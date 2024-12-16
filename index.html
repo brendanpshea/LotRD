@@ -66,6 +66,7 @@
                 this.hit_dice = data.hit_dice;
                 this.attack_die = data.attack_die;
                 this.defense = data.defense;
+                this.image = data.image || null;  // Optional image property
                 this.hit_points = 0;
                 for (let i = 0; i < this.hit_dice; i++) {
                     this.hit_points += rollDice(1, 6);
@@ -212,138 +213,151 @@
             }
 
             showQuestionSetSelection(availableSets, startCallback) {
-        this.clear();
-        let html = `
-            <div class='bbs-container'>
-                <div class='title'>Choose Your Question Set</div>
-                <div class='section'>
-                    Select a question set to begin your adventure.
-                </div>
-            </div>
-        `;
-        this.root.insertAdjacentHTML('beforeend', html);
-
-        const select = document.createElement('select');
-        availableSets.forEach(set => {
-            const option = document.createElement('option');
-            option.value = set;
-            option.textContent = set;
-            select.appendChild(option);
-        });
-        select.classList.add('question-set-select'); // Added Class
-
-        this.root.appendChild(select);
-
-        const btnContainer = document.createElement('div');
-        btnContainer.className = 'button-container'; // Added Class
-
-        const startBtn = document.createElement('button');
-        startBtn.textContent = "Load Questions";
-        startBtn.onclick = () => {
-            const chosenSet = select.value;
-            startCallback(chosenSet);
-        };
-        startBtn.classList.add('action-button'); // Added Class
-
-        btnContainer.appendChild(startBtn);
-        this.root.appendChild(btnContainer);
-    }
-
-    showInitialScreen(startCallback) {
-        this.clear();
-        const html = `
-            <div class='bbs-container'>
-                <div class='title'>Welcome to the Loop of the Recursive Dragon!</div>
-                <div class='section'>
-                    Face monsters near your level. Answer questions to deal damage and gain XP.
-                    Level up to improve gear and health.
-                </div>
-            </div>
-        `;
-        this.root.insertAdjacentHTML('beforeend', html);
-
-        const btnContainer = document.createElement('div');
-        btnContainer.className = 'button-container'; // Added Class
-
-        const startBtn = document.createElement('button');
-        startBtn.textContent = "Start Adventure";
-        startBtn.onclick = () => startCallback();
-        startBtn.classList.add('action-button'); // Added Class
-
-        btnContainer.appendChild(startBtn);
-        this.root.appendChild(btnContainer);
-    }
-
-        showEncounter() {
-            this.clear();
-            const p = this.model.player;
-            const m = this.model.current_monster;
-            const q = this.model.current_question;
-
-            const encounter_html = `
-                <div class='bbs-container'>
-                    <div class='title'>Loop of the Recursive Dragon</div>
-                    <div class='section'>
-                        You encounter <span class='bold underline'>${m.monster_name}</span>! ${m.initial_description}<br>
-                        Monster HP: <span class='yellow'>${m.hit_points}</span><br>
-                        Your HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span>, Lvl: <span class='yellow'>${p.level}</span>, XP: <span class='yellow'>${p.xp}/${p.xp_to_next_level}</span><br>
-                        Weapon: <span class='yellow'>${p.weapon.name}</span>, Armor: <span class='yellow'>${p.armor.name}</span>
+                this.clear();
+                let html = `
+                    <div class='bbs-container'>
+                        <div class='title'>Choose Your Question Set</div>
+                        <div class='section'>
+                            Select a question set to begin your adventure.
+                        </div>
                     </div>
-                </div>
-                <div class='bbs-container'>
-                    <div class='section'>
-                        <span class='bold'>Question:</span> ${q.question}
-                    </div>
-                </div>
-            `;
-            this.root.insertAdjacentHTML('beforeend', encounter_html);
+                `;
+                this.root.insertAdjacentHTML('beforeend', html);
 
-            const options = [...(q.correct || []), ...(q.incorrect || [])];
-            for (let i = options.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [options[i], options[j]] = [options[j], options[i]];
+                const select = document.createElement('select');
+                availableSets.forEach(set => {
+                    const option = document.createElement('option');
+                    option.value = set;
+                    option.textContent = set;
+                    select.appendChild(option);
+                });
+                select.classList.add('question-set-select'); // Added Class
+
+                this.root.appendChild(select);
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'button-container'; // Added Class
+
+                const startBtn = document.createElement('button');
+                startBtn.textContent = "Load Questions";
+                startBtn.onclick = () => {
+                    const chosenSet = select.value;
+                    startCallback(chosenSet);
+                };
+                startBtn.classList.add('action-button'); // Added Class
+
+                btnContainer.appendChild(startBtn);
+                this.root.appendChild(btnContainer);
             }
 
-            const checkboxContainer = document.createElement('div');
-            checkboxContainer.className = 'checkbox-container';
+            showInitialScreen(startCallback) {
+                this.clear();
+                const html = `
+                    <div class='bbs-container'>
+                        <div class='title'>Welcome to the Loop of the Recursive Dragon!</div>
+                        <div class='section'>
+                            Face monsters near your level. Answer questions to deal damage and gain XP.
+                            Level up to improve gear and health.
+                        </div>
+                    </div>
+                `;
+                this.root.insertAdjacentHTML('beforeend', html);
 
-            const checkboxes = [];
-            options.forEach(opt => {
-                const label = document.createElement('label');
-                const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.value = opt;
-                label.appendChild(cb);
-                label.appendChild(document.createTextNode(' ' + opt));
-                label.classList.add('checkbox-label'); // Added Class
-                checkboxContainer.appendChild(label);
-                checkboxes.push(cb);
-            });
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'button-container'; // Added Class
 
-            this.root.appendChild(checkboxContainer);
+                const startBtn = document.createElement('button');
+                startBtn.textContent = "Start Adventure";
+                startBtn.onclick = () => startCallback();
+                startBtn.classList.add('action-button'); // Added Class
 
-            const btnContainer = document.createElement('div');
-            btnContainer.className = 'button-container'; // Added Class
+                btnContainer.appendChild(startBtn);
+                this.root.appendChild(btnContainer);
+            }
 
-            const submitBtn = document.createElement('button');
-            submitBtn.textContent = "Submit Answer";
-            submitBtn.onclick = () => {
-                const selected = checkboxes.filter(c => c.checked).map(c => c.value);
-                window.gameController.submitAnswer(selected);
-            };
-            submitBtn.classList.add('action-button'); // Added Class
+            showEncounter() {
+                this.clear();
+                const p = this.model.player;
+                const m = this.model.current_monster;
+                const q = this.model.current_question;
 
-            const hintBtn = document.createElement('button');
-            hintBtn.textContent = "Show Hint";
-            hintBtn.onclick = () => {
-                this.showHint(q.hint || "No hint available.");
-            };
-            hintBtn.classList.add('action-button'); // Added Class
+                let encounter_html = `
+                    <div class='bbs-container'>
+                        <div class='title'>Loop of the Recursive Dragon</div>
+                        <div class='section'>
+                            You encounter <span class='bold underline'>${m.monster_name}</span>! ${m.initial_description}<br>
+                            Monster HP: <span class='yellow'>${m.hit_points}</span><br>
+                            Your HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span>, Lvl: <span class='yellow'>${p.level}</span>, XP: <span class='yellow'>${p.xp}/${p.xp_to_next_level}</span><br>
+                            Weapon: <span class='yellow'>${p.weapon.name}</span>, Armor: <span class='yellow'>${p.armor.name}</span>
+                        </div>
+                `;
 
-            btnContainer.appendChild(submitBtn);
-            btnContainer.appendChild(hintBtn);
-            this.root.appendChild(btnContainer);
-        }
+                // If the monster has an image, include it
+                if (m.image) {
+                    encounter_html += `
+                        <div class='monster-image-container'>
+                            <img src='images/monsters/${m.image}' alt='${m.monster_name}' class='monster-image'/>
+                        </div>
+                    `;
+                }
+
+                encounter_html += `
+                    </div>
+                    <div class='bbs-container'>
+                        <div class='section'>
+                            <span class='bold'>Question:</span> ${q.question}
+                        </div>
+                    </div>
+                `;
+                this.root.insertAdjacentHTML('beforeend', encounter_html);
+
+                const options = [...(q.correct || []), ...(q.incorrect || [])];
+                for (let i = options.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [options[i], options[j]] = [options[j], options[i]];
+                }
+
+                const checkboxContainer = document.createElement('div');
+                checkboxContainer.className = 'checkbox-container';
+
+                const checkboxes = [];
+                options.forEach(opt => {
+                    const label = document.createElement('label');
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.value = opt;
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(' ' + opt));
+                    label.classList.add('checkbox-label'); // Added Class
+                    checkboxContainer.appendChild(label);
+                    checkboxes.push(cb);
+                });
+
+                this.root.appendChild(checkboxContainer);
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'button-container'; // Added Class
+
+                const submitBtn = document.createElement('button');
+                submitBtn.textContent = "Submit Answer";
+                submitBtn.onclick = () => {
+                    const selected = checkboxes.filter(c => c.checked).map(c => c.value);
+                    window.gameController.submitAnswer(selected);
+                };
+                submitBtn.classList.add('action-button'); // Added Class
+
+                const hintBtn = document.createElement('button');
+                hintBtn.textContent = "Show Hint";
+                hintBtn.onclick = () => {
+                    this.showHint(q.hint || "No hint available.");
+                };
+                hintBtn.classList.add('action-button'); // Added Class
+
+                btnContainer.appendChild(submitBtn);
+                btnContainer.appendChild(hintBtn);
+                this.root.appendChild(btnContainer);
+            }
+
             showHint(hint) {
                 const oldHint = this.root.querySelector('.hint');
                 if (oldHint) oldHint.remove();
@@ -400,6 +414,7 @@
                 const continueBtn = document.createElement('button');
                 continueBtn.textContent = "Continue";
                 continueBtn.onclick = () => continueCallback();
+                continueBtn.classList.add('action-button'); // Ensure consistent styling
                 this.root.appendChild(continueBtn);
             }
 
