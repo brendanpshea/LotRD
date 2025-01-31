@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
     <title>Loop of the Recursive Dragon</title>
     <link rel="stylesheet" href="styles.css">
+    
 </head>
 <body>
     <div class="game-container">
@@ -156,12 +157,14 @@
                 let defeated_player = false;
                 let xp_gained = 0;
                 let question_repeated = false;
+                let levelsGained = 0;
 
                 if (this.current_monster.hit_points <= 0) {
                     defeated_monster = true;
                     xp_gained = this.current_monster.xp_value;
                     this.player.xp += xp_gained;
-                    this.checkLevelUp();
+                    // Capture level-up information
+                    levelsGained = this.checkLevelUp();
                 }
 
                 if (this.player.hit_points <= 0) {
@@ -181,13 +184,20 @@
                     defeated_monster,
                     defeated_player,
                     xp_gained,
-                    question_repeated
+                    question_repeated,
+                    correctSelections,
+                    incorrectSelections,
+                    missedCorrect,
+                    levelsGained // Include levels gained
                 };
             }
 
             checkLevelUp() {
+                let levelsGained = 0;
                 while (this.player.xp >= this.player.xp_to_next_level) {
                     this.player.level += 1;
+                    levelsGained += 1;
+                    this.player.xp -= this.player.xp_to_next_level;
                     this.player.xp_to_next_level += 50;
                     this.player.max_hit_points += 10;
                     this.player.hit_points = this.player.max_hit_points;
@@ -199,6 +209,7 @@
                         this.player.armor = ARMORS[this.player.level - 1];
                     }
                 }
+                return levelsGained;
             }
         }
 
@@ -377,6 +388,41 @@
                 const m = this.model.current_monster;
 
                 let html = "<div class='bbs-container battle-text'><div class='section'>";
+
+                // Display feedback about correct and incorrect answers
+                html += `<div class='feedback-container'>`;
+                if (battleData.correctSelections.length > 0) {
+                    html += `<div class='correct'>✔ Correctly selected:</div><ul>`;
+                    battleData.correctSelections.forEach(item => {
+                        html += `<li>${item}</li>`;
+                    });
+                    html += `</ul>`;
+                } else {
+                    html += `<div class='correct'>✔ No correct selections.</div>`;
+                }
+
+                if (battleData.incorrectSelections.length > 0) {
+                    html += `<div class='incorrect'>✖ Incorrectly selected:</div><ul>`;
+                    battleData.incorrectSelections.forEach(item => {
+                        html += `<li>${item}</li>`;
+                    });
+                    html += `</ul>`;
+                } else {
+                    html += `<div class='incorrect'>✖ No incorrect selections.</div>`;
+                }
+
+                if (battleData.missedCorrect.length > 0) {
+                    html += `<div class='missed'>⚠ Missed correct answers:</div><ul>`;
+                    battleData.missedCorrect.forEach(item => {
+                        html += `<li>${item}</li>`;
+                    });
+                    html += `</ul>`;
+                } else {
+                    html += `<div class='missed'>⚠ No missed correct answers.</div>`;
+                }
+                html += `</div>`; // Close feedback-container
+
+                // Now display damage
                 if (battleData.effective_player_damage > 0) {
                     html += `You deal <span class='yellow'>${battleData.effective_player_damage}</span> damage.<br>`;
                 } else {
@@ -420,6 +466,40 @@
                 continueBtn.onclick = () => continueCallback();
                 continueBtn.classList.add('action-button'); // Ensure consistent styling
                 this.root.appendChild(continueBtn);
+            }
+
+            showLevelUp(levelsGained, continueCallback) {
+                const p = this.model.player;
+
+                let html = `
+                    <div class='bbs-container level-up-container'>
+                        <div class='level-up-title'>🎉 Congratulations!</div>
+                        <div class='section'>
+                            <span class='bold'>You've reached level ${p.level}!</span><br>
+                            ${levelsGained > 1 ? `You've gained ${levelsGained} levels!` : `You've gained 1 level!`}
+                        </div>
+                        <div class='section new-gear'>
+                            <span class='bold'>New Gear Unlocked:</span><br>
+                            <span class='bold'>Weapon:</span> ${p.weapon.name} (Attack Die: d${p.weapon.attack_die})<br>
+                            <span class='bold'>Armor:</span> ${p.armor.name} (Defense: ${p.armor.defense})
+                        </div>
+                        <div class='section hit-points'>
+                            <span class='bold'>Hit Points Increased:</span> Your maximum HP is now <span class='yellow'>${p.max_hit_points}</span>!
+                        </div>
+                    </div>
+                `;
+                this.root.innerHTML = html;
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'button-container';
+
+                const continueBtn = document.createElement('button');
+                continueBtn.textContent = "Continue Adventure";
+                continueBtn.onclick = () => continueCallback();
+                continueBtn.classList.add('action-button');
+
+                btnContainer.appendChild(continueBtn);
+                this.root.appendChild(btnContainer);
             }
 
             showVictory() {
@@ -486,7 +566,49 @@
             constructor() {
                 this.root = document.getElementById('game-root');
                 this.ui = new GameUI(this.root, null);
-                this.showQuestionSetSelection();
+
+                // Parse URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const specifiedSet = urlParams.get('set');
+
+                if (specifiedSet) {
+                    // Attempt to load the specified set
+                    this.loadSpecifiedSet(specifiedSet);
+                } else {
+                    // Show the question set selection screen
+                    this.showQuestionSetSelection();
+                }
+            }
+
+            async loadSpecifiedSet(setName) {
+                try {
+                    // Fetch available question sets to validate the specified set
+                    const availableSets = await loadJSON('question_sets/index.json');
+                    if (!availableSets.includes(setName)) {
+                        throw new Error(`Question set "${setName}" does not exist.`);
+                    }
+
+                    // Load the specified question set
+                    const questions_url = `question_sets/${setName}`;
+                    const monsters_url = `assets/monsters.json`;
+                    const questions_data = await loadJSON(questions_url);
+                    const monsters_data = await loadJSON(monsters_url);
+                    this.model = new GameModel(questions_data, monsters_data);
+                    this.ui = new GameUI(this.root, this.model);
+                    this.ui.showInitialScreen(() => this.startAdventure());
+                } catch (err) {
+                    // If there's an error (e.g., set doesn't exist), show an error message
+                    this.root.innerHTML = `
+                        <div class='bbs-container'>
+                            <div class='section red bold'>Error loading question set "${setName}": ${err.message}</div>
+                            <div class='section'>
+                                <button class='action-button' onclick='window.gameController.showQuestionSetSelection()'>
+                                    Go Back to Selection
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
             async showQuestionSetSelection() {
@@ -509,6 +631,11 @@
                     this.model = new GameModel(questions_data, monsters_data);
                     this.ui = new GameUI(this.root, this.model);
                     this.ui.showInitialScreen(() => this.startAdventure());
+
+                    // Optional: Update the URL to include the selected set
+                    const newURL = new URL(window.location);
+                    newURL.searchParams.set('set', chosenSet);
+                    window.history.replaceState({}, '', newURL);
                 } catch (err) {
                     this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading game data: ${err.message}</div></div>`;
                 }
@@ -540,7 +667,11 @@
                     this.ui.showGameOver();
                     return;
                 }
-                this.ui.showResults(battleData, () => this.continueAdventure());
+                if (battleData.levelsGained > 0) {
+                    this.ui.showLevelUp(battleData.levelsGained, () => this.continueAdventure());
+                } else {
+                    this.ui.showResults(battleData, () => this.continueAdventure());
+                }
             }
 
             continueAdventure() {
