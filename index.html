@@ -284,12 +284,7 @@
                 let encounter_html = `
                     <div class='bbs-container'>
                         <div class='title'>Loop of the Recursive Dragon</div>
-                        <div class='section'>
-                            You encounter <span class='bold underline'>${m.monster_name}</span>! ${m.initial_description}<br>
-                            Monster HP: <span class='yellow'>${m.hit_points}</span><br>
-                            Your HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span>, Lvl: <span class='yellow'>${p.level}</span>, XP: <span class='yellow'>${p.xp}/${p.xp_to_next_level}</span><br>
-                            Weapon: <span class='yellow'>${p.weapon.name}</span>, Armor: <span class='yellow'>${p.armor.name}</span>
-                        </div>
+                        <div class='monster-container'>
                 `;
 
                 // If the monster has an image, include it
@@ -300,6 +295,15 @@
                         </div>
                     `;
                 }
+
+                encounter_html += `
+                    <div class='monster-info'>
+                        You encounter <span class='bold underline'>${m.monster_name}</span>! ${m.initial_description}<br>
+                        Monster HP: <span class='yellow'>${m.hit_points}</span><br>
+                        Your HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span>, Lvl: <span class='yellow'>${p.level}</span>, XP: <span class='yellow'>${p.xp}/${p.xp_to_next_level}</span><br>
+                        Weapon: <span class='yellow'>${p.weapon.name}</span>, Armor: <span class='yellow'>${p.armor.name}</span>
+                    </div>
+                `;
 
                 encounter_html += `
                     </div>
@@ -369,10 +373,10 @@
             }
 
             showResults(battleData, continueCallback) {
-                this.clear();
                 const p = this.model.player;
                 const m = this.model.current_monster;
-                let html = "<div class='bbs-container'><div class='section'>";
+
+                let html = "<div class='bbs-container battle-text'><div class='section'>";
                 if (battleData.effective_player_damage > 0) {
                     html += `You deal <span class='yellow'>${battleData.effective_player_damage}</span> damage.<br>`;
                 } else {
@@ -410,7 +414,7 @@
                 }
                 html += "</div></div>";
 
-                this.root.innerHTML = html;
+                this.root.insertAdjacentHTML('beforeend', html);
                 const continueBtn = document.createElement('button');
                 continueBtn.textContent = "Continue";
                 continueBtn.onclick = () => continueCallback();
