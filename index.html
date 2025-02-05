@@ -13,23 +13,23 @@
     </div>
     <script>
         const WEAPONS = [
-            {name: "Apprentice's Debug Dagger", attack_die: 4},
-            {name: "Journeyman's Binary Blade", attack_die: 5},
-            {name: "Recursive Battle Axe", attack_die: 6},
-            {name: "Greater Sword of Stack Overflow", attack_die: 7},
-            {name: "Epic Quantum Warhammer", attack_die: 8},
-            {name: "Ancient Blade of Deep Learning", attack_die: 9},
-            {name: "Legendary Sword of System Core Access", attack_die: 10},
+            { name: "Rusty Dagger", attack_die: 4 },
+            { name: "Copper Shortsword", attack_die: 5 },
+            { name: "Iron Battle Axe", attack_die: 6 },
+            { name: "Steel Longsword", attack_die: 7 },
+            { name: "Mythril Hammer", attack_die: 8 },
+            { name: "Adamant Blade", attack_die: 9 },
+            { name: "Crystal Sword", attack_die: 10 },
         ];
 
         const ARMORS = [
-            {name: "Initiate's Firewall Robes", defense: 0},
-            {name: "Acolyte's Cache Armor", defense: 1},
-            {name: "Encryption Mesh Vest", defense: 2},
-            {name: "Greater Blockchain Chainmail", defense: 3},
-            {name: "Epic Neural Network Plate", defense: 4},
-            {name: "Ancient Quantum-Shielded Armor", defense: 5},
-            {name: "Legendary Armor of Root Access", defense: 6},
+            { name: "Cloth Tunic", defense: 0 },
+            { name: "Leather Jerkin", defense: 1 },
+            { name: "Chainmail Vest", defense: 2 },
+            { name: "Iron Cuirass", defense: 3 },
+            { name: "Steel Plate", defense: 4 },
+            { name: "Mythril Armor", defense: 5 },
+            { name: "Dragon Scale Mail", defense: 6 },
         ];
 
         async function loadJSON(url) {
@@ -480,8 +480,19 @@
                         </div>
                         <div class='section new-gear'>
                             <span class='bold'>New Gear Unlocked:</span><br>
-                            <span class='bold'>Weapon:</span> ${p.weapon.name} (Attack Die: d${p.weapon.attack_die})<br>
-                            <span class='bold'>Armor:</span> ${p.armor.name} (Defense: ${p.armor.defense})
+                `;
+                // Alternate weapon/armor upgrades
+                const isWeaponUpgrade = (p.level - 1) % 2 === 0; // Check if level is even (0-indexed)
+                if (isWeaponUpgrade) {
+                    html += `<span class='bold'>Weapon:</span> ${p.weapon.name} (Attack Die: d${p.weapon.attack_die})<br>`;
+                    if (p.level > 1) { //Only show previous armor if they have it.
+                        html += `<span class='bold'>Armor:</span> ${ARMORS[p.level - 2].name} (Defense: ${ARMORS[p.level - 2].defense})<br>`;
+                    }
+                } else {
+                    html += `<span class='bold'>Armor:</span> ${p.armor.name} (Defense: ${p.armor.defense})<br>`;
+                    html += `<span class='bold'>Weapon:</span> ${WEAPONS[p.level - 2].name} (Attack Die: d${WEAPONS[p.level - 2].attack_die})<br>`;
+                }
+                html += `
                         </div>
                         <div class='section hit-points'>
                             <span class='bold'>Hit Points Increased:</span> Your maximum HP is now <span class='yellow'>${p.max_hit_points}</span>!
@@ -656,6 +667,7 @@
                 }
             }
 
+            
             submitAnswer(selected) {
                 if (!this.model.current_question) return;
                 if (selected.length === 0) {
@@ -667,12 +679,16 @@
                     this.ui.showGameOver();
                     return;
                 }
-                if (battleData.levelsGained > 0) {
-                    this.ui.showLevelUp(battleData.levelsGained, () => this.continueAdventure());
-                } else {
-                    this.ui.showResults(battleData, () => this.continueAdventure());
-                }
+
+                this.ui.showResults(battleData, () => { // Show results first
+                    if (battleData.levelsGained > 0) {
+                        this.ui.showLevelUp(battleData.levelsGained, () => this.continueAdventure());
+                    } else {
+                        this.continueAdventure(); // Continue after results
+                    }
+                });
             }
+
 
             continueAdventure() {
                 const status = this.model.nextEncounter();
