@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Loop of the Recursive Dragon</title>
     <link rel="stylesheet" href="styles.css">
-    
+
 </head>
 <body>
     <div class="game-container">
@@ -192,26 +192,38 @@
                 };
             }
 
+
+            // Revised checkLevelUp method:
             checkLevelUp() {
                 let levelsGained = 0;
                 while (this.player.xp >= this.player.xp_to_next_level) {
-                    this.player.level += 1;
-                    levelsGained += 1;
                     this.player.xp -= this.player.xp_to_next_level;
+                    this.player.level += 1;
+                    levelsGained++;
                     this.player.xp_to_next_level += 50;
                     this.player.max_hit_points += 10;
                     this.player.hit_points = this.player.max_hit_points;
 
-                    if (this.player.level <= WEAPONS.length) {
-                        this.player.weapon = WEAPONS[this.player.level - 1];
-                    }
-                    if (this.player.level <= ARMORS.length) {
-                        this.player.armor = ARMORS[this.player.level - 1];
+                    if (this.player.level % 2 === 0) { // Even level: upgrade weapon.
+                        const weaponIndex = this.player.level / 2; // Level 2 → index 1.
+                        if (weaponIndex < WEAPONS.length) {
+                            this.player.weapon = WEAPONS[weaponIndex];
+                        } else {
+                            console.warn("Player level exceeds available weapons!");
+                        }
+                    } else if (this.player.level > 1) { // Odd level (>1): upgrade armor.
+                        const armorIndex = Math.floor((this.player.level - 1) / 2); // Level 3 → index 1.
+                        if (armorIndex < ARMORS.length) {
+                            this.player.armor = ARMORS[armorIndex];
+                        } else {
+                            console.warn("Player level exceeds available armor!");
+                        }
                     }
                 }
                 return levelsGained;
             }
-        }
+
+            }
 
         class GameUI {
             constructor(root, model) {
@@ -361,15 +373,9 @@
                 };
                 submitBtn.classList.add('action-button'); // Added Class
 
-                const hintBtn = document.createElement('button');
-                hintBtn.textContent = "Show Hint";
-                hintBtn.onclick = () => {
-                    this.showHint(q.hint || "No hint available.");
-                };
-                hintBtn.classList.add('action-button'); // Added Class
 
                 btnContainer.appendChild(submitBtn);
-                btnContainer.appendChild(hintBtn);
+                // Removed hint button code here
                 this.root.appendChild(btnContainer);
             }
 
@@ -384,6 +390,21 @@
             }
 
             showResults(battleData, continueCallback) {
+                // Remove question and answer elements by targeting their existing classes
+                const questionBBSContainer = this.root.querySelector('.bbs-container .section span.bold'); // Targetting the 'Question:' section using a more specific selector
+                if (questionBBSContainer && questionBBSContainer.closest('.bbs-container')) { // Need to remove the parent 'bbs-container' div
+                    questionBBSContainer.closest('.bbs-container').remove();
+                }
+                const answerCheckboxContainer = this.root.querySelector('.checkbox-container');
+                if (answerCheckboxContainer) {
+                    answerCheckboxContainer.remove();
+                }
+                const actionButtonContainer = this.root.querySelector('.button-container');
+                if (actionButtonContainer) {
+                    actionButtonContainer.remove();
+                }
+
+
                 const p = this.model.player;
                 const m = this.model.current_monster;
 
@@ -468,9 +489,9 @@
                 this.root.appendChild(continueBtn);
             }
 
+            // Revised showLevelUp function:
             showLevelUp(levelsGained, continueCallback) {
                 const p = this.model.player;
-
                 let html = `
                     <div class='bbs-container level-up-container'>
                         <div class='level-up-title'>🎉 Congratulations!</div>
@@ -481,16 +502,12 @@
                         <div class='section new-gear'>
                             <span class='bold'>New Gear Unlocked:</span><br>
                 `;
-                // Alternate weapon/armor upgrades
-                const isWeaponUpgrade = (p.level - 1) % 2 === 0; // Check if level is even (0-indexed)
-                if (isWeaponUpgrade) {
+                if (p.level % 2 === 0) { // Even level: new weapon.
                     html += `<span class='bold'>Weapon:</span> ${p.weapon.name} (Attack Die: d${p.weapon.attack_die})<br>`;
-                    if (p.level > 1) { //Only show previous armor if they have it.
-                        html += `<span class='bold'>Armor:</span> ${ARMORS[p.level - 2].name} (Defense: ${ARMORS[p.level - 2].defense})<br>`;
-                    }
-                } else {
                     html += `<span class='bold'>Armor:</span> ${p.armor.name} (Defense: ${p.armor.defense})<br>`;
-                    html += `<span class='bold'>Weapon:</span> ${WEAPONS[p.level - 2].name} (Attack Die: d${WEAPONS[p.level - 2].attack_die})<br>`;
+                } else { // Odd level: new armor.
+                    html += `<span class='bold'>Armor:</span> ${p.armor.name} (Defense: ${p.armor.defense})<br>`;
+                    html += `<span class='bold'>Weapon:</span> ${p.weapon.name} (Attack Die: d${p.weapon.attack_die})<br>`;
                 }
                 html += `
                         </div>
@@ -503,12 +520,10 @@
 
                 const btnContainer = document.createElement('div');
                 btnContainer.className = 'button-container';
-
                 const continueBtn = document.createElement('button');
                 continueBtn.textContent = "Continue Adventure";
                 continueBtn.onclick = () => continueCallback();
                 continueBtn.classList.add('action-button');
-
                 btnContainer.appendChild(continueBtn);
                 this.root.appendChild(btnContainer);
             }
@@ -667,7 +682,7 @@
                 }
             }
 
-            
+
             submitAnswer(selected) {
                 if (!this.model.current_question) return;
                 if (selected.length === 0) {
