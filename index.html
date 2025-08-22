@@ -188,7 +188,8 @@
                     correctSelections,
                     incorrectSelections,
                     missedCorrect,
-                    levelsGained // Include levels gained
+                    levelsGained, // Include levels gained
+                    feedback: q.feedback || null // Include feedback if present
                 };
             }
 
@@ -444,6 +445,8 @@
                 }
                 html += `</div>`; // Close feedback-container
 
+                
+
                 // Now display damage
                 if (battleData.effective_player_damage > 0) {
                     html += `You deal <span class='yellow'>${battleData.effective_player_damage}</span> damage.<br>`;
@@ -480,7 +483,18 @@
                 if (battleData.question_repeated) {
                     html += "<span class='cyan'>You will face this question again.</span><br>";
                 }
+
+                // Display custom feedback if present
+                if (battleData.feedback) {
+                    html += `<div class='custom-feedback'>`;
+                    html += `<br><div class='bold'>Feedback:</div>`;
+                    html += `<div class='feedback-text'>${battleData.feedback}</div>`;
+                    html += `</div>`;
+                }
+
+
                 html += "</div></div>";
+
 
                 this.root.insertAdjacentHTML('beforeend', html);
                 const continueBtn = document.createElement('button');
