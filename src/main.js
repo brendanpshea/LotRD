@@ -715,4 +715,4 @@ class GameController {
 }
 
 // Initialize the game controller and make it globally accessible
-new GameController();
+window.gameController = new GameController();
