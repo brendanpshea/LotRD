@@ -1,4 +1,13 @@
-// main.js
+// app.js
+/* This file contains the main game logic and UI rendering for the "Loop of the Recursive Dragon" game. 
+
+Classes and methods overview:
+- GameUI: Handles the user interface and rendering.
+- GameController: Manages the game flow and interactions between the model and UI.
+- GameModel: Represents the game state, including the player, monsters, and questions (from model.js).
+
+*/
+
 import { loadJSON, GameModel } from "./model.js";
 
 

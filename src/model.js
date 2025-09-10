@@ -1,3 +1,14 @@
+// src/model.js
+/* This file contains the data models and game logic for the "Loop of the Recursive Dragon" game. 
+
+Classes and methods overview:
+- Player: Represents the player character, including stats and equipment.
+- Monster: Represents a monster with stats and methods to initialize hit points.
+- GameModel: Manages the game state, including questions, monsters, player state, and encounter logic.
+- loadJSON: Utility function to load JSON data from a URL.
+- rollDice: Utility function to simulate dice rolls.
+*/
+
 export const WEAPONS = [
     { name: "Rusty Dagger", attack_die: 4 },
     { name: "Copper Shortsword", attack_die: 5 },
