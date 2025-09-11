@@ -11,381 +11,266 @@ Classes and methods overview:
 import { loadJSON, GameModel } from "./model.js";
 
 
+// helpers for working with <template>
+function renderTemplate(root, id) {
+  root.innerHTML = "";
+  const tpl = document.getElementById(id);
+  if (!tpl) throw new Error(`Missing template: ${id}`);
+  const frag = tpl.content.cloneNode(true);
+  root.appendChild(frag);
+  return root;
+}
+const $  = (root, sel) => root.querySelector(sel);
+const $$ = (root, sel) => [...root.querySelectorAll(sel)];
+
 export class GameUI {
-    constructor(root, model) {
-        this.root = root;
-        this.model = model;
+  constructor(root, model) {
+    this.root = root;
+    this.model = model;
+  }
+
+  setModel(model) { this.model = model; }
+
+  clear() { this.root.innerHTML = ""; }
+
+  showQuestionSetSelection(availableSets, startCallback) {
+    renderTemplate(this.root, "tpl-set-select");
+    const select = $(this.root, "[data-ref=setSelect]");
+    availableSets.forEach(set => {
+      const opt = document.createElement("option");
+      opt.value = set; opt.textContent = set;
+      select.appendChild(opt);
+    });
+    $(this.root, "[data-action=load]")
+      .addEventListener("click", () => startCallback(select.value));
+  }
+
+  showInitialScreen(startCallback) {
+    renderTemplate(this.root, "tpl-initial");
+    $(this.root, "[data-action=start]")
+      .addEventListener("click", () => startCallback());
+  }
+
+  showEncounter() {
+    const p = this.model.player;
+    const m = this.model.current_monster;
+    const q = this.model.current_question;
+
+    renderTemplate(this.root, "tpl-encounter");
+
+    // Fill monster/player info
+    $ (this.root, "[data-ref=mName]").textContent  = m.monster_name;
+    $ (this.root, "[data-ref=mDesc]").textContent  = " " + (m.initial_description || "");
+    $ (this.root, "[data-ref=mHP]").textContent    = m.hit_points;
+    $ (this.root, "[data-ref=pHP]").textContent    = `${p.hit_points}/${p.max_hit_points}`;
+    $ (this.root, "[data-ref=pLvl]").textContent   = p.level;
+    $ (this.root, "[data-ref=pXP]").textContent    = `${p.xp}/${p.xp_to_next_level}`;
+    $ (this.root, "[data-ref=pWeap]").textContent  = p.weapon.name;
+    $ (this.root, "[data-ref=pArmor]").textContent = p.armor.name;
+    $ (this.root, "[data-ref=qText]").textContent  = q.question;
+
+    // Optional image
+    if (m.image) {
+      const wrap = $(this.root, "[data-ref=imgWrap]");
+      const img  = $(this.root, "[data-ref=img]");
+      img.src = `images/monsters/${m.image}`;
+      img.alt = m.monster_name;
+      wrap.hidden = false;
     }
 
-    clear() {
-        this.root.innerHTML = '';
+    // Options
+    const options = [...(q.correct || []), ...(q.incorrect || [])];
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
     }
+    const optBox = $(this.root, "[data-ref=options]");
+    const checkboxes = [];
+    options.forEach(opt => {
+      const id = `opt-${Math.random().toString(36).slice(2)}`;
+      const label = document.createElement("label");
+      label.className = "checkbox-label";
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.value = opt; cb.id = id;
+      const txt = document.createTextNode(" " + opt);
+      label.appendChild(cb);
+      label.appendChild(txt);
+      optBox.appendChild(label);
+      checkboxes.push(cb);
+    });
 
-    showQuestionSetSelection(availableSets, startCallback) {
-        this.clear();
-        let html = `
-            <div class='bbs-container'>
-                <div class='title'>Choose Your Question Set</div>
-                <div class='section'>
-                    Select a question set to begin your adventure.
-                </div>
-            </div>
-        `;
-        this.root.insertAdjacentHTML('beforeend', html);
+    $(this.root, "[data-action=submit]").addEventListener("click", () => {
+      const selected = checkboxes.filter(c => c.checked).map(c => c.value);
+      // keep current contract with your controller
+      window.gameController.submitAnswer(selected);
+    });
+  }
 
-        const select = document.createElement('select');
-        availableSets.forEach(set => {
-            const option = document.createElement('option');
-            option.value = set;
-            option.textContent = set;
-            select.appendChild(option);
+  showHint(hint) {
+    // remove existing hint if any
+    const old = this.root.querySelector(".hint");
+    if (old) old.remove();
+    const tpl = document.getElementById("tpl-hint");
+    const frag = tpl.content.cloneNode(true);
+    frag.querySelector("[data-ref=hintText]").textContent = hint;
+    this.root.appendChild(frag);
+  }
+
+  showResults(battleData, continueCallback) {
+    const p = this.model.player;
+    const m = this.model.current_monster;
+
+    renderTemplate(this.root, "tpl-results");
+    const body = $(this.root, "[data-ref=resultsBody]");
+
+    // Feedback lists
+    const buildList = (titleClass, titleText, items) => {
+      const title = document.createElement("div");
+      title.className = titleClass;
+      title.textContent = titleText;
+      body.appendChild(title);
+      const ul = document.createElement("ul");
+      if (items.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "None.";
+        ul.appendChild(li);
+      } else {
+        items.forEach(item => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          ul.appendChild(li);
         });
-        select.classList.add('question-set-select'); // Added Class
+      }
+      body.appendChild(ul);
+    };
 
-        this.root.appendChild(select);
+    const fbWrap = document.createElement("div");
+    fbWrap.className = "feedback-container";
+    body.appendChild(fbWrap);
+    // Temporarily point "body" at fbWrap while building lists
+    const savedBody = body;
+    const tmpBody = fbWrap;
 
-        const btnContainer = document.createElement('div');
-        btnContainer.className = 'button-container'; // Added Class
-
-        const startBtn = document.createElement('button');
-        startBtn.textContent = "Load Questions";
-        startBtn.onclick = () => {
-            const chosenSet = select.value;
-            startCallback(chosenSet);
-        };
-        startBtn.classList.add('action-button'); // Added Class
-
-        btnContainer.appendChild(startBtn);
-        this.root.appendChild(btnContainer);
-    }
-
-    showInitialScreen(startCallback) {
-        this.clear();
-        const html = `
-            <div class='bbs-container'>
-                <div class='title'>Welcome to the Loop of the Recursive Dragon!</div>
-                <div class='section'>
-                    In this game, you'll get to battle monsters to master ideas about computer science, databases, cybersecurity, the ethics of technology, or other areas. You'll do damage to monsters when you get answers right. They'll do damage to when you get answers wrong. Good luck!
-                    
-                    <p>A game by Brendan Shea, PhD (Brendan.Shea@rctc.edu)</p>
-                </div>
-            </div>
-        `;
-        this.root.insertAdjacentHTML('beforeend', html);
-
-        const btnContainer = document.createElement('div');
-        btnContainer.className = 'button-container'; // Added Class
-
-        const startBtn = document.createElement('button');
-        startBtn.textContent = "Start Adventure";
-        startBtn.onclick = () => startCallback();
-        startBtn.classList.add('action-button'); // Added Class
-
-        btnContainer.appendChild(startBtn);
-        this.root.appendChild(btnContainer);
-    }
-
-    showEncounter() {
-        this.clear();
-        const p = this.model.player;
-        const m = this.model.current_monster;
-        const q = this.model.current_question;
-
-        let encounter_html = `
-            <div class='bbs-container'>
-                <div class='title'>Loop of the Recursive Dragon</div>
-                <div class='monster-container'>
-        `;
-
-        // If the monster has an image, include it
-        if (m.image) {
-            encounter_html += `
-                <div class='monster-image-container'>
-                    <img src='images/monsters/${m.image}' alt='${m.monster_name}' class='monster-image'/>
-                </div>
-            `;
-        }
-
-        encounter_html += `
-            <div class='monster-info'>
-                You encounter <span class='bold underline'>${m.monster_name}</span>! ${m.initial_description}<br>
-                Monster HP: <span class='yellow'>${m.hit_points}</span><br>
-                Your HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span>, Lvl: <span class='yellow'>${p.level}</span>, XP: <span class='yellow'>${p.xp}/${p.xp_to_next_level}</span><br>
-                Weapon: <span class='yellow'>${p.weapon.name}</span>, Armor: <span class='yellow'>${p.armor.name}</span>
-            </div>
-        `;
-
-        encounter_html += `
-            </div>
-            <div class='bbs-container'>
-                <div class='section'>
-                    <span class='bold'>Question:</span> ${q.question}
-                </div>
-            </div>
-        `;
-        this.root.insertAdjacentHTML('beforeend', encounter_html);
-
-        const options = [...(q.correct || []), ...(q.incorrect || [])];
-        for (let i = options.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [options[i], options[j]] = [options[j], options[i]];
-        }
-
-        const checkboxContainer = document.createElement('div');
-        checkboxContainer.className = 'checkbox-container';
-
-        const checkboxes = [];
-        options.forEach(opt => {
-            const label = document.createElement('label');
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.value = opt;
-            label.appendChild(cb);
-            label.appendChild(document.createTextNode(' ' + opt));
-            label.classList.add('checkbox-label'); // Added Class
-            checkboxContainer.appendChild(label);
-            checkboxes.push(cb);
-        });
-
-        this.root.appendChild(checkboxContainer);
-
-        const btnContainer = document.createElement('div');
-        btnContainer.className = 'button-container'; // Added Class
-
-        const submitBtn = document.createElement('button');
-        submitBtn.textContent = "Submit Answer";
-        submitBtn.onclick = () => {
-            const selected = checkboxes.filter(c => c.checked).map(c => c.value);
-            window.gameController.submitAnswer(selected);
-        };
-        submitBtn.classList.add('action-button'); // Added Class
-
-
-        btnContainer.appendChild(submitBtn);
-        // Removed hint button code here
-        this.root.appendChild(btnContainer);
-    }
-
-    showHint(hint) {
-        const oldHint = this.root.querySelector('.hint');
-        if (oldHint) oldHint.remove();
-
-        const hintDiv = document.createElement('div');
-        hintDiv.className = 'bbs-container hint';
-        hintDiv.innerHTML = `<div class='section'><span class='cyan'>Hint: ${hint}</span></div>`;
-        this.root.appendChild(hintDiv);
-    }
-
-    showResults(battleData, continueCallback) {
-        // Remove question and answer elements by targeting their existing classes
-        const questionBBSContainer = this.root.querySelector('.bbs-container .section span.bold'); // Targetting the 'Question:' section using a more specific selector
-        if (questionBBSContainer && questionBBSContainer.closest('.bbs-container')) { // Need to remove the parent 'bbs-container' div
-            questionBBSContainer.closest('.bbs-container').remove();
-        }
-        const answerCheckboxContainer = this.root.querySelector('.checkbox-container');
-        if (answerCheckboxContainer) {
-            answerCheckboxContainer.remove();
-        }
-        const actionButtonContainer = this.root.querySelector('.button-container');
-        if (actionButtonContainer) {
-            actionButtonContainer.remove();
-        }
-
-
-        const p = this.model.player;
-        const m = this.model.current_monster;
-
-        let html = "<div class='bbs-container battle-text'><div class='section'>";
-
-        // Display feedback about correct and incorrect answers
-        html += `<div class='feedback-container'>`;
-        if (battleData.correctSelections.length > 0) {
-            html += `<div class='correct'>✔ Correctly selected:</div><ul>`;
-            battleData.correctSelections.forEach(item => {
-                html += `<li>${item}</li>`;
-            });
-            html += `</ul>`;
+    // Correct / Incorrect / Missed
+    (function (b) {
+      const add = (cls, title, arr) => {
+        const d = document.createElement("div");
+        d.className = cls;
+        d.textContent = title;
+        b.appendChild(d);
+        const ul = document.createElement("ul");
+        if (arr.length === 0) {
+          const li = document.createElement("li"); li.textContent = "None.";
+          ul.appendChild(li);
         } else {
-            html += `<div class='correct'>✔ No correct selections.</div>`;
+          arr.forEach(x => { const li = document.createElement("li"); li.textContent = x; ul.appendChild(li); });
         }
+        b.appendChild(ul);
+      };
+      add("correct",   "✔ Correctly selected:",  battleData.correctSelections);
+      add("incorrect", "✖ Incorrectly selected:", battleData.incorrectSelections);
+      add("missed",    "⚠ Missed correct answers:", battleData.missedCorrect);
+    })(tmpBody);
 
-        if (battleData.incorrectSelections.length > 0) {
-            html += `<div class='incorrect'>✖ Incorrectly selected:</div><ul>`;
-            battleData.incorrectSelections.forEach(item => {
-                html += `<li>${item}</li>`;
-            });
-            html += `</ul>`;
-        } else {
-            html += `<div class='incorrect'>✖ No incorrect selections.</div>`;
-        }
-
-        if (battleData.missedCorrect.length > 0) {
-            html += `<div class='missed'>⚠ Missed correct answers:</div><ul>`;
-            battleData.missedCorrect.forEach(item => {
-                html += `<li>${item}</li>`;
-            });
-            html += `</ul>`;
-        } else {
-            html += `<div class='missed'>⚠ No missed correct answers.</div>`;
-        }
-        html += `</div>`; // Close feedback-container
-
-        
-
-        // Now display damage
-        if (battleData.effective_player_damage > 0) {
-            html += `You deal <span class='yellow'>${battleData.effective_player_damage}</span> damage.<br>`;
-        } else {
-            html += "Your attack was ineffective.<br>";
-        }
-
-        if (battleData.effective_monster_damage > 0) {
-            html += `The monster hits you for <span class='red'>${battleData.effective_monster_damage}</span> damage.<br>`;
-        } else {
-            if (!battleData.defeated_monster && battleData.effective_monster_damage === 0) {
-                html += "The monster cannot penetrate your armor.<br>";
-            } else {
-                html += "No counter-attack from the monster.<br>";
-            }
-        }
-
-        if (battleData.defeated_monster) {
-            html += `<span class='bold'>You defeated the monster!</span><br>`;
-            html += `XP gained: <span class='yellow'>${battleData.xp_gained}</span> (Total: ${p.xp}/${p.xp_to_next_level})<br>`;
-        }
-
-        if (battleData.defeated_player) {
-            html += `<span class='red bold'>You have been defeated! Game Over.</span></div></div>`;
-            this.root.innerHTML = html;
-            return;
-        }
-
-        if (m && m.hit_points > 0) {
-            html += `Monster HP: <span class='yellow'>${m.hit_points}</span><br>`;
-        }
-
-        html += `Your HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>`;
-        if (battleData.question_repeated) {
-            html += "<span class='cyan'>You will face this question again.</span><br>";
-        }
-
-        // Display custom feedback if present
-        if (battleData.feedback) {
-            html += `<div class='custom-feedback'>`;
-            html += `<br><div class='bold'>Feedback:</div>`;
-            html += `<div class='feedback-text'>${battleData.feedback}</div>`;
-            html += `</div>`;
-        }
-
-
-        html += "</div></div>";
-
-
-        this.root.insertAdjacentHTML('beforeend', html);
-        const continueBtn = document.createElement('button');
-        continueBtn.textContent = "Continue";
-        continueBtn.onclick = () => continueCallback();
-        continueBtn.classList.add('action-button'); // Ensure consistent styling
-        this.root.appendChild(continueBtn);
+    // Damage + state
+    const lines = [];
+    lines.push(
+      (battleData.effective_player_damage > 0)
+        ? `You deal ${battleData.effective_player_damage} damage.`
+        : "Your attack was ineffective."
+    );
+    if (battleData.effective_monster_damage > 0) {
+      lines.push(`The monster hits you for ${battleData.effective_monster_damage} damage.`);
+    } else {
+      if (!battleData.defeated_monster && battleData.effective_monster_damage === 0) {
+        lines.push("The monster cannot penetrate your armor.");
+      } else {
+        lines.push("No counter-attack from the monster.");
+      }
+    }
+    if (battleData.defeated_monster) {
+      lines.push(`You defeated the monster!`);
+      lines.push(`XP gained: ${battleData.xp_gained} (Total: ${p.xp}/${p.xp_to_next_level})`);
+    }
+    if (m && m.hit_points > 0) {
+      lines.push(`Monster HP: ${m.hit_points}`);
+    }
+    lines.push(`Your HP: ${p.hit_points}/${p.max_hit_points}`);
+    if (battleData.question_repeated) {
+      lines.push("You will face this question again.");
+    }
+    if (battleData.feedback) {
+      const block = document.createElement("div");
+      block.className = "custom-feedback";
+      block.innerHTML = `<br><div class='bold'>Feedback:</div><div class='feedback-text'></div>`;
+      block.querySelector(".feedback-text").textContent = battleData.feedback;
+      savedBody.appendChild(block);
     }
 
-    // Revised showLevelUp function:
-    showLevelUp(levelsGained, continueCallback) {
-        const p = this.model.player;
-        let html = `
-            <div class='bbs-container level-up-container'>
-                <div class='level-up-title'>🎉 Congratulations!</div>
-                <div class='section'>
-                    <span class='bold'>You've reached level ${p.level}!</span><br>
-                    ${levelsGained > 1 ? `You've gained ${levelsGained} levels!` : `You've gained 1 level!`}
-                </div>
-                <div class='section new-gear'>
-                    <span class='bold'>New Gear Unlocked:</span><br>
-        `;
-        if (p.level % 2 === 0) { // Even level: new weapon.
-            html += `<span class='bold'>Weapon:</span> ${p.weapon.name} (Attack Die: d${p.weapon.attack_die})<br>`;
-            html += `<span class='bold'>Armor:</span> ${p.armor.name} (Defense: ${p.armor.defense})<br>`;
-        } else { // Odd level: new armor.
-            html += `<span class='bold'>Armor:</span> ${p.armor.name} (Defense: ${p.armor.defense})<br>`;
-            html += `<span class='bold'>Weapon:</span> ${p.weapon.name} (Attack Die: d${p.weapon.attack_die})<br>`;
-        }
-        html += `
-                </div>
-                <div class='section hit-points'>
-                    <span class='bold'>Hit Points Increased:</span> Your maximum HP is now <span class='yellow'>${p.max_hit_points}</span>!
-                </div>
-            </div>
-        `;
-        this.root.innerHTML = html;
+    const dmg = document.createElement("div");
+    dmg.innerHTML = lines.map(s => `${s}<br>`).join("");
+    savedBody.appendChild(dmg);
 
-        const btnContainer = document.createElement('div');
-        btnContainer.className = 'button-container';
-        const continueBtn = document.createElement('button');
-        continueBtn.textContent = "Continue Adventure";
-        continueBtn.onclick = () => continueCallback();
-        continueBtn.classList.add('action-button');
-        btnContainer.appendChild(continueBtn);
-        this.root.appendChild(btnContainer);
-    }
+    $(this.root, "[data-action=continue]")
+      .addEventListener("click", () => continueCallback());
+  }
 
-    showVictory() {
-        this.clear();
-        const p = this.model.player;
-        const html = `
-            <div class='bbs-container'>
-                <div class='title'>Victory!</div>
-                <div class='section'>
-                    All questions answered.<br>
-                    Correct: <span class='yellow'>${p.total_correct}</span><br>
-                    Incorrect: <span class='yellow'>${p.total_incorrect}</span><br>
-                    Level: <span class='yellow'>${p.level}</span><br>
-                    HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>
-                    Weapon: <span class='yellow'>${p.weapon.name}</span><br>
-                    Armor: <span class='yellow'>${p.armor.name}</span>
-                </div>
-            </div>
-        `;
-        this.root.innerHTML = html;
-    }
+  showLevelUp(levelsGained, continueCallback) {
+    const p = this.model.player;
+    renderTemplate(this.root, "tpl-levelup");
+    $(this.root, "[data-ref=level]").textContent = p.level;
+    $(this.root, "[data-ref=levelsGainedText]").textContent =
+      (levelsGained > 1) ? `You've gained ${levelsGained} levels!` : `You've gained 1 level!`;
+    $(this.root, "[data-ref=weaponName]").textContent = p.weapon.name;
+    $(this.root, "[data-ref=weaponDie]").textContent  = `Attack Die: d${p.weapon.attack_die}`;
+    $(this.root, "[data-ref=armorName]").textContent  = p.armor.name;
+    $(this.root, "[data-ref=armorDef]").textContent   = p.armor.defense;
+    $(this.root, "[data-ref=maxHP]").textContent      = p.max_hit_points;
+    $(this.root, "[data-action=continue]")
+      .addEventListener("click", () => continueCallback());
+  }
 
-    showNoQuestions() {
-        this.clear();
-        const p = this.model.player;
-        const html = `
-            <div class='bbs-container'>
-                <div class='section'>
-                    <span class='bold red'>All questions have been answered!</span> The monster flees.
-                </div>
-                <div class='section'>
-                    <span class='bold'>Final Stats:</span><br>
-                    Correct: <span class='yellow'>${p.total_correct}</span><br>
-                    Incorrect: <span class='yellow'>${p.total_incorrect}</span><br>
-                    HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>
-                    Level: <span class='yellow'>${p.level}</span>
-                </div>
-            </div>
-        `;
-        this.root.innerHTML = html;
-    }
+  showVictory() {
+    const p = this.model.player;
+    renderTemplate(this.root, "tpl-victory");
+    const stats = $(this.root, "[data-ref=victoryStats]");
+    stats.innerHTML = `
+      All questions answered.<br>
+      Correct: <span class='yellow'>${p.total_correct}</span><br>
+      Incorrect: <span class='yellow'>${p.total_incorrect}</span><br>
+      Level: <span class='yellow'>${p.level}</span><br>
+      HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>
+      Weapon: <span class='yellow'>${p.weapon.name}</span><br>
+      Armor: <span class='yellow'>${p.armor.name}</span>
+    `;
+  }
 
-    showGameOver() {
-        this.clear();
-        const p = this.model.player;
-        const html = `
-            <div class='bbs-container'>
-                <div class='title'>Game Over</div>
-                <div class='section'>
-                    Correct: <span class='yellow'>${p.total_correct}</span><br>
-                    Incorrect: <span class='yellow'>${p.total_incorrect}</span><br>
-                    Level: <span class='yellow'>${p.level}</span><br>
-                    HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>
-                    Weapon: <span class='yellow'>${p.weapon.name}</span><br>
-                    Armor: <span class='yellow'>${p.armor.name}</span>
-                </div>
-            </div>
-        `;
-        this.root.innerHTML = html;
-    }
+  showNoQuestions() {
+    const p = this.model.player;
+    renderTemplate(this.root, "tpl-no-questions");
+    const stats = $(this.root, "[data-ref=finalStats]");
+    stats.innerHTML = `
+      <span class='bold'>Final Stats:</span><br>
+      Correct: <span class='yellow'>${p.total_correct}</span><br>
+      Incorrect: <span class='yellow'>${p.total_incorrect}</span><br>
+      HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>
+      Level: <span class='yellow'>${p.level}</span>
+    `;
+  }
+
+  showGameOver() {
+    const p = this.model.player;
+    renderTemplate(this.root, "tpl-gameover");
+    const stats = $(this.root, "[data-ref=gameOverStats]");
+    stats.innerHTML = `
+      Correct: <span class='yellow'>${p.total_correct}</span><br>
+      Incorrect: <span class='yellow'>${p.total_incorrect}</span><br>
+      Level: <span class='yellow'>${p.level}</span><br>
+      HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>
+      Weapon: <span class='yellow'>${p.weapon.name}</span><br>
+      Armor: <span class='yellow'>${p.armor.name}</span>
+    `;
+  }
 }
 
 export class GameController {
