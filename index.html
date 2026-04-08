@@ -8,43 +8,70 @@
 </head>
 <body>
   <div class="game-container">
-    <div id="game-root"></div>
+    <!-- Persistent toolbar: sits outside game-root so it survives screen changes -->
+    <div class="game-toolbar" role="toolbar" aria-label="Game controls">
+      <button id="sound-toggle" class="toolbar-btn"
+              aria-pressed="true"
+              aria-label="Sound effects: on. Click to toggle.">🔊</button>
+    </div>
+
+    <div id="game-root" role="main" aria-live="polite" aria-atomic="false"></div>
   </div>
 
-  <!-- Initial screen -->
+  <!-- ── Initial welcome screen ─────────────────────────────────── -->
   <template id="tpl-initial">
     <div class="bbs-container">
-      <div class="title">Welcome to the Loop of the Recursive Dragon!</div>
+      <h1 class="title">Welcome to the Loop of the Recursive Dragon!</h1>
       <div class="section">
         In this game, you'll battle monsters to master ideas about computer science, databases,
         cybersecurity, tech ethics, and more. Right answers hurt monsters; wrong answers hurt you.
         Good luck!
-        <p>A game by Brendan Shea, PhD (Brendan.Shea@rctc.edu)</p>
+        <p>A game by Brendan Shea, PhD (<a href="mailto:Brendan.Shea@rctc.edu" style="color:inherit">Brendan.Shea@rctc.edu</a>)</p>
       </div>
       <div class="button-container">
-        <button class="action-button" data-action="start">Start Adventure</button>
+        <button class="action-button" data-action="start"
+                aria-label="Begin the adventure">Start Adventure</button>
       </div>
     </div>
   </template>
 
-  <!-- Question set selection -->
+  <!-- ── Question set selection ──────────────────────────────────── -->
   <template id="tpl-set-select">
     <div class="bbs-container">
-      <div class="title">Choose Your Question Set</div>
-      <div class="section">
-        Select a question set to begin your adventure.
-      </div>
-      <select class="question-set-select" data-ref="setSelect"></select>
+      <h1 class="title">Choose Your Question Set</h1>
+      <div class="section">Select a question set to begin your adventure.</div>
+      <label for="set-select-input" class="sr-only">Question set</label>
+      <select id="set-select-input" class="question-set-select" data-ref="setSelect"
+              aria-label="Choose a question set"></select>
       <div class="button-container">
-        <button class="action-button" data-action="load">Load Questions</button>
+        <button class="action-button" data-action="load"
+                aria-label="Load the selected question set">Load Questions</button>
       </div>
     </div>
   </template>
 
-  <!-- Encounter screen -->
-  <template id="tpl-encounter">
+  <!-- ── Resume saved game prompt ───────────────────────────────── -->
+  <template id="tpl-resume">
     <div class="bbs-container">
-      <div class="title">Loop of the Recursive Dragon</div>
+      <h1 class="title">Saved Game Found</h1>
+      <div class="section" data-ref="resumeInfo"></div>
+      <div class="button-container">
+        <button class="action-button" data-action="resume"
+                aria-label="Resume saved game">Resume Game</button>
+        <button class="action-button action-button--secondary" data-action="new-game"
+                aria-label="Discard save and start a new game">New Game</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- ── Encounter screen ───────────────────────────────────────── -->
+  <template id="tpl-encounter">
+    <div class="bbs-container" role="region" aria-label="Monster encounter">
+      <h1 class="title">Loop of the Recursive Dragon</h1>
+
+      <!-- Streak indicator (hidden when streak = 0) -->
+      <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
+
       <div class="monster-container">
         <div class="monster-image-container" data-ref="imgWrap" hidden>
           <img class="monster-image" data-ref="img" alt="">
@@ -62,31 +89,39 @@
       </div>
     </div>
 
-    <div class="bbs-container">
+    <div class="bbs-container" role="region" aria-label="Question and answers">
       <div class="section">
-        <span class="bold">Question:</span> <span data-ref="qText"></span>
+        <span class="bold">Question:</span>
+        <span data-ref="qText"></span>
       </div>
+
+      <!-- role and aria-labelledby are set in JS after the option label id is assigned -->
       <div class="checkbox-container" data-ref="options"></div>
+
+      <div class="kb-hint" data-ref="kbHint" aria-hidden="true"></div>
+
       <div class="button-container">
-        <button class="action-button submit-btn" data-action="submit">Submit Answer</button>
+        <button class="action-button submit-btn" data-action="submit"
+                aria-label="Submit your selected answers">Submit Answer</button>
       </div>
     </div>
   </template>
 
-  <!-- Results screen -->
+  <!-- ── Results screen ────────────────────────────────────────── -->
   <template id="tpl-results">
-    <div class="bbs-container battle-text">
+    <div class="bbs-container battle-text" role="region" aria-label="Round results">
       <div class="section" data-ref="resultsBody"></div>
     </div>
     <div class="button-container">
-      <button class="action-button" data-action="continue">Continue</button>
+      <button class="action-button" data-action="continue"
+              aria-label="Continue to next encounter">Continue</button>
     </div>
   </template>
 
-  <!-- Level up -->
+  <!-- ── Level up ───────────────────────────────────────────────── -->
   <template id="tpl-levelup">
-    <div class="bbs-container level-up-container">
-      <div class="level-up-title">🎉 Congratulations!</div>
+    <div class="bbs-container level-up-container" role="region" aria-label="Level up">
+      <div class="level-up-title" aria-live="assertive">🎉 Congratulations!</div>
       <div class="section">
         <span class="bold">You've reached level <span data-ref="level"></span>!</span><br>
         <span data-ref="levelsGainedText"></span>
@@ -104,40 +139,73 @@
       </div>
     </div>
     <div class="button-container">
-      <button class="action-button" data-action="continue">Continue Adventure</button>
+      <button class="action-button" data-action="continue"
+              aria-label="Continue adventure after leveling up">Continue Adventure</button>
     </div>
   </template>
 
-  <!-- Victory -->
+  <!-- ── Victory ────────────────────────────────────────────────── -->
   <template id="tpl-victory">
-    <div class="bbs-container">
-      <div class="title">Victory!</div>
-      <div class="section" data-ref="victoryStats"></div>
+    <div class="bbs-container" role="region" aria-label="Victory">
+      <h1 class="title">Victory!</h1>
+      <div class="section" data-ref="victoryStats" aria-live="assertive"></div>
+    </div>
+    <div class="button-container">
+      <button class="action-button" data-action="review"
+              aria-label="View session review and export results">Session Review</button>
     </div>
   </template>
 
-  <!-- No questions -->
+  <!-- ── No questions remaining ─────────────────────────────────── -->
   <template id="tpl-no-questions">
-    <div class="bbs-container">
+    <div class="bbs-container" role="region" aria-label="Session complete">
       <div class="section">
         <span class="bold red">All questions have been answered!</span> The monster flees.
       </div>
       <div class="section" data-ref="finalStats"></div>
     </div>
-  </template>
-
-  <!-- Game Over -->
-  <template id="tpl-gameover">
-    <div class="bbs-container">
-      <div class="title">Game Over</div>
-      <div class="section" data-ref="gameOverStats"></div>
+    <div class="button-container">
+      <button class="action-button" data-action="review"
+              aria-label="View session review and export results">Session Review</button>
     </div>
   </template>
 
-  <!-- Hint (appended; not a full-screen template) -->
+  <!-- ── Game over ──────────────────────────────────────────────── -->
+  <template id="tpl-gameover">
+    <div class="bbs-container" role="region" aria-label="Game over">
+      <h1 class="title">Game Over</h1>
+      <div class="section" data-ref="gameOverStats" aria-live="assertive"></div>
+    </div>
+    <div class="button-container">
+      <button class="action-button" data-action="review"
+              aria-label="View session review and export results">Session Review</button>
+    </div>
+  </template>
+
+  <!-- ── Session review ─────────────────────────────────────────── -->
+  <template id="tpl-review">
+    <div class="bbs-container">
+      <h1 class="title" data-ref="reviewTitle"></h1>
+      <div class="section review-summary" data-ref="reviewSummary"></div>
+    </div>
+    <div class="bbs-container review-list-container">
+      <div class="review-list" data-ref="reviewList" role="list"
+           aria-label="Question-by-question results"></div>
+    </div>
+    <div class="button-container">
+      <button class="action-button action-button--export" data-action="export"
+              aria-label="Export session results to a text file">Export to Text File</button>
+      <button class="action-button action-button--secondary" data-action="new-game"
+              aria-label="Return to question set selection">New Game</button>
+    </div>
+  </template>
+
+  <!-- ── Hint (appended inline, not full-screen) ────────────────── -->
   <template id="tpl-hint">
-    <div class="bbs-container hint">
-      <div class="section"><span class="cyan">Hint: <span data-ref="hintText"></span></span></div>
+    <div class="bbs-container hint" role="alert">
+      <div class="section">
+        <span class="cyan">Hint: <span data-ref="hintText"></span></span>
+      </div>
     </div>
   </template>
 
