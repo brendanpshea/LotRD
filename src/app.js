@@ -346,14 +346,196 @@ export class GameUI {
     if (checkboxes.length > 0) checkboxes[0].focus();
   }
 
-  showHint(hint) {
-    const old = this.root.querySelector(".hint");
-    if (old) old.remove();
-    const tpl  = document.getElementById("tpl-hint");
-    const frag = tpl.content.cloneNode(true);
-    frag.querySelector("[data-ref=hintText]").textContent = hint;
-    this.root.appendChild(frag);
+  // ── Fill-in-the-blank encounter ───────────────────────────────────────────────
+
+  showEncounterFillBlank() {
+    this._clearKeyboard();
+    const p = this.model.player;
+    const m = this.model.current_monster;
+    const q = this.model.current_question;
+
+    renderTemplate(this.root, "tpl-encounter-fill-blank");
+
+    $(this.root, "[data-ref=mName]") .textContent = m.monster_name;
+    $(this.root, "[data-ref=mDesc]") .textContent = " " + (m.initial_description || "");
+    $(this.root, "[data-ref=mHP]")   .textContent = m.hit_points;
+    $(this.root, "[data-ref=pHP]")   .textContent = `${p.hit_points}/${p.max_hit_points}`;
+    $(this.root, "[data-ref=pLvl]")  .textContent = p.level;
+    $(this.root, "[data-ref=pXP]")   .textContent = `${p.xp}/${p.xp_to_next_level}`;
+    $(this.root, "[data-ref=pWeap]") .textContent = p.weapon.name;
+    $(this.root, "[data-ref=pArmor]").textContent = p.armor.name;
+
+    const streakEl = $(this.root, "[data-ref=streak]");
+    if (streakEl) {
+      if (p.streak >= 3) {
+        const bonus = p.streak >= 10 ? '2×' : p.streak >= 5 ? '1.5×' : '1.25×';
+        streakEl.textContent = `🔥 Streak: ${p.streak}  (${bonus} damage bonus active)`;
+        streakEl.hidden = false;
+      } else if (p.streak > 0) {
+        streakEl.textContent = `🔥 Streak: ${p.streak}`;
+        streakEl.hidden = false;
+      } else {
+        streakEl.hidden = true;
+      }
+    }
+
+    if (m.image) {
+      const wrap = $(this.root, "[data-ref=imgWrap]");
+      const img  = $(this.root, "[data-ref=img]");
+      img.src    = `images/monsters/${m.image}`;
+      img.alt    = m.monster_name;
+      wrap.hidden = false;
+    }
+
+    $(this.root, "[data-ref=qText]").textContent = q.question;
+
+    // Character-count hint: show blanks per word
+    const answers    = q.correct || [];
+    const canonical  = answers[0] || "";
+    const charHint   = canonical.split(' ')
+      .map(word => `${'_'.repeat(word.length)} (${word.length})`)
+      .join('  ');
+    const caseSens   = q.case_sensitive === true;
+    $(this.root, "[data-ref=charHint]").textContent =
+      `${charHint}${caseSens ? '  [case-sensitive]' : '  [not case-sensitive]'}`;
+
+    const input     = $(this.root, "[data-ref=answerInput]");
+    const submitBtn = $(this.root, "[data-action=submit]");
+
+    submitBtn.addEventListener("click", () => {
+      window.gameController.submitFillBlank(input.value);
+    });
+
+    this._kbAbort = new AbortController();
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && document.activeElement === input) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    }, { signal: this._kbAbort.signal });
+
+    input.focus();
   }
+
+  // ── Matching encounter ────────────────────────────────────────────────────────
+
+  showEncounterMatching() {
+    this._clearKeyboard();
+    const p = this.model.player;
+    const m = this.model.current_monster;
+    const q = this.model.current_question;
+
+    renderTemplate(this.root, "tpl-encounter-matching");
+
+    $(this.root, "[data-ref=mName]") .textContent = m.monster_name;
+    $(this.root, "[data-ref=mDesc]") .textContent = " " + (m.initial_description || "");
+    $(this.root, "[data-ref=mHP]")   .textContent = m.hit_points;
+    $(this.root, "[data-ref=pHP]")   .textContent = `${p.hit_points}/${p.max_hit_points}`;
+    $(this.root, "[data-ref=pLvl]")  .textContent = p.level;
+    $(this.root, "[data-ref=pXP]")   .textContent = `${p.xp}/${p.xp_to_next_level}`;
+    $(this.root, "[data-ref=pWeap]") .textContent = p.weapon.name;
+    $(this.root, "[data-ref=pArmor]").textContent = p.armor.name;
+
+    const streakEl = $(this.root, "[data-ref=streak]");
+    if (streakEl) {
+      if (p.streak >= 3) {
+        const bonus = p.streak >= 10 ? '2×' : p.streak >= 5 ? '1.5×' : '1.25×';
+        streakEl.textContent = `🔥 Streak: ${p.streak}  (${bonus} damage bonus active)`;
+        streakEl.hidden = false;
+      } else if (p.streak > 0) {
+        streakEl.textContent = `🔥 Streak: ${p.streak}`;
+        streakEl.hidden = false;
+      } else {
+        streakEl.hidden = true;
+      }
+    }
+
+    if (m.image) {
+      const wrap = $(this.root, "[data-ref=imgWrap]");
+      const img  = $(this.root, "[data-ref=img]");
+      img.src    = `images/monsters/${m.image}`;
+      img.alt    = m.monster_name;
+      wrap.hidden = false;
+    }
+
+    $(this.root, "[data-ref=qText]").textContent = q.question;
+
+    const pairs        = q.pairs || [];
+    const definitions  = pairs.map(p => p.definition);
+    // Shuffle definitions for the dropdowns
+    const shuffled = [...definitions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const tableBody = $(this.root, "[data-ref=matchTable]");
+    const selects   = [];
+
+    pairs.forEach((pair, idx) => {
+      const row   = document.createElement("div");
+      row.className = "match-row";
+
+      const termCell = document.createElement("div");
+      termCell.className   = "match-term";
+      termCell.textContent = pair.term;
+
+      const selectId = `match-sel-${idx}`;
+      const sel = document.createElement("select");
+      sel.id        = selectId;
+      sel.className = "match-select";
+      sel.setAttribute("aria-label", `Match for: ${pair.term}`);
+
+      // Blank placeholder
+      const placeholder = document.createElement("option");
+      placeholder.value       = "";
+      placeholder.textContent = "— choose a definition —";
+      sel.appendChild(placeholder);
+
+      shuffled.forEach(def => {
+        const opt = document.createElement("option");
+        opt.value       = def;
+        opt.textContent = def;
+        sel.appendChild(opt);
+      });
+
+      selects.push({ term: pair.term, select: sel });
+      row.appendChild(termCell);
+      row.appendChild(sel);
+      tableBody.appendChild(row);
+    });
+
+    const submitBtn = $(this.root, "[data-action=submit]");
+    submitBtn.addEventListener("click", () => {
+      const selectedPairs = selects.map(({ term, select }) => ({
+        term,
+        definition: select.value,
+      }));
+      // Validate all chosen
+      if (selectedPairs.some(p => !p.definition)) {
+        this.showFeedbackInline("Please match all terms before submitting.");
+        return;
+      }
+      window.gameController.submitMatching(selectedPairs);
+    });
+
+    if (selects.length > 0) selects[0].select.focus();
+  }
+
+  // ── Inline feedback (replaces old showHint) ───────────────────────────────────
+
+  showFeedbackInline(msg) {
+    const existing = this.root.querySelector(".inline-feedback");
+    if (existing) existing.remove();
+    const div = document.createElement("div");
+    div.className   = "inline-feedback";
+    div.setAttribute("role", "alert");
+    div.textContent = msg;
+    this.root.appendChild(div);
+  }
+
+  // Keep showHint as a thin alias so any other callers don't break
+  showHint(msg) { this.showFeedbackInline(msg); }
 
   showResults(battleData, continueCallback) {
     this._clearKeyboard();
@@ -784,7 +966,14 @@ export class GameController {
       this.ui.showNoQuestions(() => this.startReview("no_questions"));
     } else {
       this._setInGame(true);
-      this.ui.showEncounter();
+      const qtype = this.model.current_question?.type;
+      if (qtype === 'fill_blank') {
+        this.ui.showEncounterFillBlank();
+      } else if (qtype === 'matching') {
+        this.ui.showEncounterMatching();
+      } else {
+        this.ui.showEncounter();
+      }
     }
   }
 
@@ -798,15 +987,32 @@ export class GameController {
     );
   }
 
+  submitFillBlank(inputText) {
+    if (!this.model.current_question) return;
+    if (!inputText.trim()) {
+      this.ui.showFeedbackInline("Please type an answer before submitting.");
+      return;
+    }
+    this._resolveBattle(this.model.evaluateFillBlank(inputText));
+  }
+
+  submitMatching(selectedPairs) {
+    if (!this.model.current_question) return;
+    this._resolveBattle(this.model.evaluateMatching(selectedPairs));
+  }
+
   submitAnswer(selected) {
     if (!this.model.current_question) return;
     if (selected.length === 0) {
-      this.ui.showHint("Please select at least one option. Press Enter to submit.");
+      this.ui.showFeedbackInline("Please select at least one option. Press Enter to submit.");
       return;
     }
 
     const battleData = this.model.evaluateAnswer(selected);
+    this._resolveBattle(battleData);
+  }
 
+  _resolveBattle(battleData) {
     if (battleData.defeated_player) {
       this._clearSave();
       this._updateGlobalStats();

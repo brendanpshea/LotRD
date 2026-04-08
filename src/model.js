@@ -279,6 +279,209 @@ export class GameModel {
         };
     }
 
+    /**
+     * Evaluate a fill-in-the-blank answer.
+     * Binary: exact match (honouring case_sensitive) = perfect; anything else = total miss.
+     * Returns the same battleData shape as evaluateAnswer().
+     */
+    evaluateFillBlank(inputText) {
+        const q          = this.current_question;
+        const acceptable = q.correct || [];   // array of acceptable strings
+        const caseSens   = q.case_sensitive === true;
+
+        const normalise = s => caseSens ? s.trim() : s.trim().toLowerCase();
+        const input      = normalise(inputText);
+        const isPerfect  = acceptable.some(ans => normalise(ans) === input);
+
+        // Streak
+        if (isPerfect) {
+            this.player.streak++;
+            if (this.player.streak > this.player.best_streak)
+                this.player.best_streak = this.player.streak;
+        } else {
+            this.player.streak = 0;
+        }
+
+        let streakMultiplier = 1.0;
+        if      (this.player.streak >= 10) streakMultiplier = 2.0;
+        else if (this.player.streak >= 5)  streakMultiplier = 1.5;
+        else if (this.player.streak >= 3)  streakMultiplier = 1.25;
+
+        // Damage — binary: hit or miss
+        let player_damage  = 0;
+        let monster_damage = 0;
+
+        if (isPerfect) {
+            this.player.total_correct++;
+            player_damage = Math.round(rollDice(1, this.player.weapon.attack_die) * streakMultiplier);
+        } else {
+            this.player.total_incorrect++;
+            monster_damage = rollDice(1, this.current_monster.attack_die);
+        }
+
+        const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
+        const effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+
+        this.current_monster.hit_points -= effective_player_damage;
+        this.player.hit_points          -= effective_monster_damage;
+
+        let defeated_monster  = false;
+        let defeated_player   = false;
+        let xp_gained         = 0;
+        let levelsGained      = 0;
+        const question_repeated = !isPerfect;
+
+        if (this.current_monster.hit_points <= 0) {
+            defeated_monster = true;
+            xp_gained        = this.current_monster.xp_value;
+            this.player.xp  += xp_gained;
+            levelsGained     = this.checkLevelUp();
+        }
+        if (this.player.hit_points <= 0) defeated_player = true;
+        if (!isPerfect) this.questions_to_ask.push(this.current_question);
+
+        this.questions_asked++;
+
+        this.answer_history.push({
+            question:             q.question,
+            correct_answers:      acceptable,
+            selected:             [inputText],
+            correct_selections:   isPerfect ? [inputText] : [],
+            incorrect_selections: isPerfect ? [] : [inputText],
+            missed_correct:       isPerfect ? [] : acceptable,
+            was_perfect:          isPerfect,
+        });
+
+        return {
+            effective_player_damage,
+            effective_monster_damage,
+            defeated_monster,
+            defeated_player,
+            xp_gained,
+            question_repeated,
+            correctSelections:   isPerfect ? [inputText] : [],
+            incorrectSelections: isPerfect ? [] : [inputText],
+            missedCorrect:       isPerfect ? [] : acceptable,
+            levelsGained,
+            feedback:         q.feedback || null,
+            streakMultiplier,
+            streakCount:      this.player.streak,
+        };
+    }
+
+    /**
+     * Evaluate a matching answer.
+     * selectedPairs: array of { term, definition } representing the student's choices.
+     * Proportional scoring: correct fraction drives player attack; wrong fraction drives monster.
+     * Re-queued if any pair is wrong.
+     */
+    evaluateMatching(selectedPairs) {
+        const q     = this.current_question;
+        const pairs = q.pairs || [];   // [{ term, definition }]
+
+        const correctMap = new Map(pairs.map(p => [p.term, p.definition]));
+        let correctCount = 0;
+        let wrongCount   = 0;
+        const wrongTerms   = [];
+        const correctTerms = [];
+
+        selectedPairs.forEach(({ term, definition }) => {
+            if (correctMap.get(term) === definition) {
+                correctCount++;
+                correctTerms.push(term);
+            } else {
+                wrongCount++;
+                wrongTerms.push(term);
+            }
+        });
+
+        const total     = pairs.length;
+        const isPerfect = wrongCount === 0 && correctCount === total;
+
+        this.player.total_correct   += correctCount;
+        this.player.total_incorrect += wrongCount;
+
+        // Streak
+        if (isPerfect) {
+            this.player.streak++;
+            if (this.player.streak > this.player.best_streak)
+                this.player.best_streak = this.player.streak;
+        } else {
+            this.player.streak = 0;
+        }
+
+        let streakMultiplier = 1.0;
+        if      (this.player.streak >= 10) streakMultiplier = 2.0;
+        else if (this.player.streak >= 5)  streakMultiplier = 1.5;
+        else if (this.player.streak >= 3)  streakMultiplier = 1.25;
+
+        // Proportional damage — roll one die per correct/wrong pair
+        let player_damage = 0;
+        for (let i = 0; i < correctCount; i++)
+            player_damage += rollDice(1, this.player.weapon.attack_die);
+        player_damage = Math.round(player_damage * streakMultiplier);
+
+        let monster_damage = 0;
+        for (let i = 0; i < wrongCount; i++)
+            monster_damage += rollDice(1, this.current_monster.attack_die);
+
+        const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
+        const effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+
+        this.current_monster.hit_points -= effective_player_damage;
+        this.player.hit_points          -= effective_monster_damage;
+
+        let defeated_monster  = false;
+        let defeated_player   = false;
+        let xp_gained         = 0;
+        let levelsGained      = 0;
+        const question_repeated = !isPerfect;
+
+        if (this.current_monster.hit_points <= 0) {
+            defeated_monster = true;
+            xp_gained        = this.current_monster.xp_value;
+            this.player.xp  += xp_gained;
+            levelsGained     = this.checkLevelUp();
+        }
+        if (this.player.hit_points <= 0) defeated_player = true;
+        if (!isPerfect) this.questions_to_ask.push(this.current_question);
+
+        this.questions_asked++;
+
+        // Build human-readable correct/incorrect arrays for the results screen
+        const correctSelections   = correctTerms.map(t => `${t} → ${correctMap.get(t)}`);
+        const incorrectSelections = wrongTerms.map(t => {
+            const student = selectedPairs.find(p => p.term === t)?.definition ?? '(none)';
+            return `${t}: chose "${student}" — correct: "${correctMap.get(t)}"`;
+        });
+
+        this.answer_history.push({
+            question:             q.question,
+            correct_answers:      pairs.map(p => `${p.term} → ${p.definition}`),
+            selected:             selectedPairs.map(p => `${p.term} → ${p.definition}`),
+            correct_selections:   correctSelections,
+            incorrect_selections: incorrectSelections,
+            missed_correct:       [],
+            was_perfect:          isPerfect,
+        });
+
+        return {
+            effective_player_damage,
+            effective_monster_damage,
+            defeated_monster,
+            defeated_player,
+            xp_gained,
+            question_repeated,
+            correctSelections,
+            incorrectSelections,
+            missedCorrect: [],
+            levelsGained,
+            feedback:         q.feedback || null,
+            streakMultiplier,
+            streakCount:      this.player.streak,
+        };
+    }
+
     checkLevelUp() {
         let levelsGained = 0;
         while (this.player.xp >= this.player.xp_to_next_level) {
