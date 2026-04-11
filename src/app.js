@@ -829,8 +829,8 @@ export class GameUI {
     const p = this.model.player;
     renderTemplate(this.root, "tpl-levelup");
     $(this.root, "[data-ref=level]")           .textContent = p.level;
+    $(this.root, "[data-ref=levelTitle]")      .textContent = getLevelTitle(p.level);
     $(this.root, "[data-ref=levelsGainedText]").textContent = levelsGained > 1 ? `${levelsGained} levels gained!` : '';
-    $(this.root, "[data-ref=reviveCount]")     .textContent = p.revive_charges;
     const cont = $(this.root, "[data-action=continue]");
     cont.addEventListener("click", () => continueCallback());
     cont.focus();

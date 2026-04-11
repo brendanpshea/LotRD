@@ -221,7 +221,7 @@ export class GameModel {
 
         let defeated_monster  = false;
         let defeated_player   = false;
-        const xp_gained       = 10;
+        const xp_gained       = this.current_monster.hit_dice * 2;
         let question_repeated = false;
         let levelsGained      = 0;
 
@@ -486,7 +486,6 @@ export class GameModel {
             this.player.xp              -= this.player.xp_to_next_level;
             this.player.level           += 1;
             this.player.xp_to_next_level = Math.round(100 * Math.pow(1.25, this.player.level - 1));
-            this.player.revive_charges  += 1;
             levelsGained++;
         }
         return levelsGained;
