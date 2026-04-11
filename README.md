@@ -11,8 +11,8 @@ A browser-based quiz game for computer science students. Answer questions to bat
 1. Open `index.html` in a browser (or serve the folder with any static file server).
 2. From the main menu, choose a topic and question set.
 3. Each encounter presents a question. Answer correctly to damage the monster; wrong answers let the monster hit back.
-4. Defeat monsters to earn XP and level up, unlocking better weapons and armor.
-5. Complete all questions in a set to achieve Victory. Your progress auto-saves to `localStorage`.
+4. Defeat monsters to earn XP and level up. Each level grants a **revive charge** (⚗️) — when your HP hits 0, a charge is consumed to restore 10 HP.
+5. Your **player level persists globally** across all question sets. Complete all questions in a set to achieve Victory. Progress auto-saves to `localStorage`.
 
 ### Keyboard Shortcuts
 
@@ -35,6 +35,8 @@ A browser-based quiz game for computer science students. Answer questions to bat
 - **Direct-link support** — instructors can share `?set=filename.json` URLs
 - **Sound effects** — Web Audio API; toggle with 🔊 button in toolbar
 - **Streak bonuses** — consecutive perfect answers multiply player damage (1.25×, 1.5×, 2×)
+- **Global level** — player level and revive charges persist across all question sets
+- **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat
 
 ---
 
@@ -88,7 +90,7 @@ The original type. Select all correct answers; partial credit is not given for i
 
 - Recommended size: 4–6 pairs.
 - Definitions are shuffled into per-row dropdowns.
-- **Scoring is proportional** — each correct pair rolls one weapon die; each wrong pair rolls one monster die. The question re-queues if any pair is wrong.
+- **Scoring is proportional** — each correct pair rolls one attack die (d6); each wrong pair rolls one monster die. The question re-queues if any pair is wrong.
 
 ---
 
@@ -96,15 +98,16 @@ The original type. Select all correct answers; partial credit is not given for i
 
 | Situation | Player damage | Monster damage |
 |-----------|--------------|----------------|
-| Multiple-choice: each correct selection | +1 weapon roll | — |
+| Multiple-choice: each correct selection | +1 attack roll (d6) | — |
 | Multiple-choice: each wrong / missed selection | — | +1 monster roll |
-| Fill-blank: exact match | 1 weapon roll × streak multiplier | — |
+| Fill-blank: exact match | 1 attack roll (d6) × streak multiplier | — |
 | Fill-blank: wrong | — | 1 monster roll |
-| Matching: each correct pair | 1 weapon roll (× streak multiplier) | — |
+| Matching: each correct pair | 1 attack roll (d6) × streak multiplier | — |
 | Matching: each wrong pair | — | 1 monster roll |
 
 Streak multipliers (consecutive perfect answers): 3–4 = 1.25×, 5–9 = 1.5×, 10+ = 2×.  
-Monster defense and player armor reduce gross damage to net damage (minimum 0).
+Monster defense reduces player damage; player base defense (1) reduces monster damage (minimum 0 net).  
+Player stats are fixed: attack die = d6, base defense = 1, max HP = 20. Level-ups grant revive charges only.
 
 ---
 
@@ -125,6 +128,10 @@ question_sets/
   catalog.json      — Topic groupings and metadata for the main menu
   index.json        — Flat list of available set filenames (for direct-link validation)
   *.json            — Individual question sets
+tests/
+  model.test.js     — Unit tests for game logic (Player, Monster, GameModel)
+  data.test.js      — Validates all JSON data files (monsters, question sets, catalog)
+  html.test.js      — Cross-reference checks (templates, data-refs, stale code)
 ```
 
 ---
@@ -166,7 +173,24 @@ question_sets/
 | `lotrd_save_${setId}` | In-progress game state for a set |
 | `lotrd_done_${setId}` | Completion record (timestamp, score %, level) |
 | `lotrd_global` | Lifetime totals: answered, correct, incorrect, best streak, sets completed |
+| `lotrd_player_level` | Global player level data (level, XP, revive charges) |
 | `lotrd_sound` | Sound preference: `"1"` on, `"0"` off |
+
+---
+
+## Running Tests
+
+Requires **Node.js 18+** (uses the built-in `node:test` runner — zero npm dependencies).
+
+```bash
+node --test tests/model.test.js tests/data.test.js tests/html.test.js
+```
+
+| File | What it checks |
+|------|----------------|
+| `model.test.js` | 45 tests — rollDice, Player, Monster, GameModel, combat, streaks, level-up, revive, items |
+| `data.test.js` | All JSON files — required fields, type constraints, image files exist, catalog/index consistency |
+| `html.test.js` | 16 tests — template IDs, data-ref/data-action cross-refs, no stale code, accessibility, CSS classes |
 
 ---
 
