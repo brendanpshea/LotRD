@@ -29,7 +29,7 @@ export class Player {
         const lvl             = levelData?.level ?? 1;
         this.level            = lvl;
         this.xp               = levelData?.xp ?? 0;
-        this.xp_to_next_level = lvl * 150;
+        this.xp_to_next_level = Math.round(100 * Math.pow(1.25, lvl - 1));
         this.max_hit_points   = 20;
         this.hit_points       = 20;
         this.attack_die       = 6;      // fixed — never changes
@@ -83,7 +83,7 @@ export class GameModel {
             const sp = saveData.player;
             p.level            = sp.level;
             p.xp               = sp.xp;
-            p.xp_to_next_level = sp.xp_to_next_level ?? (sp.level * 150);
+            p.xp_to_next_level = sp.xp_to_next_level ?? Math.round(100 * Math.pow(1.25, sp.level - 1));
             p.max_hit_points   = sp.max_hit_points;
             p.hit_points       = sp.hit_points;
             p.attack_die       = sp.attack_die   ?? 6;
@@ -221,15 +221,15 @@ export class GameModel {
 
         let defeated_monster  = false;
         let defeated_player   = false;
-        let xp_gained         = 0;
+        const xp_gained       = 10;
         let question_repeated = false;
         let levelsGained      = 0;
 
+        this.player.xp += xp_gained;
+        levelsGained    = this.checkLevelUp();
+
         if (this.current_monster.hit_points <= 0) {
             defeated_monster = true;
-            xp_gained        = this.current_monster.xp_value;
-            this.player.xp  += xp_gained;
-            levelsGained     = this.checkLevelUp();
         }
 
         if (this.player.hit_points <= 0) {
@@ -320,17 +320,17 @@ export class GameModel {
         this.current_monster.hit_points -= effective_player_damage;
         this.player.hit_points          -= effective_monster_damage;
 
-        let defeated_monster  = false;
-        let defeated_player   = false;
-        let xp_gained         = 0;
-        let levelsGained      = 0;
+        let defeated_monster    = false;
+        let defeated_player     = false;
+        const xp_gained         = 10;
+        let levelsGained        = 0;
         const question_repeated = !isPerfect;
+
+        this.player.xp += xp_gained;
+        levelsGained    = this.checkLevelUp();
 
         if (this.current_monster.hit_points <= 0) {
             defeated_monster = true;
-            xp_gained        = this.current_monster.xp_value;
-            this.player.xp  += xp_gained;
-            levelsGained     = this.checkLevelUp();
         }
         if (this.player.hit_points <= 0) defeated_player = true;
         if (!isPerfect) this.questions_to_ask.push(this.current_question);
@@ -429,17 +429,17 @@ export class GameModel {
         this.current_monster.hit_points -= effective_player_damage;
         this.player.hit_points          -= effective_monster_damage;
 
-        let defeated_monster  = false;
-        let defeated_player   = false;
-        let xp_gained         = 0;
-        let levelsGained      = 0;
+        let defeated_monster    = false;
+        let defeated_player     = false;
+        const xp_gained         = 10;
+        let levelsGained        = 0;
         const question_repeated = !isPerfect;
+
+        this.player.xp += xp_gained;
+        levelsGained    = this.checkLevelUp();
 
         if (this.current_monster.hit_points <= 0) {
             defeated_monster = true;
-            xp_gained        = this.current_monster.xp_value;
-            this.player.xp  += xp_gained;
-            levelsGained     = this.checkLevelUp();
         }
         if (this.player.hit_points <= 0) defeated_player = true;
         if (!isPerfect) this.questions_to_ask.push(this.current_question);
@@ -485,7 +485,7 @@ export class GameModel {
         while (this.player.xp >= this.player.xp_to_next_level) {
             this.player.xp              -= this.player.xp_to_next_level;
             this.player.level           += 1;
-            this.player.xp_to_next_level = this.player.level * 150;
+            this.player.xp_to_next_level = Math.round(100 * Math.pow(1.25, this.player.level - 1));
             this.player.revive_charges  += 1;
             levelsGained++;
         }

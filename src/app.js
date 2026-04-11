@@ -275,25 +275,28 @@ export class GameUI {
 
   // ── Main menu ────────────────────────────────────────────────────────────────
 
-  showMainMenu(catalog, globalStats, launchCallback) {
+  showMainMenu(catalog, globalStats, levelData, launchCallback) {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-main-menu");
 
     // Global stats bar
-    if (globalStats && globalStats.total_answered > 0) {
-      const bar = $(this.root, "[data-ref=globalStats]");
-      const totalSel = (globalStats.total_correct ?? 0) + (globalStats.total_incorrect ?? 0);
-      const pct = totalSel > 0
-        ? Math.round((globalStats.total_correct ?? 0) / totalSel * 100)
-        : 0;
-      bar.innerHTML = `
-        <span class="stat-item">📋 Answered: <span class="yellow">${globalStats.total_answered}</span></span>
-        <span class="stat-item">🎯 Accuracy: <span class="yellow">${pct}%</span></span>
-        <span class="stat-item">🔥 Best streak: <span class="yellow">${globalStats.best_streak}</span></span>
-        <span class="stat-item">🏆 Completed: <span class="yellow">${globalStats.sets_completed ?? 0}</span></span>
-      `;
-      bar.hidden = false;
-    }
+    const level = levelData?.level ?? 1;
+    const title = getLevelTitle(level);
+    const bar   = $(this.root, "[data-ref=globalStats]");
+
+    const totalSel = (globalStats?.total_correct ?? 0) + (globalStats?.total_incorrect ?? 0);
+    const pct      = totalSel > 0
+      ? Math.round((globalStats.total_correct ?? 0) / totalSel * 100)
+      : 0;
+
+    bar.innerHTML = `
+      <span class="stat-item">⚔ Level: <span class="yellow">${level}</span> <span class="dim">(${title})</span></span>
+      <span class="stat-item">📋 Answered: <span class="yellow">${globalStats?.total_answered ?? 0}</span></span>
+      <span class="stat-item">🎯 Accuracy: <span class="yellow">${pct}%</span></span>
+      <span class="stat-item">🔥 Best streak: <span class="yellow">${globalStats?.best_streak ?? 0}</span></span>
+      <span class="stat-item">🏆 Completed: <span class="yellow">${globalStats?.sets_completed ?? 0}</span></span>
+    `;
+    bar.hidden = false;
 
     // In-progress section
     const inProgressEntries = [];
@@ -473,39 +476,62 @@ export class GameUI {
       [options[i], options[j]] = [options[j], options[i]];
     }
 
+    const isSingle   = (q.correct || []).length === 1;
+    const inputType  = isSingle ? "radio" : "checkbox";
+    const radioGroup = `answer-group-${Math.random().toString(36).slice(2)}`;
+
+    // Hint line below the question
+    const hintEl = $(this.root, "[data-ref=answerHint]");
+    if (hintEl) {
+      hintEl.textContent = isSingle
+        ? "Select one answer."
+        : `Select all that apply (${(q.correct || []).length} correct).`;
+      hintEl.hidden = false;
+    }
+
     const optBox = $(this.root, "[data-ref=options]");
-    optBox.setAttribute("role", "group");
+    optBox.setAttribute("role", isSingle ? "radiogroup" : "group");
     optBox.setAttribute("aria-labelledby", "encounter-question-label");
 
-    const checkboxes = [];
+    const inputs = [];
     options.forEach((opt, idx) => {
       const id    = `opt-${Math.random().toString(36).slice(2)}`;
       const label = document.createElement("label");
       label.className = "checkbox-label";
-      const cb = document.createElement("input");
-      cb.type  = "checkbox"; cb.value = opt; cb.id = id;
-      cb.setAttribute("aria-label", `Option ${idx + 1}: ${opt}`);
+      const inp = document.createElement("input");
+      inp.type  = inputType; inp.value = opt; inp.id = id;
+      if (isSingle) inp.name = radioGroup;
+      inp.setAttribute("aria-label", `Option ${idx + 1}: ${opt}`);
       const num = document.createElement("span");
       num.className = "option-num"; num.textContent = `${idx + 1}.\u00a0`;
       num.setAttribute("aria-hidden", "true");
-      label.appendChild(cb); label.appendChild(num); label.appendChild(document.createTextNode(opt));
+      label.appendChild(inp); label.appendChild(num); label.appendChild(document.createTextNode(opt));
       optBox.appendChild(label);
-      checkboxes.push(cb);
+      inputs.push(inp);
     });
 
     const kbHint = $(this.root, "[data-ref=kbHint]");
-    if (kbHint) kbHint.textContent = `Keys: 1–${options.length} toggle options · Enter submits`;
+    if (kbHint) kbHint.textContent = isSingle
+      ? `Keys: 1–${options.length} select · Enter submits`
+      : `Keys: 1–${options.length} toggle · Enter submits`;
 
     const submitBtn = $(this.root, "[data-action=submit]");
     submitBtn.addEventListener("click", () => {
-      window.gameController.submitAnswer(checkboxes.filter(c => c.checked).map(c => c.value));
+      window.gameController.submitAnswer(inputs.filter(c => c.checked).map(c => c.value));
     });
 
     this._kbAbort = new AbortController();
     document.addEventListener("keydown", (e) => {
       const n = parseInt(e.key, 10);
-      if (n >= 1 && n <= checkboxes.length) { e.preventDefault(); checkboxes[n-1].checked = !checkboxes[n-1].checked; }
-      else if (e.key === "Enter") { e.preventDefault(); submitBtn.click(); }
+      if (n >= 1 && n <= inputs.length) {
+        e.preventDefault();
+        if (isSingle) {
+          inputs.forEach(inp => { inp.checked = false; });
+          inputs[n - 1].checked = true;
+        } else {
+          inputs[n - 1].checked = !inputs[n - 1].checked;
+        }
+      } else if (e.key === "Enter") { e.preventDefault(); submitBtn.click(); }
     }, { signal: this._kbAbort.signal });
 
     this._renderProgress(this.root);
@@ -942,6 +968,26 @@ export class GameUI {
   }
 }
 
+// ─── Level titles ─────────────────────────────────────────────────────────────
+const LEVEL_TITLES = [
+  { minLevel: 1,  title: "Apprentice" },
+  { minLevel: 3,  title: "Student" },
+  { minLevel: 5,  title: "Journeyman" },
+  { minLevel: 8,  title: "Scholar" },
+  { minLevel: 11, title: "Adept" },
+  { minLevel: 14, title: "Expert" },
+  { minLevel: 17, title: "Master" },
+  { minLevel: 20, title: "Grandmaster" },
+];
+function getLevelTitle(level) {
+  let title = LEVEL_TITLES[0].title;
+  for (const entry of LEVEL_TITLES) {
+    if (level >= entry.minLevel) title = entry.title;
+    else break;
+  }
+  return title;
+}
+
 // ─── GameController ───────────────────────────────────────────────────────────
 export class GameController {
   constructor() {
@@ -1103,6 +1149,7 @@ export class GameController {
       const catalog     = await loadJSON('question_sets/catalog.json');
       this._catalog     = catalog;
       const globalStats = this._loadGlobalStats();
+      const levelData   = this._loadGlobalLevel();
 
       // Annotate each set entry with its saved status
       catalog.forEach(topic => {
@@ -1123,7 +1170,7 @@ export class GameController {
         });
       });
 
-      this.ui.showMainMenu(catalog, globalStats, (setId, mode) => this._launchSet(setId, mode));
+      this.ui.showMainMenu(catalog, globalStats, levelData, (setId, mode) => this._launchSet(setId, mode));
     } catch (err) {
       this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading catalog: ${err.message}</div></div>`;
     }
