@@ -623,8 +623,73 @@ export class GameUI {
   // Keep showHint as a thin alias so any other callers don't break
   showHint(msg) { this.showFeedbackInline(msg); }
 
+  // ── Combat animation helpers ──────────────────────────────────────────────
+
+  /**
+   * Spawns a fixed-position floating damage number that floats upward and
+   * fades out over the given anchor element, then removes itself from the DOM.
+   * @param {Element} anchorEl  - element to position the number over
+   * @param {string}  text      - text to display (e.g. "-7")
+   * @param {string}  extraClass - 'dmg-float--hit' or 'dmg-float--recv'
+   */
+  _spawnFloatNumber(anchorEl, text, extraClass) {
+    if (!anchorEl) return;
+    const rect = anchorEl.getBoundingClientRect();
+    const span = document.createElement("span");
+    span.className   = `dmg-float ${extraClass}`;
+    span.textContent = text;
+    span.style.left  = `${rect.left + rect.width  / 2}px`;
+    span.style.top   = `${rect.top  + rect.height / 2}px`;
+    document.body.appendChild(span);
+    span.addEventListener("animationend", () => span.remove(), { once: true });
+  }
+
+  /**
+   * Fire hit-flash (A), floating damage numbers (B), and screen-edge flash (D)
+   * before the results template replaces the encounter DOM.
+   * @param {object} battleData
+   * @returns {number} ms to wait before rendering results
+   */
+  _triggerCombatAnimations(battleData) {
+    const dealingDamage = battleData.effective_player_damage > 0;
+    const takingDamage  = battleData.effective_monster_damage > 0;
+    if (!dealingDamage && !takingDamage) return 0;
+
+    // A — flash the monster image
+    if (dealingDamage) {
+      const img = this.root.querySelector(".monster-image");
+      if (img) {
+        img.classList.add("monster-hit");
+        img.addEventListener("animationend", () => img.classList.remove("monster-hit"), { once: true });
+      }
+      // B — green number near monster image container
+      const imgWrap = this.root.querySelector(".monster-image-container") ||
+                      this.root.querySelector(".monster-details");
+      this._spawnFloatNumber(imgWrap, `-${battleData.effective_player_damage}`, "dmg-float--hit");
+    }
+
+    // D — red screen-edge flash when player takes damage
+    if (takingDamage) {
+      const container = document.querySelector(".game-container");
+      if (container) {
+        container.classList.add("player-hit");
+        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+      }
+      // B — red number near player HUD
+      const hud = this.root.querySelector(".player-hud");
+      this._spawnFloatNumber(hud, `-${battleData.effective_monster_damage}`, "dmg-float--recv");
+    }
+
+    return 380;
+  }
+
   showResults(battleData, itemDrop, continueCallback) {
     this._clearKeyboard();
+    const animDelay = this._triggerCombatAnimations(battleData);
+    setTimeout(() => this._renderResults(battleData, itemDrop, continueCallback), animDelay);
+  }
+
+  _renderResults(battleData, itemDrop, continueCallback) {
     const p = this.model.player;
     const m = this.model.current_monster;
     renderTemplate(this.root, "tpl-results");
