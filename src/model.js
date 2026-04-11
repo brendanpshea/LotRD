@@ -30,6 +30,8 @@ export const ARMORS = [
     { name: "Dragon Scale Mail", defense: 6 },
 ];
 
+
+
 export async function loadJSON(url) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Error fetching ${url}`);
@@ -94,6 +96,7 @@ export class GameModel {
             this.questions_to_ask = saveData.questions_to_ask;
             this.questions_asked  = saveData.questions_asked || 0;
             this.answer_history   = saveData.answer_history  || [];
+            this.active_item      = saveData.active_item     || null;
 
             const p = new Player();
             const sp = saveData.player;
@@ -114,6 +117,7 @@ export class GameModel {
             this.questions       = [...questions];
             this.questions_asked = 0;
             this.answer_history  = [];
+            this.active_item     = null;
             this.player          = new Player();
 
             // Fisher-Yates shuffle
@@ -133,6 +137,7 @@ export class GameModel {
             questions_to_ask: this.questions_to_ask,
             questions_asked:  this.questions_asked,
             answer_history:   this.answer_history,
+            active_item:      this.active_item,
             player: {
                 level:            p.level,
                 xp:               p.xp,
@@ -215,7 +220,8 @@ export class GameModel {
         for (let i = 0; i < player_hits; i++) {
             player_damage += rollDice(1, this.player.weapon.attack_die);
         }
-        player_damage = Math.round(player_damage * streakMultiplier);
+        const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
+        player_damage = Math.round(player_damage * streakMultiplier * itemAttackMult);
 
         let monster_damage = 0;
         for (let i = 0; i < monster_hits; i++) {
@@ -223,7 +229,9 @@ export class GameModel {
         }
 
         const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        const effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        let   effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        if (this.active_item?.type === 'defense')
+            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
 
         this.current_monster.hit_points -= effective_player_damage;
         this.player.hit_points          -= effective_monster_damage;
@@ -314,14 +322,17 @@ export class GameModel {
 
         if (isPerfect) {
             this.player.total_correct++;
-            player_damage = Math.round(rollDice(1, this.player.weapon.attack_die) * streakMultiplier);
+            const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
+            player_damage = Math.round(rollDice(1, this.player.weapon.attack_die) * streakMultiplier * itemAttackMult);
         } else {
             this.player.total_incorrect++;
             monster_damage = rollDice(1, this.current_monster.attack_die);
         }
 
         const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        const effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        let   effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        if (this.active_item?.type === 'defense')
+            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
 
         this.current_monster.hit_points -= effective_player_damage;
         this.player.hit_points          -= effective_monster_damage;
@@ -420,14 +431,17 @@ export class GameModel {
         let player_damage = 0;
         for (let i = 0; i < correctCount; i++)
             player_damage += rollDice(1, this.player.weapon.attack_die);
-        player_damage = Math.round(player_damage * streakMultiplier);
+        const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
+        player_damage = Math.round(player_damage * streakMultiplier * itemAttackMult);
 
         let monster_damage = 0;
         for (let i = 0; i < wrongCount; i++)
             monster_damage += rollDice(1, this.current_monster.attack_die);
 
         const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        const effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        let   effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        if (this.active_item?.type === 'defense')
+            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
 
         this.current_monster.hit_points -= effective_player_damage;
         this.player.hit_points          -= effective_monster_damage;

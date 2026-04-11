@@ -9,6 +9,40 @@ Classes:
 
 import { loadJSON, GameModel } from "./model.js";
 
+// ─── Item drop table ──────────────────────────────────────────────────────────
+// type 'heal'    – instant HP restore (amount: HP gained)
+// type 'attack'  – attack multiplier for the full next monster fight (attack_mult)
+// type 'defense' – incoming-damage reduction for the full next fight (defense_reduce: 0–1)
+const ITEM_DROPS = [
+    // ── Healing ────────────────────────────────────────────────────────────────
+    { name: "Debug Elixir",      emoji: "🧪", type: "heal",    amount: 6,
+      flavor: "Traces the error. Restores the damage." },
+    { name: "Restore Point",     emoji: "💾", type: "heal",    amount: 10,
+      flavor: "Roll back to a healthier state." },
+    { name: "Hot Patch Vial",    emoji: "💊", type: "heal",    amount: 7,
+      flavor: "Applied at runtime. No restart needed." },
+    { name: "Recovery Packet",   emoji: "📡", type: "heal",    amount: 8,
+      flavor: "Delivered with guaranteed reliability." },
+    // ── Attack boost ───────────────────────────────────────────────────────────
+    { name: "Overclock Rune",    emoji: "⚡", type: "attack",  attack_mult: 2.0,
+      flavor: "Pushes your attack beyond rated spec." },
+    { name: "Brute Force Sigil", emoji: "\u2694", type: "attack",  attack_mult: 1.5,
+      flavor: "Try every possibility until one hits." },
+    { name: "Pipeline Booster",  emoji: "\u2699", type: "attack",  attack_mult: 1.75,
+      flavor: "No stalls. Maximum throughput." },
+    { name: "Parallel Strike",   emoji: "\u21AF", type: "attack",  attack_mult: 2.5,
+      flavor: "Two threads. One target." },
+    // ── Defense boost ──────────────────────────────────────────────────────────
+    { name: "Firewall Shard",    emoji: "\uD83D\uDEE1", type: "defense", defense_reduce: 0.5,
+      flavor: "Blocks unauthorized incoming damage." },
+    { name: "Encryption Ward",   emoji: "\uD83D\uDD12", type: "defense", defense_reduce: 0.6,
+      flavor: "Damage denied — wrong key." },
+    { name: "Redundancy Charm",  emoji: "\uD83D\uDD04", type: "defense", defense_reduce: 0.4,
+      flavor: "If the first defense fails, the second holds." },
+    { name: "Sandboxed Amulet",  emoji: "\uD83D\uDD10", type: "defense", defense_reduce: 0.5,
+      flavor: "Damage contained. System isolated." },
+];
+
 // ─── Template / DOM helpers ───────────────────────────────────────────────────
 function renderTemplate(root, id) {
   root.innerHTML = "";
@@ -141,6 +175,21 @@ export class GameUI {
       img.src     = `images/monsters/${m.image}`;
       img.alt     = m.monster_name;
       wrap.hidden = false;
+    }
+
+    // Active item slot in HUD
+    const itemSlot = $(root, "[data-ref=itemSlot]");
+    const itemSep  = $(root, "[data-ref=itemSep]");
+    const item     = this.model.active_item;
+    if (itemSlot) {
+      if (item) {
+        itemSlot.textContent = `${item.emoji} ${item.name}`;
+        itemSlot.hidden = false;
+        if (itemSep) itemSep.hidden = false;
+      } else {
+        itemSlot.hidden = true;
+        if (itemSep) itemSep.hidden = true;
+      }
     }
   }
 
@@ -574,7 +623,7 @@ export class GameUI {
   // Keep showHint as a thin alias so any other callers don't break
   showHint(msg) { this.showFeedbackInline(msg); }
 
-  showResults(battleData, continueCallback) {
+  showResults(battleData, itemDrop, continueCallback) {
     this._clearKeyboard();
     const p = this.model.player;
     const m = this.model.current_monster;
@@ -621,6 +670,24 @@ export class GameUI {
       block.innerHTML = `<div class='bold'>Feedback:</div><div class='feedback-text'></div>`;
       block.querySelector(".feedback-text").textContent = battleData.feedback;
       body.appendChild(block);
+    }
+
+    // Item drop loot block
+    if (itemDrop) {
+      const effectLabel = itemDrop.type === 'heal'
+        ? `+${itemDrop.actual_heal} HP restored`
+        : itemDrop.type === 'attack'
+          ? `${itemDrop.attack_mult}× attack for next fight`
+          : `−${Math.round(itemDrop.defense_reduce * 100)}% incoming damage for next fight`;
+      const loot = document.createElement("div");
+      loot.className = "loot-drop";
+      loot.setAttribute("aria-live", "polite");
+      loot.innerHTML =
+        `<div class="loot-header">&gt;&gt;&gt; ITEM DROP &lt;&lt;&lt;</div>` +
+        `<div class="loot-body">${itemDrop.emoji} <span class="loot-name">${this._esc(itemDrop.name)}</span><br>` +
+        `<span class="loot-flavor">${this._esc(itemDrop.flavor)}</span><br>` +
+        `<span class="loot-effect">${this._esc(effectLabel)}</span></div>`;
+      body.appendChild(loot);
     }
 
     const cont = $(this.root, "[data-action=continue]");
@@ -1075,6 +1142,25 @@ export class GameController {
       return;
     }
 
+    // ── Item drop (on monster defeat only) ────────────────────────────────────
+    let itemDrop = null;
+    if (battleData.defeated_monster) {
+      this.model.active_item = null;          // consume the item used in this fight
+      if (Math.random() < 1 / 3) {
+        const drop = ITEM_DROPS[Math.floor(Math.random() * ITEM_DROPS.length)];
+        if (drop.type === 'heal') {
+          const maxHeal   = this.model.player.max_hit_points - this.model.player.hit_points;
+          const actualHeal = Math.min(drop.amount, maxHeal);
+          this.model.player.hit_points += actualHeal;
+          itemDrop = { ...drop, actual_heal: actualHeal };
+          // Heals are instant — no active_item set
+        } else {
+          this.model.active_item = drop;
+          itemDrop = drop;
+        }
+      }
+    }
+
     const hasErrors = battleData.incorrectSelections.length > 0 || battleData.missedCorrect.length > 0;
     if (battleData.defeated_monster)  this.sounds.monsterDefeated();
     else if (hasErrors)               this.sounds.incorrect();
@@ -1083,7 +1169,7 @@ export class GameController {
       if (battleData.streakCount >= 3) setTimeout(() => this.sounds.streakHit(battleData.streakCount), 250);
     }
 
-    this.ui.showResults(battleData, () => {
+    this.ui.showResults(battleData, itemDrop, () => {
       if (battleData.levelsGained > 0) {
         this.sounds.levelUp();
         this.ui.showLevelUp(battleData.levelsGained, () => this.continueAdventure());
