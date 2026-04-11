@@ -57,22 +57,44 @@ const $$ = (root, sel) => [...root.querySelectorAll(sel)];
 // ─── Sound System ─────────────────────────────────────────────────────────────
 class SoundSystem {
   constructor() {
-    this._ctx    = null;
-    this.enabled = true;
+    this._ctx     = null;
+    this.enabled  = true;
+    this._kaTimer = null;
   }
 
   _getCtx() {
     if (!this._ctx) {
       this._ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
-    if (this._ctx.state === 'suspended') this._ctx.resume();
     return this._ctx;
   }
 
-  _beep(freq, dur, type = 'square', vol = 0.12, delay = 0) {
+  // Play a 1-sample silent buffer every 9 s to prevent the browser from
+  // auto-suspending the AudioContext between answers.
+  _keepAlive() {
+    clearTimeout(this._kaTimer);
+    this._kaTimer = setTimeout(() => {
+      if (this._ctx) {
+        try {
+          const buf = this._ctx.createBuffer(1, 1, this._ctx.sampleRate);
+          const src = this._ctx.createBufferSource();
+          src.buffer = buf;
+          src.connect(this._ctx.destination);
+          src.start();
+        } catch (_) {}
+      }
+      this._keepAlive();
+    }, 9000);
+  }
+
+  // Async so we can await ctx.resume() when the context has been suspended
+  // (e.g. after a tab switch). This ensures audio is scheduled against a
+  // live, advancing currentTime rather than a frozen one.
+  async _beep(freq, dur, type = 'square', vol = 0.12, delay = 0) {
     if (!this.enabled) return;
     try {
-      const ctx  = this._getCtx();
+      const ctx = this._getCtx();
+      if (ctx.state !== 'running') await ctx.resume();
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -87,13 +109,13 @@ class SoundSystem {
     } catch (_) {}
   }
 
-  correct()         { this._beep(523,.08); this._beep(659,.08,'square',.12,.09); this._beep(784,.15,'square',.12,.18); }
-  incorrect()       { this._beep(220,.12,'sawtooth',.10); this._beep(165,.25,'sawtooth',.10,.13); }
-  levelUp()         { [523,659,784,1047].forEach((f,i) => this._beep(f,.14,'square',.11,i*.14)); }
-  victory()         { [523,659,784,659,784,1047].forEach((f,i) => this._beep(f,.16,'square',.11,i*.15)); }
-  gameOver()        { [330,247,196,147].forEach((f,i) => this._beep(f,.22,'sawtooth',.10,i*.22)); }
-  monsterDefeated() { this._beep(660,.08); this._beep(880,.14,'square',.11,.09); }
-  streakHit(n)      { const f=Math.min(400+n*40,880); this._beep(f,.06,'square',.09); this._beep(f*1.25,.10,'square',.09,.08); }
+  correct()         { this._keepAlive(); this._beep(523,.08); this._beep(659,.08,'square',.12,.09); this._beep(784,.15,'square',.12,.18); }
+  incorrect()       { this._keepAlive(); this._beep(220,.12,'sawtooth',.10); this._beep(165,.25,'sawtooth',.10,.13); }
+  levelUp()         { this._keepAlive(); [523,659,784,1047].forEach((f,i) => this._beep(f,.14,'square',.11,i*.14)); }
+  victory()         { this._keepAlive(); [523,659,784,659,784,1047].forEach((f,i) => this._beep(f,.16,'square',.11,i*.15)); }
+  gameOver()        { this._keepAlive(); [330,247,196,147].forEach((f,i) => this._beep(f,.22,'sawtooth',.10,i*.22)); }
+  monsterDefeated() { this._keepAlive(); this._beep(660,.08); this._beep(880,.14,'square',.11,.09); }
+  streakHit(n)      { this._keepAlive(); const f=Math.min(400+n*40,880); this._beep(f,.06,'square',.09); this._beep(f*1.25,.10,'square',.09,.08); }
 }
 
 // ─── GameUI ───────────────────────────────────────────────────────────────────
