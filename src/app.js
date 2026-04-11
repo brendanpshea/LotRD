@@ -978,7 +978,8 @@ export class GameController {
     const backBtn = document.getElementById('back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        this.saveGame();         // persist current progress
+        this._updateGlobalStats();  // flush new answers before leaving
+        this.saveGame();            // persist progress + updated stats_offset
         this.showMainMenu();
       });
     }
@@ -1055,17 +1056,32 @@ export class GameController {
 
   _updateGlobalStats(completed = false) {
     if (!this.model) return;
-    const p    = this.model.player;
+    const p      = this.model.player;
+    const offset = this.model.stats_offset ?? 0;
+    const newHistory = this.model.answer_history.slice(offset);
+    if (newHistory.length === 0 && !completed) return;  // nothing new to flush
+
     const prev = this._loadGlobalStats() ?? { total_answered: 0, total_perfect: 0, total_correct: 0, total_incorrect: 0, best_streak: 0, sets_completed: 0 };
+
+    // Compute per-selection deltas from only the new history entries
+    let deltaCorrect = 0, deltaIncorrect = 0;
+    for (const h of newHistory) {
+      deltaCorrect   += (h.correct_selections   ?? []).length;
+      deltaIncorrect += (h.incorrect_selections ?? []).length;
+    }
+
     const next = {
-      total_answered:  prev.total_answered  + this.model.answer_history.length,
-      total_perfect:   (prev.total_perfect ?? 0) + this.model.answer_history.filter(h => h.was_perfect).length,
-      total_correct:   (prev.total_correct  ?? 0) + p.total_correct,
-      total_incorrect: (prev.total_incorrect ?? 0) + p.total_incorrect,
+      total_answered:  (prev.total_answered  ?? 0) + newHistory.length,
+      total_perfect:   (prev.total_perfect   ?? 0) + newHistory.filter(h => h.was_perfect).length,
+      total_correct:   (prev.total_correct   ?? 0) + deltaCorrect,
+      total_incorrect: (prev.total_incorrect ?? 0) + deltaIncorrect,
       best_streak:     Math.max(prev.best_streak ?? 0, p.best_streak),
-      sets_completed:  (prev.sets_completed ?? 0) + (completed ? 1 : 0),
+      sets_completed:  (prev.sets_completed  ?? 0) + (completed ? 1 : 0),
     };
     try { localStorage.setItem(this._globalKey(), JSON.stringify(next)); } catch (_) {}
+
+    // Advance the offset so these entries aren't double-counted on resume
+    this.model.stats_offset = this.model.answer_history.length;
   }
 
   /** Show or hide the back-to-menu toolbar button. */

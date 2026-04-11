@@ -76,6 +76,7 @@ export class GameModel {
             this.questions_to_ask = saveData.questions_to_ask;
             this.questions_asked  = saveData.questions_asked || 0;
             this.answer_history   = saveData.answer_history  || [];
+            this.stats_offset     = saveData.stats_offset    || 0;
             this.active_item      = saveData.active_item     || null;
 
             const p = new Player();
@@ -98,6 +99,7 @@ export class GameModel {
             this.questions       = [...questions];
             this.questions_asked = 0;
             this.answer_history  = [];
+            this.stats_offset    = 0;
             this.active_item     = null;
             this.player          = new Player(levelData);
 
@@ -118,6 +120,7 @@ export class GameModel {
             questions_to_ask: this.questions_to_ask,
             questions_asked:  this.questions_asked,
             answer_history:   this.answer_history,
+            stats_offset:     this.stats_offset,
             active_item:      this.active_item,
             player: {
                 level:            p.level,
