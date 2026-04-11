@@ -1053,17 +1053,17 @@ export class GameController {
     try { const r = localStorage.getItem(this._globalKey()); return r ? JSON.parse(r) : null; } catch (_) { return null; }
   }
 
-  _updateGlobalStats() {
+  _updateGlobalStats(completed = false) {
     if (!this.model) return;
     const p    = this.model.player;
     const prev = this._loadGlobalStats() ?? { total_answered: 0, total_perfect: 0, total_correct: 0, total_incorrect: 0, best_streak: 0, sets_completed: 0 };
     const next = {
       total_answered:  prev.total_answered  + this.model.answer_history.length,
       total_perfect:   (prev.total_perfect ?? 0) + this.model.answer_history.filter(h => h.was_perfect).length,
-      total_correct:   prev.total_correct   + p.total_correct,
-      total_incorrect: prev.total_incorrect + p.total_incorrect,
-      best_streak:     Math.max(prev.best_streak, p.best_streak),
-      sets_completed:  prev.sets_completed,   // updated separately by _recordCompletion caller
+      total_correct:   (prev.total_correct  ?? 0) + p.total_correct,
+      total_incorrect: (prev.total_incorrect ?? 0) + p.total_incorrect,
+      best_streak:     Math.max(prev.best_streak ?? 0, p.best_streak),
+      sets_completed:  (prev.sets_completed ?? 0) + (completed ? 1 : 0),
     };
     try { localStorage.setItem(this._globalKey(), JSON.stringify(next)); } catch (_) {}
   }
@@ -1199,7 +1199,7 @@ export class GameController {
     if (status === "victory") {
       this._clearSave();
       this._recordCompletion();
-      this._updateGlobalStats();
+      this._updateGlobalStats(true);
       this._saveGlobalLevel();
       this.sounds.victory();
       this._setInGame(false);
