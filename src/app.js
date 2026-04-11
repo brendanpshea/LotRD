@@ -262,7 +262,7 @@ export class GameUI {
     if (globalStats && globalStats.total_answered > 0) {
       const bar = $(this.root, "[data-ref=globalStats]");
       const pct = globalStats.total_answered > 0
-        ? Math.round(globalStats.total_correct / globalStats.total_answered * 100)
+        ? Math.round((globalStats.total_perfect ?? 0) / globalStats.total_answered * 100)
         : 0;
       bar.innerHTML = `
         <span class="stat-item">📋 Answered: <span class="yellow">${globalStats.total_answered}</span></span>
@@ -350,13 +350,16 @@ export class GameUI {
         const badge = document.createElement("span");
         if (status.type === 'complete') {
           badge.className   = "status-badge status-complete";
-          badge.textContent = "✔ Complete";
+          badge.textContent = "✔ Cleared";
         } else if (status.type === 'in_progress') {
           badge.className   = "status-badge status-progress";
           badge.textContent = `▶ ${status.remaining} left`;
+        } else if (status.type === 'attempted') {
+          badge.className   = "status-badge status-attempted";
+          badge.textContent = "◉ Attempted";
         } else {
           badge.className   = "status-badge status-new";
-          badge.textContent = "○ Not started";
+          badge.textContent = "○ New";
         }
         actions.appendChild(badge);
 
@@ -376,15 +379,15 @@ export class GameUI {
           newLink.addEventListener("click", () => launchCallback(entry.id, 'new'));
           actions.appendChild(btn);
           actions.appendChild(newLink);
-        } else if (status.type === 'complete') {
+        } else if (status.type === 'complete' || status.type === 'attempted') {
           btn.textContent = "Play Again";
           btn.setAttribute("aria-label", `Play ${entry.title} again`);
-          btn.addEventListener("click", () => launchCallback(entry.id, 'start'));
+          btn.addEventListener("click", () => launchCallback(entry.id, 'new'));
           actions.appendChild(btn);
         } else {
           btn.textContent = "Start";
           btn.setAttribute("aria-label", `Start ${entry.title}`);
-          btn.addEventListener("click", () => launchCallback(entry.id, 'start'));
+          btn.addEventListener("click", () => launchCallback(entry.id, 'new'));
           actions.appendChild(btn);
         }
 
@@ -971,6 +974,7 @@ export class GameController {
 
   _saveKey(setName)       { return `lotrd_save_${setName}`; }
   _completionKey(setName) { return `lotrd_done_${setName}`; }
+  _attemptKey(setName)    { return `lotrd_attempt_${setName}`; }
   _globalKey()            { return `lotrd_global`; }
 
   saveGame() {
@@ -1011,9 +1015,10 @@ export class GameController {
   _updateGlobalStats() {
     if (!this.model) return;
     const p    = this.model.player;
-    const prev = this._loadGlobalStats() ?? { total_answered: 0, total_correct: 0, total_incorrect: 0, best_streak: 0, sets_completed: 0 };
+    const prev = this._loadGlobalStats() ?? { total_answered: 0, total_perfect: 0, total_correct: 0, total_incorrect: 0, best_streak: 0, sets_completed: 0 };
     const next = {
       total_answered:  prev.total_answered  + this.model.answer_history.length,
+      total_perfect:   (prev.total_perfect ?? 0) + this.model.answer_history.filter(h => h.was_perfect).length,
       total_correct:   prev.total_correct   + p.total_correct,
       total_incorrect: prev.total_incorrect + p.total_incorrect,
       best_streak:     Math.max(prev.best_streak, p.best_streak),
@@ -1045,12 +1050,16 @@ export class GameController {
       // Annotate each set entry with its saved status
       catalog.forEach(topic => {
         (topic.sets || []).forEach(entry => {
-          const done = this._loadCompletion(entry.id);
-          const save = this._loadSave(entry.id);
+          const done    = this._loadCompletion(entry.id);
+          const save    = this._loadSave(entry.id);
+          let attempted = false;
+          try { attempted = !!localStorage.getItem(this._attemptKey(entry.id)); } catch (_) {}
           if (done) {
             entry.status = { type: 'complete', ...done };
           } else if (save && (save.questions_to_ask?.length ?? 0) > 0) {
             entry.status = { type: 'in_progress', remaining: save.questions_to_ask.length };
+          } else if (attempted) {
+            entry.status = { type: 'attempted' };
           } else {
             entry.status = { type: 'not_started' };
           }
@@ -1137,6 +1146,8 @@ export class GameController {
   // ── Game flow ─────────────────────────────────────────────────────────────────
 
   startAdventure() {
+    // Mark the set as attempted so the main menu can show the badge
+    try { localStorage.setItem(this._attemptKey(this._setName), '1'); } catch (_) {}
     const status = this.model.nextEncounter();
     this.saveGame();
     this.showEncounterStatus(status);
