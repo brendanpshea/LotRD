@@ -282,8 +282,9 @@ export class GameUI {
     // Global stats bar
     if (globalStats && globalStats.total_answered > 0) {
       const bar = $(this.root, "[data-ref=globalStats]");
-      const pct = globalStats.total_answered > 0
-        ? Math.round((globalStats.total_perfect ?? 0) / globalStats.total_answered * 100)
+      const totalSel = (globalStats.total_correct ?? 0) + (globalStats.total_incorrect ?? 0);
+      const pct = totalSel > 0
+        ? Math.round((globalStats.total_correct ?? 0) / totalSel * 100)
         : 0;
       bar.innerHTML = `
         <span class="stat-item">📋 Answered: <span class="yellow">${globalStats.total_answered}</span></span>
