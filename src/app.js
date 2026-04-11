@@ -84,6 +84,67 @@ export class GameUI {
   }
 
   /**
+   * Populate the compact encounter header (breadcrumb, monster block, player HUD).
+   * Called identically from showEncounter, showEncounterFillBlank, showEncounterMatching.
+   * Requires window.gameController._setTitle to be set before calling.
+   */
+  _populateEncounterHeader(root) {
+    const p = this.model.player;
+    const m = this.model.current_monster;
+
+    // A – breadcrumb
+    const crumb = $(root, "[data-ref=breadcrumb]");
+    if (crumb) {
+      const title = window.gameController?._setTitle || '';
+      crumb.textContent = title ? `▶ ${title}` : '▶ Loop of the Recursive Dragon';
+    }
+
+    // B – monster name / description
+    $(root, "[data-ref=mName]").textContent = m.monster_name;
+    $(root, "[data-ref=mDesc]").textContent = m.initial_description ? ` — ${m.initial_description}` : '';
+
+    // D – monster HP text + colour bar
+    $(root, "[data-ref=mHP]").textContent = m.hit_points;
+    const hpBar = $(root, "[data-ref=mHPBar]");
+    if (hpBar) {
+      const pct = m.max_hit_points > 0 ? m.hit_points / m.max_hit_points : 1;
+      hpBar.style.width = `${Math.max(0, Math.round(pct * 100))}%`;
+      hpBar.className   = 'monster-hp-bar ' + (pct > 0.6 ? 'hp-high' : pct > 0.25 ? 'hp-mid' : 'hp-low');
+    }
+
+    // C – player HUD
+    $(root, "[data-ref=pHP]")   .textContent = `${p.hit_points}/${p.max_hit_points}`;
+    $(root, "[data-ref=pLvl]")  .textContent = p.level;
+    $(root, "[data-ref=pXP]")   .textContent = `${p.xp}/${p.xp_to_next_level}`;
+    $(root, "[data-ref=pWeap]") .textContent = p.weapon.name;
+    $(root, "[data-ref=pArmor]").textContent = p.armor.name;
+
+    // Streak badge
+    const streakEl = $(root, "[data-ref=streak]");
+    if (streakEl) {
+      if (p.streak >= 3) {
+        const bonus = p.streak >= 10 ? '2×' : p.streak >= 5 ? '1.5×' : '1.25×';
+        streakEl.textContent = `🔥 Streak: ${p.streak}  (${bonus} damage bonus active)`;
+        streakEl.hidden = false;
+      } else if (p.streak > 0) {
+        streakEl.textContent = `🔥 Streak: ${p.streak}`;
+        streakEl.hidden = false;
+      } else {
+        streakEl.hidden = true;
+      }
+    }
+
+    // Monster image (optional)
+    if (m.image) {
+      const wrap = $(root, "[data-ref=imgWrap]");
+      const img  = $(root, "[data-ref=img]");
+      img.src     = `images/monsters/${m.image}`;
+      img.alt     = m.monster_name;
+      wrap.hidden = false;
+    }
+  }
+
+  /**
    * Render the dungeon-corridor journey visualization into the progress section
    * that exists in all three encounter templates.
    *
@@ -326,40 +387,11 @@ export class GameUI {
 
     renderTemplate(this.root, "tpl-encounter");
 
-    $(this.root, "[data-ref=mName]") .textContent = m.monster_name;
-    $(this.root, "[data-ref=mDesc]") .textContent = " " + (m.initial_description || "");
-    $(this.root, "[data-ref=mHP]")   .textContent = m.hit_points;
-    $(this.root, "[data-ref=pHP]")   .textContent = `${p.hit_points}/${p.max_hit_points}`;
-    $(this.root, "[data-ref=pLvl]")  .textContent = p.level;
-    $(this.root, "[data-ref=pXP]")   .textContent = `${p.xp}/${p.xp_to_next_level}`;
-    $(this.root, "[data-ref=pWeap]") .textContent = p.weapon.name;
-    $(this.root, "[data-ref=pArmor]").textContent = p.armor.name;
-
-    const streakEl = $(this.root, "[data-ref=streak]");
-    if (streakEl) {
-      if (p.streak >= 3) {
-        const bonus = p.streak >= 10 ? '2×' : p.streak >= 5 ? '1.5×' : '1.25×';
-        streakEl.textContent = `🔥 Streak: ${p.streak}  (${bonus} damage bonus active)`;
-        streakEl.hidden = false;
-      } else if (p.streak > 0) {
-        streakEl.textContent = `🔥 Streak: ${p.streak}`;
-        streakEl.hidden = false;
-      } else {
-        streakEl.hidden = true;
-      }
-    }
+    this._populateEncounterHeader(this.root);
 
     const qEl = $(this.root, "[data-ref=qText]");
     qEl.textContent = q.question;
     qEl.id = "encounter-question-label";
-
-    if (m.image) {
-      const wrap = $(this.root, "[data-ref=imgWrap]");
-      const img  = $(this.root, "[data-ref=img]");
-      img.src    = `images/monsters/${m.image}`;
-      img.alt    = m.monster_name;
-      wrap.hidden = false;
-    }
 
     const options = [...(q.correct || []), ...(q.incorrect || [])];
     for (let i = options.length - 1; i > 0; i--) {
@@ -417,36 +449,7 @@ export class GameUI {
 
     renderTemplate(this.root, "tpl-encounter-fill-blank");
 
-    $(this.root, "[data-ref=mName]") .textContent = m.monster_name;
-    $(this.root, "[data-ref=mDesc]") .textContent = " " + (m.initial_description || "");
-    $(this.root, "[data-ref=mHP]")   .textContent = m.hit_points;
-    $(this.root, "[data-ref=pHP]")   .textContent = `${p.hit_points}/${p.max_hit_points}`;
-    $(this.root, "[data-ref=pLvl]")  .textContent = p.level;
-    $(this.root, "[data-ref=pXP]")   .textContent = `${p.xp}/${p.xp_to_next_level}`;
-    $(this.root, "[data-ref=pWeap]") .textContent = p.weapon.name;
-    $(this.root, "[data-ref=pArmor]").textContent = p.armor.name;
-
-    const streakEl = $(this.root, "[data-ref=streak]");
-    if (streakEl) {
-      if (p.streak >= 3) {
-        const bonus = p.streak >= 10 ? '2×' : p.streak >= 5 ? '1.5×' : '1.25×';
-        streakEl.textContent = `🔥 Streak: ${p.streak}  (${bonus} damage bonus active)`;
-        streakEl.hidden = false;
-      } else if (p.streak > 0) {
-        streakEl.textContent = `🔥 Streak: ${p.streak}`;
-        streakEl.hidden = false;
-      } else {
-        streakEl.hidden = true;
-      }
-    }
-
-    if (m.image) {
-      const wrap = $(this.root, "[data-ref=imgWrap]");
-      const img  = $(this.root, "[data-ref=img]");
-      img.src    = `images/monsters/${m.image}`;
-      img.alt    = m.monster_name;
-      wrap.hidden = false;
-    }
+    this._populateEncounterHeader(this.root);
 
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
@@ -475,6 +478,7 @@ export class GameUI {
       }
     }, { signal: this._kbAbort.signal });
 
+    this._renderProgress(this.root);
     input.focus();
   }
 
@@ -488,36 +492,7 @@ export class GameUI {
 
     renderTemplate(this.root, "tpl-encounter-matching");
 
-    $(this.root, "[data-ref=mName]") .textContent = m.monster_name;
-    $(this.root, "[data-ref=mDesc]") .textContent = " " + (m.initial_description || "");
-    $(this.root, "[data-ref=mHP]")   .textContent = m.hit_points;
-    $(this.root, "[data-ref=pHP]")   .textContent = `${p.hit_points}/${p.max_hit_points}`;
-    $(this.root, "[data-ref=pLvl]")  .textContent = p.level;
-    $(this.root, "[data-ref=pXP]")   .textContent = `${p.xp}/${p.xp_to_next_level}`;
-    $(this.root, "[data-ref=pWeap]") .textContent = p.weapon.name;
-    $(this.root, "[data-ref=pArmor]").textContent = p.armor.name;
-
-    const streakEl = $(this.root, "[data-ref=streak]");
-    if (streakEl) {
-      if (p.streak >= 3) {
-        const bonus = p.streak >= 10 ? '2×' : p.streak >= 5 ? '1.5×' : '1.25×';
-        streakEl.textContent = `🔥 Streak: ${p.streak}  (${bonus} damage bonus active)`;
-        streakEl.hidden = false;
-      } else if (p.streak > 0) {
-        streakEl.textContent = `🔥 Streak: ${p.streak}`;
-        streakEl.hidden = false;
-      } else {
-        streakEl.hidden = true;
-      }
-    }
-
-    if (m.image) {
-      const wrap = $(this.root, "[data-ref=imgWrap]");
-      const img  = $(this.root, "[data-ref=img]");
-      img.src    = `images/monsters/${m.image}`;
-      img.alt    = m.monster_name;
-      wrap.hidden = false;
-    }
+    this._populateEncounterHeader(this.root);
 
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
@@ -580,6 +555,7 @@ export class GameUI {
       window.gameController.submitMatching(selectedPairs);
     });
 
+    this._renderProgress(this.root);
     if (selects.length > 0) selects[0].select.focus();
   }
 
@@ -808,8 +784,10 @@ export class GameController {
     this.root     = document.getElementById('game-root');
     this.ui       = new GameUI(this.root, null);
     this.sounds   = new SoundSystem();
-    this._setName = null;
-    this.model    = null;
+    this._setName  = null;
+    this._setTitle = null;
+    this._catalog  = null;
+    this.model     = null;
 
     // Sound toggle
     const soundBtn = document.getElementById('sound-toggle');
@@ -923,6 +901,7 @@ export class GameController {
 
     try {
       const catalog     = await loadJSON('question_sets/catalog.json');
+      this._catalog     = catalog;
       const globalStats = this._loadGlobalStats();
 
       // Annotate each set entry with its saved status
@@ -949,6 +928,19 @@ export class GameController {
   /** Central dispatch for all "launch a set" actions from the main menu. */
   async _launchSet(setId, mode) {
     try {
+      // Ensure catalog is loaded (may be null on URL-param direct-link entry)
+      if (!this._catalog) {
+        try { this._catalog = await loadJSON('question_sets/catalog.json'); } catch (_) {}
+      }
+      // Resolve human-readable breadcrumb title
+      this._setTitle = null;
+      if (this._catalog) {
+        for (const topic of this._catalog) {
+          const entry = (topic.sets || []).find(s => s.id === setId);
+          if (entry) { this._setTitle = `${topic.topic}: ${entry.title}`; break; }
+        }
+      }
+
       const [questions_data, monsters_data] = await Promise.all([
         loadJSON(`question_sets/${setId}`),
         loadJSON('assets/monsters.json'),

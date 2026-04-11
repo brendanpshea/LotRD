@@ -72,6 +72,7 @@ export class Monster {
         for (let i = 0; i < this.hit_dice; i++) {
             this.hit_points += rollDice(1, 10);
         }
+        this.max_hit_points = this.hit_points;
         this.xp_value = this.hit_dice * 10;
     }
 }
