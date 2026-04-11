@@ -83,6 +83,65 @@ export class GameUI {
     return d.innerHTML;
   }
 
+  /**
+   * Render the dungeon-corridor journey visualization into the progress section
+   * that exists in all three encounter templates.
+   *
+   * Derives three counts from answer_history:
+   *   done    – questions answered perfectly (permanently cleared)
+   *   requeue – questions answered at least once but still failing (need retry)
+   *   unseen  – questions not yet encountered this session
+   */
+  _renderProgress(root) {
+    const section = $(root, "[data-ref=progressSection]");
+    if (!section) return;
+
+    const total = this.model.questions.length;
+
+    // Walk the answer history once to classify each unique question
+    const status = new Map(); // question text → true (done) | false (needs retry)
+    this.model.answer_history.forEach(h => {
+      if (h.was_perfect) {
+        status.set(h.question, true);           // perfect: mark done (never downgrade)
+      } else if (!status.get(h.question)) {
+        status.set(h.question, false);           // at least one failure, not yet cleared
+      }
+    });
+
+    const done    = [...status.values()].filter(v => v).length;
+    const requeue = [...status.values()].filter(v => !v).length;
+    const unseen  = total - done - requeue;
+
+    // Helper: append a coloured block span
+    const addBlock = (parent, cls) => {
+      const b = document.createElement('span');
+      b.className = `prog-block ${cls}`;
+      parent.appendChild(b);
+    };
+
+    // Main corridor: done (green) | requeue (amber) | unseen (dark) → 🐉
+    const bar = $(root, "[data-ref=progBar]");
+    for (let i = 0; i < done;    i++) addBlock(bar, 'prog-done');
+    for (let i = 0; i < requeue; i++) addBlock(bar, 'prog-requeue');
+    for (let i = 0; i < unseen;  i++) addBlock(bar, 'prog-unseen');
+
+    // Stats line
+    const parts = [`${done} of ${total} complete`];
+    if (requeue > 0) parts.push(`${requeue} to retry`);
+    if (unseen  > 0) parts.push(`${unseen} unseen`);
+    $(root, "[data-ref=progStats]").textContent = parts.join(' · ');
+
+    // Retry-pile row — only visible when there are questions needing a second attempt
+    if (requeue > 0) {
+      const retryRow = $(root, "[data-ref=retryRow]");
+      const retryBar = $(root, "[data-ref=retryBar]");
+      for (let i = 0; i < requeue; i++) addBlock(retryBar, 'prog-requeue');
+      $(root, "[data-ref=retryText]").textContent =
+        `${requeue} question${requeue !== 1 ? 's' : ''} need${requeue === 1 ? 's' : ''} another attempt`;
+      retryRow.hidden = false;
+    }
+  }
+
   // ── Main menu ────────────────────────────────────────────────────────────────
 
   showMainMenu(catalog, globalStats, launchCallback) {
@@ -342,6 +401,8 @@ export class GameUI {
       if (n >= 1 && n <= checkboxes.length) { e.preventDefault(); checkboxes[n-1].checked = !checkboxes[n-1].checked; }
       else if (e.key === "Enter") { e.preventDefault(); submitBtn.click(); }
     }, { signal: this._kbAbort.signal });
+
+    this._renderProgress(this.root);
 
     if (checkboxes.length > 0) checkboxes[0].focus();
   }
