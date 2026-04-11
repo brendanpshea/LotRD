@@ -10,28 +10,6 @@ Utilities:
 - rollDice     – dice-roll helper
 */
 
-export const WEAPONS = [
-    { name: "Rusty Dagger",      attack_die: 4 },
-    { name: "Copper Shortsword", attack_die: 5 },
-    { name: "Iron Battle Axe",   attack_die: 6 },
-    { name: "Steel Longsword",   attack_die: 7 },
-    { name: "Mythril Hammer",    attack_die: 8 },
-    { name: "Adamant Blade",     attack_die: 9 },
-    { name: "Crystal Sword",     attack_die: 10 },
-];
-
-export const ARMORS = [
-    { name: "Cloth Tunic",       defense: 0 },
-    { name: "Leather Jerkin",    defense: 1 },
-    { name: "Chainmail Vest",    defense: 2 },
-    { name: "Iron Cuirass",      defense: 3 },
-    { name: "Steel Plate",       defense: 4 },
-    { name: "Mythril Armor",     defense: 5 },
-    { name: "Dragon Scale Mail", defense: 6 },
-];
-
-
-
 export async function loadJSON(url) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Error fetching ${url}`);
@@ -47,18 +25,20 @@ export function rollDice(times, sides) {
 }
 
 export class Player {
-    constructor() {
-        this.level            = 1;
-        this.xp               = 0;
-        this.xp_to_next_level = 50;
+    constructor(levelData = null) {
+        const lvl             = levelData?.level ?? 1;
+        this.level            = lvl;
+        this.xp               = levelData?.xp ?? 0;
+        this.xp_to_next_level = lvl * 150;
         this.max_hit_points   = 20;
         this.hit_points       = 20;
-        this.weapon           = WEAPONS[0];
-        this.armor            = ARMORS[0];
+        this.attack_die       = 6;      // fixed — never changes
+        this.base_defense     = 1;      // fixed — never changes
+        this.revive_charges   = levelData?.revive_charges ?? 0;
         this.total_correct    = 0;
         this.total_incorrect  = 0;
-        this.streak           = 0;  // consecutive perfect-answer streak
-        this.best_streak      = 0;  // session high-water mark
+        this.streak           = 0;
+        this.best_streak      = 0;
     }
 }
 
@@ -85,7 +65,7 @@ export class GameModel {
      * @param {object[]} monsters   – monster definitions
      * @param {object|null} saveData – optional: resume from a localStorage snapshot
      */
-    constructor(questions, monsters, saveData = null) {
+    constructor(questions, monsters, saveData = null, levelData = null) {
         this.monsters         = monsters;
         this.current_monster  = null;
         this.current_question = null;
@@ -102,15 +82,16 @@ export class GameModel {
             const sp = saveData.player;
             p.level            = sp.level;
             p.xp               = sp.xp;
-            p.xp_to_next_level = sp.xp_to_next_level;
+            p.xp_to_next_level = sp.xp_to_next_level ?? (sp.level * 150);
             p.max_hit_points   = sp.max_hit_points;
             p.hit_points       = sp.hit_points;
+            p.attack_die       = sp.attack_die   ?? 6;
+            p.base_defense     = sp.base_defense ?? 1;
+            p.revive_charges   = sp.revive_charges ?? 0;
             p.total_correct    = sp.total_correct;
             p.total_incorrect  = sp.total_incorrect;
             p.streak           = sp.streak      || 0;
             p.best_streak      = sp.best_streak || 0;
-            p.weapon           = WEAPONS[sp.weapon_index] || WEAPONS[0];
-            p.armor            = ARMORS[sp.armor_index]  || ARMORS[0];
             this.player = p;
         } else {
             // ── Fresh game path ──────────────────────────────────────────
@@ -118,7 +99,7 @@ export class GameModel {
             this.questions_asked = 0;
             this.answer_history  = [];
             this.active_item     = null;
-            this.player          = new Player();
+            this.player          = new Player(levelData);
 
             // Fisher-Yates shuffle
             for (let i = this.questions.length - 1; i > 0; i--) {
@@ -148,16 +129,15 @@ export class GameModel {
                 total_incorrect:  p.total_incorrect,
                 streak:           p.streak,
                 best_streak:      p.best_streak,
-                weapon_index:     WEAPONS.indexOf(p.weapon),
-                armor_index:      ARMORS.indexOf(p.armor),
+                attack_die:       p.attack_die,
+                base_defense:     p.base_defense,
+                revive_charges:   p.revive_charges,
             },
         };
     }
 
     generateMonster() {
-        let valid = this.monsters.filter(m => Math.abs(m.hit_dice - this.player.level) <= 1);
-        if (valid.length === 0) valid = this.monsters;
-        const chosen = valid[Math.floor(Math.random() * valid.length)];
+        const chosen = this.monsters[Math.floor(Math.random() * this.monsters.length)];
         return new Monster(chosen);
     }
 
@@ -218,7 +198,7 @@ export class GameModel {
 
         let player_damage = 0;
         for (let i = 0; i < player_hits; i++) {
-            player_damage += rollDice(1, this.player.weapon.attack_die);
+            player_damage += rollDice(1, this.player.attack_die);
         }
         const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
         player_damage = Math.round(player_damage * streakMultiplier * itemAttackMult);
@@ -229,7 +209,7 @@ export class GameModel {
         }
 
         const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        let   effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        let   effective_monster_damage = Math.max(monster_damage - this.player.base_defense,     0);
         if (this.active_item?.type === 'defense')
             effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
 
@@ -323,14 +303,14 @@ export class GameModel {
         if (isPerfect) {
             this.player.total_correct++;
             const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
-            player_damage = Math.round(rollDice(1, this.player.weapon.attack_die) * streakMultiplier * itemAttackMult);
+            player_damage = Math.round(rollDice(1, this.player.attack_die) * streakMultiplier * itemAttackMult);
         } else {
             this.player.total_incorrect++;
             monster_damage = rollDice(1, this.current_monster.attack_die);
         }
 
         const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        let   effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        let   effective_monster_damage = Math.max(monster_damage - this.player.base_defense,     0);
         if (this.active_item?.type === 'defense')
             effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
 
@@ -430,7 +410,7 @@ export class GameModel {
         // Proportional damage — roll one die per correct/wrong pair
         let player_damage = 0;
         for (let i = 0; i < correctCount; i++)
-            player_damage += rollDice(1, this.player.weapon.attack_die);
+            player_damage += rollDice(1, this.player.attack_die);
         const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
         player_damage = Math.round(player_damage * streakMultiplier * itemAttackMult);
 
@@ -439,7 +419,7 @@ export class GameModel {
             monster_damage += rollDice(1, this.current_monster.attack_die);
 
         const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        let   effective_monster_damage = Math.max(monster_damage - this.player.armor.defense,    0);
+        let   effective_monster_damage = Math.max(monster_damage - this.player.base_defense,     0);
         if (this.active_item?.type === 'defense')
             effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
 
@@ -500,22 +480,11 @@ export class GameModel {
     checkLevelUp() {
         let levelsGained = 0;
         while (this.player.xp >= this.player.xp_to_next_level) {
-            this.player.xp            -= this.player.xp_to_next_level;
-            this.player.level         += 1;
+            this.player.xp              -= this.player.xp_to_next_level;
+            this.player.level           += 1;
+            this.player.xp_to_next_level = this.player.level * 150;
+            this.player.revive_charges  += 1;
             levelsGained++;
-            this.player.xp_to_next_level += 50;
-            this.player.max_hit_points   += 10;
-            this.player.hit_points        = this.player.max_hit_points;
-
-            if (this.player.level % 2 === 0) {
-                const wi = this.player.level / 2;
-                if (wi < WEAPONS.length) this.player.weapon = WEAPONS[wi];
-                else console.warn("Player level exceeds available weapons!");
-            } else if (this.player.level > 1) {
-                const ai = Math.floor((this.player.level - 1) / 2);
-                if (ai < ARMORS.length) this.player.armor = ARMORS[ai];
-                else console.warn("Player level exceeds available armor!");
-            }
         }
         return levelsGained;
     }

@@ -15,31 +15,31 @@ import { loadJSON, GameModel } from "./model.js";
 // type 'defense' – incoming-damage reduction for the full next fight (defense_reduce: 0–1)
 const ITEM_DROPS = [
     // ── Healing ────────────────────────────────────────────────────────────────
-    { name: "Debug Elixir",      emoji: "🧪", type: "heal",    amount: 6,
+    { name: "Debug Elixir",      emoji: "🧪", type: "heal",    amount: 6,      min_tier: 1,
       flavor: "Traces the error. Restores the damage." },
-    { name: "Restore Point",     emoji: "💾", type: "heal",    amount: 10,
+    { name: "Restore Point",     emoji: "💾", type: "heal",    amount: 10,     min_tier: 4,
       flavor: "Roll back to a healthier state." },
-    { name: "Hot Patch Vial",    emoji: "💊", type: "heal",    amount: 7,
+    { name: "Hot Patch Vial",    emoji: "💊", type: "heal",    amount: 7,      min_tier: 2,
       flavor: "Applied at runtime. No restart needed." },
-    { name: "Recovery Packet",   emoji: "📡", type: "heal",    amount: 8,
+    { name: "Recovery Packet",   emoji: "📡", type: "heal",    amount: 8,      min_tier: 3,
       flavor: "Delivered with guaranteed reliability." },
     // ── Attack boost ───────────────────────────────────────────────────────────
-    { name: "Overclock Rune",    emoji: "⚡", type: "attack",  attack_mult: 2.0,
+    { name: "Overclock Rune",    emoji: "⚡", type: "attack",  attack_mult: 2.0,  min_tier: 6,
       flavor: "Pushes your attack beyond rated spec." },
-    { name: "Brute Force Sigil", emoji: "\u2694", type: "attack",  attack_mult: 1.5,
+    { name: "Brute Force Sigil", emoji: "\u2694", type: "attack",  attack_mult: 1.5,  min_tier: 3,
       flavor: "Try every possibility until one hits." },
-    { name: "Pipeline Booster",  emoji: "\u2699", type: "attack",  attack_mult: 1.75,
+    { name: "Pipeline Booster",  emoji: "\u2699", type: "attack",  attack_mult: 1.75, min_tier: 4,
       flavor: "No stalls. Maximum throughput." },
-    { name: "Parallel Strike",   emoji: "\u21AF", type: "attack",  attack_mult: 2.5,
+    { name: "Parallel Strike",   emoji: "\u21AF", type: "attack",  attack_mult: 2.5,  min_tier: 8,
       flavor: "Two threads. One target." },
     // ── Defense boost ──────────────────────────────────────────────────────────
-    { name: "Firewall Shard",    emoji: "\uD83D\uDEE1", type: "defense", defense_reduce: 0.5,
+    { name: "Firewall Shard",    emoji: "\uD83D\uDEE1", type: "defense", defense_reduce: 0.5, min_tier: 3,
       flavor: "Blocks unauthorized incoming damage." },
-    { name: "Encryption Ward",   emoji: "\uD83D\uDD12", type: "defense", defense_reduce: 0.6,
+    { name: "Encryption Ward",   emoji: "\uD83D\uDD12", type: "defense", defense_reduce: 0.6, min_tier: 6,
       flavor: "Damage denied — wrong key." },
-    { name: "Redundancy Charm",  emoji: "\uD83D\uDD04", type: "defense", defense_reduce: 0.4,
+    { name: "Redundancy Charm",  emoji: "\uD83D\uDD04", type: "defense", defense_reduce: 0.4, min_tier: 2,
       flavor: "If the first defense fails, the second holds." },
-    { name: "Sandboxed Amulet",  emoji: "\uD83D\uDD10", type: "defense", defense_reduce: 0.5,
+    { name: "Sandboxed Amulet",  emoji: "\uD83D\uDD10", type: "defense", defense_reduce: 0.5, min_tier: 4,
       flavor: "Damage contained. System isolated." },
 ];
 
@@ -150,8 +150,7 @@ export class GameUI {
     $(root, "[data-ref=pHP]")   .textContent = `${p.hit_points}/${p.max_hit_points}`;
     $(root, "[data-ref=pLvl]")  .textContent = p.level;
     $(root, "[data-ref=pXP]")   .textContent = `${p.xp}/${p.xp_to_next_level}`;
-    $(root, "[data-ref=pWeap]") .textContent = p.weapon.name;
-    $(root, "[data-ref=pArmor]").textContent = p.armor.name;
+    $(root, "[data-ref=pRevive]").textContent = p.revive_charges;
 
     // Streak badge
     const streakEl = $(root, "[data-ref=streak]");
@@ -735,6 +734,14 @@ export class GameUI {
       body.appendChild(rep);
     }
 
+    if (battleData.revived) {
+      const rev = document.createElement("div");
+      rev.className = "correct";
+      rev.style.marginTop = "8px";
+      rev.textContent = "⚗️ A Revive Charge was consumed — you survive with 10 HP!";
+      body.appendChild(rev);
+    }
+
     if (battleData.feedback) {
       const block = document.createElement("div");
       block.className = "custom-feedback";
@@ -773,12 +780,8 @@ export class GameUI {
     const p = this.model.player;
     renderTemplate(this.root, "tpl-levelup");
     $(this.root, "[data-ref=level]")           .textContent = p.level;
-    $(this.root, "[data-ref=levelsGainedText]").textContent = levelsGained > 1 ? `You've gained ${levelsGained} levels!` : `You've gained 1 level!`;
-    $(this.root, "[data-ref=weaponName]").textContent = p.weapon.name;
-    $(this.root, "[data-ref=weaponDie]") .textContent = `Attack Die: d${p.weapon.attack_die}`;
-    $(this.root, "[data-ref=armorName]") .textContent = p.armor.name;
-    $(this.root, "[data-ref=armorDef]")  .textContent = p.armor.defense;
-    $(this.root, "[data-ref=maxHP]")     .textContent = p.max_hit_points;
+    $(this.root, "[data-ref=levelsGainedText]").textContent = levelsGained > 1 ? `${levelsGained} levels gained!` : '';
+    $(this.root, "[data-ref=reviveCount]")     .textContent = p.revive_charges;
     const cont = $(this.root, "[data-action=continue]");
     cont.addEventListener("click", () => continueCallback());
     cont.focus();
@@ -797,8 +800,7 @@ export class GameUI {
       Best Streak: <span class='yellow'>${p.best_streak}</span><br>
       Level: <span class='yellow'>${p.level}</span><br>
       HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>
-      Weapon: <span class='yellow'>${this._esc(p.weapon.name)}</span><br>
-      Armor: <span class='yellow'>${this._esc(p.armor.name)}</span>
+      Revive Charges: <span class='yellow'>${p.revive_charges}</span>
     `;
     const btn = $(this.root, "[data-action=review]");
     if (btn) { btn.addEventListener("click", () => reviewCallback()); btn.focus(); }
@@ -830,8 +832,7 @@ export class GameUI {
       Best Streak: <span class='yellow'>${p.best_streak}</span><br>
       Level: <span class='yellow'>${p.level}</span><br>
       HP: <span class='yellow'>${p.hit_points}/${p.max_hit_points}</span><br>
-      Weapon: <span class='yellow'>${this._esc(p.weapon.name)}</span><br>
-      Armor: <span class='yellow'>${this._esc(p.armor.name)}</span>
+      Revive Charges: <span class='yellow'>${p.revive_charges}</span>
     `;
     const reviewBtn = $(this.root, "[data-action=review]");
     if (reviewBtn) reviewBtn.addEventListener("click", () => reviewCallback());
@@ -860,8 +861,7 @@ export class GameUI {
       Correct selections: <span class="yellow">${player.total_correct}</span> &nbsp;&nbsp;
       Incorrect selections: <span class="yellow">${player.total_incorrect}</span><br>
       Final HP: <span class="yellow">${player.hit_points}/${player.max_hit_points}</span> &nbsp;&nbsp;
-      Weapon: <span class="yellow">${this._esc(player.weapon.name)}</span> &nbsp;&nbsp;
-      Armor: <span class="yellow">${this._esc(player.armor.name)}</span>
+      Revive Charges: <span class="yellow">${player.revive_charges}</span>
     `;
 
     const list = $(this.root, "[data-ref=reviewList]");
@@ -902,7 +902,7 @@ export class GameUI {
     t += `Questions Answered   : ${total}\nPerfect Answers      : ${perfect} / ${total} (${pct}%)\n`;
     t += `Best Streak          : ${player.best_streak}\nCorrect Selections   : ${player.total_correct}\n`;
     t += `Incorrect Selections : ${player.total_incorrect}\nFinal Level          : ${player.level}\n`;
-    t += `Final Weapon         : ${player.weapon.name}\nFinal Armor          : ${player.armor.name}\n`;
+    t += `Revive Charges Left  : ${player.revive_charges}\n`;
     t += `Final HP             : ${player.hit_points}/${player.max_hit_points}\n\nQUESTION REVIEW\n${'-'.repeat(30)}\n\n`;
     history.forEach((e, i) => {
       t += `${i+1}. [${e.was_perfect ? '✔ PASS' : '✖ FAIL'}] ${e.question}\n   Correct: ${e.correct_answers.join(', ')}\n`;
@@ -976,6 +976,23 @@ export class GameController {
   _completionKey(setName) { return `lotrd_done_${setName}`; }
   _attemptKey(setName)    { return `lotrd_attempt_${setName}`; }
   _globalKey()            { return `lotrd_global`; }
+  _globalLevelKey()       { return `lotrd_player_level`; }
+
+  _loadGlobalLevel() {
+    try { const r = localStorage.getItem(this._globalLevelKey()); return r ? JSON.parse(r) : null; } catch (_) { return null; }
+  }
+
+  _saveGlobalLevel() {
+    if (!this.model) return;
+    const p = this.model.player;
+    try {
+      localStorage.setItem(this._globalLevelKey(), JSON.stringify({
+        level:          p.level,
+        xp:             p.xp,
+        revive_charges: p.revive_charges,
+      }));
+    } catch (_) {}
+  }
 
   saveGame() {
     if (!this._setName || !this.model) return;
@@ -983,6 +1000,7 @@ export class GameController {
       localStorage.setItem(this._saveKey(this._setName),
         JSON.stringify({ ...this.model.toSaveData(), setName: this._setName, savedAt: new Date().toISOString() }));
     } catch (_) {}
+    this._saveGlobalLevel();
   }
 
   _loadSave(setName) {
@@ -1114,7 +1132,8 @@ export class GameController {
       }
 
       // Fresh or play-again: show welcome screen
-      this.model = new GameModel(questions_data, monsters_data);
+      const levelData = this._loadGlobalLevel();
+      this.model = new GameModel(questions_data, monsters_data, null, levelData);
       this.ui    = new GameUI(this.root, this.model);
       this.ui.showInitialScreen(() => this.startAdventure());
 
@@ -1158,12 +1177,14 @@ export class GameController {
       this._clearSave();
       this._recordCompletion();
       this._updateGlobalStats();
+      this._saveGlobalLevel();
       this.sounds.victory();
       this._setInGame(false);
       this.ui.showVictory(() => this.startReview("victory"));
     } else if (status === "no_questions") {
       this._clearSave();
       this._updateGlobalStats();
+      this._saveGlobalLevel();
       this._setInGame(false);
       this.ui.showNoQuestions(() => this.startReview("no_questions"));
     } else {
@@ -1215,12 +1236,22 @@ export class GameController {
   }
 
   _resolveBattle(battleData) {
+    // ── Revive check — consume a charge to survive player death ──────────────
+    if (battleData.defeated_player && this.model.player.revive_charges > 0) {
+      this.model.player.revive_charges--;
+      this.model.player.hit_points = 10;
+      battleData = { ...battleData, defeated_player: false, revived: true };
+    }
+
     // ── Item drop (on monster defeat only) ────────────────────────────────────
     let itemDrop = null;
     if (battleData.defeated_monster) {
       this.model.active_item = null;          // consume the item used in this fight
       if (Math.random() < 1 / 3) {
-        const drop = ITEM_DROPS[Math.floor(Math.random() * ITEM_DROPS.length)];
+        const tier     = this.model.current_monster.hit_dice;
+        const eligible = ITEM_DROPS.filter(d => (d.min_tier ?? 1) <= tier);
+        const pool     = eligible.length > 0 ? eligible : ITEM_DROPS;
+        const drop = pool[Math.floor(Math.random() * pool.length)];
         if (drop.type === 'heal') {
           const maxHeal   = this.model.player.max_hit_points - this.model.player.hit_points;
           const actualHeal = Math.min(drop.amount, maxHeal);
@@ -1246,6 +1277,7 @@ export class GameController {
       if (battleData.defeated_player) {
         this._clearSave();
         this._updateGlobalStats();
+        this._saveGlobalLevel();
         this.sounds.gameOver();
         this._setInGame(false);
         this.ui.showGameOver(
@@ -1255,6 +1287,7 @@ export class GameController {
         return;
       }
       if (battleData.levelsGained > 0) {
+        this._saveGlobalLevel();
         this.sounds.levelUp();
         this.ui.showLevelUp(battleData.levelsGained, () => this.continueAdventure());
       } else {
