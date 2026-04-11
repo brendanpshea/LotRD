@@ -680,7 +680,7 @@ export class GameUI {
       this._spawnFloatNumber(hud, `-${battleData.effective_monster_damage}`, "dmg-float--recv");
     }
 
-    return 380;
+    return 760;
   }
 
   showResults(battleData, itemDrop, continueCallback) {
@@ -705,6 +705,15 @@ export class GameUI {
       (arr.length === 0 ? ["None."] : arr).forEach(x => { const li = document.createElement("li"); li.textContent = x; ul.appendChild(li); });
       container.appendChild(ul);
     };
+    // Question repeat
+    const q = this.model.current_question;
+    if (q) {
+      const qLine = document.createElement("div");
+      qLine.className = "section";
+      qLine.innerHTML = `<span class="bold">Question:</span> ${this._esc(q.question)}`;
+      body.insertBefore(qLine, fbWrap);
+    }
+
     addList(fbWrap, "correct",   "✔ Correctly selected:",     battleData.correctSelections);
     addList(fbWrap, "incorrect", "✖ Incorrectly selected:",   battleData.incorrectSelections);
     addList(fbWrap, "missed",    "⚠ Missed correct answers:", battleData.missedCorrect);
@@ -716,18 +725,12 @@ export class GameUI {
       body.appendChild(sb);
     }
 
-    const lines = [];
-    lines.push(battleData.effective_player_damage > 0 ? `You deal ${battleData.effective_player_damage} damage.` : "Your attack was ineffective.");
-    if (battleData.effective_monster_damage > 0) lines.push(`The monster hits you for ${battleData.effective_monster_damage} damage.`);
-    else if (!battleData.defeated_monster)       lines.push("The monster cannot penetrate your armor.");
-    if (battleData.defeated_monster) { lines.push(`You defeated the monster!`); lines.push(`XP gained: ${battleData.xp_gained} (Total: ${p.xp}/${p.xp_to_next_level})`); }
-    if (m && m.hit_points > 0) lines.push(`Monster HP: ${m.hit_points}`);
-    lines.push(`Your HP: ${p.hit_points}/${p.max_hit_points}`);
-    if (battleData.question_repeated) lines.push("You will face this question again.");
-
-    const dmg = document.createElement("div");
-    dmg.innerHTML = lines.map(s => `${this._esc(s)}<br>`).join("");
-    body.appendChild(dmg);
+    if (battleData.question_repeated) {
+      const rep = document.createElement("div");
+      rep.className = "missed";
+      rep.textContent = "⟳ You will face this question again.";
+      body.appendChild(rep);
+    }
 
     if (battleData.feedback) {
       const block = document.createElement("div");
@@ -814,7 +817,7 @@ export class GameUI {
     if (btn) { btn.addEventListener("click", () => reviewCallback()); btn.focus(); }
   }
 
-  showGameOver(reviewCallback) {
+  showGameOver(reviewCallback, restartCallback) {
     this._clearKeyboard();
     const p = this.model.player;
     renderTemplate(this.root, "tpl-gameover");
@@ -827,8 +830,11 @@ export class GameUI {
       Weapon: <span class='yellow'>${this._esc(p.weapon.name)}</span><br>
       Armor: <span class='yellow'>${this._esc(p.armor.name)}</span>
     `;
-    const btn = $(this.root, "[data-action=review]");
-    if (btn) { btn.addEventListener("click", () => reviewCallback()); btn.focus(); }
+    const reviewBtn = $(this.root, "[data-action=review]");
+    if (reviewBtn) reviewBtn.addEventListener("click", () => reviewCallback());
+    const restartBtn = $(this.root, "[data-action=restart]");
+    if (restartBtn) restartBtn.addEventListener("click", () => restartCallback());
+    if (reviewBtn) reviewBtn.focus();
   }
 
   // ── Session review ────────────────────────────────────────────────────────────
@@ -1198,15 +1204,6 @@ export class GameController {
   }
 
   _resolveBattle(battleData) {
-    if (battleData.defeated_player) {
-      this._clearSave();
-      this._updateGlobalStats();
-      this.sounds.gameOver();
-      this._setInGame(false);
-      this.ui.showGameOver(() => this.startReview("game_over"));
-      return;
-    }
-
     // ── Item drop (on monster defeat only) ────────────────────────────────────
     let itemDrop = null;
     if (battleData.defeated_monster) {
@@ -1234,14 +1231,27 @@ export class GameController {
       if (battleData.streakCount >= 3) setTimeout(() => this.sounds.streakHit(battleData.streakCount), 250);
     }
 
-    this.ui.showResults(battleData, itemDrop, () => {
+    const afterResults = () => {
+      if (battleData.defeated_player) {
+        this._clearSave();
+        this._updateGlobalStats();
+        this.sounds.gameOver();
+        this._setInGame(false);
+        this.ui.showGameOver(
+          () => this.startReview("game_over"),
+          () => this._launchSet(this._setName, 'new')
+        );
+        return;
+      }
       if (battleData.levelsGained > 0) {
         this.sounds.levelUp();
         this.ui.showLevelUp(battleData.levelsGained, () => this.continueAdventure());
       } else {
         this.continueAdventure();
       }
-    });
+    };
+
+    this.ui.showResults(battleData, itemDrop, afterResults);
   }
 
   continueAdventure() {
