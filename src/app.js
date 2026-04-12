@@ -553,15 +553,28 @@ export class GameUI {
 
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
-    // Character-count hint: show blanks per word
-    const answers    = q.correct || [];
-    const canonical  = answers[0] || "";
-    const charHint   = canonical.split(' ')
+    const answers   = q.correct || [];
+    const canonical = answers[0] || "";
+    const caseSens  = q.case_sensitive === true;
+
+    // Character-count hint: blank bars per word
+    const charHint = canonical.split(' ')
       .map(word => `${'_'.repeat(word.length)} (${word.length})`)
       .join('  ');
-    const caseSens   = q.case_sensitive === true;
     $(this.root, "[data-ref=charHint]").textContent =
       `${charHint}${caseSens ? '  [case-sensitive]' : '  [not case-sensitive]'}`;
+
+    // Scrambled hint: shuffle letters within each word
+    const scrambleWord = word => {
+      const a = word.split('');
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a.join('');
+    };
+    const scrambled = canonical.split(' ').map(scrambleWord).join(' ');
+    $(this.root, "[data-ref=scrambledHint]").textContent = `Scrambled: ${scrambled}`;
 
     const input     = $(this.root, "[data-ref=answerInput]");
     const submitBtn = $(this.root, "[data-action=submit]");

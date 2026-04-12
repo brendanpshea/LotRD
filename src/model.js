@@ -273,17 +273,35 @@ export class GameModel {
 
     /**
      * Evaluate a fill-in-the-blank answer.
-     * Binary: exact match (honouring case_sensitive) = perfect; anything else = total miss.
-     * Returns the same battleData shape as evaluateAnswer().
+     * Partial credit: characters at correct positions score as hits; the rest as misses.
+     * Damage scales proportionally (one roll each side, multiplied by correct/wrong fraction).
+     * isPerfect only when the normalised input exactly matches an acceptable answer.
      */
     evaluateFillBlank(inputText) {
         const q          = this.current_question;
-        const acceptable = q.correct || [];   // array of acceptable strings
+        const acceptable = q.correct || [];
         const caseSens   = q.case_sensitive === true;
-
-        const normalise = s => caseSens ? s.trim() : s.trim().toLowerCase();
+        const normalise  = s => caseSens ? s.trim() : s.trim().toLowerCase();
         const input      = normalise(inputText);
-        const isPerfect  = acceptable.some(ans => normalise(ans) === input);
+
+        // Find the best-matching acceptable answer (most chars in correct position).
+        let bestAnswer  = normalise(acceptable[0] || '');
+        let bestMatches = 0;
+        for (const ans of acceptable) {
+            const norm = normalise(ans);
+            if (norm === input) { bestAnswer = norm; bestMatches = norm.length; break; }
+            let m = 0;
+            for (let i = 0; i < norm.length; i++) { if (input[i] === norm[i]) m++; }
+            if (m > bestMatches) { bestMatches = m; bestAnswer = norm; }
+        }
+
+        const totalChars   = bestAnswer.length;
+        let   correctChars = 0;
+        for (let i = 0; i < totalChars; i++) {
+            if (input[i] === bestAnswer[i]) correctChars++;
+        }
+        const wrongChars = totalChars - correctChars;
+        const isPerfect  = input === bestAnswer;
 
         // Streak
         if (isPerfect) {
@@ -299,18 +317,17 @@ export class GameModel {
         else if (this.player.streak >= 5)  streakMultiplier = 1.5;
         else if (this.player.streak >= 3)  streakMultiplier = 1.25;
 
-        // Damage — binary: hit or miss
-        let player_damage  = 0;
-        let monster_damage = 0;
+        // Partial-credit stats
+        this.player.total_correct   += correctChars;
+        this.player.total_incorrect += wrongChars;
 
-        if (isPerfect) {
-            this.player.total_correct++;
-            const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
-            player_damage = Math.round(rollDice(1, this.player.attack_die) * streakMultiplier * itemAttackMult);
-        } else {
-            this.player.total_incorrect++;
-            monster_damage = rollDice(1, this.current_monster.attack_die);
-        }
+        // Proportional damage: one roll per side, scaled by fraction correct/wrong
+        const correctFrac    = totalChars > 0 ? correctChars / totalChars : 0;
+        const wrongFrac      = 1 - correctFrac;
+        const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
+
+        let player_damage  = Math.round(rollDice(1, this.player.attack_die)          * correctFrac * streakMultiplier * itemAttackMult);
+        let monster_damage = Math.round(rollDice(1, this.current_monster.attack_die) * wrongFrac);
 
         const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
         let   effective_monster_damage = Math.max(monster_damage - this.player.base_defense,     0);
@@ -322,28 +339,30 @@ export class GameModel {
 
         let defeated_monster    = false;
         let defeated_player     = false;
-        const xp_gained         = 10;
+        const xp_gained         = this.current_monster.hit_dice * 2;
         let levelsGained        = 0;
         const question_repeated = !isPerfect;
 
         this.player.xp += xp_gained;
         levelsGained    = this.checkLevelUp();
 
-        if (this.current_monster.hit_points <= 0) {
-            defeated_monster = true;
-        }
-        if (this.player.hit_points <= 0) defeated_player = true;
+        if (this.current_monster.hit_points <= 0) defeated_monster = true;
+        if (this.player.hit_points <= 0)          defeated_player  = true;
         if (!isPerfect) this.questions_to_ask.push(this.current_question);
 
         this.questions_asked++;
+
+        const scoreLabel = isPerfect
+            ? inputText
+            : `"${inputText}" — ${correctChars}/${totalChars} chars correct`;
 
         this.answer_history.push({
             question:             q.question,
             correct_answers:      acceptable,
             selected:             [inputText],
-            correct_selections:   isPerfect ? [inputText] : [],
-            incorrect_selections: isPerfect ? [] : [inputText],
-            missed_correct:       isPerfect ? [] : acceptable,
+            correct_selections:   correctChars > 0 ? [scoreLabel] : [],
+            incorrect_selections: wrongChars   > 0 ? [scoreLabel] : [],
+            missed_correct:       isPerfect    ? [] : acceptable,
             was_perfect:          isPerfect,
         });
 
@@ -354,9 +373,9 @@ export class GameModel {
             defeated_player,
             xp_gained,
             question_repeated,
-            correctSelections:   isPerfect ? [inputText] : [],
-            incorrectSelections: isPerfect ? [] : [inputText],
-            missedCorrect:       isPerfect ? [] : acceptable,
+            correctSelections:   correctChars > 0 ? [scoreLabel] : [],
+            incorrectSelections: wrongChars   > 0 ? [scoreLabel] : [],
+            missedCorrect:       isPerfect    ? [] : acceptable,
             levelsGained,
             feedback:         q.feedback || null,
             streakMultiplier,
