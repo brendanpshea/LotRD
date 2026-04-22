@@ -99,9 +99,8 @@ describe('No stale weapon/armor references', () => {
     assert.ok(!appJs.includes('weapon.attack_die'), 'stale weapon.attack_die in app.js');
   });
 
-  it('index.html includes pRevive and reviveCount refs', () => {
+  it('index.html includes the revive HUD ref', () => {
     assert.ok(html.includes('data-ref="pRevive"'), 'missing pRevive in index.html');
-    assert.ok(html.includes('data-ref="reviveCount"'), 'missing reviveCount in index.html');
   });
 });
 

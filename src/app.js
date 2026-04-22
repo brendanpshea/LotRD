@@ -956,6 +956,7 @@ export class GameUI {
     const date    = new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
     const total   = history.length;
     const perfect = history.filter(h => h.was_perfect).length;
+    const imperfect = history.filter(h => !h.was_perfect);
     const pct     = total > 0 ? Math.round(perfect / total * 100) : 0;
     const outcome = outcomeType === 'victory' ? 'Victory!' : outcomeType === 'game_over' ? 'Game Over' : 'Completed';
     let t = `Loop of the Recursive Dragon — Session Review\n${'='.repeat(50)}\n`;
@@ -965,15 +966,15 @@ export class GameUI {
     t += `Best Streak          : ${player.best_streak}\nCorrect Selections   : ${player.total_correct}\n`;
     t += `Incorrect Selections : ${player.total_incorrect}\nFinal Level          : ${player.level}\n`;
     t += `Revive Charges Left  : ${player.revive_charges}\n`;
-    t += `Final HP             : ${player.hit_points}/${player.max_hit_points}\n\nQUESTION REVIEW\n${'-'.repeat(30)}\n\n`;
-    history.forEach((e, i) => {
-      t += `${i+1}. [${e.was_perfect ? '✔ PASS' : '✖ FAIL'}] ${e.question}\n   Correct: ${e.correct_answers.join(', ')}\n`;
-      if (!e.was_perfect) {
-        if (e.incorrect_selections.length > 0) t += `   Wrong:   ${e.incorrect_selections.join(', ')}\n`;
-        if (e.missed_correct.length > 0)       t += `   Missed:  ${e.missed_correct.join(', ')}\n`;
-      }
-      t += '\n';
-    });
+    t += `Final HP             : ${player.hit_points}/${player.max_hit_points}\n\n`;
+    t += `QUESTIONS BELOW 100%\n${'-'.repeat(30)}\n`;
+    if (imperfect.length === 0) {
+      t += `None.\n`;
+    } else {
+      imperfect.forEach((entry, i) => {
+        t += `${i+1}. ${entry.question}\n`;
+      });
+    }
     const url = URL.createObjectURL(new Blob([t], { type: 'text/plain;charset=utf-8' }));
     const a   = Object.assign(document.createElement('a'), { href: url, download: `lotrd-${setName.replace('.json','')}-${new Date().toISOString().slice(0,10)}.txt` });
     a.click();
