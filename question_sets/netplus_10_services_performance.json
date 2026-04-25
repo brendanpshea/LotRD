@@ -1,0 +1,319 @@
+[
+  {
+    "question": "Brom plugs an unmanaged hub between two switch ports and shortly afterward, every host in the building loses connectivity. Which Layer 2 problem is most likely?",
+    "correct": ["A switching loop is broadcasting traffic out of control"],
+    "incorrect": [
+      "A duplex mismatch on a single port",
+      "An incorrect default gateway on every host",
+      "DHCP pool exhaustion"
+    ],
+    "feedback": "A loop without STP causes broadcast storms — frames circulate forever and saturate the network. STP, BPDU guard, and avoiding random hubs are the defenses."
+  },
+  {
+    "question": "Which of the following accurately describe how Spanning Tree Protocol (STP) chooses the root bridge?",
+    "correct": [
+      "The switch with the lowest bridge ID becomes the root",
+      "The bridge ID combines a configurable priority with the switch's MAC address",
+      "Lowering a switch's STP priority is how administrators force it to become root"
+    ],
+    "incorrect": [
+      "The switch with the highest IP address becomes the root",
+      "The switch with the most physical ports automatically wins",
+      "The root is chosen randomly each time STP converges"
+    ],
+    "feedback": "STP picks the lowest bridge ID. By default many switches share the same priority, so the MAC address breaks the tie — which is rarely what you want. Set priority explicitly on your intended root."
+  },
+  {
+    "question": "Which STP port role forwards traffic toward the root bridge on a non-root switch?",
+    "correct": ["Root port"],
+    "incorrect": [
+      "Designated port",
+      "Blocking port",
+      "Edge port"
+    ],
+    "feedback": "Each non-root switch elects one root port (its best path toward the root). Each segment elects one designated port; non-designated ports may be blocked."
+  },
+  {
+    "question": "Which STP port state is forwarding user data and learning MAC addresses?",
+    "correct": ["Forwarding"],
+    "incorrect": ["Blocking", "Listening", "Learning"],
+    "feedback": "Classic STP transitions a port through blocking, listening, learning, and forwarding. Only forwarding state moves user traffic. RSTP collapses these into discarding/learning/forwarding for faster convergence."
+  },
+  {
+    "question": "Mira reports a user can't reach the file server. The user's PC is plugged into a switch port the help desk thinks should be in VLAN 20, but `show interface switchport` shows the port assigned to VLAN 99. Which issue is this?",
+    "correct": ["Incorrect VLAN assignment on the switch port"],
+    "incorrect": [
+      "Duplicate IP address on the file server",
+      "STP blocking the access port",
+      "DHCP pool exhaustion"
+    ],
+    "feedback": "An access port in the wrong VLAN puts the user in the wrong broadcast domain and away from the resources its VLAN was supposed to reach. Verify with `show interface switchport`."
+  },
+  {
+    "question": "Which of the following are common causes when 'the network is broken' but the cabling and port look fine?",
+    "correct": [
+      "An ACL on a router or firewall is dropping the traffic",
+      "An incorrect VLAN assignment isolates the host from its gateway",
+      "A misconfigured static route sends return traffic out the wrong path"
+    ],
+    "incorrect": [
+      "Spanning Tree always blocks production VLANs by default",
+      "Switches randomly drop frames every fifth packet",
+      "DHCP must be disabled for routing to function"
+    ],
+    "feedback": "Once Layer 1/2 looks fine, suspect policy: ACLs, VLAN membership, routing, and firewall rules. These are the classic 'silent drop' culprits."
+  },
+  {
+    "question": "Aria suspects an ACL is dropping certain traffic. Which command output is most useful for confirming this?",
+    "correct": ["The ACL hit counters or the firewall's deny log entries"],
+    "incorrect": [
+      "The MAC address table on the access switch",
+      "The DHCP scope utilization report",
+      "The wireless heat map for the floor"
+    ],
+    "feedback": "ACL counters and firewall deny logs show whether traffic is reaching the rule and being dropped. Without them, ACL troubleshooting becomes guesswork."
+  },
+  {
+    "question": "A router has multiple routes to a destination. Which of the following correctly describes route selection?",
+    "correct": ["The router picks the longest prefix match first; among equal-length matches, lower administrative distance wins; among equal AD, lower metric wins"],
+    "incorrect": [
+      "The router always picks the route learned most recently",
+      "The router averages the metrics from all routes and uses the result",
+      "The router uses the route with the highest administrative distance"
+    ],
+    "feedback": "Route selection follows: prefix length → administrative distance → metric. Memorize that order — it explains many 'why is the router using that path?' mysteries."
+  },
+  {
+    "question": "Which entry is used by a router when no more specific route matches a packet's destination?",
+    "correct": ["The default route (0.0.0.0/0)"],
+    "incorrect": [
+      "The route with the highest metric in the table",
+      "The first static route configured on the router",
+      "The router's loopback address"
+    ],
+    "feedback": "0.0.0.0/0 (or ::/0 for IPv6) matches anything and is used last. Branch routers typically have a default route pointing to HQ or the ISP."
+  },
+  {
+    "question": "Captain Doran's branch router suddenly cannot reach any internet destination, although internal subnets still work. Which is the most likely cause?",
+    "correct": ["The default route to the ISP has been removed or its next hop is unreachable"],
+    "incorrect": [
+      "STP has converged on a different root bridge",
+      "DHCP pool exhaustion on the user VLAN",
+      "Spanning Tree port states changed on the access switches"
+    ],
+    "feedback": "Internal connectivity working but external broken almost always points to the default route or the link/path that route depends on."
+  },
+  {
+    "question": "At The Gilded Tankard, three APs in the same room are all configured for 2.4 GHz channel 6. Users complain of slow Wi-Fi and frequent retransmissions. Which issue is this?",
+    "correct": ["Co-channel interference from APs sharing the same channel"],
+    "incorrect": [
+      "Channel overlap from APs using channels 1, 6, and 11",
+      "Signal loss caused by shielded twisted pair cabling",
+      "DHCP pool exhaustion on the guest VLAN"
+    ],
+    "feedback": "APs on the same channel share airtime and contend for it. The 2.4 GHz fix is a 1/6/11 channel plan so neighboring APs do not interfere."
+  },
+  {
+    "question": "Which of the following symptoms typically point to an incorrect default gateway on a host?",
+    "correct": [
+      "The host can reach other hosts on its own subnet but nothing beyond it",
+      "Pings to a remote subnet fail while pings to a local IP succeed",
+      "Traceroute fails immediately at the first hop"
+    ],
+    "incorrect": [
+      "The host receives no DHCP lease at all",
+      "The host's MAC address has changed",
+      "The host is mistakenly placed in the wrong rack"
+    ],
+    "feedback": "Local works, remote does not — that is the signature of a missing or incorrect default gateway. Check `ipconfig` / `ip route` and the DHCP options being delivered."
+  },
+  {
+    "question": "Brom statically assigns an IP to a printer that turns out to already be in use by a server. Which symptom is most likely?",
+    "correct": [
+      "Both devices experience intermittent connectivity, with the OS logging IP address conflicts",
+      "ARP entries for the disputed IP flap between two MAC addresses"
+    ],
+    "incorrect": [
+      "Both devices reach full gigabit throughput with no errors",
+      "STP changes the root bridge",
+      "DHCP automatically resolves the conflict by reassigning one of them"
+    ],
+    "feedback": "Duplicate IPs cause classic on-and-off connectivity as ARP races between the two MAC addresses. Operating systems often log clear 'IP address conflict' warnings."
+  },
+  {
+    "question": "Lyra finds that a user's host has IP 10.10.20.50 with subnet mask 255.255.255.0, while the gateway and other hosts on the segment use 255.255.255.224. Which problem is this?",
+    "correct": ["Incorrect subnet mask on the host"],
+    "incorrect": [
+      "Duplicate IP address",
+      "Default route missing on the gateway",
+      "ACL silently dropping traffic"
+    ],
+    "feedback": "A wrong subnet mask makes the host believe other addresses are 'local' or 'remote' incorrectly, breaking ARP and routing in subtle ways depending on direction."
+  },
+  {
+    "question": "Mira's team complains that Wi-Fi 'works fine in the conference room but disconnects in the back offices.' A heat map confirms signal strength drops below -75 dBm in those offices. Which issue is this?",
+    "correct": ["Insufficient wireless coverage in part of the building"],
+    "incorrect": [
+      "Co-channel interference between three APs",
+      "Roaming misconfiguration on the WLC",
+      "Client disassociation due to MFP"
+    ],
+    "feedback": "Coverage gaps show up as weak signal in specific areas. Adding APs, repositioning antennas, or boosting transmit power (within regulatory limits) all help."
+  },
+  {
+    "type": "fill_blank",
+    "question": "When no more specific route matches a packet, a router uses the ___ route, written as 0.0.0.0/0 in IPv4.",
+    "correct": ["default"],
+    "case_sensitive": false,
+    "feedback": "The default route is the route of last resort. On branch routers it usually points to the corporate WAN or the ISP."
+  },
+  {
+    "type": "fill_blank",
+    "question": "When a DHCP server has no free addresses left in its scope, the scope is said to be ___.",
+    "correct": ["exhausted"],
+    "case_sensitive": false,
+    "feedback": "Scope exhaustion is fixed by enlarging the scope, shortening lease times, or removing stale reservations and leases."
+  },
+  {
+    "type": "matching",
+    "question": "Match each Spanning Tree concept to its description.",
+    "pairs": [
+      { "term": "Root bridge", "definition": "The single switch elected as the reference point for all path calculations" },
+      { "term": "Root port", "definition": "On each non-root switch, the port with the best path toward the root" },
+      { "term": "Designated port", "definition": "On each segment, the single port that forwards traffic toward and from the root" },
+      { "term": "Blocking state", "definition": "A port that does not forward user data, used to break loops" }
+    ],
+    "feedback": "Bridge ID elects the root. Each non-root switch chooses one root port; each segment chooses one designated port; the rest may block to prevent loops."
+  },
+  {
+    "question": "Which performance issue describes too much traffic competing for the same resource — for example, many flows sharing a single uplink at peak hours?",
+    "correct": ["Congestion / contention"],
+    "incorrect": [
+      "Jitter",
+      "Default route loss",
+      "Duplicate IP address"
+    ],
+    "feedback": "Congestion is the symptom; the underlying capacity bottleneck is the cause. Mitigations include adding capacity, applying QoS, and shaping traffic."
+  },
+  {
+    "question": "Captain Doran investigates slow file transfers between two sites and finds that the WAN link is saturated long before the local LAN or servers are. Where is the bottleneck?",
+    "correct": ["The WAN link, which has the lowest available bandwidth in the path"],
+    "incorrect": [
+      "The local file server's CPU",
+      "The host NICs at each end",
+      "The Ethernet cabling inside the rack"
+    ],
+    "feedback": "End-to-end throughput is limited by the slowest link in the path. Identify the bottleneck before throwing money at unrelated upgrades."
+  },
+  {
+    "question": "Which of the following statements about bandwidth and throughput are accurate?",
+    "correct": [
+      "Bandwidth is the theoretical maximum capacity of a link",
+      "Throughput is the actual data rate achieved in practice",
+      "Throughput is usually less than the link's nominal bandwidth due to overhead and other factors"
+    ],
+    "incorrect": [
+      "Throughput is always higher than bandwidth",
+      "Bandwidth and throughput are synonyms",
+      "Throughput cannot be measured without disabling the firewall"
+    ],
+    "feedback": "Bandwidth = ceiling. Throughput = what you actually get. Tools like iperf measure throughput across a path."
+  },
+  {
+    "question": "Which of the following best describes latency on a network path?",
+    "correct": ["The time it takes for a packet to travel from source to destination"],
+    "incorrect": [
+      "The total amount of traffic carried per second",
+      "The variation in delay between successive packets",
+      "The percentage of packets lost in transit"
+    ],
+    "feedback": "Latency is one-way (or round-trip) delay, often reported by ping in milliseconds. Throughput is volume per time; jitter is variation in latency; packet loss is dropped packets."
+  },
+  {
+    "question": "Which of the following can degrade or attenuate a Wi-Fi signal in an office environment?",
+    "correct": [
+      "Thick concrete walls and metal-backed obstructions in the path",
+      "Microwave ovens and other 2.4 GHz devices radiating noise",
+      "Excessive distance between the client and the AP"
+    ],
+    "incorrect": [
+      "Painting the walls with low-VOC paint",
+      "Using LED ceiling lights instead of fluorescent tubes",
+      "Installing the AP on the same VLAN as the user"
+    ],
+    "feedback": "Wi-Fi range is heavily affected by walls, metal, and same-band interferers. Site surveys help identify problem materials and bad neighbors before deployment."
+  },
+  {
+    "question": "Mira reports that VoIP calls have crackling, choppy audio while regular file transfers seem fine. Which performance issue is most likely?",
+    "correct": ["High jitter and/or packet loss on the voice traffic"],
+    "incorrect": [
+      "DHCP scope exhaustion",
+      "Incorrect default gateway on the call manager",
+      "Duplicate IP on the user's PC"
+    ],
+    "feedback": "Voice and video are intolerant of jitter and loss. Bulk transfers can tolerate higher latency and use TCP to recover from drops; real-time UDP traffic cannot."
+  },
+  {
+    "question": "Which of the following best defines jitter?",
+    "correct": ["The variation in delay between successive packets in a flow"],
+    "incorrect": [
+      "The total time to transfer a large file",
+      "The percentage of packets dropped along a path",
+      "The maximum capacity of the slowest link in the path"
+    ],
+    "feedback": "Jitter measures inconsistency in arrival times. Voice and video are very sensitive to it; jitter buffers smooth it out at the cost of added latency."
+  },
+  {
+    "question": "At Ravenshade Academy, students report that as they walk between buildings, their Wi-Fi devices sometimes drop and have to reassociate instead of seamlessly handing off to the next AP. Which issue is most likely?",
+    "correct": ["Roaming misconfiguration — APs are not configured consistently for fast roaming or share the same SSID/security settings"],
+    "incorrect": [
+      "DHCP scope exhaustion in the user VLAN",
+      "Spanning Tree blocking the AP uplinks",
+      "An incorrect default gateway on the wireless controller"
+    ],
+    "feedback": "Smooth roaming requires consistent SSID, security, and (often) 802.11k/v/r support across APs in the same ESS. Misconfigured APs force full reauthentication on every move."
+  },
+  {
+    "question": "Aria sees consistent 1% packet loss on a saturated WAN link, particularly during business hours. Which mitigation is most appropriate as a first step?",
+    "correct": ["Apply QoS to prioritize latency-sensitive traffic and shape bulk traffic on the link"],
+    "incorrect": [
+      "Reboot every endpoint device",
+      "Disable Spanning Tree on the WAN router",
+      "Replace all copper cabling with new copper of the same category"
+    ],
+    "feedback": "When the link is the bottleneck, QoS protects what matters until you can add capacity. Cabling and STP are unrelated to a saturated WAN link."
+  },
+  {
+    "question": "Brom notices that wireless clients in one corner of the office randomly drop their association with the AP and have to reconnect every few minutes. Which of the following could plausibly cause this?",
+    "correct": [
+      "Marginal signal strength in that area causing the AP or client to deauthenticate",
+      "RF interference from a nearby microwave or Bluetooth device",
+      "Aggressive client steering by the WLC kicking the device to a different AP"
+    ],
+    "incorrect": [
+      "STP changing the root bridge on the wired core",
+      "An ACL on the firewall dropping HTTPS traffic",
+      "A duplicate IP on the wireless controller management interface"
+    ],
+    "feedback": "Client disassociation issues usually come back to RF (signal quality, interference) or controller behavior (steering, idle timeouts), not to wired-side switching or routing."
+  },
+  {
+    "type": "fill_blank",
+    "question": "In 2.4 GHz, the three commonly recommended non-overlapping channels are 1, 6, and ___.",
+    "correct": ["11"],
+    "case_sensitive": false,
+    "feedback": "Channels 1, 6, and 11 are spaced widely enough that their 20 MHz spectra don't overlap. Any other combination causes adjacent-channel interference."
+  },
+  {
+    "type": "matching",
+    "question": "Match each performance metric or issue to its description.",
+    "pairs": [
+      { "term": "Bandwidth", "definition": "Theoretical maximum capacity of a link" },
+      { "term": "Throughput", "definition": "Actual data rate achieved across a path" },
+      { "term": "Latency", "definition": "Time it takes for a packet to travel from source to destination" },
+      { "term": "Jitter", "definition": "Variation in delay between successive packets" },
+      { "term": "Packet loss", "definition": "Percentage of packets that fail to reach the destination" }
+    ],
+    "feedback": "These five metrics describe the bulk of network performance complaints. Knowing which one is misbehaving narrows the troubleshooting path quickly."
+  }
+]
