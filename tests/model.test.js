@@ -100,11 +100,19 @@ describe('Player', () => {
     assert.equal(p.revive_charges, 3);
   });
 
-  it('has fixed attack_die and base_defense regardless of levelData', () => {
+  it('attack_die is fixed; max_hp and base_defense scale with level', () => {
     const p = new Player({ level: 50, xp: 0, revive_charges: 10 });
     assert.equal(p.attack_die, 6);
-    assert.equal(p.base_defense, 1);
+    // 1 + floor((50-1)/5) = 1 + 9 = 10
+    assert.equal(p.base_defense, 10);
+    // 20 + (50-1)*2 = 118
+    assert.equal(p.max_hit_points, 118);
+  });
+
+  it('level 1 player has the documented baseline stats', () => {
+    const p = new Player({ level: 1 });
     assert.equal(p.max_hit_points, 20);
+    assert.equal(p.base_defense, 1);
   });
 });
 
@@ -219,16 +227,34 @@ describe('toSaveData / resume round-trip', () => {
 // GameModel — generateMonster
 // ────────────────────────────────────────────────────────────────────────────────
 describe('generateMonster', () => {
-  it('picks from the full monster pool regardless of player level', () => {
+  it('weights toward monsters whose hit_dice match the player level', () => {
     const gm = freshModel();
-    gm.player.level = 99;
+    gm.player.level = 5;
+    const counts = { 'Test Slime': 0, 'Test Golem': 0 };
+    for (let i = 0; i < 600; i++) counts[gm.generateMonster().monster_name]++;
+    // Golem (hit_dice=5) should dominate over Slime (hit_dice=1) at level 5
+    assert.ok(counts['Test Golem'] > counts['Test Slime'],
+      `Expected Golem to dominate at level 5: ${JSON.stringify(counts)}`);
+  });
+
+  it('low-level players see more low-tier monsters', () => {
+    const gm = freshModel();
+    gm.player.level = 1;
+    const counts = { 'Test Slime': 0, 'Test Golem': 0 };
+    for (let i = 0; i < 600; i++) counts[gm.generateMonster().monster_name]++;
+    assert.ok(counts['Test Slime'] > counts['Test Golem'],
+      `Expected Slime to dominate at level 1: ${JSON.stringify(counts)}`);
+  });
+
+  it('keeps every monster reachable (non-zero weight)', () => {
+    const gm = freshModel();
+    gm.player.level = 1;
     const names = new Set();
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 800 && names.size < 2; i++) {
       names.add(gm.generateMonster().monster_name);
     }
-    // Both monsters should appear eventually
-    assert.ok(names.has('Test Slime'), 'Test Slime never appeared at level 99');
-    assert.ok(names.has('Test Golem'), 'Test Golem never appeared at level 99');
+    assert.ok(names.has('Test Slime'));
+    assert.ok(names.has('Test Golem'));
   });
 });
 
@@ -460,6 +486,49 @@ describe('Streak mechanics', () => {
     assert.equal(r.streakMultiplier, 1.25);
   });
 
+  it('preserves streak on ≥80% partial credit (matching)', () => {
+    const fivePair = matchingQuestion({
+      pairs: [
+        { term: 'A', definition: 'a' }, { term: 'B', definition: 'b' },
+        { term: 'C', definition: 'c' }, { term: 'D', definition: 'd' },
+        { term: 'E', definition: 'e' },
+      ],
+    });
+    const gm = freshModel([fivePair]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.player.streak = 4; // pre-existing streak
+
+    const r = gm.evaluateMatching([
+      { term: 'A', definition: 'a' }, { term: 'B', definition: 'b' },
+      { term: 'C', definition: 'c' }, { term: 'D', definition: 'd' },
+      { term: 'E', definition: 'wrong' }, // 4/5 = 80%
+    ]);
+    assert.equal(r.streakState, 'preserved');
+    assert.equal(gm.player.streak, 4); // unchanged
+  });
+
+  it('resets streak on <80% partial credit', () => {
+    const fivePair = matchingQuestion({
+      pairs: [
+        { term: 'A', definition: 'a' }, { term: 'B', definition: 'b' },
+        { term: 'C', definition: 'c' }, { term: 'D', definition: 'd' },
+        { term: 'E', definition: 'e' },
+      ],
+    });
+    const gm = freshModel([fivePair]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.player.streak = 5;
+    const r = gm.evaluateMatching([
+      { term: 'A', definition: 'a' }, { term: 'B', definition: 'b' },
+      { term: 'C', definition: 'c' }, { term: 'D', definition: 'wrong' },
+      { term: 'E', definition: 'wrong' }, // 3/5 = 60%
+    ]);
+    assert.equal(r.streakState, 'reset');
+    assert.equal(gm.player.streak, 0);
+  });
+
   it('applies 1.5× at streak 5, 2× at streak 10', () => {
     const qs = Array.from({ length: 12 }, () => mcQuestion());
     const gm = freshModel(qs);
@@ -481,12 +550,11 @@ describe('Streak mechanics', () => {
 describe('checkLevelUp', () => {
   it('levels up when xp >= xp_to_next_level', () => {
     const gm = freshModel();
-    gm.player.xp = 100; // exactly meets threshold for level 1 → 2
+    gm.player.xp = 100;
     const gained = gm.checkLevelUp();
     assert.equal(gained, 1);
     assert.equal(gm.player.level, 2);
     assert.equal(gm.player.xp_to_next_level, 125);
-    assert.equal(gm.player.revive_charges, 0);
   });
 
   it('can gain multiple levels at once', () => {
@@ -494,35 +562,37 @@ describe('checkLevelUp', () => {
     gm.player.xp = 500;
     const gained = gm.checkLevelUp();
     assert.ok(gained >= 2, `Expected >=2 levels, got ${gained}`);
-    assert.equal(gm.player.revive_charges, 0);
   });
 
-  it('does NOT increase max_hit_points on level-up', () => {
+  it('grants +2 max HP per level (and heals current HP by the same amount)', () => {
     const gm = freshModel();
+    const startHp = gm.player.hit_points;
     gm.player.xp = 150;
-    gm.checkLevelUp();
-    assert.equal(gm.player.max_hit_points, 20);
+    const gained = gm.checkLevelUp();
+    assert.equal(gm.player.max_hit_points, 20 + gained * 2);
+    assert.equal(gm.player.hit_points, startHp + gained * 2);
   });
 
-  it('does NOT change attack_die or base_defense on level-up', () => {
+  it('attack_die stays fixed; base_defense bumps every 5 levels', () => {
     const gm = freshModel();
-    gm.player.xp = 9999;
+    gm.player.xp = 1_000_000;
     gm.checkLevelUp();
     assert.equal(gm.player.attack_die, 6);
-    assert.equal(gm.player.base_defense, 1);
+    // base_defense for any level L = 1 + floor((L-1)/5)
+    assert.equal(gm.player.base_defense, 1 + Math.floor((gm.player.level - 1) / 5));
   });
 
-  it('does not grant revive charges on level gain', () => {
+  it('grants 1 revive charge per level gained', () => {
     const gm = freshModel();
-    gm.player.xp = 100;
-    gm.checkLevelUp();
     assert.equal(gm.player.revive_charges, 0);
 
-    // Level 2 → 3 requires 125 XP in the current curve.
+    gm.player.xp = 100;
+    const gained1 = gm.checkLevelUp();
+    assert.equal(gm.player.revive_charges, gained1);
+
     gm.player.xp = 125;
-    gm.checkLevelUp();
-    assert.equal(gm.player.revive_charges, 0);
-    assert.equal(gm.player.level, 3);
+    const gained2 = gm.checkLevelUp();
+    assert.equal(gm.player.revive_charges, gained1 + gained2);
   });
 
   it('XP curve grows by 1.25x from a base of 100', () => {
@@ -540,6 +610,39 @@ describe('checkLevelUp', () => {
 // ────────────────────────────────────────────────────────────────────────────────
 // Active item effects
 // ────────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
+// Spaced-repetition re-queue
+// ────────────────────────────────────────────────────────────────────────────────
+describe('Re-queue placement', () => {
+  it('inserts a missed question 3 positions ahead, not at the end', () => {
+    const qs = Array.from({ length: 8 }, (_, i) => mcQuestion({ question: `Q${i}` }));
+    const gm = freshModel(qs);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    const missed = gm.current_question.question;
+    // Wrong answer → re-queue
+    gm.evaluateAnswer(['B']);
+
+    // After miss, queue length should equal original remaining (= 7 minus 1 popped + 1 re-queued = 7)
+    const queue = gm.questions_to_ask.map(q => q.question);
+    const idx = queue.indexOf(missed);
+    assert.ok(idx >= 0, 'missed question should be re-queued');
+    // Should be near the front (index <= 3), not at the end
+    assert.ok(idx <= 3, `expected re-queue near front, got index ${idx} of ${queue.length}`);
+    assert.notEqual(idx, queue.length - 1, 'should not be at the very end');
+  });
+
+  it('falls back to end-of-queue when fewer than 3 questions remain', () => {
+    const qs = [mcQuestion({ question: 'Q0' }), mcQuestion({ question: 'Q1' })];
+    const gm = freshModel(qs);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.evaluateAnswer(['B']); // miss → re-queue with only 1 question remaining
+    // Should land at end (index 1, after the one remaining question)
+    assert.equal(gm.questions_to_ask.length, 2);
+  });
+});
+
 describe('Active item effects', () => {
   it('attack item multiplies player damage', () => {
     const gm = freshModel([mcQuestion()]);

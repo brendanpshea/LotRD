@@ -617,7 +617,7 @@ export class GameUI {
 
     this._renderProgress(this.root);
 
-    if (checkboxes.length > 0) checkboxes[0].focus();
+    if (inputs.length > 0) inputs[0].focus();
   }
 
   // ── Fill-in-the-blank encounter ───────────────────────────────────────────────
@@ -870,6 +870,13 @@ export class GameUI {
       body.appendChild(sb);
     }
 
+    if (battleData.streakState === 'preserved' && battleData.streakCount > 0) {
+      const sp = document.createElement("div");
+      sp.className = "streak-bonus-note";
+      sp.textContent = `🔥 Close enough! Streak of ${battleData.streakCount} preserved.`;
+      body.appendChild(sp);
+    }
+
     if (battleData.question_repeated) {
       const rep = document.createElement("div");
       rep.className = "missed";
@@ -918,13 +925,22 @@ export class GameUI {
     document.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); continueCallback(); } }, { signal: this._kbAbort.signal });
   }
 
-  showLevelUp(levelsGained, continueCallback) {
+  showLevelUp(levelsGained, rewards, continueCallback) {
     this._clearKeyboard();
     const p = this.model.player;
     renderTemplate(this.root, "tpl-levelup");
     $(this.root, "[data-ref=level]")           .textContent = p.level;
     $(this.root, "[data-ref=levelTitle]")      .textContent = getLevelTitle(p.level);
     $(this.root, "[data-ref=levelsGainedText]").textContent = levelsGained > 1 ? `${levelsGained} levels gained!` : '';
+
+    const rewardsEl = $(this.root, "[data-ref=levelUpRewards]");
+    if (rewardsEl) {
+      const parts = [];
+      if (rewards?.hp_gained > 0)      parts.push(`+${rewards.hp_gained} max HP`);
+      if (rewards?.defense_gained > 0) parts.push(`+${rewards.defense_gained} defense`);
+      if (rewards?.revive_gained > 0)  parts.push(`+${rewards.revive_gained} revive charge${rewards.revive_gained > 1 ? 's' : ''} ⚗️`);
+      rewardsEl.textContent = parts.length ? parts.join(' · ') : '';
+    }
     const cont = $(this.root, "[data-action=continue]");
     cont.addEventListener("click", () => continueCallback());
     cont.focus();
@@ -1552,7 +1568,7 @@ export class GameController {
       if (battleData.levelsGained > 0) {
         this._saveGlobalLevel();
         this.sounds.levelUp();
-        this.ui.showLevelUp(battleData.levelsGained, () => this.continueAdventure());
+        this.ui.showLevelUp(battleData.levelsGained, battleData.levelUpRewards, () => this.continueAdventure());
       } else {
         this.continueAdventure();
       }

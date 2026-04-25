@@ -25,15 +25,19 @@ export function rollDice(times, sides) {
 }
 
 export class Player {
+    static maxHpForLevel(level)       { return 20 + (level - 1) * 2; }
+    static baseDefenseForLevel(level) { return 1 + Math.floor((level - 1) / 5); }
+    static xpToNext(level)            { return Math.round(100 * Math.pow(1.25, level - 1)); }
+
     constructor(levelData = null) {
         const lvl             = levelData?.level ?? 1;
         this.level            = lvl;
         this.xp               = levelData?.xp ?? 0;
-        this.xp_to_next_level = Math.round(100 * Math.pow(1.25, lvl - 1));
-        this.max_hit_points   = 20;
-        this.hit_points       = 20;
+        this.xp_to_next_level = Player.xpToNext(lvl);
+        this.max_hit_points   = Player.maxHpForLevel(lvl);
+        this.hit_points       = this.max_hit_points;
         this.attack_die       = 6;      // fixed — never changes
-        this.base_defense     = 1;      // fixed — never changes
+        this.base_defense     = Player.baseDefenseForLevel(lvl);
         this.revive_charges   = levelData?.revive_charges ?? 0;
         this.total_correct    = 0;
         this.total_incorrect  = 0;
@@ -79,15 +83,15 @@ export class GameModel {
             this.stats_offset     = saveData.stats_offset    || 0;
             this.active_item      = saveData.active_item     || null;
 
-            const p = new Player();
+            const p  = new Player();
             const sp = saveData.player;
             p.level            = sp.level;
             p.xp               = sp.xp;
-            p.xp_to_next_level = sp.xp_to_next_level ?? Math.round(100 * Math.pow(1.25, sp.level - 1));
-            p.max_hit_points   = sp.max_hit_points;
+            p.xp_to_next_level = sp.xp_to_next_level ?? Player.xpToNext(sp.level);
+            p.max_hit_points   = sp.max_hit_points   ?? Player.maxHpForLevel(sp.level);
             p.hit_points       = sp.hit_points;
             p.attack_die       = sp.attack_die   ?? 6;
-            p.base_defense     = sp.base_defense ?? 1;
+            p.base_defense     = sp.base_defense ?? Player.baseDefenseForLevel(sp.level);
             p.revive_charges   = sp.revive_charges ?? 0;
             p.total_correct    = sp.total_correct;
             p.total_incorrect  = sp.total_incorrect;
@@ -139,9 +143,20 @@ export class GameModel {
         };
     }
 
+    /**
+     * Pick a monster weighted toward player level: weight = 1 / (1 + |hit_dice - level|).
+     * Monsters near the player's level are favoured but no monster is excluded.
+     */
     generateMonster() {
-        const chosen = this.monsters[Math.floor(Math.random() * this.monsters.length)];
-        return new Monster(chosen);
+        const lvl     = this.player?.level ?? 1;
+        const weights = this.monsters.map(m => 1 / (1 + Math.abs(m.hit_dice - lvl)));
+        const total   = weights.reduce((a, b) => a + b, 0);
+        let r = Math.random() * total;
+        for (let i = 0; i < this.monsters.length; i++) {
+            r -= weights[i];
+            if (r <= 0) return new Monster(this.monsters[i]);
+        }
+        return new Monster(this.monsters[this.monsters.length - 1]);
     }
 
     nextEncounter() {
@@ -164,6 +179,98 @@ export class GameModel {
         return "continue";
     }
 
+    // ─── Shared combat helpers (used by all three evaluators) ──────────────────
+
+    _streakMultiplier() {
+        const s = this.player.streak;
+        if (s >= 10) return 2.0;
+        if (s >= 5)  return 1.5;
+        if (s >= 3)  return 1.25;
+        return 1.0;
+    }
+
+    /**
+     * Streak rules:
+     *   - perfect           → increment (and bump best_streak)
+     *   - partial ≥ 0.8     → preserve (no change either way) — "streak forgiveness"
+     *   - partial < 0.8     → reset to 0
+     * Returns 'incremented' | 'preserved' | 'reset' so callers can surface it.
+     */
+    _updateStreak(isPerfect, partialFraction) {
+        if (isPerfect) {
+            this.player.streak++;
+            if (this.player.streak > this.player.best_streak)
+                this.player.best_streak = this.player.streak;
+            return 'incremented';
+        }
+        if (this.player.streak > 0 && partialFraction >= 0.8) {
+            return 'preserved';
+        }
+        this.player.streak = 0;
+        return 'reset';
+    }
+
+    /**
+     * Apply streak/item modifiers to raw damage rolls, subtract defenses,
+     * deduct HP from monster and player. Returns the post-defense values.
+     * @param {number} rawPlayerDamage   – sum of player's attack rolls before mods
+     * @param {number} rawMonsterDamage  – sum of monster's attack rolls before mods
+     * @param {number} streakMultiplier  – player's current streak mult
+     */
+    _applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier) {
+        const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
+        const player_damage  = Math.round(rawPlayerDamage * streakMultiplier * itemAttackMult);
+
+        const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
+        let   effective_monster_damage = Math.max(rawMonsterDamage - this.player.base_defense,   0);
+        if (this.active_item?.type === 'defense')
+            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
+
+        this.current_monster.hit_points -= effective_player_damage;
+        this.player.hit_points          -= effective_monster_damage;
+
+        return { effective_player_damage, effective_monster_damage };
+    }
+
+    /**
+     * After damage is applied: award XP, level up, requeue if needed,
+     * push history, return the values shared across all evaluator returns.
+     */
+    _finalizeTurn({ xpGained, requeue, historyEntry }) {
+        const startMaxHp       = this.player.max_hit_points;
+        const startBaseDefense = this.player.base_defense;
+        const startRevives     = this.player.revive_charges;
+
+        this.player.xp += xpGained;
+        const levelsGained = this.checkLevelUp();
+
+        const levelUpRewards = levelsGained > 0 ? {
+            hp_gained:      this.player.max_hit_points - startMaxHp,
+            defense_gained: this.player.base_defense   - startBaseDefense,
+            revive_gained:  this.player.revive_charges - startRevives,
+        } : null;
+
+        if (requeue) {
+            // Re-queue 3 positions ahead (or at end if fewer questions remain).
+            // Spaced-repetition flavour: missed questions resurface soon enough to
+            // reinforce, but not so soon that students just retype the same answer.
+            const idx = Math.min(3, this.questions_to_ask.length);
+            this.questions_to_ask.splice(idx, 0, this.current_question);
+        }
+        this.questions_asked++;
+        this.answer_history.push(historyEntry);
+        return {
+            defeated_monster:  this.current_monster.hit_points <= 0,
+            defeated_player:   this.player.hit_points <= 0,
+            xp_gained:         xpGained,
+            question_repeated: !!requeue,
+            levelsGained,
+            levelUpRewards,
+        };
+    }
+
+    // ─── Evaluators ────────────────────────────────────────────────────────────
+
     evaluateAnswer(selectedOptions) {
         const q            = this.current_question;
         const correctSet   = new Set(q.correct   || []);
@@ -177,74 +284,26 @@ export class GameModel {
         this.player.total_correct   += correctSelections.length;
         this.player.total_incorrect += incorrectSelections.length;
 
-        // ── Streak tracking ──────────────────────────────────────────────
         const isPerfect = incorrectSelections.length === 0 && missedCorrect.length === 0;
-        if (isPerfect) {
-            this.player.streak++;
-            if (this.player.streak > this.player.best_streak) {
-                this.player.best_streak = this.player.streak;
-            }
-        } else {
-            this.player.streak = 0;
-        }
+        const accuracyDenom = correctSelections.length + incorrectSelections.length + missedCorrect.length;
+        const accuracy = accuracyDenom > 0 ? correctSelections.length / accuracyDenom : 0;
+        const streakState = this._updateStreak(isPerfect, accuracy);
+        const streakMultiplier = this._streakMultiplier();
 
-        // Streak damage multiplier (applied to player's attack total)
-        let streakMultiplier = 1.0;
-        if      (this.player.streak >= 10) streakMultiplier = 2.0;
-        else if (this.player.streak >= 5)  streakMultiplier = 1.5;
-        else if (this.player.streak >= 3)  streakMultiplier = 1.25;
-
-        // ── Damage calculation ───────────────────────────────────────────
-        const player_hits  = correctSelections.length
+        const player_hits = correctSelections.length
             + [...incorrectSet].filter(i => !selectedSet.has(i)).length;
         const monster_hits = incorrectSelections.length + missedCorrect.length;
 
-        let player_damage = 0;
-        for (let i = 0; i < player_hits; i++) {
-            player_damage += rollDice(1, this.player.attack_die);
-        }
-        const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
-        player_damage = Math.round(player_damage * streakMultiplier * itemAttackMult);
+        let rawPlayerDamage = 0;
+        for (let i = 0; i < player_hits; i++)  rawPlayerDamage  += rollDice(1, this.player.attack_die);
+        let rawMonsterDamage = 0;
+        for (let i = 0; i < monster_hits; i++) rawMonsterDamage += rollDice(1, this.current_monster.attack_die);
 
-        let monster_damage = 0;
-        for (let i = 0; i < monster_hits; i++) {
-            monster_damage += rollDice(1, this.current_monster.attack_die);
-        }
+        const { effective_player_damage, effective_monster_damage } =
+            this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
 
-        const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        let   effective_monster_damage = Math.max(monster_damage - this.player.base_defense,     0);
-        if (this.active_item?.type === 'defense')
-            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
-
-        this.current_monster.hit_points -= effective_player_damage;
-        this.player.hit_points          -= effective_monster_damage;
-
-        let defeated_monster  = false;
-        let defeated_player   = false;
-        const xp_gained       = this.current_monster.hit_dice * 2;
-        let question_repeated = false;
-        let levelsGained      = 0;
-
-        this.player.xp += xp_gained;
-        levelsGained    = this.checkLevelUp();
-
-        if (this.current_monster.hit_points <= 0) {
-            defeated_monster = true;
-        }
-
-        if (this.player.hit_points <= 0) {
-            defeated_player = true;
-        }
-
-        if (missedCorrect.length > 0 || incorrectSelections.length > 0) {
-            this.questions_to_ask.push(this.current_question);
-            question_repeated = true;
-        }
-
-        this.questions_asked++;
-
-        // ── Record for end-of-session review ────────────────────────────
-        this.answer_history.push({
+        const requeue = !isPerfect;
+        const historyEntry = {
             question:             q.question,
             correct_answers:      [...correctSet],
             selected:             selectedOptions,
@@ -252,22 +311,24 @@ export class GameModel {
             incorrect_selections: incorrectSelections,
             missed_correct:       missedCorrect,
             was_perfect:          isPerfect,
+        };
+        const turn = this._finalizeTurn({
+            xpGained: this.current_monster.hit_dice * 2,
+            requeue,
+            historyEntry,
         });
 
         return {
+            ...turn,
             effective_player_damage,
             effective_monster_damage,
-            defeated_monster,
-            defeated_player,
-            xp_gained,
-            question_repeated,
             correctSelections,
             incorrectSelections,
             missedCorrect,
-            levelsGained,
             feedback:         q.feedback || null,
             streakMultiplier,
             streakCount:      this.player.streak,
+            streakState,
         };
     }
 
@@ -302,61 +363,28 @@ export class GameModel {
         }
         const wrongChars = totalChars - correctChars;
         const isPerfect  = input === bestAnswer;
+        const accuracy   = totalChars > 0 ? correctChars / totalChars : 0;
 
-        // Streak
-        if (isPerfect) {
-            this.player.streak++;
-            if (this.player.streak > this.player.best_streak)
-                this.player.best_streak = this.player.streak;
-        } else {
-            this.player.streak = 0;
-        }
+        const streakState = this._updateStreak(isPerfect, accuracy);
+        const streakMultiplier = this._streakMultiplier();
 
-        let streakMultiplier = 1.0;
-        if      (this.player.streak >= 10) streakMultiplier = 2.0;
-        else if (this.player.streak >= 5)  streakMultiplier = 1.5;
-        else if (this.player.streak >= 3)  streakMultiplier = 1.25;
-
-        // Partial-credit stats
         this.player.total_correct   += correctChars;
         this.player.total_incorrect += wrongChars;
 
         // Proportional damage: one roll per side, scaled by fraction correct/wrong
-        const correctFrac    = totalChars > 0 ? correctChars / totalChars : 0;
-        const wrongFrac      = 1 - correctFrac;
-        const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
+        const correctFrac = totalChars > 0 ? correctChars / totalChars : 0;
+        const wrongFrac   = 1 - correctFrac;
+        const rawPlayerDamage  = rollDice(1, this.player.attack_die)          * correctFrac;
+        const rawMonsterDamage = rollDice(1, this.current_monster.attack_die) * wrongFrac;
 
-        let player_damage  = Math.round(rollDice(1, this.player.attack_die)          * correctFrac * streakMultiplier * itemAttackMult);
-        let monster_damage = Math.round(rollDice(1, this.current_monster.attack_die) * wrongFrac);
-
-        const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        let   effective_monster_damage = Math.max(monster_damage - this.player.base_defense,     0);
-        if (this.active_item?.type === 'defense')
-            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
-
-        this.current_monster.hit_points -= effective_player_damage;
-        this.player.hit_points          -= effective_monster_damage;
-
-        let defeated_monster    = false;
-        let defeated_player     = false;
-        const xp_gained         = this.current_monster.hit_dice * 2;
-        let levelsGained        = 0;
-        const question_repeated = !isPerfect;
-
-        this.player.xp += xp_gained;
-        levelsGained    = this.checkLevelUp();
-
-        if (this.current_monster.hit_points <= 0) defeated_monster = true;
-        if (this.player.hit_points <= 0)          defeated_player  = true;
-        if (!isPerfect) this.questions_to_ask.push(this.current_question);
-
-        this.questions_asked++;
+        const { effective_player_damage, effective_monster_damage } =
+            this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
 
         const scoreLabel = isPerfect
             ? inputText
             : `"${inputText}" — ${correctChars}/${totalChars} chars correct`;
 
-        this.answer_history.push({
+        const historyEntry = {
             question:             q.question,
             correct_answers:      acceptable,
             selected:             [inputText],
@@ -364,22 +392,24 @@ export class GameModel {
             incorrect_selections: wrongChars   > 0 ? [scoreLabel] : [],
             missed_correct:       isPerfect    ? [] : acceptable,
             was_perfect:          isPerfect,
+        };
+        const turn = this._finalizeTurn({
+            xpGained: this.current_monster.hit_dice * 2,
+            requeue:  !isPerfect,
+            historyEntry,
         });
 
         return {
+            ...turn,
             effective_player_damage,
             effective_monster_damage,
-            defeated_monster,
-            defeated_player,
-            xp_gained,
-            question_repeated,
             correctSelections:   correctChars > 0 ? [scoreLabel] : [],
             incorrectSelections: wrongChars   > 0 ? [scoreLabel] : [],
             missedCorrect:       isPerfect    ? [] : acceptable,
-            levelsGained,
             feedback:         q.feedback || null,
             streakMultiplier,
             streakCount:      this.player.streak,
+            streakState,
         };
     }
 
@@ -391,7 +421,7 @@ export class GameModel {
      */
     evaluateMatching(selectedPairs) {
         const q     = this.current_question;
-        const pairs = q.pairs || [];   // [{ term, definition }]
+        const pairs = q.pairs || [];
 
         const correctMap = new Map(pairs.map(p => [p.term, p.definition]));
         let correctCount = 0;
@@ -415,64 +445,26 @@ export class GameModel {
         this.player.total_correct   += correctCount;
         this.player.total_incorrect += wrongCount;
 
-        // Streak
-        if (isPerfect) {
-            this.player.streak++;
-            if (this.player.streak > this.player.best_streak)
-                this.player.best_streak = this.player.streak;
-        } else {
-            this.player.streak = 0;
-        }
-
-        let streakMultiplier = 1.0;
-        if      (this.player.streak >= 10) streakMultiplier = 2.0;
-        else if (this.player.streak >= 5)  streakMultiplier = 1.5;
-        else if (this.player.streak >= 3)  streakMultiplier = 1.25;
+        const accuracy = total > 0 ? correctCount / total : 0;
+        const streakState = this._updateStreak(isPerfect, accuracy);
+        const streakMultiplier = this._streakMultiplier();
 
         // Proportional damage — roll one die per correct/wrong pair
-        let player_damage = 0;
-        for (let i = 0; i < correctCount; i++)
-            player_damage += rollDice(1, this.player.attack_die);
-        const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
-        player_damage = Math.round(player_damage * streakMultiplier * itemAttackMult);
+        let rawPlayerDamage = 0;
+        for (let i = 0; i < correctCount; i++) rawPlayerDamage += rollDice(1, this.player.attack_die);
+        let rawMonsterDamage = 0;
+        for (let i = 0; i < wrongCount; i++)   rawMonsterDamage += rollDice(1, this.current_monster.attack_die);
 
-        let monster_damage = 0;
-        for (let i = 0; i < wrongCount; i++)
-            monster_damage += rollDice(1, this.current_monster.attack_die);
+        const { effective_player_damage, effective_monster_damage } =
+            this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
 
-        const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
-        let   effective_monster_damage = Math.max(monster_damage - this.player.base_defense,     0);
-        if (this.active_item?.type === 'defense')
-            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
-
-        this.current_monster.hit_points -= effective_player_damage;
-        this.player.hit_points          -= effective_monster_damage;
-
-        let defeated_monster    = false;
-        let defeated_player     = false;
-        const xp_gained         = 10;
-        let levelsGained        = 0;
-        const question_repeated = !isPerfect;
-
-        this.player.xp += xp_gained;
-        levelsGained    = this.checkLevelUp();
-
-        if (this.current_monster.hit_points <= 0) {
-            defeated_monster = true;
-        }
-        if (this.player.hit_points <= 0) defeated_player = true;
-        if (!isPerfect) this.questions_to_ask.push(this.current_question);
-
-        this.questions_asked++;
-
-        // Build human-readable correct/incorrect arrays for the results screen
         const correctSelections   = correctTerms.map(t => `${t} → ${correctMap.get(t)}`);
         const incorrectSelections = wrongTerms.map(t => {
             const student = selectedPairs.find(p => p.term === t)?.definition ?? '(none)';
             return `${t}: chose "${student}" — correct: "${correctMap.get(t)}"`;
         });
 
-        this.answer_history.push({
+        const historyEntry = {
             question:             q.question,
             correct_answers:      pairs.map(p => `${p.term} → ${p.definition}`),
             selected:             selectedPairs.map(p => `${p.term} → ${p.definition}`),
@@ -480,31 +472,46 @@ export class GameModel {
             incorrect_selections: incorrectSelections,
             missed_correct:       [],
             was_perfect:          isPerfect,
+        };
+        const turn = this._finalizeTurn({
+            xpGained: 10,
+            requeue:  !isPerfect,
+            historyEntry,
         });
 
         return {
+            ...turn,
             effective_player_damage,
             effective_monster_damage,
-            defeated_monster,
-            defeated_player,
-            xp_gained,
-            question_repeated,
             correctSelections,
             incorrectSelections,
             missedCorrect: [],
-            levelsGained,
             feedback:         q.feedback || null,
             streakMultiplier,
             streakCount:      this.player.streak,
+            streakState,
         };
     }
 
+    /**
+     * Apply XP gains and roll up any level-ups. Each level-up grants:
+     *   - +1 revive charge
+     *   - +2 max HP (and current HP grows by the same amount)
+     *   - +1 base defense at every 5th level (5, 10, 15…)
+     */
     checkLevelUp() {
         let levelsGained = 0;
         while (this.player.xp >= this.player.xp_to_next_level) {
             this.player.xp              -= this.player.xp_to_next_level;
             this.player.level           += 1;
-            this.player.xp_to_next_level = Math.round(100 * Math.pow(1.25, this.player.level - 1));
+            this.player.xp_to_next_level = Player.xpToNext(this.player.level);
+
+            const newMaxHp = Player.maxHpForLevel(this.player.level);
+            this.player.hit_points     += (newMaxHp - this.player.max_hit_points);
+            this.player.max_hit_points  = newMaxHp;
+
+            this.player.base_defense    = Player.baseDefenseForLevel(this.player.level);
+            this.player.revive_charges += 1;
             levelsGained++;
         }
         return levelsGained;
