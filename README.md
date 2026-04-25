@@ -1,8 +1,10 @@
 # Loop of the Recursive Dragon
 
-A browser-based quiz game for computer science students. Answer questions to battle monsters, level up your character, and track your progress across topic areas.
+A free, browser-based quiz-RPG for learning programming, networking, and computer science. Answer questions to battle monsters, level up your character, and track your progress across topic areas — built originally for college students, but open to anyone studying for an exam like Network+ or working through a first Java course.
 
 **A game by Brendan Shea, PhD — [Brendan.Shea@rctc.edu](mailto:Brendan.Shea@rctc.edu)**
+
+> No account, no install, no tracking. Progress saves locally in your browser via `localStorage`. Pick a topic, start a set, and your spot is remembered next time you visit.
 
 ---
 

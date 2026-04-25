@@ -330,18 +330,37 @@ export class GameUI {
     // Topic sections
     const topicContainer = $(this.root, "[data-ref=topicSections]");
     catalog.forEach(topic => {
-      const section = document.createElement("div");
-      section.className = `bbs-container topic-section${topic.coming_soon ? ' topic-coming-soon' : ''}`;
+      const playableSets = (topic.sets || []).filter(e => !e.review);
+      const hasInProgress = playableSets.some(e => e.status?.type === 'in_progress');
+      const completedCount = playableSets.filter(e => e.status?.type === 'complete').length;
 
-      const heading = document.createElement("div");
+      const section = document.createElement("details");
+      section.className = `bbs-container topic-section${topic.coming_soon ? ' topic-coming-soon' : ''}`;
+      // Auto-expand topics that have something in progress; collapse the rest by default.
+      if (hasInProgress) section.open = true;
+
+      const heading = document.createElement("summary");
       heading.className = "topic-heading";
-      heading.textContent = topic.topic.toUpperCase();
+
+      const label = document.createElement("span");
+      label.className = "topic-heading-label";
+      label.textContent = topic.topic.toUpperCase();
+      heading.appendChild(label);
+
       if (topic.coming_soon) {
         const badge = document.createElement("span");
         badge.className   = "coming-soon-badge";
         badge.textContent = "Coming Soon";
         heading.appendChild(badge);
+      } else if (playableSets.length > 0) {
+        const meta = document.createElement("span");
+        meta.className = "topic-heading-meta";
+        meta.textContent = completedCount > 0
+          ? `${playableSets.length} sets · ${completedCount} cleared`
+          : `${playableSets.length} sets`;
+        heading.appendChild(meta);
       }
+
       section.appendChild(heading);
 
       if (topic.coming_soon || !topic.sets?.length) {
@@ -352,22 +371,55 @@ export class GameUI {
       const setList = document.createElement("div");
       setList.className = "set-list";
 
-      topic.sets.forEach(entry => {
+      // Review sets render first, then normal sets
+      const ordered = [
+        ...topic.sets.filter(e => e.review),
+        ...topic.sets.filter(e => !e.review),
+      ];
+
+      ordered.forEach(entry => {
         const row = document.createElement("div");
-        row.className = "set-row";
+        row.className = "set-row" + (entry.review ? " set-row--review" : "");
 
         // Info column
         const info = document.createElement("div");
         info.className = "set-info";
-        info.innerHTML = `
-          <span class="set-title">${this._esc(entry.title)}</span>
-          <span class="set-desc">${this._esc(entry.description)}</span>
-          <span class="set-count">${entry.question_count} questions</span>
-        `;
+        if (entry.review) {
+          info.innerHTML = `
+            <span class="set-title">🔀 ${this._esc(entry.title)}</span>
+            <span class="set-desc">${this._esc(entry.description)}</span>
+            <span class="set-count">${entry.sample_size} random questions</span>
+          `;
+        } else {
+          info.innerHTML = `
+            <span class="set-title">${this._esc(entry.title)}</span>
+            <span class="set-desc">${this._esc(entry.description)}</span>
+            <span class="set-count">${entry.question_count} questions</span>
+          `;
+        }
 
         // Actions column
         const actions = document.createElement("div");
         actions.className = "set-actions";
+
+        if (entry.review) {
+          const badge = document.createElement("span");
+          badge.className   = "status-badge status-new";
+          badge.textContent = "🔀 Review";
+          actions.appendChild(badge);
+
+          const btn = document.createElement("button");
+          btn.className   = "action-button set-btn";
+          btn.textContent = "New Mix";
+          btn.setAttribute("aria-label", `Start a new ${entry.title} mix`);
+          btn.addEventListener("click", () => launchCallback(entry.id, 'new'));
+          actions.appendChild(btn);
+
+          row.appendChild(info);
+          row.appendChild(actions);
+          setList.appendChild(row);
+          return;
+        }
 
         const status = entry.status ?? { type: 'not_started' };
 
@@ -424,6 +476,35 @@ export class GameUI {
       section.appendChild(setList);
       topicContainer.appendChild(section);
     });
+
+    // Wire live filter
+    const searchInput = $(this.root, "[data-ref=setSearch]");
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        const q = searchInput.value.trim().toLowerCase();
+        const sections = topicContainer.querySelectorAll(".topic-section");
+        sections.forEach(sec => {
+          const rows = sec.querySelectorAll(".set-row");
+          if (!q) {
+            rows.forEach(r => { r.hidden = false; });
+            sec.hidden = false;
+            // Restore default open state: only sections with in-progress stay open
+            sec.open = sec.querySelector(".status-progress") !== null;
+            return;
+          }
+          let anyVisible = false;
+          rows.forEach(r => {
+            const title = (r.querySelector(".set-title")?.textContent || "").toLowerCase();
+            const desc  = (r.querySelector(".set-desc")?.textContent  || "").toLowerCase();
+            const match = title.includes(q) || desc.includes(q);
+            r.hidden = !match;
+            if (match) anyVisible = true;
+          });
+          sec.hidden = !anyVisible;
+          if (anyVisible) sec.open = true;
+        });
+      });
+    }
   }
 
   // ── Screens ───────────────────────────────────────────────────────────────────
@@ -1077,7 +1158,45 @@ export class GameController {
     } catch (_) {}
   }
 
+  _sampleReviewQuestions(sourceDatas, sampleSize) {
+    const shuffle = arr => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+
+    // Dedupe across all sources by question text, preserving source attribution
+    const seen = new Set();
+    const perSourceUnique = sourceDatas.map(data => {
+      const arr = Array.isArray(data) ? data : (data.questions || []);
+      const out = [];
+      for (const q of arr) {
+        const key = q.question;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(q);
+      }
+      return shuffle(out);
+    });
+
+    const perSource = Math.floor(sampleSize / sourceDatas.length);
+    const picked = [];
+    const leftovers = [];
+    for (const pool of perSourceUnique) {
+      picked.push(...pool.slice(0, perSource));
+      leftovers.push(...pool.slice(perSource));
+    }
+
+    const remaining = sampleSize - picked.length;
+    if (remaining > 0) picked.push(...shuffle(leftovers).slice(0, remaining));
+
+    return shuffle(picked);
+  }
+
   saveGame() {
+    if (this._isReview) return;
     if (!this._setName || !this.model) return;
     try {
       localStorage.setItem(this._saveKey(this._setName),
@@ -1100,6 +1219,7 @@ export class GameController {
   }
 
   _recordCompletion() {
+    if (this._isReview) return;
     if (!this._setName || !this.model) return;
     const p   = this.model.player;
     const pct = (p.total_correct + p.total_incorrect) > 0
@@ -1167,6 +1287,7 @@ export class GameController {
       // Annotate each set entry with its saved status
       catalog.forEach(topic => {
         (topic.sets || []).forEach(entry => {
+          if (entry.review) { entry.status = { type: 'review' }; return; }
           const done    = this._loadCompletion(entry.id);
           const save    = this._loadSave(entry.id);
           let attempted = false;
@@ -1204,6 +1325,39 @@ export class GameController {
           if (entry) { this._setTitle = `${topic.topic}: ${entry.title}`; break; }
         }
       }
+
+      // Resolve the catalog entry so we can detect review sets
+      let catalogEntry = null;
+      if (this._catalog) {
+        for (const topic of this._catalog) {
+          const found = (topic.sets || []).find(s => s.id === setId);
+          if (found) { catalogEntry = found; break; }
+        }
+      }
+
+      // ── Review set: synthesize question pool from source sets ──────────────
+      if (catalogEntry?.review) {
+        const [sourceDatas, monsters_data] = await Promise.all([
+          Promise.all(catalogEntry.sources.map(src => loadJSON(`question_sets/${src}`))),
+          loadJSON('assets/monsters.json'),
+        ]);
+        const questions_data = this._sampleReviewQuestions(sourceDatas, catalogEntry.sample_size);
+
+        const newURL = new URL(window.location);
+        newURL.searchParams.set('set', setId);
+        window.history.replaceState({}, '', newURL);
+
+        this._setName  = setId;
+        this._isReview = true;
+
+        const levelData = this._loadGlobalLevel();
+        this.model = new GameModel(questions_data, monsters_data, null, levelData);
+        this.ui    = new GameUI(this.root, this.model);
+        this.ui.showInitialScreen(() => this.startAdventure());
+        return;
+      }
+
+      this._isReview = false;
 
       const [questions_data, monsters_data] = await Promise.all([
         loadJSON(`question_sets/${setId}`),
@@ -1245,9 +1399,16 @@ export class GameController {
 
   async loadSpecifiedSet(setName) {
     try {
-      const availableSets = await loadJSON('question_sets/index.json');
-      if (!availableSets.includes(setName)) throw new Error(`Question set "${setName}" not found.`);
-      await this._launchSet(setName, 'resume');   // honour any existing save
+      if (!this._catalog) {
+        try { this._catalog = await loadJSON('question_sets/catalog.json'); } catch (_) {}
+      }
+      const isReview = this._catalog?.some(t =>
+        (t.sets || []).some(s => s.id === setName && s.review));
+      if (!isReview) {
+        const availableSets = await loadJSON('question_sets/index.json');
+        if (!availableSets.includes(setName)) throw new Error(`Question set "${setName}" not found.`);
+      }
+      await this._launchSet(setName, isReview ? 'new' : 'resume');
     } catch (err) {
       this.root.innerHTML = `
         <div class='bbs-container'>
@@ -1265,7 +1426,9 @@ export class GameController {
 
   startAdventure() {
     // Mark the set as attempted so the main menu can show the badge
-    try { localStorage.setItem(this._attemptKey(this._setName), '1'); } catch (_) {}
+    if (!this._isReview) {
+      try { localStorage.setItem(this._attemptKey(this._setName), '1'); } catch (_) {}
+    }
     const status = this.model.nextEncounter();
     this.saveGame();
     this.showEncounterStatus(status);
@@ -1275,7 +1438,7 @@ export class GameController {
     if (status === "victory") {
       this._clearSave();
       this._recordCompletion();
-      this._updateGlobalStats(true);
+      this._updateGlobalStats(!this._isReview);
       this._saveGlobalLevel();
       this.sounds.victory();
       this._setInGame(false);

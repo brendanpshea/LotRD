@@ -1,0 +1,302 @@
+[
+  {
+    "question": "Which of the following best describes static routing?",
+    "correct": ["Routes are manually configured by an administrator and do not change unless edited"],
+    "incorrect": [
+      "Routers exchange routing updates with each other to learn paths dynamically",
+      "Routes are automatically generated based on observed traffic patterns",
+      "Routes are discovered by broadcasting ARP requests for each destination"
+    ],
+    "feedback": "Static routes are hand-configured and do not adapt to topology changes. They are simple and predictable but do not scale to large or frequently changing networks."
+  },
+  {
+    "question": "Which of the following are advantages of dynamic routing compared to static routing?",
+    "correct": [
+      "Routers can automatically adapt to topology changes such as link failures",
+      "Route tables scale more easily in large networks with many destinations",
+      "Administrators do not need to manually update every router when a new subnet is added"
+    ],
+    "incorrect": [
+      "Dynamic routing protocols use no CPU or bandwidth on the routers",
+      "Dynamic routing removes the need for any IP addressing plan",
+      "Dynamic routing requires that every router use the same serial number"
+    ],
+    "feedback": "Dynamic routing trades some CPU and bandwidth overhead for automatic adaptation and scalability. Static routing remains useful for small or predictable topologies."
+  },
+  {
+    "question": "Captain Doran is peering Silverkeep Holdings' edge router with the ISP to exchange routes between their autonomous systems. Which routing protocol is he using?",
+    "correct": ["Border Gateway Protocol (BGP)"],
+    "incorrect": [
+      "Open Shortest Path First (OSPF)",
+      "Enhanced Interior Gateway Routing Protocol (EIGRP)",
+      "Routing Information Protocol version 2 (RIPv2)"
+    ],
+    "feedback": "BGP is the path-vector protocol used between autonomous systems on the internet. OSPF and EIGRP are interior gateway protocols used inside a single organization."
+  },
+  {
+    "question": "Which routing protocol is a link-state interior gateway protocol that floods link-state advertisements (LSAs) within an area and calculates shortest paths using Dijkstra's algorithm?",
+    "correct": ["OSPF"],
+    "incorrect": ["BGP", "EIGRP", "RIP"],
+    "feedback": "OSPF is a link-state IGP. EIGRP is a Cisco advanced distance-vector (hybrid) protocol. BGP is a path-vector protocol used between autonomous systems."
+  },
+  {
+    "question": "A router has learned the same destination network from OSPF and from a static route. Assuming default values, which route will be installed in the routing table?",
+    "correct": ["The static route, because it has a lower administrative distance"],
+    "incorrect": [
+      "The OSPF route, because link-state protocols always win",
+      "Both routes, load-balanced equally",
+      "Neither route, because the tie cannot be broken"
+    ],
+    "feedback": "Administrative distance (AD) ranks the trustworthiness of route sources. Lower is better. Default ADs: directly connected = 0, static = 1, EIGRP = 90, OSPF = 110, RIP = 120."
+  },
+  {
+    "question": "A router has two routes to the same destination in its routing table: 10.1.2.0/24 via OSPF and 10.1.0.0/16 via BGP. A packet arrives destined for 10.1.2.50. Which route is used?",
+    "correct": ["10.1.2.0/24, because it is the longest (most specific) prefix match"],
+    "incorrect": [
+      "10.1.0.0/16, because BGP has a higher administrative distance",
+      "Neither, because the router will drop the packet",
+      "Both routes, in a round-robin fashion"
+    ],
+    "feedback": "The longest prefix match wins, regardless of routing protocol or administrative distance. A /24 is more specific than a /16."
+  },
+  {
+    "type": "matching",
+    "question": "Match each routing protocol to its default administrative distance on a Cisco router.",
+    "pairs": [
+      { "term": "Directly connected", "definition": "0" },
+      { "term": "Static route", "definition": "1" },
+      { "term": "EIGRP (internal)", "definition": "90" },
+      { "term": "OSPF", "definition": "110" },
+      { "term": "RIP", "definition": "120" }
+    ],
+    "feedback": "Administrative distance determines which source is preferred when the same destination is learned from multiple protocols. Lower AD wins."
+  },
+  {
+    "question": "Within a single routing protocol, when multiple valid paths to the same destination exist, what is used to pick the best one?",
+    "correct": ["The metric, which varies by protocol (cost for OSPF, composite metric for EIGRP, hops for RIP)"],
+    "incorrect": [
+      "The MAC address of the next-hop interface",
+      "The DNS name of the destination",
+      "The alphabetical order of the route's description"
+    ],
+    "feedback": "Administrative distance chooses between different protocols; metric chooses between paths within the same protocol. Each protocol defines its own metric."
+  },
+  {
+    "question": "Which of the following are true about NAT and PAT?",
+    "correct": [
+      "NAT translates private IP addresses to a public IP address at the network edge",
+      "PAT (NAT overload) maps many internal hosts to a single public IP by using different source port numbers",
+      "Outbound PAT is what most home internet routers use to share one public IP among many devices"
+    ],
+    "incorrect": [
+      "NAT operates at Layer 2 using MAC address translation",
+      "PAT requires each internal host to be assigned a unique public IPv4 address",
+      "NAT and PAT are only used on IPv6 networks"
+    ],
+    "feedback": "NAT rewrites IP addresses as packets cross a boundary. PAT (port address translation, a.k.a. NAT overload) multiplexes many internal hosts onto a single public IP using unique source ports."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The NAT variant that lets many internal hosts share a single public IP address by tracking unique source port numbers is called ___.",
+    "correct": ["PAT", "port address translation", "NAT overload"],
+    "case_sensitive": false,
+    "feedback": "PAT (also called NAT overload) uses the transport-layer source port to distinguish flows sharing the same translated public IP."
+  },
+  {
+    "question": "Which technology lets two or more routers share a virtual IP that hosts use as their default gateway, so that if the active router fails, a standby router takes over transparently?",
+    "correct": ["First Hop Redundancy Protocol (FHRP) — e.g., HSRP, VRRP, GLBP"],
+    "incorrect": [
+      "Spanning Tree Protocol (STP)",
+      "Port Address Translation (PAT)",
+      "Link Aggregation Control Protocol (LACP)"
+    ],
+    "feedback": "FHRPs like HSRP, VRRP, and GLBP present a virtual IP/MAC that hosts use as their gateway. If the active router fails, a standby takes over without clients reconfiguring."
+  },
+  {
+    "question": "A load balancer presents a single IP address to clients, behind which a pool of real servers actually handles the traffic. What is this client-facing address called?",
+    "correct": ["Virtual IP (VIP)"],
+    "incorrect": ["APIPA address", "Loopback address", "Anycast multicast group"],
+    "feedback": "A Virtual IP is a logical address owned by the load balancer (or FHRP group) rather than a single physical interface. Clients connect to the VIP and the traffic is distributed to real servers."
+  },
+  {
+    "question": "Aria has a single physical router interface connected to a trunk and wants it to route between three VLANs. Which feature does she configure to give the interface multiple logical IP addresses, one per VLAN?",
+    "correct": ["Subinterfaces with 802.1Q encapsulation (router on a stick)"],
+    "incorrect": [
+      "Spanning Tree Protocol",
+      "Port Address Translation",
+      "Jumbo frames"
+    ],
+    "feedback": "Subinterfaces (GigabitEthernet0/0.10, 0/0.20, etc.) let one physical interface terminate multiple VLANs by tagging each with 802.1Q — the classic 'router on a stick'."
+  },
+  {
+    "question": "Which of the following are true about VLANs?",
+    "correct": [
+      "VLANs segment a single physical switch into multiple broadcast domains",
+      "Hosts in different VLANs cannot communicate without a Layer 3 device",
+      "VLAN membership information is stored in the switch's VLAN database"
+    ],
+    "incorrect": [
+      "All VLANs on a switch share a single broadcast domain by default",
+      "VLANs eliminate the need for IP addressing",
+      "Every VLAN on a switch must use the same IP subnet"
+    ],
+    "feedback": "A VLAN is a Layer 2 broadcast domain. Communication between VLANs requires routing (a Layer 3 switch SVI or an external router)."
+  },
+  {
+    "question": "A Layer 3 switch needs an IP address on VLAN 20 so that it can route traffic for hosts in that VLAN. Which construct provides that IP?",
+    "correct": ["A Switch Virtual Interface (SVI)"],
+    "incorrect": [
+      "A physical routed interface",
+      "A trunk port",
+      "A native VLAN"
+    ],
+    "feedback": "An SVI (e.g., 'interface Vlan20') is a logical Layer 3 interface on a switch that provides a gateway address for the VLAN's hosts."
+  },
+  {
+    "question": "Which standard defines the 802.1Q tag inserted into Ethernet frames to identify VLAN membership on a trunk link?",
+    "correct": ["IEEE 802.1Q"],
+    "incorrect": ["IEEE 802.3", "IEEE 802.1X", "IEEE 802.11"],
+    "feedback": "802.1Q defines VLAN tagging. 802.3 is Ethernet itself, 802.1X is port-based authentication, and 802.11 is wireless LAN."
+  },
+  {
+    "question": "On an 802.1Q trunk, which VLAN carries untagged traffic by default?",
+    "correct": ["The native VLAN"],
+    "incorrect": [
+      "The voice VLAN",
+      "VLAN 0",
+      "The highest-numbered configured VLAN"
+    ],
+    "feedback": "Frames on the native VLAN are sent untagged across the trunk. By default this is VLAN 1, but best practice is to change it and ensure both ends of a trunk agree."
+  },
+  {
+    "question": "Which switch feature tags IP phone traffic into a dedicated VLAN while still carrying untagged PC traffic on the same port, so a phone and a workstation can share a single access port?",
+    "correct": ["Voice VLAN"],
+    "incorrect": [
+      "Native VLAN",
+      "Subinterface",
+      "Spanning Tree PortFast"
+    ],
+    "feedback": "A voice VLAN allows an IP phone (with a passthrough port for a PC) to tag its own voice traffic while the PC's data stays untagged on the access VLAN."
+  },
+  {
+    "question": "Which of the following statements about link aggregation are correct?",
+    "correct": [
+      "It bundles multiple physical links between devices into a single logical link",
+      "It increases available bandwidth and provides redundancy if a member link fails",
+      "LACP (IEEE 802.3ad) is a common protocol used to negotiate the bundle"
+    ],
+    "incorrect": [
+      "It allows a single frame to be split across multiple member links simultaneously",
+      "It requires member links to operate at different speeds",
+      "It is a substitute for Spanning Tree and eliminates the need for STP on any network"
+    ],
+    "feedback": "Link aggregation (LAG / EtherChannel / port-channel) bundles links using LACP or PAgP. Individual flows are hashed to a single link, but the bundle as a whole looks like one high-bandwidth link."
+  },
+  {
+    "question": "Brom reports that a workstation connected to a 1 Gbps switch port is performing poorly. Running `show interface` on the switch shows the port negotiated at 100 Mbps / half-duplex. What is the most likely issue?",
+    "correct": ["A duplex and/or speed mismatch between the switch port and the NIC"],
+    "incorrect": [
+      "The switch does not support Ethernet",
+      "The port is configured as a trunk",
+      "Spanning Tree is blocking the port"
+    ],
+    "feedback": "Half-duplex on a modern switch port almost always indicates a failed autonegotiation or a mismatch (e.g., one side hardcoded, the other auto). It causes late collisions and poor throughput."
+  },
+  {
+    "question": "What is the primary purpose of Spanning Tree Protocol (STP) on a switched Ethernet network?",
+    "correct": ["To prevent Layer 2 loops by blocking redundant paths while keeping a loop-free active topology"],
+    "incorrect": [
+      "To distribute IP addresses to hosts automatically",
+      "To translate private IPs to public IPs at the network edge",
+      "To authenticate users connecting to a switch port"
+    ],
+    "feedback": "STP (and its successors RSTP/MSTP) blocks redundant links until needed, preventing broadcast storms and MAC table instability on networks with physical loops."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The standard Ethernet maximum transmission unit (MTU) for the payload of a frame is ___ bytes.",
+    "correct": ["1500"],
+    "case_sensitive": false,
+    "feedback": "Standard Ethernet MTU is 1500 bytes. Jumbo frames typically carry a 9000-byte payload and require that every device in the path support them."
+  },
+  {
+    "question": "Which term describes an Ethernet frame with a payload significantly larger than the standard 1500-byte MTU, typically 9000 bytes?",
+    "correct": ["Jumbo frame"],
+    "incorrect": ["Runt frame", "Giant frame (error)", "Baby giant"],
+    "feedback": "Jumbo frames reduce per-packet overhead for bulk transfers like storage traffic. Every hop in the path must support jumbo frames or fragmentation/drops will occur."
+  },
+  {
+    "question": "Which of the following are symptoms of an MTU mismatch between two hosts?",
+    "correct": [
+      "Small packets (such as pings with default size) succeed while larger transfers stall",
+      "Applications that rely on large TCP segments hang or time out",
+      "Path MTU Discovery failures when ICMP is blocked along the path"
+    ],
+    "incorrect": [
+      "All ICMP echo requests are silently translated to broadcasts",
+      "The host loses its MAC address",
+      "DHCP leases are refused on every interface"
+    ],
+    "feedback": "MTU mismatches are classic 'small things work, big things don't' problems. Path MTU Discovery relies on ICMP Fragmentation Needed; filtering that ICMP causes 'PMTU black holes'."
+  },
+  {
+    "type": "fill_blank",
+    "question": "On an 802.1Q trunk, traffic that is not tagged with a VLAN ID is assumed to belong to the ___ VLAN.",
+    "correct": ["native"],
+    "case_sensitive": false,
+    "feedback": "Untagged frames on a trunk belong to the native VLAN. Mismatched native VLANs on either end of a trunk are a common misconfiguration."
+  },
+  {
+    "type": "fill_blank",
+    "question": "On Cisco devices, the default administrative distance of a static route is ___.",
+    "correct": ["1"],
+    "case_sensitive": false,
+    "feedback": "Static routes have an AD of 1, beaten only by directly connected routes (AD 0). This is why static routes override OSPF, EIGRP, and BGP by default."
+  },
+  {
+    "type": "matching",
+    "question": "Match each switching term to its best description.",
+    "pairs": [
+      { "term": "Access port", "definition": "A switch port that belongs to a single VLAN and carries untagged traffic for that VLAN" },
+      { "term": "Trunk port", "definition": "A switch port that carries traffic for multiple VLANs, tagged with 802.1Q" },
+      { "term": "SVI", "definition": "A logical Layer 3 interface on a switch that provides a gateway for a VLAN" },
+      { "term": "LAG", "definition": "Multiple physical links bundled into a single logical link for bandwidth and redundancy" },
+      { "term": "STP", "definition": "A protocol that blocks redundant paths to prevent Layer 2 loops" }
+    ],
+    "feedback": "These are the core building blocks of Layer 2 switch configuration for Network+."
+  },
+  {
+    "type": "matching",
+    "question": "Match each routing term to its best description.",
+    "pairs": [
+      { "term": "Administrative distance", "definition": "A value used to rank the trustworthiness of different route sources" },
+      { "term": "Metric", "definition": "A value used to choose between multiple paths learned from the same protocol" },
+      { "term": "Prefix length", "definition": "The number of bits in the network portion of a route, used to prefer more specific routes" },
+      { "term": "FHRP", "definition": "A mechanism that allows multiple routers to share a virtual gateway IP for failover" }
+    ],
+    "feedback": "Route selection is a layered decision: longest prefix match first, then AD across protocols, then metric within a single protocol."
+  },
+  {
+    "question": "Lyra is hardening the network and wants to make sure only authorized VLANs are carried on each trunk between switches. Which configuration technique should she use?",
+    "correct": ["Set an allowed VLAN list on each trunk so it only carries the required VLANs"],
+    "incorrect": [
+      "Disable 802.1Q tagging on every trunk",
+      "Move every trunk into the native VLAN",
+      "Enable PortFast on every trunk"
+    ],
+    "feedback": "Pruning the allowed VLAN list on trunks limits the blast radius of VLAN hopping and misconfiguration. Trunks should only carry the VLANs they actually need."
+  },
+  {
+    "question": "Which of the following describe why a network engineer might enable jumbo frames?",
+    "correct": [
+      "To improve throughput on storage traffic such as iSCSI or NFS inside a data center",
+      "To reduce CPU overhead by sending fewer, larger frames for bulk transfers"
+    ],
+    "incorrect": [
+      "To force all devices on the internet to accept oversized Ethernet frames",
+      "To replace the need for Spanning Tree Protocol",
+      "To allow a switch to route between VLANs without an SVI"
+    ],
+    "feedback": "Jumbo frames are typically used on controlled, high-bandwidth links (storage networks, data center fabrics). End-to-end support is required, which is why they are uncommon on general internet-facing paths."
+  }
+]

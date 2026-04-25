@@ -569,8 +569,11 @@ select {
 .ip-title    { font-weight: bold; flex: 1 1 auto; }
 .ip-remaining { color: #ffb300; font-size: 0.85rem; white-space: nowrap; }
 
-/* Topic sections */
+/* Topic sections (collapsible <details>) */
 .topic-section { margin: 8px 0; }
+
+/* When a <details> topic-section is closed, drop the gap below the heading */
+details.topic-section:not([open]) .topic-heading { margin-bottom: 0; }
 
 .topic-heading {
     font-weight: bold;
@@ -581,9 +584,77 @@ select {
     display: flex;
     align-items: center;
     gap: 10px;
+    list-style: none;        /* hide default <summary> marker */
+}
+summary.topic-heading {
+    cursor: pointer;
+    user-select: none;
+}
+summary.topic-heading::-webkit-details-marker { display: none; }
+summary.topic-heading::before {
+    content: "▸";
+    display: inline-block;
+    color: #00e87a;
+    font-size: 0.85rem;
+    width: 0.9em;
+    transition: transform 0.15s ease;
+}
+details.topic-section[open] > summary.topic-heading::before {
+    transform: rotate(90deg);
+}
+summary.topic-heading:hover { color: #5cffa3; }
+summary.topic-heading:focus-visible {
+    outline: 2px solid #00e87a;
+    outline-offset: 2px;
+}
+
+.topic-heading-label { flex: 1 1 auto; }
+
+.topic-heading-meta {
+    font-weight: normal;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    color: #4a8a4a;
+    text-transform: none;
 }
 
 .topic-coming-soon { opacity: 0.5; }
+.topic-coming-soon .topic-heading { cursor: default; }
+.topic-coming-soon .topic-heading::before { content: ""; }
+
+/* Newcomer intro on main menu */
+.newcomer-intro {
+    margin: 10px 0 4px;
+    padding: 10px 12px;
+    background: rgba(0, 200, 64, 0.05);
+    border-left: 3px solid #00d4cc;
+    border-radius: 4px;
+    color: #b8d8b8;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+.newcomer-intro p { margin: 0 0 6px; }
+.newcomer-intro p:last-child { margin-bottom: 0; }
+
+/* Set search bar */
+.set-search-bar { padding: 8px 10px; }
+.set-search-input {
+    width: 100%;
+    padding: 7px 10px;
+    background: #0a0f0a;
+    color: #d0f0d0;
+    border: 1px solid #3a6a3a;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+.set-search-input:focus {
+    outline: none;
+    border-color: #00e87a;
+    box-shadow: 0 0 0 2px rgba(0, 232, 122, 0.25);
+}
+.set-search-input::placeholder { color: #5a7a5a; }
 
 .coming-soon-badge {
     font-size: 0.7rem;
