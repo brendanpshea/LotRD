@@ -24,6 +24,67 @@ export function rollDice(times, sides) {
     return total;
 }
 
+/** Edit distance between two strings (insert/delete/substitute = 1). */
+export function levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    let prev = new Array(b.length + 1);
+    let cur  = new Array(b.length + 1);
+    for (let j = 0; j <= b.length; j++) prev[j] = j;
+    for (let i = 1; i <= a.length; i++) {
+        cur[0] = i;
+        for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        }
+        [prev, cur] = [cur, prev];
+    }
+    return prev[b.length];
+}
+
+/** 0..1 similarity: 1 = identical, 0 = nothing in common. */
+export function levenshteinSimilarity(a, b) {
+    const maxLen = Math.max(a.length, b.length);
+    if (maxLen === 0) return 1;
+    return 1 - (levenshtein(a, b) / maxLen);
+}
+
+/**
+ * Wordle-style letter feedback. Returns an array (one entry per guess char):
+ *   { char, status: 'correct' | 'present' | 'absent' | 'space' }
+ * Two-pass algorithm correctly handles duplicate letters.
+ */
+export function wordleFeedback(guess, answer) {
+    const g = [...guess];
+    const a = [...answer];
+    const status = new Array(g.length).fill('absent');
+    const used   = new Array(a.length).fill(false);
+
+    // Pass 1 — exact-position matches
+    for (let i = 0; i < g.length; i++) {
+        if (g[i] === ' ') { status[i] = 'space'; continue; }
+        if (i < a.length && g[i] === a[i]) {
+            status[i] = 'correct';
+            used[i] = true;
+        }
+    }
+    // Pass 2 — letters present but in wrong position (only consume unused answer letters)
+    for (let i = 0; i < g.length; i++) {
+        if (status[i] !== 'absent') continue;
+        for (let j = 0; j < a.length; j++) {
+            if (!used[j] && g[i] === a[j]) {
+                status[i] = 'present';
+                used[j] = true;
+                break;
+            }
+        }
+    }
+    return g.map((char, i) => ({ char, status: status[i] }));
+}
+
+export const FB_MAX_ATTEMPTS = 3;
+
 export class Player {
     static maxHpForLevel(level)       { return 20 + (level - 1) * 2; }
     static baseDefenseForLevel(level) { return 1 + Math.floor((level - 1) / 5); }
@@ -333,83 +394,164 @@ export class GameModel {
     }
 
     /**
-     * Evaluate a fill-in-the-blank answer.
-     * Partial credit: characters at correct positions score as hits; the rest as misses.
-     * Damage scales proportionally (one roll each side, multiplied by correct/wrong fraction).
-     * isPerfect only when the normalised input exactly matches an acceptable answer.
+     * Submit one guess for the current fill-in-the-blank question.
+     * Players get FB_MAX_ATTEMPTS guesses; each wrong guess earns a monster
+     * attack and Wordle-style letter feedback.
+     *
+     * Returns one of three shapes:
+     *   { status: 'wrong',  feedback, attemptsLeft, effective_monster_damage,
+     *     defeated_player } – player should be allowed to guess again
+     *   { status: 'won',  ...battleData, wordleFeedback, attemptsUsed }
+     *   { status: 'failed', ...battleData, wordleFeedback, attemptsUsed }
+     * 'won' and 'failed' are full battleData snapshots ready for _resolveBattle.
      */
-    evaluateFillBlank(inputText) {
-        const q          = this.current_question;
+    submitFillBlankGuess(inputText) {
+        const q = this.current_question;
+        // Reset attempt state when entering a new fill-blank question
+        if (this._fbCurrentQ !== q) {
+            this._fbCurrentQ      = q;
+            this._fbAttempts      = 0;
+            this._fbBestGuess     = '';
+            this._fbBestSimilarity = 0;
+        }
+
         const acceptable = q.correct || [];
         const caseSens   = q.case_sensitive === true;
         const normalise  = s => caseSens ? s.trim() : s.trim().toLowerCase();
         const input      = normalise(inputText);
 
-        // Find the best-matching acceptable answer (most chars in correct position).
-        let bestAnswer  = normalise(acceptable[0] || '');
-        let bestMatches = 0;
+        // Pick the acceptable answer most similar to this guess (so feedback
+        // helps the player home in on the closest variant).
+        let bestAnswer = normalise(acceptable[0] || '');
+        let bestSim    = -1;
         for (const ans of acceptable) {
             const norm = normalise(ans);
-            if (norm === input) { bestAnswer = norm; bestMatches = norm.length; break; }
-            let m = 0;
-            for (let i = 0; i < norm.length; i++) { if (input[i] === norm[i]) m++; }
-            if (m > bestMatches) { bestMatches = m; bestAnswer = norm; }
+            if (norm === input) { bestAnswer = norm; bestSim = 1; break; }
+            const sim = levenshteinSimilarity(input, norm);
+            if (sim > bestSim) { bestSim = sim; bestAnswer = norm; }
         }
 
-        const totalChars   = bestAnswer.length;
-        let   correctChars = 0;
-        for (let i = 0; i < totalChars; i++) {
-            if (input[i] === bestAnswer[i]) correctChars++;
+        const isCorrect = input === bestAnswer;
+        const feedback  = wordleFeedback(input, bestAnswer);
+        this._fbAttempts++;
+
+        if (bestSim > this._fbBestSimilarity) {
+            this._fbBestSimilarity = bestSim;
+            this._fbBestGuess      = inputText;
         }
-        const wrongChars = totalChars - correctChars;
-        const isPerfect  = input === bestAnswer;
-        const accuracy   = totalChars > 0 ? correctChars / totalChars : 0;
 
-        const streakState = this._updateStreak(isPerfect, accuracy);
-        const streakMultiplier = this._streakMultiplier();
+        if (isCorrect) {
+            return this._finalizeFillBlank({ won: true, finalInput: inputText, bestAnswer, feedback });
+        }
+        if (this._fbAttempts >= FB_MAX_ATTEMPTS) {
+            return this._finalizeFillBlank({ won: false, finalInput: this._fbBestGuess, bestAnswer, feedback });
+        }
 
+        // Wrong, but more attempts remain — apply monster attack only
+        const monsterRoll = rollDice(1, this.current_monster.attack_die);
+        let effective_monster_damage = Math.max(monsterRoll - this.player.base_defense, 0);
+        if (this.active_item?.type === 'defense')
+            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
+        this.player.hit_points -= effective_monster_damage;
+
+        return {
+            status:       'wrong',
+            feedback,
+            guessText:    inputText,
+            attemptsUsed: this._fbAttempts,
+            attemptsLeft: FB_MAX_ATTEMPTS - this._fbAttempts,
+            effective_monster_damage,
+            defeated_player: this.player.hit_points <= 0,
+        };
+    }
+
+    /**
+     * End the current fill-blank turn early as a failure (used when the player
+     * dies on a wrong guess and has no revives, so the game-over screen needs
+     * a complete battleData object).
+     */
+    forceFillBlankFail() {
+        const q          = this.current_question;
+        const acceptable = q.correct || [];
+        const caseSens   = q.case_sensitive === true;
+        const normalise  = s => caseSens ? s.trim() : s.trim().toLowerCase();
+        const bestAnswer = normalise(acceptable[0] || '');
+        this._fbAttempts = FB_MAX_ATTEMPTS;
+        return this._finalizeFillBlank({
+            won:        false,
+            finalInput: this._fbBestGuess,
+            bestAnswer,
+            feedback:   wordleFeedback(normalise(this._fbBestGuess || ''), bestAnswer),
+        });
+    }
+
+    /**
+     * Finalise a fill-blank turn — apply player damage (won only), update stats,
+     * record history, requeue, return a battleData-shaped object.
+     */
+    _finalizeFillBlank({ won, finalInput, bestAnswer, feedback }) {
+        const q            = this.current_question;
+        const attemptsUsed = this._fbAttempts;
+        const isPerfect    = won && attemptsUsed === 1;
+        const sim          = won ? 1 : this._fbBestSimilarity;
+
+        // Proportional credit using Levenshtein similarity (fairer than position-only)
+        const correctChars = Math.round(sim * bestAnswer.length);
+        const wrongChars   = bestAnswer.length - correctChars;
         this.player.total_correct   += correctChars;
         this.player.total_incorrect += wrongChars;
 
-        // Proportional damage: one roll per side, scaled by fraction correct/wrong
-        const correctFrac = totalChars > 0 ? correctChars / totalChars : 0;
-        const wrongFrac   = 1 - correctFrac;
-        const rawPlayerDamage  = rollDice(1, this.player.attack_die)          * correctFrac;
-        const rawMonsterDamage = rollDice(1, this.current_monster.attack_die) * wrongFrac;
+        // Streak: first-try wins increment; later wins or close fails preserve;
+        // bad fails reset. The 0.9 sentinel guarantees later wins always preserve.
+        const streakState      = this._updateStreak(isPerfect, won ? 0.9 : sim);
+        const streakMultiplier = this._streakMultiplier();
 
+        // Player damage on win scales with how few attempts were used: 3/2/1 dice.
+        let rawPlayerDamage = 0;
+        if (won) {
+            const dice = (FB_MAX_ATTEMPTS - attemptsUsed) + 1;
+            for (let i = 0; i < dice; i++) rawPlayerDamage += rollDice(1, this.player.attack_die);
+        }
         const { effective_player_damage, effective_monster_damage } =
-            this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
+            this._applyDamage(rawPlayerDamage, 0, streakMultiplier);
 
-        const scoreLabel = isPerfect
-            ? inputText
-            : `"${inputText}" — ${correctChars}/${totalChars} chars correct`;
+        const scoreLabel = won
+            ? `${finalInput} (won in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'})`
+            : `closest: "${this._fbBestGuess}" — ${Math.round(sim * 100)}% match`;
 
         const historyEntry = {
             question:             q.question,
-            correct_answers:      acceptable,
-            selected:             [inputText],
-            correct_selections:   correctChars > 0 ? [scoreLabel] : [],
-            incorrect_selections: wrongChars   > 0 ? [scoreLabel] : [],
-            missed_correct:       isPerfect    ? [] : acceptable,
+            correct_answers:      q.correct || [],
+            selected:             [finalInput || ''],
+            correct_selections:   (won || sim > 0) ? [scoreLabel] : [],
+            incorrect_selections: !won ? [scoreLabel] : [],
+            missed_correct:       won  ? [] : (q.correct || []),
             was_perfect:          isPerfect,
         };
         const turn = this._finalizeTurn({
             xpGained: this.current_monster.hit_dice * 2,
-            requeue:  !isPerfect,
+            requeue:  !won,
             historyEntry,
         });
 
+        // Reset so the next fill-blank question starts fresh
+        this._fbCurrentQ = null;
+
         return {
             ...turn,
+            status: won ? 'won' : 'failed',
             effective_player_damage,
             effective_monster_damage,
-            correctSelections:   correctChars > 0 ? [scoreLabel] : [],
-            incorrectSelections: wrongChars   > 0 ? [scoreLabel] : [],
-            missedCorrect:       isPerfect    ? [] : acceptable,
+            correctSelections:   (won || sim > 0) ? [scoreLabel] : [],
+            incorrectSelections: !won ? [scoreLabel] : [],
+            missedCorrect:       won  ? [] : (q.correct || []),
             feedback:         q.feedback || null,
             streakMultiplier,
             streakCount:      this.player.streak,
             streakState,
+            attemptsUsed,
+            bestAnswer,
+            wordleFeedback:   feedback,
         };
     }
 

@@ -624,8 +624,6 @@ export class GameUI {
 
   showEncounterFillBlank() {
     this._clearKeyboard();
-    const p = this.model.player;
-    const m = this.model.current_monster;
     const q = this.model.current_question;
 
     renderTemplate(this.root, "tpl-encounter-fill-blank");
@@ -645,17 +643,7 @@ export class GameUI {
     $(this.root, "[data-ref=charHint]").textContent =
       `${charHint}${caseSens ? '  [case-sensitive]' : '  [not case-sensitive]'}`;
 
-    // Scrambled hint: shuffle letters within each word
-    const scrambleWord = word => {
-      const a = word.split('');
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a.join('');
-    };
-    const scrambled = canonical.split(' ').map(scrambleWord).join(' ');
-    $(this.root, "[data-ref=scrambledHint]").textContent = `Scrambled: ${scrambled}`;
+    this._updateWordleStatus(0);
 
     const input     = $(this.root, "[data-ref=answerInput]");
     const submitBtn = $(this.root, "[data-action=submit]");
@@ -674,6 +662,58 @@ export class GameUI {
 
     this._renderProgress(this.root);
     input.focus();
+  }
+
+  /** Set the "Guess N of 3" status line. */
+  _updateWordleStatus(attemptsUsed) {
+    const el = $(this.root, "[data-ref=wordleStatus]");
+    if (!el) return;
+    const total = 3;
+    const next  = Math.min(attemptsUsed + 1, total);
+    el.textContent = `Guess ${next} of ${total} — type your answer below.`;
+  }
+
+  /** Append a row of Wordle-style colored tiles for one guess. */
+  _appendWordleRow(feedback) {
+    const grid = $(this.root, "[data-ref=wordleGrid]");
+    if (!grid) return;
+    const row = document.createElement("div");
+    row.className = "wordle-row";
+    feedback.forEach(({ char, status }) => {
+      const tile = document.createElement("span");
+      tile.className   = `wordle-tile wordle-tile--${status}`;
+      tile.textContent = char;
+      row.appendChild(tile);
+    });
+    grid.appendChild(row);
+  }
+
+  /**
+   * Called after a wrong-but-not-final guess. Updates the HUD with the new HP,
+   * appends the guess row of tiles, refocuses the input for the next attempt.
+   */
+  showFillBlankAttempt(result) {
+    // Refresh HUD (HP/streak) so the user sees the monster damage tick down.
+    this._populateEncounterHeader(this.root);
+
+    this._appendWordleRow(result.feedback);
+    this._updateWordleStatus(result.attemptsUsed);
+
+    if (result.effective_monster_damage > 0) {
+      const hud = this.root.querySelector(".player-hud");
+      this._spawnFloatNumber(hud, `-${result.effective_monster_damage}`, "dmg-float--recv");
+      const container = document.querySelector(".game-container");
+      if (container) {
+        container.classList.add("player-hit");
+        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+      }
+    }
+    if (result.revived) {
+      this.showFeedbackInline("⚗️ A Revive Charge was consumed — you survive with 10 HP!");
+    }
+
+    const input = $(this.root, "[data-ref=answerInput]");
+    if (input) { input.value = ''; input.focus(); }
   }
 
   // ── Matching encounter ────────────────────────────────────────────────────────
@@ -1495,7 +1535,32 @@ export class GameController {
       this.ui.showFeedbackInline("Please type an answer before submitting.");
       return;
     }
-    this._resolveBattle(this.model.evaluateFillBlank(inputText));
+
+    const result = this.model.submitFillBlankGuess(inputText);
+
+    if (result.status === 'wrong') {
+      // Mid-attempt revive (mirrors _resolveBattle's logic)
+      if (result.defeated_player && this.model.player.revive_charges > 0) {
+        this.model.player.revive_charges--;
+        this.model.player.hit_points = 10;
+        result.defeated_player = false;
+        result.revived = true;
+      }
+      if (result.defeated_player) {
+        // No revives left — finalize this turn as a failure and game-over.
+        const finalResult = this.model.forceFillBlankFail();
+        finalResult.defeated_player = true;
+        this._resolveBattle(finalResult);
+        return;
+      }
+      this.sounds.incorrect();
+      this.ui.showFillBlankAttempt(result);
+      this.saveGame();
+      return;
+    }
+
+    // 'won' or 'failed' — full battleData; let the standard pipeline handle it.
+    this._resolveBattle(result);
   }
 
   submitMatching(selectedPairs) {

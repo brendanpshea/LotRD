@@ -1,7 +1,8 @@
 // tests/model.test.js — Unit tests for src/model.js
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { rollDice, Player, Monster, GameModel } from '../src/model.js';
+import { rollDice, Player, Monster, GameModel,
+         levenshtein, levenshteinSimilarity, wordleFeedback } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -353,9 +354,63 @@ describe('evaluateAnswer', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────────
-// GameModel — evaluateFillBlank
+// Levenshtein and Wordle utilities
 // ────────────────────────────────────────────────────────────────────────────────
-describe('evaluateFillBlank', () => {
+describe('levenshtein', () => {
+  it('returns 0 for identical strings', () => {
+    assert.equal(levenshtein('hello', 'hello'), 0);
+  });
+  it('returns string length when one side is empty', () => {
+    assert.equal(levenshtein('', 'cat'), 3);
+    assert.equal(levenshtein('cat', ''), 3);
+  });
+  it('counts a single substitution as 1', () => {
+    assert.equal(levenshtein('cat', 'bat'), 1);
+  });
+  it('counts insertion + deletion correctly', () => {
+    assert.equal(levenshtein('extend', 'extends'), 1);
+    assert.equal(levenshtein('xtends', 'extends'), 1);
+  });
+  it('similarity is 1 - dist/maxLen', () => {
+    assert.ok(Math.abs(levenshteinSimilarity('extend', 'extends') - 6 / 7) < 1e-9);
+    assert.equal(levenshteinSimilarity('cat', 'cat'), 1);
+    assert.equal(levenshteinSimilarity('', ''), 1);
+  });
+});
+
+describe('wordleFeedback', () => {
+  it('marks every position correct for an exact match', () => {
+    const fb = wordleFeedback('cat', 'cat');
+    assert.deepEqual(fb.map(t => t.status), ['correct', 'correct', 'correct']);
+  });
+  it('marks unrelated letters as absent', () => {
+    const fb = wordleFeedback('xyz', 'abc');
+    assert.deepEqual(fb.map(t => t.status), ['absent', 'absent', 'absent']);
+  });
+  it('marks a letter present when it appears at a different position', () => {
+    // guess "cab" vs answer "bat": c→absent, a→correct, b→present
+    const fb = wordleFeedback('cab', 'bat');
+    assert.equal(fb[0].status, 'absent');
+    assert.equal(fb[1].status, 'correct');
+    assert.equal(fb[2].status, 'present');
+  });
+  it('handles duplicate letters (only one match consumed per answer letter)', () => {
+    // guess "loose" vs answer "lower": l→correct, o→correct, second o has no match left
+    const fb = wordleFeedback('loose', 'lower');
+    assert.equal(fb[0].status, 'correct');
+    assert.equal(fb[1].status, 'correct');
+    assert.equal(fb[2].status, 'absent');
+  });
+  it('flags spaces with a separate space status', () => {
+    const fb = wordleFeedback('a b', 'a c');
+    assert.equal(fb[1].status, 'space');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// GameModel — submitFillBlankGuess (multi-attempt)
+// ────────────────────────────────────────────────────────────────────────────────
+describe('submitFillBlankGuess', () => {
   let gm;
   beforeEach(() => {
     gm = freshModel([fillBlankQuestion()]);
@@ -364,32 +419,96 @@ describe('evaluateFillBlank', () => {
     gm.current_monster.max_hit_points = 999;
   });
 
-  it('correct answer (case-insensitive) is perfect', () => {
-    const r = gm.evaluateFillBlank('Extends');
-    assert.deepEqual(r.correctSelections, ['Extends']);
+  it('first-try correct answer wins immediately and is perfect', () => {
+    const r = gm.submitFillBlankGuess('Extends');
+    assert.equal(r.status, 'won');
+    assert.equal(r.attemptsUsed, 1);
+    assert.equal(r.streakState, 'incremented');
     assert.equal(r.question_repeated, false);
     assert.equal(gm.player.streak, 1);
   });
 
-  it('wrong answer re-queues question', () => {
-    const r = gm.evaluateFillBlank('implements');
-    assert.deepEqual(r.incorrectSelections, ['"implements" — 0/7 chars correct']);
+  it('returns wordle feedback on a wrong intermediate guess', () => {
+    const r = gm.submitFillBlankGuess('explode');
+    assert.equal(r.status, 'wrong');
+    assert.ok(Array.isArray(r.feedback));
+    assert.equal(r.feedback.length, 'explode'.length);
+    assert.equal(r.attemptsLeft, 2);
+  });
+
+  it('second-try win preserves streak (not reset, not incremented)', () => {
+    gm.player.streak = 4;
+    gm.submitFillBlankGuess('zzzzzz'); // wrong
+    const r = gm.submitFillBlankGuess('extends');
+    assert.equal(r.status, 'won');
+    assert.equal(r.attemptsUsed, 2);
+    assert.equal(r.streakState, 'preserved');
+    assert.equal(gm.player.streak, 4);
+  });
+
+  it('three wrong guesses → status failed and question is requeued', () => {
+    gm.submitFillBlankGuess('aaa');
+    gm.submitFillBlankGuess('bbb');
+    const r = gm.submitFillBlankGuess('ccc');
+    assert.equal(r.status, 'failed');
+    assert.equal(r.attemptsUsed, 3);
     assert.equal(r.question_repeated, true);
+  });
+
+  it('failure with high similarity (≥0.8) preserves streak', () => {
+    gm.player.streak = 3;
+    gm.submitFillBlankGuess('extend');  // sim 6/7 ≈ 0.857
+    gm.submitFillBlankGuess('xtends');  // sim 6/7
+    const r = gm.submitFillBlankGuess('extens'); // sim 6/7
+    assert.equal(r.status, 'failed');
+    assert.equal(r.streakState, 'preserved');
+    assert.equal(gm.player.streak, 3);
   });
 
   it('case-sensitive mode rejects wrong case', () => {
     const gm2 = freshModel([fillBlankQuestion({ case_sensitive: true })]);
     gm2.nextEncounter();
     gm2.current_monster.hit_points = 999;
-    const r = gm2.evaluateFillBlank('Extends'); // capital E
-    assert.equal(r.question_repeated, true);
+    const r = gm2.submitFillBlankGuess('Extends'); // capital E rejected
+    assert.equal(r.status, 'wrong');
   });
 
   it('accepts any answer in the correct array', () => {
     const gm2 = freshModel([fillBlankQuestion({ correct: ['true', 'True', 'TRUE'] })]);
     gm2.nextEncounter();
     gm2.current_monster.hit_points = 999;
-    assert.equal(gm2.evaluateFillBlank('true').question_repeated, false);
+    const r = gm2.submitFillBlankGuess('true');
+    assert.equal(r.status, 'won');
+  });
+
+  it('wrong intermediate guess applies monster damage but no player damage', () => {
+    gm.player.base_defense = 0;
+    gm.current_monster.attack_die = 100; // force visible damage
+    const startHp = gm.player.hit_points;
+    const r = gm.submitFillBlankGuess('zzzz');
+    assert.equal(r.status, 'wrong');
+    assert.ok(r.effective_monster_damage > 0);
+    assert.equal(gm.player.hit_points, startHp - r.effective_monster_damage);
+  });
+
+  it('attempt state resets when the question changes', () => {
+    const q1 = fillBlankQuestion({ question: 'Q1', correct: ['first']  });
+    const q2 = fillBlankQuestion({ question: 'Q2', correct: ['second'] });
+    const gm2 = freshModel([q1]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    gm2.current_question = q1;          // pin to Q1
+    gm2.submitFillBlankGuess('wrong');  // attempt 1 of Q1
+    gm2.current_question = q2;          // switch
+    const r = gm2.submitFillBlankGuess('alsobad');
+    assert.equal(r.attemptsUsed, 1, 'counter should reset on new question');
+  });
+
+  it('forceFillBlankFail returns a finalized failure result', () => {
+    gm.submitFillBlankGuess('wrong'); // 1st attempt
+    const r = gm.forceFillBlankFail();
+    assert.equal(r.status, 'failed');
+    assert.equal(r.question_repeated, true);
   });
 });
 
