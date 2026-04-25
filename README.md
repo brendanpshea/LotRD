@@ -164,7 +164,7 @@ tests/
 | Java | Inheritance & Polymorphism | 34 |
 | Java | Exceptions | 32 |
 | Java | Streams & Lambdas | 33 |
-| Java | GUI Programming | 30 |
+| Java | GUI, Git & Dev Workflow | 30 |
 
 ---
 

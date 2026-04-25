@@ -84,7 +84,7 @@ describe('Player', () => {
     const p = new Player();
     assert.equal(p.level, 1);
     assert.equal(p.xp, 0);
-    assert.equal(p.xp_to_next_level, 150);
+    assert.equal(p.xp_to_next_level, 100);
     assert.equal(p.max_hit_points, 20);
     assert.equal(p.hit_points, 20);
     assert.equal(p.attack_die, 6);
@@ -96,7 +96,7 @@ describe('Player', () => {
     const p = new Player({ level: 5, xp: 30, revive_charges: 3 });
     assert.equal(p.level, 5);
     assert.equal(p.xp, 30);
-    assert.equal(p.xp_to_next_level, 5 * 150);
+    assert.equal(p.xp_to_next_level, Math.round(100 * Math.pow(1.25, 4)));
     assert.equal(p.revive_charges, 3);
   });
 
@@ -347,7 +347,7 @@ describe('evaluateFillBlank', () => {
 
   it('wrong answer re-queues question', () => {
     const r = gm.evaluateFillBlank('implements');
-    assert.deepEqual(r.incorrectSelections, ['implements']);
+    assert.deepEqual(r.incorrectSelections, ['"implements" — 0/7 chars correct']);
     assert.equal(r.question_repeated, true);
   });
 
@@ -481,20 +481,20 @@ describe('Streak mechanics', () => {
 describe('checkLevelUp', () => {
   it('levels up when xp >= xp_to_next_level', () => {
     const gm = freshModel();
-    gm.player.xp = 150; // exactly meets threshold for level 1 → 2
+    gm.player.xp = 100; // exactly meets threshold for level 1 → 2
     const gained = gm.checkLevelUp();
     assert.equal(gained, 1);
     assert.equal(gm.player.level, 2);
-    assert.equal(gm.player.xp_to_next_level, 2 * 150);
-    assert.equal(gm.player.revive_charges, 1);
+    assert.equal(gm.player.xp_to_next_level, 125);
+    assert.equal(gm.player.revive_charges, 0);
   });
 
   it('can gain multiple levels at once', () => {
     const gm = freshModel();
-    gm.player.xp = 500; // 150 for level 2, then 300 for level 3
+    gm.player.xp = 500;
     const gained = gm.checkLevelUp();
     assert.ok(gained >= 2, `Expected >=2 levels, got ${gained}`);
-    assert.ok(gm.player.revive_charges >= 2);
+    assert.equal(gm.player.revive_charges, 0);
   });
 
   it('does NOT increase max_hit_points on level-up', () => {
@@ -512,27 +512,27 @@ describe('checkLevelUp', () => {
     assert.equal(gm.player.base_defense, 1);
   });
 
-  it('grants exactly 1 revive charge per level gained', () => {
+  it('does not grant revive charges on level gain', () => {
     const gm = freshModel();
-    gm.player.xp = 150;
+    gm.player.xp = 100;
     gm.checkLevelUp();
-    assert.equal(gm.player.revive_charges, 1);
+    assert.equal(gm.player.revive_charges, 0);
 
-    // Level 2 → 3 requires 300 XP
-    gm.player.xp = 300;
+    // Level 2 → 3 requires 125 XP in the current curve.
+    gm.player.xp = 125;
     gm.checkLevelUp();
-    assert.equal(gm.player.revive_charges, 2);
+    assert.equal(gm.player.revive_charges, 0);
     assert.equal(gm.player.level, 3);
   });
 
-  it('XP curve: threshold = level × 150', () => {
+  it('XP curve grows by 1.25x from a base of 100', () => {
     const gm = freshModel();
     // Level up through several levels, checking threshold each time
     for (let targetLevel = 2; targetLevel <= 10; targetLevel++) {
       gm.player.xp = gm.player.xp_to_next_level;
       gm.checkLevelUp();
       assert.equal(gm.player.level, targetLevel);
-      assert.equal(gm.player.xp_to_next_level, targetLevel * 150);
+      assert.equal(gm.player.xp_to_next_level, Math.round(100 * Math.pow(1.25, targetLevel - 1)));
     }
   });
 });
@@ -595,7 +595,7 @@ describe('Monster defeat', () => {
     const r = gm.evaluateAnswer(['A']);
     if (r.effective_player_damage > 0) {
       assert.equal(r.defeated_monster, true);
-      assert.equal(r.xp_gained, gm.current_monster.xp_value);
+      assert.equal(r.xp_gained, gm.current_monster.hit_dice * 2);
     }
     // If the 1d6 roll was exactly 0 after rounding... unlikely but valid
   });
