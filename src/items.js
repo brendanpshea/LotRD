@@ -1,26 +1,77 @@
-export const ITEM_DROPS = [
-    { name: "Debug Elixir",      emoji: "🧪", type: "heal",    amount: 6,         min_tier: 1,
-      flavor: "Traces the error. Restores the damage." },
-    { name: "Restore Point",     emoji: "💾", type: "heal",    amount: 10,        min_tier: 4,
-      flavor: "Roll back to a healthier state." },
-    { name: "Hot Patch Vial",    emoji: "💊", type: "heal",    amount: 7,         min_tier: 2,
-      flavor: "Applied at runtime. No restart needed." },
-    { name: "Recovery Packet",   emoji: "📡", type: "heal",    amount: 8,         min_tier: 3,
-      flavor: "Delivered with guaranteed reliability." },
-    { name: "Overclock Rune",    emoji: "⚡", type: "attack",  attack_mult: 2.0,  min_tier: 6,
-      flavor: "Pushes your attack beyond rated spec." },
-    { name: "Brute Force Sigil", emoji: "⚔", type: "attack",  attack_mult: 1.5,  min_tier: 3,
-      flavor: "Try every possibility until one hits." },
-    { name: "Pipeline Booster",  emoji: "⚙", type: "attack",  attack_mult: 1.75, min_tier: 4,
-      flavor: "No stalls. Maximum throughput." },
-    { name: "Parallel Strike",   emoji: "↯", type: "attack",  attack_mult: 2.5,  min_tier: 8,
-      flavor: "Two threads. One target." },
-    { name: "Firewall Shard",    emoji: "🛡", type: "defense", defense_reduce: 0.5, min_tier: 3,
-      flavor: "Blocks unauthorized incoming damage." },
-    { name: "Encryption Ward",   emoji: "🔒", type: "defense", defense_reduce: 0.6, min_tier: 6,
-      flavor: "Damage denied — wrong key." },
-    { name: "Redundancy Charm",  emoji: "🔄", type: "defense", defense_reduce: 0.4, min_tier: 2,
-      flavor: "If the first defense fails, the second holds." },
-    { name: "Sandboxed Amulet",  emoji: "🔐", type: "defense", defense_reduce: 0.5, min_tier: 4,
-      flavor: "Damage contained. System isolated." },
+// All items are question-type-agnostic: they only touch combat / encounter / run state.
+//
+// kind:
+//   "instant" — activating fires the effect immediately and consumes the item.
+//   "pending" — activating arms a flag (model.pending_effects) consumed by the
+//               next round of combat resolution.
+//
+// effect: the controller dispatches on this string to apply the item.
+// min_tier: gates an item out of the drop pool until a monster of at least that
+//           hit_dice has been encountered.
+
+export const ITEMS = [
+    // ─── Heals (instant) ───────────────────────────────────────────────
+    {
+        id: "debug_elixir", emoji: "🧪", name: "Debug Elixir",
+        kind: "instant", effect: "heal", amount: 6, min_tier: 1,
+        flavor: "Traces the error. Restores the damage.",
+    },
+    {
+        id: "restore_point", emoji: "💾", name: "Restore Point",
+        kind: "instant", effect: "heal", amount: 12, min_tier: 4,
+        flavor: "Roll back to a healthier state.",
+    },
+
+    // ─── Run-level (instant, persistent effects) ───────────────────────
+    {
+        id: "heart_container", emoji: "❤", name: "Heart Container",
+        kind: "instant", effect: "max_hp", amount: 2, min_tier: 3,
+        flavor: "+2 permanent max HP.",
+    },
+    {
+        id: "phoenix_feather", emoji: "🪶", name: "Phoenix Feather",
+        kind: "instant", effect: "add_revive", min_tier: 3,
+        flavor: "+1 revive charge for the run.",
+    },
+
+    // ─── Encounter manipulation (instant) ──────────────────────────────
+    {
+        id: "flee_scroll", emoji: "💨", name: "Flee Scroll",
+        kind: "instant", effect: "flee", min_tier: 1,
+        flavor: "Escape this encounter — no damage, no XP.",
+    },
+    {
+        id: "logic_bomb", emoji: "💣", name: "Logic Bomb",
+        kind: "instant", effect: "bomb", min_tier: 5,
+        flavor: "Defeat the monster instantly. The question returns later.",
+    },
+
+    // ─── Pending combat modifiers ──────────────────────────────────────
+    {
+        id: "firewall_shard", emoji: "🛡", name: "Firewall Shard",
+        kind: "pending", effect: "shield", min_tier: 1,
+        flavor: "Blocks the next hit you would take.",
+    },
+    {
+        id: "stack_mirror", emoji: "🪞", name: "Stack Mirror",
+        kind: "pending", effect: "mirror", min_tier: 3,
+        flavor: "Next round, the monster takes the damage meant for you.",
+    },
+    {
+        id: "xp_magnet", emoji: "✨", name: "XP Magnet",
+        kind: "pending", effect: "xp_double", min_tier: 2,
+        flavor: "2× XP on your next correct answer.",
+    },
+    {
+        id: "mulligan", emoji: "🔁", name: "Mulligan",
+        kind: "pending", effect: "mulligan", min_tier: 2,
+        flavor: "Recompile and retry — undo a wrong answer once.",
+    },
 ];
+
+// Backwards-compat export for any code still importing the old name.
+export const ITEM_DROPS = ITEMS;
+
+export function findItemById(id) {
+    return ITEMS.find(i => i.id === id) || null;
+}

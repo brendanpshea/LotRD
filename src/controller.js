@@ -1,9 +1,12 @@
 import { loadJSON, GameModel } from "./model.js";
-import { ITEM_DROPS } from "./items.js";
+import { ITEMS } from "./items.js";
 import { SoundSystem } from "./sound.js";
 import { GameUI } from "./ui.js";
 import { shuffle } from "./util.js";
 import { pickDragonLine } from "./dragon.js";
+
+const SAVE_DATA_VERSION = "2026-04-26";
+const SAVE_DATA_VERSION_KEY = "lotrd_save_data_version";
 
 export class GameController {
   constructor() {
@@ -46,6 +49,8 @@ export class GameController {
       });
     }
 
+    this._applySaveDataVersion();
+
     const params = new URLSearchParams(window.location.search);
     const specifiedSet = params.get("set");
     if (specifiedSet) {
@@ -68,6 +73,23 @@ export class GameController {
   _attemptKey(setName)    { return `lotrd_attempt_${setName}`; }
   _globalKey()            { return "lotrd_global"; }
   _globalLevelKey()       { return "lotrd_player_level"; }
+
+  _applySaveDataVersion() {
+    try {
+      const current = localStorage.getItem(SAVE_DATA_VERSION_KEY);
+      if (current === SAVE_DATA_VERSION) return;
+
+      for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+        const key = localStorage.key(index);
+        if (!key) continue;
+        if (key.startsWith("lotrd_save_")) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      localStorage.setItem(SAVE_DATA_VERSION_KEY, SAVE_DATA_VERSION);
+    } catch (_) {}
+  }
 
   _loadGlobalLevel() {
     try { const r = localStorage.getItem(this._globalLevelKey()); return r ? JSON.parse(r) : null; } catch (_) { return null; }
@@ -457,7 +479,7 @@ export class GameController {
 
   submitMatching(selectedPairs) {
     if (!this.model.current_question) return;
-    this._resolveBattle(this.model.evaluateMatching(selectedPairs));
+    this._evaluateWithMulligan(() => this.model.evaluateMatching(selectedPairs));
   }
 
   submitAnswer(selected) {
@@ -466,7 +488,51 @@ export class GameController {
       this.ui.showFeedbackInline("Please select at least one option. Press Enter to submit.");
       return;
     }
-    this._resolveBattle(this.model.evaluateAnswer(selected));
+    this._evaluateWithMulligan(() => this.model.evaluateAnswer(selected));
+  }
+
+  /**
+   * Wrap an evaluator call so an active Mulligan can rewind a non-perfect
+   * outcome and let the player retry the same question once. Mulligan does NOT
+   * apply on perfect answers (no need) or on monster-defeating wins (the win
+   * stands; the player wouldn't choose to undo it anyway).
+   */
+  _evaluateWithMulligan(evaluate) {
+    const mulliganArmed = this.model.pending_effects.has('mulligan');
+    const snap = mulliganArmed ? this._mulliganSnapshot() : null;
+    const battleData = evaluate();
+
+    const wasPerfect = !(battleData.incorrectSelections?.length || battleData.missedCorrect?.length);
+    const monsterDead = battleData.defeated_monster;
+    if (mulliganArmed && !wasPerfect && !monsterDead) {
+      this._mulliganRestore(snap);
+      this.model.pending_effects.delete('mulligan');
+      this.sounds.incorrect();
+      this.ui.showFeedbackInline("🔁 Mulligan! That answer was rolled back. Try again.");
+      this.saveGame();
+      return;
+    }
+
+    this._resolveBattle(battleData);
+  }
+
+  _mulliganSnapshot() {
+    const p = this.model.player;
+    return {
+      player: { ...p },
+      monsterHp: this.model.current_monster.hit_points,
+      questions_to_ask: [...this.model.questions_to_ask],
+      questions_asked: this.model.questions_asked,
+      answer_history_len: this.model.answer_history.length,
+    };
+  }
+
+  _mulliganRestore(snap) {
+    Object.assign(this.model.player, snap.player);
+    this.model.current_monster.hit_points = snap.monsterHp;
+    this.model.questions_to_ask = snap.questions_to_ask;
+    this.model.questions_asked = snap.questions_asked;
+    this.model.answer_history.length = snap.answer_history_len;
   }
 
   _resolveBattle(battleData) {
@@ -478,21 +544,13 @@ export class GameController {
 
     let itemDrop = null;
     if (battleData.defeated_monster) {
-      this.model.active_item = null;
       if (Math.random() < 1 / 3) {
         const tier = this.model.current_monster.hit_dice;
-        const eligible = ITEM_DROPS.filter(d => (d.min_tier ?? 1) <= tier);
-        const pool = eligible.length > 0 ? eligible : ITEM_DROPS;
+        const eligible = ITEMS.filter(d => (d.min_tier ?? 1) <= tier);
+        const pool = eligible.length > 0 ? eligible : ITEMS;
         const drop = pool[Math.floor(Math.random() * pool.length)];
-        if (drop.type === "heal") {
-          const maxHeal = this.model.player.max_hit_points - this.model.player.hit_points;
-          const actualHeal = Math.min(drop.amount, maxHeal);
-          this.model.player.hit_points += actualHeal;
-          itemDrop = { ...drop, actual_heal: actualHeal };
-        } else {
-          this.model.active_item = drop;
-          itemDrop = drop;
-        }
+        const placement = this.model.addItemDrop({ ...drop });
+        itemDrop = { ...drop, placed_slot: placement.placed, displaced: placement.displaced };
       }
     }
 
@@ -535,5 +593,91 @@ export class GameController {
     const status = this.model.nextEncounter();
     this.saveGame();
     this.showEncounterStatus(status);
+  }
+
+  /**
+   * Activate the item in the given inventory slot. Instant items fire now and
+   * may need a screen refresh / encounter advance; pending items just arm a
+   * flag and re-render the HUD.
+   */
+  useItem(slotIdx) {
+    if (!this.model || !this.model.current_question) return;
+    const item = this.model.inventory[slotIdx];
+    if (!item) return;
+
+    if (item.kind === "pending") {
+      this.model.consumeSlot(slotIdx);
+      this.model.pending_effects.add(item.effect);
+      this.sounds.correct();
+      this.ui.showFeedbackInline(`${item.emoji} ${item.name} armed.`);
+      this.ui.refreshHUD();
+      this.saveGame();
+      return;
+    }
+
+    // ── Instant items ──
+    switch (item.effect) {
+      case "heal": {
+        const room = this.model.player.max_hit_points - this.model.player.hit_points;
+        const actual = Math.max(0, Math.min(item.amount, room));
+        this.model.player.hit_points += actual;
+        this.model.consumeSlot(slotIdx);
+        this.sounds.correct();
+        this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +${actual} HP.`);
+        this.ui.refreshHUD();
+        break;
+      }
+      case "max_hp": {
+        this.model.player.max_hit_points += item.amount;
+        this.model.player.hit_points     += item.amount;
+        this.model.consumeSlot(slotIdx);
+        this.sounds.levelUp();
+        this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +${item.amount} max HP!`);
+        this.ui.refreshHUD();
+        break;
+      }
+      case "add_revive": {
+        this.model.player.revive_charges++;
+        this.model.consumeSlot(slotIdx);
+        this.sounds.levelUp();
+        this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +1 revive charge.`);
+        this.ui.refreshHUD();
+        break;
+      }
+      case "flee": {
+        this.model.consumeSlot(slotIdx);
+        this.sounds.correct();
+        // Discard current question and monster; next encounter draws fresh ones.
+        // Match _finalizeTurn's bookkeeping minimally so progress stays sensible.
+        this.model.current_monster.hit_points = 0;
+        this.model.current_question = null;
+        this.continueAdventure();
+        break;
+      }
+      case "bomb": {
+        this.model.consumeSlot(slotIdx);
+        this.sounds.monsterDefeated();
+        this.model.current_monster.hit_points = 0;
+        // Re-queue the current question so the player still has to face it later.
+        // Bomb buys time; flee throws the question away.
+        const idx = Math.min(3, this.model.questions_to_ask.length);
+        this.model.questions_to_ask.splice(idx, 0, this.model.current_question);
+        this.model.current_question = null;
+        this.continueAdventure();
+        break;
+      }
+      default:
+        return;
+    }
+    this.saveGame();
+  }
+
+  /** Right-click / long-press support: discard the slot's item without using it. */
+  discardItem(slotIdx) {
+    if (!this.model) return;
+    if (!this.model.inventory[slotIdx]) return;
+    this.model.consumeSlot(slotIdx);
+    this.ui.refreshHUD();
+    this.saveGame();
   }
 }

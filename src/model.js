@@ -11,7 +11,7 @@ Utilities:
 */
 
 export async function loadJSON(url) {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) throw new Error(`Error fetching ${url}`);
     return response.json();
 }
@@ -86,6 +86,8 @@ export function wordleFeedback(guess, answer) {
 }
 
 export const FB_MAX_ATTEMPTS = 3;
+
+export const INVENTORY_SIZE = 2;
 
 export class Player {
     static maxHpForLevel(level)       { return 20 + (level - 1) * 2; }
@@ -201,8 +203,9 @@ export class GameModel {
             this.questions_asked  = saveData.questions_asked || 0;
             this.answer_history   = saveData.answer_history  || [];
             this.stats_offset     = saveData.stats_offset    || 0;
-            this.active_item      = saveData.active_item     || null;
             this.recent_monsters  = saveData.recent_monsters || [];
+            this.inventory        = this._loadInventory(saveData);
+            this.pending_effects  = new Set(saveData.pending_effects || []);
             this.player = Player.fromSave(saveData.player);
         } else {
             // ── Fresh game path ──────────────────────────────────────────
@@ -210,11 +213,24 @@ export class GameModel {
             this.questions_asked = 0;
             this.answer_history  = [];
             this.stats_offset    = 0;
-            this.active_item     = null;
+            this.inventory       = new Array(INVENTORY_SIZE).fill(null);
+            this.pending_effects = new Set();
             this.player          = Player.fresh(levelData);
             this.questions       = shuffle(this.questions);
             this.questions_to_ask = [...this.questions];
         }
+    }
+
+    /** Migrate legacy single-slot saves; otherwise pad/truncate to INVENTORY_SIZE. */
+    _loadInventory(saveData) {
+        if (Array.isArray(saveData.inventory)) {
+            const inv = saveData.inventory.slice(0, INVENTORY_SIZE);
+            while (inv.length < INVENTORY_SIZE) inv.push(null);
+            return inv;
+        }
+        const inv = new Array(INVENTORY_SIZE).fill(null);
+        if (saveData.active_item) inv[0] = saveData.active_item;
+        return inv;
     }
 
     /** Produce a plain-object snapshot suitable for JSON serialisation. */
@@ -226,7 +242,8 @@ export class GameModel {
             questions_asked:  this.questions_asked,
             answer_history:   this.answer_history,
             stats_offset:     this.stats_offset,
-            active_item:      this.active_item,
+            inventory:        this.inventory,
+            pending_effects:  [...this.pending_effects],
             recent_monsters:  this.recent_monsters,
             player: {
                 level:            p.level,
@@ -341,29 +358,49 @@ export class GameModel {
      * @param {number} streakMultiplier  – player's current streak mult
      */
     _applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier) {
-        const itemAttackMult = (this.active_item?.type === 'attack') ? this.active_item.attack_mult : 1.0;
-        const player_damage  = Math.round(rawPlayerDamage * streakMultiplier * itemAttackMult);
+        const player_damage = Math.round(rawPlayerDamage * streakMultiplier);
 
-        const effective_player_damage  = Math.max(player_damage  - this.current_monster.defense, 0);
+        const effective_player_damage  = Math.max(player_damage    - this.current_monster.defense, 0);
         let   effective_monster_damage = Math.max(rawMonsterDamage - this.player.base_defense,   0);
-        if (this.active_item?.type === 'defense')
-            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
+
+        const itemEffects = { shield_used: false, mirror_used: false, mirror_damage: 0 };
+
+        // Mirror: incoming damage is redirected to the monster instead.
+        if (this.pending_effects.has('mirror') && effective_monster_damage > 0) {
+            itemEffects.mirror_used   = true;
+            itemEffects.mirror_damage = effective_monster_damage;
+            this.current_monster.hit_points -= effective_monster_damage;
+            effective_monster_damage = 0;
+            this.pending_effects.delete('mirror');
+        }
+        // Shield: blocks any remaining incoming damage entirely.
+        if (this.pending_effects.has('shield') && effective_monster_damage > 0) {
+            itemEffects.shield_used = true;
+            effective_monster_damage = 0;
+            this.pending_effects.delete('shield');
+        }
 
         this.current_monster.hit_points -= effective_player_damage;
         this.player.hit_points          -= effective_monster_damage;
 
-        return { effective_player_damage, effective_monster_damage };
+        return { effective_player_damage, effective_monster_damage, ...itemEffects };
     }
 
     /**
      * After damage is applied: award XP, level up, requeue if needed,
      * push history, return the values shared across all evaluator returns.
      */
-    _finalizeTurn({ xpGained, requeue, historyEntry }) {
+    _finalizeTurn({ xpGained, requeue, historyEntry, isPerfect }) {
         const startMaxHp       = this.player.max_hit_points;
         const startBaseDefense = this.player.base_defense;
         const startRevives     = this.player.revive_charges;
 
+        let xp_doubled = false;
+        if (isPerfect && xpGained > 0 && this.pending_effects.has('xp_double')) {
+            xpGained *= 2;
+            xp_doubled = true;
+            this.pending_effects.delete('xp_double');
+        }
         this.player.xp += xpGained;
         const levelsGained = this.checkLevelUp();
 
@@ -386,6 +423,7 @@ export class GameModel {
             defeated_monster:  this.current_monster.hit_points <= 0,
             defeated_player:   this.player.hit_points <= 0,
             xp_gained:         xpGained,
+            xp_doubled,
             question_repeated: !!requeue,
             levelsGained,
             levelUpRewards,
@@ -415,18 +453,58 @@ export class GameModel {
         const streakMultiplier = this._streakMultiplier();
         const rawPlayerDamage = this._rollDamage(playerHits, this.player.attack_die);
         const rawMonsterDamage = this._rollDamage(monsterHits, this.current_monster.attack_die);
-        const { effective_player_damage, effective_monster_damage } =
-            this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
-        const turn = this._finalizeTurn({ xpGained, requeue, historyEntry });
+        const dmg = this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
+        const turn = this._finalizeTurn({ xpGained, requeue, historyEntry, isPerfect });
 
         return {
             ...turn,
-            effective_player_damage,
-            effective_monster_damage,
+            effective_player_damage:  dmg.effective_player_damage,
+            effective_monster_damage: dmg.effective_monster_damage,
+            shield_used:              dmg.shield_used,
+            mirror_used:              dmg.mirror_used,
+            mirror_damage:            dmg.mirror_damage,
             streakMultiplier,
             streakCount: this.player.streak,
             streakState,
         };
+    }
+
+    // ─── Inventory helpers ────────────────────────────────────────────────────
+
+    /** Return index of the first empty slot, or -1 if full. */
+    firstEmptySlot() {
+        return this.inventory.findIndex(s => s === null);
+    }
+
+    /**
+     * Place a freshly dropped item into the inventory.
+     *   - empty slot exists  → fill it, return { placed: idx }
+     *   - both slots full    → drop the older item (slot 0), shift slot 1 → 0,
+     *                          place new in slot 1, return { placed: 1, displaced: oldItem }
+     */
+    addItemDrop(item) {
+        const empty = this.firstEmptySlot();
+        if (empty !== -1) {
+            this.inventory[empty] = item;
+            return { placed: empty, displaced: null };
+        }
+        const displaced = this.inventory[0];
+        this.inventory[0] = this.inventory[1];
+        this.inventory[1] = item;
+        return { placed: 1, displaced };
+    }
+
+    /** Remove and return the item in slot idx, or null if empty / out of range. */
+    consumeSlot(idx) {
+        if (idx < 0 || idx >= this.inventory.length) return null;
+        const item = this.inventory[idx];
+        this.inventory[idx] = null;
+        return item;
+    }
+
+    /** True if any inventory slot is occupied. */
+    hasItems() {
+        return this.inventory.some(s => s !== null);
     }
 
     // ─── Evaluators ────────────────────────────────────────────────────────────
@@ -535,8 +613,13 @@ export class GameModel {
         // Wrong, but more attempts remain — apply monster attack only
         const monsterRoll = rollDice(1, this.current_monster.attack_die);
         let effective_monster_damage = Math.max(monsterRoll - this.player.base_defense, 0);
-        if (this.active_item?.type === 'defense')
-            effective_monster_damage = Math.round(effective_monster_damage * (1 - this.active_item.defense_reduce));
+
+        let shield_used = false;
+        if (this.pending_effects.has('shield') && effective_monster_damage > 0) {
+            shield_used = true;
+            effective_monster_damage = 0;
+            this.pending_effects.delete('shield');
+        }
         this.player.hit_points -= effective_monster_damage;
 
         return {
@@ -546,6 +629,7 @@ export class GameModel {
             attemptsUsed: this._fbAttempts,
             attemptsLeft: FB_MAX_ATTEMPTS - this._fbAttempts,
             effective_monster_damage,
+            shield_used,
             defeated_player: this.player.hit_points <= 0,
         };
     }

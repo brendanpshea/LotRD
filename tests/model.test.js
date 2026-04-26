@@ -791,29 +791,145 @@ describe('Re-queue placement', () => {
   });
 });
 
-describe('Active item effects', () => {
-  it('attack item multiplies player damage', () => {
+describe('Inventory', () => {
+  it('starts with two empty slots', () => {
+    const gm = freshModel();
+    assert.equal(gm.inventory.length, 2);
+    assert.deepEqual(gm.inventory, [null, null]);
+    assert.equal(gm.firstEmptySlot(), 0);
+    assert.equal(gm.hasItems(), false);
+  });
+
+  it('addItemDrop fills first empty slot', () => {
+    const gm = freshModel();
+    const r = gm.addItemDrop({ id: 'a', name: 'A' });
+    assert.equal(r.placed, 0);
+    assert.equal(r.displaced, null);
+    const r2 = gm.addItemDrop({ id: 'b', name: 'B' });
+    assert.equal(r2.placed, 1);
+    assert.equal(r2.displaced, null);
+  });
+
+  it('addItemDrop replaces oldest (slot 0) when both full', () => {
+    const gm = freshModel();
+    gm.addItemDrop({ id: 'a' });
+    gm.addItemDrop({ id: 'b' });
+    const r = gm.addItemDrop({ id: 'c' });
+    assert.equal(r.placed, 1);
+    assert.equal(r.displaced.id, 'a');
+    assert.equal(gm.inventory[0].id, 'b');
+    assert.equal(gm.inventory[1].id, 'c');
+  });
+
+  it('consumeSlot returns and clears the item', () => {
+    const gm = freshModel();
+    gm.addItemDrop({ id: 'a' });
+    assert.equal(gm.consumeSlot(0).id, 'a');
+    assert.equal(gm.inventory[0], null);
+    assert.equal(gm.consumeSlot(0), null);
+  });
+});
+
+describe('Pending item effects', () => {
+  it('shield blocks all monster damage and is consumed', () => {
+    const gm = freshModel([mcQuestion()]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.current_monster.attack_die = 100;
+    gm.player.base_defense = 0;
+    gm.pending_effects.add('shield');
+    const startHp = gm.player.hit_points;
+    const r = gm.evaluateAnswer(['B']); // wrong → monster attacks
+    assert.equal(r.effective_monster_damage, 0);
+    assert.equal(r.shield_used, true);
+    assert.equal(gm.player.hit_points, startHp);
+    assert.equal(gm.pending_effects.has('shield'), false);
+  });
+
+  it('mirror redirects monster damage to the monster and is consumed', () => {
     const gm = freshModel([mcQuestion()]);
     gm.nextEncounter();
     gm.current_monster.hit_points = 999;
     gm.current_monster.defense = 0;
-    gm.active_item = { type: 'attack', attack_mult: 2.0 };
-    const r = gm.evaluateAnswer(['A']);
-    // With 2× mult, damage should be at least what a single d6 roll would give
-    assert.ok(r.effective_player_damage >= 0);
+    gm.current_monster.attack_die = 100;
+    gm.player.base_defense = 0;
+    gm.pending_effects.add('mirror');
+    const startHp = gm.player.hit_points;
+    const startMonsterHp = gm.current_monster.hit_points;
+    const r = gm.evaluateAnswer(['B']); // wrong → monster attacks
+    assert.equal(r.effective_monster_damage, 0);
+    assert.ok(r.mirror_used);
+    assert.ok(r.mirror_damage > 0);
+    assert.equal(gm.player.hit_points, startHp);
+    assert.ok(gm.current_monster.hit_points < startMonsterHp);
+    assert.equal(gm.pending_effects.has('mirror'), false);
   });
 
-  it('defense item reduces monster damage', () => {
+  it('xp_double doubles XP on a perfect answer and is consumed', () => {
     const gm = freshModel([mcQuestion()]);
     gm.nextEncounter();
     gm.current_monster.hit_points = 999;
-    gm.current_monster.attack_die = 100; // ensure high damage
+    gm.pending_effects.add('xp_double');
+    const r = gm.evaluateAnswer(['A']); // perfect
+    assert.equal(r.xp_doubled, true);
+    assert.equal(r.xp_gained, gm.current_monster.hit_dice * 2 * 2);
+    assert.equal(gm.pending_effects.has('xp_double'), false);
+  });
+
+  it('xp_double does NOT trigger on a wrong answer', () => {
+    const gm = freshModel([mcQuestion()]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.pending_effects.add('xp_double');
+    const r = gm.evaluateAnswer(['B']); // wrong
+    assert.equal(r.xp_doubled, undefined === r.xp_doubled ? r.xp_doubled : false);
+    assert.equal(r.xp_doubled, false);
+    // Magnet stays armed for the next correct answer.
+    assert.equal(gm.pending_effects.has('xp_double'), true);
+  });
+
+  it('shield also blocks fill-blank wrong-attempt damage', () => {
+    const gm = freshModel([fillBlankQuestion()]);
+    gm.nextEncounter();
+    gm.current_monster.attack_die = 100;
     gm.player.base_defense = 0;
-    gm.active_item = { type: 'defense', defense_reduce: 0.5 };
-    const r = gm.evaluateAnswer(['B']); // wrong → monster attacks
-    // The damage should be reduced by 50%
-    // Can't predict exact value but it should be at least 0
-    assert.ok(r.effective_monster_damage >= 0);
+    gm.pending_effects.add('shield');
+    const startHp = gm.player.hit_points;
+    const r = gm.submitFillBlankGuess('wrong');
+    assert.equal(r.status, 'wrong');
+    assert.equal(r.effective_monster_damage, 0);
+    assert.ok(r.shield_used);
+    assert.equal(gm.player.hit_points, startHp);
+    assert.equal(gm.pending_effects.has('shield'), false);
+  });
+});
+
+describe('Save/load inventory migration', () => {
+  it('migrates legacy active_item into slot 0', () => {
+    const legacy = {
+      questions: [mcQuestion()],
+      questions_to_ask: [mcQuestion()],
+      questions_asked: 0,
+      answer_history: [],
+      active_item: { id: 'legacy', name: 'Legacy', kind: 'pending' },
+      player: {},
+    };
+    const gm = freshModel([mcQuestion()], null, legacy);
+    assert.equal(gm.inventory.length, 2);
+    assert.equal(gm.inventory[0].id, 'legacy');
+    assert.equal(gm.inventory[1], null);
+  });
+
+  it('round-trips inventory and pending_effects through toSaveData', () => {
+    const gm = freshModel();
+    gm.addItemDrop({ id: 'a' });
+    gm.pending_effects.add('shield');
+    gm.pending_effects.add('mulligan');
+    const save = gm.toSaveData();
+    const gm2 = freshModel([mcQuestion()], null, save);
+    assert.equal(gm2.inventory[0].id, 'a');
+    assert.ok(gm2.pending_effects.has('shield'));
+    assert.ok(gm2.pending_effects.has('mulligan'));
   });
 });
 

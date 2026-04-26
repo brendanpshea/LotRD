@@ -105,19 +105,88 @@ export class GameUI {
       wrap.hidden = false;
     }
 
-    const itemSlot = $(root, "[data-ref=itemSlot]");
-    const itemSep = $(root, "[data-ref=itemSep]");
-    const item = this.model.active_item;
-    if (itemSlot) {
+    this._renderInventory(root);
+  }
+
+  /** Refresh just the per-encounter HUD (HP/XP/inventory) without rerendering the question. */
+  refreshHUD() {
+    if (!this.model || !this.model.current_question) return;
+    this._populateEncounterHeader(this.root);
+  }
+
+  _renderInventory(root) {
+    const inv = this.model.inventory || [];
+    for (let i = 0; i < 2; i++) {
+      const slot = $(root, `[data-ref=invSlot${i}]`);
+      const icon = $(root, `[data-ref=invIcon${i}]`);
+      const name = $(root, `[data-ref=invName${i}]`);
+      if (!slot) continue;
+      const item = inv[i];
       if (item) {
-        itemSlot.textContent = `${item.emoji} ${item.name}`;
-        itemSlot.hidden = false;
-        if (itemSep) itemSep.hidden = false;
+        slot.classList.remove("inv-slot--empty");
+        slot.classList.add("inv-slot--filled");
+        slot.disabled = false;
+        slot.setAttribute("aria-label",
+          `Item slot ${i + 1}: ${item.name} — ${item.flavor} (shortcut ${i === 0 ? "Q" : "W"})`);
+        slot.title = `${item.name} — ${item.flavor}`;
+        if (icon) icon.textContent = item.emoji;
+        if (name) name.textContent = item.name;
       } else {
-        itemSlot.hidden = true;
-        if (itemSep) itemSep.hidden = true;
+        slot.classList.add("inv-slot--empty");
+        slot.classList.remove("inv-slot--filled");
+        slot.disabled = true;
+        slot.setAttribute("aria-label",
+          `Item slot ${i + 1}, empty (shortcut ${i === 0 ? "Q" : "W"})`);
+        slot.title = "";
+        if (icon) icon.textContent = "·";
+        if (name) name.textContent = "empty";
       }
     }
+
+    const pendingEl = $(root, "[data-ref=invPending]");
+    if (pendingEl) {
+      const labels = {
+        shield:    "🛡 Shield armed",
+        mirror:    "🪞 Mirror armed",
+        xp_double: "✨ 2× XP armed",
+        mulligan:  "🔁 Mulligan ready",
+      };
+      const active = [...(this.model.pending_effects || [])]
+        .map(e => labels[e]).filter(Boolean);
+      pendingEl.textContent = active.length ? `[${active.join(" · ")}]` : "";
+    }
+  }
+
+  /** Wire up Q/W and click handlers for inventory slots inside an encounter screen. */
+  _attachInventoryHandlers() {
+    if (!this.controller) return;
+    [0, 1].forEach(i => {
+      const slot = $(this.root, `[data-ref=invSlot${i}]`);
+      if (!slot) return;
+      slot.addEventListener("click", () => {
+        if (!slot.disabled) this.controller.useItem(i);
+      });
+      slot.addEventListener("contextmenu", (e) => {
+        if (slot.disabled) return;
+        e.preventDefault();
+        if (window.confirm("Discard this item?")) this.controller.discardItem(i);
+      });
+    });
+  }
+
+  /** Bind Q/W shortcuts on the supplied AbortController; skips when typing in inputs. */
+  _bindInventoryHotkeys(signal) {
+    if (!this.controller) return;
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "q" && e.key !== "Q" && e.key !== "w" && e.key !== "W") return;
+      const ae = document.activeElement;
+      const tag = ae?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || ae?.isContentEditable) return;
+      const idx = (e.key === "q" || e.key === "Q") ? 0 : 1;
+      if (!this.model.inventory?.[idx]) return;
+      e.preventDefault();
+      this.controller.useItem(idx);
+    }, { signal });
   }
 
   _renderProgress(root) {
@@ -484,6 +553,8 @@ export class GameUI {
       }
     }, { signal: this._kbAbort.signal });
 
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
     this._renderProgress(this.root);
     if (inputs.length > 0) inputs[0].focus();
   }
@@ -520,6 +591,8 @@ export class GameUI {
       }
     }, { signal: this._kbAbort.signal });
 
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
     this._renderProgress(this.root);
     input.focus();
   }
@@ -556,6 +629,8 @@ export class GameUI {
       }
     }, { signal: this._kbAbort.signal });
 
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
     this._renderProgress(this.root);
     input.focus();
   }
@@ -595,6 +670,9 @@ export class GameUI {
         container.classList.add("player-hit");
         container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
       }
+    }
+    if (result.shield_used) {
+      this.showFeedbackInline("🛡 Firewall Shard absorbed the hit.");
     }
     if (result.revived) {
       this.showFeedbackInline("⚗️ A Revive Charge was consumed — you survive with 10 HP!");
@@ -663,6 +741,9 @@ export class GameUI {
       this.controller.submitMatching(selectedPairs);
     });
 
+    this._kbAbort = new AbortController();
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
     this._renderProgress(this.root);
     if (selects.length > 0) selects[0].select.focus();
   }
@@ -788,6 +869,17 @@ export class GameUI {
       body.appendChild(rev);
     }
 
+    const itemNote = (text) => {
+      const el = document.createElement("div");
+      el.className = "correct";
+      el.style.marginTop = "4px";
+      el.textContent = text;
+      body.appendChild(el);
+    };
+    if (battleData.shield_used) itemNote("🛡 Firewall Shard absorbed the hit.");
+    if (battleData.mirror_used) itemNote(`🪞 Stack Mirror reflected ${battleData.mirror_damage} damage to the monster.`);
+    if (battleData.xp_doubled)  itemNote("✨ XP Magnet doubled your XP gain.");
+
     if (battleData.feedback) {
       const block = document.createElement("div");
       block.className = "custom-feedback";
@@ -797,11 +889,10 @@ export class GameUI {
     }
 
     if (itemDrop) {
-      const effectLabel = itemDrop.type === "heal"
-        ? `+${itemDrop.actual_heal} HP restored`
-        : itemDrop.type === "attack"
-          ? `${itemDrop.attack_mult}× attack for next fight`
-          : `−${Math.round(itemDrop.defense_reduce * 100)}% incoming damage for next fight`;
+      const slotLabel = `Stored in slot ${itemDrop.placed_slot + 1} (${itemDrop.placed_slot === 0 ? "Q" : "W"})`;
+      const displaced = itemDrop.displaced
+        ? `<br><span class="loot-flavor">Discarded to make room: ${itemDrop.displaced.emoji} ${this._esc(itemDrop.displaced.name)}.</span>`
+        : "";
       const loot = document.createElement("div");
       loot.className = "loot-drop";
       loot.setAttribute("aria-live", "polite");
@@ -809,7 +900,7 @@ export class GameUI {
         "<div class=\"loot-header\">&gt;&gt;&gt; ITEM DROP &lt;&lt;&lt;</div>" +
         `<div class="loot-body">${itemDrop.emoji} <span class="loot-name">${this._esc(itemDrop.name)}</span><br>` +
         `<span class="loot-flavor">${this._esc(itemDrop.flavor)}</span><br>` +
-        `<span class="loot-effect">${this._esc(effectLabel)}</span></div>`;
+        `<span class="loot-effect">${this._esc(slotLabel)}</span>${displaced}</div>`;
       body.appendChild(loot);
     }
 

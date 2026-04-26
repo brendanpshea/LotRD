@@ -213,6 +213,14 @@ tests/
 
 ---
 
+## Releasing Updated Content
+
+- Question-set JSON files are fetched with `cache: "no-store"`, so browsers should re-request fresh content instead of reusing a stale cached copy.
+- In-progress runs are restored from `localStorage`. If you change question content and want existing browsers to discard old in-progress snapshots, bump `SAVE_DATA_VERSION` in [src/controller.js](src/controller.js).
+- Global progress and completed-set records are preserved; only `lotrd_save_*` keys are invalidated by a save-data version bump.
+
+---
+
 ## Running Tests
 
 Requires **Node.js 18+** (uses the built-in `node:test` runner — zero npm dependencies).
