@@ -28,7 +28,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Features
 
-- **Three question types** (described below)
+- **Four question types** (described below)
 - **Main menu** with topic groupings, per-set progress badges, and a global stats bar
 - **Auto-save** — every encounter result is saved to `localStorage`; the back button saves and returns to the menu
 - **Completion tracking** — `lotrd_done_${setId}` records completed sets permanently
@@ -44,7 +44,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Question Types
 
-All three types live in the same JSON arrays and can be mixed within one set. Existing questions with no `type` field are treated as **multiple-choice** (default).
+All four types live in the same JSON arrays and can be mixed within one set. Existing questions with no `type` field are treated as **multiple-choice** (default).
 
 ### Multiple Choice (default)
 
@@ -76,6 +76,25 @@ The original type. Select all correct answers; partial credit is not given for i
 - The UI shows a per-word character-count hint (e.g. `_ _ _ _ _ _ _  (7 chars)`).
 - **Scoring is binary** — exact match = full player attack + streak; anything else = full monster counter-attack. The question re-queues on a miss.
 
+### Code Trace ("predict the output")
+
+```json
+{
+  "type": "code_trace",
+  "question": "What does this loop print?",
+  "code": "for (int i = 1; i <= 3; i++) {\n    System.out.println(\"Hi \" + i);\n}",
+  "language": "java",
+  "correct": ["Hi 1\nHi 2\nHi 3"],
+  "case_sensitive": true,
+  "feedback": "Optional explanation."
+}
+```
+
+- The snippet is shown in a monospaced `<pre>` block. When `language` is `"java"` (default), keywords, strings, numbers, and comments are syntax-highlighted by [src/highlight.js](src/highlight.js); other languages render plain.
+- Player types the program's expected stdout into a multi-line `<textarea>`, one value per line. **Submit with `Ctrl`/`Cmd`+`Enter`** (plain `Enter` inserts a newline).
+- Input is normalised before comparison: line endings unified, trailing whitespace per line stripped, leading/trailing blank lines dropped — write `correct` answers exactly as printed, with `\n` between lines.
+- Scoring reuses the **fill-blank engine**: 3 attempts, Levenshtein-based partial credit on the final miss, monster counter-attack on each wrong attempt. The wordle-style per-character grid is hidden for code-trace.
+
 ### Matching
 
 ```json
@@ -102,8 +121,8 @@ The original type. Select all correct answers; partial credit is not given for i
 |-----------|--------------|----------------|
 | Multiple-choice: each correct selection | +1 attack roll (d6) | — |
 | Multiple-choice: each wrong / missed selection | — | +1 monster roll |
-| Fill-blank: exact match | 1 attack roll (d6) × streak multiplier | — |
-| Fill-blank: wrong | — | 1 monster roll |
+| Fill-blank / code-trace: exact match | 1 attack roll (d6) × streak multiplier | — |
+| Fill-blank / code-trace: wrong | — | 1 monster roll |
 | Matching: each correct pair | 1 attack roll (d6) × streak multiplier | — |
 | Matching: each wrong pair | — | 1 monster roll |
 
@@ -167,9 +186,9 @@ tests/
 | Foundations | Basic Math | 10 |
 | Computing Concepts | Computing Concepts | 33 |
 | Computing Concepts | Data Systems | 75 |
-| Java | Hour of Java | 30 |
+| Java | Hour of Java | 10 (sampler — one of every question type) |
 | Java | Java Basics | 29 |
-| Java | Control Flow | 30 |
+| Java | Control Flow | 34 |
 | Java | Algorithms | 25 |
 | Java | Functions & Methods | 30 |
 | Java | Types, Null & Imports | 28 |

@@ -377,6 +377,8 @@ export class GameController {
       const qtype = this.model.current_question?.type;
       if (qtype === "fill_blank") {
         this.ui.showEncounterFillBlank();
+      } else if (qtype === "code_trace") {
+        this.ui.showEncounterCodeTrace();
       } else if (qtype === "matching") {
         this.ui.showEncounterMatching();
       } else {
@@ -411,6 +413,16 @@ export class GameController {
       this._setName,
       () => this.showMainMenu()
     );
+  }
+
+  submitCodeTrace(inputText) {
+    const normalized = (inputText || "")
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map(line => line.replace(/\s+$/, ""))
+      .join("\n")
+      .replace(/^\n+|\n+$/g, "");
+    this.submitFillBlank(normalized);
   }
 
   submitFillBlank(inputText) {

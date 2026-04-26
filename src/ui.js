@@ -1,4 +1,5 @@
 import { shuffle } from "./util.js";
+import { highlightJava } from "./highlight.js";
 
 const LEVEL_TITLES = [
   { minLevel: 1,  title: "Apprentice" },
@@ -514,6 +515,42 @@ export class GameUI {
     this._kbAbort = new AbortController();
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && document.activeElement === input) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    }, { signal: this._kbAbort.signal });
+
+    this._renderProgress(this.root);
+    input.focus();
+  }
+
+  showEncounterCodeTrace() {
+    this._clearKeyboard();
+    const q = this.model.current_question;
+    renderTemplate(this.root, "tpl-encounter-code-trace");
+    this._populateEncounterHeader(this.root);
+    $(this.root, "[data-ref=qText]").textContent = q.question;
+
+    const code = q.code || "";
+    const lang = (q.language || "java").toLowerCase();
+    const snippetEl = $(this.root, "[data-ref=codeSnippet]");
+    if (lang === "java") {
+      snippetEl.innerHTML = highlightJava(code);
+    } else {
+      snippetEl.textContent = code;
+    }
+
+    this._updateWordleStatus(0);
+
+    const input = $(this.root, "[data-ref=answerInput]");
+    const submitBtn = $(this.root, "[data-action=submit]");
+    submitBtn.addEventListener("click", () => {
+      this.controller.submitCodeTrace(input.value);
+    });
+
+    this._kbAbort = new AbortController();
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && document.activeElement === input) {
         e.preventDefault();
         submitBtn.click();
       }
