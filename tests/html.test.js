@@ -1,12 +1,19 @@
 // tests/html.test.js — Validate HTML templates and cross-references with app.js
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(import.meta.dirname, '..');
 const html = readFileSync(join(ROOT, 'index.html'), 'utf-8');
-const appJs = readFileSync(join(ROOT, 'src', 'app.js'), 'utf-8');
+const srcJs = [
+  'app.js',
+  'controller.js',
+  'ui.js',
+  'main.js',
+  'items.js',
+  'sound.js',
+].map(file => readFileSync(join(ROOT, 'src', file), 'utf-8')).join('\n');
 const modelJs = readFileSync(join(ROOT, 'src', 'model.js'), 'utf-8');
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -33,10 +40,10 @@ describe('HTML template integrity', () => {
   });
 
   it('every template ID referenced in app.js exists in HTML', () => {
-    const refs = [...appJs.matchAll(/["'](tpl-[^"']+)["']/g)].map(m => m[1]);
+    const refs = [...srcJs.matchAll(/["'](tpl-[^"']+)["']/g)].map(m => m[1]);
     for (const ref of refs) {
       assert.ok(templateIds.includes(ref),
-        `app.js references template "${ref}" but it doesn't exist in index.html`);
+        `src JS references template "${ref}" but it doesn't exist in index.html`);
     }
   });
 });
@@ -46,13 +53,12 @@ describe('HTML template integrity', () => {
 // ────────────────────────────────────────────────────────────────────────────────
 describe('data-ref cross-references', () => {
   const htmlRefs = new Set([...html.matchAll(/data-ref="([^"]+)"/g)].map(m => m[1]));
-  // Match the pattern $(root, "[data-ref=foo]") used throughout app.js
-  const jsDollarRefs = [...appJs.matchAll(/\[data-ref=(\w+)\]/g)].map(m => m[1]);
+  const jsDollarRefs = [...srcJs.matchAll(/\[data-ref=(\w+)\]/g)].map(m => m[1]);
 
   it('every data-ref used in app.js exists in HTML', () => {
     for (const ref of jsDollarRefs) {
       assert.ok(htmlRefs.has(ref),
-        `app.js uses data-ref="${ref}" but it doesn't exist in index.html`);
+        `src JS uses data-ref="${ref}" but it doesn't exist in index.html`);
     }
   });
 });
@@ -62,12 +68,12 @@ describe('data-ref cross-references', () => {
 // ────────────────────────────────────────────────────────────────────────────────
 describe('data-action cross-references', () => {
   const htmlActions = new Set([...html.matchAll(/data-action="([^"]+)"/g)].map(m => m[1]));
-  const jsActions = [...appJs.matchAll(/\[data-action=(\w+)\]/g)].map(m => m[1]);
+  const jsActions = [...srcJs.matchAll(/\[data-action=(\w+)\]/g)].map(m => m[1]);
 
   it('every data-action used in app.js exists in HTML', () => {
     for (const action of jsActions) {
       assert.ok(htmlActions.has(action),
-        `app.js uses data-action="${action}" but it doesn't exist in index.html`);
+        `src JS uses data-action="${action}" but it doesn't exist in index.html`);
     }
   });
 });
@@ -92,15 +98,24 @@ describe('No stale weapon/armor references', () => {
     assert.ok(!modelJs.includes('ARMORS'), 'stale ARMORS reference in model.js');
   });
 
-  it('app.js does not reference weapon.name, armor.name, or old equipment fields', () => {
-    assert.ok(!appJs.includes('weapon.name'), 'stale weapon.name in app.js');
-    assert.ok(!appJs.includes('armor.name'), 'stale armor.name in app.js');
-    assert.ok(!appJs.includes('armor.defense'), 'stale armor.defense in app.js');
-    assert.ok(!appJs.includes('weapon.attack_die'), 'stale weapon.attack_die in app.js');
+  it('src JS does not reference weapon.name, armor.name, or old equipment fields', () => {
+    assert.ok(!srcJs.includes('weapon.name'), 'stale weapon.name in src JS');
+    assert.ok(!srcJs.includes('armor.name'), 'stale armor.name in src JS');
+    assert.ok(!srcJs.includes('armor.defense'), 'stale armor.defense in src JS');
+    assert.ok(!srcJs.includes('weapon.attack_die'), 'stale weapon.attack_die in src JS');
   });
 
   it('index.html includes the revive HUD ref', () => {
     assert.ok(html.includes('data-ref="pRevive"'), 'missing pRevive in index.html');
+  });
+
+  it('GameUI no longer reads window.gameController directly', () => {
+    const uiJs = readFileSync(join(ROOT, 'src', 'ui.js'), 'utf-8');
+    assert.ok(!uiJs.includes('window.gameController'), 'ui.js still references window.gameController');
+  });
+
+  it('dom.js has been removed', () => {
+    assert.ok(!existsSync(join(ROOT, 'src', 'dom.js')), 'src/dom.js should be deleted');
   });
 });
 

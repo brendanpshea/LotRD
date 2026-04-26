@@ -16,6 +16,8 @@ export async function loadJSON(url) {
     return response.json();
 }
 
+import { shuffle } from "./util.js";
+
 export function rollDice(times, sides) {
     let total = 0;
     for (let i = 0; i < times; i++) {
@@ -90,20 +92,76 @@ export class Player {
     static baseDefenseForLevel(level) { return 1 + Math.floor((level - 1) / 5); }
     static xpToNext(level)            { return Math.round(100 * Math.pow(1.25, level - 1)); }
 
-    constructor(levelData = null) {
-        const lvl             = levelData?.level ?? 1;
-        this.level            = lvl;
-        this.xp               = levelData?.xp ?? 0;
-        this.xp_to_next_level = Player.xpToNext(lvl);
-        this.max_hit_points   = Player.maxHpForLevel(lvl);
-        this.hit_points       = this.max_hit_points;
-        this.attack_die       = 6;      // fixed — never changes
-        this.base_defense     = Player.baseDefenseForLevel(lvl);
-        this.revive_charges   = levelData?.revive_charges ?? 0;
-        this.total_correct    = 0;
-        this.total_incorrect  = 0;
-        this.streak           = 0;
-        this.best_streak      = 0;
+    static _defaultFields() {
+        const level = 1;
+        const maxHitPoints = Player.maxHpForLevel(level);
+        return {
+            level,
+            xp: 0,
+            xp_to_next_level: Player.xpToNext(level),
+            max_hit_points: maxHitPoints,
+            hit_points: maxHitPoints,
+            attack_die: 6,
+            base_defense: Player.baseDefenseForLevel(level),
+            revive_charges: 0,
+            total_correct: 0,
+            total_incorrect: 0,
+            streak: 0,
+            best_streak: 0,
+        };
+    }
+
+    static _freshFields(levelData = null) {
+        const level = levelData?.level ?? 1;
+        const maxHitPoints = Player.maxHpForLevel(level);
+        return {
+            ...Player._defaultFields(),
+            level,
+            xp: levelData?.xp ?? 0,
+            xp_to_next_level: Player.xpToNext(level),
+            max_hit_points: maxHitPoints,
+            hit_points: maxHitPoints,
+            base_defense: Player.baseDefenseForLevel(level),
+            revive_charges: levelData?.revive_charges ?? 0,
+        };
+    }
+
+    static fresh(levelData = null) {
+        return new Player(Player._freshFields(levelData));
+    }
+
+    static fromSave(snapshot = {}) {
+        const level = snapshot.level ?? 1;
+        return new Player({
+            level,
+            xp: snapshot.xp ?? 0,
+            xp_to_next_level: snapshot.xp_to_next_level ?? Player.xpToNext(level),
+            max_hit_points: snapshot.max_hit_points ?? Player.maxHpForLevel(level),
+            hit_points: snapshot.hit_points ?? Player.maxHpForLevel(level),
+            attack_die: snapshot.attack_die ?? 6,
+            base_defense: snapshot.base_defense ?? Player.baseDefenseForLevel(level),
+            revive_charges: snapshot.revive_charges ?? 0,
+            total_correct: snapshot.total_correct ?? 0,
+            total_incorrect: snapshot.total_incorrect ?? 0,
+            streak: snapshot.streak ?? 0,
+            best_streak: snapshot.best_streak ?? 0,
+        });
+    }
+
+    constructor(fields = null) {
+        const data = { ...Player._freshFields(fields), ...(fields ?? {}) };
+        this.level            = data.level;
+        this.xp               = data.xp;
+        this.xp_to_next_level = data.xp_to_next_level;
+        this.max_hit_points   = data.max_hit_points;
+        this.hit_points       = data.hit_points;
+        this.attack_die       = data.attack_die;
+        this.base_defense     = data.base_defense;
+        this.revive_charges   = data.revive_charges;
+        this.total_correct    = data.total_correct;
+        this.total_incorrect  = data.total_incorrect;
+        this.streak           = data.streak;
+        this.best_streak      = data.best_streak;
     }
 }
 
@@ -143,22 +201,7 @@ export class GameModel {
             this.answer_history   = saveData.answer_history  || [];
             this.stats_offset     = saveData.stats_offset    || 0;
             this.active_item      = saveData.active_item     || null;
-
-            const p  = new Player();
-            const sp = saveData.player;
-            p.level            = sp.level;
-            p.xp               = sp.xp;
-            p.xp_to_next_level = sp.xp_to_next_level ?? Player.xpToNext(sp.level);
-            p.max_hit_points   = sp.max_hit_points   ?? Player.maxHpForLevel(sp.level);
-            p.hit_points       = sp.hit_points;
-            p.attack_die       = sp.attack_die   ?? 6;
-            p.base_defense     = sp.base_defense ?? Player.baseDefenseForLevel(sp.level);
-            p.revive_charges   = sp.revive_charges ?? 0;
-            p.total_correct    = sp.total_correct;
-            p.total_incorrect  = sp.total_incorrect;
-            p.streak           = sp.streak      || 0;
-            p.best_streak      = sp.best_streak || 0;
-            this.player = p;
+            this.player = Player.fromSave(saveData.player);
         } else {
             // ── Fresh game path ──────────────────────────────────────────
             this.questions       = [...questions];
@@ -166,13 +209,8 @@ export class GameModel {
             this.answer_history  = [];
             this.stats_offset    = 0;
             this.active_item     = null;
-            this.player          = new Player(levelData);
-
-            // Fisher-Yates shuffle
-            for (let i = this.questions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [this.questions[i], this.questions[j]] = [this.questions[j], this.questions[i]];
-            }
+            this.player          = Player.fresh(levelData);
+            this.questions       = shuffle(this.questions);
             this.questions_to_ask = [...this.questions];
         }
     }
@@ -330,6 +368,43 @@ export class GameModel {
         };
     }
 
+    _buildHistoryEntry({ correctAnswers, selected, correctSelections, incorrectSelections, missedCorrect, isPerfect }) {
+        return {
+            question: this.current_question.question,
+            correct_answers: correctAnswers,
+            selected,
+            correct_selections: correctSelections,
+            incorrect_selections: incorrectSelections,
+            missed_correct: missedCorrect,
+            was_perfect: isPerfect,
+        };
+    }
+
+    _rollDamage(hitCount, dieSize) {
+        let total = 0;
+        for (let i = 0; i < hitCount; i++) total += rollDice(1, dieSize);
+        return total;
+    }
+
+    _resolveDamage({ playerHits, monsterHits, isPerfect, partialFraction, xpGained, requeue, historyEntry }) {
+        const streakState = this._updateStreak(isPerfect, partialFraction);
+        const streakMultiplier = this._streakMultiplier();
+        const rawPlayerDamage = this._rollDamage(playerHits, this.player.attack_die);
+        const rawMonsterDamage = this._rollDamage(monsterHits, this.current_monster.attack_die);
+        const { effective_player_damage, effective_monster_damage } =
+            this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
+        const turn = this._finalizeTurn({ xpGained, requeue, historyEntry });
+
+        return {
+            ...turn,
+            effective_player_damage,
+            effective_monster_damage,
+            streakMultiplier,
+            streakCount: this.player.streak,
+            streakState,
+        };
+    }
+
     // ─── Evaluators ────────────────────────────────────────────────────────────
 
     evaluateAnswer(selectedOptions) {
@@ -348,48 +423,34 @@ export class GameModel {
         const isPerfect = incorrectSelections.length === 0 && missedCorrect.length === 0;
         const accuracyDenom = correctSelections.length + incorrectSelections.length + missedCorrect.length;
         const accuracy = accuracyDenom > 0 ? correctSelections.length / accuracyDenom : 0;
-        const streakState = this._updateStreak(isPerfect, accuracy);
-        const streakMultiplier = this._streakMultiplier();
 
         const player_hits = correctSelections.length
             + [...incorrectSet].filter(i => !selectedSet.has(i)).length;
         const monster_hits = incorrectSelections.length + missedCorrect.length;
 
-        let rawPlayerDamage = 0;
-        for (let i = 0; i < player_hits; i++)  rawPlayerDamage  += rollDice(1, this.player.attack_die);
-        let rawMonsterDamage = 0;
-        for (let i = 0; i < monster_hits; i++) rawMonsterDamage += rollDice(1, this.current_monster.attack_die);
-
-        const { effective_player_damage, effective_monster_damage } =
-            this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
-
-        const requeue = !isPerfect;
-        const historyEntry = {
-            question:             q.question,
-            correct_answers:      [...correctSet],
-            selected:             selectedOptions,
-            correct_selections:   correctSelections,
-            incorrect_selections: incorrectSelections,
-            missed_correct:       missedCorrect,
-            was_perfect:          isPerfect,
-        };
-        const turn = this._finalizeTurn({
+        const turn = this._resolveDamage({
+            playerHits: player_hits,
+            monsterHits: monster_hits,
+            isPerfect,
+            partialFraction: accuracy,
             xpGained: this.current_monster.hit_dice * 2,
-            requeue,
-            historyEntry,
+            requeue: !isPerfect,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: [...correctSet],
+                selected: selectedOptions,
+                correctSelections,
+                incorrectSelections,
+                missedCorrect,
+                isPerfect,
+            }),
         });
 
         return {
             ...turn,
-            effective_player_damage,
-            effective_monster_damage,
             correctSelections,
             incorrectSelections,
             missedCorrect,
             feedback:         q.feedback || null,
-            streakMultiplier,
-            streakCount:      this.player.streak,
-            streakState,
         };
     }
 
@@ -503,35 +564,26 @@ export class GameModel {
 
         // Streak: first-try wins increment; later wins or close fails preserve;
         // bad fails reset. The 0.9 sentinel guarantees later wins always preserve.
-        const streakState      = this._updateStreak(isPerfect, won ? 0.9 : sim);
-        const streakMultiplier = this._streakMultiplier();
-
-        // Player damage on win scales with how few attempts were used: 3/2/1 dice.
-        let rawPlayerDamage = 0;
-        if (won) {
-            const dice = (FB_MAX_ATTEMPTS - attemptsUsed) + 1;
-            for (let i = 0; i < dice; i++) rawPlayerDamage += rollDice(1, this.player.attack_die);
-        }
-        const { effective_player_damage, effective_monster_damage } =
-            this._applyDamage(rawPlayerDamage, 0, streakMultiplier);
 
         const scoreLabel = won
             ? `${finalInput} (won in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'})`
             : `closest: "${this._fbBestGuess}" — ${Math.round(sim * 100)}% match`;
 
-        const historyEntry = {
-            question:             q.question,
-            correct_answers:      q.correct || [],
-            selected:             [finalInput || ''],
-            correct_selections:   (won || sim > 0) ? [scoreLabel] : [],
-            incorrect_selections: !won ? [scoreLabel] : [],
-            missed_correct:       won  ? [] : (q.correct || []),
-            was_perfect:          isPerfect,
-        };
-        const turn = this._finalizeTurn({
+        const turn = this._resolveDamage({
+            playerHits: won ? (FB_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
+            monsterHits: 0,
+            isPerfect,
+            partialFraction: won ? 0.9 : sim,
             xpGained: this.current_monster.hit_dice * 2,
-            requeue:  !won,
-            historyEntry,
+            requeue: !won,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: q.correct || [],
+                selected: [finalInput || ''],
+                correctSelections: (won || sim > 0) ? [scoreLabel] : [],
+                incorrectSelections: !won ? [scoreLabel] : [],
+                missedCorrect: won ? [] : (q.correct || []),
+                isPerfect,
+            }),
         });
 
         // Reset so the next fill-blank question starts fresh
@@ -540,15 +592,10 @@ export class GameModel {
         return {
             ...turn,
             status: won ? 'won' : 'failed',
-            effective_player_damage,
-            effective_monster_damage,
             correctSelections:   (won || sim > 0) ? [scoreLabel] : [],
             incorrectSelections: !won ? [scoreLabel] : [],
             missedCorrect:       won  ? [] : (q.correct || []),
             feedback:         q.feedback || null,
-            streakMultiplier,
-            streakCount:      this.player.streak,
-            streakState,
             attemptsUsed,
             bestAnswer,
             wordleFeedback:   feedback,
@@ -588,17 +635,6 @@ export class GameModel {
         this.player.total_incorrect += wrongCount;
 
         const accuracy = total > 0 ? correctCount / total : 0;
-        const streakState = this._updateStreak(isPerfect, accuracy);
-        const streakMultiplier = this._streakMultiplier();
-
-        // Proportional damage — roll one die per correct/wrong pair
-        let rawPlayerDamage = 0;
-        for (let i = 0; i < correctCount; i++) rawPlayerDamage += rollDice(1, this.player.attack_die);
-        let rawMonsterDamage = 0;
-        for (let i = 0; i < wrongCount; i++)   rawMonsterDamage += rollDice(1, this.current_monster.attack_die);
-
-        const { effective_player_damage, effective_monster_damage } =
-            this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
 
         const correctSelections   = correctTerms.map(t => `${t} → ${correctMap.get(t)}`);
         const incorrectSelections = wrongTerms.map(t => {
@@ -606,32 +642,29 @@ export class GameModel {
             return `${t}: chose "${student}" — correct: "${correctMap.get(t)}"`;
         });
 
-        const historyEntry = {
-            question:             q.question,
-            correct_answers:      pairs.map(p => `${p.term} → ${p.definition}`),
-            selected:             selectedPairs.map(p => `${p.term} → ${p.definition}`),
-            correct_selections:   correctSelections,
-            incorrect_selections: incorrectSelections,
-            missed_correct:       [],
-            was_perfect:          isPerfect,
-        };
-        const turn = this._finalizeTurn({
+        const turn = this._resolveDamage({
+            playerHits: correctCount,
+            monsterHits: wrongCount,
+            isPerfect,
+            partialFraction: accuracy,
             xpGained: 10,
-            requeue:  !isPerfect,
-            historyEntry,
+            requeue: !isPerfect,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: pairs.map(p => `${p.term} → ${p.definition}`),
+                selected: selectedPairs.map(p => `${p.term} → ${p.definition}`),
+                correctSelections,
+                incorrectSelections,
+                missedCorrect: [],
+                isPerfect,
+            }),
         });
 
         return {
             ...turn,
-            effective_player_damage,
-            effective_monster_damage,
             correctSelections,
             incorrectSelections,
             missedCorrect: [],
             feedback:         q.feedback || null,
-            streakMultiplier,
-            streakCount:      this.player.streak,
-            streakState,
         };
     }
 

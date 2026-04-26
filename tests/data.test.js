@@ -90,6 +90,7 @@ describe('question_sets/index.json', () => {
 describe('question_sets/catalog.json', () => {
   const catalog = loadJSON('question_sets/catalog.json');
   const index = loadJSON('question_sets/index.json');
+  const isReviewSet = set => set.review === true;
 
   it('is a non-empty array of topic objects', () => {
     assert.ok(Array.isArray(catalog) && catalog.length > 0);
@@ -105,8 +106,15 @@ describe('question_sets/catalog.json', () => {
         assert.ok(typeof s.id === 'string', `Set missing id in topic "${topic.topic}"`);
         assert.ok(typeof s.title === 'string', `Set missing title: ${s.id}`);
         assert.ok(typeof s.description === 'string', `Set missing description: ${s.id}`);
-        assert.ok(Number.isInteger(s.question_count) && s.question_count > 0,
-          `Bad question_count for ${s.id}: ${s.question_count}`);
+        if (isReviewSet(s)) {
+          assert.ok(Number.isInteger(s.sample_size) && s.sample_size > 0,
+            `Bad sample_size for review set ${s.id}: ${s.sample_size}`);
+          assert.ok(Array.isArray(s.sources) && s.sources.length > 0,
+            `Review set ${s.id} must declare at least one source set`);
+        } else {
+          assert.ok(Number.isInteger(s.question_count) && s.question_count > 0,
+            `Bad question_count for ${s.id}: ${s.question_count}`);
+        }
       }
     }
   });
@@ -114,8 +122,15 @@ describe('question_sets/catalog.json', () => {
   it('every catalog set ID has a matching file on disk', () => {
     for (const topic of catalog) {
       for (const s of topic.sets) {
-        const p = join(ROOT, 'question_sets', s.id);
-        assert.ok(existsSync(p), `catalog references missing file: ${s.id}`);
+        if (isReviewSet(s)) {
+          for (const src of s.sources) {
+            const p = join(ROOT, 'question_sets', src);
+            assert.ok(existsSync(p), `review set ${s.id} references missing source file: ${src}`);
+          }
+        } else {
+          const p = join(ROOT, 'question_sets', s.id);
+          assert.ok(existsSync(p), `catalog references missing file: ${s.id}`);
+        }
       }
     }
   });
@@ -123,7 +138,13 @@ describe('question_sets/catalog.json', () => {
   it('every catalog set ID appears in index.json', () => {
     for (const topic of catalog) {
       for (const s of topic.sets) {
-        assert.ok(index.includes(s.id), `catalog set "${s.id}" not in index.json`);
+        if (isReviewSet(s)) {
+          for (const src of s.sources) {
+            assert.ok(index.includes(src), `review set "${s.id}" source "${src}" not in index.json`);
+          }
+        } else {
+          assert.ok(index.includes(s.id), `catalog set "${s.id}" not in index.json`);
+        }
       }
     }
   });
@@ -131,6 +152,7 @@ describe('question_sets/catalog.json', () => {
   it('question_count matches actual question count in each file', () => {
     for (const topic of catalog) {
       for (const s of topic.sets) {
+        if (isReviewSet(s)) continue;
         const questions = loadJSON(`question_sets/${s.id}`);
         assert.equal(questions.length, s.question_count,
           `${s.id}: catalog says ${s.question_count} questions, file has ${questions.length}`);
