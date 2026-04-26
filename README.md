@@ -120,8 +120,13 @@ index.html          — All HTML templates (SPA; templates are <template> elemen
 styles.css          — BBS-style dark-green terminal theme
 src/
   main.js           — Entry point; instantiates GameController
-  app.js            — GameUI (all screen rendering) + GameController (game flow)
-  model.js          — Player, Monster, GameModel; all game logic and battle math
+  app.js            — Barrel module that re-exports the main runtime classes
+  controller.js     — GameController; game flow, persistence, item drops, review-set launch
+  ui.js             — GameUI; all screen rendering, keyboard handling, encounter/results screens
+  sound.js          — SoundSystem; Web Audio API effects and keep-alive logic
+  items.js          — ITEM_DROPS table for post-battle loot
+  model.js          — Player, Monster, GameModel; game logic, battle math, save/load state
+  util.js           — Shared helpers such as shuffle()
 assets/
   monsters.json     — Monster definitions (name, hit_dice, attack_die, defense, image)
   questions.json    — Legacy; not used by the main app
@@ -135,6 +140,15 @@ tests/
   data.test.js      — Validates all JSON data files (monsters, question sets, catalog)
   html.test.js      — Cross-reference checks (templates, data-refs, stale code)
 ```
+
+### Runtime Architecture
+
+- `main.js` is the browser entrypoint and creates a single `GameController` instance.
+- `controller.js` owns application state transitions: loading sets, saving progress, resuming games, resolving battles, and routing to the right screen.
+- `ui.js` is intentionally presentation-focused: it renders templates, handles keyboard shortcuts, and calls controller methods instead of reaching through globals.
+- `model.js` owns the combat and progression rules: player/monster state, streaks, fill-blank and matching evaluation, shared damage resolution, and save snapshots.
+- `sound.js` is isolated from UI and model logic, so audio concerns stay separate from gameplay and rendering.
+- `items.js` and `util.js` hold small shared data/helpers that were previously duplicated inline.
 
 ---
 
@@ -190,9 +204,9 @@ node --test tests/model.test.js tests/data.test.js tests/html.test.js
 
 | File | What it checks |
 |------|----------------|
-| `model.test.js` | 45 tests — rollDice, Player, Monster, GameModel, combat, streaks, level-up, revive, items |
+| `model.test.js` | Model and combat logic — player state, streaks, fill-blank/matching evaluation, level-up, revive, items |
 | `data.test.js` | All JSON files — required fields, type constraints, image files exist, catalog/index consistency |
-| `html.test.js` | 16 tests — template IDs, data-ref/data-action cross-refs, no stale code, accessibility, CSS classes |
+| `html.test.js` | HTML/template cross-checks — template IDs, data-ref/data-action usage, stale code checks, accessibility, CSS classes |
 
 ---
 

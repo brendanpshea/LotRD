@@ -3,6 +3,7 @@ import { ITEM_DROPS } from "./items.js";
 import { SoundSystem } from "./sound.js";
 import { GameUI } from "./ui.js";
 import { shuffle } from "./util.js";
+import { pickDragonLine } from "./dragon.js";
 
 export class GameController {
   constructor() {
@@ -11,6 +12,7 @@ export class GameController {
     this.sounds = new SoundSystem();
     this._setName = null;
     this._setTitle = null;
+    this._setTopic = null;
     this._catalog = null;
     this.model = null;
     this._isReview = false;
@@ -251,11 +253,13 @@ export class GameController {
       }
 
       this._setTitle = null;
+      this._setTopic = null;
       if (this._catalog) {
         for (const topic of this._catalog) {
           const entry = (topic.sets || []).find(s => s.id === setId);
           if (entry) {
             this._setTitle = `${topic.topic}: ${entry.title}`;
+            this._setTopic = topic.topic;
             break;
           }
         }
@@ -361,13 +365,13 @@ export class GameController {
       this._saveGlobalLevel();
       this.sounds.victory();
       this._setInGame(false);
-      this.ui.showVictory(() => this.startReview("victory"));
+      this._showWithDragon(line => this.ui.showVictory(() => this.startReview("victory"), line));
     } else if (status === "no_questions") {
       this._clearSave();
       this._updateGlobalStats();
       this._saveGlobalLevel();
       this._setInGame(false);
-      this.ui.showNoQuestions(() => this.startReview("no_questions"));
+      this._showWithDragon(line => this.ui.showNoQuestions(() => this.startReview("no_questions"), line));
     } else {
       this._setInGame(true);
       const qtype = this.model.current_question?.type;
@@ -379,6 +383,24 @@ export class GameController {
         this.ui.showEncounter();
       }
     }
+  }
+
+  _showWithDragon(render) {
+    if (this._isReview) { render(null); return; }
+    const p = this.model.player;
+    const total = p.total_correct + p.total_incorrect;
+    const score_pct = total > 0 ? Math.round((p.total_correct / total) * 100) : 0;
+    const global = this._loadGlobalStats();
+    const sets_completed = global?.sets_completed ?? 0;
+    const ctx = {
+      score_pct,
+      was_perfect: p.total_incorrect === 0 && total > 0,
+      best_streak: p.best_streak,
+      topic: this._setTopic,
+      sets_completed,
+      is_first_ever: sets_completed === 1,
+    };
+    pickDragonLine(ctx).then(render).catch(() => render(null));
   }
 
   startReview(outcomeType) {

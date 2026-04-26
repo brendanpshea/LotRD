@@ -192,6 +192,7 @@ export class GameModel {
         this.monsters         = monsters;
         this.current_monster  = null;
         this.current_question = null;
+        this.recent_monsters  = [];
 
         if (saveData) {
             // ── Resume path ──────────────────────────────────────────────
@@ -201,6 +202,7 @@ export class GameModel {
             this.answer_history   = saveData.answer_history  || [];
             this.stats_offset     = saveData.stats_offset    || 0;
             this.active_item      = saveData.active_item     || null;
+            this.recent_monsters  = saveData.recent_monsters || [];
             this.player = Player.fromSave(saveData.player);
         } else {
             // ── Fresh game path ──────────────────────────────────────────
@@ -225,6 +227,7 @@ export class GameModel {
             answer_history:   this.answer_history,
             stats_offset:     this.stats_offset,
             active_item:      this.active_item,
+            recent_monsters:  this.recent_monsters,
             player: {
                 level:            p.level,
                 xp:               p.xp,
@@ -247,15 +250,36 @@ export class GameModel {
      * Monsters near the player's level are favoured but no monster is excluded.
      */
     generateMonster() {
-        const lvl     = this.player?.level ?? 1;
-        const weights = this.monsters.map(m => 1 / (1 + Math.abs(m.hit_dice - lvl)));
+        const lvl = this.player?.level ?? 1;
+        const recent = this.recent_monsters;
+        const weights = this.monsters.map(monster => {
+            const levelWeight = 1 / (1 + Math.abs(monster.hit_dice - lvl));
+            const recentIndex = recent.lastIndexOf(monster.monster_name);
+            if (recentIndex === -1) return levelWeight;
+
+            const distanceFromLatest = recent.length - recentIndex;
+            const repeatPenalty = distanceFromLatest === 1 ? 0.15 : 0.45;
+            return levelWeight * repeatPenalty;
+        });
         const total   = weights.reduce((a, b) => a + b, 0);
         let r = Math.random() * total;
         for (let i = 0; i < this.monsters.length; i++) {
             r -= weights[i];
-            if (r <= 0) return new Monster(this.monsters[i]);
+            if (r <= 0) {
+                this._rememberMonster(this.monsters[i].monster_name);
+                return new Monster(this.monsters[i]);
+            }
         }
-        return new Monster(this.monsters[this.monsters.length - 1]);
+        const fallback = this.monsters[this.monsters.length - 1];
+        this._rememberMonster(fallback.monster_name);
+        return new Monster(fallback);
+    }
+
+    _rememberMonster(monsterName) {
+        this.recent_monsters.push(monsterName);
+        if (this.recent_monsters.length > 3) {
+            this.recent_monsters.shift();
+        }
     }
 
     nextEncounter() {

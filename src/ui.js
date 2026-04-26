@@ -816,10 +816,14 @@ export class GameUI {
     }, { signal: this._kbAbort.signal });
   }
 
-  showVictory(reviewCallback) {
+  showVictory(reviewCallback, dragonLine = null) {
     this._clearKeyboard();
     const p = this.model.player;
     renderTemplate(this.root, "tpl-victory");
+    if (dragonLine) {
+      const d = $(this.root, "[data-ref=dragonSpeech]");
+      if (d) { d.textContent = dragonLine; d.hidden = false; }
+    }
     $(this.root, "[data-ref=victoryStats]").innerHTML = `
       All questions answered!<br>
       Correct: <span class='yellow'>${p.total_correct}</span><br>
@@ -836,10 +840,14 @@ export class GameUI {
     }
   }
 
-  showNoQuestions(reviewCallback) {
+  showNoQuestions(reviewCallback, dragonLine = null) {
     this._clearKeyboard();
     const p = this.model.player;
     renderTemplate(this.root, "tpl-no-questions");
+    if (dragonLine) {
+      const d = $(this.root, "[data-ref=dragonSpeech]");
+      if (d) { d.textContent = dragonLine; d.hidden = false; }
+    }
     $(this.root, "[data-ref=finalStats]").innerHTML = `
       <span class='bold'>Final Stats:</span><br>
       Correct: <span class='yellow'>${p.total_correct}</span><br>

@@ -257,6 +257,35 @@ describe('generateMonster', () => {
     assert.ok(names.has('Test Slime'));
     assert.ok(names.has('Test Golem'));
   });
+
+  it('penalizes immediate monster repeats when alternatives exist', () => {
+    const monsters = [
+      { monster_name: 'Constellation', hit_dice: 6, attack_die: 4, defense: 0, image: 'slime.png' },
+      { monster_name: 'Warden', hit_dice: 6, attack_die: 4, defense: 0, image: 'golem.png' },
+    ];
+    const gm = freshModel([mcQuestion(), mcQuestion(), mcQuestion()], monsters);
+    gm.player.level = 6;
+
+    const randomValues = [0.01, 0.99];
+    const originalRandom = Math.random;
+    Math.random = () => randomValues.shift() ?? 0.5;
+
+    try {
+      const first = gm.generateMonster().monster_name;
+      const second = gm.generateMonster().monster_name;
+      assert.notEqual(second, first);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  it('round-trips recent monster history through save data', () => {
+    const gm = freshModel();
+    gm.recent_monsters = ['Alpha', 'Beta', 'Gamma'];
+
+    const resumed = freshModel(null, null, gm.toSaveData());
+    assert.deepEqual(resumed.recent_monsters, ['Alpha', 'Beta', 'Gamma']);
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────────────
