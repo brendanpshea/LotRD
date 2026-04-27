@@ -13,6 +13,7 @@ Each question set is a **JSON array** of question objects saved in `question_set
 | Multiple Choice | *(omitted)* | Radio (1 correct) or Checkbox (2+ correct) | Recall, analysis, "select all that apply" |
 | Fill-in-the-Blank | `"fill_blank"` | Text input | Terminology, syntax, exact recall |
 | Matching | `"matching"` | Dropdowns | Associating terms with definitions |
+| Code Line | `"code_line"` | Text input + token-Wordle | Writing one line of code/command |
 
 A good problem set uses a **mix of all types**. Aim for roughly:
 - 60–70% multiple choice (split between single-answer and multi-answer)
@@ -301,6 +302,99 @@ Use to test the ability to **associate terms with definitions**, concepts with e
 
 ---
 
+## Type 5: Code Line
+
+Use when the student should **write** (not just recognize) a single line of code or a single command. Grading is whitespace-insensitive at the token level: `int x=5;` ≡ `int x = 5 ;`. Up to 3 attempts per question, with token-level Wordle feedback between attempts and a "did you mean?" prompt for typos within 2 character edits of an accepted answer.
+
+### Schema
+
+```json
+{
+  "type": "code_line",
+  "question": "Declare an empty ArrayList of Strings named names.",
+  "language": "java",
+  "correct": [
+    "List<String> names = new ArrayList<>();",
+    "ArrayList<String> names = new ArrayList<>();"
+  ],
+  "case_sensitive": true,
+  "feedback": "Declaring as List<String> is preferred — it lets you swap implementations later."
+}
+```
+
+### Rules
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `type` | yes | `"code_line"` | Must be exactly this string |
+| `question` | yes | string | Plain-language instruction for what to write |
+| `correct` | yes | string[] | All accepted variants. The grader picks the closest variant per attempt and renders token-Wordle against it. |
+| `language` | no | string | Display tag (`java`, `python`, `bash`, `cisco`, …). Currently informational. |
+| `case_sensitive` | no | boolean | Default `false`. Set `true` for code (most cases). |
+| `feedback` | no | string | Shown after the question resolves |
+
+### Writing Good Code-Line Questions
+
+1. **Pin every free variable in the stem.** "Declare a list of Strings" → infinite valid names. "Declare a list of Strings named `names`" → bounded answer set.
+2. **Enumerate every reasonable surface form** in `correct[]` (diamond vs explicit type, `var` vs declared type, alternate method orders for bash flags). Aim for 2–6 entries.
+3. **Keep it to one line.** Multi-line answers belong in `code_trace` or a different format.
+4. **Avoid open-ended questions.** "Write a class that…" has too many right answers — grading collapses.
+5. **Use `case_sensitive: true`** for any code where casing matters (almost always; Cisco config is the main exception).
+6. **Don't include leading/trailing whitespace** in `correct[]` entries — the grader trims for you.
+
+### Scoring (how it maps to combat)
+
+- **Win on attempt 1** → `isPerfect`, full damage, streak increments, XP eligible for doubling.
+- **Win on attempt 2 or 3** → full damage but `isPerfect = false`; streak preserved.
+- **Fail (3 wrong)** → no player damage; partial credit = best token-similarity across attempts. Streak preserved if best ≥ 0.8, else reset. Question re-queued.
+- **Each wrong intermediate attempt** → monster attacks the player.
+- **Typo gate** (≤ 2 char edits from any accepted answer) → "Did you mean: …?" prompt before the attempt counts.
+
+### Good Stem Patterns
+
+```
+"Declare a ___ named ___, initialized to ___."
+"Write the Java statement that ___."
+"Write the bash command that lists ___."
+"Write the lambda that returns true when ___."
+"Write the Cisco command (in global config) to ___."
+```
+
+### Examples
+
+```json
+{
+  "type": "code_line",
+  "question": "List all files under /var/log modified in the last 24 hours.",
+  "language": "bash",
+  "correct": [
+    "find /var/log -mtime -1",
+    "find /var/log -mtime -1 -type f",
+    "find /var/log -type f -mtime -1"
+  ],
+  "case_sensitive": true,
+  "feedback": "`find /var/log -mtime -1` matches files modified less than 1 day ago."
+}
+```
+
+```json
+{
+  "type": "code_line",
+  "question": "Write a Python list comprehension that squares every even number in `nums`.",
+  "language": "python",
+  "correct": [
+    "[n*n for n in nums if n % 2 == 0]",
+    "[n**2 for n in nums if n % 2 == 0]",
+    "[n*n for n in nums if n%2==0]",
+    "[n**2 for n in nums if n%2==0]"
+  ],
+  "case_sensitive": true,
+  "feedback": "List comprehensions filter with `if` and transform with the leading expression."
+}
+```
+
+---
+
 ## General Quality Guidelines
 
 ### Feedback
@@ -429,6 +523,7 @@ The output must be a valid JSON array following these rules:
 - Multiple choice (multi-answer): { "question", "correct": ["answer1", "answer2", ...], "incorrect": [...], "feedback" }  
 - Fill-in-the-blank: { "type": "fill_blank", "question" (with ___), "correct": ["accepted answers..."], "case_sensitive": bool, "feedback" }
 - Matching: { "type": "matching", "question", "pairs": [{"term", "definition"}, ...], "feedback" }
+- Code line: { "type": "code_line", "question", "language", "correct": ["accepted variants..."], "case_sensitive": bool, "feedback" }
 
 Requirements:
 - Generate [N] questions total

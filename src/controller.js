@@ -401,6 +401,8 @@ export class GameController {
         this.ui.showEncounterFillBlank();
       } else if (qtype === "code_trace") {
         this.ui.showEncounterCodeTrace();
+      } else if (qtype === "code_line") {
+        this.ui.showEncounterCodeLine();
       } else if (qtype === "matching") {
         this.ui.showEncounterMatching();
       } else {
@@ -470,6 +472,47 @@ export class GameController {
       }
       this.sounds.incorrect();
       this.ui.showFillBlankAttempt(result);
+      this.saveGame();
+      return;
+    }
+
+    this._resolveBattle(result);
+  }
+
+  submitCodeLine(inputText, { confirmed = false } = {}) {
+    if (!this.model.current_question) return;
+    if (!inputText.trim()) {
+      this.ui.showFeedbackInline("Please type an answer before submitting.");
+      return;
+    }
+
+    const result = this.model.submitCodeLineGuess(inputText, { confirmed });
+
+    if (result.status === "typo") {
+      this.ui.showCodeLineTypoConfirm(
+        result.suggestion,
+        inputText,
+        () => this.submitCodeLine(inputText, { confirmed: true }),
+        () => this.ui.focusCodeLineInput(),
+      );
+      return;
+    }
+
+    if (result.status === "wrong") {
+      if (result.defeated_player && this.model.player.revive_charges > 0) {
+        this.model.player.revive_charges--;
+        this.model.player.hit_points = 10;
+        result.defeated_player = false;
+        result.revived = true;
+      }
+      if (result.defeated_player) {
+        const finalResult = this.model.forceCodeLineFail();
+        finalResult.defeated_player = true;
+        this._resolveBattle(finalResult);
+        return;
+      }
+      this.sounds.incorrect();
+      this.ui.showCodeLineAttempt(result);
       this.saveGame();
       return;
     }

@@ -657,6 +657,111 @@ export class GameUI {
     grid.appendChild(row);
   }
 
+  showEncounterCodeLine() {
+    this._clearKeyboard();
+    const q = this.model.current_question;
+    renderTemplate(this.root, "tpl-encounter-code-line");
+    this._populateEncounterHeader(this.root);
+    $(this.root, "[data-ref=qText]").textContent = q.question;
+
+    const langEl = $(this.root, "[data-ref=langTag]");
+    if (langEl) langEl.textContent = q.language ? `[${q.language}]` : "";
+
+    this._updateWordleStatus(0);
+
+    const input = $(this.root, "[data-ref=answerInput]");
+    const submitBtn = $(this.root, "[data-action=submit]");
+    submitBtn.addEventListener("click", () => {
+      this.controller.submitCodeLine(input.value);
+    });
+
+    this._kbAbort = new AbortController();
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && document.activeElement === input) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    }, { signal: this._kbAbort.signal });
+
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
+    this._renderProgress(this.root);
+    input.focus();
+  }
+
+  showCodeLineAttempt(result) {
+    this._populateEncounterHeader(this.root);
+    this._appendWordleRow(result.feedback);
+    this._updateWordleStatus(result.attemptsUsed);
+
+    if (result.effective_monster_damage > 0) {
+      const hud = this.root.querySelector(".player-hud");
+      this._spawnFloatNumber(hud, `-${result.effective_monster_damage}`, "dmg-float--recv");
+      const container = document.querySelector(".game-container");
+      if (container) {
+        container.classList.add("player-hit");
+        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+      }
+    }
+    if (result.shield_used) {
+      this.showFeedbackInline("🛡 Firewall Shard absorbed the hit.");
+    }
+    if (result.revived) {
+      this.showFeedbackInline("⚗️ A Revive Charge was consumed — you survive with 10 HP!");
+    }
+
+    this._clearTypoPrompt();
+    const input = $(this.root, "[data-ref=answerInput]");
+    if (input) {
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  showCodeLineTypoConfirm(suggestion, guessText, onConfirm, onEdit) {
+    const promptEl = $(this.root, "[data-ref=typoPrompt]");
+    if (!promptEl) { onConfirm(); return; }
+    promptEl.hidden = false;
+    promptEl.innerHTML = "";
+
+    const msg = document.createElement("div");
+    msg.className = "typo-prompt-msg";
+    const label = document.createElement("span");
+    label.textContent = "Did you mean: ";
+    const code = document.createElement("code");
+    code.textContent = suggestion;
+    msg.appendChild(label);
+    msg.appendChild(code);
+    promptEl.appendChild(msg);
+
+    const btnRow = document.createElement("div");
+    btnRow.className = "typo-prompt-buttons";
+    const yes = document.createElement("button");
+    yes.type = "button";
+    yes.className = "action-button";
+    yes.textContent = "Yes, submit";
+    yes.addEventListener("click", () => { this._clearTypoPrompt(); onConfirm(); });
+    const no = document.createElement("button");
+    no.type = "button";
+    no.className = "action-button";
+    no.textContent = "No, let me edit";
+    no.addEventListener("click", () => { this._clearTypoPrompt(); onEdit(); });
+    btnRow.appendChild(yes);
+    btnRow.appendChild(no);
+    promptEl.appendChild(btnRow);
+    yes.focus();
+  }
+
+  focusCodeLineInput() {
+    const input = $(this.root, "[data-ref=answerInput]");
+    if (input) input.focus();
+  }
+
+  _clearTypoPrompt() {
+    const el = $(this.root, "[data-ref=typoPrompt]");
+    if (el) { el.hidden = true; el.innerHTML = ""; }
+  }
+
   showFillBlankAttempt(result) {
     this._populateEncounterHeader(this.root);
     this._appendWordleRow(result.feedback);

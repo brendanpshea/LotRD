@@ -193,6 +193,13 @@ describe('Question set file validation', () => {
               `${label}: code_trace must have non-empty correct array`);
             assert.ok(typeof q.code === 'string' && q.code.length > 0,
               `${label}: code_trace must have non-empty code string`);
+          } else if (type === 'code_line') {
+            assert.ok(Array.isArray(q.correct) && q.correct.length > 0,
+              `${label}: code_line must have non-empty correct array`);
+            for (const ans of q.correct) {
+              assert.ok(typeof ans === 'string' && ans.length > 0,
+                `${label}: code_line correct entries must be non-empty strings`);
+            }
           } else if (type === 'matching') {
             assert.ok(Array.isArray(q.pairs) && q.pairs.length >= 2,
               `${label}: matching must have >= 2 pairs`);

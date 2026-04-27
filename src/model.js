@@ -85,7 +85,76 @@ export function wordleFeedback(guess, answer) {
     return g.map((char, i) => ({ char, status: status[i] }));
 }
 
+/**
+ * Tokenize a string for code-line questions. Splits into identifiers,
+ * numbers, multi-character operators, and individual punctuation chars.
+ * Whitespace is stripped. The same regex serves Java/Python/Bash/Cisco
+ * for v1 — language-specific normalization can layer on later.
+ */
+const CODE_TOKEN_RE = /[A-Za-z_$][A-Za-z0-9_$]*|\d+(?:\.\d+)?|<=|>=|==|!=|&&|\|\||->|::|\+\+|--|<<|>>|\+=|-=|\*=|\/=|<>|\S/g;
+export function tokenize(s, _language) {
+    if (!s) return [];
+    return s.match(CODE_TOKEN_RE) || [];
+}
+
+/** Edit distance between two token arrays (insert/delete/substitute = 1). */
+export function tokenLevenshtein(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    let prev = new Array(b.length + 1);
+    let cur  = new Array(b.length + 1);
+    for (let j = 0; j <= b.length; j++) prev[j] = j;
+    for (let i = 1; i <= a.length; i++) {
+        cur[0] = i;
+        for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        }
+        [prev, cur] = [cur, prev];
+    }
+    return prev[b.length];
+}
+
+/** 0..1 token-level similarity (1 = identical token sequence). */
+export function tokenSimilarity(a, b) {
+    const maxLen = Math.max(a.length, b.length);
+    if (maxLen === 0) return 1;
+    return 1 - (tokenLevenshtein(a, b) / maxLen);
+}
+
+/**
+ * Token-level Wordle feedback. Same shape as wordleFeedback() so the
+ * existing wordle-grid renderer works unchanged — each "char" is a whole
+ * token. Two-pass to handle repeated tokens correctly.
+ */
+export function tokenWordleFeedback(guessTokens, answerTokens) {
+    const status = new Array(guessTokens.length).fill('absent');
+    const used   = new Array(answerTokens.length).fill(false);
+
+    for (let i = 0; i < guessTokens.length; i++) {
+        if (i < answerTokens.length && guessTokens[i] === answerTokens[i]) {
+            status[i] = 'correct';
+            used[i]   = true;
+        }
+    }
+    for (let i = 0; i < guessTokens.length; i++) {
+        if (status[i] !== 'absent') continue;
+        for (let j = 0; j < answerTokens.length; j++) {
+            if (!used[j] && guessTokens[i] === answerTokens[j]) {
+                status[i] = 'present';
+                used[j]   = true;
+                break;
+            }
+        }
+    }
+    return guessTokens.map((char, i) => ({ char, status: status[i] }));
+}
+
 export const FB_MAX_ATTEMPTS = 3;
+export const CL_MAX_ATTEMPTS = 3;
+// Char-level edit distance under which a near-miss triggers the "did you mean?"
+// typo gate — small enough to catch real typos without rescuing wrong answers.
+export const CL_TYPO_THRESHOLD = 2;
 
 export const INVENTORY_SIZE = 2;
 
@@ -696,6 +765,193 @@ export class GameModel {
 
         // Reset so the next fill-blank question starts fresh
         this._fbCurrentQ = null;
+
+        return {
+            ...turn,
+            status: won ? 'won' : 'failed',
+            correctSelections:   (won || sim > 0) ? [scoreLabel] : [],
+            incorrectSelections: !won ? [scoreLabel] : [],
+            missedCorrect:       won  ? [] : (q.correct || []),
+            feedback:         q.feedback || null,
+            attemptsUsed,
+            bestAnswer,
+            wordleFeedback:   feedback,
+        };
+    }
+
+    /**
+     * Submit one guess for the current code-line question.
+     * Mirrors fill-blank but uses token-level similarity (so `int x=5;` ≡
+     * `int x = 5 ;`) and a typo gate that asks "did you mean?" before
+     * burning an attempt on a near-miss.
+     *
+     * Returns one of:
+     *   { status: 'typo',   suggestion, guessText, ... } – ask before counting
+     *   { status: 'wrong',  feedback, attemptsLeft, effective_monster_damage,
+     *                       defeated_player } – more attempts remain
+     *   { status: 'won',    ...battleData, wordleFeedback, attemptsUsed }
+     *   { status: 'failed', ...battleData, wordleFeedback, attemptsUsed }
+     */
+    submitCodeLineGuess(inputText, { confirmed = false } = {}) {
+        const q = this.current_question;
+        if (this._clCurrentQ !== q) {
+            this._clCurrentQ         = q;
+            this._clAttempts         = 0;
+            this._clBestGuess        = '';
+            this._clBestSimilarity   = 0;
+            this._clBestAnswer       = '';
+            this._clBestAnswerTokens = [];
+        }
+
+        const acceptable = q.correct || [];
+        const caseSens   = q.case_sensitive === true;
+        const lang       = (q.language || '').toLowerCase();
+        const norm       = s => caseSens ? s.trim() : s.trim().toLowerCase();
+
+        const inputNorm   = norm(inputText);
+        const inputTokens = tokenize(inputNorm, lang);
+
+        // Pick the variant most similar to this guess (token similarity).
+        // Track best char distance separately for the typo gate. A perfect
+        // token match (sim === 1) counts as correct even if whitespace differs
+        // — that's the whole point of token-level grading.
+        let bestAnswer       = norm(acceptable[0] || '');
+        let bestAnswerTokens = tokenize(bestAnswer, lang);
+        let bestTokenSim     = -1;
+        let bestCharDist     = Infinity;
+        for (const ans of acceptable) {
+            const ansNorm   = norm(ans);
+            const ansTokens = tokenize(ansNorm, lang);
+            const sim       = tokenSimilarity(inputTokens, ansTokens);
+            if (sim > bestTokenSim) {
+                bestTokenSim = sim; bestAnswer = ansNorm; bestAnswerTokens = ansTokens;
+            }
+            const cd = levenshtein(inputNorm, ansNorm);
+            if (cd < bestCharDist) bestCharDist = cd;
+            if (sim === 1) { bestCharDist = 0; break; }
+        }
+
+        const isCorrect = bestTokenSim === 1;
+
+        // Typo gate — fire on a near-miss before counting the attempt.
+        if (!isCorrect && !confirmed && inputNorm.length > 0
+            && bestCharDist > 0 && bestCharDist <= CL_TYPO_THRESHOLD) {
+            return {
+                status:        'typo',
+                suggestion:    bestAnswer,
+                guessText:     inputText,
+                charDistance:  bestCharDist,
+                attemptsUsed:  this._clAttempts,
+                attemptsLeft:  CL_MAX_ATTEMPTS - this._clAttempts,
+            };
+        }
+
+        const feedback = tokenWordleFeedback(inputTokens, bestAnswerTokens);
+        this._clAttempts++;
+
+        if (bestTokenSim > this._clBestSimilarity) {
+            this._clBestSimilarity   = bestTokenSim;
+            this._clBestGuess        = inputText;
+            this._clBestAnswer       = bestAnswer;
+            this._clBestAnswerTokens = bestAnswerTokens;
+        }
+
+        if (isCorrect) {
+            return this._finalizeCodeLine({
+                won: true, finalInput: inputText, bestAnswer, bestAnswerTokens, feedback,
+            });
+        }
+        if (this._clAttempts >= CL_MAX_ATTEMPTS) {
+            return this._finalizeCodeLine({
+                won: false,
+                finalInput:       this._clBestGuess,
+                bestAnswer:       this._clBestAnswer || bestAnswer,
+                bestAnswerTokens: this._clBestAnswerTokens.length ? this._clBestAnswerTokens : bestAnswerTokens,
+                feedback,
+            });
+        }
+
+        // Wrong, but more attempts remain — apply monster attack only.
+        const monsterRoll = rollDice(1, this.current_monster.attack_die);
+        let effective_monster_damage = Math.max(monsterRoll - this.player.base_defense, 0);
+        let shield_used = false;
+        if (this.pending_effects.has('shield') && effective_monster_damage > 0) {
+            shield_used = true;
+            effective_monster_damage = 0;
+            this.pending_effects.delete('shield');
+        }
+        this.player.hit_points -= effective_monster_damage;
+
+        return {
+            status:       'wrong',
+            feedback,
+            guessText:    inputText,
+            attemptsUsed: this._clAttempts,
+            attemptsLeft: CL_MAX_ATTEMPTS - this._clAttempts,
+            effective_monster_damage,
+            shield_used,
+            defeated_player: this.player.hit_points <= 0,
+        };
+    }
+
+    /** Force-fail the current code-line turn (player died on a wrong guess). */
+    forceCodeLineFail() {
+        const q          = this.current_question;
+        const acceptable = q.correct || [];
+        const caseSens   = q.case_sensitive === true;
+        const lang       = (q.language || '').toLowerCase();
+        const norm       = s => caseSens ? s.trim() : s.trim().toLowerCase();
+        const bestAnswer = this._clBestAnswer || norm(acceptable[0] || '');
+        const bestAnswerTokens = this._clBestAnswerTokens.length
+            ? this._clBestAnswerTokens
+            : tokenize(bestAnswer, lang);
+        const guessTokens = tokenize(norm(this._clBestGuess || ''), lang);
+        const feedback    = tokenWordleFeedback(guessTokens, bestAnswerTokens);
+        this._clAttempts  = CL_MAX_ATTEMPTS;
+        return this._finalizeCodeLine({
+            won: false,
+            finalInput: this._clBestGuess,
+            bestAnswer,
+            bestAnswerTokens,
+            feedback,
+        });
+    }
+
+    _finalizeCodeLine({ won, finalInput, bestAnswer, bestAnswerTokens, feedback }) {
+        const q            = this.current_question;
+        const attemptsUsed = this._clAttempts;
+        const isPerfect    = won && attemptsUsed === 1;
+        const sim          = won ? 1 : this._clBestSimilarity;
+
+        // Proportional credit — token count is the natural denominator for code.
+        const tokenCount   = bestAnswerTokens.length || 1;
+        const correctToks  = Math.round(sim * tokenCount);
+        const wrongToks    = tokenCount - correctToks;
+        this.player.total_correct   += correctToks;
+        this.player.total_incorrect += wrongToks;
+
+        const scoreLabel = won
+            ? `${finalInput} (won in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'})`
+            : `closest: "${this._clBestGuess}" — ${Math.round(sim * 100)}% match`;
+
+        const turn = this._resolveDamage({
+            playerHits:  won ? (CL_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
+            monsterHits: 0,
+            isPerfect,
+            partialFraction: won ? 0.9 : sim,
+            xpGained: this.current_monster.hit_dice * 2,
+            requeue: !won,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: q.correct || [],
+                selected: [finalInput || ''],
+                correctSelections:   (won || sim > 0) ? [scoreLabel] : [],
+                incorrectSelections: !won ? [scoreLabel] : [],
+                missedCorrect: won ? [] : (q.correct || []),
+                isPerfect,
+            }),
+        });
+
+        this._clCurrentQ = null;
 
         return {
             ...turn,

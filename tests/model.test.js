@@ -2,7 +2,9 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { rollDice, Player, Monster, GameModel,
-         levenshtein, levenshteinSimilarity, wordleFeedback } from '../src/model.js';
+         levenshtein, levenshteinSimilarity, wordleFeedback,
+         tokenize, tokenSimilarity, tokenWordleFeedback,
+         CL_MAX_ATTEMPTS } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -28,6 +30,21 @@ function fillBlankQuestion(overrides = {}) {
     correct: ['extends'],
     case_sensitive: false,
     feedback: 'extends is the keyword.',
+    ...overrides,
+  };
+}
+
+function codeLineQuestion(overrides = {}) {
+  return {
+    type: 'code_line',
+    question: 'Declare an empty ArrayList of Strings named names.',
+    language: 'java',
+    correct: [
+      'List<String> names = new ArrayList<>();',
+      'ArrayList<String> names = new ArrayList<>();',
+    ],
+    case_sensitive: true,
+    feedback: 'List<String> on the left is preferred.',
     ...overrides,
   };
 }
@@ -433,6 +450,154 @@ describe('wordleFeedback', () => {
   it('flags spaces with a separate space status', () => {
     const fb = wordleFeedback('a b', 'a c');
     assert.equal(fb[1].status, 'space');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// tokenize / tokenSimilarity / tokenWordleFeedback
+// ────────────────────────────────────────────────────────────────────────────────
+describe('tokenize', () => {
+  it('splits identifiers, numbers, and punctuation', () => {
+    assert.deepEqual(tokenize('int x = 5;'), ['int', 'x', '=', '5', ';']);
+  });
+  it('whitespace-insensitive: same tokens with or without spaces', () => {
+    assert.deepEqual(tokenize('int x=5;'), tokenize('int  x  =  5 ;'));
+  });
+  it('groups multi-char operators', () => {
+    assert.deepEqual(tokenize('a == b && c != d'), ['a', '==', 'b', '&&', 'c', '!=', 'd']);
+  });
+  it('treats <> as a single diamond token', () => {
+    const toks = tokenize('new ArrayList<>()');
+    assert.ok(toks.includes('<>'), `expected <> in ${JSON.stringify(toks)}`);
+  });
+  it('returns [] for empty input', () => {
+    assert.deepEqual(tokenize(''), []);
+  });
+});
+
+describe('tokenSimilarity', () => {
+  it('identical token sequences → 1', () => {
+    assert.equal(tokenSimilarity(['a','b','c'], ['a','b','c']), 1);
+  });
+  it('disjoint sequences → 0', () => {
+    assert.equal(tokenSimilarity(['a','b'], ['x','y']), 0);
+  });
+  it('one token off → high similarity', () => {
+    const sim = tokenSimilarity(['a','b','c'], ['a','b','d']);
+    assert.ok(sim > 0.6 && sim < 1);
+  });
+  it('whitespace differences in source don\'t affect similarity', () => {
+    assert.equal(tokenSimilarity(tokenize('int x=5;'), tokenize('int x = 5 ;')), 1);
+  });
+});
+
+describe('tokenWordleFeedback', () => {
+  it('marks position-correct tokens', () => {
+    const fb = tokenWordleFeedback(['int','x','=','5',';'], ['int','x','=','5',';']);
+    assert.ok(fb.every(t => t.status === 'correct'));
+  });
+  it('marks present-but-wrong-position tokens', () => {
+    const fb = tokenWordleFeedback(['x','int'], ['int','x']);
+    assert.equal(fb[0].status, 'present');
+    assert.equal(fb[1].status, 'present');
+  });
+  it('marks absent tokens', () => {
+    const fb = tokenWordleFeedback(['foo'], ['bar']);
+    assert.equal(fb[0].status, 'absent');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// GameModel — submitCodeLineGuess
+// ────────────────────────────────────────────────────────────────────────────────
+describe('submitCodeLineGuess', () => {
+  let gm;
+  beforeEach(() => {
+    gm = freshModel([codeLineQuestion()]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.current_monster.max_hit_points = 999;
+  });
+
+  it('first-try exact answer wins and is perfect', () => {
+    const r = gm.submitCodeLineGuess('List<String> names = new ArrayList<>();');
+    assert.equal(r.status, 'won');
+    assert.equal(r.attemptsUsed, 1);
+    assert.equal(r.streakState, 'incremented');
+  });
+
+  it('whitespace-only differences still count as exact match', () => {
+    const r = gm.submitCodeLineGuess('List<String>  names=new   ArrayList<>() ;');
+    assert.equal(r.status, 'won');
+    assert.equal(r.attemptsUsed, 1);
+  });
+
+  it('accepts any variant in correct[]', () => {
+    const r = gm.submitCodeLineGuess('ArrayList<String> names = new ArrayList<>();');
+    assert.equal(r.status, 'won');
+  });
+
+  it('typo gate fires on near-miss without burning an attempt', () => {
+    // Missing the trailing ; — 1 char distance.
+    const r = gm.submitCodeLineGuess('List<String> names = new ArrayList<>()');
+    assert.equal(r.status, 'typo');
+    assert.equal(r.attemptsUsed, 0);
+    assert.ok(r.suggestion.includes('ArrayList'));
+  });
+
+  it('typo gate is bypassed when confirmed=true', () => {
+    const r = gm.submitCodeLineGuess('List<String> names = new ArrayList<>()', { confirmed: true });
+    assert.notEqual(r.status, 'typo');
+  });
+
+  it('genuinely wrong answer does NOT fire typo gate', () => {
+    const r = gm.submitCodeLineGuess('var x = 1;');
+    assert.equal(r.status, 'wrong');
+    assert.equal(r.attemptsUsed, 1);
+    assert.ok(Array.isArray(r.feedback));
+  });
+
+  it('three wrong guesses → status failed and question is requeued', () => {
+    gm.submitCodeLineGuess('var x = 1;');
+    gm.submitCodeLineGuess('var y = 2;');
+    const r = gm.submitCodeLineGuess('var z = 3;');
+    assert.equal(r.status, 'failed');
+    assert.equal(r.attemptsUsed, 3);
+    assert.equal(r.question_repeated, true);
+  });
+
+  it('wrong intermediate guess applies monster damage', () => {
+    gm.player.base_defense = 0;
+    gm.current_monster.attack_die = 100;
+    const startHp = gm.player.hit_points;
+    const r = gm.submitCodeLineGuess('totally wrong code');
+    assert.equal(r.status, 'wrong');
+    assert.ok(r.effective_monster_damage > 0);
+    assert.equal(gm.player.hit_points, startHp - r.effective_monster_damage);
+  });
+
+  it('attempt state resets when the question changes', () => {
+    const q1 = codeLineQuestion({ question: 'Q1', correct: ['int x = 1;'] });
+    const q2 = codeLineQuestion({ question: 'Q2', correct: ['int y = 2;'] });
+    const gm2 = freshModel([q1]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    gm2.current_question = q1;
+    gm2.submitCodeLineGuess('completely different');
+    gm2.current_question = q2;
+    const r = gm2.submitCodeLineGuess('also wrong code');
+    assert.equal(r.attemptsUsed, 1);
+  });
+
+  it('forceCodeLineFail returns a finalized failure result', () => {
+    gm.submitCodeLineGuess('var x = 1;');
+    const r = gm.forceCodeLineFail();
+    assert.equal(r.status, 'failed');
+    assert.equal(r.question_repeated, true);
+  });
+
+  it('CL_MAX_ATTEMPTS is exported and equals 3', () => {
+    assert.equal(CL_MAX_ATTEMPTS, 3);
   });
 });
 
