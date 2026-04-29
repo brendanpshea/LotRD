@@ -14,7 +14,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 2. From the main menu, choose a topic and question set.
 3. Each encounter presents a question. Answer correctly to damage the monster; wrong answers let the monster hit back.
 4. Defeat monsters to earn XP and level up. Each level grants a **revive charge** (⚗️) — when your HP hits 0, a charge is consumed to restore 10 HP.
-5. Your **player level persists globally** across all question sets. Complete all questions in a set to achieve Victory. Progress auto-saves to `localStorage`.
+5. Your **player level persists globally** across all question sets. Finishing a set by defeating the last monster or exhausting all remaining questions counts as clearing it. Progress auto-saves to `localStorage`.
 
 ### Keyboard Shortcuts
 
@@ -31,7 +31,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Four question types** (described below)
 - **Main menu** with topic groupings, per-set progress badges, and a global stats bar
 - **Auto-save** — every encounter result is saved to `localStorage`; the back button saves and returns to the menu
-- **Completion tracking** — `lotrd_done_${setId}` records completed sets permanently
+- **Completion tracking** — `lotrd_done_${setId}` records cleared sets permanently, including runs that end because there are no questions left
 - **Global stats** — `lotrd_global` accumulates lifetime totals across all sets
 - **Session review** — question-by-question pass/fail breakdown with export to `.txt`
 - **Direct-link support** — instructors can share `?set=filename.json` URLs

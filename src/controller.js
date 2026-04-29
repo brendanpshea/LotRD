@@ -390,7 +390,8 @@ export class GameController {
       this._showWithDragon(line => this.ui.showVictory(() => this.startReview("victory"), line));
     } else if (status === "no_questions") {
       this._clearSave();
-      this._updateGlobalStats();
+      this._recordCompletion();
+      this._updateGlobalStats(!this._isReview);
       this._saveGlobalLevel();
       this._setInGame(false);
       this._showWithDragon(line => this.ui.showNoQuestions(() => this.startReview("no_questions"), line));

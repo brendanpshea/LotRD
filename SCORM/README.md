@@ -37,8 +37,9 @@ Score reported to the LMS is a percentage:
 
     score = (completed sets / total non-review sets in this edition) * 100
 
-A "completed" set is one the player has cleared in the RPG sense
-(victory) — the same definition the in-game "Cleared" badge uses.
+A "completed" set is one the player has cleared in the RPG sense —
+either by victory or by reaching the end of the question queue. This
+matches the in-game "Cleared" badge.
 Review sets are excluded from both numerator and denominator.
 
 `cmi.core.lesson_status` is set to `completed` at 100%, otherwise
@@ -55,6 +56,11 @@ open the SCO on another device.
 
 The full RPG save (HP, level, current question queue) stays in
 localStorage and is per-device. Only completion state syncs.
+
+To preserve existing browser save data across package refreshes, do not
+change the local save keys or `SAVE_DATA_VERSION` in
+`src/controller.js` unless you are intentionally migrating or clearing
+incompatible in-progress saves.
 
 ## Adding to D2L
 
