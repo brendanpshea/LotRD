@@ -933,11 +933,11 @@ export class GameUI {
       container.appendChild(ul);
     };
 
-    const q = this.model.current_question;
-    if (q) {
+    const questionText = battleData.questionText || this.model.current_question?.question || null;
+    if (questionText) {
       const qLine = document.createElement("div");
       qLine.className = "section";
-      qLine.innerHTML = `<span class="bold">Question:</span> ${this._esc(q.question)}`;
+      qLine.innerHTML = `<span class="bold">Question:</span> ${this._esc(questionText)}`;
       body.insertBefore(qLine, fbWrap);
     }
 

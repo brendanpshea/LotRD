@@ -397,6 +397,19 @@ describe('evaluateAnswer', () => {
     gm.evaluateAnswer(['A']);
     assert.equal(gm.questions_asked, 1);
   });
+
+  it('consumes the current question after a resolved answer', () => {
+    gm.evaluateAnswer(['A']);
+
+    assert.equal(gm.current_question, null);
+    assert.equal(gm.answer_history.length, 1);
+    assert.equal(gm.player.streak, 1);
+
+    const repeat = gm.evaluateAnswer(['A']);
+    assert.equal(repeat, null);
+    assert.equal(gm.answer_history.length, 1);
+    assert.equal(gm.player.streak, 1);
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────────────

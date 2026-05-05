@@ -460,6 +460,7 @@ export class GameModel {
      * push history, return the values shared across all evaluator returns.
      */
     _finalizeTurn({ xpGained, requeue, historyEntry, isPerfect }) {
+        const resolvedQuestion = this.current_question;
         const startMaxHp       = this.player.max_hit_points;
         const startBaseDefense = this.player.base_defense;
         const startRevives     = this.player.revive_charges;
@@ -488,12 +489,14 @@ export class GameModel {
         }
         this.questions_asked++;
         this.answer_history.push(historyEntry);
+        this.current_question = null;
         return {
             defeated_monster:  this.current_monster.hit_points <= 0,
             defeated_player:   this.player.hit_points <= 0,
             xp_gained:         xpGained,
             xp_doubled,
             question_repeated: !!requeue,
+            questionText:      resolvedQuestion?.question || null,
             levelsGained,
             levelUpRewards,
         };
@@ -579,6 +582,7 @@ export class GameModel {
     // ─── Evaluators ────────────────────────────────────────────────────────────
 
     evaluateAnswer(selectedOptions) {
+        if (!this.current_question) return null;
         const q            = this.current_question;
         const correctSet   = new Set(q.correct   || []);
         const incorrectSet = new Set(q.incorrect  || []);
@@ -638,6 +642,7 @@ export class GameModel {
      * 'won' and 'failed' are full battleData snapshots ready for _resolveBattle.
      */
     submitFillBlankGuess(inputText) {
+        if (!this.current_question) return null;
         const q = this.current_question;
         // Reset attempt state when entering a new fill-blank question
         if (this._fbCurrentQ !== q) {
@@ -709,6 +714,7 @@ export class GameModel {
      * a complete battleData object).
      */
     forceFillBlankFail() {
+        if (!this.current_question) return null;
         const q          = this.current_question;
         const acceptable = q.correct || [];
         const caseSens   = q.case_sensitive === true;
@@ -793,6 +799,7 @@ export class GameModel {
      *   { status: 'failed', ...battleData, wordleFeedback, attemptsUsed }
      */
     submitCodeLineGuess(inputText, { confirmed = false } = {}) {
+        if (!this.current_question) return null;
         const q = this.current_question;
         if (this._clCurrentQ !== q) {
             this._clCurrentQ         = q;
@@ -896,6 +903,7 @@ export class GameModel {
 
     /** Force-fail the current code-line turn (player died on a wrong guess). */
     forceCodeLineFail() {
+        if (!this.current_question) return null;
         const q          = this.current_question;
         const acceptable = q.correct || [];
         const caseSens   = q.case_sensitive === true;
@@ -973,6 +981,7 @@ export class GameModel {
      * Re-queued if any pair is wrong.
      */
     evaluateMatching(selectedPairs) {
+        if (!this.current_question) return null;
         const q     = this.current_question;
         const pairs = q.pairs || [];
 
