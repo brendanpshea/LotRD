@@ -67,7 +67,10 @@ def copy_game(build_dir: Path) -> None:
     for d in GAME_DIRS:
         src = REPO / d
         if src.exists():
-            shutil.copytree(src, build_dir / d)
+            dst = build_dir / d
+            if dst.exists():
+                shutil.rmtree(dst, ignore_errors=True)
+            shutil.copytree(src, dst)
     for f in GAME_FILES:
         src = REPO / f
         if src.exists():
@@ -173,8 +176,19 @@ def build(config_path: Path) -> Path:
 
     work_dir = DIST / edition_id
     if work_dir.exists():
-        shutil.rmtree(work_dir)
-    work_dir.mkdir(parents=True)
+        try:
+            shutil.rmtree(work_dir, ignore_errors=True)
+        except PermissionError:
+            # If we still can't remove it, try removing just the contents
+            for item in work_dir.iterdir():
+                try:
+                    if item.is_dir():
+                        shutil.rmtree(item, ignore_errors=True)
+                    else:
+                        item.unlink()
+                except (PermissionError, OSError):
+                    pass
+    work_dir.mkdir(parents=True, exist_ok=True)
 
     copy_game(work_dir)
 
