@@ -419,15 +419,39 @@ Before submitting a question set, verify:
 
 - [ ] File is a valid JSON array
 - [ ] Every question has a non-empty `question` string
-- [ ] MC questions have non-empty `correct[]` and `incorrect[]`
+- [ ] MC questions have non-empty `correct[]` and an `incorrect[]` array
 - [ ] Fill-blank questions have `"type": "fill_blank"` and non-empty `correct[]`
 - [ ] Matching questions have `"type": "matching"` and ≥ 2 pairs with `term` and `definition`
 - [ ] No duplicate options within any MC question (`correct` ∪ `incorrect` has no repeats)
 - [ ] No overlap between `correct` and `incorrect` in any MC question
-- [ ] `question_count` in `catalog.json` matches the actual array length
 - [ ] The filename is listed in `index.json`
 - [ ] Answer options are roughly equal in length within each question
 - [ ] All questions have `feedback`
+
+### Question Testing
+
+The repository has automated checks in [tests/data.test.js](tests/data.test.js) that are meant to catch both schema errors and common authoring mistakes.
+
+Run this before submitting question changes:
+
+```bash
+node --test tests/data.test.js
+```
+
+What the tests currently check:
+
+- Basic structure: valid JSON, required fields, matching-pair shape, no duplicate options, no overlap between `correct` and `incorrect`
+- Registration: the file exists, is listed in `index.json`, and has a valid entry in `catalog.json`
+- Extreme multi-answer uniformity: if a set has many multi-answer questions, they should not all use the exact same `correct/incorrect` shape
+- Answer-length bias: on average, correct answers should not be much longer than wrong answers in the same set
+- Cue-word bias in distractors: wrong answers should not lean too heavily on giveaway absolutes or negations like `always`, `never`, `only`, `all`, or `cannot`
+
+How to use those heuristics as an author:
+
+- If a multi-answer set keeps using `3 correct / 3 incorrect` or `2 correct / 3 incorrect`, change a few items so the set mixes shapes
+- If correct answers are consistently the longest options, shorten them or make distractors more parallel in wording and detail
+- If wrong answers keep using absolute phrasing, rewrite some of them to be plausible without depending on words like `always`, `never`, or `only`
+- Treat heuristic failures as editorial feedback, not just a puzzle to satisfy mechanically; the goal is to reduce obvious clues
 
 ---
 
@@ -456,8 +480,8 @@ After creating your JSON file (e.g., `python_01_basics.json`):
    ```
 
 3. **Run the tests** to validate your set:
-   ```
-   npm test
+    ```bash
+    node --test tests/data.test.js
    ```
 
 ---

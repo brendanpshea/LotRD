@@ -19,6 +19,11 @@ function getAverageAnswerLength(answers) {
   return answers.reduce((sum, answer) => sum + answer.length, 0) / answers.length;
 }
 
+function countAbsoluteOrNegativeAnswers(answers) {
+  const cueWordPattern = /\b(always|never|only|all|none|must|cannot|can't|no|not|every|entirely|exclusively|forever)\b/i;
+  return answers.filter(answer => cueWordPattern.test(answer));
+}
+
 // ────────────────────────────────────────────────────────────────────────────────
 // monsters.json
 // ────────────────────────────────────────────────────────────────────────────────
@@ -306,6 +311,37 @@ describe('Question set quality heuristics', () => {
       flaggedSets,
       [],
       `Correct-answer length bias detected:\n${flaggedSets.join('\n')}`
+    );
+  });
+
+  it('flags sets where wrong answers overuse absolute quantifiers or negations', () => {
+    const flaggedSets = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      const mcQuestions = getMultipleChoiceQuestions(questions);
+      const correctAnswers = mcQuestions.flatMap(q => q.correct || []);
+      const incorrectAnswers = mcQuestions.flatMap(q => q.incorrect || []);
+
+      if (correctAnswers.length < 20 || incorrectAnswers.length < 40) continue;
+
+      const flaggedCorrectAnswers = countAbsoluteOrNegativeAnswers(correctAnswers);
+      const flaggedIncorrectAnswers = countAbsoluteOrNegativeAnswers(incorrectAnswers);
+      const correctRate = flaggedCorrectAnswers.length / correctAnswers.length;
+      const incorrectRate = flaggedIncorrectAnswers.length / incorrectAnswers.length;
+      const rateGap = incorrectRate - correctRate;
+
+      if (flaggedIncorrectAnswers.length >= 10 && incorrectRate >= 0.18 && rateGap >= 0.15) {
+        flaggedSets.push(
+          `${setId}: incorrect ${flaggedIncorrectAnswers.length}/${incorrectAnswers.length} (${(incorrectRate * 100).toFixed(1)}%) vs correct ${flaggedCorrectAnswers.length}/${correctAnswers.length} (${(correctRate * 100).toFixed(1)}%)`
+        );
+      }
+    }
+
+    assert.deepEqual(
+      flaggedSets,
+      [],
+      `Absolute/negative cue-word bias detected:\n${flaggedSets.join('\n')}`
     );
   });
 });
