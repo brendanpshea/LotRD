@@ -5,11 +5,11 @@
       "Tune the rule with environment baselines and add scoped exclusions for known admin tooling"
     ],
     "incorrect": [
-      "Disable the rule during business hours and rely on overnight batch detections instead",
-      "Raise the severity threshold globally so only critical alerts are shown to analysts",
-      "Forward every alert to tier three analysts so triage can be completed more quickly"
+      "Suppress business-hour matches from the rule and review queued alerts in overnight batches",
+      "Retune alert thresholds so the rule fires only for the highest-severity events",
+      "Route alerts from the rule directly to senior analysts for manual triage"
     ],
-    "feedback": "SecurityX questions prefer the best constrained option. Baseline tuning and narrow exclusions preserve coverage while reducing noise. Global suppression and blanket escalation miss the stated balance requirement."
+    "feedback": "The requirement is to reduce analyst noise without reducing true-positive detection of credential dumping. Baselines and narrowly scoped exclusions remove known-benign activity while keeping the underlying detection logic intact. The other choices either hide valid signals or move the same noisy workload to a different queue instead of fixing the rule."
   },
   {
     "question": "A playbook should automatically isolate endpoints only when confidence is high and business impact is low. Which approach BEST fits this requirement?",
@@ -17,11 +17,11 @@
       "Use risk-scored SOAR actions with human approval required for high-impact isolation steps"
     ],
     "incorrect": [
-      "Use fully automated isolation for every endpoint alert regardless of confidence signal",
-      "Use manual analyst action for all endpoint alerts without any orchestration support",
-      "Use email notifications only and leave all containment decisions to help desk teams"
+      "Use automatic isolation for endpoint alerts based on the playbook trigger alone",
+      "Use analyst-driven isolation for endpoint alerts with no automated decision support",
+      "Use notification-only workflows for endpoint alerts and assign containment to help desk teams"
     ],
-    "feedback": "Risk-scored automation with approval gates gives speed where safe and control where risky. The other options over-automate or under-automate against the requirement."
+    "feedback": "The question asks for automation that changes behavior based on confidence and business impact. Risk-scored SOAR with approval gates automates low-risk actions while preserving human control for disruptive containment steps. The other options ignore one side of the requirement by either isolating too aggressively or removing automation where it would still be useful."
   },
   {
     "question": "Which telemetry sources together provide the strongest visibility for detecting account takeover in a hybrid environment? (Select all that apply.)",
@@ -35,7 +35,7 @@
       "Building cafeteria transaction summaries by department",
       "Static network diagrams exported from last year's wiki"
     ],
-    "feedback": "Identity, endpoint, and cloud audit telemetry directly expose takeover behavior and impact. The distractors are operational artifacts, not adversary-signal sources."
+    "feedback": "Account takeover is best detected by combining identity, endpoint, and cloud-control evidence. Those sources show who authenticated, what ran on the host, and whether privileges or policies changed afterward. The wrong answers describe business or documentation artifacts that do not directly show attacker behavior."
   },
   {
     "question": "Hesper must preserve evidence for potential litigation after a breach. Which step should occur FIRST once legal counsel confirms hold requirements?",
@@ -43,11 +43,11 @@
       "Issue a documented legal hold and suspend routine deletion for scoped evidence stores"
     ],
     "incorrect": [
-      "Begin remediation immediately and reconstruct evidence later from analyst notes",
-      "Notify all customers immediately before preserving chain-of-custody artifacts",
-      "Rotate all affected logs to reduce storage consumption during investigation"
+      "Begin host cleanup actions and reconstruct preserved evidence from case notes afterward",
+      "Begin external breach notifications before placing scoped evidence under legal hold",
+      "Rotate stored logs to lower retention overhead during the investigation"
     ],
-    "feedback": "Once hold is triggered, preservation comes first. Deleting or changing data before hold execution creates legal and evidentiary risk."
+    "feedback": "Once counsel confirms a legal hold, the first obligation is to preserve the scoped evidence set. Suspending deletion and documenting the hold protects chain of custody and future admissibility. The other options change or discard evidence before preservation, which creates legal and forensic risk."
   },
   {
     "question": "Which action BEST strengthens chain of custody for forensic disk images?",
@@ -55,11 +55,11 @@
       "Record handler, timestamp, transfer reason, and cryptographic hash at each custody change"
     ],
     "incorrect": [
-      "Store images on a shared drive and trust analyst memory for transfer history details",
-      "Compress images aggressively so evidence copies can move between teams more quickly",
-      "Rename files with investigator initials and skip separate custody documentation forms"
+      "Store images in a shared repository and document transfers informally in the case record",
+      "Transfer compressed evidence copies between teams and record custody details after analysis",
+      "Label evidence with investigator identifiers and rely on file names instead of custody forms"
     ],
-    "feedback": "Chain of custody is about traceable accountability and integrity at every handoff. Hashes plus documented transfers are essential."
+    "feedback": "Chain of custody answers who handled the evidence, when it changed hands, why it moved, and how integrity was verified. Recording each handoff alongside a cryptographic hash creates that audit trail. Informal notes, file names, or convenience-driven transfers do not provide the same evidentiary assurance."
   },
   {
     "question": "Selene needs an incident severity model that prioritizes business impact over raw alert volume. Which scoring input is MOST important to include?",
@@ -71,7 +71,7 @@
       "Number of analysts currently available in the on-call incident response rotation",
       "Elapsed time since the first alert without considering affected business function"
     ],
-    "feedback": "Security operations maturity means mapping technical events to business impact. Alert count and staffing are operational constraints, not severity drivers."
+    "feedback": "The model is supposed to prioritize business impact, so the most important input is service criticality and dependency on that service for recovery. Raw alert volume, analyst staffing, and elapsed time may affect operations, but they do not tell you how much the incident matters to the business."
   },
   {
     "question": "During active ransomware execution, which containment decision is usually BEST in the first minutes for a single confirmed endpoint?",
@@ -79,11 +79,11 @@
       "Isolate the endpoint from the network while preserving volatile evidence when feasible"
     ],
     "incorrect": [
-      "Shut down all domain controllers to prevent any further lateral movement attempts",
-      "Reimage the endpoint immediately to restore user productivity before triage starts",
-      "Wait for full malware attribution before taking any disruptive containment action"
+      "Disconnect core identity infrastructure to slow potential lateral movement",
+      "Rebuild the affected endpoint before completing triage and evidence capture",
+      "Delay containment until analysts complete malware attribution and reporting"
     ],
-    "feedback": "Early containment should be targeted and fast. Isolating the affected host limits spread while preserving investigation value."
+    "feedback": "In the first minutes of ransomware, the best move is usually targeted containment of the confirmed host. Isolation limits spread while still preserving volatile evidence and avoiding unnecessary enterprise-wide disruption. The other answers either overreact to the whole environment, destroy useful evidence, or wait too long to contain active damage."
   },
   {
     "question": "Which metrics are most useful for evaluating SOC detection and response effectiveness over time? (Select all that apply.)",
@@ -97,7 +97,7 @@
       "Total count of all tickets opened by every IT team in the enterprise",
       "Number of SIEM dashboards created during the initial platform rollout"
     ],
-    "feedback": "MTTD, MTTC, and false-positive trends measure outcome quality. Document counts and dashboard counts measure activity, not effectiveness."
+    "feedback": "Useful SOC metrics show whether detection and response outcomes are improving over time. Mean time to detect, mean time to contain, and false-positive rate all measure speed or quality of operational results. Counts of documents, tickets, or dashboards are activity indicators, not proof that the SOC is performing better."
   },
   {
     "question": "A suspected memory-resident implant is active on a mission-critical server. Which evidence-collection order is BEST?",
@@ -105,11 +105,11 @@
       "Capture volatile memory first, then acquire disk and relevant host and network logs"
     ],
     "incorrect": [
-      "Acquire full disk image first, then reboot and collect memory after restart completes",
-      "Patch the host immediately, then collect whatever forensic artifacts remain afterward",
-      "Collect only SIEM alerts because endpoint acquisition may impact service availability"
+      "Acquire full disk first and defer volatile memory capture until afterward",
+      "Apply emergency host remediation before collecting volatile and disk evidence",
+      "Rely on centralized SIEM records instead of host acquisition for the server"
     ],
-    "feedback": "Volatile artifacts disappear fastest. Memory-first collection is the defensible forensic sequence when practical."
+    "feedback": "A memory-resident implant may leave its most valuable evidence only in RAM, so volatile capture comes first whenever the environment allows it. Disk and log collection still matter, but they can usually wait a little longer than memory. The other answers either destroy volatile evidence or substitute partial records for a proper host acquisition sequence."
   },
   {
     "question": "Which statement BEST distinguishes eradication from recovery in an IR lifecycle?",
@@ -117,11 +117,11 @@
       "Eradication removes root cause and persistence; recovery restores trusted operations safely"
     ],
     "incorrect": [
-      "Eradication restores user access quickly; recovery performs malware analysis in isolation",
-      "Eradication is optional if backups exist; recovery is mandatory for every low-severity alert",
-      "Eradication and recovery are interchangeable labels for final incident closure tasks"
+      "Eradication restores user access quickly; recovery analyzes malware in isolation",
+      "Eradication removes visible malware; recovery declares service trusted once backups are available",
+      "Eradication and recovery describe the same restoration phase"
     ],
-    "feedback": "Eradication addresses cause. Recovery reintroduces service under controlled conditions. They are related but not identical."
+    "feedback": "Eradication is the work of removing the root cause, persistence, and attacker footholds. Recovery happens after that and focuses on bringing services back in a trusted, monitored state. Students often blur the two because both happen late in the lifecycle, but they answer different operational questions."
   },
   {
     "question": "Which activities are strong indicators of a mature tabletop exercise program? (Select all that apply.)",
@@ -135,7 +135,7 @@
       "Unscripted discussions with no objectives and no action-item accountability",
       "Annual slide review sessions treated as equivalent to scenario exercises"
     ],
-    "feedback": "Mature tabletops are objective-driven, cross-functional, and improvement-oriented. Passive reviews are not operational readiness testing."
+    "feedback": "A mature tabletop is built around decisions the organization may actually face during an incident. Cross-functional participation, structured injects, and tracked after-action improvements show that the exercise is testing readiness rather than just reviewing slides. The wrong answers remove decision pressure, accountability, or business participation."
   },
   {
     "type": "fill_blank",
@@ -144,7 +144,7 @@
       "MTTD"
     ],
     "case_sensitive": false,
-    "feedback": "MTTD tracks how quickly validated incidents are detected after initial malicious activity."
+    "feedback": "MTTD stands for Mean Time To Detect. It measures how long it takes the organization to discover malicious activity after it begins or becomes observable, which is why it is a detection metric rather than a response metric."
   },
   {
     "type": "fill_blank",
@@ -153,7 +153,7 @@
       "MTTR"
     ],
     "case_sensitive": false,
-    "feedback": "MTTR is frequently used for response or recovery speed depending on organizational definition."
+    "feedback": "MTTR commonly means Mean Time To Respond or Mean Time To Recover, depending on how the organization defines it. In either case, it is about how quickly the team acts after detection, not how quickly it first notices the incident."
   },
   {
     "type": "fill_blank",
@@ -163,7 +163,7 @@
       "yara"
     ],
     "case_sensitive": false,
-    "feedback": "YARA rules are widely used in threat hunting and malware triage pipelines."
+    "feedback": "YARA is the rule format commonly used to describe malware characteristics with string and hex matching logic. Teams use it in hunting, malware triage, and content-based detection workflows."
   },
   {
     "type": "fill_blank",
@@ -174,7 +174,7 @@
       "purple team"
     ],
     "case_sensitive": false,
-    "feedback": "Purple teaming emphasizes immediate detection and control improvement rather than one-sided reporting."
+    "feedback": "A purple exercise brings defenders and offensive testers together so they can improve detections and controls in real time. That is different from a purely red-team exercise, which is usually more adversarial and report-driven."
   },
   {
     "type": "matching",
@@ -197,7 +197,7 @@
         "definition": "Capture lessons learned and track control improvements"
       }
     ],
-    "feedback": "Phase clarity prevents teams from skipping crucial steps under pressure."
+    "feedback": "These phases are easier to remember if you tie each one to its job: prepare before the incident, analyze what happened, contain and recover safely, then capture lessons learned. Students often miss points here by mixing restoration work into detection or by forgetting the post-incident improvement phase."
   },
   {
     "type": "matching",
@@ -220,7 +220,7 @@
         "definition": "Which principals changed permissions or created high-risk resources"
       }
     ],
-    "feedback": "Good triage maps each investigative question to the best evidence source."
+    "feedback": "Strong triage starts by asking a specific investigative question and then choosing the log source most likely to answer it. Identity logs explain authentication, EDR explains host activity, DNS logs explain resolution behavior, and cloud audit trails explain administrative changes."
   },
   {
     "type": "matching",
@@ -243,7 +243,7 @@
         "definition": "Timestamp and version carefully as contextual, not primary technical evidence"
       }
     ],
-    "feedback": "Handling standards differ by artifact volatility and evidentiary role."
+    "feedback": "Each evidence type has different handling priorities because some artifacts disappear quickly and others need stronger integrity controls. Memory is time-sensitive, disk images need write-blocking and hashing, centralized logs need preservation, and interview notes support context rather than replacing technical evidence."
   },
   {
     "type": "code_line",
@@ -254,7 +254,7 @@
       "grep -i \"failed password\" /var/log/auth.log"
     ],
     "case_sensitive": true,
-    "feedback": "This is a common first-pass triage command for suspicious remote access activity."
+    "feedback": "`grep -i 'failed password' /var/log/auth.log` is a straightforward first-pass triage command because it finds failed SSH password attempts without caring about letter case. The case-insensitive flag matters because log messages may vary in capitalization across systems or tooling."
   },
   {
     "type": "code_line",
@@ -265,7 +265,7 @@
       "sha256sum ./memory.raw"
     ],
     "case_sensitive": true,
-    "feedback": "Cryptographic hashing is central to integrity verification and chain-of-custody documentation."
+    "feedback": "`sha256sum memory.raw` computes a SHA-256 digest that investigators can record in chain-of-custody paperwork. The hash gives you a repeatable way to prove the evidence file has not changed between collection, transfer, and analysis."
   },
   {
     "question": "Kaeli finds a high-confidence C2 beacon from a workstation used by payroll. Business leadership requires continued payroll processing today. Which containment strategy is BEST?",
@@ -273,11 +273,11 @@
       "Isolate the host and provide a clean replacement workflow while investigation proceeds"
     ],
     "incorrect": [
-      "Keep the host online to avoid disruption and wait for overnight containment actions",
-      "Disconnect the entire payroll network segment immediately without business fallback",
-      "Restore last week's endpoint backup now and defer forensics to next quarter planning"
+      "Keep the workstation connected and schedule containment for the overnight window",
+      "Isolate the payroll subnet and rebuild business workflow after containment decisions",
+      "Restore the workstation from backup and postpone forensic collection to a later phase"
     ],
-    "feedback": "Best answer balances security and continuity constraints: targeted isolation plus business-safe replacement workflow."
+    "feedback": "The scenario gives you two constraints at once: stop the beacon and keep payroll running today. Isolating the affected host while moving users to a clean replacement workflow addresses both. The distractors either leave the threat active, disrupt more of the business than necessary, or discard evidence before the investigation is complete."
   },
   {
     "question": "Which practice BEST improves analyst handoff quality between SOC shifts?",
@@ -285,11 +285,11 @@
       "Use a structured handoff template with scope, hypotheses, actions, and pending decisions"
     ],
     "incorrect": [
-      "Rely on SIEM ticket titles because detailed notes can be added after closure",
-      "Assign all unresolved alerts back to tier one so each shift starts from scratch",
-      "Delay handoff until all open incidents are fully closed by the current shift"
+      "Use ticket titles as the primary handoff record and add details during later case review",
+      "Reassign unresolved work to first-line queues so the next shift can reassess independently",
+      "Delay shift turnover until current analysts close the active incident set"
     ],
-    "feedback": "Structured handoff reduces duplicated effort and lost context across follow-the-sun teams."
+    "feedback": "Good handoffs preserve context, unfinished hypotheses, and decision points so the next analyst does not have to rediscover the case. A structured template does that consistently. The other choices either discard context, restart work unnecessarily, or make shift turnover depend on case closure."
   },
   {
     "question": "A regulator requires notification within a fixed timeline after confirming a reportable breach. Which governance control BEST supports compliance during incidents?",
@@ -297,11 +297,11 @@
       "Predefined notification decision matrix with legal review paths and accountable owners"
     ],
     "incorrect": [
-      "Analyst discretion to notify regulators whenever alerts appear operationally significant",
-      "A policy statement that notifications are important without procedural timelines defined",
-      "Automated customer notifications triggered from any high-severity SIEM rule activity"
+      "Use analyst judgment to decide when regulator notification appears operationally warranted",
+      "Use a high-level notification policy without a defined legal decision workflow",
+      "Use automated customer messaging triggered directly from high-severity detection rules"
     ],
-    "feedback": "Time-bound reporting needs explicit decision logic, ownership, and legal workflow before incidents occur."
+    "feedback": "A fixed reporting deadline is hard to meet unless decision paths, owners, and legal review steps are defined in advance. A notification matrix gives responders a repeatable way to decide whether a confirmed breach is reportable and who approves the message. The wrong answers rely on improvisation, vague policy language, or trigger notifications before the event is even legally classified."
   },
   {
     "question": "Which signals most strongly support escalation from suspicious activity to confirmed incident? (Select all that apply.)",
@@ -315,7 +315,7 @@
       "Executive concern that recent media coverage could affect public confidence",
       "A temporary increase in help desk ticket volume during software patching week"
     ],
-    "feedback": "Escalation quality improves when evidence is corroborated, impact is confirmed, and detection logic is validated."
+    "feedback": "Moving from suspicious activity to confirmed incident requires stronger proof than a single noisy signal. Corroborated evidence, demonstrated business impact, and validated detection logic all increase confidence that the activity is real and material. The wrong answers describe context that may be worth monitoring but does not confirm malicious activity by itself."
   },
   {
     "question": "Which statement BEST describes the role of threat hunting in a mature SOC?",
@@ -323,11 +323,11 @@
       "Hypothesis-driven analysis that proactively searches for adversary behavior missed by alerts"
     ],
     "incorrect": [
-      "Daily review of every SIEM dashboard panel in the same order for consistency",
-      "Immediate remediation of all vulnerabilities discovered by weekly scanner reports",
-      "Policy-focused risk workshops held each quarter with governance stakeholders"
+      "Repeat a standard dashboard review routine across each analyst shift",
+      "Prioritize weekly vulnerability scanner findings for immediate remediation",
+      "Facilitate quarterly risk workshops with governance stakeholders"
     ],
-    "feedback": "Threat hunting complements alerting by looking for weak signals and unknown patterns, not by replacing vulnerability or governance programs."
+    "feedback": "Threat hunting is proactive and hypothesis-driven, which means analysts start with a suspected behavior pattern and search for evidence that standard alerts may have missed. Routine dashboard review, vulnerability remediation, and governance workshops are useful activities, but they answer different operational questions."
   },
   {
     "question": "Which actions typically belong in a high-quality post-incident review? (Select all that apply.)",
@@ -337,11 +337,11 @@
       "Updating playbooks and controls based on validated lessons learned"
     ],
     "incorrect": [
-      "Avoiding process analysis to keep the review focused only on attacker behavior",
-      "Closing all follow-up work items once executive summary slides are delivered",
-      "Limiting attendance to SOC analysts so business teams are not distracted"
+      "Limit the review to attacker actions and defer internal process analysis",
+      "Treat executive summary delivery as the completion point for all follow-up work",
+      "Restrict participation to SOC personnel and exclude affected business teams"
     ],
-    "feedback": "Post-incident value comes from measurable improvements, not narrative closure alone."
+    "feedback": "A strong post-incident review produces concrete improvements, not just a narrative of what happened. That means documenting causes and gaps, assigning owners, and changing playbooks or controls where the evidence supports it. The wrong answers remove accountability, exclude affected stakeholders, or stop before remediation work is complete."
   },
   {
     "question": "Highrook's MDR provider detected suspicious behavior, but internal teams were not informed for six hours due to unclear contracts. Which control is MOST important to fix first?",
@@ -353,7 +353,7 @@
       "Expanding endpoint telemetry retention from thirty days to ninety days globally",
       "Migrating all SOC ticket queues to a new workflow platform during the quarter"
     ],
-    "feedback": "The root issue is governance of third-party response obligations. Clear SLAs and escalation terms fix the primary gap."
+    "feedback": "The failure in this scenario is not visibility; it is delayed communication caused by unclear third-party obligations. Contractual notification timelines and escalation ownership are the first controls to fix because they define when the MDR must notify internal responders. New dashboards or platforms do not solve an undefined escalation commitment."
   },
   {
     "question": "Kaeli needs to reduce duplicate alerts generated by multiple controls detecting the same behavior chain. Which approach is BEST?",
@@ -361,11 +361,11 @@
       "Implement event correlation and deduplication keyed by entity, time, and technique mapping"
     ],
     "incorrect": [
-      "Disable overlapping detections permanently to ensure each behavior maps to one rule",
-      "Create separate queues per tool and forbid cross-tool case consolidation by analysts",
-      "Escalate duplicate alerts independently so every control can be measured in isolation"
+      "Retire overlapping detections so each technique is represented by a single rule",
+      "Separate cases by tool source and prevent analysts from consolidating related alerts",
+      "Escalate each duplicate alert as an independent case for reporting consistency"
     ],
-    "feedback": "Correlation preserves visibility while reducing triage duplication. Permanent suppression and fragmented workflows create blind spots."
+    "feedback": "Duplicate alerts are usually a correlation problem, not proof that detections should be removed. Deduplication keyed to the same entity, time window, and technique keeps coverage while reducing wasted triage effort. The other answers either throw away useful visibility or force analysts to treat the same event as separate incidents."
   },
   {
     "question": "Which response is BEST when malware analysis confirms persistence via scheduled task on multiple hosts?",
@@ -373,11 +373,11 @@
       "Use coordinated containment and scripted task removal with enterprise-wide validation sweeps"
     ],
     "incorrect": [
-      "Rebuild only the first infected host since persistence likely stayed localized there",
-      "Block the malware hash in endpoint tools and postpone host remediation activities",
-      "Wait for next monthly patching cycle to avoid introducing emergency process risk"
+      "Rebuild the first affected host and assume the scheduled task did not spread further",
+      "Block the observed malware hash and defer host-level remediation to a later cycle",
+      "Wait for the next planned patch window before coordinating enterprise removal"
     ],
-    "feedback": "Persistence across hosts requires coordinated eradication and validation, not single-host or delayed action."
+    "feedback": "Once persistence is confirmed on multiple hosts, the response has to be coordinated across the affected estate. Scripted removal plus validation sweeps helps ensure the scheduled task is actually gone everywhere it was deployed. Single-host cleanup, hash blocking alone, or delayed action all leave room for the attacker to retain persistence."
   },
   {
     "question": "Selene wants to measure whether IR investments improved real resilience this year. Which metric is MOST meaningful?",
@@ -389,6 +389,6 @@
       "Decrease in average incident report writing time for SOC case documentation",
       "Growth in quarterly training attendance across governance and compliance teams"
     ],
-    "feedback": "Leadership-level resilience metrics should tie to business impact outcomes, not raw security activity volume."
+    "feedback": "If the question is whether IR investment improved resilience, the best evidence is reduced business harm in comparable incidents. Downtime and loss connect the program to outcomes leadership actually cares about. More detections, faster report writing, or better attendance may reflect effort, but not necessarily better resilience."
   }
 ]
