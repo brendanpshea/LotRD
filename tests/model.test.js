@@ -362,6 +362,27 @@ describe('evaluateAnswer', () => {
     assert.equal(gm.player.streak, 1);
   });
 
+  it('supports select-all questions where every option is correct', () => {
+    gm = freshModel([
+      mcQuestion({
+        question: 'Pick all valid controls.',
+        correct: ['A', 'B', 'C', 'D'],
+        incorrect: [],
+      }),
+    ]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.current_monster.max_hit_points = 999;
+
+    const result = gm.evaluateAnswer(['A', 'B', 'C', 'D']);
+
+    assert.deepEqual(result.correctSelections, ['A', 'B', 'C', 'D']);
+    assert.deepEqual(result.incorrectSelections, []);
+    assert.deepEqual(result.missedCorrect, []);
+    assert.equal(result.question_repeated, false);
+    assert.equal(gm.player.total_incorrect, 0);
+  });
+
   it('wrong answer: incorrect tracked, question re-queued', () => {
     const result = gm.evaluateAnswer(['B']);
     assert.deepEqual(result.incorrectSelections, ['B']);

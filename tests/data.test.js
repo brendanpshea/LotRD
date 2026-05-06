@@ -10,6 +10,15 @@ function loadJSON(relPath) {
   return JSON.parse(readFileSync(join(ROOT, relPath), 'utf-8'));
 }
 
+function getMultipleChoiceQuestions(questions) {
+  return questions.filter(q => (q.type || 'multiple_choice') === 'multiple_choice');
+}
+
+function getAverageAnswerLength(answers) {
+  if (answers.length === 0) return 0;
+  return answers.reduce((sum, answer) => sum + answer.length, 0) / answers.length;
+}
+
 // ────────────────────────────────────────────────────────────────────────────────
 // monsters.json
 // ────────────────────────────────────────────────────────────────────────────────
@@ -211,8 +220,8 @@ describe('Question set file validation', () => {
             // multiple choice (default)
             assert.ok(Array.isArray(q.correct) && q.correct.length > 0,
               `${label}: MC must have non-empty correct array`);
-            assert.ok(Array.isArray(q.incorrect) && q.incorrect.length > 0,
-              `${label}: MC must have non-empty incorrect array`);
+            assert.ok(Array.isArray(q.incorrect),
+              `${label}: MC must have an incorrect array`);
           }
         }
       });
@@ -238,6 +247,75 @@ describe('Question set file validation', () => {
             `${setId}[${i}]: option in both correct AND incorrect: ${overlap.join('; ')}`);
         }
       });
+
     });
   }
+});
+
+describe('Question set quality heuristics', () => {
+  const index = loadJSON('question_sets/index.json');
+
+  it('flags extreme multi-answer shape uniformity within a set', () => {
+    const flaggedSets = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      const multiAnswerQuestions = getMultipleChoiceQuestions(questions)
+        .filter(q => (q.correct || []).length > 1);
+
+      if (multiAnswerQuestions.length < 6) continue;
+
+      const shapeCounts = new Map();
+      for (const q of multiAnswerQuestions) {
+        const shape = `${(q.correct || []).length}/${(q.incorrect || []).length}`;
+        shapeCounts.set(shape, (shapeCounts.get(shape) || 0) + 1);
+      }
+
+      const [dominantShape, dominantCount] = [...shapeCounts.entries()]
+        .sort((left, right) => right[1] - left[1])[0];
+      const dominantRatio = dominantCount / multiAnswerQuestions.length;
+
+      if (dominantRatio >= 0.85) {
+        flaggedSets.push(
+          `${setId}: ${dominantShape} appears ${dominantCount}/${multiAnswerQuestions.length} times (${Math.round(dominantRatio * 100)}%)`
+        );
+      }
+    }
+
+    assert.deepEqual(
+      flaggedSets,
+      [],
+      `Extreme multi-answer uniformity detected:\n${flaggedSets.join('\n')}`
+    );
+  });
+
+  it('flags sets where correct answers are much longer than wrong answers on average', () => {
+    const flaggedSets = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      const mcQuestions = getMultipleChoiceQuestions(questions);
+      const correctAnswers = mcQuestions.flatMap(q => q.correct || []);
+      const incorrectAnswers = mcQuestions.flatMap(q => q.incorrect || []);
+
+      if (correctAnswers.length < 20 || incorrectAnswers.length < 20) continue;
+
+      const avgCorrectLength = getAverageAnswerLength(correctAnswers);
+      const avgIncorrectLength = getAverageAnswerLength(incorrectAnswers);
+      const lengthRatio = avgIncorrectLength > 0 ? avgCorrectLength / avgIncorrectLength : 0;
+      const absoluteGap = avgCorrectLength - avgIncorrectLength;
+
+      if (lengthRatio >= 1.5 && absoluteGap >= 12) {
+        flaggedSets.push(
+          `${setId}: avg correct ${avgCorrectLength.toFixed(1)} chars vs avg incorrect ${avgIncorrectLength.toFixed(1)} chars (${lengthRatio.toFixed(2)}x)`
+        );
+      }
+    }
+
+    assert.deepEqual(
+      flaggedSets,
+      [],
+      `Correct-answer length bias detected:\n${flaggedSets.join('\n')}`
+    );
+  });
 });
