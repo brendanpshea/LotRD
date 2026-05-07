@@ -569,9 +569,23 @@ export class GameUI {
     const answers = q.correct || [];
     const canonical = answers[0] || "";
     const caseSens = q.case_sensitive === true;
-    const charHint = canonical.split(" ")
-      .map(word => `${"_".repeat(word.length)} (${word.length})`)
-      .join("  ");
+    const cloze = this.model.getFillBlankCloze();
+
+    let charHint;
+    if (cloze) {
+      // Show the surrounding words inline; only the picked word is blanked.
+      // Student types just the missing word into the input below.
+      const blankWord = cloze.words[cloze.blankIndex];
+      charHint = cloze.words
+        .map((w, i) => i === cloze.blankIndex
+          ? `${"_".repeat(blankWord.length)} (${blankWord.length})`
+          : w)
+        .join("  ");
+    } else {
+      charHint = canonical.split(" ")
+        .map(word => `${"_".repeat(word.length)} (${word.length})`)
+        .join("  ");
+    }
     $(this.root, "[data-ref=charHint]").textContent =
       `${charHint}${caseSens ? "  [case-sensitive]" : "  [not case-sensitive]"}`;
 

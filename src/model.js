@@ -152,6 +152,38 @@ export function tokenWordleFeedback(guessTokens, answerTokens) {
 
 export const FB_MAX_ATTEMPTS = 3;
 export const CL_MAX_ATTEMPTS = 3;
+
+// Auto-cloze: when a fill-blank answer is long, pre-fill all but one word so
+// the student doesn't have to type 30 chars. Triggers when canonical answer
+// is > FB_CLOZE_MIN_CHARS chars AND has ≥ 2 words. The blanked word is
+// chosen once per encounter (stable across the 3 attempts) and skips common
+// stopwords so the visible scaffold doesn't trivialise the question.
+export const FB_CLOZE_MIN_CHARS = 12;
+const FB_CLOZE_STOPWORDS = new Set([
+    'the','a','an','of','in','on','at','to','for','and','or','by','with',
+    'is','as','from','that','this','these','those','it','its','be','are',
+]);
+
+/**
+ * Pick which word of a multi-word answer to blank for auto-cloze.
+ * Returns { words, blankIndex } or null when cloze shouldn't apply.
+ * Prefers the longest non-stopword; ties broken randomly so re-runs vary.
+ */
+export function pickClozeBlank(canonical, rng = Math.random) {
+    if (!canonical || canonical.length <= FB_CLOZE_MIN_CHARS) return null;
+    const words = canonical.split(/\s+/).filter(Boolean);
+    if (words.length < 2) return null;
+
+    let candidates = words
+        .map((w, i) => ({ w, i }))
+        .filter(({ w }) => !FB_CLOZE_STOPWORDS.has(w.toLowerCase()));
+    if (candidates.length === 0) candidates = words.map((w, i) => ({ w, i }));
+
+    const maxLen = Math.max(...candidates.map(c => c.w.length));
+    const longest = candidates.filter(c => c.w.length === maxLen);
+    const pick = longest[Math.floor(rng() * longest.length)];
+    return { words, blankIndex: pick.i };
+}
 // Char-level edit distance under which a near-miss triggers the "did you mean?"
 // typo gate — small enough to catch real typos without rescuing wrong answers.
 export const CL_TYPO_THRESHOLD = 2;
@@ -641,34 +673,70 @@ export class GameModel {
      *   { status: 'failed', ...battleData, wordleFeedback, attemptsUsed }
      * 'won' and 'failed' are full battleData snapshots ready for _resolveBattle.
      */
+    /**
+     * Lazily initialise per-question fill-blank state (attempt counter,
+     * best-guess tracking, auto-cloze pick). Called from both the submit
+     * path and the UI's getFillBlankCloze() so the cloze blank is fixed
+     * the first time the question is touched and stays stable for the
+     * rest of the encounter.
+     */
+    _initFillBlankState() {
+        const q = this.current_question;
+        if (this._fbCurrentQ === q) return;
+        this._fbCurrentQ       = q;
+        this._fbAttempts       = 0;
+        this._fbBestGuess      = '';
+        this._fbBestSimilarity = 0;
+        const canonical = (q && q.correct && q.correct[0]) || '';
+        this._fbCloze = q ? pickClozeBlank(canonical) : null;
+    }
+
+    /**
+     * Returns the cloze pick for the current fill-blank question, or null
+     * when the answer is short enough that the student should type it in
+     * full. Stable across all attempts of one encounter.
+     */
+    getFillBlankCloze() {
+        const q = this.current_question;
+        if (!q || q.type !== 'fill_blank') return null;
+        this._initFillBlankState();
+        return this._fbCloze;
+    }
+
     submitFillBlankGuess(inputText) {
         if (!this.current_question) return null;
+        this._initFillBlankState();
         const q = this.current_question;
-        // Reset attempt state when entering a new fill-blank question
-        if (this._fbCurrentQ !== q) {
-            this._fbCurrentQ      = q;
-            this._fbAttempts      = 0;
-            this._fbBestGuess     = '';
-            this._fbBestSimilarity = 0;
-        }
 
-        const acceptable = q.correct || [];
+        // When cloze is active the student is filling just one word, so we
+        // compare against that word only. Otherwise the full answer set.
+        const acceptable = this._fbCloze
+            ? [this._fbCloze.words[this._fbCloze.blankIndex]]
+            : (q.correct || []);
         const caseSens   = q.case_sensitive === true;
         const normalise  = s => caseSens ? s.trim() : s.trim().toLowerCase();
         const input      = normalise(inputText);
 
         // Pick the acceptable answer most similar to this guess (so feedback
-        // helps the player home in on the closest variant).
+        // helps the player home in on the closest variant). Track edit
+        // distance to the closest variant so we can fuzzy-accept typos.
         let bestAnswer = normalise(acceptable[0] || '');
         let bestSim    = -1;
+        let bestDist   = Infinity;
         for (const ans of acceptable) {
             const norm = normalise(ans);
-            if (norm === input) { bestAnswer = norm; bestSim = 1; break; }
-            const sim = levenshteinSimilarity(input, norm);
-            if (sim > bestSim) { bestSim = sim; bestAnswer = norm; }
+            if (norm === input) { bestAnswer = norm; bestSim = 1; bestDist = 0; break; }
+            const dist = levenshtein(input, norm);
+            const sim  = 1 - (dist / Math.max(norm.length, input.length, 1));
+            if (sim > bestSim) { bestSim = sim; bestAnswer = norm; bestDist = dist; }
         }
 
-        const isCorrect = input === bestAnswer;
+        // Fuzzy accept: a single-character typo on a reasonably long answer
+        // counts as correct. Avoids losing a turn to "extens" vs "extends"
+        // while keeping short answers (TCP, true) strict. Skipped when the
+        // question is case-sensitive — the author is asking for exactness.
+        const isCorrect = input === bestAnswer
+            || (!caseSens && bestDist <= 1 && bestAnswer.length >= 5);
         const feedback  = wordleFeedback(input, bestAnswer);
         this._fbAttempts++;
 
@@ -684,9 +752,17 @@ export class GameModel {
             return this._finalizeFillBlank({ won: false, finalInput: this._fbBestGuess, bestAnswer, feedback });
         }
 
-        // Wrong, but more attempts remain — apply monster attack only
+        // Wrong, but more attempts remain — apply monster attack only.
+        // Damage scales with attempt number so a blind first guess doesn't
+        // gut the player: attempts 1/2/3 deal 0% / 50% / 100% of the roll.
+        // (Attempt 3 here means "you used your last shot and missed," which
+        // is the failure path and uses _finalizeFillBlank — so live wrong
+        // attempts are only ever 1 or 2.)
+        const FB_DAMAGE_SCALE = [0, 0.5, 1.0];
+        const scale = FB_DAMAGE_SCALE[this._fbAttempts - 1] ?? 1.0;
         const monsterRoll = rollDice(1, this.current_monster.attack_die);
-        let effective_monster_damage = Math.max(monsterRoll - this.player.base_defense, 0);
+        let effective_monster_damage = Math.max(
+            Math.round(monsterRoll * scale) - this.player.base_defense, 0);
 
         let shield_used = false;
         if (this.pending_effects.has('shield') && effective_monster_damage > 0) {
@@ -715,8 +791,11 @@ export class GameModel {
      */
     forceFillBlankFail() {
         if (!this.current_question) return null;
+        this._initFillBlankState();
         const q          = this.current_question;
-        const acceptable = q.correct || [];
+        const acceptable = this._fbCloze
+            ? [this._fbCloze.words[this._fbCloze.blankIndex]]
+            : (q.correct || []);
         const caseSens   = q.case_sensitive === true;
         const normalise  = s => caseSens ? s.trim() : s.trim().toLowerCase();
         const bestAnswer = normalise(acceptable[0] || '');

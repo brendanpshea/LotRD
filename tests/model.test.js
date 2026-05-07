@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { rollDice, Player, Monster, GameModel,
          levenshtein, levenshteinSimilarity, wordleFeedback,
          tokenize, tokenSimilarity, tokenWordleFeedback,
-         CL_MAX_ATTEMPTS } from '../src/model.js';
+         CL_MAX_ATTEMPTS, pickClozeBlank } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -436,6 +436,35 @@ describe('evaluateAnswer', () => {
 // ────────────────────────────────────────────────────────────────────────────────
 // Levenshtein and Wordle utilities
 // ────────────────────────────────────────────────────────────────────────────────
+describe('pickClozeBlank', () => {
+  // Use a deterministic rng (always picks the first candidate among ties)
+  const rng0 = () => 0;
+  it('returns null for short answers', () => {
+    assert.equal(pickClozeBlank('short', rng0), null);
+    assert.equal(pickClozeBlank('two words', rng0), null); // 9 chars, ≤ 12
+  });
+  it('returns null for single-word answers regardless of length', () => {
+    assert.equal(pickClozeBlank('polymorphism', rng0), null);
+    assert.equal(pickClozeBlank('antidisestablishmentarianism', rng0), null);
+  });
+  it('blanks a non-stopword from a long multi-word answer', () => {
+    const r = pickClozeBlank('the secure shell protocol', rng0);
+    assert.ok(r);
+    const blanked = r.words[r.blankIndex];
+    assert.ok(!['the'].includes(blanked.toLowerCase()),
+      'should not blank a stopword');
+  });
+  it('prefers the longest non-stopword', () => {
+    const r = pickClozeBlank('Transport Layer Security', rng0);
+    assert.equal(r.words[r.blankIndex], 'Transport'); // longest, tie-broken by rng0
+  });
+  it('falls back to all words if every word is a stopword', () => {
+    const r = pickClozeBlank('the of and or in', rng0);
+    assert.ok(r);
+    assert.ok(r.blankIndex >= 0 && r.blankIndex < r.words.length);
+  });
+});
+
 describe('levenshtein', () => {
   it('returns 0 for identical strings', () => {
     assert.equal(levenshtein('hello', 'hello'), 0);
@@ -684,13 +713,32 @@ describe('submitFillBlankGuess', () => {
   });
 
   it('failure with high similarity (≥0.8) preserves streak', () => {
-    gm.player.streak = 3;
-    gm.submitFillBlankGuess('extend');  // sim 6/7 ≈ 0.857
-    gm.submitFillBlankGuess('xtends');  // sim 6/7
-    const r = gm.submitFillBlankGuess('extens'); // sim 6/7
+    // Use a longer target so distance-2 guesses still clear the 0.8 sim
+    // threshold (fuzzy-accept now consumes anything at distance ≤ 1).
+    const gm2 = freshModel([fillBlankQuestion({ correct: ['polymorphism'] })]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    gm2.player.streak = 3;
+    gm2.submitFillBlankGuess('polymrphsm');   // dist 2, sim ≈ 0.83
+    gm2.submitFillBlankGuess('plymorphis');   // dist 2, sim ≈ 0.83
+    const r = gm2.submitFillBlankGuess('polymrphis'); // dist 2, sim ≈ 0.83
     assert.equal(r.status, 'failed');
     assert.equal(r.streakState, 'preserved');
-    assert.equal(gm.player.streak, 3);
+    assert.equal(gm2.player.streak, 3);
+  });
+
+  it('fuzzy-accepts a single-character typo on long answers', () => {
+    const r = gm.submitFillBlankGuess('extens'); // dist 1 to "extends"
+    assert.equal(r.status, 'won');
+    assert.equal(r.attemptsUsed, 1);
+  });
+
+  it('does not fuzzy-accept on short answers', () => {
+    const gm2 = freshModel([fillBlankQuestion({ correct: ['true'] })]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    const r = gm2.submitFillBlankGuess('trie'); // dist 1 but len 4
+    assert.equal(r.status, 'wrong');
   });
 
   it('case-sensitive mode rejects wrong case', () => {
@@ -709,14 +757,18 @@ describe('submitFillBlankGuess', () => {
     assert.equal(r.status, 'won');
   });
 
-  it('wrong intermediate guess applies monster damage but no player damage', () => {
+  it('first wrong attempt deals no damage; second deals scaled damage', () => {
     gm.player.base_defense = 0;
     gm.current_monster.attack_die = 100; // force visible damage
     const startHp = gm.player.hit_points;
-    const r = gm.submitFillBlankGuess('zzzz');
-    assert.equal(r.status, 'wrong');
-    assert.ok(r.effective_monster_damage > 0);
-    assert.equal(gm.player.hit_points, startHp - r.effective_monster_damage);
+    const r1 = gm.submitFillBlankGuess('zzzz');
+    assert.equal(r1.status, 'wrong');
+    assert.equal(r1.effective_monster_damage, 0, 'attempt 1 is a freebie');
+    assert.equal(gm.player.hit_points, startHp);
+    const r2 = gm.submitFillBlankGuess('yyyy');
+    assert.equal(r2.status, 'wrong');
+    assert.ok(r2.effective_monster_damage > 0, 'attempt 2 deals scaled damage');
+    assert.equal(gm.player.hit_points, startHp - r2.effective_monster_damage);
   });
 
   it('attempt state resets when the question changes', () => {
@@ -730,6 +782,45 @@ describe('submitFillBlankGuess', () => {
     gm2.current_question = q2;          // switch
     const r = gm2.submitFillBlankGuess('alsobad');
     assert.equal(r.attemptsUsed, 1, 'counter should reset on new question');
+  });
+
+  it('cloze: long answer triggers cloze; submitting the missing word wins', () => {
+    const gm2 = freshModel([fillBlankQuestion({
+      correct: ['Transport Layer Security'],
+    })]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    const cloze = gm2.getFillBlankCloze();
+    assert.ok(cloze, 'cloze should activate for a long multi-word answer');
+    const blankWord = cloze.words[cloze.blankIndex];
+    const r = gm2.submitFillBlankGuess(blankWord);
+    assert.equal(r.status, 'won');
+    assert.equal(r.attemptsUsed, 1);
+  });
+
+  it('cloze: pick is stable across attempts of the same encounter', () => {
+    const gm2 = freshModel([fillBlankQuestion({
+      correct: ['Transport Layer Security'],
+    })]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    const first = gm2.getFillBlankCloze();
+    gm2.submitFillBlankGuess('zzz'); // wrong attempt
+    const second = gm2.getFillBlankCloze();
+    assert.equal(second.blankIndex, first.blankIndex);
+  });
+
+  it('cloze: typing the full answer when cloze is active does not win', () => {
+    // With cloze active we compare against the missing word only — so a
+    // student typing the whole phrase is treated as a wrong guess, which
+    // is the right call (the scaffold tells them which slot to fill).
+    const gm2 = freshModel([fillBlankQuestion({
+      correct: ['Transport Layer Security'],
+    })]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    const r = gm2.submitFillBlankGuess('Transport Layer Security');
+    assert.equal(r.status, 'wrong');
   });
 
   it('forceFillBlankFail returns a finalized failure result', () => {
@@ -1094,7 +1185,10 @@ describe('Pending item effects', () => {
     gm.player.base_defense = 0;
     gm.pending_effects.add('shield');
     const startHp = gm.player.hit_points;
-    const r = gm.submitFillBlankGuess('wrong');
+    // Attempt 1 deals no damage, so it can't trigger the shield. Burn it
+    // first, then assert the shield consumes the attempt-2 hit.
+    gm.submitFillBlankGuess('wrong');
+    const r = gm.submitFillBlankGuess('alsobad');
     assert.equal(r.status, 'wrong');
     assert.equal(r.effective_monster_damage, 0);
     assert.ok(r.shield_used);
