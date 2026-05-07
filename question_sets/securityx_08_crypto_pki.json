@@ -1,0 +1,359 @@
+[
+  {
+    "question": "Which entity in a PKI is responsible for issuing and signing digital certificates?",
+    "correct": ["Certificate Authority (CA)"],
+    "incorrect": [
+      "Registration Authority that vets requests but never signs them itself",
+      "Validation Authority that maintains revocation lists for relying parties",
+      "Hardware Security Module that stores keys but issues no certificates"
+    ],
+    "feedback": "The CA signs certificates, binding a public key to an identity. RAs vet requests, VAs handle revocation status, and HSMs protect key material — none of them issue certificates."
+  },
+  {
+    "question": "What is the primary role of a Registration Authority (RA) in a PKI?",
+    "correct": ["Verify the identity of certificate requesters before the CA issues a certificate"],
+    "incorrect": [
+      "Sign issued end-entity certificates with the offline root key material",
+      "Distribute certificate revocation lists to every relying party endpoint",
+      "Decrypt and re-encrypt session traffic for inspection on the wire"
+    ],
+    "feedback": "The RA performs identity proofing and request validation; the CA is what actually signs. Session decryption and CRL distribution are unrelated functions."
+  },
+  {
+    "question": "Which statement BEST describes OCSP stapling?",
+    "correct": ["The server sends a recently signed OCSP response together with its certificate during the TLS handshake"],
+    "incorrect": [
+      "The client downloads the full certificate revocation list before connecting to the server",
+      "The certificate authority embeds revocation status directly into a long-lived static field",
+      "The browser caches the entire issuing chain locally and skips revocation checking entirely"
+    ],
+    "feedback": "OCSP stapling has the server attach a fresh, time-limited OCSP response to the handshake so clients do not need to query the OCSP responder themselves."
+  },
+  {
+    "question": "Which certificate type would BEST secure traffic to *.shop.example.com and *.api.example.com under one certificate?",
+    "correct": ["A SAN (Subject Alternative Name) certificate listing both wildcard names"],
+    "incorrect": [
+      "A self-signed certificate generated on each individual web server host",
+      "A code-signing certificate issued from a publicly trusted timestamp authority",
+      "A client authentication certificate enrolled through device management"
+    ],
+    "feedback": "SAN certificates can list multiple names, including wildcards, on one cert. Self-signed, code-signing, and client-auth certs are not appropriate for public TLS at multiple wildcard hostnames."
+  },
+  {
+    "question": "Which of the following are valid uses of digital certificates in an enterprise? (Select all that apply.)",
+    "correct": [
+      "Authenticating servers to clients during a TLS handshake",
+      "Signing executables for software publisher identity verification",
+      "Authenticating clients to servers using mutual TLS",
+      "Encrypting and signing S/MIME email messages"
+    ],
+    "incorrect": [
+      "Storing user passwords in cleartext for help-desk lookup",
+      "Replacing symmetric session keys for bulk file encryption at rest"
+    ],
+    "feedback": "Certificates support server auth, code signing, mutual TLS client auth, and S/MIME. They do not store passwords, and bulk encryption uses symmetric keys (often wrapped by certs)."
+  },
+  {
+    "question": "Why is offline storage of the root CA key considered a strong PKI design choice?",
+    "correct": ["It limits exposure of the highest-trust key, reducing the impact of a compromise of issuing systems"],
+    "incorrect": [
+      "It allows the root key to sign every end-entity certificate at very high throughput",
+      "It removes the need to ever publish revocation information to relying parties",
+      "It eliminates the requirement for any subordinate intermediate CAs in the hierarchy"
+    ],
+    "feedback": "An offline root issues only intermediate CA certificates infrequently, so a network compromise of issuing infrastructure does not expose the root key."
+  },
+  {
+    "question": "Which symmetric cipher mode provides authenticated encryption with associated data (AEAD)?",
+    "correct": ["AES-GCM"],
+    "incorrect": [
+      "AES-CBC without an additional message authentication code applied",
+      "AES-ECB used directly on full-block plaintext records",
+      "RSA-OAEP for padding asymmetric key transport messages"
+    ],
+    "feedback": "AES-GCM combines confidentiality and integrity in one pass. CBC needs a separate MAC, ECB leaks structure, and RSA-OAEP is asymmetric padding, not a symmetric AEAD mode."
+  },
+  {
+    "question": "Which property does forward secrecy provide to a TLS session?",
+    "correct": ["Compromise of the server's long-term private key does not let an attacker decrypt previously captured sessions"],
+    "incorrect": [
+      "Encryption of session data is performed without any per-session keys at all",
+      "Each handshake reuses the same ephemeral key pair across many sessions for speed",
+      "Server certificates rotate automatically every few minutes during steady traffic"
+    ],
+    "feedback": "Forward secrecy uses ephemeral key exchange (e.g., ECDHE) so each session has unique keys; recovering the long-term key later does not decrypt past traffic."
+  },
+  {
+    "question": "Which of the following are examples of key stretching functions used to slow brute-force attacks on passwords? (Select all that apply.)",
+    "correct": [
+      "Argon2",
+      "bcrypt",
+      "PBKDF2",
+      "scrypt"
+    ],
+    "incorrect": [
+      "AES-CTR used directly on the password bytes as the cipher",
+      "SHA-256 applied a single time without any salt or work factor"
+    ],
+    "feedback": "Argon2, bcrypt, PBKDF2, and scrypt deliberately consume CPU and/or memory to make guessing expensive. A raw cipher or a single SHA pass does not stretch the key."
+  },
+  {
+    "question": "Which technique allows computation on ciphertext such that the decrypted result equals the result of computing on the plaintext?",
+    "correct": ["Homomorphic encryption"],
+    "incorrect": [
+      "Symmetric block cipher operating in counter mode for bulk encryption",
+      "Format-preserving encryption that retains the input character class only",
+      "Hash-based message authentication code applied to the whole record"
+    ],
+    "feedback": "Homomorphic encryption permits arithmetic on ciphertext directly. The other options either don't support computation or only protect format/integrity."
+  },
+  {
+    "question": "Which use case is the BEST fit for secure multiparty computation (SMPC)?",
+    "correct": ["Several organizations jointly compute a statistic over their data without revealing individual inputs"],
+    "incorrect": [
+      "A single user encrypts a backup before uploading it to consumer cloud storage",
+      "A web server proves its identity to a browser during a normal TLS handshake",
+      "An administrator hashes a password file before publishing it to a paste site"
+    ],
+    "feedback": "SMPC is designed for multi-party joint computation that preserves each party's privacy. The other scenarios are everyday encryption, server auth, or hashing — none require multi-party privacy."
+  },
+  {
+    "question": "Which scheme splits a secret into shares so that any k of n shares reconstruct it, but fewer than k reveal nothing?",
+    "correct": ["Shamir's Secret Sharing"],
+    "incorrect": [
+      "RSA digital signature with a single private key held by one administrator",
+      "AES-GCM authenticated encryption of the secret using a master key",
+      "PBKDF2 derivation of the secret from a memorable user passphrase"
+    ],
+    "feedback": "Shamir's Secret Sharing is the canonical k-of-n threshold scheme. Single-key signatures, AEAD, and password derivation do not split a secret into independent shares."
+  },
+  {
+    "question": "Envelope encryption typically works by:",
+    "correct": ["Encrypting data with a data encryption key (DEK), then encrypting the DEK with a key encryption key (KEK)"],
+    "incorrect": [
+      "Encrypting both the data and the key with the same single shared symmetric key",
+      "Wrapping the ciphertext inside a printable envelope of base64-encoded text",
+      "Storing the plaintext key alongside the ciphertext for fast offline decryption"
+    ],
+    "feedback": "Envelope encryption protects each object with its own DEK and protects DEKs with a centrally managed KEK, enabling rotation and access control without re-encrypting bulk data."
+  },
+  {
+    "question": "Which of the following describe data sanitization techniques appropriate for end-of-life cloud-managed disks? (Select all that apply.)",
+    "correct": [
+      "Cryptographic erase by destroying the keys used to encrypt the volume",
+      "Issuing the cloud provider's documented secure-wipe API on the resource"
+    ],
+    "incorrect": [
+      "Asking the provider to physically degauss the underlying multi-tenant drives on demand",
+      "Renaming the volume label so future tenants cannot identify the data set",
+      "Reducing the storage class to archive tier as a substitute for deletion"
+    ],
+    "feedback": "Crypto erase and provider-supplied secure-wipe APIs work in shared cloud storage. You cannot dictate physical media handling on multi-tenant infrastructure, and renaming or moving tiers does not remove data."
+  },
+  {
+    "question": "Which statement BEST describes tokenization compared with encryption?",
+    "correct": ["Tokenization replaces sensitive values with non-sensitive surrogates that have no mathematical relationship to the original"],
+    "incorrect": [
+      "Tokenization derives ciphertext from plaintext using a published symmetric key",
+      "Tokenization is a hashing function that produces a fixed-length digest of the input",
+      "Tokenization compresses repeated values into smaller fixed-width binary tokens"
+    ],
+    "feedback": "Tokens are surrogate values stored in a vault; without the vault mapping, tokens reveal nothing. That distinguishes tokenization from encryption (reversible by key) and hashing (one-way digest)."
+  },
+  {
+    "question": "Anonymization differs from pseudonymization in that anonymization:",
+    "correct": ["Removes or transforms data so individuals cannot be re-identified, even with additional data"],
+    "incorrect": [
+      "Replaces names with random strings while keeping a re-identification key elsewhere",
+      "Encrypts user identifiers with a tenant-specific symmetric key for storage",
+      "Hashes identifiers with a public salt that anyone can recompute on demand"
+    ],
+    "feedback": "True anonymization is irreversible. Pseudonymization (the other choices) keeps a way to re-identify, often via a key or mapping kept elsewhere."
+  },
+  {
+    "question": "Which authentication approach BEST illustrates passwordless authentication?",
+    "correct": ["FIDO2 security key performing public-key challenge-response with the relying party"],
+    "incorrect": [
+      "Username and password entered into the same form as previous logins",
+      "Username, password, and one-time SMS code typed into a portal field",
+      "Username, password, and security question answer combined at sign-in"
+    ],
+    "feedback": "FIDO2 uses asymmetric keys bound to the user's authenticator and replaces shared secrets entirely. The other options still rely on a password as a primary factor."
+  },
+  {
+    "question": "Mutual TLS (mTLS) differs from standard TLS in that:",
+    "correct": ["Both client and server present certificates and authenticate each other"],
+    "incorrect": [
+      "Only the server validates a certificate while the client always remains anonymous",
+      "Both endpoints share the same private key to derive the session secret material",
+      "The handshake skips certificate validation in favor of preshared symmetric keys"
+    ],
+    "feedback": "mTLS adds client certificate authentication on top of normal server authentication. The other options misdescribe TLS or invent shared-secret-only handshakes."
+  },
+  {
+    "question": "Which controls strengthen software supply-chain trust through cryptography? (Select all that apply.)",
+    "correct": [
+      "Signing build artifacts with a code-signing key stored in an HSM",
+      "Verifying signatures on dependencies before installing them in build images",
+      "Generating reproducible builds and publishing signed provenance attestations"
+    ],
+    "incorrect": [
+      "Disabling signature verification on registries to speed up release pipelines",
+      "Allowing unsigned binaries from public mirrors when builds are tight on time"
+    ],
+    "feedback": "Signed artifacts, signature verification on dependencies, and signed provenance all raise the bar against supply-chain tampering. Disabling verification or accepting unsigned binaries removes the protection."
+  },
+  {
+    "question": "The DigiNotar incident is BEST characterized as which of the following?",
+    "correct": ["Compromise of a trusted certificate authority that issued fraudulent certificates"],
+    "incorrect": [
+      "A weakness in a hashing algorithm that allowed full preimage recovery in seconds",
+      "A flaw in a TLS cipher suite that exposed every session key during the handshake",
+      "A side-channel attack against a smart card recovering keys via timing analysis"
+    ],
+    "feedback": "Attackers compromised the DigiNotar CA and issued bogus certificates for high-value domains, undermining trust until major browsers removed the root from their stores."
+  },
+  {
+    "question": "Why is post-quantum cryptography (PQC) a current concern even before scalable quantum computers exist?",
+    "correct": ["Adversaries can capture encrypted traffic now and decrypt it later when quantum capability arrives"],
+    "incorrect": [
+      "Quantum computers already break AES-256 in production deployments today",
+      "PQC algorithms are mandated for every TLS handshake by current browsers",
+      "Classical algorithms have been shown to fail against ordinary CPUs at scale"
+    ],
+    "feedback": "The 'harvest now, decrypt later' threat motivates PQC migration ahead of large quantum machines, especially for long-confidentiality data such as health records and intellectual property."
+  },
+  {
+    "question": "Which algorithms are most threatened by a sufficiently large quantum computer running Shor's algorithm? (Select all that apply.)",
+    "correct": [
+      "RSA used for key transport in TLS handshakes",
+      "ECDSA signatures over standard NIST elliptic curves",
+      "Diffie-Hellman key exchange with classical groups"
+    ],
+    "incorrect": [
+      "AES-256 used in GCM mode for bulk session encryption",
+      "SHA-3 used as a one-way hash for integrity checks"
+    ],
+    "feedback": "Shor's algorithm targets factoring and discrete-log problems, breaking RSA, ECDSA, and DH at scale. Symmetric primitives like AES-256 and SHA-3 are weakened by Grover's algorithm but remain practically secure with longer outputs."
+  },
+  {
+    "question": "Which use case is the BEST fit for an immutable, append-only ledger such as a blockchain?",
+    "correct": ["Recording tamper-evident transactions across mutually distrusting parties"],
+    "incorrect": [
+      "Replacing every relational database in a single-tenant enterprise application",
+      "Storing high-volume video content for low-latency on-demand streaming",
+      "Holding short-lived ephemeral session keys for a TLS-terminating gateway"
+    ],
+    "feedback": "Blockchains shine when distrusting parties need a shared, append-only history. They are poorly suited to high-throughput media, ephemeral keys, or general-purpose OLTP."
+  },
+  {
+    "question": "Which approach BEST manages the risk of long-lived TLS server certificates expiring unexpectedly?",
+    "correct": ["Automated certificate lifecycle management with renewal before expiry and monitoring alerts"],
+    "incorrect": [
+      "A spreadsheet tracked manually by a single administrator close to expiration",
+      "Issuing 10-year certificates so renewals fall outside normal employee tenure",
+      "Disabling certificate validation on internal services to avoid outage risk"
+    ],
+    "feedback": "Automation plus expiry monitoring is what saves the Mad Hatter from another outage. Manual tracking, very long lifetimes, and disabled validation each create or hide risk."
+  },
+  {
+    "question": "Which control supports nonrepudiation of an electronic contract?",
+    "correct": ["Digital signature created with the signer's private key bound to a verified identity"],
+    "incorrect": [
+      "Symmetric MAC computed with a key shared between every counterparty",
+      "Cleartext footer with the signer's typed name and printed timestamp",
+      "Server-side TLS certificate authenticating the host that displays the document"
+    ],
+    "feedback": "Nonrepudiation requires a signature that only the signer could have created, which is what asymmetric digital signatures provide. Shared MACs cannot bind a single party, and TLS authenticates servers, not signers."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The protocol used to check whether a certificate has been revoked, often delivered via stapling on the TLS handshake, is ___.",
+    "correct": ["OCSP", "Online Certificate Status Protocol"],
+    "case_sensitive": false,
+    "feedback": "OCSP (Online Certificate Status Protocol) returns the revocation status of an individual certificate; stapling has the server pre-fetch and attach the response."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A tamper-resistant device used to generate, store, and protect cryptographic keys is called a(n) ___.",
+    "correct": ["HSM", "hardware security module", "Hardware Security Module"],
+    "case_sensitive": false,
+    "feedback": "An HSM is the standard control for protecting high-value keys (root CAs, code-signing keys, payment keys) in hardware."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The cryptographic property that ensures recovery of a long-term key cannot decrypt previously captured sessions is called ___ secrecy.",
+    "correct": ["forward", "perfect forward", "Forward"],
+    "case_sensitive": false,
+    "feedback": "Forward secrecy (sometimes called perfect forward secrecy) is achieved with ephemeral key exchange such as ECDHE."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Sanitizing storage by destroying the keys used to encrypt the data, rather than wiping the bytes themselves, is called ___ erase.",
+    "correct": ["cryptographic", "crypto", "Cryptographic"],
+    "case_sensitive": false,
+    "feedback": "Cryptographic erase is well suited to cloud and large-capacity storage where physical wiping is slow or impractical."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A scheme that allows computation directly on encrypted data without decryption is called ___ encryption.",
+    "correct": ["homomorphic", "fully homomorphic", "Homomorphic"],
+    "case_sensitive": false,
+    "feedback": "Homomorphic encryption enables operations on ciphertext, useful for privacy-preserving analytics — though performance overhead remains significant."
+  },
+  {
+    "type": "matching",
+    "question": "Match each cryptographic primitive to its primary use case.",
+    "pairs": [
+      { "term": "AES-GCM", "definition": "Authenticated encryption of bulk data with confidentiality and integrity" },
+      { "term": "ECDHE", "definition": "Ephemeral key agreement that provides forward secrecy in TLS" },
+      { "term": "RSA-PSS", "definition": "Asymmetric digital signatures with modern probabilistic padding" },
+      { "term": "HMAC-SHA-256", "definition": "Symmetric message authentication using a shared key and hash" }
+    ],
+    "feedback": "Each primitive solves a distinct problem — bulk encryption, key agreement, signing, and message authentication. Picking the right one is a routine architectural choice."
+  },
+  {
+    "type": "matching",
+    "question": "Match each PKI component to its responsibility.",
+    "pairs": [
+      { "term": "Certificate Authority", "definition": "Signs certificates that bind public keys to verified identities" },
+      { "term": "Registration Authority", "definition": "Vets requesters and forwards approved requests to the signing CA" },
+      { "term": "OCSP Responder", "definition": "Returns the current revocation status of a specific certificate" },
+      { "term": "CRL Distribution Point", "definition": "Publishes a signed list of revoked certificates for relying parties" }
+    ],
+    "feedback": "A working PKI separates issuance, vetting, and revocation status — knowing which component does what helps when designing or troubleshooting trust chains."
+  },
+  {
+    "type": "matching",
+    "question": "Match each data-protection technique to the BEST description.",
+    "pairs": [
+      { "term": "Tokenization", "definition": "Replacing sensitive values with surrogates linked only via a vault mapping" },
+      { "term": "Anonymization", "definition": "Transforming data so individuals cannot be re-identified, even with side information" },
+      { "term": "Pseudonymization", "definition": "Replacing identifiers with values that can be reversed using a separately held key" },
+      { "term": "Cryptographic erase", "definition": "Rendering data unrecoverable by destroying its encryption keys" }
+    ],
+    "feedback": "These techniques sit on a spectrum from reversible (pseudonymization, tokenization) to irreversible (anonymization, crypto erase). Matching the right one to the data-handling requirement is a frequent design choice."
+  },
+  {
+    "type": "matching",
+    "question": "Match each authentication mechanism to its description.",
+    "pairs": [
+      { "term": "Mutual TLS", "definition": "Both client and server present and validate certificates during the handshake" },
+      { "term": "FIDO2 / WebAuthn", "definition": "Public-key challenge-response from a hardware authenticator with no shared secret" },
+      { "term": "Smart card logon", "definition": "Certificate-based authentication using a private key stored on a physical card" },
+      { "term": "Kerberos", "definition": "Ticket-based authentication using a trusted key distribution center" }
+    ],
+    "feedback": "Each mechanism authenticates without sending a password over the wire, but they differ in trust model and where keys live."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the OpenSSL command that generates a 4096-bit RSA private key written to the file server.key.",
+    "language": "bash",
+    "correct": [
+      "openssl genrsa -out server.key 4096",
+      "openssl genpkey -algorithm RSA -out server.key -pkeyopt rsa_keygen_bits:4096"
+    ],
+    "case_sensitive": true,
+    "feedback": "Both forms produce a 4096-bit RSA private key. Modern guidance prefers `genpkey`, but `genrsa` is still widely seen in scripts and documentation."
+  }
+]

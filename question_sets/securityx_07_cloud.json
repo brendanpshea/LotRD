@@ -1,0 +1,341 @@
+[
+  {
+    "question": "Under the cloud shared responsibility model for IaaS, which layer is the customer typically responsible for securing?",
+    "correct": ["Guest operating system, applications, and customer data on the provisioned virtual machines"],
+    "incorrect": [
+      "Hypervisor patching and physical access to data center server racks",
+      "Underlying network fabric and the provider's storage hardware controllers",
+      "Power conditioning, fire suppression, and physical perimeter monitoring"
+    ],
+    "feedback": "In IaaS the provider secures the underlying hardware, hypervisor, and facilities while the customer secures the guest OS, applications, and data they place on the VMs. The other options describe responsibilities that stay with the provider."
+  },
+  {
+    "question": "A SaaS vendor manages the application code, runtime, and infrastructure. Which security task remains the customer's responsibility?",
+    "correct": ["Identity, access policies, and the data they place into the SaaS tenant"],
+    "incorrect": [
+      "Patching the underlying application server and database engine versions",
+      "Hardening the load balancers that front the multi-tenant service",
+      "Rotating the platform's TLS certificates used for the public endpoint"
+    ],
+    "feedback": "Even in SaaS, customers retain responsibility for who can log in, what roles they hold, and the data they upload. Patching, load balancers, and platform certificates sit with the provider."
+  },
+  {
+    "question": "Dorothy is comparing customer-managed keys (CMK) and provider-managed keys for an IaaS database. Which statement BEST describes a benefit of CMK?",
+    "correct": ["The customer controls key rotation policy and can revoke access independently of the provider"],
+    "incorrect": [
+      "The provider performs all rotation, allowing the customer to skip key lifecycle planning",
+      "Encryption is automatically extended to data already deleted from the storage tier",
+      "Application code does not need any reference to the key for envelope decryption"
+    ],
+    "feedback": "Customer-managed keys give the customer authority over rotation and revocation, which is useful for compliance and exit scenarios. Provider-managed keys hand that control back to the cloud vendor."
+  },
+  {
+    "question": "Which of the following are typical functions of a Cloud Access Security Broker (CASB)? (Select all that apply.)",
+    "correct": [
+      "Discovering shadow IT cloud services in use across the enterprise",
+      "Enforcing data loss prevention policies on traffic to sanctioned SaaS apps",
+      "Applying access policies based on user, device posture, and risk signals"
+    ],
+    "incorrect": [
+      "Replacing the enterprise identity provider with a built-in user directory",
+      "Patching guest operating systems inside customer-managed virtual machines"
+    ],
+    "feedback": "CASBs sit between users and cloud services to discover usage, enforce DLP, and apply contextual access policies. They do not replace the IdP and do not patch guest VMs."
+  },
+  {
+    "question": "Highrook needs visibility into SaaS usage without changing user network paths. Which CASB deployment mode BEST fits?",
+    "correct": ["API-based CASB integration with sanctioned SaaS providers"],
+    "incorrect": [
+      "Forward proxy CASB requiring agent installation on every endpoint",
+      "Reverse proxy CASB inserted in front of unmanaged personal devices",
+      "Inline IPS sensor configured on the upstream internet edge router"
+    ],
+    "feedback": "API-mode CASBs query SaaS provider APIs to inspect activity and content out-of-band, so user traffic paths are unchanged. Forward and reverse proxies insert themselves into the data path."
+  },
+  {
+    "question": "Which controls help reduce the blast radius of a compromised container in a Kubernetes cluster? (Select all that apply.)",
+    "correct": [
+      "Running containers as non-root users with read-only root filesystems",
+      "Applying network policies that restrict pod-to-pod traffic by namespace",
+      "Using admission controllers to reject images without signed provenance",
+      "Setting CPU and memory limits to prevent noisy-neighbor exhaustion"
+    ],
+    "incorrect": [
+      "Granting the default service account cluster-admin to simplify rollout",
+      "Disabling image scanning so deployments do not stall on warnings"
+    ],
+    "feedback": "Non-root execution, network policies, signed-image admission, and resource limits all narrow what a compromised pod can do or reach. Granting cluster-admin or skipping scans does the opposite."
+  },
+  {
+    "question": "A serverless function reads from a queue and writes to an object store. Which IAM design BEST follows least privilege?",
+    "correct": ["A function-specific role granting only ReceiveMessage on the queue and PutObject on the bucket prefix"],
+    "incorrect": [
+      "A shared role used by every function in the account with broad service wildcards",
+      "The account root credentials referenced from an environment variable at runtime",
+      "A managed policy giving full administrator rights to simplify future changes"
+    ],
+    "feedback": "Each serverless function should have its own role scoped to the exact actions and resources it touches. Shared, root, or admin credentials violate least privilege."
+  },
+  {
+    "question": "Which of the following are valid concerns specific to serverless workloads? (Select all that apply.)",
+    "correct": [
+      "Event-injection attacks via untrusted event sources triggering the function",
+      "Over-permissioned execution roles granting access to unrelated resources",
+      "Dependency vulnerabilities pulled in through the function's package layer"
+    ],
+    "incorrect": [
+      "Hypervisor patching cadence on the underlying compute hosts",
+      "Physical cable runs between the function and customer storage arrays"
+    ],
+    "feedback": "Serverless shifts host patching to the provider, but customers still own the function's permissions, dependencies, and how it handles event input. Hypervisor and physical-cabling concerns belong to the provider."
+  },
+  {
+    "question": "Which API gateway feature MOST directly mitigates credential-stuffing attempts against a public login endpoint?",
+    "correct": ["Per-client rate limiting with throttling and lockout on repeated failures"],
+    "incorrect": [
+      "Adding a TLS 1.3 cipher to the listener's negotiated suite list",
+      "Enabling gzip response compression for authenticated JSON payloads",
+      "Increasing the gateway's request timeout to accommodate slower clients"
+    ],
+    "feedback": "Rate limiting and throttling slow brute-force and credential-stuffing patterns at the edge. TLS ciphers, compression, and timeouts do not address abusive request volume."
+  },
+  {
+    "question": "An external API uses OAuth 2.0. Which design choice BEST supports scoped, auditable third-party access?",
+    "correct": ["Issue short-lived access tokens bound to specific scopes and client IDs"],
+    "incorrect": [
+      "Share the master administrator API key with every approved partner",
+      "Embed long-lived bearer tokens directly in client-side JavaScript",
+      "Authenticate with HTTP Basic over plaintext for backward compatibility"
+    ],
+    "feedback": "Short-lived, scoped tokens limit blast radius and produce audit-friendly client identifiers. Shared admin keys, embedded long-lived tokens, and plaintext Basic auth all break those properties."
+  },
+  {
+    "question": "The 2019 Capital One breach involved a misconfigured cloud component that allowed a server-side request forgery to retrieve credentials. Which component was MOST directly involved?",
+    "correct": ["A misconfigured web application firewall and an over-privileged instance metadata role"],
+    "incorrect": [
+      "An on-premises mainframe replication link to the public cloud region",
+      "A leaked physical badge reader at the colocation facility's loading dock",
+      "A vulnerable smart card driver on a corporate laptop fleet image"
+    ],
+    "feedback": "The breach exploited a WAF that could be tricked into making SSRF requests to the EC2 instance metadata service, returning role credentials with broad S3 access. The other options describe unrelated physical or endpoint issues."
+  },
+  {
+    "question": "Which of the following are examples of cloud data remanence risk? (Select all that apply.)",
+    "correct": [
+      "Snapshots of decommissioned volumes left behind in another region",
+      "Cached copies of objects served from a content delivery network edge",
+      "Database backup files retained in long-term storage past the retention policy"
+    ],
+    "incorrect": [
+      "Active queries running against a production read replica during business hours",
+      "Live session cookies signed with a current rotated key on the API gateway"
+    ],
+    "feedback": "Remanence is data that lingers beyond its intended lifecycle: orphaned snapshots, edge caches, and forgotten backups all qualify. Live queries and current session cookies are in-use, not residual."
+  },
+  {
+    "question": "Which scenarios describe insecure storage resources in a public cloud? (Select all that apply.)",
+    "correct": [
+      "An object storage bucket whose ACL grants list and read to anonymous users",
+      "A managed disk snapshot shared publicly to all accounts in the marketplace"
+    ],
+    "incorrect": [
+      "A bucket with default encryption, private ACL, and signed URLs for sharing",
+      "A disk snapshot encrypted with a CMK and shared to a single approved account",
+      "A storage account fronted by a private endpoint and firewalled to internal CIDRs"
+    ],
+    "feedback": "Public ACLs and publicly shared snapshots expose data without authentication. The other options describe sound configurations: private ACLs with signed URLs, scoped snapshot sharing, and private endpoints."
+  },
+  {
+    "question": "Which connectivity option provides a private, dedicated link between an enterprise data center and a cloud provider, bypassing the public internet?",
+    "correct": ["Dedicated interconnect such as AWS Direct Connect or Azure ExpressRoute"],
+    "incorrect": [
+      "Site-to-site IPsec tunnel established over the public internet backbone",
+      "TLS-encrypted browser session to the provider's web management console",
+      "Outbound NAT gateway routing instance traffic to public service endpoints"
+    ],
+    "feedback": "Dedicated interconnects deliver a private circuit with predictable latency. IPsec VPNs use the public internet, and TLS consoles or NAT gateways are not private dedicated links."
+  },
+  {
+    "question": "Which control is BEST described as detective in a cloud environment?",
+    "correct": ["Continuous configuration scanning that flags publicly exposed buckets"],
+    "incorrect": [
+      "Service control policy that blocks creation of public buckets organization-wide",
+      "Encrypting object data at rest with a customer-managed key for confidentiality",
+      "Backup vault with immutable retention designed to recover from ransomware"
+    ],
+    "feedback": "Detective controls find problems that already exist; configuration scanning is a classic example. The other options are preventive (SCP, encryption) or recovery-oriented (immutable backups)."
+  },
+  {
+    "question": "Which CI/CD pipeline practice MOST reduces the risk of pushing vulnerable cloud infrastructure?",
+    "correct": ["Static analysis of Terraform plans plus policy-as-code checks before apply"],
+    "incorrect": [
+      "Granting the build agent administrator credentials in the target account",
+      "Running terraform apply directly from developer laptops on demand",
+      "Skipping plan output review when the change set looks small in diff"
+    ],
+    "feedback": "Pre-apply static analysis and policy-as-code (e.g., OPA, tfsec) catch misconfigurations before they reach the cloud. Admin build agents, laptop applies, and skipped reviews each weaken the pipeline."
+  },
+  {
+    "question": "FedRAMP authorization is BEST described as which of the following?",
+    "correct": ["A standardized U.S. government program for assessing and authorizing cloud services"],
+    "incorrect": [
+      "A European Union framework that supersedes GDPR for SaaS providers",
+      "An ISO standard for industrial control system network segmentation",
+      "A payment-card industry program for tokenizing cardholder account numbers"
+    ],
+    "feedback": "FedRAMP standardizes how U.S. federal agencies assess and authorize cloud offerings. The distractors describe unrelated EU privacy, ICS, and card-payment regimes."
+  },
+  {
+    "question": "Which signals are most useful for shadow IT discovery? (Select all that apply.)",
+    "correct": [
+      "DNS query logs showing access to unsanctioned SaaS domains",
+      "Egress firewall and proxy logs grouped by destination service",
+      "Expense reports flagging recurring SaaS subscriptions paid with corporate cards"
+    ],
+    "incorrect": [
+      "Internal Active Directory password complexity audit reports",
+      "Switch port MAC address tables for the on-premises wiring closets"
+    ],
+    "feedback": "DNS, proxy egress, and expense data each surface SaaS usage outside official channels. AD password audits and switch MAC tables describe internal hygiene, not shadow SaaS discovery."
+  },
+  {
+    "question": "Which approach MOST effectively prevents container images with known critical CVEs from reaching production?",
+    "correct": ["Registry scanning gated by an admission policy that blocks failing images"],
+    "incorrect": [
+      "Running antivirus on the host kernel of every worker node hourly",
+      "Disabling network policies so scanners can reach every namespace",
+      "Granting developers direct kubectl exec access in production pods"
+    ],
+    "feedback": "Scanning combined with an enforcing admission policy prevents vulnerable images from being deployed. Host AV, open networking, and broad exec rights do not gate image quality."
+  },
+  {
+    "question": "Which statement BEST describes microsegmentation as applied to cloud workloads?",
+    "correct": ["Identity-aware policy that restricts traffic between workloads at fine granularity"],
+    "incorrect": [
+      "A global VLAN trunk shared across all virtual private clouds and regions",
+      "A perimeter firewall applied at the public internet edge of the account",
+      "A flat subnet design that allows any-to-any reachability for simplicity"
+    ],
+    "feedback": "Microsegmentation enforces fine-grained, often identity-aware controls between workloads. The other options describe coarse perimeter or flat-network designs."
+  },
+  {
+    "question": "Which mechanism BEST prevents a serverless function from being abused as an open relay for arbitrary outbound HTTP requests?",
+    "correct": ["Egress allowlist that limits the function to specific destination hostnames"],
+    "incorrect": [
+      "Increasing the function's memory allocation to slow attacker reuse",
+      "Returning HTTP 200 on all paths to confuse automated scanners",
+      "Removing structured logging so requests cannot be correlated later"
+    ],
+    "feedback": "An egress allowlist constrains where the function can talk to, limiting SSRF-style abuse. The other options either ignore the issue or actively reduce defenders' visibility."
+  },
+  {
+    "question": "Crypto agility in a cloud platform MOST directly refers to the ability to:",
+    "correct": ["Swap algorithms, keys, and protocols without redesigning the application"],
+    "incorrect": [
+      "Compress ciphertext payloads to reduce storage costs across regions",
+      "Generate vanity TLS certificate fingerprints for marketing landing pages",
+      "Pin a single cipher suite forever to maximize interoperability"
+    ],
+    "feedback": "Crypto agility is about being able to change algorithms or key material as standards evolve. Compression, vanity fingerprints, and forever-pinned ciphers do not describe agility."
+  },
+  {
+    "question": "Which is a preventative control for cloud data leakage?",
+    "correct": ["DLP policy blocking outbound uploads of classified data to unsanctioned services"],
+    "incorrect": [
+      "After-action review describing what categories of data were exfiltrated",
+      "SIEM alert generated once leaked records appear on a dump site",
+      "Forensic timeline reconstructed during incident response activities"
+    ],
+    "feedback": "Preventative controls stop the event before it happens; DLP blocking egress is a clear example. After-action reviews, SIEM alerts on dump sites, and forensic timelines are detective or responsive."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A ___ sits between users and cloud services to enforce policy, provide visibility, and discover shadow IT.",
+    "correct": ["CASB", "Cloud Access Security Broker", "cloud access security broker"],
+    "case_sensitive": false,
+    "feedback": "A CASB (Cloud Access Security Broker) is the standard term for this control point in cloud security architecture."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The orchestration platform widely used to deploy and manage containerized workloads is ___.",
+    "correct": ["Kubernetes", "kubernetes", "k8s", "K8s"],
+    "case_sensitive": false,
+    "feedback": "Kubernetes (often abbreviated k8s) has become the de facto orchestration platform for production container workloads."
+  },
+  {
+    "type": "fill_blank",
+    "question": "An attacker who tricks a server into making outbound requests on their behalf, often to reach internal endpoints, is performing a ___ attack.",
+    "correct": ["SSRF", "server-side request forgery", "Server-Side Request Forgery"],
+    "case_sensitive": false,
+    "feedback": "Server-side request forgery (SSRF) was the technique used in the Capital One breach against the cloud instance metadata service."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A machine-readable inventory of components and dependencies in a software artifact is called a(n) ___.",
+    "correct": ["SBOM", "software bill of materials", "Software Bill of Materials"],
+    "case_sensitive": false,
+    "feedback": "An SBOM lists the components and dependencies in a software artifact, supporting supply-chain transparency for cloud and on-prem builds."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The U.S. federal program that standardizes security assessment and authorization of cloud services for government use is ___.",
+    "correct": ["FedRAMP", "fedramp", "Federal Risk and Authorization Management Program"],
+    "case_sensitive": false,
+    "feedback": "FedRAMP defines a common baseline so cloud providers can be assessed once and used across federal agencies."
+  },
+  {
+    "type": "matching",
+    "question": "Match each cloud control to the strategy it BEST represents.",
+    "pairs": [
+      { "term": "Service control policy blocking public buckets", "definition": "Preventative — stops the misconfiguration before it can occur" },
+      { "term": "Continuous configuration scanning of cloud accounts", "definition": "Detective — finds issues that already exist in the environment" },
+      { "term": "Immutable backup vault with retention lock", "definition": "Recovery — supports restoration after destructive incidents" },
+      { "term": "Just-in-time elevation for cloud admin actions", "definition": "Proactive — reduces standing privilege before it is abused" }
+    ],
+    "feedback": "Cloud controls map to preventative, detective, recovery, and proactive strategies. A mature program uses several together rather than relying on any single class."
+  },
+  {
+    "type": "matching",
+    "question": "Match each cloud term to its description.",
+    "pairs": [
+      { "term": "Shared responsibility model", "definition": "Division of security duties between the customer and the cloud provider" },
+      { "term": "Serverless function", "definition": "Short-lived compute unit invoked by events with no managed host for the customer" },
+      { "term": "API gateway", "definition": "Edge component that authenticates, throttles, and routes API requests" },
+      { "term": "Data remanence", "definition": "Residual information that persists after data is meant to be removed" }
+    ],
+    "feedback": "Each term maps to a distinct concept in cloud security architecture. Knowing them helps you reason about responsibility, exposure, and lifecycle."
+  },
+  {
+    "type": "matching",
+    "question": "Match each connectivity option to its BEST fit for hybrid cloud design.",
+    "pairs": [
+      { "term": "Dedicated interconnect", "definition": "Private circuit with predictable latency for steady, high-volume workloads" },
+      { "term": "Site-to-site IPsec VPN", "definition": "Encrypted tunnel over the public internet for moderate, bursty traffic" },
+      { "term": "Transit gateway or hub VPC", "definition": "Central routing hub that interconnects many VPCs and on-prem networks" },
+      { "term": "Private endpoint", "definition": "Service-specific entry point reachable only from inside a private network" }
+    ],
+    "feedback": "Hybrid designs combine dedicated circuits, VPNs, transit hubs, and private endpoints depending on volume, sensitivity, and reach."
+  },
+  {
+    "type": "matching",
+    "question": "Match each API security control to the threat it BEST addresses.",
+    "pairs": [
+      { "term": "OAuth 2.0 scoped tokens", "definition": "Over-broad delegated access by third-party clients" },
+      { "term": "Per-client rate limiting", "definition": "Brute-force and credential-stuffing request volume" },
+      { "term": "Structured request logging", "definition": "Lack of forensic visibility into who called what and when" },
+      { "term": "Schema validation at the gateway", "definition": "Malformed or injection-laden payloads reaching backend services" }
+    ],
+    "feedback": "Each API gateway feature pairs naturally with a specific threat class. A defense-in-depth API design layers all of them rather than relying on any single one."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the AWS CLI command that lists all S3 buckets in the current account.",
+    "language": "bash",
+    "correct": [
+      "aws s3 ls",
+      "aws s3api list-buckets"
+    ],
+    "case_sensitive": true,
+    "feedback": "`aws s3 ls` (or `aws s3api list-buckets`) enumerates buckets in the current account — a common first step when auditing cloud storage exposure."
+  }
+]
