@@ -284,25 +284,38 @@ describe('Question set quality heuristics', () => {
     );
   });
 
-  it('flags sets where correct answers are much longer than wrong answers on average', () => {
+  it('flags sets where within-question correct/incorrect length ratio is biased on average', () => {
+    // For each MC question, compute r = avg(correct length) / avg(incorrect length).
+    // If the geometric mean of r across the set is far from 1.0, length predicts the answer.
     const flaggedSets = [];
 
     for (const setId of index) {
       const questions = loadJSON(`question_sets/${setId}`);
       const mcQuestions = getMultipleChoiceQuestions(questions);
-      const correctAnswers = mcQuestions.flatMap(q => q.correct || []);
-      const incorrectAnswers = mcQuestions.flatMap(q => q.incorrect || []);
+      const logRatios = [];
 
-      if (correctAnswers.length < 20 || incorrectAnswers.length < 20) continue;
+      for (const q of mcQuestions) {
+        const correct = q.correct || [];
+        const incorrect = q.incorrect || [];
+        if (correct.length === 0 || incorrect.length === 0) continue;
+        const avgC = getAverageAnswerLength(correct);
+        const avgI = getAverageAnswerLength(incorrect);
+        if (avgC <= 0 || avgI <= 0) continue;
+        // Skip questions whose answers are intrinsically short (commands, keywords, single tokens),
+        // where character-count ratio isn't a meaningful predictive signal.
+        if (Math.max(avgC, avgI) < 30) continue;
+        logRatios.push(Math.log(avgC / avgI));
+      }
 
-      const avgCorrectLength = getAverageAnswerLength(correctAnswers);
-      const avgIncorrectLength = getAverageAnswerLength(incorrectAnswers);
-      const lengthRatio = avgIncorrectLength > 0 ? avgCorrectLength / avgIncorrectLength : 0;
-      const absoluteGap = avgCorrectLength - avgIncorrectLength;
+      if (logRatios.length < 15) continue;
 
-      if (lengthRatio >= 1.6 && absoluteGap >= 15) {
+      const meanLog = logRatios.reduce((s, x) => s + x, 0) / logRatios.length;
+      const geoMean = Math.exp(meanLog);
+
+      if (Math.abs(meanLog) >= Math.log(1.50)) {
+        const direction = geoMean > 1 ? 'correct longer than incorrect' : 'correct shorter than incorrect';
         flaggedSets.push(
-          `${setId}: avg correct ${avgCorrectLength.toFixed(1)} chars vs avg incorrect ${avgIncorrectLength.toFixed(1)} chars (${lengthRatio.toFixed(2)}x)`
+          `${setId}: within-question geo-mean ratio ${geoMean.toFixed(2)}x (${direction}, n=${logRatios.length})`
         );
       }
     }
@@ -310,7 +323,84 @@ describe('Question set quality heuristics', () => {
     assert.deepEqual(
       flaggedSets,
       [],
-      `Correct-answer length bias detected:\n${flaggedSets.join('\n')}`
+      `Within-question length bias detected:\n${flaggedSets.join('\n')}`
+    );
+  });
+
+  it('flags sets where most questions have length predicting the answer in the same direction', () => {
+    // Independent check: even if the geo-mean is moderate, a set is biased if the same
+    // direction wins on most questions. Count questions where avgC/avgI > 1.25 vs < 0.80.
+    const flaggedSets = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      const mcQuestions = getMultipleChoiceQuestions(questions);
+      let longerCorrect = 0;
+      let shorterCorrect = 0;
+      let total = 0;
+
+      for (const q of mcQuestions) {
+        const correct = q.correct || [];
+        const incorrect = q.incorrect || [];
+        if (correct.length === 0 || incorrect.length === 0) continue;
+        const avgC = getAverageAnswerLength(correct);
+        const avgI = getAverageAnswerLength(incorrect);
+        if (avgC <= 0 || avgI <= 0) continue;
+        if (Math.max(avgC, avgI) < 30) continue;
+        total++;
+        const ratio = avgC / avgI;
+        if (ratio >= 1.25) longerCorrect++;
+        else if (ratio <= 0.80) shorterCorrect++;
+      }
+
+      if (total < 15) continue;
+
+      const dominant = Math.max(longerCorrect, shorterCorrect);
+      const dominantRate = dominant / total;
+      if (dominantRate >= 0.65 && dominant >= 10) {
+        const direction = longerCorrect > shorterCorrect ? 'correct longer' : 'correct shorter';
+        flaggedSets.push(
+          `${setId}: ${dominant}/${total} questions skewed (${direction}, ${(dominantRate * 100).toFixed(0)}%)`
+        );
+      }
+    }
+
+    assert.deepEqual(
+      flaggedSets,
+      [],
+      `Per-question length-direction bias detected:\n${flaggedSets.join('\n')}`
+    );
+  });
+
+  it('flags individual single-answer MC questions where the correct option is much shorter than every distractor', () => {
+    const flagged = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (q.type && q.type !== 'multiple_choice') continue;
+        if (!q.correct || q.correct.length !== 1) continue;
+        const incs = q.incorrect || [];
+        if (incs.length < 2) continue;
+
+        const correctLen = q.correct[0].length;
+        const minIncorrectLen = Math.min(...incs.map(a => a.length));
+        const ratio = correctLen > 0 ? minIncorrectLen / correctLen : 0;
+        const gap = minIncorrectLen - correctLen;
+
+        if (ratio >= 2.0 && gap >= 20) {
+          flagged.push(
+            `${setId}[${i}]: correct ${correctLen} chars vs shortest distractor ${minIncorrectLen} chars (${ratio.toFixed(2)}x)`
+          );
+        }
+      }
+    }
+
+    assert.deepEqual(
+      flagged,
+      [],
+      `Per-question short-correct bias detected:\n${flagged.join('\n')}`
     );
   });
 
