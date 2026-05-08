@@ -19,9 +19,22 @@ function getAverageAnswerLength(answers) {
   return answers.reduce((sum, answer) => sum + answer.length, 0) / answers.length;
 }
 
+// Hard absolutes: words that almost always signal an absolutist claim regardless of
+// surrounding context. Low false-positive rate — used for per-question giveaway detection.
+const HARD_ABSOLUTE_PATTERN = /\b(always|never|forever|entirely|exclusively)\b/i;
+
+// Broader cue list: includes context-dependent quantifiers and modals (every, all, only,
+// must, cannot, none) that often signal absolutism but also appear in legitimate
+// descriptive scope ("every two years", "all components"). Used for set-level rate
+// comparisons where false positives wash out across many questions.
+const CUE_WORD_PATTERN = /\b(always|never|forever|entirely|exclusively|every|all|none|only|must|cannot|can't)\b/i;
+
 function countAbsoluteOrNegativeAnswers(answers) {
-  const cueWordPattern = /\b(always|never|only|all|none|must|cannot|can't|no|not|every|entirely|exclusively|forever)\b/i;
-  return answers.filter(answer => cueWordPattern.test(answer));
+  return answers.filter(answer => CUE_WORD_PATTERN.test(answer));
+}
+
+function hasHardAbsolute(answer) {
+  return HARD_ABSOLUTE_PATTERN.test(answer);
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -438,6 +451,38 @@ describe('Question set quality heuristics', () => {
     );
   });
 
+  it('flags individual MC questions where cue words appear in distractors but not in any correct answer', () => {
+    // Per-question giveaway: if 2+ distractors contain absolute/universal cue words and
+    // no correct answer does, the test-taker can rule them out by phrasing alone.
+    const flagged = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (q.type && q.type !== 'multiple_choice') continue;
+        const correct = q.correct || [];
+        const incorrect = q.incorrect || [];
+        if (correct.length === 0 || incorrect.length < 2) continue;
+
+        const cueInCorrect = correct.filter(hasHardAbsolute).length;
+        const cueInIncorrect = incorrect.filter(hasHardAbsolute).length;
+
+        if (cueInCorrect === 0 && cueInIncorrect >= 2) {
+          flagged.push(
+            `${setId}[${i}]: ${cueInIncorrect}/${incorrect.length} distractors use hard absolutes, 0/${correct.length} correct`
+          );
+        }
+      }
+    }
+
+    assert.deepEqual(
+      flagged,
+      [],
+      `Per-question cue-word giveaway detected:\n${flagged.join('\n')}`
+    );
+  });
+
   it('flags sets where wrong answers overuse absolute quantifiers or negations', () => {
     const flaggedSets = [];
 
@@ -455,7 +500,7 @@ describe('Question set quality heuristics', () => {
       const incorrectRate = flaggedIncorrectAnswers.length / incorrectAnswers.length;
       const rateGap = incorrectRate - correctRate;
 
-      if (flaggedIncorrectAnswers.length >= 10 && incorrectRate >= 0.18 && rateGap >= 0.15) {
+      if (flaggedIncorrectAnswers.length >= 8 && incorrectRate >= 0.15 && rateGap >= 0.12) {
         flaggedSets.push(
           `${setId}: incorrect ${flaggedIncorrectAnswers.length}/${incorrectAnswers.length} (${(incorrectRate * 100).toFixed(1)}%) vs correct ${flaggedCorrectAnswers.length}/${correctAnswers.length} (${(correctRate * 100).toFixed(1)}%)`
         );
