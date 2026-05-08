@@ -372,6 +372,40 @@ describe('Question set quality heuristics', () => {
     );
   });
 
+  it('flags MC questions where one option stands out by length (max/min ratio across all options)', () => {
+    // Within-question spread: regardless of which option is correct, if one option is much
+    // longer or shorter than the others, the test-taker can rule it in or out by length alone.
+    const flagged = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (q.type && q.type !== 'multiple_choice') continue;
+        const all = [...(q.correct || []), ...(q.incorrect || [])];
+        if (all.length < 3) continue;
+        const lens = all.map(a => a.length);
+        const minLen = Math.min(...lens);
+        const maxLen = Math.max(...lens);
+        // Skip questions whose options are intrinsically short (commands, keywords, single tokens).
+        if (maxLen < 30) continue;
+        const ratio = minLen > 0 ? maxLen / minLen : Infinity;
+        const gap = maxLen - minLen;
+        if (ratio >= 3.0 && gap >= 40) {
+          flagged.push(
+            `${setId}[${i}]: option lengths span ${minLen}-${maxLen} chars (${ratio.toFixed(2)}x)`
+          );
+        }
+      }
+    }
+
+    assert.deepEqual(
+      flagged,
+      [],
+      `Per-question option-length spread detected:\n${flagged.join('\n')}`
+    );
+  });
+
   it('flags individual single-answer MC questions where the correct option is much shorter than every distractor', () => {
     const flagged = [];
 
