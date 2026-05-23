@@ -188,6 +188,546 @@ export function pickClozeBlank(canonical, rng = Math.random) {
 // typo gate — small enough to catch real typos without rescuing wrong answers.
 export const CL_TYPO_THRESHOLD = 2;
 
+const MAX_DYNAMIC_RANGE_STEPS = 10000;
+const MAX_DYNAMIC_LOOP_ITERS = 100000;
+
+function requireFiniteNumber(value, label = "value") {
+    const n = Number(value);
+    if (!Number.isFinite(n)) {
+        throw new Error(`${label} must be a finite number.`);
+    }
+    return n;
+}
+
+function requireInteger(value, label = "value") {
+    const n = requireFiniteNumber(value, label);
+    if (!Number.isInteger(n)) {
+        throw new Error(`${label} must be an integer.`);
+    }
+    return n;
+}
+
+function decimalPlaces(n) {
+    const s = String(n).toLowerCase();
+    if (!s.includes("e")) {
+        const i = s.indexOf(".");
+        return i === -1 ? 0 : s.length - i - 1;
+    }
+    const [mantissa, expRaw] = s.split("e");
+    const exponent = Number(expRaw);
+    const i = mantissa.indexOf(".");
+    const fracLen = i === -1 ? 0 : mantissa.length - i - 1;
+    return Math.max(0, fracLen - exponent);
+}
+
+function safeRound(value, decimals) {
+    if (decimals <= 0) return Math.round(value);
+    const factor = Math.pow(10, decimals);
+    return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+function loopGuard(count, label) {
+    if (count > MAX_DYNAMIC_LOOP_ITERS) {
+        throw new Error(`${label} exceeded ${MAX_DYNAMIC_LOOP_ITERS} iterations.`);
+    }
+}
+
+const DYNAMIC_NUMERIC_FUNCTIONS = Object.freeze({
+    abs: (x) => Math.abs(requireFiniteNumber(x, "abs(x)")),
+    round: (x) => Math.round(requireFiniteNumber(x, "round(x)")),
+    floor: (x) => Math.floor(requireFiniteNumber(x, "floor(x)")),
+    ceil: (x) => Math.ceil(requireFiniteNumber(x, "ceil(x)")),
+    trunc: (x) => Math.trunc(requireFiniteNumber(x, "trunc(x)")),
+    sqrt: (x) => Math.sqrt(requireFiniteNumber(x, "sqrt(x)")),
+    pow: (a, b) => Math.pow(requireFiniteNumber(a, "pow(a,b)"), requireFiniteNumber(b, "pow(a,b)")),
+    min: (...args) => {
+        if (args.length === 0) throw new Error("min() requires at least one argument.");
+        return Math.min(...args.map((v, i) => requireFiniteNumber(v, `min arg ${i + 1}`)));
+    },
+    max: (...args) => {
+        if (args.length === 0) throw new Error("max() requires at least one argument.");
+        return Math.max(...args.map((v, i) => requireFiniteNumber(v, `max arg ${i + 1}`)));
+    },
+    clamp: (x, low, high) => {
+        const n = requireFiniteNumber(x, "clamp(x,low,high)");
+        const lo = requireFiniteNumber(low, "clamp(x,low,high)");
+        const hi = requireFiniteNumber(high, "clamp(x,low,high)");
+        if (lo > hi) throw new Error("clamp() requires low <= high.");
+        return Math.min(Math.max(n, lo), hi);
+    },
+    mod: (a, b) => {
+        const n = requireFiniteNumber(a, "mod(a,b)");
+        const d = requireFiniteNumber(b, "mod(a,b)");
+        if (d === 0) throw new Error("mod() divisor cannot be 0.");
+        return ((n % d) + d) % d;
+    },
+    floorDiv: (a, b) => {
+        const n = requireFiniteNumber(a, "floorDiv(a,b)");
+        const d = requireFiniteNumber(b, "floorDiv(a,b)");
+        if (d === 0) throw new Error("floorDiv() divisor cannot be 0.");
+        return Math.floor(n / d);
+    },
+
+    bitAnd: (a, b) => requireInteger(a, "bitAnd(a,b)") & requireInteger(b, "bitAnd(a,b)"),
+    bitOr:  (a, b) => requireInteger(a, "bitOr(a,b)")  | requireInteger(b, "bitOr(a,b)"),
+    bitXor: (a, b) => requireInteger(a, "bitXor(a,b)") ^ requireInteger(b, "bitXor(a,b)"),
+    shl:    (a, b) => requireInteger(a, "shl(a,b)")    << requireInteger(b, "shl(a,b)"),
+    shr:    (a, b) => requireInteger(a, "shr(a,b)")    >> requireInteger(b, "shr(a,b)"),
+    ushr:   (a, b) => requireInteger(a, "ushr(a,b)")   >>> requireInteger(b, "ushr(a,b)"),
+    popcount: (n) => {
+        let x = requireInteger(n, "popcount(n)") >>> 0;
+        let count = 0;
+        while (x !== 0) {
+            count += x & 1;
+            x >>>= 1;
+        }
+        return count;
+    },
+    bitLength: (n) => {
+        const x = Math.abs(requireInteger(n, "bitLength(n)"));
+        if (x === 0) return 1;
+        return Math.floor(Math.log2(x)) + 1;
+    },
+
+    toBase: (n, base = 10) => {
+        const value = requireInteger(n, "toBase(n,base)");
+        const b = requireInteger(base, "toBase(n,base)");
+        if (b < 2 || b > 36) throw new Error("toBase() base must be between 2 and 36.");
+        return value.toString(b).toUpperCase();
+    },
+    toBin: (n) => requireInteger(n, "toBin(n)").toString(2),
+    toOct: (n) => requireInteger(n, "toOct(n)").toString(8),
+    toHex: (n) => requireInteger(n, "toHex(n)").toString(16).toUpperCase(),
+    fromBase: (text, base = 10) => {
+        const b = requireInteger(base, "fromBase(text,base)");
+        if (b < 2 || b > 36) throw new Error("fromBase() base must be between 2 and 36.");
+        const raw = String(text ?? "").trim();
+        if (!raw) throw new Error("fromBase() requires a non-empty string.");
+
+        let sign = "";
+        let body = raw;
+        if (body[0] === "+" || body[0] === "-") {
+            sign = body[0];
+            body = body.slice(1);
+        }
+        if (!body) throw new Error("fromBase() requires digits.");
+
+        const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz".slice(0, b);
+        const valid = new RegExp(`^[${alphabet}]+$`, "i");
+        if (!valid.test(body)) {
+            throw new Error(`fromBase() got invalid digit for base ${b}: "${raw}".`);
+        }
+
+        const parsed = parseInt(`${sign}${body}`, b);
+        if (!Number.isFinite(parsed)) throw new Error(`fromBase() failed for "${raw}".`);
+        return parsed;
+    },
+
+    sumRange: (start, end, step = 1) => {
+        const s = requireFiniteNumber(start, "sumRange(start,end,step)");
+        const e = requireFiniteNumber(end, "sumRange(start,end,step)");
+        const d = requireFiniteNumber(step, "sumRange(start,end,step)");
+        if (d === 0) throw new Error("sumRange() step cannot be 0.");
+        let total = 0;
+        let loops = 0;
+        if (d > 0) {
+            for (let v = s; v <= e + 1e-12; v += d) {
+                total += v;
+                loops++;
+                loopGuard(loops, "sumRange()");
+            }
+            return total;
+        }
+        for (let v = s; v >= e - 1e-12; v += d) {
+            total += v;
+            loops++;
+            loopGuard(loops, "sumRange()");
+        }
+        return total;
+    },
+    countRange: (start, end, step = 1) => {
+        const s = requireFiniteNumber(start, "countRange(start,end,step)");
+        const e = requireFiniteNumber(end, "countRange(start,end,step)");
+        const d = requireFiniteNumber(step, "countRange(start,end,step)");
+        if (d === 0) throw new Error("countRange() step cannot be 0.");
+        let count = 0;
+        if (d > 0) {
+            for (let v = s; v <= e + 1e-12; v += d) {
+                count++;
+                loopGuard(count, "countRange()");
+            }
+            return count;
+        }
+        for (let v = s; v >= e - 1e-12; v += d) {
+            count++;
+            loopGuard(count, "countRange()");
+        }
+        return count;
+    },
+});
+
+const DYNAMIC_NUMERIC_CONSTANTS = Object.freeze({
+    pi: Math.PI,
+    e: Math.E,
+});
+
+class DynamicExprParser {
+    constructor(expr) {
+        this.expr = expr;
+        this.tokens = this._tokenize(expr);
+        this.pos = 0;
+    }
+
+    _tokenize(expr) {
+        const tokens = [];
+        let i = 0;
+        while (i < expr.length) {
+            const ch = expr[i];
+            if (/\s/.test(ch)) { i++; continue; }
+
+            if ((ch >= "0" && ch <= "9") || (ch === "." && /[0-9]/.test(expr[i + 1] || ""))) {
+                const start = i;
+                if (ch === ".") i++;
+                while (/[0-9]/.test(expr[i] || "")) i++;
+                if ((expr[i] || "") === ".") {
+                    i++;
+                    while (/[0-9]/.test(expr[i] || "")) i++;
+                }
+                if ((expr[i] || "") === "e" || (expr[i] || "") === "E") {
+                    const next = expr[i + 1] || "";
+                    const next2 = expr[i + 2] || "";
+                    if ((next === "+" || next === "-") ? /[0-9]/.test(next2) : /[0-9]/.test(next)) {
+                        i++;
+                        if (expr[i] === "+" || expr[i] === "-") i++;
+                        while (/[0-9]/.test(expr[i] || "")) i++;
+                    }
+                }
+                const raw = expr.slice(start, i);
+                const value = Number(raw);
+                if (!Number.isFinite(value)) {
+                    throw new Error(`Invalid number literal "${raw}" in dynamic expression.`);
+                }
+                tokens.push({ type: "number", value });
+                continue;
+            }
+
+            if (/[A-Za-z_]/.test(ch)) {
+                const start = i;
+                i++;
+                while (/[A-Za-z0-9_]/.test(expr[i] || "")) i++;
+                tokens.push({ type: "identifier", value: expr.slice(start, i) });
+                continue;
+            }
+
+            if (ch === "*" && expr[i + 1] === "*") {
+                tokens.push({ type: "operator", value: "**" });
+                i += 2;
+                continue;
+            }
+
+            if ("+-*/%^(),".includes(ch)) {
+                if (ch === "(") tokens.push({ type: "lparen", value: ch });
+                else if (ch === ")") tokens.push({ type: "rparen", value: ch });
+                else if (ch === ",") tokens.push({ type: "comma", value: ch });
+                else tokens.push({ type: "operator", value: ch });
+                i++;
+                continue;
+            }
+
+            throw new Error(`Unsupported character "${ch}" in dynamic expression.`);
+        }
+        tokens.push({ type: "eof" });
+        return tokens;
+    }
+
+    _peek() {
+        return this.tokens[this.pos];
+    }
+
+    _consume(type, value = null) {
+        const t = this._peek();
+        if (!t || t.type !== type || (value !== null && t.value !== value)) {
+            throw new Error(`Unexpected token while parsing dynamic expression: ${this.expr}`);
+        }
+        this.pos++;
+        return t;
+    }
+
+    _match(type, value = null) {
+        const t = this._peek();
+        if (!t || t.type !== type || (value !== null && t.value !== value)) return false;
+        this.pos++;
+        return true;
+    }
+
+    parse() {
+        const node = this._parseAddSub();
+        this._consume("eof");
+        return node;
+    }
+
+    _parseAddSub() {
+        let node = this._parseMulDiv();
+        while (true) {
+            if (this._match("operator", "+")) {
+                node = { type: "binary", op: "+", left: node, right: this._parseMulDiv() };
+            } else if (this._match("operator", "-")) {
+                node = { type: "binary", op: "-", left: node, right: this._parseMulDiv() };
+            } else {
+                break;
+            }
+        }
+        return node;
+    }
+
+    _parseMulDiv() {
+        let node = this._parsePower();
+        while (true) {
+            if (this._match("operator", "*")) {
+                node = { type: "binary", op: "*", left: node, right: this._parsePower() };
+            } else if (this._match("operator", "/")) {
+                node = { type: "binary", op: "/", left: node, right: this._parsePower() };
+            } else if (this._match("operator", "%")) {
+                node = { type: "binary", op: "%", left: node, right: this._parsePower() };
+            } else {
+                break;
+            }
+        }
+        return node;
+    }
+
+    _parsePower() {
+        let node = this._parseUnary();
+        if (this._match("operator", "**") || this._match("operator", "^")) {
+            node = { type: "binary", op: "**", left: node, right: this._parsePower() };
+        }
+        return node;
+    }
+
+    _parseUnary() {
+        if (this._match("operator", "+")) {
+            return { type: "unary", op: "+", value: this._parseUnary() };
+        }
+        if (this._match("operator", "-")) {
+            return { type: "unary", op: "-", value: this._parseUnary() };
+        }
+        return this._parsePrimary();
+    }
+
+    _parsePrimary() {
+        const t = this._peek();
+        if (t.type === "number") {
+            this.pos++;
+            return { type: "number", value: t.value };
+        }
+
+        if (t.type === "identifier") {
+            this.pos++;
+            const name = t.value;
+            if (this._match("lparen")) {
+                const args = [];
+                if (!this._match("rparen")) {
+                    do {
+                        args.push(this._parseAddSub());
+                    } while (this._match("comma"));
+                    this._consume("rparen");
+                }
+                return { type: "call", name, args };
+            }
+            return { type: "identifier", name };
+        }
+
+        if (this._match("lparen")) {
+            const expr = this._parseAddSub();
+            this._consume("rparen");
+            return expr;
+        }
+
+        throw new Error(`Unexpected token in dynamic expression: ${this.expr}`);
+    }
+}
+
+function evaluateDynamicAst(node, scope) {
+    if (node.type === "number") return node.value;
+
+    if (node.type === "identifier") {
+        if (!(node.name in scope)) {
+            throw new Error(`Unknown dynamic variable "${node.name}".`);
+        }
+        return scope[node.name];
+    }
+
+    if (node.type === "unary") {
+        const v = requireFiniteNumber(evaluateDynamicAst(node.value, scope), "Unary operand");
+        return node.op === "-" ? -v : v;
+    }
+
+    if (node.type === "binary") {
+        const left = requireFiniteNumber(evaluateDynamicAst(node.left, scope), "Binary operand");
+        const right = requireFiniteNumber(evaluateDynamicAst(node.right, scope), "Binary operand");
+        if (node.op === "+") return left + right;
+        if (node.op === "-") return left - right;
+        if (node.op === "*") return left * right;
+        if (node.op === "/") {
+            if (right === 0) throw new Error("Division by zero in dynamic expression.");
+            return left / right;
+        }
+        if (node.op === "%") {
+            if (right === 0) throw new Error("Modulo by zero in dynamic expression.");
+            return left % right;
+        }
+        if (node.op === "**") return Math.pow(left, right);
+        throw new Error(`Unsupported operator "${node.op}" in dynamic expression.`);
+    }
+
+    if (node.type === "call") {
+        const fn = DYNAMIC_NUMERIC_FUNCTIONS[node.name];
+        if (!fn) throw new Error(`Unknown dynamic function "${node.name}".`);
+        const args = node.args.map(arg => evaluateDynamicAst(arg, scope));
+        return fn(...args);
+    }
+
+    throw new Error("Invalid dynamic expression AST node.");
+}
+
+export function evaluateDynamicExpression(expression, scope = {}) {
+    if (typeof expression !== "string" || expression.trim().length === 0) {
+        throw new Error("Dynamic expression must be a non-empty string.");
+    }
+    const parser = new DynamicExprParser(expression);
+    const ast = parser.parse();
+    const mergedScope = { ...DYNAMIC_NUMERIC_CONSTANTS, ...scope };
+    return evaluateDynamicAst(ast, mergedScope);
+}
+
+function sampleDynamicVariable(name, spec, rng = Math.random) {
+    if (!spec || typeof spec !== "object" || Array.isArray(spec)) {
+        throw new Error(`Dynamic variable "${name}" must be an object.`);
+    }
+
+    if (Array.isArray(spec.values)) {
+        if (spec.values.length === 0) throw new Error(`Dynamic variable "${name}" has an empty values list.`);
+        const pool = spec.values.map((v, i) => requireFiniteNumber(v, `${name}.values[${i}]`));
+        return pool[Math.floor(rng() * pool.length)];
+    }
+
+    if (!("min" in spec) || !("max" in spec)) {
+        throw new Error(`Dynamic variable "${name}" must provide either values[] or min/max.`);
+    }
+
+    const min = requireFiniteNumber(spec.min, `${name}.min`);
+    const max = requireFiniteNumber(spec.max, `${name}.max`);
+    const step = spec.step == null ? 1 : requireFiniteNumber(spec.step, `${name}.step`);
+    if (step <= 0) throw new Error(`Dynamic variable "${name}" step must be > 0.`);
+    if (max < min) throw new Error(`Dynamic variable "${name}" requires max >= min.`);
+
+    const span = max - min;
+    const steps = Math.floor((span / step) + 1e-12);
+    const count = steps + 1;
+    if (count > MAX_DYNAMIC_RANGE_STEPS) {
+        throw new Error(`Dynamic variable "${name}" has too many possible values (${count}).`);
+    }
+    const idx = Math.floor(rng() * count);
+    const raw = min + (idx * step);
+    const dp = Math.max(decimalPlaces(min), decimalPlaces(max), decimalPlaces(step));
+    const rounded = safeRound(raw, Math.min(dp + 2, 12));
+    return rounded > max ? max : rounded;
+}
+
+function renderDynamicTemplate(template, context) {
+    if (typeof template !== "string" || template.trim().length === 0) {
+        throw new Error("Dynamic template must be a non-empty string.");
+    }
+    return template.replace(/\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}/g, (_m, key) => {
+        if (!(key in context)) {
+            throw new Error(`Dynamic template references unknown key "${key}".`);
+        }
+        return String(context[key]);
+    });
+}
+
+function materializeDynamicNumericQuestion(question, rng = Math.random) {
+    const q = { ...question };
+    const template = q.question_template || q.question;
+    if (typeof template !== "string" || template.trim().length === 0) {
+        throw new Error("dynamic_numeric question requires question or question_template.");
+    }
+    q.question_template = template;
+
+    const varSpecs = q.variables;
+    if (!varSpecs || typeof varSpecs !== "object" || Array.isArray(varSpecs)) {
+        throw new Error("dynamic_numeric question requires variables object.");
+    }
+    const varEntries = Object.entries(varSpecs);
+    if (varEntries.length === 0) {
+        throw new Error("dynamic_numeric question requires at least one variable.");
+    }
+
+    const vars = {};
+    for (const [name, spec] of varEntries) {
+        vars[name] = sampleDynamicVariable(name, spec, rng);
+    }
+
+    const derived = {};
+    if (q.derived != null) {
+        if (typeof q.derived !== "object" || Array.isArray(q.derived)) {
+            throw new Error("dynamic_numeric.derived must be an object of expression strings.");
+        }
+        for (const [name, expr] of Object.entries(q.derived)) {
+            if (typeof expr !== "string" || expr.trim().length === 0) {
+                throw new Error(`dynamic_numeric.derived.${name} must be a non-empty expression.`);
+            }
+            derived[name] = evaluateDynamicExpression(expr, { ...vars, ...derived });
+        }
+    }
+
+    const answer = q.answer;
+    if (!answer || typeof answer !== "object" || Array.isArray(answer)) {
+        throw new Error("dynamic_numeric question requires answer object.");
+    }
+    if (typeof answer.expr !== "string" || answer.expr.trim().length === 0) {
+        throw new Error("dynamic_numeric answer requires expr string.");
+    }
+    const toleranceAbs = answer.tolerance_abs == null
+        ? 0
+        : requireFiniteNumber(answer.tolerance_abs, "dynamic_numeric answer.tolerance_abs");
+    if (toleranceAbs < 0) {
+        throw new Error("dynamic_numeric answer.tolerance_abs must be >= 0.");
+    }
+
+    const templateContext = { ...vars, ...derived };
+    const expectedRaw = evaluateDynamicExpression(answer.expr, templateContext);
+    const expected = requireFiniteNumber(expectedRaw, "dynamic_numeric answer expr");
+
+    q.question = renderDynamicTemplate(template, templateContext);
+    if (typeof q.feedback_template === "string" && q.feedback_template.trim().length > 0) {
+        q.feedback = renderDynamicTemplate(q.feedback_template, {
+            ...templateContext,
+            expected,
+            tolerance_abs: toleranceAbs,
+        });
+    }
+    q.dynamic_numeric = {
+        vars,
+        derived,
+        expected,
+        tolerance_abs: toleranceAbs,
+    };
+    return q;
+}
+
+function materializeQuestion(question, rng = Math.random) {
+    if (!question || typeof question !== "object") return question;
+    if (question.type === "dynamic_numeric") {
+        return materializeDynamicNumericQuestion(question, rng);
+    }
+    return { ...question };
+}
+
+function materializeQuestions(questions, rng = Math.random) {
+    return (questions || []).map(q => materializeQuestion(q, rng));
+}
+
 export const INVENTORY_SIZE = 2;
 
 export class Player {
@@ -310,7 +850,7 @@ export class GameModel {
             this.player = Player.fromSave(saveData.player);
         } else {
             // ── Fresh game path ──────────────────────────────────────────
-            this.questions       = [...questions];
+            this.questions       = materializeQuestions(questions);
             this.questions_asked = 0;
             this.answer_history  = [];
             this.stats_offset    = 0;
@@ -703,8 +1243,221 @@ export class GameModel {
         return this._fbCloze;
     }
 
+    getDynamicNumericMeta() {
+        const q = this.current_question;
+        if (!q || q.type !== 'dynamic_numeric' || !q.dynamic_numeric) return null;
+        return {
+            tolerance_abs: q.dynamic_numeric.tolerance_abs,
+            expected: q.dynamic_numeric.expected,
+        };
+    }
+
+    _initDynamicNumericState() {
+        const q = this.current_question;
+        if (this._dnCurrentQ === q) return;
+        this._dnCurrentQ = q;
+        this._dnAttempts = 0;
+        this._dnBestGuessText = '';
+        this._dnBestGuessValue = null;
+        this._dnBestSimilarity = 0;
+        this._dnBestAbsError = Infinity;
+    }
+
+    _parseDynamicNumericGuess(inputText) {
+        const raw = String(inputText ?? '').trim();
+        if (!raw) return null;
+        const normalized = raw.replace(/[,_\s]/g, '');
+        if (!normalized) return null;
+        const value = Number(normalized);
+        if (!Number.isFinite(value)) return null;
+        return value;
+    }
+
+    _dynamicNumericDisplay(value, decimals = null) {
+        const n = requireFiniteNumber(value, 'dynamic numeric value');
+        if (typeof decimals === 'number' && Number.isInteger(decimals) && decimals >= 0) {
+            return safeRound(n, decimals).toFixed(decimals);
+        }
+        if (Number.isInteger(n)) return String(n);
+        const rounded = safeRound(n, Math.min(Math.max(decimalPlaces(n), 0), 8));
+        return String(rounded);
+    }
+
+    _dynamicNumericSimilarity(absError, toleranceAbs, expectedValue) {
+        if (absError <= toleranceAbs) return 1;
+        const scale = Math.max(Math.abs(expectedValue), toleranceAbs, 1);
+        return Math.max(0, 1 - ((absError - toleranceAbs) / scale));
+    }
+
+    submitDynamicNumericGuess(inputText) {
+        if (!this.current_question) return null;
+        this._initDynamicNumericState();
+
+        const q = this.current_question;
+        const meta = q.dynamic_numeric;
+        if (!meta) {
+            throw new Error('dynamic_numeric question is missing resolved metadata.');
+        }
+
+        const guessValue = this._parseDynamicNumericGuess(inputText);
+        if (guessValue === null) {
+            return {
+                status: 'invalid',
+                message: 'Please enter a valid number.',
+            };
+        }
+
+        const expectedValue = meta.expected;
+        const toleranceAbs = meta.tolerance_abs ?? 0;
+        const absError = Math.abs(guessValue - expectedValue);
+        const similarity = this._dynamicNumericSimilarity(absError, toleranceAbs, expectedValue);
+
+        const expectedDisplay = this._dynamicNumericDisplay(expectedValue, q.display_decimals ?? q.answer?.display_decimals ?? null);
+        const guessDisplay = this._dynamicNumericDisplay(guessValue, q.display_decimals ?? q.answer?.display_decimals ?? null);
+        const feedback = wordleFeedback(guessDisplay, expectedDisplay);
+
+        this._dnAttempts++;
+
+        if (similarity > this._dnBestSimilarity || (similarity === this._dnBestSimilarity && absError < this._dnBestAbsError)) {
+            this._dnBestSimilarity = similarity;
+            this._dnBestGuessText = inputText;
+            this._dnBestGuessValue = guessValue;
+            this._dnBestAbsError = absError;
+        }
+
+        const isCorrect = absError <= toleranceAbs;
+        if (isCorrect) {
+            return this._finalizeDynamicNumeric({
+                won: true,
+                finalInput: inputText,
+                guessValue,
+                absError,
+                feedback,
+            });
+        }
+        if (this._dnAttempts >= FB_MAX_ATTEMPTS) {
+            return this._finalizeDynamicNumeric({
+                won: false,
+                finalInput: this._dnBestGuessText,
+                guessValue: this._dnBestGuessValue,
+                absError: this._dnBestAbsError,
+                feedback,
+            });
+        }
+
+        const FB_DAMAGE_SCALE = [0, 0.5, 1.0];
+        const scale = FB_DAMAGE_SCALE[this._dnAttempts - 1] ?? 1.0;
+        const monsterRoll = rollDice(1, this.current_monster.attack_die);
+        let effective_monster_damage = Math.max(
+            Math.round(monsterRoll * scale) - this.player.base_defense, 0);
+
+        let shield_used = false;
+        if (this.pending_effects.has('shield') && effective_monster_damage > 0) {
+            shield_used = true;
+            effective_monster_damage = 0;
+            this.pending_effects.delete('shield');
+        }
+        this.player.hit_points -= effective_monster_damage;
+
+        const direction = guessValue < expectedValue ? 'Too low.' : 'Too high.';
+        const errText = this._dynamicNumericDisplay(absError, q.display_decimals ?? q.answer?.display_decimals ?? null);
+
+        return {
+            status: 'wrong',
+            feedback,
+            feedbackText: `${direction} Off by ${errText}; accepted error is +/- ${this._dynamicNumericDisplay(toleranceAbs)}.`,
+            guessText: inputText,
+            attemptsUsed: this._dnAttempts,
+            attemptsLeft: FB_MAX_ATTEMPTS - this._dnAttempts,
+            effective_monster_damage,
+            shield_used,
+            defeated_player: this.player.hit_points <= 0,
+        };
+    }
+
+    forceDynamicNumericFail() {
+        if (!this.current_question) return null;
+        this._initDynamicNumericState();
+        const q = this.current_question;
+        const meta = q.dynamic_numeric;
+        const expectedDisplay = this._dynamicNumericDisplay(meta.expected, q.display_decimals ?? q.answer?.display_decimals ?? null);
+        const guessDisplay = this._dynamicNumericDisplay(
+            this._dnBestGuessValue ?? meta.expected,
+            q.display_decimals ?? q.answer?.display_decimals ?? null);
+        this._dnAttempts = FB_MAX_ATTEMPTS;
+        return this._finalizeDynamicNumeric({
+            won: false,
+            finalInput: this._dnBestGuessText,
+            guessValue: this._dnBestGuessValue,
+            absError: this._dnBestAbsError,
+            feedback: wordleFeedback(guessDisplay, expectedDisplay),
+        });
+    }
+
+    _finalizeDynamicNumeric({ won, finalInput, guessValue, absError, feedback }) {
+        const q = this.current_question;
+        const meta = q.dynamic_numeric;
+        const attemptsUsed = this._dnAttempts;
+        const isPerfect = won && attemptsUsed === 1;
+        const similarity = won ? 1 : this._dnBestSimilarity;
+
+        const expectedDisplay = this._dynamicNumericDisplay(meta.expected, q.display_decimals ?? q.answer?.display_decimals ?? null);
+        const answerWeight = Math.max(expectedDisplay.length, 1);
+        const correctUnits = Math.round(similarity * answerWeight);
+        const wrongUnits = answerWeight - correctUnits;
+        this.player.total_correct += correctUnits;
+        this.player.total_incorrect += wrongUnits;
+
+        const bestGuessText = this._dnBestGuessText || finalInput || '';
+        const bestGuessDisplay = this._dnBestGuessValue == null
+            ? '(no valid number entered)'
+            : this._dynamicNumericDisplay(this._dnBestGuessValue, q.display_decimals ?? q.answer?.display_decimals ?? null);
+        const bestErrorDisplay = Number.isFinite(this._dnBestAbsError)
+            ? this._dynamicNumericDisplay(this._dnBestAbsError, q.display_decimals ?? q.answer?.display_decimals ?? null)
+            : 'n/a';
+
+        const scoreLabel = won
+            ? `${finalInput} (won in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'})`
+            : `closest: "${bestGuessText || bestGuessDisplay}" — off by ${bestErrorDisplay}`;
+        const correctAnswerLabel = `${expectedDisplay} (+/- ${this._dynamicNumericDisplay(meta.tolerance_abs)})`;
+
+        const turn = this._resolveDamage({
+            playerHits: won ? (FB_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
+            monsterHits: 0,
+            isPerfect,
+            partialFraction: won ? 0.9 : similarity,
+            xpGained: this.current_monster.hit_dice * 2,
+            requeue: !won,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: [correctAnswerLabel],
+                selected: [finalInput || bestGuessDisplay],
+                correctSelections: (won || similarity > 0) ? [scoreLabel] : [],
+                incorrectSelections: !won ? [scoreLabel] : [],
+                missedCorrect: won ? [] : [correctAnswerLabel],
+                isPerfect,
+            }),
+        });
+
+        this._dnCurrentQ = null;
+
+        return {
+            ...turn,
+            status: won ? 'won' : 'failed',
+            correctSelections: (won || similarity > 0) ? [scoreLabel] : [],
+            incorrectSelections: !won ? [scoreLabel] : [],
+            missedCorrect: won ? [] : [correctAnswerLabel],
+            feedback: q.feedback || null,
+            attemptsUsed,
+            bestAnswer: expectedDisplay,
+            wordleFeedback: feedback,
+        };
+    }
+
     submitFillBlankGuess(inputText) {
         if (!this.current_question) return null;
+        if (this.current_question.type === 'dynamic_numeric') {
+            return this.submitDynamicNumericGuess(inputText);
+        }
         this._initFillBlankState();
         const q = this.current_question;
 
@@ -791,6 +1544,9 @@ export class GameModel {
      */
     forceFillBlankFail() {
         if (!this.current_question) return null;
+        if (this.current_question.type === 'dynamic_numeric') {
+            return this.forceDynamicNumericFail();
+        }
         this._initFillBlankState();
         const q          = this.current_question;
         const acceptable = this._fbCloze

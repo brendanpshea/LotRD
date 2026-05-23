@@ -37,6 +37,10 @@ function hasHardAbsolute(answer) {
   return HARD_ABSOLUTE_PATTERN.test(answer);
 }
 
+function isFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 // ────────────────────────────────────────────────────────────────────────────────
 // monsters.json
 // ────────────────────────────────────────────────────────────────────────────────
@@ -205,6 +209,49 @@ describe('Question set file validation', () => {
           if (type === 'fill_blank') {
             assert.ok(Array.isArray(q.correct) && q.correct.length > 0,
               `${label}: fill_blank must have non-empty correct array`);
+          } else if (type === 'dynamic_numeric') {
+            assert.ok(q.variables && typeof q.variables === 'object' && !Array.isArray(q.variables),
+              `${label}: dynamic_numeric must have a variables object`);
+            assert.ok(Object.keys(q.variables || {}).length > 0,
+              `${label}: dynamic_numeric must define at least one variable`);
+
+            for (const [name, spec] of Object.entries(q.variables || {})) {
+              assert.ok(spec && typeof spec === 'object' && !Array.isArray(spec),
+                `${label}: variable ${name} must be an object`);
+              if (Array.isArray(spec.values)) {
+                assert.ok(spec.values.length > 0,
+                  `${label}: variable ${name}.values must be non-empty`);
+                for (const value of spec.values) {
+                  assert.ok(isFiniteNumber(value),
+                    `${label}: variable ${name}.values entries must be finite numbers`);
+                }
+              } else {
+                assert.ok(isFiniteNumber(spec.min) && isFiniteNumber(spec.max),
+                  `${label}: variable ${name} must define numeric min/max or values[]`);
+                if ('step' in spec) {
+                  assert.ok(isFiniteNumber(spec.step) && spec.step > 0,
+                    `${label}: variable ${name}.step must be a positive number`);
+                }
+              }
+            }
+
+            if ('derived' in q) {
+              assert.ok(q.derived && typeof q.derived === 'object' && !Array.isArray(q.derived),
+                `${label}: derived must be an object when present`);
+              for (const [name, expr] of Object.entries(q.derived || {})) {
+                assert.ok(typeof expr === 'string' && expr.length > 0,
+                  `${label}: derived expression ${name} must be a non-empty string`);
+              }
+            }
+
+            assert.ok(q.answer && typeof q.answer === 'object' && !Array.isArray(q.answer),
+              `${label}: dynamic_numeric must have an answer object`);
+            assert.ok(typeof q.answer?.expr === 'string' && q.answer.expr.length > 0,
+              `${label}: dynamic_numeric answer.expr must be a non-empty string`);
+            if ('tolerance_abs' in (q.answer || {})) {
+              assert.ok(isFiniteNumber(q.answer.tolerance_abs) && q.answer.tolerance_abs >= 0,
+                `${label}: dynamic_numeric answer.tolerance_abs must be a non-negative number`);
+            }
           } else if (type === 'code_trace') {
             assert.ok(Array.isArray(q.correct) && q.correct.length > 0,
               `${label}: code_trace must have non-empty correct array`);

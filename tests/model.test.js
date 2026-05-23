@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { rollDice, Player, Monster, GameModel,
          levenshtein, levenshteinSimilarity, wordleFeedback,
          tokenize, tokenSimilarity, tokenWordleFeedback,
-         CL_MAX_ATTEMPTS, pickClozeBlank } from '../src/model.js';
+         CL_MAX_ATTEMPTS, pickClozeBlank,
+         evaluateDynamicExpression } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,25 @@ function codeLineQuestion(overrides = {}) {
     ],
     case_sensitive: true,
     feedback: 'List<String> on the left is preferred.',
+    ...overrides,
+  };
+}
+
+function dynamicNumericQuestion(overrides = {}) {
+  return {
+    type: 'dynamic_numeric',
+    question: 'What decimal value does binary {{bits}} represent?',
+    variables: {
+      n: { values: [13] },
+    },
+    derived: {
+      bits: 'toBin(n)',
+    },
+    answer: {
+      expr: 'n',
+      tolerance_abs: 0,
+    },
+    feedback_template: 'Binary {{bits}} equals {{expected}} in decimal.',
     ...overrides,
   };
 }
@@ -516,6 +536,23 @@ describe('wordleFeedback', () => {
   });
 });
 
+describe('evaluateDynamicExpression', () => {
+  it('supports curated CS helper functions and nested calls', () => {
+    const value = evaluateDynamicExpression('fromBase(toHex(n), 16) + popcount(mask)', {
+      n: 31,
+      mask: 13,
+    });
+    assert.equal(value, 34);
+  });
+
+  it('supports range helpers for loop-style arithmetic', () => {
+    const value = evaluateDynamicExpression('sumRange(1, n) + countRange(0, 6, 2)', {
+      n: 4,
+    });
+    assert.equal(value, 14);
+  });
+});
+
 // ────────────────────────────────────────────────────────────────────────────────
 // tokenize / tokenSimilarity / tokenWordleFeedback
 // ────────────────────────────────────────────────────────────────────────────────
@@ -828,6 +865,70 @@ describe('submitFillBlankGuess', () => {
     const r = gm.forceFillBlankFail();
     assert.equal(r.status, 'failed');
     assert.equal(r.question_repeated, true);
+  });
+});
+
+describe('dynamic_numeric questions', () => {
+  it('materializes question text, feedback, and expected answer from helper expressions', () => {
+    const gm = freshModel([dynamicNumericQuestion()]);
+    const q = gm.questions[0];
+
+    assert.equal(q.question, 'What decimal value does binary 1101 represent?');
+    assert.equal(q.dynamic_numeric.expected, 13);
+    assert.equal(q.feedback, 'Binary 1101 equals 13 in decimal.');
+  });
+
+  it('round-trips resolved dynamic question state through save data', () => {
+    const gm = freshModel([dynamicNumericQuestion()]);
+    const original = gm.questions[0];
+    const saved = JSON.parse(JSON.stringify(gm.toSaveData()));
+    const resumed = new GameModel([], SAMPLE_MONSTERS, saved);
+
+    assert.equal(resumed.questions[0].question, original.question);
+    assert.equal(resumed.questions[0].dynamic_numeric.expected, original.dynamic_numeric.expected);
+    assert.equal(resumed.questions[0].dynamic_numeric.vars.n, 13);
+  });
+
+  it('accepts a numeric answer within tolerance', () => {
+    const gm = freshModel([dynamicNumericQuestion({
+      answer: { expr: 'n', tolerance_abs: 0.5 },
+    })]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.current_monster.max_hit_points = 999;
+
+    const r = gm.submitFillBlankGuess('13.4');
+    assert.equal(r.status, 'won');
+    assert.equal(r.attemptsUsed, 1);
+  });
+
+  it('rejects non-numeric input without consuming an attempt', () => {
+    const gm = freshModel([dynamicNumericQuestion()]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.current_monster.max_hit_points = 999;
+
+    const invalid = gm.submitFillBlankGuess('thirteen');
+    assert.equal(invalid.status, 'invalid');
+
+    const retry = gm.submitFillBlankGuess('13');
+    assert.equal(retry.status, 'won');
+    assert.equal(retry.attemptsUsed, 1);
+  });
+
+  it('requeues the question after three numeric misses', () => {
+    const gm = freshModel([dynamicNumericQuestion()]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.current_monster.max_hit_points = 999;
+
+    gm.submitFillBlankGuess('1');
+    gm.submitFillBlankGuess('2');
+    const r = gm.submitFillBlankGuess('3');
+
+    assert.equal(r.status, 'failed');
+    assert.equal(r.question_repeated, true);
+    assert.equal(r.missedCorrect.length, 1);
   });
 });
 

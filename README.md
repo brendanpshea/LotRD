@@ -28,7 +28,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Features
 
-- **Four question types** (described below)
+- **Six question formats** (described below)
 - **Main menu** with topic groupings, per-set progress badges, and a global stats bar
 - **Auto-save** — every encounter result is saved to `localStorage`; the back button saves and returns to the menu
 - **Completion tracking** — `lotrd_done_${setId}` records cleared sets permanently, including runs that end because there are no questions left
@@ -44,7 +44,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Question Types
 
-All four types live in the same JSON arrays and can be mixed within one set. Existing questions with no `type` field are treated as **multiple-choice** (default).
+All question types live in the same JSON arrays and can be mixed within one set. Existing questions with no `type` field are treated as **multiple-choice** (default). Dynamic numeric questions use a safe expression engine with curated helper functions; JSON content does not execute arbitrary JavaScript.
 
 ### Multiple Choice (default)
 
@@ -74,7 +74,36 @@ The original type. Select all correct answers; partial credit is not given for i
 - `correct` is an array — list all acceptable answers (e.g. `["true", "True", "TRUE"]`).
 - `case_sensitive: true` should be used for Java keywords and code; omit or set `false` for prose answers.
 - The UI shows a per-word character-count hint (e.g. `_ _ _ _ _ _ _  (7 chars)`).
-- **Scoring is binary** — exact match = full player attack + streak; anything else = full monster counter-attack. The question re-queues on a miss.
+- Players get up to **3 attempts**. Wrong attempts show Wordle-style feedback; long answers may auto-cloze so only one word needs to be typed.
+- A one-character typo on a long non-case-sensitive answer is accepted automatically.
+- Missed questions re-queue, and final failure keeps partial credit based on similarity.
+
+### Dynamic Numeric
+
+```json
+{
+  "type": "dynamic_numeric",
+  "question": "What decimal value does binary {{bits}} represent?",
+  "variables": {
+    "n": { "min": 8, "max": 63 }
+  },
+  "derived": {
+    "bits": "toBin(n)"
+  },
+  "answer": {
+    "expr": "fromBase(bits, 2)",
+    "tolerance_abs": 0
+  },
+  "feedback_template": "Binary {{bits}} equals {{expected}} in decimal."
+}
+```
+
+- `variables` define numeric inputs using either `min` / `max` / optional `step` or an explicit `values` list.
+- `derived` lets authors compute helper values for the rendered prompt, such as binary or hex strings.
+- `question` is a template string that can reference resolved values with `{{name}}` placeholders.
+- `answer.expr` must evaluate to a single finite number. `tolerance_abs` controls accepted error.
+- Supported helper functions include `toBin`, `toHex`, `fromBase`, `bitAnd`, `bitOr`, `bitXor`, `shl`, `shr`, `popcount`, `bitLength`, `sumRange`, `countRange`, plus arithmetic helpers like `min`, `max`, `abs`, `pow`, `floor`, `ceil`, and `round`.
+- Dynamic numeric questions reuse the 3-attempt fill-blank flow, but numeric misses show high/low feedback and accepted tolerance instead of character hints.
 
 ### Code Trace ("predict the output")
 
@@ -94,6 +123,26 @@ The original type. Select all correct answers; partial credit is not given for i
 - Player types the program's expected stdout into a multi-line `<textarea>`, one value per line. **Submit with `Ctrl`/`Cmd`+`Enter`** (plain `Enter` inserts a newline).
 - Input is normalised before comparison: line endings unified, trailing whitespace per line stripped, leading/trailing blank lines dropped — write `correct` answers exactly as printed, with `\n` between lines.
 - Scoring reuses the **fill-blank engine**: 3 attempts, Levenshtein-based partial credit on the final miss, monster counter-attack on each wrong attempt. The wordle-style per-character grid is hidden for code-trace.
+
+### Code Line
+
+```json
+{
+  "type": "code_line",
+  "question": "Declare an empty ArrayList of Strings named names.",
+  "language": "java",
+  "correct": [
+    "List<String> names = new ArrayList<>();",
+    "ArrayList<String> names = new ArrayList<>();"
+  ],
+  "case_sensitive": true,
+  "feedback": "Declaring as List<String> is preferred — it keeps the left-hand side flexible."
+}
+```
+
+- Best for one-line code or command authoring.
+- Grading is token-based, so whitespace-only differences do not matter.
+- Players get 3 attempts, token-Wordle feedback, and a typo confirmation prompt for near-misses.
 
 ### Matching
 
@@ -121,14 +170,14 @@ The original type. Select all correct answers; partial credit is not given for i
 |-----------|--------------|----------------|
 | Multiple-choice: each correct selection | +1 attack roll (d6) | — |
 | Multiple-choice: each wrong / missed selection | — | +1 monster roll |
-| Fill-blank / code-trace: exact match | 1 attack roll (d6) × streak multiplier | — |
-| Fill-blank / code-trace: wrong | — | 1 monster roll |
+| Fill-blank / dynamic numeric / code-trace: correct within 3 tries | 1 attack roll (d6) × streak multiplier | — |
+| Fill-blank / dynamic numeric / code-trace: wrong intermediate guess | — | 1 monster roll, scaled by attempt (0%, 50%, 100%) |
+| Code-line: correct within 3 tries | 1 attack roll (d6) × streak multiplier | — |
+| Code-line: wrong intermediate guess | — | 1 monster roll |
 | Matching: each correct pair | 1 attack roll (d6) × streak multiplier | — |
 | Matching: each wrong pair | — | 1 monster roll |
 
-Streak multipliers (consecutive perfect answers): 3–4 = 1.25×, 5–9 = 1.5×, 10+ = 2×.  
-Monster defense reduces player damage; player base defense (1) reduces monster damage (minimum 0 net).  
-Player stats are fixed: attack die = d6, base defense = 1, max HP = 20. Level-ups grant revive charges only.
+Final failure on fill-blank, dynamic numeric, code-trace, and code-line keeps partial credit based on best similarity or numeric closeness and re-queues the question. Streak multipliers (consecutive perfect answers): 3–4 = 1.25×, 5–9 = 1.5×, 10+ = 2×. Monster defense reduces player damage; player base defense (1) reduces monster damage (minimum 0 net). Player stats are fixed: attack die = d6, base defense = 1, max HP = 20. Level-ups grant revive charges only.
 
 ---
 
@@ -165,7 +214,7 @@ tests/
 - `main.js` is the browser entrypoint and creates a single `GameController` instance.
 - `controller.js` owns application state transitions: loading sets, saving progress, resuming games, resolving battles, and routing to the right screen.
 - `ui.js` is intentionally presentation-focused: it renders templates, handles keyboard shortcuts, and calls controller methods instead of reaching through globals.
-- `model.js` owns the combat and progression rules: player/monster state, streaks, fill-blank and matching evaluation, shared damage resolution, and save snapshots.
+- `model.js` owns the combat and progression rules: player/monster state, streaks, dynamic question materialization, safe expression evaluation, answer grading, shared damage resolution, and save snapshots.
 - `sound.js` is isolated from UI and model logic, so audio concerns stay separate from gameplay and rendering.
 - `items.js` and `util.js` hold small shared data/helpers that were previously duplicated inline.
 
@@ -185,6 +234,7 @@ tests/
 |-------|-----|-----------|
 | Foundations | Basic Math | 10 |
 | Computing Concepts | Computing Concepts | 33 |
+| Computing Concepts | Dynamic Numeric Practice | 20 |
 | Computing Concepts | Data Systems | 75 |
 | Java | Hour of Java | 10 (sampler — one of every question type) |
 | Java | Java Basics | 29 |
@@ -231,8 +281,8 @@ node --test tests/model.test.js tests/data.test.js tests/html.test.js
 
 | File | What it checks |
 |------|----------------|
-| `model.test.js` | Model and combat logic — player state, streaks, fill-blank/matching evaluation, level-up, revive, items |
-| `data.test.js` | All JSON files — required fields, type constraints, image files exist, catalog/index consistency |
+| `model.test.js` | Model and combat logic — player state, streaks, fill-blank, dynamic numeric, code-line, matching, level-up, revive, items |
+| `data.test.js` | All JSON files — required fields, type constraints, dynamic-question schema, image files exist, catalog/index consistency |
 | `html.test.js` | HTML/template cross-checks — template IDs, data-ref/data-action usage, stale code checks, accessibility, CSS classes |
 
 ---

@@ -1,0 +1,390 @@
+[
+  {
+    "question": "What is a view in SQLite?",
+    "correct": [
+      "A saved query with a name"
+    ],
+    "incorrect": [
+      "A copied table on disk",
+      "A list of user passwords",
+      "A chart stored in the app"
+    ],
+    "feedback": "A view stores a query definition under a name. When you query the view, SQLite runs that saved SELECT and returns the result."
+  },
+  {
+    "question": "Why is a view useful for presentation?",
+    "correct": [
+      "It can shape data for display"
+    ],
+    "incorrect": [
+      "It changes the table's key",
+      "It saves each row twice",
+      "It turns rows into charts"
+    ],
+    "feedback": "Views are useful for presentation because they can rename columns, format values, and hide extra details without changing the underlying table."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The SQL keywords used to define a view start with CREATE ___.",
+    "correct": [
+      "VIEW"
+    ],
+    "case_sensitive": false,
+    "feedback": "A standard view is created with CREATE VIEW view_name AS SELECT ..."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the SQL line that creates a view named high_scores showing student_id and score from scores where score >= 90.",
+    "language": "sql",
+    "correct": [
+      "CREATE VIEW high_scores AS SELECT student_id, score FROM scores WHERE score >= 90;",
+      "CREATE VIEW high_scores AS SELECT student_id, score FROM scores WHERE score >= 90"
+    ],
+    "case_sensitive": false,
+    "feedback": "CREATE VIEW names the view, and the SELECT after AS defines which rows and columns the view will show."
+  },
+  {
+    "question": "After high_scores has been created, how do you read from it?",
+    "correct": [
+      "SELECT * FROM high_scores;"
+    ],
+    "incorrect": [
+      "CREATE * FROM high_scores;",
+      "OPEN VIEW high_scores;",
+      "READ TABLE high_scores;"
+    ],
+    "feedback": "A view is queried with SELECT just like a table. SQLite expands the view definition and returns the matching result."
+  },
+  {
+    "question": "Which are good reasons to use a view?",
+    "correct": [
+      "To reuse a common query",
+      "To hide unneeded columns",
+      "To simplify report output"
+    ],
+    "incorrect": [
+      "To repair a damaged disk",
+      "To rename the SQLite file",
+      "To install database drivers"
+    ],
+    "feedback": "Views are helpful for reuse, presentation, and selective access. They do not repair storage problems or manage software installation."
+  },
+  {
+    "question": "What is a temporary view?",
+    "correct": [
+      "A view for one connection"
+    ],
+    "incorrect": [
+      "A view stored in a backup",
+      "A view shared across apps",
+      "A view that sorts by date"
+    ],
+    "feedback": "A temporary view exists for the current database connection or session. It disappears when that connection ends."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The keyword often used in CREATE TEMP VIEW is ___.",
+    "correct": [
+      "TEMP",
+      "TEMPORARY"
+    ],
+    "case_sensitive": false,
+    "feedback": "SQLite accepts TEMP or TEMPORARY when you want the view to exist just for the current connection."
+  },
+  {
+    "question": "What best describes a materialized view?",
+    "correct": [
+      "A stored result refreshed later"
+    ],
+    "incorrect": [
+      "A saved query read each time",
+      "A view used for one session",
+      "A permission list for roles"
+    ],
+    "feedback": "A materialized view stores rows from a query result so later reads can be faster, but the stored result needs to be refreshed when source data changes."
+  },
+  {
+    "question": "How is the materialized-view idea usually handled in SQLite?",
+    "correct": [
+      "With a table and refresh step"
+    ],
+    "incorrect": [
+      "With CREATE MATERIALIZED VIEW",
+      "With a TEMP view and no rows",
+      "With DROP TABLE in a query"
+    ],
+    "feedback": "SQLite does not have a native CREATE MATERIALIZED VIEW command. People usually simulate the idea with a table that is rebuilt or refreshed when needed."
+  },
+  {
+    "question": "To reduce exposure of sensitive data, what should a public view include?",
+    "correct": [
+      "Needed fields like id and name"
+    ],
+    "incorrect": [
+      "Extra fields like SSN and notes",
+      "Full rows plus staff comments",
+      "Source tables plus passwords"
+    ],
+    "feedback": "A public or role-based view should expose just the columns needed for that audience. Leaving out sensitive columns supports privacy and access control."
+  },
+  {
+    "type": "matching",
+    "question": "Match each data source term to its best description.",
+    "pairs": [
+      {
+        "term": "Standard view",
+        "definition": "Saves a query definition"
+      },
+      {
+        "term": "Temporary view",
+        "definition": "Lasts for one connection"
+      },
+      {
+        "term": "Materialized view",
+        "definition": "Stores rows until refresh"
+      },
+      {
+        "term": "Base table",
+        "definition": "Holds the underlying data"
+      }
+    ],
+    "feedback": "Standard and temporary views are built from queries. A materialized view stores a result set, while a base table stores the original data."
+  },
+  {
+    "question": "In SQLite, what usually happens if you run INSERT on a view with no INSTEAD OF trigger?",
+    "correct": [
+      "SQLite rejects the change"
+    ],
+    "incorrect": [
+      "SQLite adds rows to the base table",
+      "SQLite drops the view first",
+      "SQLite converts the view to a table"
+    ],
+    "feedback": "SQLite views are read-only by default. An INSTEAD OF trigger can be added to tell SQLite how to handle writes through a view."
+  },
+  {
+    "question": "In many SQL systems, which view is the best candidate for direct row updates?",
+    "correct": [
+      "A simple view over one table"
+    ],
+    "incorrect": [
+      "A view with GROUP BY totals",
+      "A view combining UNION results",
+      "A view built from many joins"
+    ],
+    "feedback": "In many database systems, the most updatable view is a simple single-table view without grouping or set operations. In SQLite, standard views are still read-only unless triggers are added."
+  },
+  {
+    "question": "Why are aggregate views poor targets for direct edits?",
+    "correct": [
+      "One row may stand for many rows"
+    ],
+    "incorrect": [
+      "They use commas in SELECT",
+      "They sort text in memory",
+      "They rename fields with AS"
+    ],
+    "feedback": "An aggregate view often turns many base-table rows into one summary row, so a direct change to that summary row does not map cleanly back to one stored record."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the SQL line that removes the view active_students if it exists.",
+    "language": "sql",
+    "correct": [
+      "DROP VIEW IF EXISTS active_students;",
+      "DROP VIEW IF EXISTS active_students"
+    ],
+    "case_sensitive": false,
+    "feedback": "DROP VIEW IF EXISTS safely removes a view by name and avoids an error if the view is not present."
+  },
+  {
+    "question": "Which keyword starts a Common Table Expression?",
+    "correct": [
+      "WITH"
+    ],
+    "incorrect": [
+      "FROM",
+      "GROUP",
+      "ORDER"
+    ],
+    "feedback": "A Common Table Expression begins with WITH, followed by a name, AS, and a query inside parentheses."
+  },
+  {
+    "question": "What is the main benefit of a CTE?",
+    "correct": [
+      "It breaks SQL into named steps"
+    ],
+    "incorrect": [
+      "It stores rows in a new file",
+      "It replaces the need for tables",
+      "It rewrites column types"
+    ],
+    "feedback": "A CTE helps you read and debug a complex query by splitting it into smaller named parts."
+  },
+  {
+    "type": "code_line",
+    "question": "Write a one-line SQLite query that defines a CTE named recent_orders as SELECT order_id FROM orders WHERE order_date >= '2026-01-01', then selects all rows from recent_orders.",
+    "language": "sql",
+    "correct": [
+      "WITH recent_orders AS (SELECT order_id FROM orders WHERE order_date >= '2026-01-01') SELECT * FROM recent_orders;",
+      "WITH recent_orders AS (SELECT order_id FROM orders WHERE order_date >= '2026-01-01') SELECT * FROM recent_orders"
+    ],
+    "case_sensitive": false,
+    "feedback": "The CTE definition comes first after WITH, and the main SELECT can then read from that named result as if it were a temporary table."
+  },
+  {
+    "question": "Which statements about CTEs are true?",
+    "correct": [
+      "A CTE has a temporary name",
+      "One query can define two CTEs",
+      "CTEs can make SQL easier"
+    ],
+    "incorrect": [
+      "A CTE rewrites table storage",
+      "A CTE remains after the query",
+      "A CTE needs a saved view"
+    ],
+    "feedback": "A CTE lives for one query, can be named, and can improve readability. It does not rewrite stored data and does not need a view to exist first."
+  },
+  {
+    "question": "Where should a team record what each column means and how it should be used?",
+    "correct": [
+      "In a data dictionary"
+    ],
+    "incorrect": [
+      "In a WHERE clause",
+      "In a join key",
+      "In a chart title"
+    ],
+    "feedback": "A data dictionary documents tables, columns, meanings, data types, and rules so people can use the database correctly and consistently."
+  },
+  {
+    "type": "matching",
+    "question": "Match each classification label to a likely example.",
+    "pairs": [
+      {
+        "term": "Public",
+        "definition": "Lunch menu on the website"
+      },
+      {
+        "term": "Internal",
+        "definition": "Staff meeting notes"
+      },
+      {
+        "term": "Confidential",
+        "definition": "Student phone list"
+      },
+      {
+        "term": "Restricted",
+        "definition": "Clinic diagnosis record"
+      }
+    ],
+    "feedback": "Classification labels help a school or company decide how strongly different data should be protected, shared, and retained."
+  },
+  {
+    "question": "Which examples count as PII or PHI?",
+    "correct": [
+      "Student email address",
+      "Social Security number",
+      "Clinic diagnosis record"
+    ],
+    "incorrect": [
+      "School mascot color",
+      "SQL keyword list",
+      "Room number on a map"
+    ],
+    "feedback": "PII is personal information that can identify a person, and PHI is protected health information. A student email or Social Security number is PII, and a diagnosis record is PHI."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Data Loss Prevention is often shortened to ___.",
+    "correct": [
+      "DLP"
+    ],
+    "case_sensitive": false,
+    "feedback": "DLP stands for Data Loss Prevention, a set of controls that detect and limit inappropriate sharing of sensitive data."
+  },
+  {
+    "question": "What does RBAC stand for in data governance?",
+    "correct": [
+      "Role-Based Access Control"
+    ],
+    "incorrect": [
+      "Row-Based Audit Count",
+      "Remote Backup Access Channel",
+      "Result Buffer Allocation Code"
+    ],
+    "feedback": "RBAC means Role-Based Access Control. Access is granted according to a user's role, such as teacher, nurse, or office staff."
+  },
+  {
+    "question": "Why can a role-specific view help support RBAC?",
+    "correct": [
+      "It shows role-matched fields"
+    ],
+    "incorrect": [
+      "It copies each table per role",
+      "It removes the need for logins",
+      "It encrypts files by itself"
+    ],
+    "feedback": "A role-specific view can expose the columns a role needs while hiding columns that are unrelated or sensitive. That supports role-based access rules."
+  },
+  {
+    "question": "What is the main job of DLP?",
+    "correct": [
+      "To limit sensitive data sharing"
+    ],
+    "incorrect": [
+      "To rename fields in a result",
+      "To group rows by category",
+      "To refresh indexes each night"
+    ],
+    "feedback": "DLP tools watch for sensitive data and can warn, block, or log risky sharing actions such as an export or email attachment."
+  },
+  {
+    "question": "Which actions are GDPR data-subject rights?",
+    "correct": [
+      "Ask to correct wrong data",
+      "Ask to erase eligible data",
+      "Ask to view stored personal data"
+    ],
+    "incorrect": [
+      "Ask for a database password",
+      "Ask to skip school policies",
+      "Ask to edit audit logs"
+    ],
+    "feedback": "GDPR gives people rights such as access, rectification, and erasure. The erasure right is often called the right to be forgotten."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The GDPR right to correct wrong personal data is called the right to ___.",
+    "correct": [
+      "rectification",
+      "rectify"
+    ],
+    "case_sensitive": false,
+    "feedback": "Under GDPR, rectification is the right to have inaccurate personal data corrected."
+  },
+  {
+    "type": "matching",
+    "question": "Match each governance control to its main job.",
+    "pairs": [
+      {
+        "term": "View",
+        "definition": "Shows limited columns or rows"
+      },
+      {
+        "term": "Classification label",
+        "definition": "Marks data sensitivity"
+      },
+      {
+        "term": "DLP rule",
+        "definition": "Monitors or blocks risky sharing"
+      },
+      {
+        "term": "RBAC",
+        "definition": "Grants access by role"
+      }
+    ],
+    "feedback": "Views reduce exposure, classification labels describe sensitivity, DLP watches data movement, and RBAC decides which roles can reach which results. Together they support privacy and governance."
+  }
+]

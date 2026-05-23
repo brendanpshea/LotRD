@@ -1,0 +1,417 @@
+[
+  {
+    "question": "What is an index in SQLite?",
+    "correct": [
+      "A structure that helps SQLite find matching rows faster"
+    ],
+    "incorrect": [
+      "A backup copy that stores every table in a second file",
+      "A report view that shows columns in alphabetical order",
+      "A permission rule that decides which users may log in"
+    ],
+    "feedback": "An index is an extra data structure that helps SQLite locate matching rows more quickly than checking each row in turn."
+  },
+  {
+    "question": "Which query is most likely to benefit from an index on last_name?",
+    "correct": [
+      "A query that filters rows with WHERE last_name = 'Lee'"
+    ],
+    "incorrect": [
+      "A query that creates a new table for student clubs",
+      "A query that begins a transaction for grade updates",
+      "A query that rolls back an unfinished payment change"
+    ],
+    "feedback": "Indexes help most when SQLite must find a small set of rows by searching or matching a column value, such as last_name = 'Lee'."
+  },
+  {
+    "question": "Which statements describe a trade-off of adding an index?",
+    "correct": [
+      "Reads on indexed columns can become faster",
+      "Writes may take more work because the index must be updated"
+    ],
+    "incorrect": [
+      "The index turns the table into a JSON document",
+      "The index replaces the need for a primary key",
+      "The index moves rows outside the database file"
+    ],
+    "feedback": "Indexes can speed up lookups, but SQLite must also keep each index up to date during INSERT, UPDATE, and DELETE work."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The SQL statement used to create an index begins with CREATE ___.",
+    "correct": [
+      "INDEX"
+    ],
+    "case_sensitive": false,
+    "feedback": "SQLite creates a regular index with CREATE INDEX index_name ON table_name(column_name)."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the SQL line that creates an index named idx_books_title on books(title).",
+    "language": "sql",
+    "correct": [
+      "CREATE INDEX idx_books_title ON books(title);",
+      "CREATE INDEX idx_books_title ON books(title)"
+    ],
+    "case_sensitive": false,
+    "feedback": "CREATE INDEX gives the index a name and tells SQLite which table and column the index should cover."
+  },
+  {
+    "question": "When is an index often not worth its cost?",
+    "correct": [
+      "When the table is small and that column is rarely searched"
+    ],
+    "incorrect": [
+      "When the column appears in filters on many queries",
+      "When the table needs faster lookups for one common report",
+      "When the app checks that column during many joins"
+    ],
+    "feedback": "An index uses storage and adds write overhead, so a very small table or a rarely searched column may not gain enough to justify it."
+  },
+  {
+    "question": "What is a full table scan?",
+    "correct": [
+      "Reading rows across the table to test the condition one by one"
+    ],
+    "incorrect": [
+      "Copying the table into a new backup file before a query",
+      "Checking one B-tree path from root to matching leaf",
+      "Saving the current transaction before more updates"
+    ],
+    "feedback": "A full table scan means SQLite reads through the table rows to find matches instead of jumping to them with an index lookup."
+  },
+  {
+    "question": "Which EXPLAIN QUERY PLAN output most strongly suggests index use?",
+    "correct": [
+      "SEARCH students USING INDEX idx_students_last_name"
+    ],
+    "incorrect": [
+      "SCAN students without an index lookup",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "EXECUTE LIST SUBQUERY FOR FILTER STEP"
+    ],
+    "feedback": "In SQLite query-plan output, SEARCH ... USING INDEX is the clearest sign that the planner expects to use an index lookup."
+  },
+  {
+    "question": "What does EXPLAIN QUERY PLAN show?",
+    "correct": [
+      "The steps SQLite expects to use while running a query"
+    ],
+    "incorrect": [
+      "The exact rows that the query will return every time",
+      "The passwords allowed for each database connection",
+      "The columns that can appear in a CREATE TABLE rule"
+    ],
+    "feedback": "EXPLAIN QUERY PLAN gives a readable summary of how SQLite plans to access data, such as scanning, searching, or sorting."
+  },
+  {
+    "type": "matching",
+    "question": "Match each SQLite query-plan term to its best meaning.",
+    "pairs": [
+      {
+        "term": "SCAN",
+        "definition": "Reads many rows from a table or index"
+      },
+      {
+        "term": "SEARCH",
+        "definition": "Uses a lookup to narrow the rows"
+      },
+      {
+        "term": "COVERING INDEX",
+        "definition": "Answers the query from index data alone"
+      },
+      {
+        "term": "USE TEMP B-TREE",
+        "definition": "Builds a temporary structure for sorting or grouping"
+      }
+    ],
+    "feedback": "These plan terms give quick clues about whether SQLite is scanning, using an index lookup, or building a temporary structure to finish the query."
+  },
+  {
+    "question": "What is a B-tree in SQLite best described as?",
+    "correct": [
+      "An ordered structure that supports efficient searching and insertion"
+    ],
+    "incorrect": [
+      "A picture format used for database diagrams and icons",
+      "A security mode that encrypts each query before parsing",
+      "An error class that appears when a transaction is rolled back"
+    ],
+    "feedback": "SQLite uses B-trees because they keep data ordered and make lookups, inserts, and range scans efficient on disk."
+  },
+  {
+    "type": "fill_blank",
+    "question": "SQLite commonly uses ___-trees for tables and indexes.",
+    "correct": [
+      "B"
+    ],
+    "case_sensitive": false,
+    "feedback": "A B-tree stores ordered keys and pointers, which is why SQLite uses it for tables, indexes, and some temporary sorting work."
+  },
+  {
+    "question": "What is a covering index?",
+    "correct": [
+      "An index that already contains every column the query needs"
+    ],
+    "incorrect": [
+      "An index that hides the table name from the query planner",
+      "An index that locks readers until the writer finishes",
+      "An index that stores trigger code next to table rows"
+    ],
+    "feedback": "A covering index can satisfy the filter and the selected columns from the index itself, so SQLite may avoid reading the table rows."
+  },
+  {
+    "question": "Which situations can make a covering index helpful?",
+    "correct": [
+      "The filter columns are in the index",
+      "The selected columns are also in the same index"
+    ],
+    "incorrect": [
+      "The query needs a trigger before it can read",
+      "The table name appears twice in the FROM clause",
+      "The database file is stored on a local drive",
+      "The app opens a savepoint before the SELECT"
+    ],
+    "feedback": "A covering index helps when the index already has the columns used to search and return the result, which can reduce extra table reads."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A query took {{before_ms}} ms before an index and became {{improvement_ms}} ms faster after the index. What is the new time in ms?",
+    "variables": {
+      "before_ms": {
+        "min": 90,
+        "max": 240,
+        "step": 10
+      },
+      "improvement_ms": {
+        "values": [
+          20,
+          30,
+          40,
+          50,
+          60,
+          70,
+          80
+        ]
+      }
+    },
+    "answer": {
+      "expr": "before_ms - improvement_ms",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Subtract the improvement from the original time. Here {{before_ms}} - {{improvement_ms}} = {{expected}} ms."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A database file was {{size_before}} KB before adding indexes and grew by {{growth_kb}} KB afterward. What is the new size in KB?",
+    "variables": {
+      "size_before": {
+        "min": 900,
+        "max": 2400,
+        "step": 100
+      },
+      "growth_kb": {
+        "values": [
+          60,
+          80,
+          100,
+          120,
+          150,
+          200
+        ]
+      }
+    },
+    "answer": {
+      "expr": "size_before + growth_kb",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Adding indexes increases the file size by the growth amount. Here {{size_before}} + {{growth_kb}} = {{expected}} KB."
+  },
+  {
+    "question": "When comparing an indexed query with a non-indexed query, what should stay the same?",
+    "correct": [
+      "The data, the SQL text, and the test conditions"
+    ],
+    "incorrect": [
+      "The database name, the table color, and the file icon",
+      "The trigger names, the savepoint labels, and the comments",
+      "The usernames, the monitor size, and the window theme"
+    ],
+    "feedback": "A fair test changes one factor at a time. Keep the query, data, and environment the same so you can compare the index effect clearly."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the SQLite line that shows the query plan for selecting all columns from orders where customer_id = 7.",
+    "language": "sql",
+    "correct": [
+      "EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 7;",
+      "EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 7"
+    ],
+    "case_sensitive": false,
+    "feedback": "Put EXPLAIN QUERY PLAN before a normal SELECT statement to see how SQLite expects to run it."
+  },
+  {
+    "question": "What is a transaction?",
+    "correct": [
+      "A group of database changes treated as one unit of work"
+    ],
+    "incorrect": [
+      "A single column that links one table to another",
+      "A report that lists rows in sorted order for printing",
+      "A B-tree page used to store one index entry"
+    ],
+    "feedback": "A transaction groups related changes so they can succeed together or be undone together if something goes wrong."
+  },
+  {
+    "type": "matching",
+    "question": "Match each ACID property to its best description.",
+    "pairs": [
+      {
+        "term": "Atomicity",
+        "definition": "All changes in the unit happen or none do"
+      },
+      {
+        "term": "Consistency",
+        "definition": "Rules still hold before and after commit"
+      },
+      {
+        "term": "Isolation",
+        "definition": "Concurrent work should not mix into one result"
+      },
+      {
+        "term": "Durability",
+        "definition": "Committed changes survive a crash"
+      }
+    ],
+    "feedback": "ACID summarizes the protections that keep transaction work correct, separate, and durable."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The command that starts an explicit transaction is ___.",
+    "correct": [
+      "BEGIN"
+    ],
+    "case_sensitive": false,
+    "feedback": "BEGIN marks the start of a transaction so later changes can be committed or rolled back together."
+  },
+  {
+    "question": "What does COMMIT do?",
+    "correct": [
+      "It makes the transaction changes permanent"
+    ],
+    "incorrect": [
+      "It undoes the changes since the last BEGIN",
+      "It opens a savepoint inside the current statement",
+      "It forces every SELECT to use an index scan"
+    ],
+    "feedback": "COMMIT finishes a successful transaction and makes its changes durable."
+  },
+  {
+    "question": "What does ROLLBACK do if an error happens before COMMIT?",
+    "correct": [
+      "It cancels the uncommitted changes in that transaction"
+    ],
+    "incorrect": [
+      "It keeps the changes and renames the savepoint",
+      "It adds a new index to speed the next query",
+      "It turns the table scan into a covering index"
+    ],
+    "feedback": "ROLLBACK returns the database to the state before the transaction started, as long as the work was not already committed."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the SQL line that creates a savepoint named before_discount.",
+    "language": "sql",
+    "correct": [
+      "SAVEPOINT before_discount;",
+      "SAVEPOINT before_discount"
+    ],
+    "case_sensitive": false,
+    "feedback": "SAVEPOINT names a point inside the current transaction so you can roll back part of the work later."
+  },
+  {
+    "question": "Why is a SAVEPOINT useful inside a long transaction?",
+    "correct": [
+      "It lets you undo one section without losing earlier work"
+    ],
+    "incorrect": [
+      "It turns each SELECT into a permanent materialized view",
+      "It changes shared locks into index rebuild commands",
+      "It stores the whole database in a second location"
+    ],
+    "feedback": "A savepoint creates a smaller recovery point inside a transaction, so one error does not have to erase everything done earlier in that transaction."
+  },
+  {
+    "question": "In SQLite, what is the main limit on concurrent write activity?",
+    "correct": [
+      "Only one writer can hold the write lock at a time"
+    ],
+    "incorrect": [
+      "Only one reader can open the database file each day",
+      "Only one table may exist in a database connection",
+      "Only one index may be created for a table schema"
+    ],
+    "feedback": "SQLite is strong for many uses, but concurrent writing is limited because one connection must hold the write lock while it writes."
+  },
+  {
+    "question": "Which statements about locking and deadlock-related concerns are correct?",
+    "correct": [
+      "Shared locks can allow multiple readers at once",
+      "An exclusive lock blocks conflicting access while writing",
+      "Long transactions increase the chance of waits and deadlock-style problems"
+    ],
+    "incorrect": [
+      "Locks exist only when a query uses ORDER BY",
+      "Deadlock concerns disappear as soon as a savepoint is created",
+      "SQLite can let many writers change the same pages at once"
+    ],
+    "feedback": "Readers may share access, but write work needs stronger locking. The longer locks are held, the more likely the system is to face waits or conflict problems."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A transaction inserts {{first_rows}} rows, creates SAVEPOINT s1, inserts {{second_rows}} more rows, and then runs ROLLBACK TO s1. How many inserted rows remain in the transaction?",
+    "variables": {
+      "first_rows": {
+        "min": 2,
+        "max": 8
+      },
+      "second_rows": {
+        "min": 1,
+        "max": 5
+      }
+    },
+    "answer": {
+      "expr": "first_rows",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "ROLLBACK TO s1 undoes the work after the savepoint but keeps the earlier inserts, so {{expected}} rows remain in the transaction."
+  },
+  {
+    "question": "Which statements describe ACID, BASE, and hybrid choices well?",
+    "correct": [
+      "ACID fits workloads that need strong correctness for each transaction",
+      "BASE often trades immediate consistency for availability or scale",
+      "A hybrid design can keep core records ACID and use other stores for scale or flexibility"
+    ],
+    "incorrect": [
+      "ACID is mainly a format for compressing database backups",
+      "BASE means each replica shows identical data at the same moment",
+      "A hybrid design removes the need to choose storage by workload"
+    ],
+    "feedback": "Relational ACID systems focus on strong transaction guarantees, BASE-style systems accept looser consistency trade-offs, and hybrid designs mix approaches by workload."
+  },
+  {
+    "question": "Which signals are useful for monitoring database health?",
+    "correct": [
+      "Slow query times on common reports",
+      "Frequent busy or lock-wait events",
+      "Error and rollback messages in logs"
+    ],
+    "incorrect": [
+      "The color theme used by the SQL editor",
+      "The length of the computer power cable",
+      "The order of icons in the desktop taskbar"
+    ],
+    "feedback": "Useful monitoring data includes performance timings, lock activity, and log evidence of errors or rollbacks. Those signals help you spot a stressed or unhealthy database."
+  }
+]

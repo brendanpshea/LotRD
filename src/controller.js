@@ -398,7 +398,7 @@ export class GameController {
     } else {
       this._setInGame(true);
       const qtype = this.model.current_question?.type;
-      if (qtype === "fill_blank") {
+      if (qtype === "fill_blank" || qtype === "dynamic_numeric") {
         this.ui.showEncounterFillBlank();
       } else if (qtype === "code_trace") {
         this.ui.showEncounterCodeTrace();
@@ -458,6 +458,10 @@ export class GameController {
     }
 
     const result = this.model.submitFillBlankGuess(inputText);
+    if (result.status === "invalid") {
+      this.ui.showFeedbackInline(result.message);
+      return;
+    }
     if (result.status === "wrong") {
       if (result.defeated_player && this.model.player.revive_charges > 0) {
         this.model.player.revive_charges--;

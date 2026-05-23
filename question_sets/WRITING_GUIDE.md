@@ -6,19 +6,23 @@
 
 ## File Format Overview
 
-Each question set is a **JSON array** of question objects saved in `question_sets/`. Three question types are supported:
+Each question set is a **JSON array** of question objects saved in `question_sets/`. Five structured question types are documented below, with multiple-choice split into single-answer and multi-answer variants:
 
 | Type | `type` field | Selection UI | Best for |
 |------|-------------|-------------|----------|
 | Multiple Choice | *(omitted)* | Radio (1 correct) or Checkbox (2+ correct) | Recall, analysis, "select all that apply" |
 | Fill-in-the-Blank | `"fill_blank"` | Text input | Terminology, syntax, exact recall |
+| Dynamic Numeric | `"dynamic_numeric"` | Numeric input | Randomized numeric reasoning, conversions, loop counts, storage math |
 | Matching | `"matching"` | Dropdowns | Associating terms with definitions |
 | Code Line | `"code_line"` | Text input + token-Wordle | Writing one line of code/command |
 
 A good problem set uses a **mix of all types**. Aim for roughly:
 - 60–70% multiple choice (split between single-answer and multi-answer)
-- 15–20% fill-in-the-blank
+- 10–20% fill-in-the-blank
+- 10–20% dynamic numeric
 - 10–20% matching
+
+Dynamic numeric questions use a safe built-in expression engine. JSON content does **not** execute arbitrary JavaScript.
 
 ---
 
@@ -229,7 +233,112 @@ Use for **terminology, syntax, commands, or exact-recall** items where the stude
 
 ---
 
-## Type 4: Matching
+## Type 4: Dynamic Numeric
+
+Use for **randomized numeric problems** where the prompt contains generated values and the student submits a single numeric answer. This is the best fit for intro-CS items such as binary and hex conversion to decimal, loop iteration counts, loop sums, bitwise results, array indexing, and storage-size arithmetic.
+
+### Schema
+
+```json
+{
+  "type": "dynamic_numeric",
+  "question": "What decimal value does binary {{bits}} represent?",
+  "variables": {
+    "n": { "min": 8, "max": 63 }
+  },
+  "derived": {
+    "bits": "toBin(n)"
+  },
+  "answer": {
+    "expr": "fromBase(bits, 2)",
+    "tolerance_abs": 0
+  },
+  "feedback_template": "Binary {{bits}} equals {{expected}} in decimal."
+}
+```
+
+### Rules
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `type` | yes | `"dynamic_numeric"` | Must be exactly this string |
+| `question` | yes | string | Template string; may use `{{name}}` placeholders |
+| `variables` | yes | object | Numeric inputs, each defined by `values[]` or `min` / `max` / optional `step` |
+| `derived` | no | object | Extra template values computed from expressions |
+| `answer.expr` | yes | string | Expression that resolves to one finite number |
+| `answer.tolerance_abs` | no | number | Absolute error allowed; default `0` |
+| `answer.display_decimals` | no | integer | Optional display rounding for the expected answer |
+| `feedback_template` | no | string | Template rendered after variables and `expected` are resolved |
+
+### Supported Dynamic Helpers
+
+Arithmetic helpers:
+
+```text
+abs, round, floor, ceil, trunc, sqrt, pow, min, max, clamp, mod, floorDiv
+```
+
+CS-focused helpers:
+
+```text
+toBin, toOct, toHex, toBase, fromBase,
+bitAnd, bitOr, bitXor, shl, shr, ushr,
+popcount, bitLength,
+sumRange, countRange
+```
+
+### Writing Good Dynamic Numeric Questions
+
+1. **Keep the student answer numeric.** The prompt may show binary or hex strings, but the answer should still be one number for v1.
+
+2. **Use placeholders only for values the student should see.** If a helper value is only useful internally, keep it in `answer.expr` instead of exposing it in the prompt.
+
+3. **Prefer declarative formulas over ad hoc logic.** If a question can be written with `sumRange`, `countRange`, `bitAnd`, or `fromBase`, do that instead of asking for arbitrary JavaScript.
+
+4. **Keep variable ranges pedagogically sane.** Large numbers make mental math miserable and hide the concept being tested.
+
+5. **Use `tolerance_abs` only when rounding is expected.** For exact integer results, keep it at `0`.
+
+6. **When asking for a rounded decimal, state the precision in the prompt** and set `answer.display_decimals` plus a matching `tolerance_abs`.
+
+7. **Do not depend on arbitrary JavaScript built-ins or loops in JSON.** The expression engine is intentionally limited so sets are testable, safe, and predictable.
+
+### Good Stem Patterns for Dynamic Numeric
+
+```text
+"What decimal value does binary {{bits}} represent?"
+"How many times does this loop body execute?"
+"What is the final value of sum after this loop?"
+"How many bytes are in {{kib}} KiB?"
+"What decimal result does {{a}} AND {{b}} produce?"
+"What is the minimum number of bits needed to store unsigned decimal {{n}}?"
+```
+
+### Example
+
+```json
+{
+  "type": "dynamic_numeric",
+  "question": "How many times does the loop body execute? for (int i = {{start}}; i < {{limit}}; i += {{step}})",
+  "variables": {
+    "start": { "min": 0, "max": 4 },
+    "step": { "values": [1, 2, 3] },
+    "iterations": { "min": 3, "max": 6 }
+  },
+  "derived": {
+    "limit": "start + iterations * step"
+  },
+  "answer": {
+    "expr": "iterations",
+    "tolerance_abs": 0
+  },
+  "feedback_template": "Starting at {{start}} and increasing by {{step}} stops just before {{limit}}, so the loop runs {{expected}} times."
+}
+```
+
+---
+
+## Type 5: Matching
 
 Use to test the ability to **associate terms with definitions**, concepts with examples, or inputs with outputs.
 
@@ -302,7 +411,7 @@ Use to test the ability to **associate terms with definitions**, concepts with e
 
 ---
 
-## Type 5: Code Line
+## Type 6: Code Line
 
 Use when the student should **write** (not just recognize) a single line of code or a single command. Grading is whitespace-insensitive at the token level: `int x=5;` ≡ `int x = 5 ;`. Up to 3 attempts per question, with token-level Wordle feedback between attempts and a "did you mean?" prompt for typos within 2 character edits of an accepted answer.
 
@@ -421,6 +530,7 @@ Before submitting a question set, verify:
 - [ ] Every question has a non-empty `question` string
 - [ ] MC questions have non-empty `correct[]` and an `incorrect[]` array
 - [ ] Fill-blank questions have `"type": "fill_blank"` and non-empty `correct[]`
+- [ ] Dynamic numeric questions have `"type": "dynamic_numeric"`, a non-empty `variables` object, and a valid `answer.expr`
 - [ ] Matching questions have `"type": "matching"` and ≥ 2 pairs with `term` and `definition`
 - [ ] No duplicate options within any MC question (`correct` ∪ `incorrect` has no repeats)
 - [ ] No overlap between `correct` and `incorrect` in any MC question
@@ -440,7 +550,7 @@ node --test tests/data.test.js
 
 What the tests currently check:
 
-- Basic structure: valid JSON, required fields, matching-pair shape, no duplicate options, no overlap between `correct` and `incorrect`
+- Basic structure: valid JSON, required fields, dynamic-question schema, matching-pair shape, no duplicate options, no overlap between `correct` and `incorrect`
 - Registration: the file exists, is listed in `index.json`, and has a valid entry in `catalog.json`
 - Extreme multi-answer uniformity: if a set has many multi-answer questions, they should not all use the exact same `correct/incorrect` shape
 - Answer-length bias: on average, correct answers should not be much longer than wrong answers in the same set
@@ -488,7 +598,7 @@ After creating your JSON file (e.g., `python_01_basics.json`):
 
 ## Complete Example: Mini Question Set
 
-A small but complete example demonstrating all four question styles:
+A small but complete example demonstrating several question styles:
 
 ```json
 [

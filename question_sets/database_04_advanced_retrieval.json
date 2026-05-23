@@ -1,0 +1,411 @@
+[
+  {
+    "question": "In work_orders(work_order_id, customer_id, technician_id, total_amount), what is customer_id usually used for?",
+    "correct": [
+      "To point to the related customer row"
+    ],
+    "incorrect": [
+      "To store the formatted customer name",
+      "To count how many jobs the customer placed",
+      "To label the order with a price category"
+    ],
+    "feedback": "A customer_id column usually acts as a foreign key, so it links each work order back to one customer."
+  },
+  {
+    "question": "In a subtype design, what does a row in commercial_customers(customer_id, tax_id) mean if customer_id is also the primary key from customers?",
+    "correct": [
+      "That customer also has a base row in customers plus data for commercial billing"
+    ],
+    "incorrect": [
+      "That customer replaces the base row in customers",
+      "That customer removes the need for foreign keys",
+      "That customer combines multiple customer types into one row"
+    ],
+    "feedback": "A subtype table extends a base table. The commercial_customers row adds commercial-specific details for a customer that already exists in customers."
+  },
+  {
+    "question": "What is the best reason to store invoice totals in DECIMAL(8,2) instead of plain text?",
+    "correct": [
+      "It keeps money values numeric and limited to two decimal places"
+    ],
+    "incorrect": [
+      "It automatically compresses invoice data on disk",
+      "It turns the column into a JSON document",
+      "It removes the need for formatting in reports"
+    ],
+    "feedback": "Money values should behave like numbers, and two decimal places match common currency formatting."
+  },
+  {
+    "question": "What does json_extract(details_json, '$.priority') do in SQLite?",
+    "correct": [
+      "It reads the priority value from the JSON text"
+    ],
+    "incorrect": [
+      "It groups rows by the JSON text",
+      "It renames the JSON column in the result",
+      "It converts the whole table into JSON"
+    ],
+    "feedback": "json_extract() pulls one value out of JSON text by following the path you provide."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The JSON path for a top-level field named priority is ___.",
+    "correct": [
+      "$.priority"
+    ],
+    "case_sensitive": true,
+    "feedback": "A top-level JSON field uses $. followed by the field name, so $.priority points to the priority value."
+  },
+  {
+    "type": "matching",
+    "question": "Match each schema example to its best description.",
+    "pairs": [
+      {
+        "term": "work_orders.customer_id",
+        "definition": "Foreign key to one customer row"
+      },
+      {
+        "term": "commercial_customers.customer_id",
+        "definition": "Subtype key that extends the customer row"
+      },
+      {
+        "term": "invoices.total_amount",
+        "definition": "DECIMAL-style money field for totals"
+      },
+      {
+        "term": "work_orders.details_json",
+        "definition": "JSON text field with structured details"
+      }
+    ],
+    "feedback": "A more complex schema can mix keys, subtype tables, money fields, and JSON text in one database design."
+  },
+  {
+    "question": "What does GROUP BY technician_id do in a report query?",
+    "correct": [
+      "It makes one group for each technician_id value"
+    ],
+    "incorrect": [
+      "It sorts rows by technician_id",
+      "It hides the technician_id column from view",
+      "It removes repeated technician rows from the table"
+    ],
+    "feedback": "GROUP BY collects rows that share the same technician_id so aggregate functions can summarize each group."
+  },
+  {
+    "question": "Which aggregate returns the number of work orders in each group?",
+    "correct": [
+      "COUNT(*)"
+    ],
+    "incorrect": [
+      "GROUP(*)",
+      "SUM(*)",
+      "TOTAL(*)"
+    ],
+    "feedback": "COUNT(*) counts rows, so it is the standard way to report how many rows are in each group."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Three branches completed {{a}}, {{b}}, and {{c}} service calls last week. What average calls per branch would AVG(calls) return? Answer to the nearest hundredth.",
+    "variables": {
+      "a": {
+        "min": 12,
+        "max": 30
+      },
+      "b": {
+        "min": 12,
+        "max": 30
+      },
+      "c": {
+        "min": 12,
+        "max": 30
+      }
+    },
+    "answer": {
+      "expr": "(a + b + c) / 3",
+      "tolerance_abs": 0.01,
+      "display_decimals": 2
+    },
+    "feedback_template": "AVG adds the values and divides by the number of branches. Here ({{a}} + {{b}} + {{c}}) / 3 = {{expected}}."
+  },
+  {
+    "question": "When should you use HAVING instead of WHERE?",
+    "correct": [
+      "When you want to filter groups after aggregation"
+    ],
+    "incorrect": [
+      "When you want to rename a column before grouping",
+      "When you want to sort rows before filtering",
+      "When you want to join two tables before grouping"
+    ],
+    "feedback": "WHERE filters individual rows before grouping. HAVING filters the grouped results after aggregates are available."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the SQLite query that returns each technician_id and COUNT(*) AS job_count from work_orders, grouped by technician_id.",
+    "language": "sql",
+    "correct": [
+      "SELECT technician_id, COUNT(*) AS job_count FROM work_orders GROUP BY technician_id;",
+      "SELECT technician_id, COUNT(*) AS job_count FROM work_orders GROUP BY technician_id",
+      "SELECT technician_id, COUNT(*) job_count FROM work_orders GROUP BY technician_id;",
+      "SELECT technician_id, COUNT(*) job_count FROM work_orders GROUP BY technician_id"
+    ],
+    "case_sensitive": false,
+    "feedback": "The query selects the grouping column, counts rows in each group, and groups by technician_id."
+  },
+  {
+    "question": "Which grouped filters belong in a HAVING clause?",
+    "correct": [
+      "HAVING COUNT(*) >= 5",
+      "HAVING AVG(total_amount) > 200",
+      "HAVING SUM(hours_worked) < 40"
+    ],
+    "incorrect": [
+      "WHERE COUNT(*) >= 5",
+      "WHERE AVG(total_amount) > 200",
+      "WHERE SUM(hours_worked) < 40"
+    ],
+    "feedback": "Aggregate results such as COUNT, AVG, and SUM are filtered with HAVING because those values are not ready during the row-level WHERE step."
+  },
+  {
+    "question": "If some rows have NULL in total_amount, how does AVG(total_amount) treat those NULL values?",
+    "correct": [
+      "It skips those NULL values when calculating the average"
+    ],
+    "incorrect": [
+      "It counts each NULL value as zero in the average",
+      "It turns the whole average into text output",
+      "It drops the rows that contain actual amounts"
+    ],
+    "feedback": "SQLite aggregate functions such as AVG ignore NULL values rather than treating them as zero."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The keyword commonly used to give a result column a temporary name is ___.",
+    "correct": [
+      "AS"
+    ],
+    "case_sensitive": false,
+    "feedback": "AS gives an expression or column a readable label in the result set, such as COUNT(*) AS job_count."
+  },
+  {
+    "question": "What does this pattern do? SELECT customer_name FROM customers WHERE customer_id IN (SELECT customer_id FROM work_orders WHERE total_amount > 200);",
+    "correct": [
+      "It returns customers who have at least one work order over 200"
+    ],
+    "incorrect": [
+      "It returns customers when each work order in their history is over 200",
+      "It returns work orders after grouping customers by name",
+      "It returns customers and work orders in one combined row"
+    ],
+    "feedback": "The inner query finds customer_id values tied to large work orders, and the outer query uses that set to find the matching customers."
+  },
+  {
+    "question": "What is a scalar subquery in a SELECT list expected to return for each outer row?",
+    "correct": [
+      "One value"
+    ],
+    "incorrect": [
+      "One full table",
+      "One index definition",
+      "One trigger rule"
+    ],
+    "feedback": "A scalar subquery supplies a single value, such as a count or maximum, that the outer SELECT can display alongside each row."
+  },
+  {
+    "question": "Which statements about subqueries are correct?",
+    "correct": [
+      "A subquery in SELECT can return one calculated value for each outer row",
+      "A subquery in WHERE can help compare rows to a calculated result",
+      "A subquery can also appear in HAVING to compare grouped results"
+    ],
+    "incorrect": [
+      "A subquery has to return several columns from one table",
+      "A subquery is mainly for cases where a JOIN was skipped",
+      "A subquery makes a query faster by itself"
+    ],
+    "feedback": "Subqueries are flexible. SQLite can use them in SELECT, WHERE, and HAVING as long as the nested result fits what the outer query needs."
+  },
+  {
+    "question": "What is the main job of a CASE expression in a query?",
+    "correct": [
+      "It turns raw values into more meaningful labels or categories"
+    ],
+    "incorrect": [
+      "It stores a backup copy of the whole table",
+      "It groups rows without using aggregate functions",
+      "It checks whether a table already has an index"
+    ],
+    "feedback": "CASE helps turn codes or ranges into readable labels, such as marking a job as short, medium, or long."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the SQLite query that returns work_order_id from work_orders when details_json stores a top-level priority value of high.",
+    "language": "sql",
+    "correct": [
+      "SELECT work_order_id FROM work_orders WHERE json_extract(details_json, '$.priority') = 'high';",
+      "SELECT work_order_id FROM work_orders WHERE json_extract(details_json, '$.priority') = 'high'"
+    ],
+    "case_sensitive": false,
+    "feedback": "json_extract(details_json, '$.priority') reads the priority field from the JSON text and compares it to 'high'."
+  },
+  {
+    "question": "What does PRINTF('$%.2f', total_amount) do in SQLite?",
+    "correct": [
+      "It formats the amount as text with a dollar sign and two decimals"
+    ],
+    "incorrect": [
+      "It filters the amount to values above two dollars",
+      "It converts the amount into a JSON number field",
+      "It rounds the amount up to the next whole dollar"
+    ],
+    "feedback": "PRINTF formats output for display. Here it produces currency-style text such as $42.50."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the SQLite query that returns invoice_id and a column named total_display using PRINTF('$%.2f', total_amount) from invoices.",
+    "language": "sql",
+    "correct": [
+      "SELECT invoice_id, PRINTF('$%.2f', total_amount) AS total_display FROM invoices;",
+      "SELECT invoice_id, PRINTF('$%.2f', total_amount) AS total_display FROM invoices",
+      "SELECT invoice_id, PRINTF('$%.2f', total_amount) total_display FROM invoices;",
+      "SELECT invoice_id, PRINTF('$%.2f', total_amount) total_display FROM invoices"
+    ],
+    "case_sensitive": false,
+    "feedback": "PRINTF creates the formatted display text, and the alias names that result column total_display."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The SQLite expression that starts a conditional label inside SELECT is ___.",
+    "correct": [
+      "CASE"
+    ],
+    "case_sensitive": false,
+    "feedback": "CASE begins a conditional expression that can choose different labels or values based on conditions."
+  },
+  {
+    "question": "If details_json stores {\"visit\":{\"window\":\"AM\"}}, which JSON path gets the window value?",
+    "correct": [
+      "$.visit.window"
+    ],
+    "incorrect": [
+      "$.window.visit",
+      "$[visit].window",
+      "$.visit[window]"
+    ],
+    "feedback": "Nested object fields are reached by chaining dot notation, so $.visit.window reaches window inside visit."
+  },
+  {
+    "type": "matching",
+    "question": "Match each query feature to its main job.",
+    "pairs": [
+      {
+        "term": "GROUP BY",
+        "definition": "Collects rows into categories before an aggregate runs"
+      },
+      {
+        "term": "HAVING",
+        "definition": "Keeps only grouped results that meet an aggregate condition"
+      },
+      {
+        "term": "Subquery",
+        "definition": "Runs a nested query to produce a value or set for another query"
+      },
+      {
+        "term": "CASE",
+        "definition": "Turns query values into labeled categories"
+      }
+    ],
+    "feedback": "These features often work together: group rows, summarize them, filter the groups, and label the results."
+  },
+  {
+    "question": "If a query scans each row once, what usually happens to the work when the table doubles in size?",
+    "correct": [
+      "It roughly doubles, which matches O(n) thinking"
+    ],
+    "incorrect": [
+      "It stays about the same, which matches O(1) thinking",
+      "It roughly quadruples, which matches O(n^2) thinking",
+      "It drops in half, which matches O(log n) thinking"
+    ],
+    "feedback": "Big O is a simple way to describe growth. If the query touches each row once, doubling the rows usually doubles the work."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A slow report compares each of {{customers}} customers to each of {{jobs}} work orders. How many customer-order comparisons does it make?",
+    "variables": {
+      "customers": {
+        "min": 8,
+        "max": 20
+      },
+      "jobs": {
+        "min": 10,
+        "max": 25
+      }
+    },
+    "answer": {
+      "expr": "customers * jobs",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Comparing every customer to every work order multiplies the counts, so {{customers}} x {{jobs}} = {{expected}} comparisons."
+  },
+  {
+    "type": "matching",
+    "question": "Match each business continuity or disaster recovery term to its best description.",
+    "pairs": [
+      {
+        "term": "Runbook",
+        "definition": "Written step-by-step instructions for responding and restoring service"
+      },
+      {
+        "term": "Restore test",
+        "definition": "Practice recovery that proves a backup can actually be used"
+      },
+      {
+        "term": "Offsite backup",
+        "definition": "A copy stored in a different physical location"
+      },
+      {
+        "term": "Retention policy",
+        "definition": "A rule for how long backups are kept before deletion"
+      }
+    ],
+    "feedback": "Recovery planning is not just storing files. Teams also need written steps, testing, location planning, and time-based retention rules."
+  },
+  {
+    "question": "Which practices strengthen a backup and recovery plan?",
+    "correct": [
+      "Keep at least one backup copy in a different location",
+      "Write clear restore steps in a runbook",
+      "Perform regular tests that restore sample data"
+    ],
+    "incorrect": [
+      "Keep backup copies on the same device",
+      "Wait for an outage before checking whether restores work",
+      "Leave retention decisions unwritten and ad hoc"
+    ],
+    "feedback": "Good recovery planning combines offsite storage, clear documentation, and regular restore testing instead of relying on hope."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A written rule that says how long backup copies are kept is a ___.",
+    "correct": [
+      "retention policy",
+      "backup retention policy",
+      "retention"
+    ],
+    "case_sensitive": false,
+    "feedback": "A retention policy defines how long backups stay available before they are rotated out or deleted."
+  },
+  {
+    "question": "What is the main goal of a business continuity plan?",
+    "correct": [
+      "To keep essential operations running during and after a disruption"
+    ],
+    "incorrect": [
+      "To store backups on the fastest local drive",
+      "To remove the need for restore testing",
+      "To make hardware failure impossible"
+    ],
+    "feedback": "Business continuity focuses on keeping important services available or restoring them quickly enough for the organization to keep working."
+  }
+]
