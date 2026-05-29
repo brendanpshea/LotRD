@@ -36,11 +36,6 @@ export const ITEMS = [
 
     // ─── Encounter manipulation (instant) ──────────────────────────────
     {
-        id: "flee_scroll", emoji: "💨", name: "Flee Scroll",
-        kind: "instant", effect: "flee", min_tier: 1,
-        flavor: "Escape this encounter — no damage, no XP.",
-    },
-    {
         id: "logic_bomb", emoji: "💣", name: "Logic Bomb",
         kind: "instant", effect: "bomb", min_tier: 5,
         flavor: "Defeat the monster instantly. The question returns later.",
@@ -61,6 +56,11 @@ export const ITEMS = [
         id: "xp_magnet", emoji: "✨", name: "XP Magnet",
         kind: "pending", effect: "xp_double", min_tier: 2,
         flavor: "2× XP on your next correct answer.",
+    },
+    {
+        id: "adrenaline_rush", emoji: "⚡", name: "Adrenaline Rush",
+        kind: "pending", effect: "double_damage", min_tier: 1,
+        flavor: "2× damage on your next hit.",
     },
     {
         id: "mulligan", emoji: "🔁", name: "Mulligan",

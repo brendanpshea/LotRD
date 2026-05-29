@@ -998,13 +998,23 @@ export class GameModel {
      * @param {number} rawMonsterDamage  – sum of monster's attack rolls before mods
      * @param {number} streakMultiplier  – player's current streak mult
      */
-    _applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier) {
-        const player_damage = Math.round(rawPlayerDamage * streakMultiplier);
+    _applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier, isPerfect = false) {
+        let player_damage = Math.round(rawPlayerDamage * streakMultiplier);
+
+        const itemEffects = { shield_used: false, mirror_used: false, mirror_damage: 0, adrenaline_used: false };
+
+        // Adrenaline Rush: double your hit, then consume. Gated on a perfect answer
+        // (like XP Magnet) so it isn't wasted on a wrong answer — note that even a
+        // wrong multiple-choice answer can deal chip damage via avoided distractors,
+        // so a raw-damage check alone wouldn't be safe.
+        if (isPerfect && this.pending_effects.has('double_damage') && player_damage > 0) {
+            player_damage *= 2;
+            itemEffects.adrenaline_used = true;
+            this.pending_effects.delete('double_damage');
+        }
 
         const effective_player_damage  = Math.max(player_damage    - this.current_monster.defense, 0);
         let   effective_monster_damage = Math.max(rawMonsterDamage - this.player.base_defense,   0);
-
-        const itemEffects = { shield_used: false, mirror_used: false, mirror_damage: 0 };
 
         // Mirror: incoming damage is redirected to the monster instead.
         if (this.pending_effects.has('mirror') && effective_monster_damage > 0) {
@@ -1097,7 +1107,7 @@ export class GameModel {
         const streakMultiplier = this._streakMultiplier();
         const rawPlayerDamage = this._rollDamage(playerHits, this.player.attack_die);
         const rawMonsterDamage = this._rollDamage(monsterHits, this.current_monster.attack_die);
-        const dmg = this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier);
+        const dmg = this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier, isPerfect);
         const turn = this._finalizeTurn({ xpGained, requeue, historyEntry, isPerfect });
 
         return {
@@ -1107,6 +1117,7 @@ export class GameModel {
             shield_used:              dmg.shield_used,
             mirror_used:              dmg.mirror_used,
             mirror_damage:            dmg.mirror_damage,
+            adrenaline_used:          dmg.adrenaline_used,
             streakMultiplier,
             streakCount: this.player.streak,
             streakState,

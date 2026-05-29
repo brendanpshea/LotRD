@@ -8,6 +8,13 @@ import { pickDragonLine } from "./dragon.js";
 const SAVE_DATA_VERSION = "2026-04-26";
 const SAVE_DATA_VERSION_KEY = "lotrd_save_data_version";
 
+/** Escape text for safe interpolation into innerHTML (e.g. ?set= URL param). */
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[ch]));
+}
+
 export class GameController {
   constructor() {
     this.root = document.getElementById("game-root");
@@ -222,7 +229,7 @@ export class GameController {
   _renderLoadError(message) {
     this.root.innerHTML = `
       <div class='bbs-container'>
-        <div class='section red bold'>Error: ${message}</div>
+        <div class='section red bold'>Error: ${escapeHtml(message)}</div>
         <div class='section'>
           <button class='action-button' data-action='main-menu'>Back to Main Menu</button>
         </div>
@@ -264,7 +271,7 @@ export class GameController {
 
       this.ui.showMainMenu(catalog, globalStats, levelData, (setId, mode) => this._launchSet(setId, mode));
     } catch (err) {
-      this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading catalog: ${err.message}</div></div>`;
+      this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading catalog: ${escapeHtml(err.message)}</div></div>`;
     }
   }
 
@@ -349,7 +356,7 @@ export class GameController {
       this._createUi(this.model);
       this.ui.showInitialScreen(() => this.startAdventure());
     } catch (err) {
-      this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading "${setId}": ${err.message}</div></div>`;
+      this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading "${escapeHtml(setId)}": ${escapeHtml(err.message)}</div></div>`;
     }
   }
 
@@ -569,6 +576,7 @@ export class GameController {
     return {
       player: { ...p },
       monsterHp: this.model.current_monster.hit_points,
+      current_question: this.model.current_question,
       questions_to_ask: [...this.model.questions_to_ask],
       questions_asked: this.model.questions_asked,
       answer_history_len: this.model.answer_history.length,
@@ -578,6 +586,9 @@ export class GameController {
   _mulliganRestore(snap) {
     Object.assign(this.model.player, snap.player);
     this.model.current_monster.hit_points = snap.monsterHp;
+    // Evaluators null out current_question when they finalize the turn; restore
+    // it so the player can actually re-submit the same question.
+    this.model.current_question = snap.current_question;
     this.model.questions_to_ask = snap.questions_to_ask;
     this.model.questions_asked = snap.questions_asked;
     this.model.answer_history.length = snap.answer_history_len;
@@ -692,22 +703,12 @@ export class GameController {
         this.ui.refreshHUD();
         break;
       }
-      case "flee": {
-        this.model.consumeSlot(slotIdx);
-        this.sounds.correct();
-        // Discard current question and monster; next encounter draws fresh ones.
-        // Match _finalizeTurn's bookkeeping minimally so progress stays sensible.
-        this.model.current_monster.hit_points = 0;
-        this.model.current_question = null;
-        this.continueAdventure();
-        break;
-      }
       case "bomb": {
         this.model.consumeSlot(slotIdx);
         this.sounds.monsterDefeated();
         this.model.current_monster.hit_points = 0;
         // Re-queue the current question so the player still has to face it later.
-        // Bomb buys time; flee throws the question away.
+        // Bomb buys time without letting the player skip the question.
         const idx = Math.min(3, this.model.questions_to_ask.length);
         this.model.questions_to_ask.splice(idx, 0, this.model.current_question);
         this.model.current_question = null;

@@ -149,6 +149,7 @@ export class GameUI {
         shield:    "🛡 Shield armed",
         mirror:    "🪞 Mirror armed",
         xp_double: "✨ 2× XP armed",
+        double_damage: "⚡ 2× damage armed",
         mulligan:  "🔁 Mulligan ready",
       };
       const active = [...(this.model.pending_effects || [])]
@@ -1021,6 +1022,7 @@ export class GameUI {
     if (battleData.shield_used) itemNote("🛡 Firewall Shard absorbed the hit.");
     if (battleData.mirror_used) itemNote(`🪞 Stack Mirror reflected ${battleData.mirror_damage} damage to the monster.`);
     if (battleData.xp_doubled)  itemNote("✨ XP Magnet doubled your XP gain.");
+    if (battleData.adrenaline_used) itemNote("⚡ Adrenaline Rush doubled your hit.");
 
     if (battleData.feedback) {
       const block = document.createElement("div");

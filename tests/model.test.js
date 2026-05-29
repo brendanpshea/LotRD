@@ -1279,6 +1279,33 @@ describe('Pending item effects', () => {
     assert.equal(gm.pending_effects.has('xp_double'), true);
   });
 
+  it('double_damage doubles a landing hit and is consumed', () => {
+    const gm = freshModel([mcQuestion()]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.current_monster.defense = 0;
+    gm.player.attack_die = 1; // deterministic: each player hit rolls exactly 1
+    gm.pending_effects.add('double_damage');
+    const r = gm.evaluateAnswer(['A']); // perfect → player lands hits
+    assert.ok(r.adrenaline_used);
+    // Without adrenaline this perfect answer would deal player_hits damage;
+    // doubled it should be exactly 2× that (defense 0, streak mult 1).
+    assert.equal(r.effective_player_damage % 2, 0);
+    assert.ok(r.effective_player_damage > 0);
+    assert.equal(gm.pending_effects.has('double_damage'), false);
+  });
+
+  it('double_damage does NOT fire on a wrong answer (no hit) and stays armed', () => {
+    const gm = freshModel([mcQuestion()]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.current_monster.defense = 0;
+    gm.pending_effects.add('double_damage');
+    const r = gm.evaluateAnswer(['B']); // wrong, single-correct question → 0 player hits
+    assert.equal(r.adrenaline_used, false);
+    assert.equal(gm.pending_effects.has('double_damage'), true);
+  });
+
   it('shield also blocks fill-blank wrong-attempt damage', () => {
     const gm = freshModel([fillBlankQuestion()]);
     gm.nextEncounter();
