@@ -116,17 +116,16 @@
     "feedback": "An INNER JOIN keeps only the rows that satisfy the join condition in both tables."
   },
   {
-    "type": "code_line",
-    "question": "Without aliases, write the SQLite query that returns movies.title and roles.character_name by joining movies to roles on movie_id.",
-    "language": "sql",
+    "question": "Which SQLite query returns movies.title and roles.character_name by joining movies to roles on movie_id?",
     "correct": [
-      "SELECT movies.title, roles.character_name FROM movies INNER JOIN roles ON movies.movie_id = roles.movie_id;",
-      "SELECT movies.title, roles.character_name FROM movies JOIN roles ON movies.movie_id = roles.movie_id;",
-      "SELECT movies.title, roles.character_name FROM movies INNER JOIN roles ON movies.movie_id = roles.movie_id",
-      "SELECT movies.title, roles.character_name FROM movies JOIN roles ON movies.movie_id = roles.movie_id"
+      "SELECT movies.title, roles.character_name FROM movies JOIN roles ON movies.movie_id = roles.movie_id;"
     ],
-    "case_sensitive": false,
-    "feedback": "The query selects one column from each table and matches rows where the movie_id values are equal."
+    "incorrect": [
+      "SELECT movies.title, roles.character_name FROM movies JOIN roles ON movies.title = roles.character_name;",
+      "SELECT movies.title FROM movies JOIN roles ON movies.movie_id = roles.movie_id;",
+      "SELECT movies.title, roles.character_name FROM movies JOIN roles ON movies.movie_id = roles.person_id;"
+    ],
+    "feedback": "Select both target columns and join on the shared movie_id field."
   },
   {
     "question": "What is the purpose of the ON clause in a join?",
@@ -314,17 +313,16 @@
     "feedback": "Set operations compare whole result rows, so the SELECT statements must line up by column count, order, and compatible meaning."
   },
   {
-    "type": "code_line",
-    "question": "Without aliases, write the SQLite query that returns movies.title and people.full_name by joining movies to roles and roles to people.",
-    "language": "sql",
+    "question": "Which SQLite query returns movies.title and people.full_name by joining movies to roles and roles to people?",
     "correct": [
-      "SELECT movies.title, people.full_name FROM movies INNER JOIN roles ON movies.movie_id = roles.movie_id INNER JOIN people ON roles.person_id = people.person_id;",
-      "SELECT movies.title, people.full_name FROM movies JOIN roles ON movies.movie_id = roles.movie_id JOIN people ON roles.person_id = people.person_id;",
-      "SELECT movies.title, people.full_name FROM movies INNER JOIN roles ON movies.movie_id = roles.movie_id INNER JOIN people ON roles.person_id = people.person_id",
-      "SELECT movies.title, people.full_name FROM movies JOIN roles ON movies.movie_id = roles.movie_id JOIN people ON roles.person_id = people.person_id"
+      "SELECT movies.title, people.full_name FROM movies JOIN roles ON movies.movie_id = roles.movie_id JOIN people ON roles.person_id = people.person_id;"
     ],
-    "case_sensitive": false,
-    "feedback": "This query follows the join path from movies to roles to people so each title can be paired with the correct person's name."
+    "incorrect": [
+      "SELECT movies.title, people.full_name FROM movies JOIN roles ON movies.movie_id = roles.movie_id;",
+      "SELECT movies.title, people.full_name FROM movies JOIN roles ON movies.person_id = roles.person_id JOIN people ON roles.person_id = people.person_id;",
+      "SELECT movies.title, roles.character_name FROM movies JOIN roles ON movies.movie_id = roles.movie_id JOIN people ON roles.person_id = people.person_id;"
+    ],
+    "feedback": "This query needs two joins: movies to roles, then roles to people."
   },
   {
     "question": "What report does this query answer? SELECT movies.title FROM movies LEFT JOIN nominations ON movies.movie_id = nominations.movie_id WHERE nominations.movie_id IS NULL;",
@@ -393,14 +391,11 @@
     "feedback": "UNION combines two compatible title lists into one result and removes duplicates by default."
   },
   {
-    "type": "code_line",
-    "question": "Without aliases, write the SQLite query that returns movie_id values found in streaming_movies but not in dvd_movies using EXCEPT.",
-    "language": "sql",
+    "type": "fill_blank",
+    "question": "The SQL set operator that returns rows from one query but not the other is ___.",
     "correct": [
-      "SELECT movie_id FROM streaming_movies EXCEPT SELECT movie_id FROM dvd_movies;",
-      "SELECT movie_id FROM streaming_movies EXCEPT SELECT movie_id FROM dvd_movies"
+      "EXCEPT"
     ],
-    "case_sensitive": false,
-    "feedback": "EXCEPT keeps rows from the first SELECT that do not appear in the second SELECT."
+    "feedback": "EXCEPT returns rows from the first query that do not appear in the second."
   }
 ]

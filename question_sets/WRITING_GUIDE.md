@@ -206,7 +206,9 @@ Use for **terminology, syntax, commands, or exact-recall** items where the stude
 
 6. **The UI shows the character count** of the first entry in `correct[]` as a hint. Keep your primary answer as the first element if you want to give an accurate length hint.
 
-7. **Avoid fill-in-the-blank for answers with many valid phrasings.** If there are 10 reasonable ways to say the answer, use multiple choice instead.
+7. **Keep the required typed answer at 12 characters or fewer.** If the shortest accepted answer is longer than that, rewrite the item as multiple choice, matching, or a shorter blank focused on one keyword.
+
+8. **Avoid fill-in-the-blank for answers with many valid phrasings.** If there are 10 reasonable ways to say the answer, use multiple choice instead.
 
 ### Good Stem Patterns for Fill-in-the-Blank
 
@@ -449,7 +451,8 @@ Use when the student should **write** (not just recognize) a single line of code
 3. **Keep it to one line.** Multi-line answers belong in `code_trace` or a different format.
 4. **Avoid open-ended questions.** "Write a class that…" has too many right answers — grading collapses.
 5. **Use `case_sensitive: true`** for any code where casing matters (almost always; Cisco config is the main exception).
-6. **Don't include leading/trailing whitespace** in `correct[]` entries — the grader trims for you.
+6. **Keep the tokenized answer at 12 non-whitespace characters or fewer.** If the command or line is longer than that, convert it to multiple choice or rewrite it as a shorter fill-in focused on the key keyword, flag, or function.
+7. **Don't include leading/trailing whitespace** in `correct[]` entries — the grader trims for you.
 
 ### Scoring (how it maps to combat)
 
@@ -535,6 +538,7 @@ Before submitting a question set, verify:
 - [ ] No duplicate options within any MC question (`correct` ∪ `incorrect` has no repeats)
 - [ ] No overlap between `correct` and `incorrect` in any MC question
 - [ ] The filename is listed in `index.json`
+- [ ] Every typed-answer prompt can be completed in 12 characters or fewer under runtime rules
 - [ ] Answer options are roughly equal in length within each question
 - [ ] All questions have `feedback`
 
@@ -552,6 +556,7 @@ What the tests currently check:
 
 - Basic structure: valid JSON, required fields, dynamic-question schema, matching-pair shape, no duplicate options, no overlap between `correct` and `incorrect`
 - Registration: the file exists, is listed in `index.json`, and has a valid entry in `catalog.json`
+- Typed-answer ergonomics: fill-in, code-line, code-trace, and dynamic-numeric prompts must not require more than 12 typed characters after runtime normalization
 - Extreme multi-answer uniformity: if a set has many multi-answer questions, they should not all use the exact same `correct/incorrect` shape
 - Answer-length bias: on average, correct answers should not be much longer than wrong answers in the same set
 - Cue-word bias in distractors: wrong answers should not lean too heavily on giveaway absolutes or negations like `always`, `never`, `only`, `all`, or `cannot`

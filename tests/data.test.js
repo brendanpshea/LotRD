@@ -3,8 +3,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
 
 const ROOT = join(import.meta.dirname, '..');
+const MAX_TYPED_ANSWER_CHARS = 12;
 
 function loadJSON(relPath) {
   return JSON.parse(readFileSync(join(ROOT, relPath), 'utf-8'));
@@ -39,6 +41,176 @@ function hasHardAbsolute(answer) {
 
 function isFiniteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+function normalizeCodeTraceAnswer(answer) {
+  return String(answer ?? '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map(line => line.replace(/[\t ]+$/g, ''))
+    .join('\n')
+    .replace(/^(?:\n)+|(?:\n)+$/g, '');
+}
+
+function enumerateDynamicValues(spec, label) {
+  if (Array.isArray(spec.values)) return spec.values.slice();
+
+  const min = Number(spec.min);
+  const max = Number(spec.max);
+  const step = 'step' in spec ? Number(spec.step) : 1;
+  const values = [];
+
+  for (let value = min; value <= max + 1e-12; value += step) {
+    values.push(Number.isInteger(min) && Number.isInteger(step)
+      ? Math.round(value)
+      : Number(value.toFixed(12)));
+    assert.ok(values.length <= 10000,
+      `${label}: variable range expands to more than 10,000 values`);
+  }
+
+  return values;
+}
+
+function expandDynamicAssignments(variables, label) {
+  const entries = Object.entries(variables || {})
+    .map(([name, spec]) => [name, enumerateDynamicValues(spec, `${label}.${name}`)]);
+
+  const assignments = [];
+
+  function walk(index, current) {
+    if (index === entries.length) {
+      assignments.push({ ...current });
+      assert.ok(assignments.length <= 100000,
+        `${label}: dynamic_numeric expands to more than 100,000 combinations`);
+      return;
+    }
+
+    const [name, values] = entries[index];
+    for (const value of values) {
+      current[name] = value;
+      walk(index + 1, current);
+    }
+  }
+
+  walk(0, {});
+  return assignments;
+}
+
+function trimNumericString(text) {
+  return text
+    .replace(/\.0+(?=e|$)/i, '')
+    .replace(/(\.\d*?[1-9])0+(?=e|$)/i, '$1')
+    .replace(/\.e/i, 'e')
+    .replace(/e\+/i, 'e');
+}
+
+function shortestAcceptedNumericText(expected, toleranceAbs) {
+  const candidates = new Set([String(expected)]);
+
+  if (Number.isInteger(expected)) {
+    candidates.add(String(Math.trunc(expected)));
+  }
+
+  for (let decimals = 0; decimals <= 8; decimals++) {
+    candidates.add(Number(expected).toFixed(decimals).replace(/\.0+$|(?<=\.\d*?)0+$/g, '').replace(/\.$/, ''));
+  }
+
+  if (expected !== 0) {
+    for (let decimals = 0; decimals <= 6; decimals++) {
+      candidates.add(trimNumericString(Number(expected).toExponential(decimals)));
+    }
+  }
+
+  let best = null;
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const parsed = Number(candidate);
+    if (!Number.isFinite(parsed)) continue;
+    if (Math.abs(parsed - expected) > toleranceAbs + 1e-12) continue;
+
+    if (!best || candidate.length < best.length || (candidate.length === best.length && candidate < best.text)) {
+      best = { text: candidate, length: candidate.length };
+    }
+  }
+
+  return best || { text: String(expected), length: String(expected).length };
+}
+
+function getTypedAnswerRequirement(q, label) {
+  if (q.type === 'fill_blank') {
+    const canonical = q.correct?.[0] || '';
+    const cloze = pickClozeBlank(canonical, () => 0);
+
+    if (cloze) {
+      const blank = cloze.words[cloze.blankIndex];
+      return {
+        requiredChars: blank.length,
+        detail: `auto-cloze requires only "${blank}" from "${canonical}"`,
+      };
+    }
+
+    const shortest = (q.correct || []).reduce((best, answer) => {
+      const candidate = String(answer ?? '').trim();
+      return !best || candidate.length < best.text.length ? { text: candidate } : best;
+    }, null);
+
+    return {
+      requiredChars: shortest?.text.length || 0,
+      detail: `shortest accepted answer is "${shortest?.text || ''}"`,
+    };
+  }
+
+  if (q.type === 'code_line') {
+    const shortest = (q.correct || []).reduce((best, answer) => {
+      const tokenText = tokenize(String(answer ?? ''), q.language).join('');
+      return !best || tokenText.length < best.text.length
+        ? { text: tokenText, raw: String(answer ?? '') }
+        : best;
+    }, null);
+
+    return {
+      requiredChars: shortest?.text.length || 0,
+      detail: `shortest tokenized answer is "${shortest?.text || ''}" from "${shortest?.raw || ''}"`,
+    };
+  }
+
+  if (q.type === 'code_trace') {
+    const shortest = (q.correct || []).reduce((best, answer) => {
+      const normalized = normalizeCodeTraceAnswer(answer);
+      return !best || normalized.length < best.text.length ? { text: normalized } : best;
+    }, null);
+
+    return {
+      requiredChars: shortest?.text.length || 0,
+      detail: `normalized output is "${shortest?.text || ''}"`,
+    };
+  }
+
+  if (q.type === 'dynamic_numeric') {
+    const assignments = expandDynamicAssignments(q.variables, label);
+    let worst = { length: 0, text: '', expected: null, vars: null };
+
+    for (const vars of assignments) {
+      const derived = {};
+      for (const [name, expr] of Object.entries(q.derived || {})) {
+        derived[name] = evaluateDynamicExpression(expr, { ...vars, ...derived });
+      }
+
+      const expected = evaluateDynamicExpression(q.answer.expr, { ...vars, ...derived });
+      const shortest = shortestAcceptedNumericText(expected, Number(q.answer?.tolerance_abs ?? 0));
+      if (shortest.length > worst.length) {
+        worst = { length: shortest.length, text: shortest.text, expected, vars };
+      }
+    }
+
+    return {
+      requiredChars: worst.length,
+      detail: `worst-case numeric input is "${worst.text}" for ${JSON.stringify(worst.vars)}`,
+    };
+  }
+
+  return null;
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -301,6 +473,30 @@ describe('Question set file validation', () => {
           assert.deepEqual(overlap, [],
             `${setId}[${i}]: option in both correct AND incorrect: ${overlap.join('; ')}`);
         }
+      });
+
+      it(`keeps required typed answers at ${MAX_TYPED_ANSWER_CHARS} chars or fewer`, () => {
+        const flagged = [];
+
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+          if (!['fill_blank', 'dynamic_numeric', 'code_trace', 'code_line'].includes(q.type)) continue;
+
+          const label = `${setId}[${i}]`;
+          const requirement = getTypedAnswerRequirement(q, label);
+          if (!requirement) continue;
+          if (requirement.requiredChars <= MAX_TYPED_ANSWER_CHARS) continue;
+
+          flagged.push(
+            `${label}: ${q.type} requires ${requirement.requiredChars} typed chars. ${requirement.detail}`
+          );
+        }
+
+        assert.deepEqual(
+          flagged,
+          [],
+          `Typed-answer prompts must stay within ${MAX_TYPED_ANSWER_CHARS} chars:\n${flagged.join('\n')}`
+        );
       });
 
     });

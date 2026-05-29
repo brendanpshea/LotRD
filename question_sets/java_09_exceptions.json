@@ -9,7 +9,7 @@
       "Binary data stored in JAR files that describes the project structure",
       "Plain text instructions interpreted line by line by the JVM"
     ],
-    "feedback": "javac compiles .java source files into .class files containing bytecode. The JVM interprets or JIT-compiles bytecode into native machine code for the host platform \u00e2\u20ac\u201d enabling Write Once, Run Anywhere."
+    "feedback": "javac compiles .java source files into .class files containing bytecode. The JVM interprets or JIT-compiles bytecode into native machine code for the host platform â€” enabling Write Once, Run Anywhere."
   },
   {
     "question": "What area of JVM memory stores objects created with new?",
@@ -172,14 +172,14 @@
     "question": "Which claims about the finally block are correct?",
     "correct": [
       "The finally block runs even if the try block contains a return statement",
-      "A try block must be followed by catch, finally, or both \u00e2\u20ac\u201d but not neither",
+      "A try block must be followed by catch, finally, or both â€” but not neither",
       "The finally block is typically used to close resources like file streams"
     ],
     "incorrect": [
       "If both a catch block and the finally block throw exceptions, both exceptions are reported",
       "finally only runs if no exception was thrown"
     ],
-    "feedback": "finally runs even after return \u00e2\u20ac\u201d the return is deferred until finally completes. If the catch block also throws, the original exception is lost and only the finally-block exception propagates. try-with-resources (Java 7+) automates close() calls."
+    "feedback": "finally runs even after return â€” the return is deferred until finally completes. If the catch block also throws, the original exception is lost and only the finally-block exception propagates. try-with-resources (Java 7+) automates close() calls."
   },
   {
     "question": "Which claims about common Java exceptions are correct?",
@@ -192,7 +192,7 @@
       "NullPointerException is a checked exception and must be declared with throws",
       "NumberFormatException must be caught because it is a checked exception"
     ],
-    "feedback": "NPE, AIOOBE, ClassCastException, NumberFormatException are all unchecked RuntimeExceptions \u00e2\u20ac\u201d no declaration required. StackOverflowError is an Error (outside the Exception hierarchy). Only checked exceptions require throws declaration."
+    "feedback": "NPE, AIOOBE, ClassCastException, NumberFormatException are all unchecked RuntimeExceptions â€” no declaration required. StackOverflowError is an Error (outside the Exception hierarchy). Only checked exceptions require throws declaration."
   },
   {
     "question": "Which claims about exception handling best practices are correct?",
@@ -235,13 +235,16 @@
     "feedback": "The finally block is used for cleanup code (closing streams, releasing locks) that must run regardless of whether the try block succeeded or threw an exception."
   },
   {
-    "type": "fill_blank",
-    "question": "NullPointerException is a subclass of ___, making it an unchecked exception.",
+    "question": "NullPointerException is a subclass of which type, making it unchecked?",
     "correct": [
       "RuntimeException"
     ],
-    "case_sensitive": true,
-    "feedback": "RuntimeException and all its subclasses (NPE, ClassCastException, IllegalArgumentException, NumberFormatException, etc.) are unchecked. The compiler does not require them to be caught or declared."
+    "incorrect": [
+      "Exception",
+      "Error",
+      "Throwable"
+    ],
+    "feedback": "Unchecked exceptions in Java are RuntimeException and its subclasses."
   },
   {
     "type": "fill_blank",
@@ -279,7 +282,7 @@
       },
       {
         "term": "ClassCastException",
-        "definition": "Performing an illegal downcast at runtime \u00e2\u20ac\u201d the object is not the expected type"
+        "definition": "Performing an illegal downcast at runtime â€” the object is not the expected type"
       }
     ],
     "feedback": "All four are unchecked (RuntimeException subclasses). NPE: null.method(). AIOOBE: arr[arr.length]. NFE: Integer.parseInt(\"xyz\"). CCE: (Dog) new Cat()."
@@ -313,22 +316,22 @@
     "pairs": [
       {
         "term": "IOException",
-        "definition": "Checked \u00e2\u20ac\u201d must be caught or declared with throws"
+        "definition": "Checked â€” must be caught or declared with throws"
       },
       {
         "term": "NullPointerException",
-        "definition": "Unchecked \u00e2\u20ac\u201d subclass of RuntimeException, no handling required by compiler"
+        "definition": "Unchecked â€” subclass of RuntimeException, no handling required by compiler"
       },
       {
         "term": "IllegalArgumentException",
-        "definition": "Unchecked \u00e2\u20ac\u201d subclass of RuntimeException, typically indicates a programming error"
+        "definition": "Unchecked â€” subclass of RuntimeException, typically indicates a programming error"
       },
       {
         "term": "StackOverflowError",
-        "definition": "Error \u00e2\u20ac\u201d not an Exception; signals a JVM-level problem, not typically caught"
+        "definition": "Error â€” not an Exception; signals a JVM-level problem, not typically caught"
       }
     ],
-    "feedback": "Checked: IOException, SQLException, FileNotFoundException. Unchecked: anything extending RuntimeException. Error: StackOverflowError, OutOfMemoryError \u00e2\u20ac\u201d represent JVM issues not expected to be caught."
+    "feedback": "Checked: IOException, SQLException, FileNotFoundException. Unchecked: anything extending RuntimeException. Error: StackOverflowError, OutOfMemoryError â€” represent JVM issues not expected to be caught."
   },
   {
     "type": "matching",
@@ -354,26 +357,28 @@
     "feedback": "try-catch-finally is the structure; throw is the action. Multiple catch blocks can follow one try, ordered from most-specific to most-general. finally always runs (except on System.exit() or JVM crash)."
   },
   {
-    "type": "code_trace",
-    "question": "Mira is debugging exception flow. What does this print?",
-    "code": "try {\n    int result = 10 / 0;\n    System.out.println(\"result: \" + result);\n} catch (ArithmeticException e) {\n    System.out.println(\"caught: \" + e.getMessage());\n} finally {\n    System.out.println(\"done\");\n}",
-    "language": "java",
+    "question": "When 10 / 0 is caught by ArithmeticException and finally prints done, what prints in order?",
     "correct": [
-      "caught: / by zero\ndone"
+      "caught: / by zero then done"
     ],
-    "case_sensitive": true,
-    "feedback": "10 / 0 throws ArithmeticException immediately \u2014 the println inside try never runs. The catch block handles it and prints the exception message \"/by zero\". The finally block always runs, printing \"done\"."
+    "incorrect": [
+      "result: 0 then done",
+      "caught: / by zero",
+      "done then caught: / by zero"
+    ],
+    "feedback": "The exception skips the println in try, the catch prints the message, and finally always runs."
   },
   {
-    "type": "code_trace",
-    "question": "What does this nested try/catch print?",
-    "code": "try {\n    String s = null;\n    System.out.println(s.length());\n} catch (NullPointerException e) {\n    System.out.println(\"null!\");\n    System.out.println(\"recovered\");\n}",
-    "language": "java",
+    "question": "When s is null and the catch block prints two lines, what prints in order?",
     "correct": [
-      "null!\nrecovered"
+      "null! then recovered"
     ],
-    "case_sensitive": true,
-    "feedback": "Calling .length() on a null reference throws NullPointerException. The catch block catches it and prints both lines. Execution continues normally after the catch block."
+    "incorrect": [
+      "recovered then null!",
+      "NullPointerException",
+      "null!"
+    ],
+    "feedback": "Calling length on null throws NullPointerException, so the catch block prints both lines."
   },
   {
     "type": "code_trace",
@@ -387,34 +392,39 @@
     "feedback": "Integer.parseInt(\"42\") succeeds and returns 42. Integer.parseInt(\"abc\") throws NumberFormatException, which the catch block handles by returning -1. Both values are printed on separate lines."
   },
   {
-    "type": "code_line",
-    "question": "Write the Java statement that throws a new IllegalArgumentException with the message \"Invalid input\".",
-    "language": "java",
+    "question": "Which Java statement throws a new IllegalArgumentException with the message \"Invalid input\"?",
     "correct": [
       "throw new IllegalArgumentException(\"Invalid input\");"
     ],
-    "case_sensitive": true,
-    "feedback": "throw new IllegalArgumentException(\"Invalid input\"); — throw is a statement, not a method call, so it does not use parentheses around the whole thing. new constructs the exception object, and throw sends it up the call stack."
-  },
-  {
-    "type": "code_line",
-    "question": "Write the catch clause header (with opening brace) that catches a NumberFormatException and names the caught exception e.",
-    "language": "java",
-    "correct": [
-      "catch (NumberFormatException e) {",
-      "catch (NumberFormatException e)"
+    "incorrect": [
+      "throws new IllegalArgumentException(\"Invalid input\");",
+      "throw IllegalArgumentException(\"Invalid input\");",
+      "throw new IllegalArgumentException('Invalid input');"
     ],
-    "case_sensitive": true,
-    "feedback": "catch (NumberFormatException e) — the exception type goes inside the parentheses, followed by a variable name. The catch block only runs if the thrown exception is an instance of NumberFormatException or a subclass."
+    "feedback": "Use throw, instantiate the exception with new, and pass the message as a String literal."
   },
   {
-    "type": "code_line",
-    "question": "Write the Java statement that wraps a caught exception e and re-throws it as a new RuntimeException.",
-    "language": "java",
+    "question": "Which catch clause header catches NumberFormatException as e?",
+    "correct": [
+      "catch (NumberFormatException e) {"
+    ],
+    "incorrect": [
+      "catch NumberFormatException e {",
+      "catch (NumberFormatException) {",
+      "catch (Exception e) {"
+    ],
+    "feedback": "A catch header needs parentheses, the exception type, a variable name, and the opening brace."
+  },
+  {
+    "question": "Which Java statement wraps caught exception e in a new RuntimeException and rethrows it?",
     "correct": [
       "throw new RuntimeException(e);"
     ],
-    "case_sensitive": true,
-    "feedback": "throw new RuntimeException(e); wraps the original checked exception as the cause of an unchecked RuntimeException. This lets it propagate without forcing callers to declare throws. e is preserved as the cause for stack trace inspection."
+    "incorrect": [
+      "throw RuntimeException(e);",
+      "throws new RuntimeException(e);",
+      "throw new Exception(e);"
+    ],
+    "feedback": "Create the wrapper exception with new and throw it immediately."
   }
 ]
