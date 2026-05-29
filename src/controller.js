@@ -2,11 +2,16 @@ import { loadJSON, GameModel } from "./model.js";
 import { ITEMS } from "./items.js";
 import { SoundSystem } from "./sound.js";
 import { GameUI } from "./ui.js";
-import { shuffle } from "./util.js";
+import { shuffle, reviewDue, advanceReviewStage } from "./util.js";
 import { pickDragonLine } from "./dragon.js";
 
 const SAVE_DATA_VERSION = "2026-04-26";
 const SAVE_DATA_VERSION_KEY = "lotrd_save_data_version";
+
+// Spaced review ("Sharpen"): a cleared set becomes "due" again on an expanding
+// schedule (see reviewDue/advanceReviewStage in util.js). Each completed review
+// advances the stage. Purely an in-game nudge — never touches the SCORM score.
+const REVIEW_SAMPLE_SIZE = 5;
 
 /** Escape text for safe interpolation into innerHTML (e.g. ?set= URL param). */
 function escapeHtml(value) {
@@ -26,6 +31,7 @@ export class GameController {
     this._catalog = null;
     this.model = null;
     this._isReview = false;
+    this._sharpenReviewId = null;
 
     const soundBtn = document.getElementById("sound-toggle");
     if (soundBtn) {
@@ -78,6 +84,7 @@ export class GameController {
   _saveKey(setName)       { return `lotrd_save_${setName}`; }
   _completionKey(setName) { return `lotrd_done_${setName}`; }
   _attemptKey(setName)    { return `lotrd_attempt_${setName}`; }
+  _reviewKey(setName)     { return `lotrd_review_${setName}`; }
   _globalKey()            { return "lotrd_global"; }
   _globalLevelKey()       { return "lotrd_player_level"; }
 
@@ -164,6 +171,32 @@ export class GameController {
 
   _loadCompletion(setName) {
     try { const r = localStorage.getItem(this._completionKey(setName)); return r ? JSON.parse(r) : null; } catch (_) { return null; }
+  }
+
+  _loadReview(setName) {
+    try { const r = localStorage.getItem(this._reviewKey(setName)); return r ? JSON.parse(r) : null; } catch (_) { return null; }
+  }
+
+  /**
+   * Whether a cleared set is due for spaced review, and how "deep" it is in the
+   * expanding schedule. Anchor is the last review (or the original completion if
+   * never reviewed); the interval grows with each completed review. Returns null
+   * when the set isn't cleared yet (not eligible).
+   */
+  _reviewDueInfo(setName, completion) {
+    if (!completion) return null;
+    return reviewDue(this._loadReview(setName), completion.completedAt);
+  }
+
+  /** Advance the spaced-review schedule after a completed review run. */
+  _recordReview(setName) {
+    const rec = this._loadReview(setName);
+    try {
+      localStorage.setItem(this._reviewKey(setName), JSON.stringify({
+        lastReviewedAt: new Date().toISOString(),
+        stage: advanceReviewStage(rec?.stage ?? 0),
+      }));
+    } catch (_) {}
   }
 
   _recordCompletion() {
@@ -259,6 +292,7 @@ export class GameController {
           try { attempted = !!localStorage.getItem(this._attemptKey(entry.id)); } catch (_) {}
           if (done) {
             entry.status = { type: "complete", ...done };
+            entry.reviewDue = !!this._reviewDueInfo(entry.id, done)?.due;
           } else if (save && (save.questions_to_ask?.length ?? 0) > 0) {
             entry.status = { type: "in_progress", remaining: save.questions_to_ask.length };
           } else if (attempted) {
@@ -275,24 +309,65 @@ export class GameController {
     }
   }
 
+  /** Locate a set in the catalog and set the breadcrumb title/topic. */
+  _applySetTitle(setId) {
+    this._setTitle = null;
+    this._setTopic = null;
+    if (!this._catalog) return;
+    for (const topic of this._catalog) {
+      const entry = (topic.sets || []).find(s => s.id === setId);
+      if (entry) {
+        this._setTitle = `${topic.topic}: ${entry.title}`;
+        this._setTopic = topic.topic;
+        break;
+      }
+    }
+  }
+
+  /**
+   * Launch a short spaced-review run of an already-cleared set: a small sample
+   * of its questions, run in review mode (no save, no completion/score change).
+   * Finishing it advances the set's expanding review schedule.
+   */
+  async _launchReview(setId) {
+    try {
+      if (!this._catalog) {
+        try { this._catalog = await loadJSON("question_sets/catalog.json"); } catch (_) {}
+      }
+      this._applySetTitle(setId);
+
+      const [questions_data, monsters_data] = await Promise.all([
+        loadJSON(`question_sets/${setId}`),
+        loadJSON("assets/monsters.json"),
+      ]);
+      const sample = this._sampleReviewQuestions([questions_data], REVIEW_SAMPLE_SIZE);
+
+      const newURL = new URL(window.location);
+      newURL.searchParams.set("set", setId);
+      window.history.replaceState({}, "", newURL);
+
+      this._setName = setId;
+      this._isReview = true;
+      this._sharpenReviewId = setId;
+
+      const levelData = this._loadGlobalLevel();
+      this.model = new GameModel(sample, monsters_data, null, levelData);
+      this._createUi(this.model);
+      this.ui.showInitialScreen(() => this.startAdventure());
+    } catch (err) {
+      this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading review for "${escapeHtml(setId)}": ${escapeHtml(err.message)}</div></div>`;
+    }
+  }
+
   async _launchSet(setId, mode) {
+    if (mode === "review") return this._launchReview(setId);
     try {
       if (!this._catalog) {
         try { this._catalog = await loadJSON("question_sets/catalog.json"); } catch (_) {}
       }
 
-      this._setTitle = null;
-      this._setTopic = null;
-      if (this._catalog) {
-        for (const topic of this._catalog) {
-          const entry = (topic.sets || []).find(s => s.id === setId);
-          if (entry) {
-            this._setTitle = `${topic.topic}: ${entry.title}`;
-            this._setTopic = topic.topic;
-            break;
-          }
-        }
-      }
+      this._sharpenReviewId = null;
+      this._applySetTitle(setId);
 
       let catalogEntry = null;
       if (this._catalog) {
@@ -390,6 +465,7 @@ export class GameController {
     if (status === "victory") {
       this._clearSave();
       this._recordCompletion();
+      this._recordReviewIfReviewing();
       this._updateGlobalStats(!this._isReview);
       this._saveGlobalLevel();
       this.sounds.victory();
@@ -398,6 +474,7 @@ export class GameController {
     } else if (status === "no_questions") {
       this._clearSave();
       this._recordCompletion();
+      this._recordReviewIfReviewing();
       this._updateGlobalStats(!this._isReview);
       this._saveGlobalLevel();
       this._setInGame(false);
@@ -410,6 +487,14 @@ export class GameController {
         .catch(() => this.ui.showBossIntro(count, null, () => this._renderEncounter()));
     } else {
       this._renderEncounter();
+    }
+  }
+
+  /** If the just-finished run was a spaced review, advance its schedule. */
+  _recordReviewIfReviewing() {
+    if (this._sharpenReviewId) {
+      this._recordReview(this._sharpenReviewId);
+      this._sharpenReviewId = null;
     }
   }
 

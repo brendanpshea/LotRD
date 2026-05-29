@@ -390,6 +390,13 @@ export class GameUI {
         }
         actions.appendChild(badge);
 
+        if (status.type === "complete" && entry.reviewDue) {
+          const due = document.createElement("span");
+          due.className = "status-badge status-review-due";
+          due.textContent = "🔁 Review due";
+          actions.appendChild(due);
+        }
+
         const btn = document.createElement("button");
         btn.className = "action-button set-btn";
         if (status.type === "in_progress") {
@@ -404,6 +411,18 @@ export class GameUI {
           newLink.addEventListener("click", () => launchCallback(entry.id, "new"));
           actions.appendChild(btn);
           actions.appendChild(newLink);
+        } else if (status.type === "complete" && entry.reviewDue) {
+          btn.textContent = "🔁 Review";
+          btn.setAttribute("aria-label", `Spaced review of ${entry.title} — a few questions`);
+          btn.addEventListener("click", () => launchCallback(entry.id, "review"));
+          actions.appendChild(btn);
+
+          const again = document.createElement("button");
+          again.className = "action-button action-button--secondary set-btn-sm";
+          again.textContent = "Play Again";
+          again.setAttribute("aria-label", `Play ${entry.title} again`);
+          again.addEventListener("click", () => launchCallback(entry.id, "new"));
+          actions.appendChild(again);
         } else if (status.type === "complete" || status.type === "attempted") {
           btn.textContent = "Play Again";
           btn.setAttribute("aria-label", `Play ${entry.title} again`);
