@@ -847,6 +847,9 @@ export class GameModel {
             this.recent_monsters  = saveData.recent_monsters || [];
             this.inventory        = this._loadInventory(saveData);
             this.pending_effects  = new Set(saveData.pending_effects || []);
+            this.boss_phase       = saveData.boss_phase || false;
+            this.boss_done        = saveData.boss_done  || false;
+            this.boss_queue       = saveData.boss_queue || [];
             this.player = Player.fromSave(saveData.player);
         } else {
             // ── Fresh game path ──────────────────────────────────────────
@@ -856,6 +859,9 @@ export class GameModel {
             this.stats_offset    = 0;
             this.inventory       = new Array(INVENTORY_SIZE).fill(null);
             this.pending_effects = new Set();
+            this.boss_phase      = false;
+            this.boss_done       = false;
+            this.boss_queue      = [];
             this.player          = Player.fresh(levelData);
             this.questions       = shuffle(this.questions);
             this.questions_to_ask = [...this.questions];
@@ -885,6 +891,9 @@ export class GameModel {
             stats_offset:     this.stats_offset,
             inventory:        this.inventory,
             pending_effects:  [...this.pending_effects],
+            boss_phase:       this.boss_phase,
+            boss_done:        this.boss_done,
+            boss_queue:       this.boss_queue,
             recent_monsters:  this.recent_monsters,
             player: {
                 level:            p.level,
@@ -940,9 +949,81 @@ export class GameModel {
         }
     }
 
+    /**
+     * Build the retrieval-boss queue: the questions the player stumbled on this
+     * run. A question "counts" if it appears in answer_history with
+     * was_perfect === false at least once — this catches multiple-choice/matching
+     * that needed extra loops AND typed questions won on attempt 2+ (which never
+     * requeue). Sorted most-missed first (ties broken randomly), capped.
+     */
+    _buildBossQueue(cap = 6) {
+        const missCounts = new Map();
+        for (const h of this.answer_history) {
+            if (h && h.was_perfect === false) {
+                missCounts.set(h.question, (missCounts.get(h.question) || 0) + 1);
+            }
+        }
+        if (missCounts.size === 0) return [];
+
+        const byText = new Map();
+        for (const q of this.questions) {
+            if (q && !byText.has(q.question)) byText.set(q.question, q);
+        }
+        const entries = shuffle([...missCounts.entries()].filter(([text]) => byText.has(text)))
+            .sort((a, b) => b[1] - a[1]);
+        return entries.slice(0, cap).map(([text]) => byText.get(text));
+    }
+
+    /**
+     * The retrieval boss. Its HP bar IS the review queue: defense is Infinity so
+     * the normal dice pipeline can't move it; _finalizeTurn resets hit_points to
+     * the remaining queue length each turn, so a concept only leaves the bar when
+     * it's mastered. attack_die still lets the dragon punish wrong answers.
+     */
+    _spawnBoss(queueLen) {
+        return {
+            monster_name:        "The Recursive Dragon",
+            initial_description: "the hoarder of half-learned ideas",
+            hit_dice:            5,
+            attack_die:          8,
+            defense:             Infinity,
+            image:               "quantum_dragon.png",
+            hit_points:          queueLen,
+            max_hit_points:      queueLen,
+            xp_value:            0,
+            is_boss:             true,
+        };
+    }
+
     nextEncounter() {
+        // ── Boss phase: drive the fight off boss_queue, ignoring the normal queue ──
+        if (this.boss_phase) {
+            if (this.boss_queue.length === 0) {
+                this.boss_phase       = false;
+                this.boss_done        = true;
+                this.current_monster  = null;
+                this.current_question = null;
+                return "victory";
+            }
+            if (!this.current_monster) this.current_monster = this._spawnBoss(this.boss_queue.length);
+            this.current_question = this.boss_queue.shift();
+            return "continue";
+        }
+
         if (!this.current_monster || this.current_monster.hit_points <= 0) {
             if (this.questions_to_ask.length === 0) {
+                // Normal queue cleared — start the retrieval boss if the player
+                // stumbled on anything this run; flawless runs go straight to victory.
+                if (!this.boss_done) {
+                    const queue = this._buildBossQueue();
+                    if (queue.length > 0) {
+                        this.boss_phase       = true;
+                        this.boss_queue       = queue;
+                        this.current_monster  = this._spawnBoss(queue.length);
+                        this.current_question = this.boss_queue.shift();
+                        return "boss_start";
+                    }
+                }
                 this.current_monster  = null;
                 this.current_question = null;
                 return "victory";
@@ -1007,7 +1088,8 @@ export class GameModel {
         // (like XP Magnet) so it isn't wasted on a wrong answer — note that even a
         // wrong multiple-choice answer can deal chip damage via avoided distractors,
         // so a raw-damage check alone wouldn't be safe.
-        if (isPerfect && this.pending_effects.has('double_damage') && player_damage > 0) {
+        if (isPerfect && this.pending_effects.has('double_damage') && player_damage > 0
+            && !this.current_monster.is_boss) {
             player_damage *= 2;
             itemEffects.adrenaline_used = true;
             this.pending_effects.delete('double_damage');
@@ -1066,14 +1148,22 @@ export class GameModel {
             // Re-queue 3 positions ahead (or at end if fewer questions remain).
             // Spaced-repetition flavour: missed questions resurface soon enough to
             // reinforce, but not so soon that students just retype the same answer.
-            const idx = Math.min(3, this.questions_to_ask.length);
-            this.questions_to_ask.splice(idx, 0, this.current_question);
+            // During the boss this targets boss_queue so a fumbled concept must
+            // still be mastered before the dragon falls.
+            const targetQueue = this.boss_phase ? this.boss_queue : this.questions_to_ask;
+            const idx = Math.min(3, targetQueue.length);
+            targetQueue.splice(idx, 0, this.current_question);
         }
         this.questions_asked++;
         this.answer_history.push(historyEntry);
+        // During the boss, the dragon's HP *is* the remaining review queue, so it
+        // drops only when a concept is mastered (not requeued).
+        if (this.boss_phase && this.current_monster) {
+            this.current_monster.hit_points = this.boss_queue.length;
+        }
         this.current_question = null;
         return {
-            defeated_monster:  this.current_monster.hit_points <= 0,
+            defeated_monster:  this.current_monster ? this.current_monster.hit_points <= 0 : false,
             defeated_player:   this.player.hit_points <= 0,
             xp_gained:         xpGained,
             xp_doubled,

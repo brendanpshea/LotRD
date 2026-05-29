@@ -1388,3 +1388,105 @@ describe('Monster defeat', () => {
     // If the 1d6 roll was exactly 0 after rounding... unlikely but valid
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Retrieval boss (The Recursive Dragon)
+// ────────────────────────────────────────────────────────────────────────────────
+describe('Retrieval boss', () => {
+  it('_buildBossQueue collects only ever-missed questions, deduped', () => {
+    const q1 = mcQuestion({ question: 'Q1' });
+    const q2 = mcQuestion({ question: 'Q2' });
+    const q3 = mcQuestion({ question: 'Q3' });
+    const gm = freshModel([q1, q2, q3]);
+    gm.questions = [q1, q2, q3];
+    gm.answer_history = [
+      { question: 'Q1', was_perfect: false },
+      { question: 'Q1', was_perfect: true },  // later mastered — still counts as struggled
+      { question: 'Q2', was_perfect: true },  // never missed — excluded
+      { question: 'Q3', was_perfect: false },
+    ];
+    const texts = gm._buildBossQueue().map(q => q.question).sort();
+    assert.deepEqual(texts, ['Q1', 'Q3']);
+  });
+
+  it('_buildBossQueue caps the queue and keeps the most-missed', () => {
+    const qs = [];
+    for (let i = 0; i < 10; i++) qs.push(mcQuestion({ question: `Q${i}` }));
+    const gm = freshModel(qs);
+    gm.questions = qs;
+    const hist = [];
+    for (let i = 0; i < 8; i++) {
+      for (let k = 0; k < (8 - i); k++) hist.push({ question: `Q${i}`, was_perfect: false });
+    }
+    gm.answer_history = hist;
+    const queue = gm._buildBossQueue(6);
+    assert.equal(queue.length, 6);
+    const texts = new Set(queue.map(q => q.question));
+    for (let i = 0; i < 6; i++) assert.ok(texts.has(`Q${i}`), `expected most-missed Q${i}`);
+  });
+
+  it('a flawless run skips the boss and goes straight to victory', () => {
+    const gm = freshModel([mcQuestion({ question: 'only' })]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 1;
+    gm.current_monster.defense = 0;
+    gm.evaluateAnswer(['A']);            // perfect → was_perfect true
+    gm.current_monster.hit_points = 0;   // ensure end-of-queue branch
+    assert.equal(gm.nextEncounter(), 'victory');
+    assert.equal(gm.boss_phase, false);
+  });
+
+  it('starts the boss when something was missed', () => {
+    const q1 = mcQuestion({ question: 'A-q' });
+    const gm = freshModel([q1]);
+    gm.questions = [q1];
+    gm.questions_to_ask = [];
+    gm.answer_history = [{ question: 'A-q', was_perfect: false }];
+    gm.current_monster = { hit_points: 0 };
+    assert.equal(gm.nextEncounter(), 'boss_start');
+    assert.equal(gm.boss_phase, true);
+    assert.ok(gm.current_monster.is_boss);
+    assert.equal(gm.current_monster.max_hit_points, 1); // total concepts
+    assert.equal(gm.current_question.question, 'A-q');
+    assert.equal(gm.boss_queue.length, 0);              // the one concept is now current
+  });
+
+  it('requeues a fumbled concept and falls only once all are mastered', () => {
+    const q1 = mcQuestion({ question: 'B-q' });
+    const gm = freshModel([q1]);
+    gm.questions = [q1];
+    gm.questions_to_ask = [];
+    gm.answer_history = [{ question: 'B-q', was_perfect: false }];
+    gm.current_monster = { hit_points: 0 };
+    assert.equal(gm.nextEncounter(), 'boss_start');
+    gm.player.hit_points = 999;
+    gm.player.base_defense = 0;
+
+    const r1 = gm.evaluateAnswer(['B']);            // wrong → concept requeues
+    assert.equal(r1.defeated_monster, false);
+    assert.equal(gm.boss_queue.length, 1);
+    assert.equal(gm.current_monster.hit_points, 1); // bar unchanged
+
+    assert.equal(gm.nextEncounter(), 'continue');   // re-face the concept
+    const r2 = gm.evaluateAnswer(['A']);            // correct → mastered
+    assert.equal(gm.boss_queue.length, 0);
+    assert.equal(gm.current_monster.hit_points, 0); // bar empty
+    assert.equal(r2.defeated_monster, true);
+
+    assert.equal(gm.nextEncounter(), 'victory');
+    assert.equal(gm.boss_done, true);
+    assert.equal(gm.boss_phase, false);
+  });
+
+  it('round-trips boss state through save/load', () => {
+    const q1 = mcQuestion({ question: 'C-q' });
+    const gm = freshModel([q1]);
+    gm.boss_phase = true;
+    gm.boss_done = false;
+    gm.boss_queue = [q1];
+    const gm2 = freshModel([q1], null, gm.toSaveData());
+    assert.equal(gm2.boss_phase, true);
+    assert.equal(gm2.boss_done, false);
+    assert.deepEqual(gm2.boss_queue.map(q => q.question), ['C-q']);
+  });
+});

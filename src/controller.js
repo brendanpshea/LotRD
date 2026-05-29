@@ -402,20 +402,31 @@ export class GameController {
       this._saveGlobalLevel();
       this._setInGame(false);
       this._showWithDragon(line => this.ui.showNoQuestions(() => this.startReview("no_questions"), line));
-    } else {
+    } else if (status === "boss_start") {
       this._setInGame(true);
-      const qtype = this.model.current_question?.type;
-      if (qtype === "fill_blank" || qtype === "dynamic_numeric") {
-        this.ui.showEncounterFillBlank();
-      } else if (qtype === "code_trace") {
-        this.ui.showEncounterCodeTrace();
-      } else if (qtype === "code_line") {
-        this.ui.showEncounterCodeLine();
-      } else if (qtype === "matching") {
-        this.ui.showEncounterMatching();
-      } else {
-        this.ui.showEncounter();
-      }
+      const count = this.model.current_monster?.max_hit_points ?? this.model.boss_queue.length + 1;
+      pickDragonLine({ boss_intro: true })
+        .then(line => this.ui.showBossIntro(count, line, () => this._renderEncounter()))
+        .catch(() => this.ui.showBossIntro(count, null, () => this._renderEncounter()));
+    } else {
+      this._renderEncounter();
+    }
+  }
+
+  /** Render the appropriate encounter screen for the current question type. */
+  _renderEncounter() {
+    this._setInGame(true);
+    const qtype = this.model.current_question?.type;
+    if (qtype === "fill_blank" || qtype === "dynamic_numeric") {
+      this.ui.showEncounterFillBlank();
+    } else if (qtype === "code_trace") {
+      this.ui.showEncounterCodeTrace();
+    } else if (qtype === "code_line") {
+      this.ui.showEncounterCodeLine();
+    } else if (qtype === "matching") {
+      this.ui.showEncounterMatching();
+    } else {
+      this.ui.showEncounter();
     }
   }
 
@@ -704,6 +715,10 @@ export class GameController {
         break;
       }
       case "bomb": {
+        if (this.model.boss_phase) {
+          this.ui.showFeedbackInline("🐉 The dragon is immune to shortcuts — answer to drive it back.");
+          return;
+        }
         this.model.consumeSlot(slotIdx);
         this.sounds.monsterDefeated();
         this.model.current_monster.hit_points = 0;

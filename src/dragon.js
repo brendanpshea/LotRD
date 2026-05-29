@@ -20,6 +20,9 @@ function recordSeen(id) {
 }
 
 function bucketsFor(ctx) {
+  // The retrieval boss has its own voice; don't dilute it with outcome lines.
+  if (ctx.boss_intro) return ["boss_intro", "default"];
+
   const buckets = [];
   if (ctx.is_first_ever) buckets.push("first_ever");
 

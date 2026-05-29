@@ -67,8 +67,13 @@ export class GameUI {
       crumb.textContent = title ? `▶ ${title}` : "▶ Loop of the Recursive Dragon";
     }
 
-    $(root, "[data-ref=mName]").textContent = m.monster_name;
-    $(root, "[data-ref=mDesc]").textContent = m.initial_description ? ` — ${m.initial_description}` : "";
+    $(root, "[data-ref=mName]").textContent = m.is_boss ? "🐉 The Recursive Dragon" : m.monster_name;
+    if (m.is_boss) {
+      const left = m.hit_points;
+      $(root, "[data-ref=mDesc]").textContent = ` — ${left} concept${left === 1 ? "" : "s"} left to master`;
+    } else {
+      $(root, "[data-ref=mDesc]").textContent = m.initial_description ? ` — ${m.initial_description}` : "";
+    }
 
     $(root, "[data-ref=mHP]").textContent = m.hit_points;
     const hpBar = $(root, "[data-ref=mHPBar]");
@@ -983,7 +988,21 @@ export class GameUI {
     addList(fbWrap, "incorrect", "✖ Incorrectly selected:", battleData.incorrectSelections);
     addList(fbWrap, "missed", "⚠ Missed correct answers:", battleData.missedCorrect);
 
-    if (battleData.streakMultiplier > 1) {
+    // During the boss the dragon's HP is "concepts remaining," not dice damage —
+    // reframe the turn around mastery instead of showing a meaningless hit number.
+    const isBoss = this.model.boss_phase;
+    if (isBoss) {
+      const gotIt = !((battleData.incorrectSelections?.length) || (battleData.missedCorrect?.length));
+      const note = document.createElement("div");
+      note.className = gotIt ? "correct" : "incorrect";
+      note.style.marginTop = "6px";
+      note.textContent = gotIt
+        ? "🐉 Concept re-mastered — the dragon recedes."
+        : "🐉 The dragon strikes! That idea still has teeth.";
+      body.appendChild(note);
+    }
+
+    if (!isBoss && battleData.streakMultiplier > 1) {
       const sb = document.createElement("div");
       sb.className = "streak-bonus-note";
       sb.textContent = `🔥 Streak ×${battleData.streakMultiplier} bonus applied to your attack!`;
@@ -1086,6 +1105,31 @@ export class GameUI {
         continueCallback();
       }
     }, { signal: this._kbAbort.signal });
+  }
+
+  /** Intro screen for the end-of-set retrieval boss. `count` = concepts to master. */
+  showBossIntro(count, dragonLine, onContinue) {
+    this._clearKeyboard();
+    const safeLine = dragonLine ? this._esc(dragonLine) : null;
+    this.root.innerHTML = `
+      <div class="bbs-container">
+        <div class="section center">
+          <img src="images/monsters/quantum_dragon.png" alt="The Recursive Dragon"
+               style="max-width:160px;image-rendering:pixelated;">
+        </div>
+        <div class="section red bold center">🐉 The Recursive Dragon blocks your path!</div>
+        ${safeLine ? `<div class="section dragon-speech">“${safeLine}”</div>` : ""}
+        <div class="section">
+          It has hoarded <span class="yellow bold">${count}</span> idea${count === 1 ? "" : "s"} you stumbled on this run.
+          Master ${count === 1 ? "it" : "them all"} to break free. Miss one and the dragon bites —
+          but a missed idea simply returns until you get it right.
+        </div>
+        <div class="section center">
+          <button class="action-button" data-action="boss-begin">Face the Dragon ⚔️</button>
+        </div>
+      </div>`;
+    const btn = this.root.querySelector("[data-action=boss-begin]");
+    if (btn) { btn.addEventListener("click", () => onContinue()); btn.focus(); }
   }
 
   showVictory(reviewCallback, dragonLine = null) {
