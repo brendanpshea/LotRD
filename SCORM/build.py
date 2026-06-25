@@ -48,6 +48,20 @@ def filter_catalog(catalog: list, topics: list[str]) -> list:
     return [t for t in catalog if t.get("topic") in keep]
 
 
+def filter_sets(catalog: list, set_ids: list[str]) -> list:
+    """Restrict each topic's sets to the given id allowlist. Topics left with
+    no sets are dropped. Used to split one topic across multiple editions."""
+    allow = set(set_ids)
+    result = []
+    for topic in catalog:
+        kept = [e for e in topic.get("sets", []) or [] if e.get("id") in allow]
+        if kept:
+            t = dict(topic)
+            t["sets"] = kept
+            result.append(t)
+    return result
+
+
 def referenced_set_files(catalog: list) -> set[str]:
     """All question-set JSON filenames referenced by the catalog (entries
     with .id ending in .json, plus any sources listed by review entries)."""
@@ -199,6 +213,13 @@ def build(config_path: Path) -> Path:
         raise SystemExit(
             f"No catalog topics matched {config['topics']!r}. "
             f"Available: {[t.get('topic') for t in full_catalog]}")
+
+    if config.get("sets"):
+        filtered = filter_sets(filtered, config["sets"])
+        if not filtered:
+            raise SystemExit(
+                f"No catalog sets matched {config['sets']!r} "
+                f"within topics {config['topics']!r}.")
 
     copied = write_filtered_question_sets(work_dir, filtered)
     print(f"  Topics: {[t['topic'] for t in filtered]}")
