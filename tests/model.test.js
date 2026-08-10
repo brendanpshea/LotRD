@@ -414,6 +414,19 @@ describe('evaluateAnswer', () => {
     assert.equal(gm.player.streak, 1);
   });
 
+  it('flags a one-correct-answer question so the UI can skip the three-list layout', () => {
+    const r = gm.evaluateAnswer(['B']);
+    assert.equal(r.singleAnswer, true);
+  });
+
+  it('does not flag a select-all question as single-answer', () => {
+    const gm2 = freshModel([mcQuestion({ correct: ['A', 'B'], incorrect: ['C'] })]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    const r = gm2.evaluateAnswer(['A']);
+    assert.equal(r.singleAnswer, false);
+  });
+
   it('supports select-all questions where every option is correct', () => {
     gm = freshModel([
       mcQuestion({

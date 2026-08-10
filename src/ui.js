@@ -121,6 +121,12 @@ export class GameUI {
 
   _renderInventory(root) {
     const inv = this.model.inventory || [];
+
+    // Before the first drop, two "empty" boxes are just noise on the screen a
+    // new player is trying to read. Show the row once there is something in it.
+    const invRow = $(root, "[data-ref=inventory]");
+    if (invRow) invRow.hidden = !inv.some(s => s !== null);
+
     for (let i = 0; i < 2; i++) {
       const slot = $(root, `[data-ref=invSlot${i}]`);
       const icon = $(root, `[data-ref=invIcon${i}]`);
@@ -230,9 +236,15 @@ export class GameUI {
     for (let i = 0; i < requeue; i++) addBlock(bar, "prog-requeue");
     for (let i = 0; i < unseen; i++) addBlock(bar, "prog-unseen");
 
-    const parts = [`${done} of ${total} complete`];
-    if (requeue > 0) parts.push(`${requeue} to retry`);
-    if (unseen > 0) parts.push(`${unseen} unseen`);
+    let parts;
+    if (done === 0 && requeue === 0) {
+      // "0 of 34 complete · 34 unseen" says the same thing twice.
+      parts = [`${total} question${total === 1 ? "" : "s"}`, "none attempted yet"];
+    } else {
+      parts = [`${done} of ${total} complete`];
+      if (requeue > 0) parts.push(`${requeue} to retry`);
+      if (unseen > 0) parts.push(`${unseen} unseen`);
+    }
     $(root, "[data-ref=progStats]").textContent = parts.join(" · ");
 
     if (requeue > 0) {
@@ -1005,6 +1017,39 @@ export class GameUI {
     return 760;
   }
 
+  /**
+   * One line of combat outcome for the results screen. The floating damage
+   * numbers are gone in under a second, and the results screen is where a
+   * player actually stops to read — so restate the fight there: what each side
+   * dealt, and where the HP bars ended up.
+   */
+  _battleSummary(battleData) {
+    if (!this.model) return "";
+    const p = this.model.player;
+    const m = this.model.current_monster;
+    const parts = [];
+
+    const dealt = battleData.effective_player_damage;
+    const taken = battleData.effective_monster_damage;
+    if (typeof dealt !== "number" || typeof taken !== "number") return "";
+
+    if (m?.is_boss) {
+      // The dragon's HP is the review queue, so a damage number would be a lie.
+      if (taken > 0) parts.push(`🩸 The dragon bites for ${taken}`);
+    } else {
+      parts.push(dealt > 0 ? `⚔ You hit for ${dealt}` : "⚔ You dealt no damage");
+      if (taken > 0) parts.push(`🩸 ${m ? m.monster_name : "The monster"} hit you for ${taken}`);
+    }
+
+    parts.push(`❤ You ${Math.max(0, p.hit_points)}/${p.max_hit_points}`);
+    if (m && !m.is_boss) {
+      parts.push(m.hit_points <= 0
+        ? `💀 ${m.monster_name} defeated`
+        : `🐲 ${m.monster_name} ${m.hit_points}/${m.max_hit_points}`);
+    }
+    return parts.join("  ·  ");
+  }
+
   showResults(battleData, itemDrop, continueCallback) {
     this._clearKeyboard();
     const animDelay = this._triggerCombatAnimations(battleData);
@@ -1037,13 +1082,47 @@ export class GameUI {
     if (questionText) {
       const qLine = document.createElement("div");
       qLine.className = "section";
-      qLine.innerHTML = `<span class="bold">Question:</span> ${this._esc(questionText)}`;
+      qLine.innerHTML =
+        `<span class="bold">Question:</span> <span class="question-text">${this._esc(questionText)}</span>`;
       body.insertBefore(qLine, fbWrap);
     }
 
-    addList(fbWrap, "correct", "✔ Correctly selected:", battleData.correctSelections);
-    addList(fbWrap, "incorrect", "✖ Incorrectly selected:", battleData.incorrectSelections);
-    addList(fbWrap, "missed", "⚠ Missed correct answers:", battleData.missedCorrect);
+    const addVerdictLine = (container, cls, label, text) => {
+      const row = document.createElement("div");
+      row.className = `verdict-line ${cls}`;
+      const lab = document.createElement("span");
+      lab.className = "verdict-label";
+      lab.textContent = label;
+      row.appendChild(lab);
+      row.appendChild(document.createTextNode(` ${text}`));
+      container.appendChild(row);
+    };
+
+    if (battleData.singleAnswer) {
+      // One right option, so three lists (one of them reading "None.") only
+      // obscures the result. Say what was picked and what was right.
+      const gotIt = battleData.correctSelections.length > 0;
+      if (gotIt) {
+        addVerdictLine(fbWrap, "correct", "✔ Correct:", battleData.correctSelections[0]);
+      } else {
+        addVerdictLine(fbWrap, "incorrect", "✖ Your answer:",
+          battleData.incorrectSelections[0] ?? "(nothing selected)");
+        addVerdictLine(fbWrap, "missed", "✔ Correct answer:",
+          battleData.missedCorrect[0] ?? "");
+      }
+    } else {
+      addList(fbWrap, "correct", "✔ Correctly selected:", battleData.correctSelections);
+      addList(fbWrap, "incorrect", "✖ Incorrectly selected:", battleData.incorrectSelections);
+      addList(fbWrap, "missed", "⚠ Missed correct answers:", battleData.missedCorrect);
+    }
+
+    const battleLine = this._battleSummary(battleData);
+    if (battleLine) {
+      const bs = document.createElement("div");
+      bs.className = "battle-summary";
+      bs.textContent = battleLine;
+      body.appendChild(bs);
+    }
 
     // During the boss the dragon's HP is "concepts remaining," not dice damage —
     // reframe the turn around mastery instead of showing a meaningless hit number.

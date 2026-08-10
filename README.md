@@ -239,7 +239,7 @@ matches the number of questions actually in each file.
 
 | Topic | Set | Questions |
 |-------|-----|-----------|
-| Computing Concepts | Computing Concepts | 34 |
+| Computing Concepts | What Is Computing? | 34 |
 | Computing Concepts | Machine Architecture | 33 |
 | Computing Concepts | Python Basics | 38 |
 | Computing Concepts | Control Flow & Functions | 38 |

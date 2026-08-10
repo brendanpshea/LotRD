@@ -1324,6 +1324,9 @@ export class GameModel {
             incorrectSelections,
             missedCorrect,
             feedback:         q.feedback || null,
+            // Lets the UI show "your answer / correct answer" for a radio-button
+            // question instead of three lists, one of which reads "None."
+            singleAnswer:     correctSet.size === 1,
         };
     }
 

@@ -145,6 +145,43 @@ describe('Accessibility basics', () => {
 // ────────────────────────────────────────────────────────────────────────────────
 // CSS animation classes referenced in app.js exist in styles.css
 // ────────────────────────────────────────────────────────────────────────────────
+describe('The hidden attribute actually hides', () => {
+  // Strip comments first: the file explains this rule in prose, and the prose
+  // contains a sample rule that would otherwise match ahead of the real one.
+  const css = readFileSync(join(ROOT, 'styles.css'), 'utf-8').replace(/\/\*[\s\S]*?\*\//g, '');
+
+  it('styles.css defines [hidden] { display: none !important }', () => {
+    // Author rules outrank the user-agent [hidden] rule, so any class setting
+    // `display` un-hides an element the markup and JS treat as hidden. This
+    // rule is what makes el.hidden = true reliable app-wide.
+    const rule = css.match(/\[hidden\]\s*\{[^}]*\}/);
+    assert.ok(rule, 'styles.css must define a [hidden] rule');
+    assert.match(rule[0], /display\s*:\s*none\s*!important/,
+      '[hidden] must set display:none !important to beat class rules');
+  });
+
+  it('question text preserves the newlines in a code stem', () => {
+    // Stems embed real programs ("What does this print?\n\nx = 4\nprint(x)").
+    // Without pre-wrap the browser collapses them into one unreadable line.
+    const rule = css.match(/\[data-ref="qText"\][^{]*\{[^}]*\}/);
+    assert.ok(rule, 'styles.css must style [data-ref="qText"]');
+    assert.match(rule[0], /white-space\s*:\s*pre-wrap/);
+  });
+
+  it('every element the app hides is covered by that rule', () => {
+    // Elements toggled via the hidden attribute whose class also sets display.
+    const displayClasses = new Set();
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (!/(^|[;\s])display\s*:/.test(m[2])) continue;
+      for (const c of m[1].matchAll(/\.([A-Za-z0-9_-]+)(?![\w-]*::)/g)) displayClasses.add(c[1]);
+    }
+    // The guard rule above neutralises all of them; assert it is not empty, so
+    // this test fails loudly if someone deletes the [hidden] rule.
+    assert.ok(displayClasses.size > 0, 'expected the stylesheet to set display somewhere');
+    assert.match(css, /\[hidden\][^{]*\{[^}]*display\s*:\s*none\s*!important/);
+  });
+});
+
 describe('CSS animation classes', () => {
   const css = readFileSync(join(ROOT, 'styles.css'), 'utf-8');
 
