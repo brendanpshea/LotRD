@@ -91,6 +91,36 @@
     "feedback": "The CPU first fetches the instruction at the address in the program counter, then decodes it, then executes it, repeating the cycle continuously."
   },
   {
+    "question": "What is the defining idea of the von Neumann architecture?",
+    "correct": ["Program instructions and the data they work on are stored together in the same memory"],
+    "incorrect": [
+      "Instructions are stored in the CPU while data is kept out on the disk",
+      "Every program must be rewired by hand into the machine before it runs",
+      "The computer decodes an instruction only after executing it once"
+    ],
+    "feedback": "In a von Neumann machine an instruction is just another number in memory, sitting alongside the data. That is what makes a computer general-purpose: load different numbers and it becomes a different program."
+  },
+  {
+    "type": "matching",
+    "question": "Match each CPU register to the job it does.",
+    "pairs": [
+      { "term": "Program Counter (PC)", "definition": "Holds the address of the next instruction to run" },
+      { "term": "Instruction Register (IR)", "definition": "Holds the instruction being carried out right now" },
+      { "term": "Accumulator", "definition": "Holds the numbers currently being worked on" }
+    ],
+    "feedback": "The PC answers 'where am I in the program?', the IR answers 'what am I doing right now?', and the accumulator is the scratch space the ALU reads from and writes back to."
+  },
+  {
+    "question": "A program reads the same small table of values over and over. Why does this run faster than reading scattered addresses across all of memory?",
+    "correct": ["The table stays in cache, so most reads are cache hits instead of trips to RAM"],
+    "incorrect": [
+      "Repeated reads let the CPU raise its clock speed automatically",
+      "The control unit skips the decode stage after the first read",
+      "Small tables are stored on the disk, which has the shortest access time"
+    ],
+    "feedback": "This is locality: recently used data is likely to be used again, so the cache keeps it close to the CPU. A cache hit is roughly a hundred times faster than reaching all the way out to RAM."
+  },
+  {
     "question": "Which of the following are parts of a CPU described by the von Neumann architecture? (Select all that apply)",
     "correct": [
       "The arithmetic logic unit (ALU)",
@@ -215,42 +245,43 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "Compute {{a}} AND {{b}} on these two bytes. Give the answer in decimal.",
+    "question": "Write the decimal number {{n}} in binary. (Type the 1s and 0s, with no spaces.)",
     "variables": {
-      "a": { "min": 6, "max": 31 },
-      "b": { "min": 6, "max": 31 }
+      "n": { "min": 18, "max": 200 }
+    },
+    "derived": {
+      "bits": "toBin(n)"
     },
     "answer": {
-      "expr": "bitAnd(a, b)",
+      "expr": "fromBase(bits, 10)",
       "tolerance_abs": 0
     },
-    "feedback_template": "Bitwise AND keeps only the bits that are 1 in both numbers, so {{a}} AND {{b}} = {{expected}}."
+    "feedback_template": "Subtract the largest place value you can, over and over: {{n}} in binary is {{bits}}."
   },
   {
     "type": "dynamic_numeric",
-    "question": "Compute {{a}} OR {{b}} on these two bytes. Give the answer in decimal.",
+    "question": "How many different values can a group of {{k}} bits represent?",
     "variables": {
-      "a": { "min": 6, "max": 31 },
-      "b": { "min": 6, "max": 31 }
+      "k": { "min": 3, "max": 10 }
     },
     "answer": {
-      "expr": "bitOr(a, b)",
+      "expr": "pow(2, k)",
       "tolerance_abs": 0
     },
-    "feedback_template": "Bitwise OR keeps any bit that is 1 in either number, so {{a}} OR {{b}} = {{expected}}."
+    "feedback_template": "Each extra bit doubles the possibilities, so {{k}} bits give 2 to the power of {{k}} = {{expected}} values. That is why one byte (8 bits) holds 256 values, 0 through 255."
   },
   {
     "type": "dynamic_numeric",
-    "question": "Compute {{a}} XOR {{b}} on these two bytes. Give the answer in decimal.",
+    "question": "A game stores its level number in a single byte, so it can only hold 0 through 255. The level is {{n}} and the player finishes {{k}} more levels. What number does the byte hold now?",
     "variables": {
-      "a": { "min": 6, "max": 31 },
-      "b": { "min": 6, "max": 31 }
+      "n": { "min": 248, "max": 255 },
+      "k": { "min": 2, "max": 9 }
     },
     "answer": {
-      "expr": "bitXor(a, b)",
+      "expr": "mod(n + k, 256)",
       "tolerance_abs": 0
     },
-    "feedback_template": "Bitwise XOR keeps only the bits that differ between the two numbers, so {{a}} XOR {{b}} = {{expected}}."
+    "feedback_template": "Past 255 the counter wraps back to 0, so the stored value is ({{n}} + {{k}}) with 256 subtracted off: {{expected}}. This is integer overflow — the bug behind the Pac-Man kill screen."
   },
   {
     "question": "What problem does two's complement solve?",

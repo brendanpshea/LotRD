@@ -239,10 +239,18 @@ matches the number of questions actually in each file.
 
 | Topic | Set | Questions |
 |-------|-----|-----------|
-| Computing Concepts | Computing Concepts | 33 |
-| Computing Concepts | Machine Architecture | 30 |
-| Computing Concepts | Python Basics | 36 |
-| Computing Concepts | Control Flow & Functions | 36 |
+| Computing Concepts | Computing Concepts | 34 |
+| Computing Concepts | Machine Architecture | 33 |
+| Computing Concepts | Python Basics | 38 |
+| Computing Concepts | Control Flow & Functions | 38 |
+| Computing Concepts | Collections & ADTs | 36 |
+| Computing Concepts | Modules & Objects | 32 |
+| Computing Concepts | Searching, Sorting & Big-O | 32 |
+| Computing Concepts | Software Engineering | 31 |
+| Computing Concepts | Databases | 31 |
+| Computing Concepts | OS, Networks & the Web | 30 |
+| Computing Concepts | Cybersecurity | 30 |
+| Computing Concepts | AI, Machine Learning & Ethics | 30 |
 | Database | Database Foundations | 33 |
 | Database | Introduction to SQL: SELECT | 30 |
 | Database | Joins and Set Operations | 30 |

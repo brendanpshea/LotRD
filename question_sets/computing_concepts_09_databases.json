@@ -1,0 +1,400 @@
+[
+  {
+    "question": "Every program written earlier in this course shared one quiet flaw. What was it?",
+    "correct": [
+      "When the program stopped, its lists, dictionaries, and objects vanished"
+    ],
+    "incorrect": [
+      "It could store whole numbers but not text",
+      "It had to be rewritten each time the data changed",
+      "It could not read input typed by a person"
+    ],
+    "feedback": "Data in variables lives only as long as the program does. A factory, a hospital, or a shop needs data that outlives the program that created it — which is what a database provides."
+  },
+  {
+    "question": "What is a database?",
+    "correct": [
+      "An organised collection of data, managed by software that keeps it correct, shared, and permanent"
+    ],
+    "incorrect": [
+      "A very large spreadsheet stored on a company's main computer",
+      "A folder of text files with one file per record",
+      "A Python dictionary that is saved automatically as you edit it"
+    ],
+    "feedback": "The managing program is called a database management system, or DBMS. SQLite is a real one, small enough to be built into Python and used in phones, browsers, and aircraft."
+  },
+  {
+    "question": "A factory kept everything in one spreadsheet. A clerk renamed a candy in one row but not in three others, and an order was shipped for a product that did not exist. What is the underlying problem?",
+    "correct": [
+      "A spreadsheet stores whatever you type; nothing stops a change that makes the data wrong"
+    ],
+    "incorrect": [
+      "Spreadsheets are limited to a few thousand rows",
+      "The clerks were not trained well enough to avoid mistakes",
+      "The file was too large to open on more than one computer"
+    ],
+    "feedback": "Everyone makes mistakes; the problem is that nothing stopped them. A spreadsheet stores what you typed, while a database enforces what must be true."
+  },
+  {
+    "question": "What is the core idea of the relational model?",
+    "correct": [
+      "Each kind of thing gets its own table"
+    ],
+    "incorrect": [
+      "The data is kept in one grid so nothing is separated",
+      "Each value is stored twice so a spare copy exists",
+      "Rows are stored in the order entered and left unsorted"
+    ],
+    "feedback": "Candies are one kind of thing, batches another, orders another. Cramming all three into one grid is precisely why the factory's disasters happened."
+  },
+  {
+    "type": "matching",
+    "question": "Match each relational database term to what it means.",
+    "pairs": [
+      {
+        "term": "Table",
+        "definition": "Every record of one kind of thing"
+      },
+      {
+        "term": "Row",
+        "definition": "One of those things — one candy, one order"
+      },
+      {
+        "term": "Column",
+        "definition": "One fact recorded about every row"
+      },
+      {
+        "term": "Primary key",
+        "definition": "The unique, permanent ID of a row"
+      }
+    ],
+    "feedback": "Four words carry the whole relational model. The primary key is the name tag that never lies: candy 3 is candy 3 forever, even if its name changes."
+  },
+  {
+    "question": "Why does a table identify each row by a primary key rather than by its name?",
+    "correct": [
+      "Names get misspelled, renamed, and duplicated, but an ID stays fixed"
+    ],
+    "incorrect": [
+      "Numbers take up less storage space than text does",
+      "SQL is unable to compare two pieces of text for equality",
+      "Each table is required to hold a column of whole numbers"
+    ],
+    "feedback": "That is the fix for the renaming disaster. Change the candy's name in its own row and every batch and order still points at the right thing, because they store the ID rather than the name."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A column in one table that holds the primary key of a row in another table is called a ___ key.",
+    "correct": [
+      "foreign"
+    ],
+    "case_sensitive": false,
+    "feedback": "A batch does not record 'the usual recipe'; it records candy_id = 3, which points at exactly one row in the candies table."
+  },
+  {
+    "question": "What makes SQL different in style from Python?",
+    "correct": [
+      "You describe the result you want, and the database works out the steps"
+    ],
+    "incorrect": [
+      "It runs faster because it is compiled before it is executed",
+      "It reads data but is unable to create or change it",
+      "It requires the data to be sorted before any command will work"
+    ],
+    "feedback": "SELECT name FROM candies WHERE sugar_grams < 20 has no loop and no if statement, yet it filters every row. You described the result; the database wrote the loop."
+  },
+  {
+    "question": "What does this SQL statement do?\n\nSELECT name, price_pence\nFROM candies\nWHERE sugar_grams < 20;",
+    "correct": [
+      "Shows the name and price of every candy with under 20 grams of sugar"
+    ],
+    "incorrect": [
+      "Shows the five columns for candies under 20 grams of sugar",
+      "Shows the name and price of each candy in the table",
+      "Changes each candy's sugar_grams value to under 20"
+    ],
+    "feedback": "SELECT chooses the columns, FROM chooses the table, and WHERE chooses the rows. Leave WHERE off and you get every row."
+  },
+  {
+    "question": "A Python programmer writes  WHERE department == 'Fizzworks'  in SQL and gets an error. What is wrong?",
+    "correct": [
+      "SQL tests equality with a single equals sign"
+    ],
+    "incorrect": [
+      "SQL requires double quotes around a text value",
+      "SQL compares numeric columns but not text ones",
+      "The column name belongs after the value being compared"
+    ],
+    "feedback": "This is a classic trap for Python speakers: in SQL, = is the comparison. Text values go in single quotes, as in 'Fizzworks'."
+  },
+  {
+    "question": "The catalog contains Gloomberry Fizzer (Fizzworks, 22 g of sugar). Would it appear in the results of  WHERE department = 'Fizzworks' AND sugar_grams < 20?",
+    "correct": [
+      "No, because AND requires both conditions to be true and its sugar is 22 g"
+    ],
+    "incorrect": [
+      "Yes, because it satisfies the department condition",
+      "Yes, because AND keeps any row matching either condition",
+      "No, because AND is unable to combine a text and number test"
+    ],
+    "feedback": "AND behaves exactly as it does in Python: both sides must hold. Swapping it for OR would let the Gloomberry Fizzer through on the department alone."
+  },
+  {
+    "question": "Which clauses would you add to answer a \"top three most expensive\" question?",
+    "correct": [
+      "ORDER BY price_pence DESC and LIMIT 3"
+    ],
+    "incorrect": [
+      "GROUP BY price_pence and COUNT(*)",
+      "WHERE price_pence = 3 and JOIN",
+      "ORDER BY price_pence and LIMIT DESC"
+    ],
+    "feedback": "ORDER BY sorts the results — DESC puts the highest first — and LIMIT keeps only the first few rows. Together they answer every top-n question."
+  },
+  {
+    "question": "The batches table stores only ID numbers, but a report needs each batch shown with its candy's name. Which SQL operation does that?",
+    "correct": [
+      "JOIN, matching batches.candy_id to candies.candy_id"
+    ],
+    "incorrect": [
+      "GROUP BY, gathering the batches for each candy",
+      "ORDER BY, sorting the batches by their candy",
+      "INSERT, copying the candy name into the batches table"
+    ],
+    "feedback": "The ON clause says how rows pair up. This is the deal the relational model offers: store every fact once, in the table where it belongs, then use JOIN to recombine facts whenever a question needs them."
+  },
+  {
+    "question": "In a JOIN, why is a column sometimes written as  batches.candy_id  rather than just  candy_id?",
+    "correct": [
+      "Both tables have a column with that name, so the table name says which one is meant"
+    ],
+    "incorrect": [
+      "The dot tells the database to search the column faster",
+      "Foreign key columns are written with a dot by convention",
+      "It converts the value into a number before comparing it"
+    ],
+    "feedback": "Without the prefix the query would be ambiguous. The same dot notation appears in the SELECT list, as in candies.name and batches.quality_score."
+  },
+  {
+    "question": "What does  GROUP BY  do in a query?",
+    "correct": [
+      "Gathers rows into buckets so an aggregate function can reduce each bucket to one number"
+    ],
+    "incorrect": [
+      "Sorts the rows so that similar values appear next to each other",
+      "Removes rows that appear more than once in the results",
+      "Combines two tables by matching a key column in each"
+    ],
+    "feedback": "One bucket per candy, then SUM, COUNT, or AVG boils each bucket down. JOIN plus GROUP BY is most of what data analysis means in practice — a leaderboard, a most-played list, a quarterly report."
+  },
+  {
+    "type": "matching",
+    "question": "Match each aggregate function or keyword to what it produces.",
+    "pairs": [
+      {
+        "term": "SUM()",
+        "definition": "Adds the values in each group together"
+      },
+      {
+        "term": "COUNT()",
+        "definition": "Reports how many rows are in each group"
+      },
+      {
+        "term": "AVG()",
+        "definition": "Reports the average of the values in a group"
+      },
+      {
+        "term": "AS",
+        "definition": "Gives a result column a readable name"
+      }
+    ],
+    "feedback": "An aggregate turns many rows into one number, which is why a GROUP BY query returns one row per bucket rather than one row per record."
+  },
+  {
+    "question": "What is an integrity constraint?",
+    "correct": [
+      "A rule about the data that the database itself enforces by refusing bad changes"
+    ],
+    "incorrect": [
+      "A warning message shown when data looks suspicious",
+      "A backup taken automatically ahead of each change",
+      "A limit on how many rows a single table may hold"
+    ],
+    "feedback": "A foreign key is one. It is not a warning — it is a refusal. The database checked for a candy 999, found none, and rejected the row no matter who typed it."
+  },
+  {
+    "question": "An INSERT into  batches  uses  candy_id = 999  when no such candy exists, and the database reports \"FOREIGN KEY constraint failed\". How should this be understood?",
+    "correct": [
+      "The rule worked: the database refused to store something that could not be true"
+    ],
+    "incorrect": [
+      "A bug in the database software that should be reported",
+      "A sign that the batches table needs to be rebuilt",
+      "A warning that can be safely ignored while the factory is busy"
+    ],
+    "feedback": "The floor manager's complaint about the spreadsheet was that nothing stopped us. This is what stopping us looks like — and it is the whole difference between storing what you typed and enforcing what must be true."
+  },
+  {
+    "question": "Which of these are things a database gives you that a shared spreadsheet does not? (Select all that apply)",
+    "correct": [
+      "Rules it enforces itself, such as rejecting an order for a product that does not exist",
+      "Safe access for several people at once",
+      "Data that survives after the program using it stops"
+    ],
+    "incorrect": [
+      "A guarantee that the numbers people type are accurate",
+      "Automatic correction of misspelled product names"
+    ],
+    "feedback": "A database enforces structural truths — this ID must exist, this column may not be empty. It cannot know whether a nurse meant to type 5.0 or 0.5."
+  },
+  {
+    "question": "What is the difference between DDL and DML commands?",
+    "correct": [
+      "DDL shapes the tables themselves; DML changes or reads the rows inside them"
+    ],
+    "incorrect": [
+      "DDL is used by programmers while DML is used by managers",
+      "DDL runs immediately while DML waits until the database is idle",
+      "DDL works on one table while DML works on several at once"
+    ],
+    "feedback": "CREATE TABLE, DROP TABLE, and ALTER TABLE are DDL: the filing cabinets. INSERT, UPDATE, DELETE, and SELECT are DML: the files inside them."
+  },
+  {
+    "question": "Why is  DELETE FROM candies;  with no WHERE clause considered a classic disaster?",
+    "correct": [
+      "Without WHERE it matches every row, so the whole table is emptied"
+    ],
+    "incorrect": [
+      "It deletes the table's structure as well as its rows",
+      "It fails with an error, leaving the data in an unknown state",
+      "It removes just the most recently inserted row"
+    ],
+    "feedback": "The same trap applies to UPDATE: forget the WHERE and every row changes. Databases do exactly what you ask, so ask carefully."
+  },
+  {
+    "question": "Public submissions describe imagined candies: one gives a texture and a sound, another lists fourteen allergies, another says only \"make it taste like a thunderstorm\". Why is a rigid table a poor fit?",
+    "correct": [
+      "Every submission would fill a few columns and leave dozens empty, and new fields keep appearing"
+    ],
+    "incorrect": [
+      "Tables are unable to store text beyond a single sentence",
+      "A table can hold just one row per person who submits",
+      "Text columns become unsearchable once there are many rows"
+    ],
+    "feedback": "Rigid columns saved the factory's batches and orders, and are exactly wrong here. Each new invented field would mean altering the table for every existing row."
+  },
+  {
+    "question": "What is a document database?",
+    "correct": [
+      "One that stores each record as a free-form bundle of labelled data, so records can differ in shape"
+    ],
+    "incorrect": [
+      "One that stores scanned paper documents rather than data",
+      "One that keeps a written description of the tables it holds",
+      "One that permits text columns but not numbers"
+    ],
+    "feedback": "Documents are usually written as JSON, which is essentially a Python dictionary in text form. MongoDB is a well-known example, and these systems are often grouped under the label NoSQL."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The text format used for documents, which looks and works much like a Python dictionary, is called ___.",
+    "correct": [
+      "JSON"
+    ],
+    "case_sensitive": false,
+    "feedback": "JSON stands for JavaScript Object Notation. A document such as {\"from\": \"a dreamer\", \"loudness\": 3} carries its own field names with it."
+  },
+  {
+    "question": "A query pulls a  taste  field from three documents, and one comes back empty because that document has no taste field. What does this show about the document model?",
+    "correct": [
+      "Missing fields are normal and cause no error, because each document defines its own shape"
+    ],
+    "incorrect": [
+      "The document is corrupted and needs to be inserted again",
+      "The query is invalid, since a field has to exist in each record",
+      "Document databases are unable to be queried by field"
+    ],
+    "feedback": "That shrug is the whole trade-off. The flexibility that makes surprise fields painless is the same flexibility that gives up the guarantee every record has the same shape."
+  },
+  {
+    "type": "matching",
+    "question": "Match each situation to the data model that fits it better.",
+    "pairs": [
+      {
+        "term": "A bank's ledger of account transfers",
+        "definition": "Relational tables, for enforced rules"
+      },
+      {
+        "term": "Game save files that gain new items each update",
+        "definition": "Documents, for shifting shapes"
+      },
+      {
+        "term": "A clinic's patients, visits, and prescriptions",
+        "definition": "Relational tables, for linked records"
+      },
+      {
+        "term": "A catalog of books, gloves, and kayaks",
+        "definition": "Documents, for varied attributes"
+      }
+    ],
+    "feedback": "The rule of thumb: batches and bank accounts want tables; dreams and profiles want documents. Real systems often use both side by side, and knowing which trade to make is the real skill."
+  },
+  {
+    "question": "Which of these are genuine strengths of the relational model over the document model? (Select all that apply)",
+    "correct": [
+      "Rules such as foreign keys are enforced automatically",
+      "Combining data from two tables with a JOIN is straightforward"
+    ],
+    "incorrect": [
+      "New, unexpected fields can be added to one record with no effort",
+      "Records are allowed to have completely different shapes",
+      "Data can be stored without deciding on any structure first"
+    ],
+    "feedback": "The last three are the document model's strengths, not the relational one's. Each model trades away exactly what the other is good at."
+  },
+  {
+    "question": "A Python program uses  sqlite3  to talk to a database. What are the three steps?",
+    "correct": [
+      "Connect to the database file, execute a query, then fetch the results"
+    ],
+    "incorrect": [
+      "Import the table, edit the rows, then export the table",
+      "Open the file, read it line by line, then close it",
+      "Create the tables, drop them, then create them again"
+    ],
+    "feedback": "The query goes in as an ordinary string and the results come back as a plain Python list you can loop over. The SQL is identical — only who is speaking it has changed."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A request for data, written in SQL and usually beginning with SELECT, is called a ___.",
+    "correct": [
+      "query"
+    ],
+    "case_sensitive": false,
+    "feedback": "Creating tables happens once; querying them happens thousands of times a day, which is why SELECT is the most important word in SQL."
+  },
+  {
+    "question": "Which statement correctly describes what a JOIN does NOT change?",
+    "correct": [
+      "It leaves both tables as they are and combines their rows only in the result"
+    ],
+    "incorrect": [
+      "It copies the matched columns permanently into the first table",
+      "It deletes rows from the second table once they have been matched",
+      "It renames the key columns so their names no longer clash"
+    ],
+    "feedback": "The stitching happens on the fly, for that query only. That is what lets each fact stay stored exactly once, in the table where it belongs."
+  },
+  {
+    "question": "Which SQL keyword adds a new row to an existing table?",
+    "correct": [
+      "INSERT INTO"
+    ],
+    "incorrect": [
+      "CREATE TABLE",
+      "UPDATE",
+      "SELECT"
+    ],
+    "feedback": "CREATE TABLE builds the empty filing cabinet, INSERT puts a file in it, UPDATE edits a file already there, and SELECT reads without changing anything."
+  }
+]
