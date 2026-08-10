@@ -253,11 +253,43 @@ describe('toSaveData / resume round-trip', () => {
   it('preserves questions_to_ask and answer_history', () => {
     const qs = [mcQuestion({ question: 'Q1' }), mcQuestion({ question: 'Q2' })];
     const gm = freshModel(qs);
-    gm.nextEncounter(); // pops Q1 (or Q2 — shuffled)
+    gm.nextEncounter(); // pops Q1 (or Q2 — shuffled) as the in-flight question
 
     const saved = JSON.parse(JSON.stringify(gm.toSaveData()));
     const resumed = new GameModel([], SAMPLE_MONSTERS, saved);
-    assert.equal(resumed.questions_to_ask.length, 1);
+    // Both questions survive: the un-asked one plus the in-flight one, which is
+    // re-queued so quitting mid-question doesn't drop it from the run.
+    assert.equal(resumed.questions_to_ask.length, 2);
+  });
+
+  it('re-queues the in-flight question so a mid-encounter save does not drop it', () => {
+    const qs = [mcQuestion({ question: 'Q1' }), mcQuestion({ question: 'Q2' })];
+    const gm = freshModel(qs);
+    gm.nextEncounter();
+    const inFlight = gm.current_question.question;
+
+    const saved = JSON.parse(JSON.stringify(gm.toSaveData()));
+    assert.equal(saved.questions_to_ask[0].question, inFlight,
+      'the in-flight question should be at the head of the resumed queue');
+
+    const resumed = new GameModel([], SAMPLE_MONSTERS, saved);
+    assert.equal(resumed.nextEncounter(), 'continue');
+    assert.equal(resumed.current_question.question, inFlight);
+  });
+
+  it('re-queues the in-flight boss concept into boss_queue', () => {
+    const q1 = mcQuestion({ question: 'Boss-q' });
+    const gm = freshModel([q1]);
+    gm.questions = [q1];
+    gm.questions_to_ask = [];
+    gm.answer_history = [{ question: 'Boss-q', was_perfect: false }];
+    gm.current_monster = { hit_points: 0 };
+    assert.equal(gm.nextEncounter(), 'boss_start');
+    assert.equal(gm.boss_queue.length, 0);
+
+    const saved = JSON.parse(JSON.stringify(gm.toSaveData()));
+    assert.deepEqual(saved.boss_queue.map(q => q.question), ['Boss-q']);
+    assert.equal(saved.questions_to_ask.length, 0);
   });
 });
 
@@ -657,6 +689,21 @@ describe('submitCodeLineGuess', () => {
     assert.ok(Array.isArray(r.feedback));
   });
 
+  it('starts a fresh set of attempts when the same question is re-faced later', () => {
+    const r1 = gm.submitCodeLineGuess('var x = 1;');
+    assert.equal(r1.attemptsLeft, CL_MAX_ATTEMPTS - 1);
+
+    gm.questions_to_ask.push(gm.current_question);
+    gm.current_question = null;
+    gm.current_monster.hit_points = 0;
+    assert.equal(gm.nextEncounter(), 'continue');
+    gm.current_monster.hit_points = 999;
+
+    const r2 = gm.submitCodeLineGuess('var y = 2;');
+    assert.equal(r2.attemptsLeft, CL_MAX_ATTEMPTS - 1,
+      'attempt counter should restart at the new encounter');
+  });
+
   it('three wrong guesses → status failed and question is requeued', () => {
     gm.submitCodeLineGuess('var x = 1;');
     gm.submitCodeLineGuess('var y = 2;');
@@ -738,6 +785,26 @@ describe('submitFillBlankGuess', () => {
     assert.equal(r.attemptsUsed, 2);
     assert.equal(r.streakState, 'preserved');
     assert.equal(gm.player.streak, 4);
+  });
+
+  it('starts a fresh set of attempts when the same question is re-faced later', () => {
+    // A Logic Bomb (or any other early end to the encounter) leaves the
+    // question un-finalised. Because attempt state is keyed on the question
+    // object, which is reused when re-queued, it has to be cleared per
+    // encounter or the player silently gets fewer guesses the second time.
+    const r1 = gm.submitFillBlankGuess('zzzzzz');
+    assert.equal(r1.status, 'wrong');
+    assert.equal(r1.attemptsLeft, 2);
+
+    gm.questions_to_ask.push(gm.current_question);
+    gm.current_question = null;
+    gm.current_monster.hit_points = 0;
+    assert.equal(gm.nextEncounter(), 'continue');
+    gm.current_monster.hit_points = 999;
+
+    const r2 = gm.submitFillBlankGuess('yyyyyy');
+    assert.equal(r2.status, 'wrong');
+    assert.equal(r2.attemptsLeft, 2, 'attempt counter should restart at the new encounter');
   });
 
   it('three wrong guesses → status failed and question is requeued', () => {
@@ -1475,6 +1542,47 @@ describe('Retrieval boss', () => {
 
     assert.equal(gm.nextEncounter(), 'victory');
     assert.equal(gm.boss_done, true);
+    assert.equal(gm.boss_phase, false);
+  });
+
+  it('starts the boss even when the last monster is still alive', () => {
+    // The run ends when the questions run out, whether or not the final monster
+    // happened to die on the last answer — the boss must not depend on that.
+    const q1 = mcQuestion({ question: 'D-q' });
+    const gm = freshModel([q1]);
+    gm.questions = [q1];
+    gm.questions_to_ask = [];
+    gm.answer_history = [{ question: 'D-q', was_perfect: false }];
+    gm.current_monster = { hit_points: 12, max_hit_points: 12 };
+
+    assert.equal(gm.nextEncounter(), 'boss_start');
+    assert.equal(gm.boss_phase, true);
+    assert.ok(gm.current_monster.is_boss);
+  });
+
+  it('reports no_questions (not victory) when a live monster outlasts the queue', () => {
+    const q1 = mcQuestion({ question: 'E-q' });
+    const gm = freshModel([q1]);
+    gm.questions = [q1];
+    gm.questions_to_ask = [];
+    gm.answer_history = [{ question: 'E-q', was_perfect: true }];  // nothing missed
+    gm.current_monster = { hit_points: 12, max_hit_points: 12 };
+
+    assert.equal(gm.nextEncounter(), 'no_questions');
+    assert.equal(gm.boss_phase, false);
+    assert.equal(gm.current_question, null);
+  });
+
+  it('does not restart the boss once it has been cleared', () => {
+    const q1 = mcQuestion({ question: 'F-q' });
+    const gm = freshModel([q1]);
+    gm.questions = [q1];
+    gm.questions_to_ask = [];
+    gm.answer_history = [{ question: 'F-q', was_perfect: false }];
+    gm.boss_done = true;
+    gm.current_monster = { hit_points: 12, max_hit_points: 12 };
+
+    assert.equal(gm.nextEncounter(), 'no_questions');
     assert.equal(gm.boss_phase, false);
   });
 

@@ -180,10 +180,16 @@ export class GameUI {
     });
   }
 
+  /** True when the event carries a browser/OS shortcut modifier (Ctrl+W, Cmd+1…). */
+  _hasShortcutModifier(e) {
+    return e.ctrlKey || e.metaKey || e.altKey;
+  }
+
   /** Bind Q/W shortcuts on the supplied AbortController; skips when typing in inputs. */
   _bindInventoryHotkeys(signal) {
     if (!this.controller) return;
     document.addEventListener("keydown", (e) => {
+      if (this._hasShortcutModifier(e)) return;  // don't eat Ctrl+W / Cmd+Q
       if (e.key !== "q" && e.key !== "Q" && e.key !== "w" && e.key !== "W") return;
       const ae = document.activeElement;
       const tag = ae?.tagName;
@@ -563,6 +569,7 @@ export class GameUI {
 
     this._kbAbort = new AbortController();
     document.addEventListener("keydown", (e) => {
+      if (this._hasShortcutModifier(e)) return;  // Ctrl+1 / Cmd+1 switch tabs
       const n = parseInt(e.key, 10);
       if (n >= 1 && n <= inputs.length) {
         e.preventDefault();
@@ -752,7 +759,7 @@ export class GameUI {
       const container = document.querySelector(".game-container");
       if (container) {
         container.classList.add("player-hit");
-        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
       }
     }
     if (result.shield_used) {
@@ -832,7 +839,7 @@ export class GameUI {
       const container = document.querySelector(".game-container");
       if (container) {
         container.classList.add("player-hit");
-        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
       }
     }
     if (result.shield_used) {
@@ -936,19 +943,50 @@ export class GameUI {
     span.style.left = `${rect.left + rect.width / 2}px`;
     span.style.top = `${rect.top + rect.height / 2}px`;
     document.body.appendChild(span);
-    span.addEventListener("animationend", () => span.remove(), { once: true });
+    // animationend never fires under prefers-reduced-motion (the stylesheet
+    // disables the animation), so back it with a timer or these pile up in
+    // <body> for the whole session.
+    this._removeAfterAnimation(span, () => span.remove());
+  }
+
+  /**
+   * Run `cleanup` when the element's animation ends, with a timer fallback for
+   * when animations are disabled (reduced motion) and animationend never fires.
+   */
+  _removeAfterAnimation(el, cleanup) {
+    let done = false;
+    const run = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      cleanup();
+    };
+    const timer = setTimeout(run, 1000);
+    el.addEventListener("animationend", run, { once: true });
+  }
+
+  /** True when the reader has asked for reduced motion (stylesheet disables our animations). */
+  _prefersReducedMotion() {
+    try {
+      return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    } catch (_) {
+      return false;
+    }
   }
 
   _triggerCombatAnimations(battleData) {
     const dealingDamage = battleData.effective_player_damage > 0;
     const takingDamage = battleData.effective_monster_damage > 0;
     if (!dealingDamage && !takingDamage) return 0;
+    // Nothing animates under reduced motion, so don't hold the results screen
+    // back waiting for animations that will never play.
+    if (this._prefersReducedMotion()) return 0;
 
     if (dealingDamage) {
       const img = this.root.querySelector(".monster-image");
       if (img) {
         img.classList.add("monster-hit");
-        img.addEventListener("animationend", () => img.classList.remove("monster-hit"), { once: true });
+        this._removeAfterAnimation(img, () => img.classList.remove("monster-hit"));
       }
       const imgWrap = this.root.querySelector(".monster-image-container") || this.root.querySelector(".monster-details");
       this._spawnFloatNumber(imgWrap, `-${battleData.effective_player_damage}`, "dmg-float--hit");
@@ -958,7 +996,7 @@ export class GameUI {
       const container = document.querySelector(".game-container");
       if (container) {
         container.classList.add("player-hit");
-        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
       }
       const hud = this.root.querySelector(".player-hud");
       this._spawnFloatNumber(hud, `-${battleData.effective_monster_damage}`, "dmg-float--recv");
@@ -1299,9 +1337,13 @@ export class GameUI {
     const url = URL.createObjectURL(new Blob([t], { type: "text/plain;charset=utf-8" }));
     const a = Object.assign(document.createElement("a"), {
       href: url,
-      download: `lotrd-${setName.replace(".json", "")}-${new Date().toISOString().slice(0, 10)}.txt`,
+      download: `lotrd-${String(setName ?? "session").replace(".json", "")}-${new Date().toISOString().slice(0, 10)}.txt`,
     });
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    // Revoking synchronously can cancel the download before it starts in some
+    // browsers — give the click a tick to be picked up first.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 }

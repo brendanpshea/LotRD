@@ -39,6 +39,9 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Streak bonuses** — consecutive perfect answers multiply player damage (1.25×, 1.5×, 2×)
 - **Global level** — player level and revive charges persist across all question sets
 - **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat
+- **Retrieval boss** — when the questions run out, anything missed during the run comes back as the Recursive Dragon's HP bar; each concept only leaves the bar once it's answered cleanly (a flawless run skips the fight)
+- **Items** — two inventory slots (`Q`/`W`) hold drops from defeated monsters: heals, shields, 2× damage/XP, and a Mulligan that rewinds one wrong answer
+- **Spaced review** — a cleared set becomes "due" again on an expanding schedule (2/7/21/60 days) and offers a short 5-question refresher
 
 ---
 
@@ -230,24 +233,61 @@ tests/
 
 ## Available Question Sets
 
+[`question_sets/catalog.json`](question_sets/catalog.json) is the source of truth for what the
+main menu shows. The counts below mirror it, and `data.test.js` asserts that the catalog itself
+matches the number of questions actually in each file.
+
 | Topic | Set | Questions |
 |-------|-----|-----------|
-| Foundations | Basic Math | 10 |
 | Computing Concepts | Computing Concepts | 33 |
-| Computing Concepts | Dynamic Numeric Practice | 20 |
-| Computing Concepts | Data Systems | 75 |
-| Java | Hour of Java | 10 (sampler — one of every question type) |
-| Java | Java Basics | 29 |
-| Java | Control Flow | 34 |
-| Java | Algorithms | 25 |
-| Java | Functions & Methods | 30 |
-| Java | Types, Null & Imports | 28 |
-| Java | Collections | 30 |
-| Java | Object-Oriented Programming | 34 |
-| Java | Inheritance & Polymorphism | 34 |
-| Java | Exceptions | 32 |
+| Computing Concepts | Machine Architecture | 30 |
+| Computing Concepts | Python Basics | 36 |
+| Computing Concepts | Control Flow & Functions | 36 |
+| Database | Database Foundations | 33 |
+| Database | Introduction to SQL: SELECT | 30 |
+| Database | Joins and Set Operations | 30 |
+| Database | Super Select: Advanced Retrieval | 30 |
+| Database | Database Design | 30 |
+| Database | Writing Data | 30 |
+| Database | Views, CTEs & Governance | 30 |
+| Database | Performance & Transactions | 30 |
+| Database | PostgreSQL Basics | 30 |
+| Database | Database Security | 30 |
+| Database | Architecture, Deployment & Testing | 30 |
+| Database | SQLite Final Project | 30 |
+| Java | Java Review Mix | 30 (random mix) |
+| Java | Hour of Java | 11 |
+| Java | Java Basics | 36 |
+| Java | Control Flow | 36 |
+| Java | Algorithms | 30 |
+| Java | Functions & Methods | 33 |
+| Java | Types, Null & Imports | 29 |
+| Java | Collections | 31 |
+| Java | Object-Oriented Programming | 33 |
+| Java | Inheritance & Polymorphism | 33 |
+| Java | Exceptions | 33 |
 | Java | Streams & Lambdas | 33 |
-| Java | GUI, Git & Dev Workflow | 30 |
+| Java | GUI, Git & Dev Workflow | 33 |
+| Networking | Network+ Review Mix | 30 (random mix) |
+| Networking | Network+ Fundamentals | 30 |
+| Networking | Media, Topology & IPv4 Addressing | 30 |
+| Networking | Routing & Switching | 30 |
+| Networking | Wireless & Physical Installations | 30 |
+| Networking | Operations & Monitoring | 30 |
+| Networking | DR, Network Services & Access | 30 |
+| Networking | Network Security Concepts | 30 |
+| Networking | Attacks & Defense | 30 |
+| Networking | Troubleshooting Methodology & Cabling | 30 |
+| Networking | Services, Performance & Wireless Troubleshooting | 30 |
+| Networking | Tools & Device Commands | 33 |
+| SecurityX / CASP+ | Security Governance, Compliance & Ethics | 40 |
+| SecurityX / CASP+ | Risk Management & Threat Modeling | 42 |
+| SecurityX / CASP+ | AI Threats & Governance | 30 |
+| SecurityX / CASP+ | Security Architecture & Zero Trust | 30 |
+| SecurityX / CASP+ | Security Operations & Incident Response | 30 |
+| SecurityX / CASP+ | IAM, Cryptography & Secure Engineering | 33 |
+| SecurityX / CASP+ | Enterprise Cloud & Hybrid Security | 33 |
+| SecurityX / CASP+ | Cryptography & PKI | 35 |
 
 ---
 
@@ -276,14 +316,16 @@ tests/
 Requires **Node.js 18+** (uses the built-in `node:test` runner — zero npm dependencies).
 
 ```bash
-node --test tests/model.test.js tests/data.test.js tests/html.test.js
+node --test tests/model.test.js tests/controller.test.js tests/data.test.js tests/html.test.js tests/util.test.js
 ```
 
 | File | What it checks |
 |------|----------------|
-| `model.test.js` | Model and combat logic — player state, streaks, fill-blank, dynamic numeric, code-line, matching, level-up, revive, items |
-| `data.test.js` | All JSON files — required fields, type constraints, dynamic-question schema, image files exist, catalog/index consistency |
+| `model.test.js` | Model and combat logic — player state, streaks, fill-blank, dynamic numeric, code-line, matching, level-up, revive, items, retrieval boss, save round-trips |
+| `controller.test.js` | Controller logic without the DOM — Mulligan rollback, item activation |
+| `data.test.js` | All JSON files — required fields, type constraints, dynamic-question schema, image files exist, catalog/index consistency, question-count and duplicate-text checks |
 | `html.test.js` | HTML/template cross-checks — template IDs, data-ref/data-action usage, stale code checks, accessibility, CSS classes |
+| `util.test.js` | Shuffle and the spaced-review interval schedule |
 
 ---
 
