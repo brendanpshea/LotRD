@@ -31,6 +31,8 @@ import time
 import uuid
 import zipfile
 from pathlib import Path
+from xml.etree import ElementTree as ET
+from xml.sax.saxutils import escape as xml_escape
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
@@ -144,15 +146,17 @@ def patch_index_html(build_dir: Path, config: dict) -> None:
     path = build_dir / "index.html"
     html = path.read_text(encoding="utf-8")
 
-    title = config["title"]
+    # Escaped so a title containing & or < stays valid markup, and passed as a
+    # lambda so nothing in it is read as a regex backreference.
+    title = xml_escape(config["title"])
     html = re.sub(
         r"<title>.*?</title>",
-        f"<title>{title}</title>",
+        lambda _m: f"<title>{title}</title>",
         html, count=1, flags=re.DOTALL,
     )
     html = re.sub(
         r'(<h1 class="title">)[^<]*(</h1>)',
-        rf"\g<1>{title}\g<2>",
+        lambda m: f"{m.group(1)}{title}{m.group(2)}",
         html, count=1,
     )
 
@@ -190,12 +194,13 @@ def collect_files(build_dir: Path) -> list[str]:
 def write_manifest(build_dir: Path, config: dict) -> None:
     template = (TEMPLATES / "imsmanifest.xml").read_text(encoding="utf-8")
     files = collect_files(build_dir)
-    file_list = "\n".join(f'      <file href="{f}"/>' for f in files)
+    file_list = "\n".join(f'      <file href="{xml_escape(f)}"/>' for f in files)
     identifier = f'{config["id"]}-{uuid.uuid4().hex[:8]}'
     manifest = (template
                 .replace("{{IDENTIFIER}}", identifier)
-                .replace("{{TITLE}}", config["title"])
+                .replace("{{TITLE}}", xml_escape(config["title"]))
                 .replace("{{FILE_LIST}}", file_list))
+    ET.fromstring(manifest)  # fail here rather than at upload time
     (build_dir / "imsmanifest.xml").write_text(manifest, encoding="utf-8")
 
 
