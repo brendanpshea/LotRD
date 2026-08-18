@@ -121,6 +121,12 @@ export class GameUI {
 
   _renderInventory(root) {
     const inv = this.model.inventory || [];
+
+    // Before the first drop, two "empty" boxes are just noise on the screen a
+    // new player is trying to read. Show the row once there is something in it.
+    const invRow = $(root, "[data-ref=inventory]");
+    if (invRow) invRow.hidden = !inv.some(s => s !== null);
+
     for (let i = 0; i < 2; i++) {
       const slot = $(root, `[data-ref=invSlot${i}]`);
       const icon = $(root, `[data-ref=invIcon${i}]`);
@@ -180,10 +186,16 @@ export class GameUI {
     });
   }
 
+  /** True when the event carries a browser/OS shortcut modifier (Ctrl+W, Cmd+1…). */
+  _hasShortcutModifier(e) {
+    return e.ctrlKey || e.metaKey || e.altKey;
+  }
+
   /** Bind Q/W shortcuts on the supplied AbortController; skips when typing in inputs. */
   _bindInventoryHotkeys(signal) {
     if (!this.controller) return;
     document.addEventListener("keydown", (e) => {
+      if (this._hasShortcutModifier(e)) return;  // don't eat Ctrl+W / Cmd+Q
       if (e.key !== "q" && e.key !== "Q" && e.key !== "w" && e.key !== "W") return;
       const ae = document.activeElement;
       const tag = ae?.tagName;
@@ -224,9 +236,15 @@ export class GameUI {
     for (let i = 0; i < requeue; i++) addBlock(bar, "prog-requeue");
     for (let i = 0; i < unseen; i++) addBlock(bar, "prog-unseen");
 
-    const parts = [`${done} of ${total} complete`];
-    if (requeue > 0) parts.push(`${requeue} to retry`);
-    if (unseen > 0) parts.push(`${unseen} unseen`);
+    let parts;
+    if (done === 0 && requeue === 0) {
+      // "0 of 34 complete · 34 unseen" says the same thing twice.
+      parts = [`${total} question${total === 1 ? "" : "s"}`, "none attempted yet"];
+    } else {
+      parts = [`${done} of ${total} complete`];
+      if (requeue > 0) parts.push(`${requeue} to retry`);
+      if (unseen > 0) parts.push(`${unseen} unseen`);
+    }
     $(root, "[data-ref=progStats]").textContent = parts.join(" · ");
 
     if (requeue > 0) {
@@ -563,6 +581,7 @@ export class GameUI {
 
     this._kbAbort = new AbortController();
     document.addEventListener("keydown", (e) => {
+      if (this._hasShortcutModifier(e)) return;  // Ctrl+1 / Cmd+1 switch tabs
       const n = parseInt(e.key, 10);
       if (n >= 1 && n <= inputs.length) {
         e.preventDefault();
@@ -752,7 +771,7 @@ export class GameUI {
       const container = document.querySelector(".game-container");
       if (container) {
         container.classList.add("player-hit");
-        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
       }
     }
     if (result.shield_used) {
@@ -832,7 +851,7 @@ export class GameUI {
       const container = document.querySelector(".game-container");
       if (container) {
         container.classList.add("player-hit");
-        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
       }
     }
     if (result.shield_used) {
@@ -936,19 +955,50 @@ export class GameUI {
     span.style.left = `${rect.left + rect.width / 2}px`;
     span.style.top = `${rect.top + rect.height / 2}px`;
     document.body.appendChild(span);
-    span.addEventListener("animationend", () => span.remove(), { once: true });
+    // animationend never fires under prefers-reduced-motion (the stylesheet
+    // disables the animation), so back it with a timer or these pile up in
+    // <body> for the whole session.
+    this._removeAfterAnimation(span, () => span.remove());
+  }
+
+  /**
+   * Run `cleanup` when the element's animation ends, with a timer fallback for
+   * when animations are disabled (reduced motion) and animationend never fires.
+   */
+  _removeAfterAnimation(el, cleanup) {
+    let done = false;
+    const run = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      cleanup();
+    };
+    const timer = setTimeout(run, 1000);
+    el.addEventListener("animationend", run, { once: true });
+  }
+
+  /** True when the reader has asked for reduced motion (stylesheet disables our animations). */
+  _prefersReducedMotion() {
+    try {
+      return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    } catch (_) {
+      return false;
+    }
   }
 
   _triggerCombatAnimations(battleData) {
     const dealingDamage = battleData.effective_player_damage > 0;
     const takingDamage = battleData.effective_monster_damage > 0;
     if (!dealingDamage && !takingDamage) return 0;
+    // Nothing animates under reduced motion, so don't hold the results screen
+    // back waiting for animations that will never play.
+    if (this._prefersReducedMotion()) return 0;
 
     if (dealingDamage) {
       const img = this.root.querySelector(".monster-image");
       if (img) {
         img.classList.add("monster-hit");
-        img.addEventListener("animationend", () => img.classList.remove("monster-hit"), { once: true });
+        this._removeAfterAnimation(img, () => img.classList.remove("monster-hit"));
       }
       const imgWrap = this.root.querySelector(".monster-image-container") || this.root.querySelector(".monster-details");
       this._spawnFloatNumber(imgWrap, `-${battleData.effective_player_damage}`, "dmg-float--hit");
@@ -958,13 +1008,46 @@ export class GameUI {
       const container = document.querySelector(".game-container");
       if (container) {
         container.classList.add("player-hit");
-        container.addEventListener("animationend", () => container.classList.remove("player-hit"), { once: true });
+        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
       }
       const hud = this.root.querySelector(".player-hud");
       this._spawnFloatNumber(hud, `-${battleData.effective_monster_damage}`, "dmg-float--recv");
     }
 
     return 760;
+  }
+
+  /**
+   * One line of combat outcome for the results screen. The floating damage
+   * numbers are gone in under a second, and the results screen is where a
+   * player actually stops to read — so restate the fight there: what each side
+   * dealt, and where the HP bars ended up.
+   */
+  _battleSummary(battleData) {
+    if (!this.model) return "";
+    const p = this.model.player;
+    const m = this.model.current_monster;
+    const parts = [];
+
+    const dealt = battleData.effective_player_damage;
+    const taken = battleData.effective_monster_damage;
+    if (typeof dealt !== "number" || typeof taken !== "number") return "";
+
+    if (m?.is_boss) {
+      // The dragon's HP is the review queue, so a damage number would be a lie.
+      if (taken > 0) parts.push(`🩸 The dragon bites for ${taken}`);
+    } else {
+      parts.push(dealt > 0 ? `⚔ You hit for ${dealt}` : "⚔ You dealt no damage");
+      if (taken > 0) parts.push(`🩸 ${m ? m.monster_name : "The monster"} hit you for ${taken}`);
+    }
+
+    parts.push(`❤ You ${Math.max(0, p.hit_points)}/${p.max_hit_points}`);
+    if (m && !m.is_boss) {
+      parts.push(m.hit_points <= 0
+        ? `💀 ${m.monster_name} defeated`
+        : `🐲 ${m.monster_name} ${m.hit_points}/${m.max_hit_points}`);
+    }
+    return parts.join("  ·  ");
   }
 
   showResults(battleData, itemDrop, continueCallback) {
@@ -999,13 +1082,47 @@ export class GameUI {
     if (questionText) {
       const qLine = document.createElement("div");
       qLine.className = "section";
-      qLine.innerHTML = `<span class="bold">Question:</span> ${this._esc(questionText)}`;
+      qLine.innerHTML =
+        `<span class="bold">Question:</span> <span class="question-text">${this._esc(questionText)}</span>`;
       body.insertBefore(qLine, fbWrap);
     }
 
-    addList(fbWrap, "correct", "✔ Correctly selected:", battleData.correctSelections);
-    addList(fbWrap, "incorrect", "✖ Incorrectly selected:", battleData.incorrectSelections);
-    addList(fbWrap, "missed", "⚠ Missed correct answers:", battleData.missedCorrect);
+    const addVerdictLine = (container, cls, label, text) => {
+      const row = document.createElement("div");
+      row.className = `verdict-line ${cls}`;
+      const lab = document.createElement("span");
+      lab.className = "verdict-label";
+      lab.textContent = label;
+      row.appendChild(lab);
+      row.appendChild(document.createTextNode(` ${text}`));
+      container.appendChild(row);
+    };
+
+    if (battleData.singleAnswer) {
+      // One right option, so three lists (one of them reading "None.") only
+      // obscures the result. Say what was picked and what was right.
+      const gotIt = battleData.correctSelections.length > 0;
+      if (gotIt) {
+        addVerdictLine(fbWrap, "correct", "✔ Correct:", battleData.correctSelections[0]);
+      } else {
+        addVerdictLine(fbWrap, "incorrect", "✖ Your answer:",
+          battleData.incorrectSelections[0] ?? "(nothing selected)");
+        addVerdictLine(fbWrap, "missed", "✔ Correct answer:",
+          battleData.missedCorrect[0] ?? "");
+      }
+    } else {
+      addList(fbWrap, "correct", "✔ Correctly selected:", battleData.correctSelections);
+      addList(fbWrap, "incorrect", "✖ Incorrectly selected:", battleData.incorrectSelections);
+      addList(fbWrap, "missed", "⚠ Missed correct answers:", battleData.missedCorrect);
+    }
+
+    const battleLine = this._battleSummary(battleData);
+    if (battleLine) {
+      const bs = document.createElement("div");
+      bs.className = "battle-summary";
+      bs.textContent = battleLine;
+      body.appendChild(bs);
+    }
 
     // During the boss the dragon's HP is "concepts remaining," not dice damage —
     // reframe the turn around mastery instead of showing a meaningless hit number.
@@ -1299,9 +1416,13 @@ export class GameUI {
     const url = URL.createObjectURL(new Blob([t], { type: "text/plain;charset=utf-8" }));
     const a = Object.assign(document.createElement("a"), {
       href: url,
-      download: `lotrd-${setName.replace(".json", "")}-${new Date().toISOString().slice(0, 10)}.txt`,
+      download: `lotrd-${String(setName ?? "session").replace(".json", "")}-${new Date().toISOString().slice(0, 10)}.txt`,
     });
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    // Revoking synchronously can cancel the download before it starts in some
+    // browsers — give the click a tick to be picked up first.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 }

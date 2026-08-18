@@ -338,6 +338,24 @@ describe('question_sets/catalog.json', () => {
     }
   });
 
+  it('question_count matches the number of questions on disk', () => {
+    // The main menu advertises this number, so a stale count is visible to
+    // students the moment a set gains or loses a question.
+    const mismatches = [];
+    for (const topic of catalog) {
+      for (const s of topic.sets) {
+        if (isReviewSet(s)) continue;
+        const p = join(ROOT, 'question_sets', s.id);
+        if (!existsSync(p)) continue;
+        const actual = loadJSON(`question_sets/${s.id}`).length;
+        if (actual !== s.question_count) {
+          mismatches.push(`${s.id}: catalog says ${s.question_count}, file has ${actual}`);
+        }
+      }
+    }
+    assert.deepEqual(mismatches, [], `stale question_count:\n${mismatches.join('\n')}`);
+  });
+
   it('every catalog set ID appears in index.json', () => {
     for (const topic of catalog) {
       for (const s of topic.sets) {
@@ -451,6 +469,19 @@ describe('Question set file validation', () => {
               `${label}: MC must have an incorrect array`);
           }
         }
+      });
+
+      it('no duplicate question text within the set', () => {
+        // Question text is the key for answer history, the session review, the
+        // progress bar and the retrieval-boss queue — duplicates collide there.
+        const seen = new Map();
+        const dupes = [];
+        questions.forEach((q, i) => {
+          const text = q.question;
+          if (seen.has(text)) dupes.push(`${setId}[${seen.get(text)}] and [${i}]: "${text}"`);
+          else seen.set(text, i);
+        });
+        assert.deepEqual(dupes, [], `duplicate question text:\n${dupes.join('\n')}`);
       });
 
       it('no duplicate answer options within a single MC question', () => {

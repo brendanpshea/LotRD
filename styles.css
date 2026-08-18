@@ -1,6 +1,16 @@
 /* styles.css */
 
 /*
+  The `hidden` attribute must beat any class that sets `display`.
+  Browsers apply `[hidden] { display: none }` from the user-agent sheet, which
+  ANY author rule outranks — so a class like `.retry-row { display: flex }`
+  silently un-hides an element the markup and JS both consider hidden.
+  Keep this first, and keep the !important: it is what makes `el.hidden = true`
+  mean what it says everywhere in the app.
+*/
+[hidden] { display: none !important; }
+
+/*
   Palette — Option A: Toned Phosphor Green
   ─────────────────────────────────────────
   --bg          #030903   barely-tinted black (body / page)
@@ -323,6 +333,36 @@ select {
     color: #ffb300;
     font-weight: bold;
     margin: 6px 0;
+}
+
+/*
+  Question stems embed code with real newlines ("What does this print?\n\nx = 4
+  \nprint(x)"). HTML collapses those, so a traced program arrives as one
+  unreadable line. pre-wrap honours the author's line breaks and indentation
+  while still wrapping prose normally.
+*/
+[data-ref="qText"],
+.question-text {
+    white-space: pre-wrap;
+}
+
+/* Single-answer verdict: "your answer / correct answer" instead of three lists */
+.verdict-line {
+    margin: 4px 0;
+    line-height: 1.45;
+}
+
+.verdict-label {
+    font-weight: bold;
+}
+
+/* One-line restatement of the combat outcome on the results screen */
+.battle-summary {
+    margin-top: 10px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--sep, #4a7a4a);
+    color: var(--dim, #5aaa5a);
+    font-size: 0.88rem;
 }
 
 /* ── Monster layout (compact two-column) ──────────────────────────────────── */

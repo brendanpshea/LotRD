@@ -883,9 +883,19 @@ export class GameModel {
     /** Produce a plain-object snapshot suitable for JSON serialisation. */
     toSaveData() {
         const p = this.player;
+        // The in-flight question has already been shifted off its queue, so a
+        // snapshot taken mid-encounter (back button, wrong fill-blank attempt)
+        // would drop it from the run entirely. Put it back at the head of
+        // whichever queue it came from so resuming re-asks it.
+        let questions_to_ask = this.questions_to_ask;
+        let boss_queue = this.boss_queue;
+        if (this.current_question) {
+            if (this.boss_phase) boss_queue = [this.current_question, ...boss_queue];
+            else questions_to_ask = [this.current_question, ...questions_to_ask];
+        }
         return {
             questions:        this.questions,
-            questions_to_ask: this.questions_to_ask,
+            questions_to_ask: questions_to_ask,
             questions_asked:  this.questions_asked,
             answer_history:   this.answer_history,
             stats_offset:     this.stats_offset,
@@ -893,7 +903,7 @@ export class GameModel {
             pending_effects:  [...this.pending_effects],
             boss_phase:       this.boss_phase,
             boss_done:        this.boss_done,
-            boss_queue:       this.boss_queue,
+            boss_queue:       boss_queue,
             recent_monsters:  this.recent_monsters,
             player: {
                 level:            p.level,
@@ -995,7 +1005,22 @@ export class GameModel {
         };
     }
 
+    /**
+     * Per-encounter state for the typed question types is keyed on the current
+     * question *object*, which is reused when a question is re-queued. Clearing
+     * it at every encounter boundary keeps attempt counters (and the auto-cloze
+     * pick) from leaking into a later encounter of the same question — e.g.
+     * when a Logic Bomb ends the encounter after a wrong fill-blank guess.
+     */
+    _resetTypedAnswerState() {
+        this._fbCurrentQ = null;
+        this._clCurrentQ = null;
+        this._dnCurrentQ = null;
+    }
+
     nextEncounter() {
+        this._resetTypedAnswerState();
+
         // ── Boss phase: drive the fight off boss_queue, ignoring the normal queue ──
         if (this.boss_phase) {
             if (this.boss_queue.length === 0) {
@@ -1010,34 +1035,34 @@ export class GameModel {
             return "continue";
         }
 
-        if (!this.current_monster || this.current_monster.hit_points <= 0) {
-            if (this.questions_to_ask.length === 0) {
-                // Normal queue cleared — start the retrieval boss if the player
-                // stumbled on anything this run; flawless runs go straight to victory.
-                if (!this.boss_done) {
-                    const queue = this._buildBossQueue();
-                    if (queue.length > 0) {
-                        this.boss_phase       = true;
-                        this.boss_queue       = queue;
-                        this.current_monster  = this._spawnBoss(queue.length);
-                        this.current_question = this.boss_queue.shift();
-                        return "boss_start";
-                    }
+        // ── Normal queue cleared ────────────────────────────────────────────
+        // Checked before the monster's state: the run is over either way, and
+        // gating this on "the last monster happened to die" would skip the
+        // retrieval boss on any run whose final monster outlived the questions.
+        if (this.questions_to_ask.length === 0) {
+            // Start the retrieval boss if the player stumbled on anything this
+            // run; flawless runs go straight to the end screen.
+            if (!this.boss_done) {
+                const queue = this._buildBossQueue();
+                if (queue.length > 0) {
+                    this.boss_phase       = true;
+                    this.boss_queue       = queue;
+                    this.current_monster  = this._spawnBoss(queue.length);
+                    this.current_question = this.boss_queue.shift();
+                    return "boss_start";
                 }
-                this.current_monster  = null;
-                this.current_question = null;
-                return "victory";
             }
+            const monsterSurvived = !!this.current_monster && this.current_monster.hit_points > 0;
+            this.current_monster  = null;
+            this.current_question = null;
+            return monsterSurvived ? "no_questions" : "victory";
+        }
+
+        if (!this.current_monster || this.current_monster.hit_points <= 0) {
             this.current_monster = this.generateMonster();
         }
 
-        if (this.questions_to_ask.length > 0) {
-            this.current_question = this.questions_to_ask.shift();
-        } else {
-            this.current_question = null;
-            return "no_questions";
-        }
-
+        this.current_question = this.questions_to_ask.shift();
         return "continue";
     }
 
@@ -1299,6 +1324,9 @@ export class GameModel {
             incorrectSelections,
             missedCorrect,
             feedback:         q.feedback || null,
+            // Lets the UI show "your answer / correct answer" for a radio-button
+            // question instead of three lists, one of which reads "None."
+            singleAnswer:     correctSet.size === 1,
         };
     }
 

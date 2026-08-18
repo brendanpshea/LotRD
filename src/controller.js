@@ -674,6 +674,8 @@ export class GameController {
       monsterHp: this.model.current_monster.hit_points,
       current_question: this.model.current_question,
       questions_to_ask: [...this.model.questions_to_ask],
+      boss_queue: [...this.model.boss_queue],
+      pending_effects: new Set(this.model.pending_effects),
       questions_asked: this.model.questions_asked,
       answer_history_len: this.model.answer_history.length,
     };
@@ -686,6 +688,11 @@ export class GameController {
     // it so the player can actually re-submit the same question.
     this.model.current_question = snap.current_question;
     this.model.questions_to_ask = snap.questions_to_ask;
+    // The rolled-back turn may have re-queued the question (into boss_queue
+    // during the boss fight) and burned other armed items — undo both, or the
+    // player pays for a turn that never happened.
+    this.model.boss_queue = snap.boss_queue;
+    this.model.pending_effects = snap.pending_effects;
     this.model.questions_asked = snap.questions_asked;
     this.model.answer_history.length = snap.answer_history_len;
   }
@@ -774,6 +781,11 @@ export class GameController {
     switch (item.effect) {
       case "heal": {
         const room = this.model.player.max_hit_points - this.model.player.hit_points;
+        if (room <= 0) {
+          // Don't burn the item for +0 HP — keep it for when it can do something.
+          this.ui.showFeedbackInline(`${item.emoji} ${item.name} — already at full HP. Saved for later.`);
+          return;
+        }
         const actual = Math.max(0, Math.min(item.amount, room));
         this.model.player.hit_points += actual;
         this.model.consumeSlot(slotIdx);
