@@ -22,9 +22,12 @@ The build:
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
+import stat
 import sys
+import time
 import uuid
 import zipfile
 from pathlib import Path
@@ -77,14 +80,36 @@ def referenced_set_files(catalog: list) -> set[str]:
     return files
 
 
+def remove_tree(path: Path) -> None:
+    """Delete a directory tree, retrying past the transient locks and read-only
+    bits that OneDrive and virus scanners leave on Windows. Raises if the tree
+    survives: building on top of a previous edition's leftovers would silently
+    ship stale question sets."""
+    if not path.exists():
+        return
+
+    def clear_readonly(func, target, _exc):
+        os.chmod(target, stat.S_IWRITE)
+        func(target)
+
+    kwarg = "onexc" if sys.version_info >= (3, 12) else "onerror"
+    for attempt in range(3):
+        try:
+            shutil.rmtree(path, **{kwarg: clear_readonly})
+            return
+        except OSError:
+            if attempt == 2:
+                raise
+            time.sleep(0.4)
+
+
 def copy_game(build_dir: Path) -> None:
     for d in GAME_DIRS:
         src = REPO / d
         if src.exists():
             dst = build_dir / d
-            if dst.exists():
-                shutil.rmtree(dst, ignore_errors=True)
-            shutil.copytree(src, dst)
+            remove_tree(dst)
+            shutil.copytree(src, dst, dirs_exist_ok=True)
     for f in GAME_FILES:
         src = REPO / f
         if src.exists():
@@ -94,6 +119,7 @@ def copy_game(build_dir: Path) -> None:
 def write_filtered_question_sets(build_dir: Path, filtered_catalog: list) -> list[str]:
     qs_src = REPO / "question_sets"
     qs_dst = build_dir / "question_sets"
+    remove_tree(qs_dst)
     qs_dst.mkdir(parents=True, exist_ok=True)
 
     files = referenced_set_files(filtered_catalog)
@@ -189,19 +215,13 @@ def build(config_path: Path) -> Path:
     print(f"Building edition: {edition_id}")
 
     work_dir = DIST / edition_id
-    if work_dir.exists():
-        try:
-            shutil.rmtree(work_dir, ignore_errors=True)
-        except PermissionError:
-            # If we still can't remove it, try removing just the contents
-            for item in work_dir.iterdir():
-                try:
-                    if item.is_dir():
-                        shutil.rmtree(item, ignore_errors=True)
-                    else:
-                        item.unlink()
-                except (PermissionError, OSError):
-                    pass
+    try:
+        remove_tree(work_dir)
+    except OSError as exc:
+        raise SystemExit(
+            f"Could not clear the previous build at {work_dir}: {exc}\n"
+            f"Close anything holding those files (Explorer, an editor, a sync "
+            f"client) and run the build again.")
     work_dir.mkdir(parents=True, exist_ok=True)
 
     copy_game(work_dir)
