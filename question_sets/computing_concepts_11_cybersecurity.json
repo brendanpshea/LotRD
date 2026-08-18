@@ -1,366 +1,426 @@
 [
   {
-    "type": "matching",
-    "question": "Match each property of the CIA triad to the failure it describes.",
-    "pairs": [
-      {
-        "term": "Confidentiality",
-        "definition": "The wrong people can read the data"
-      },
-      {
-        "term": "Integrity",
-        "definition": "The wrong people can change the data"
-      },
-      {
-        "term": "Availability",
-        "definition": "The system can be stopped from working"
-      }
-    ],
-    "feedback": "Every attack breaks at least one of these, and every defence protects at least one. Hiding data protects confidentiality but does nothing for availability — which is why security is never one lock."
-  },
-  {
-    "question": "A clinic's patient records are read by outsiders who typed something clever into a login box. Which property failed?",
+    "question": "Which security goal in the CIA triad ensures that data is accessible only to authorized people?",
     "correct": [
       "Confidentiality"
     ],
     "incorrect": [
       "Integrity",
       "Availability",
-      "Compatibility"
+      "Authenticity"
     ],
-    "feedback": "Nobody changed the records and the portal stayed up — outsiders simply read data they should not have. Altering a prescription would break integrity; knocking the portal offline would break availability."
+    "feedback": "Confidentiality guarantees that private information is protected from unauthorized access or disclosure."
   },
   {
-    "question": "What is a threat model?",
+    "question": "Which goal in the CIA triad ensures that data cannot be unauthorizedly modified or corrupted?",
     "correct": [
-      "A written list of your assets, what could happen to each, and the property at risk"
+      "Integrity"
     ],
     "incorrect": [
-      "A simulation predicting which attacks are most likely to occur next month",
-      "An automated tool that scans source code and reports its vulnerabilities",
-      "A ranking of known attacker groups by how skilled and well funded they are"
+      "Confidentiality",
+      "Availability",
+      "Anonymity"
     ],
-    "feedback": "It is ordinary data — a list of dictionaries would do. Writing it down turns 'are we secure?', which nobody can answer, into 'have we handled every row?', which you can."
+    "feedback": "Integrity guarantees that data remains accurate and trustworthy, protected against unauthorized modification."
   },
   {
-    "question": "A login function builds its query as  f\"SELECT * FROM users WHERE name = '{username}'\"  and someone types  ' OR '1'='1  as the username. What does the database receive?",
+    "question": "Which goal in the CIA triad ensures that systems and services remain operational when needed?",
     "correct": [
-      "A query whose condition is always true, so every user row is returned"
+      "Availability"
     ],
     "incorrect": [
-      "A syntax error, because the quotes do not balance",
-      "A request for the single user actually named ' OR '1'='1",
-      "An empty result, because no such name exists"
+      "Confidentiality",
+      "Integrity",
+      "Non-repudiation"
     ],
-    "feedback": "The attacker's quote closed the string early and their OR clause bolted on a condition that is always true. Scale three rows to forty thousand patient records and you have the morning that started the notebook."
+    "feedback": "Availability ensures that authorized users have timely, reliable access to computing systems and data."
   },
   {
-    "question": "What is the root cause shared by SQL injection and cross-site scripting?",
+    "question": "How does a SQL injection attack work?",
     "correct": [
-      "Data supplied by a user ended up in a position where it was treated as code"
+      "Smuggling malicious SQL commands into a database query through unsanitized user input"
     ],
     "incorrect": [
-      "The program failed to check whether the user was logged in",
-      "The data was stored without being encrypted first",
-      "The server was running an out-of-date version of its software"
+      "Overloading a network router with millions of fake IP connection packets per second",
+      "Eavesdropping on plain text HTTP messages as they cross public Wi-Fi access points",
+      "Stealing physical hard drives directly from an unguarded cloud server data center"
     ],
-    "feedback": "One aims at the database and the other at the page, but both are the same confusion: the application meant a value to be data, and a cleverly written value became commands."
+    "feedback": "SQL injection occurs when unsanitized user input is concatenated directly into SQL query strings, allowing attackers to run arbitrary SQL commands."
   },
   {
-    "question": "What is a parameterized query?",
+    "question": "What is the primary method used to prevent SQL injection vulnerabilities in application code?",
     "correct": [
-      "A query with ? placeholders, where the values are handed to the database separately"
+      "Using parameterized queries so input is treated strictly as data rather than SQL code"
     ],
     "incorrect": [
-      "A query that removes apostrophes and other dangerous characters first",
-      "A query stored in the database rather than in the program",
-      "A query that is checked against a list of allowed patterns"
+      "Encrypting the database file stored on disk with a long administrator password",
+      "Disabling all primary key constraints across every table in the relational schema",
+      "Renaming database tables every week to confuse potential malicious attackers"
     ],
-    "feedback": "The database keeps the query and the value in separate hands, so the value can never be read as commands no matter what it contains. It is also less code than the broken version."
-  },
-  {
-    "question": "With a parameterized query in place, what happens when someone submits  ' OR '1'='1  as a username?",
-    "correct": [
-      "It is looked up as a literal name, finds nobody, and returns an empty result"
-    ],
-    "incorrect": [
-      "The database rejects the request with a syntax error",
-      "The characters are stripped out and the rest of the name is used",
-      "Every user row is returned, but the login is refused afterwards"
-    ],
-    "feedback": "The whole string is treated as data. Since no user is actually called that, the attack simply fails — and ordinary logins keep working exactly as before."
-  },
-  {
-    "question": "Why is hunting for dangerous characters a worse defence against injection than using placeholders?",
-    "correct": [
-      "Blocklists must guess every dangerous input; placeholders remove the risk"
-    ],
-    "incorrect": [
-      "Character filtering runs noticeably slower on a large database",
-      "Character filtering needs a newer version of the database software",
-      "Character filtering protects text fields but leaves numbers exposed"
-    ],
-    "feedback": "Blocklists are a guessing game you have to win every time; the attacker only has to win once. The rule for the rest of your programming life: never build a query by gluing in user input."
-  },
-  {
-    "question": "A patient portal shows staff the comments patients leave. An attacker submits a comment containing a script tag. What is the danger?",
-    "correct": [
-      "Dropped straight onto the page, the script runs in the staff member's browser"
-    ],
-    "incorrect": [
-      "The comment crashes the server at the moment it is written to storage",
-      "The comment overwrites the other comments already held in the database",
-      "The comment makes the page load noticeably more slowly for every visitor"
-    ],
-    "feedback": "This is cross-site scripting. The victim's browser cannot tell the attacker's script from the site's own code, so it obeys it — in someone else's session."
-  },
-  {
-    "question": "What does escaping do to a piece of user input before it is displayed?",
-    "correct": [
-      "Turns characters that would start markup into harmless display text"
-    ],
-    "incorrect": [
-      "Removes the input entirely if it contains anything suspicious",
-      "Encrypts the input so only the server can read it",
-      "Stores the input in a separate table away from real data"
-    ],
-    "feedback": "The character that would open a tag is replaced by an entity that a browser shows as a literal symbol instead of obeying. Flask's template tool does this automatically for every value you drop into a page."
-  },
-  {
-    "question": "How is input validation different from escaping?",
-    "correct": [
-      "Validation checks incoming data's shape; escaping makes outgoing data safe"
-    ],
-    "incorrect": [
-      "Validation runs on the web server while escaping runs inside the database",
-      "Validation applies only to numeric fields and escaping only to text fields",
-      "Validation happens once at start-up while escaping happens on each request"
-    ],
-    "feedback": "They guard different ends. A field asking for an age should reject anything that is not digits, for the simple reason that it is not a number — and that turns away the crudest attacks before they get anywhere."
-  },
-  {
-    "question": "Which of these are examples of input a program should treat as untrusted? (Select all that apply)",
-    "correct": [
-      "Text typed into a form field on a web page",
-      "Values taken from the address a visitor requested",
-      "JSON received in a response from another server"
-    ],
-    "incorrect": [
-      "A constant defined at the top of your own source file",
-      "The result of adding two numbers your program computed"
-    ],
-    "feedback": "Anything that arrives from outside the program could have been crafted by an attacker. All input is a suspect until proven innocent."
-  },
-  {
-    "question": "What is the essential difference between hashing and encryption?",
-    "correct": [
-      "Encryption is two-way and reversible with a key; hashing is one-way"
-    ],
-    "incorrect": [
-      "Hashing is the two-way operation and encryption is the one-way one",
-      "Hashing is designed for text files and encryption for binary files",
-      "Encryption is the right tool for passwords and hashing for messages"
-    ],
-    "feedback": "Use encryption for data you need to read again, such as a message in transit. Use hashing for passwords precisely because you never want to recover them."
-  },
-  {
-    "question": "If a password's hash cannot be reversed, how can a system check that someone typed the right password?",
-    "correct": [
-      "It hashes what was typed and compares that fingerprint with the stored one"
-    ],
-    "incorrect": [
-      "It unhashes the stored value and compares the two passwords",
-      "It sends the typed password to the user's email for confirmation",
-      "It stores the first few characters of the password in readable form"
-    ],
-    "feedback": "The same password always produces the same fingerprint, so the check works. A stolen database yields only fingerprints — which is the whole point: a system should never be able to read its users' passwords."
-  },
-  {
-    "question": "Why is hashing a password without a salt still risky?",
-    "correct": [
-      "The same password always gives the same hash, so lookup tables work"
-    ],
-    "incorrect": [
-      "A hash with no salt can be reversed given enough computing power",
-      "The resulting hash is too short to stay unique across many users",
-      "Two genuinely different passwords end up with the same fingerprint"
-    ],
-    "feedback": "Attackers keep enormous precomputed tables mapping hashes back to common passwords. If your password is common, its hash is already sitting in a lookup table somewhere."
-  },
-  {
-    "question": "What does adding a per-user salt accomplish?",
-    "correct": [
-      "Two users with the same password get different stored hashes"
-    ],
-    "incorrect": [
-      "The stored hash is encrypted, so a stolen database cannot be read",
-      "The stored hash becomes shorter and therefore faster to compare",
-      "The system gains the ability to recover the original password"
-    ],
-    "feedback": "The salt is not secret and is stored alongside the hash. Its only job is to make every user's fingerprint unique, so an attacker would need a fresh table for every salt."
-  },
-  {
-    "question": "Why does the notebook say not to build your own password hashing, even after explaining how it works?",
-    "correct": [
-      "Real password storage must also be deliberately slow, and libraries do that"
-    ],
-    "incorrect": [
-      "Writing your own is unlawful in software that stores personal data",
-      "Python cannot hash text at all without installing an extra library",
-      "A hand-written hash runs too slowly for a real application to use"
-    ],
-    "feedback": "Slowness blunts an attacker guessing millions of times a second. Understanding what the library does is what lets you recognise when it is missing."
-  },
-  {
-    "question": "What is a brute-force attack, and which simple measure blunts it?",
-    "correct": [
-      "Trying guess after guess until one works; locking the account after several failures"
-    ],
-    "incorrect": [
-      "Flooding a server with traffic; adding more server capacity",
-      "Guessing a database's table names; renaming the tables",
-      "Reading packets on a network; switching to a different Wi-Fi"
-    ],
-    "feedback": "Slow hashing makes each guess costly, and a lockout rule turns millions of guesses a second into a handful per hour — without ever storing a readable password."
-  },
-  {
-    "question": "A patient logs in over a coffee-shop Wi-Fi using plain HTTP. What is the risk?",
-    "correct": [
-      "Anyone on the network path can read the packets, including the password, as ordinary text"
-    ],
-    "incorrect": [
-      "The password will be stored on the coffee shop's own server",
-      "The login will fail because plain HTTP cannot carry a password",
-      "The clinic's database will accept the login without checking it"
-    ],
-    "feedback": "Data is most exposed on the journey. The café router, the provider, and anyone snooping on the same Wi-Fi all sit on that path, and plain HTTP sends everything as readable text."
-  },
-  {
-    "question": "What does HTTPS add to HTTP?",
-    "correct": [
-      "Encryption of the conversation, plus a certificate proving the server's identity"
-    ],
-    "incorrect": [
-      "Compression, so pages arrive faster over slow connections",
-      "A guarantee that the site's content is accurate and lawful",
-      "Automatic validation of anything the visitor types in"
-    ],
-    "feedback": "An eavesdropper still sees the packets go by, but all they see is scrambled gibberish. The certificate is why a browser warns loudly when it can no longer confirm who is on the other end."
-  },
-  {
-    "question": "A padlock icon appears in the address bar of a scam website. What does the padlock actually promise?",
-    "correct": [
-      "That the connection is encrypted, not that the site itself is trustworthy"
-    ],
-    "incorrect": [
-      "That the site has been checked and approved as legitimate",
-      "That the site does not collect any personal information",
-      "That the site's owner has been identified by name"
-    ],
-    "feedback": "Certificates are easy to obtain, so a scammer can have a padlock too. 'This connection is private' and 'this site is trustworthy' are two very different claims."
-  },
-  {
-    "question": "What counts as a secret in the sense used here?",
-    "correct": [
-      "Any credential that grants access, such as an API key, password, or database login"
-    ],
-    "incorrect": [
-      "Any part of the code the developer would rather not publish",
-      "Any personal data a user has asked to be kept private",
-      "Any value that changes between one run of the program and the next"
-    ],
-    "feedback": "The rule is absolute: secrets never go in your code. Bots constantly scan public repositories for exactly these strings, and they find them within hours."
-  },
-  {
-    "question": "How does an environment variable keep a secret out of your code?",
-    "correct": [
-      "The code names the secret and reads its value from the environment at runtime"
-    ],
-    "incorrect": [
-      "The code still holds the secret, but stores it in an encrypted form",
-      "The code is compiled first, so the secret is no longer human-readable",
-      "The secret is split across several files so no single file holds it"
-    ],
-    "feedback": "The file becomes safe to share with the world, because there is no secret in it — only a request to read one by name."
-  },
-  {
-    "question": "A developer commits a file containing an API key, then deletes the key in the very next commit. Why is the key still exposed?",
-    "correct": [
-      "Version control keeps every past snapshot, so the old commit still contains the key"
-    ],
-    "incorrect": [
-      "The key stays in the file until the repository is rebuilt",
-      "Deleting a line does not remove it until the branch is merged",
-      "The key is cached by the hosting site for exactly thirty days"
-    ],
-    "feedback": "The history is the point of git and it never forgets. The only safe response is to treat the key as compromised and revoke it, then issue a new one."
+    "feedback": "Parameterized queries separate the SQL code structure from user parameters (using placeholders like `?`), rendering injected SQL harmless."
   },
   {
     "type": "fill_blank",
-    "question": "The file that lists paths git should refuse to track, keeping local secret files out of a repository, is named ___.",
+    "question": "The three components of the CIA security triad are confidentiality, availability, and ___.",
     "correct": [
-      ".gitignore",
-      "gitignore"
+      "integrity"
     ],
     "case_sensitive": false,
-    "feedback": "Listing a secrets file there means git will not track it, so it cannot be committed by accident."
-  },
-  {
-    "question": "What does the principle of defence in depth say?",
-    "correct": [
-      "Stack several independent defences so no single failure exposes everything"
-    ],
-    "incorrect": [
-      "Choose the single strongest defence and implement it perfectly",
-      "Defend the database first and the interface only if time allows",
-      "Add a new defence each time an attack actually succeeds"
-    ],
-    "feedback": "Assume any one layer will eventually fail and make sure another is waiting behind it. A castle is not one wall but a moat, a wall, a gate, and guards."
-  },
-  {
-    "question": "In a layered defence, an attacker slips past input validation with an injection string. What stops the attack next?",
-    "correct": [
-      "The parameterized query, which treats the string as data not commands"
-    ],
-    "incorrect": [
-      "The salted password hashes that are stored in the user database",
-      "The HTTPS encryption that protects the data while it is in transit",
-      "The rate limit governing how many attempts an address may make"
-    ],
-    "feedback": "Each layer stops a different kind of attack. If the database is stolen anyway, the passwords are only salted hashes; if traffic is sniffed, HTTPS scrambled it."
-  },
-  {
-    "question": "Which of these are vulnerabilities in this login route?\n\nname = request.form[\"username\"]\nquery = f\"SELECT * FROM users WHERE name='{name}' AND password='{pw}'\"\nreturn f\"<h1>Welcome {name}</h1>\"\n\n(Select all that apply)",
-    "correct": [
-      "The query is built by gluing user input into SQL, allowing injection",
-      "The password is compared as plain text rather than as a hash",
-      "The username is written into the page without being escaped"
-    ],
-    "incorrect": [
-      "The route reads the form fields by name instead of by position",
-      "The welcome message uses an f-string instead of concatenation"
-    ],
-    "feedback": "Three separate doors, each closed by a different fix: a placeholder query, a password-hash check, and escaping on output. One weak spot with nothing behind it is all an attacker needs."
-  },
-  {
-    "question": "Why should AI-written security code be reviewed especially carefully?",
-    "correct": [
-      "It was trained on huge amounts of real code, much of which is itself vulnerable"
-    ],
-    "incorrect": [
-      "It cannot use libraries that provide encryption or hashing",
-      "It always refuses to write code that touches passwords",
-      "It writes code that runs correctly but far too slowly"
-    ],
-    "feedback": "An AI will confidently produce insecure code, because insecure code is common in its training material. A fast first draft is often an insecure one, and you are the auditor."
+    "feedback": "The CIA triad stands for Confidentiality, Integrity, and Availability."
   },
   {
     "type": "fill_blank",
-    "question": "Random data mixed into a password before hashing, different for every user, is called a ___.",
+    "question": "An attack where malicious JavaScript input is executed inside another user's web browser is known as ___.",
+    "correct": [
+      "XSS",
+      "cross-site scripting",
+      "cross site scripting"
+    ],
+    "case_sensitive": false,
+    "feedback": "XSS (Cross-Site Scripting) occurs when untrusted user input is rendered in a browser as executable script code."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A one-way mathematical function that converts input text into a fixed-length fingerprint for password storage is a ___.",
+    "correct": [
+      "hash",
+      "hash function",
+      "hashing function"
+    ],
+    "case_sensitive": false,
+    "feedback": "Hashing is a one-way transformation used to verify passwords without storing plaintext credentials."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Random data mixed into a password before hashing to defeat precomputed rainbow table attacks is called a ___.",
     "correct": [
       "salt"
     ],
     "case_sensitive": false,
-    "feedback": "It is stored next to the hash and is not secret. Its only job is to make each user's fingerprint unique so precomputed tables cannot be used."
+    "feedback": "A salt is a unique, random string appended to a password before hashing to prevent rainbow table dictionary attacks."
+  },
+  {
+    "question": "Which of the following statements correctly distinguish hashing from encryption? (Select all that apply)",
+    "correct": [
+      "Hashing is a one-way transformation that cannot be mathematically reversed",
+      "Encryption is a two-way process that can be decrypted using a secret key"
+    ],
+    "incorrect": [
+      "Hashing allows developers to decrypt passwords back into original plaintext",
+      "Encryption is used exclusively for password storage and never for data transit"
+    ],
+    "feedback": "Hashing is a one-way fingerprint (irreversible), whereas encryption is a two-way process (reversible with a key)."
+  },
+  {
+    "question": "Which of the following are effective practices for keeping API keys and secrets safe? (Select all that apply)",
+    "correct": [
+      "Storing secrets in environment variables outside the application source code",
+      "Adding secret files and configuration paths to the project's .gitignore file"
+    ],
+    "incorrect": [
+      "Hardcoding secret credentials directly into public GitHub repository files",
+      "Embedding private API keys directly in public HTML and JavaScript web templates"
+    ],
+    "feedback": "Secrets must never be hardcoded or committed to git; store them in environment variables and exclude secret files via `.gitignore`."
+  },
+  {
+    "question": "Which of the following measures help protect web applications against Cross-Site Scripting (XSS)? (Select all that apply)",
+    "correct": [
+      "Validating user input for expected format, length, and content before processing",
+      "Escaping dangerous HTML characters (<, >, &, \") before rendering input in templates"
+    ],
+    "incorrect": [
+      "Using SQL string concatenation when inserting user text into database tables",
+      "Storing user passwords in clear plaintext inside local browser storage cookies"
+    ],
+    "feedback": "XSS defense relies on strict input validation and escaping special HTML characters before rendering untrusted user data."
+  },
+  {
+    "type": "matching",
+    "question": "Match each security concept to its description.",
+    "pairs": [
+      {
+        "term": "CIA Triad",
+        "definition": "The core model covering confidentiality, integrity, and availability"
+      },
+      {
+        "term": "Threat Model",
+        "definition": "A structured list of system assets, potential threats, and risks"
+      },
+      {
+        "term": "Defense in Depth",
+        "definition": "Stacking multiple independent security layers for protection"
+      },
+      {
+        "term": "Brute-Force Attack",
+        "definition": "Systematically testing every possible password key until one works"
+      }
+    ],
+    "feedback": "The CIA triad defines core security goals, threat models identify risks, defense in depth stacks security layers, and brute-force tests every key."
+  },
+  {
+    "type": "matching",
+    "question": "Match each security tool or technique to the vulnerability it mitigates.",
+    "pairs": [
+      {
+        "term": "Parameterized Query",
+        "definition": "Prevents SQL injection by isolating user parameters from SQL commands"
+      },
+      {
+        "term": "HTML Escaping",
+        "definition": "Prevents Cross-Site Scripting (XSS) by neutralizing script tags"
+      },
+      {
+        "term": "Password Salting",
+        "definition": "Defeats precomputed rainbow table attacks against stored hashes"
+      },
+      {
+        "term": ".gitignore File",
+        "definition": "Prevents sensitive secret keys from being pushed to source repositories"
+      }
+    ],
+    "feedback": "Parameterized queries block SQLi, HTML escaping blocks XSS, salting blocks rainbow tables, and `.gitignore` protects repository secrets."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A PIN code has {{digits}} decimal digits. How many total possible PIN combinations exist for a brute-force attack to test?",
+    "variables": {
+      "digits": {
+        "min": 3,
+        "max": 6
+      }
+    },
+    "answer": {
+      "expr": "pow(10, digits)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "A {{digits}}-digit decimal PIN code has 10^{{digits}} = {{expected}} total possible combinations."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An attacker attempts {{attempts_per_sec}} password guesses per second. How many total attempts occur in {{minutes}} minutes?",
+    "variables": {
+      "attempts_per_sec": {
+        "min": 100,
+        "max": 500,
+        "step": 100
+      },
+      "minutes": {
+        "min": 2,
+        "max": 10,
+        "step": 2
+      }
+    },
+    "answer": {
+      "expr": "attempts_per_sec * minutes * 60",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "At {{attempts_per_sec}} attempts/sec, {{minutes}} minutes ({{minutes * 60}} seconds) results in {{expected}} total attempts."
+  },
+  {
+    "question": "What is the principle of Defense in Depth in cybersecurity?",
+    "correct": [
+      "Layering multiple independent security controls so no single failure exposes the system"
+    ],
+    "incorrect": [
+      "Relying exclusively on a single strong firewall to defend an entire internal network",
+      "Storing all user passwords in plain text inside an encrypted cloud storage bucket",
+      "Requiring developers to rewrite application code in assembly language every year"
+    ],
+    "feedback": "Defense in depth uses overlapping, redundant security measures so that if one defensive layer fails, others continue to protect."
+  },
+  {
+    "question": "What primary threat does a `.gitignore` file protect against when properly configured?",
+    "correct": [
+      "Accidentally committing secret API keys and private credentials into version control"
+    ],
+    "incorrect": [
+      "Preventing unauthorized users from sending SQL injection queries to web servers",
+      "Blocking distributed denial-of-service packet floods targeted at web router ports",
+      "Stopping web browsers from caching outdated HTML page templates on user devices"
+    ],
+    "feedback": "A `.gitignore` file ensures local files containing secrets (like `.env`) are ignored by git and not published."
+  },
+  {
+    "question": "Why is storing user passwords in clear, unhashed plaintext dangerous?",
+    "correct": [
+      "If the database is leaked or accessed improperly, every user's password is stolen immediately"
+    ],
+    "incorrect": [
+      "Plaintext passwords take up significantly more memory storage than hashed values do",
+      "Plaintext passwords cause relational database queries to fail with SQL syntax errors",
+      "Plaintext passwords prevent web applications from connecting to HTTPS server ports"
+    ],
+    "feedback": "Plaintext passwords expose all user accounts if data is compromised; salted hashing ensures passwords cannot be read directly."
+  },
+  {
+    "question": "What is HTTPS?",
+    "correct": [
+      "HTTP communication encrypted using Transport Layer Security (TLS) certificates"
+    ],
+    "incorrect": [
+      "A database query language that replaces standard SQL with secure JSON formatting",
+      "A hardware network switch used to connect web servers inside private data centers",
+      "A Python module designed to automatically fix Cross-Site Scripting bugs in code"
+    ],
+    "feedback": "HTTPS encrypts HTTP traffic using TLS/SSL certificates, protecting data confidentiality and integrity in transit."
+  },
+  {
+    "question": "What is Cross-Site Request Forgery (CSRF)?",
+    "correct": [
+      "Tricking an authenticated user's web browser into executing unwanted actions on a trusted site"
+    ],
+    "incorrect": [
+      "Injecting malicious SQL syntax into database form fields to drop table schemas",
+      "Intercepting and reading plain text network packets sent over public copper cables",
+      "Guessing user passwords through systematic automated dictionary trial searches"
+    ],
+    "feedback": "CSRF exploits the trust a web app has in an authenticated user's browser, tricking it into submitting unauthorized commands."
+  },
+  {
+    "question": "What fundamental rule should web developers follow regarding user-supplied input?",
+    "correct": [
+      "Never trust user input — validate and sanitize all incoming data before using it"
+    ],
+    "incorrect": [
+      "Trust input coming from desktop users while validating input coming from mobile users",
+      "Assume all input entered into text fields is already free of malicious code scripts",
+      "Convert all user input directly into executable SQL queries to speed up server performance"
+    ],
+    "feedback": "The cardinal rule of web security is 'Never trust user input.' Validate, sanitize, escape, or parameterize all external data."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The file used to prevent secret credentials from being tracked by git is ___.",
+    "correct": [
+      ".gitignore"
+    ],
+    "case_sensitive": true,
+    "feedback": "The `.gitignore` file specifies untracked files that git should intentionally ignore."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Values stored in the operating system environment to keep secrets out of code are called environment ___.",
+    "correct": [
+      "variables"
+    ],
+    "case_sensitive": false,
+    "feedback": "Environment variables store configuration values and secrets outside source code files."
+  },
+  {
+    "question": "Which of the following scenarios represent a breach of Availability? (Select all that apply)",
+    "correct": [
+      "A distributed denial-of-service (DDoS) attack taking a hospital website offline",
+      "A server power outage crashing the database engine during operating hours"
+    ],
+    "incorrect": [
+      "An unauthorized attacker reading private patient medical records in cleartext",
+      "A malicious intruder altering a patient's stored allergy record in the database"
+    ],
+    "feedback": "Availability breaches prevent legitimate users from accessing operating services (e.g. outages or DDoS attacks)."
+  },
+  {
+    "question": "Which of the following scenarios represent a breach of Integrity? (Select all that apply)",
+    "correct": [
+      "An unauthorized user modifying grade records stored in a university database",
+      "A malicious script altering financial account balance figures during transit"
+    ],
+    "incorrect": [
+      "An attacker taking down a web server by flooding it with millions of ping requests",
+      "A user viewing their own account settings page after logging in successfully"
+    ],
+    "feedback": "Integrity breaches involve unauthorized modification, tampering, or corruption of data."
+  },
+  {
+    "question": "Why is concatenating user input directly into a SQL query string dangerous?",
+    "correct": [
+      "The input can alter the query structure and execute unintended SQL commands"
+    ],
+    "incorrect": [
+      "It causes the operating system to delete the underlying database file on disk",
+      "It automatically converts all database integer values into floating-point numbers",
+      "It prevents web browsers from rendering static CSS stylesheets on web pages"
+    ],
+    "feedback": "Direct string concatenation allows user input containing SQL metacharacters (like `' OR '1'='1`) to alter query logic."
+  },
+  {
+    "question": "What role does a digital certificate play in HTTPS connections?",
+    "correct": [
+      "Vouching for a server's identity and providing public keys for encrypted sessions"
+    ],
+    "incorrect": [
+      "Replacing database primary keys with random unique identifiers in table schemas",
+      "Translating Python source code files into machine code before web deployment",
+      "Filtering out spam emails before they reach a web server's inbox directory"
+    ],
+    "feedback": "Certificates issued by trusted Certificate Authorities authenticate a server's domain identity and enable secure TLS encryption."
+  },
+  {
+    "type": "matching",
+    "question": "Match each security threat to its primary defense.",
+    "pairs": [
+      {
+        "term": "SQL Injection",
+        "definition": "Parameterized SQL queries with placeholder parameters"
+      },
+      {
+        "term": "Cross-Site Scripting (XSS)",
+        "definition": "HTML character escaping and strict input validation"
+      },
+      {
+        "term": "Hardcoded Secrets",
+        "definition": "Environment variables excluded via .gitignore"
+      },
+      {
+        "term": "Eavesdropping in Transit",
+        "definition": "HTTPS encryption using TLS digital certificates"
+      }
+    ],
+    "feedback": "Parameterized queries stop SQLi, escaping stops XSS, environment variables protect secrets, and HTTPS stops eavesdropping."
+  },
+  {
+    "question": "What is a threat model in software engineering?",
+    "correct": [
+      "A documentation of a system's assets, potential threat vectors, and risk mitigations"
+    ],
+    "incorrect": [
+      "A 3D graphical diagram showing physical server hardware locations in a data center",
+      "A automated machine learning model that generates random user passwords on request",
+      "A software unit test that measures how fast a database query executes under load"
+    ],
+    "feedback": "Threat modeling identifies valuable assets, potential threat actors, vulnerabilities, and countermeasure plans."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A system uses a salt of {{salt_bytes}} bytes and a hash of {{hash_bytes}} bytes for each password. How many total bytes are stored per user record?",
+    "variables": {
+      "salt_bytes": {
+        "min": 16,
+        "max": 32,
+        "step": 8
+      },
+      "hash_bytes": {
+        "min": 32,
+        "max": 64,
+        "step": 16
+      }
+    },
+    "answer": {
+      "expr": "salt_bytes + hash_bytes",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Adding {{salt_bytes}} salt bytes and {{hash_bytes}} hash bytes equals {{expected}} total stored bytes per user."
+  },
+  {
+    "question": "What is the purpose of input validation in a secure application?",
+    "correct": [
+      "Checking that incoming data matches expected types, lengths, and formats before processing"
+    ],
+    "incorrect": [
+      "Ensuring that user passwords can be easily decrypted by database administrators",
+      "Automatically backing up database tables to external hard drives every five minutes",
+      "Allowing arbitrary code scripts submitted by users to execute directly on the server"
+    ],
+    "feedback": "Input validation verifies that data entering a system strictly conforms to expected specifications before processing."
   }
 ]
