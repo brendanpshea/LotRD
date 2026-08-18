@@ -12,6 +12,18 @@
     "feedback": "Confidentiality guarantees that private information is protected from unauthorized access or disclosure."
   },
   {
+    "question": "A clinic's patient records are read by outsiders who typed something clever into a login box. Which property failed?",
+    "correct": [
+      "Confidentiality"
+    ],
+    "incorrect": [
+      "Integrity",
+      "Availability",
+      "Compatibility"
+    ],
+    "feedback": "Nobody changed the records and the portal stayed up — outsiders simply read data they should not have. Altering a prescription would break integrity; knocking the portal offline would break availability."
+  },
+  {
     "question": "Which goal in the CIA triad ensures that data cannot be unauthorizedly modified or corrupted?",
     "correct": [
       "Integrity"
@@ -34,6 +46,18 @@
       "Non-repudiation"
     ],
     "feedback": "Availability ensures that authorized users have timely, reliable access to computing systems and data."
+  },
+  {
+    "question": "A login function builds its query as  f\"SELECT * FROM users WHERE name = '{username}'\"  and someone types  ' OR '1'='1  as the username. What does the database receive?",
+    "correct": [
+      "A condition that is always true, so every user row is returned"
+    ],
+    "incorrect": [
+      "A syntax error, because the quotes do not balance",
+      "A request for the single user actually named ' OR '1'='1",
+      "An empty result, because no such name exists"
+    ],
+    "feedback": "The attacker's quote closed the string early and their OR clause bolted on a condition that is always true. Scale three rows to forty thousand patient records and you have the morning that started the notebook."
   },
   {
     "question": "How does a SQL injection attack work?",
@@ -69,6 +93,18 @@
     "feedback": "The CIA triad stands for Confidentiality, Integrity, and Availability."
   },
   {
+    "question": "With a parameterized query in place, what happens when someone submits  ' OR '1'='1  as a username?",
+    "correct": [
+      "It is looked up as a literal name, finds nobody, returns nothing"
+    ],
+    "incorrect": [
+      "The database rejects the request with a syntax error",
+      "The characters are stripped out and the rest of the name is used",
+      "Every user row is returned, but the login is refused afterwards"
+    ],
+    "feedback": "The whole string is treated as data. Since no user is actually called that, the attack simply fails — and ordinary logins keep working exactly as before."
+  },
+  {
     "type": "fill_blank",
     "question": "An attack where malicious JavaScript input is executed inside another user's web browser is known as ___.",
     "correct": [
@@ -98,6 +134,18 @@
     ],
     "case_sensitive": false,
     "feedback": "A salt is a unique, random string appended to a password before hashing to prevent rainbow table dictionary attacks."
+  },
+  {
+    "question": "A patient portal shows staff the comments patients leave. An attacker submits a comment containing a script tag. What is the danger?",
+    "correct": [
+      "Dropped straight onto the page, the script runs in the staff member's browser"
+    ],
+    "incorrect": [
+      "The comment crashes the server at the moment it is written to storage",
+      "The comment overwrites the other comments already held in the database",
+      "The comment makes the page load noticeably more slowly for every visitor"
+    ],
+    "feedback": "This is cross-site scripting. The victim's browser cannot tell the attacker's script from the site's own code, so it obeys it — in someone else's session."
   },
   {
     "question": "Which of the following statements correctly distinguish hashing from encryption? (Select all that apply)",
@@ -242,16 +290,40 @@
     "feedback": "A `.gitignore` file ensures local files containing secrets (like `.env`) are ignored by git and not published."
   },
   {
-    "question": "Why is storing user passwords in clear, unhashed plaintext dangerous?",
+    "question": "What is a brute-force attack, and which simple measure blunts it?",
     "correct": [
-      "If the database is leaked or accessed improperly, every user's password is stolen immediately"
+      "Trying guess after guess; locking the account after failures"
     ],
     "incorrect": [
-      "Plaintext passwords take up significantly more memory storage than hashed values do",
-      "Plaintext passwords cause relational database queries to fail with SQL syntax errors",
-      "Plaintext passwords prevent web applications from connecting to HTTPS server ports"
+      "Flooding a server with traffic; adding more server capacity",
+      "Guessing a database's table names; renaming the tables",
+      "Reading packets on a network; switching to a different Wi-Fi"
+    ],
+    "feedback": "Slow hashing makes each guess costly, and a lockout rule turns millions of guesses a second into a handful per hour — without ever storing a readable password."
+  },
+  {
+    "question": "Why is storing user passwords in clear, unhashed plaintext dangerous?",
+    "correct": [
+      "If the database is leaked, every user's password is stolen immediately"
+    ],
+    "incorrect": [
+      "Plaintext passwords take up more memory storage than hashed values do",
+      "Plaintext passwords cause database queries to fail with syntax errors",
+      "Plaintext passwords prevent applications from connecting to HTTPS ports"
     ],
     "feedback": "Plaintext passwords expose all user accounts if data is compromised; salted hashing ensures passwords cannot be read directly."
+  },
+  {
+    "question": "A patient logs in over a coffee-shop Wi-Fi using plain HTTP. What is the risk?",
+    "correct": [
+      "Anyone on the network path can read the packets, password included"
+    ],
+    "incorrect": [
+      "The password will be stored on the coffee shop's own server",
+      "The login will fail because plain HTTP cannot carry a password",
+      "The clinic's database will accept the login without checking it"
+    ],
+    "feedback": "Data is most exposed on the journey. The café router, the provider, and anyone snooping on the same Wi-Fi all sit on that path, and plain HTTP sends everything as readable text."
   },
   {
     "question": "What is HTTPS?",
@@ -268,14 +340,26 @@
   {
     "question": "What is Cross-Site Request Forgery (CSRF)?",
     "correct": [
-      "Tricking an authenticated user's web browser into executing unwanted actions on a trusted site"
+      "Tricking a logged-in user's browser into unwanted actions on a trusted site"
     ],
     "incorrect": [
-      "Injecting malicious SQL syntax into database form fields to drop table schemas",
-      "Intercepting and reading plain text network packets sent over public copper cables",
-      "Guessing user passwords through systematic automated dictionary trial searches"
+      "Injecting malicious SQL into database form fields to drop table schemas",
+      "Intercepting and reading plain text packets sent over public cables",
+      "Guessing user passwords through automated dictionary trial searches"
     ],
     "feedback": "CSRF exploits the trust a web app has in an authenticated user's browser, tricking it into submitting unauthorized commands."
+  },
+  {
+    "question": "A padlock icon appears in the address bar of a scam website. What does the padlock actually promise?",
+    "correct": [
+      "That the connection is encrypted, not that the site is honest"
+    ],
+    "incorrect": [
+      "That the site has been checked and approved as legitimate",
+      "That the site does not collect any personal information",
+      "That the site's owner has been identified by name"
+    ],
+    "feedback": "Certificates are easy to obtain, so a scammer can have a padlock too. 'This connection is private' and 'this site is trustworthy' are two very different claims."
   },
   {
     "question": "What fundamental rule should web developers follow regarding user-supplied input?",
@@ -318,6 +402,18 @@
       "A malicious intruder altering a patient's stored allergy record in the database"
     ],
     "feedback": "Availability breaches prevent legitimate users from accessing operating services (e.g. outages or DDoS attacks)."
+  },
+  {
+    "question": "A developer commits a file containing an API key, then deletes the key in the very next commit. Why is the key still exposed?",
+    "correct": [
+      "Version control keeps every snapshot, so the old commit has the key"
+    ],
+    "incorrect": [
+      "The key stays in the file until the repository is rebuilt",
+      "Deleting a line does not remove it until the branch is merged",
+      "The key is cached by the hosting site for exactly thirty days"
+    ],
+    "feedback": "The history is the point of git and it never forgets. The only safe response is to treat the key as compromised and revoke it, then issue a new one."
   },
   {
     "question": "Which of the following scenarios represent a breach of Integrity? (Select all that apply)",
