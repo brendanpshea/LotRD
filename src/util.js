@@ -75,6 +75,75 @@ export const MASTER_WAIT_DAYS = 7;
 export const TRIAL_MAX_QUESTIONS = 18;
 
 /**
+ * The grade the SCORM shim reports to the LMS, recomputed in-app so a student
+ * can see the same number the gradebook gets — and, in the browser build where
+ * there is no LMS at all, so the number means something on its own.
+ *
+ * Every playable set is worth an equal share of 100%; a set pays out its share
+ * scaled by the rank it has been carried to. The shim keeps its own copy of
+ * this arithmetic (it can't import a module), and a test pins the two together.
+ *
+ * @param {Array<{topic?:string, sets?:Array<{id?:string, review?:boolean, tier?:number, status?:{type?:string}}>}>} catalog
+ *        The catalog after the controller has decorated it with per-set status and tier.
+ * @returns {{percent:number, credit:number, totalSets:number, clearedSets:number,
+ *            tierCounts:number[], topics:Array<object>}}
+ */
+export function computeCourseGrade(catalog) {
+  const tierCounts = [0, 0, 0, 0];
+  const topics = [];
+  let credit = 0;
+  let totalSets = 0;
+  let clearedSets = 0;
+
+  for (const topic of (catalog || [])) {
+    const sets = (topic.sets || []).filter(entry => !entry.review && entry.id);
+    if (sets.length === 0) continue;
+    const topicCounts = [0, 0, 0, 0];
+    let topicCredit = 0;
+
+    for (const entry of sets) {
+      const cleared = entry.status?.type === "complete";
+      const tier = cleared ? clampTier(entry.tier) : TIER_NONE;
+      topicCounts[tier]++;
+      topicCredit += TIER_CREDIT[tier];
+      if (tier > TIER_NONE) clearedSets++;
+    }
+
+    for (let t = 0; t < tierCounts.length; t++) tierCounts[t] += topicCounts[t];
+    credit += topicCredit;
+    totalSets += sets.length;
+    topics.push({
+      topic: topic.topic || "Other",
+      totalSets: sets.length,
+      credit: topicCredit,
+      // Share of the whole grade this topic is currently contributing.
+      percentOfWhole: topicCredit,
+      percentOfTopic: Math.round((topicCredit / sets.length) * 100),
+      tierCounts: topicCounts,
+    });
+  }
+
+  for (const t of topics) {
+    t.percentOfWhole = totalSets > 0 ? (t.credit / totalSets) * 100 : 0;
+  }
+
+  return {
+    percent: totalSets > 0 ? Math.round((credit / totalSets) * 100) : 0,
+    credit,
+    totalSets,
+    clearedSets,
+    tierCounts,
+    topics,
+  };
+}
+
+function clampTier(tier) {
+  const t = typeof tier === "number" ? Math.floor(tier) : TIER_APPRENTICE;
+  if (!Number.isFinite(t) || t < TIER_APPRENTICE) return TIER_APPRENTICE;
+  return Math.min(t, TIER_MASTER);
+}
+
+/**
  * When (and whether) the next rank trial is available.
  * @param {{tier?:number, apprenticeAt?:string, journeymanAt?:string}|null} tierRec
  * @param {number} now – epoch ms (injectable for tests)

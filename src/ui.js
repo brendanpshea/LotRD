@@ -1,4 +1,6 @@
-import { shuffle, TIER_MASTER, TIER_NAMES, TIER_BADGES } from "./util.js";
+import {
+  shuffle, TIER_MASTER, TIER_NAMES, TIER_BADGES, TIER_CREDIT, computeCourseGrade,
+} from "./util.js";
 import { highlightJava } from "./highlight.js";
 import { parseClozeSegments, evaluateDynamicExpression } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
@@ -322,6 +324,112 @@ export class GameUI {
     }
   }
 
+  /**
+   * The headline grade, plus an expandable derivation. Students are being graded
+   * on this number, so it has to be inspectable: the panel shows every set's rank,
+   * what each rank is worth, and what the next trial would add.
+   */
+  _renderGradePanel(catalog) {
+    const panel = $(this.root, "[data-ref=gradePanel]");
+    if (!panel) return;
+    const grade = computeCourseGrade(catalog);
+    if (grade.totalSets === 0) return;
+
+    // The shim only exists in an LMS package; in the browser build there is no gradebook
+    // to explain, so the same number gets framed as personal progress instead.
+    const hasLms = (() => {
+      try { return !!window.LotrdScorm?.hasLms?.(); } catch (_) { return false; }
+    })();
+
+    $(this.root, "[data-ref=gradeLabel]").textContent =
+      hasLms ? "Course score (sent to your gradebook)" : "Overall progress score";
+    $(this.root, "[data-ref=gradeValue]").textContent = `${grade.percent}%`;
+
+    const fill = $(this.root, "[data-ref=gradeBarFill]");
+    fill.style.width = `${grade.percent}%`;
+    const bar = $(this.root, "[data-ref=gradeBar]");
+    bar.setAttribute("aria-label", `${grade.percent} percent of the total score earned`);
+
+    const [, apprentice, journeyman, master] = grade.tierCounts;
+    const rankParts = [];
+    if (master) rankParts.push(`${TIER_BADGES[3]} ${master} Master`);
+    if (journeyman) rankParts.push(`${TIER_BADGES[2]} ${journeyman} Journeyman`);
+    if (apprentice) rankParts.push(`${TIER_BADGES[1]} ${apprentice} Apprentice`);
+    $(this.root, "[data-ref=gradeSummary]").innerHTML = grade.clearedSets === 0
+      ? `<span class="dim">No sets cleared yet — finish any set to start earning credit.</span>`
+      : `<span class="yellow">${grade.clearedSets}</span> of ${grade.totalSets} sets cleared` +
+        (rankParts.length ? ` &nbsp;·&nbsp; ${rankParts.join(" &nbsp; ")}` : "");
+
+    $(this.root, "[data-ref=gradeBreakdown]").innerHTML =
+      this._gradeBreakdownHtml(grade, hasLms);
+    panel.hidden = false;
+  }
+
+  _gradeBreakdownHtml(grade, hasLms) {
+    const share = 100 / grade.totalSets;
+    const fmt = n => (Math.round(n * 10) / 10).toString();
+    const rankRow = (tier, count) => {
+      const worth = share * TIER_CREDIT[tier];
+      return `<tr>
+        <td>${TIER_BADGES[tier]} ${TIER_NAMES[tier]}</td>
+        <td class="dim grade-col-optional">${Math.round(TIER_CREDIT[tier] * 100)}% of a set's share</td>
+        <td>${count} ${count === 1 ? "set" : "sets"}</td>
+        <td class="yellow">${fmt(worth * count)}%</td>
+      </tr>`;
+    };
+
+    const notCleared = grade.tierCounts[0];
+    const rows = [3, 2, 1].map(t => rankRow(t, grade.tierCounts[t])).join("") +
+      `<tr class="dim">
+        <td>Not cleared</td><td class="grade-col-optional">no credit</td>
+        <td>${notCleared} ${notCleared === 1 ? "set" : "sets"}</td><td>0%</td>
+      </tr>`;
+
+    // With several courses loaded, the headline is diluted across topics a given player
+    // may never touch, so each topic also reports how far along it is on its own terms.
+    const topicRows = grade.topics.length > 1
+      ? `<div class="grade-subhead">By topic</div>
+         <table class="grade-table">
+           <tr><th>Topic</th><th>Cleared</th><th>This topic</th>
+               <th class="grade-col-optional">Adds to total</th></tr>
+           ${grade.topics.map(t => `<tr>
+             <td>${this._esc(t.topic)}</td>
+             <td>${t.totalSets - t.tierCounts[0]} of ${t.totalSets}</td>
+             <td class="yellow">${t.percentOfTopic}%</td>
+             <td class="grade-col-optional">${fmt(t.percentOfWhole)}%</td>
+           </tr>`).join("")}
+         </table>
+         <p class="dim">“This topic” scores that topic on its own, counting only its sets —
+         the number to watch if you are working through one course rather than all of
+         them.<span class="grade-col-optional"> “Adds to total” is the slice of the headline
+         percentage the topic currently contributes.</span></p>`
+      : "";
+
+    return `
+      <p>Every set counts the same: with ${grade.totalSets} sets, each one is worth
+      <span class="yellow">${fmt(share)}%</span> of the total. How much of that share a set
+      pays out depends on the rank you have carried it to.</p>
+      <table class="grade-table">
+        <tr><th>Rank</th><th class="grade-col-optional">Pays</th><th>You have</th><th>Earned</th></tr>
+        ${rows}
+        <tr class="grade-total">
+          <td colspan="3">Total</td><td class="yellow">${grade.percent}%</td>
+        </tr>
+      </table>
+      ${topicRows}
+      <p>Clearing a set the first time earns <strong>Apprentice</strong>. A rank trial — a
+      short re-run of about half the set, weighted toward the questions you missed — raises it
+      to <strong>Journeyman</strong> and then <strong>Master</strong>. Trials unlock only after
+      a real waiting period, so full credit takes a few sittings spread over days rather than
+      one long night.</p>
+      <p class="dim">Your score never goes down. A trial can only add credit, so a bad day on a
+      rank trial costs you nothing but the wait.</p>
+      <p>${hasLms
+        ? "This percentage is what gets written to your gradebook, and it updates as soon as you finish a set or a trial."
+        : "You are playing without a learning-management system, so nothing is reported anywhere — this is just your own progress, saved in this browser."}</p>
+    `;
+  }
+
   showMainMenu(catalog, globalStats, levelData, launchCallback) {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-main-menu");
@@ -331,6 +439,8 @@ export class GameUI {
     const bar = $(this.root, "[data-ref=globalStats]");
     const totalSel = (globalStats?.total_correct ?? 0) + (globalStats?.total_incorrect ?? 0);
     const pct = totalSel > 0 ? Math.round((globalStats.total_correct ?? 0) / totalSel * 100) : 0;
+
+    this._renderGradePanel(catalog);
 
     bar.innerHTML = `
       <span class="stat-item">⚔ Level: <span class="yellow">${level}</span> <span class="dim">(${title})</span></span>

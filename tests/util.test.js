@@ -8,8 +8,10 @@ import {
   advanceReviewStage,
   TIER_APPRENTICE, TIER_JOURNEYMAN, TIER_MASTER, TIER_CREDIT,
   JOURNEYMAN_WAIT_DAYS, MASTER_WAIT_DAYS, TRIAL_MAX_QUESTIONS,
-  nextTierInfo, sampleTrialQuestions,
+  nextTierInfo, sampleTrialQuestions, computeCourseGrade,
 } from '../src/util.js';
+
+import { readFile } from 'node:fs/promises';
 
 const DAY = 86400000;
 const T0 = Date.parse('2026-01-01T00:00:00.000Z');
@@ -151,5 +153,73 @@ describe('sampleTrialQuestions', () => {
     const texts = new Set(sample.map(x => x.question));
     assert.ok(texts.has('q2') && texts.has('q4') && texts.has('q5'),
       `expected the three most-missed, got ${[...texts].join(', ')}`);
+  });
+});
+
+describe('course grade', () => {
+  const set = (id, tier) => ({
+    id,
+    ...(tier ? { status: { type: 'complete' }, tier } : { status: { type: 'not_started' } }),
+  });
+
+  it('splits 100% evenly across playable sets and pays each by rank', () => {
+    const grade = computeCourseGrade([{
+      topic: 'A',
+      sets: [set('a', TIER_MASTER), set('b', TIER_JOURNEYMAN), set('c', TIER_APPRENTICE), set('d')],
+    }]);
+    assert.equal(grade.totalSets, 4);
+    assert.equal(grade.clearedSets, 3);
+    // (1.0 + 0.9 + 0.8 + 0) / 4 = 67.5% → 68
+    assert.equal(grade.percent, 68);
+    assert.deepEqual(grade.tierCounts, [1, 1, 1, 1]);
+  });
+
+  it('ignores review entries, which are not gradeable', () => {
+    const grade = computeCourseGrade([{
+      topic: 'A',
+      sets: [set('a', TIER_MASTER), { id: 'r', review: true }],
+    }]);
+    assert.equal(grade.totalSets, 1);
+    assert.equal(grade.percent, 100);
+  });
+
+  it('reaches exactly 100% only when every set is at Master', () => {
+    const all = tier => computeCourseGrade([{
+      topic: 'A', sets: ['a', 'b', 'c'].map(id => set(id, tier)),
+    }]).percent;
+    assert.equal(all(TIER_MASTER), 100);
+    assert.equal(all(TIER_JOURNEYMAN), 90);
+    assert.equal(all(TIER_APPRENTICE), 80);
+  });
+
+  it('reports each topic\'s contribution to the whole, not to itself', () => {
+    const grade = computeCourseGrade([
+      { topic: 'A', sets: [set('a', TIER_MASTER), set('b', TIER_MASTER)] },
+      { topic: 'B', sets: [set('c'), set('d')] },
+    ]);
+    assert.equal(grade.percent, 50);
+    const [a, b] = grade.topics;
+    assert.equal(Math.round(a.percentOfWhole), 50);   // half the course, fully mastered
+    assert.equal(a.percentOfTopic, 100);
+    assert.equal(Math.round(b.percentOfWhole), 0);
+  });
+
+  it('handles an empty or set-less catalog without dividing by zero', () => {
+    assert.equal(computeCourseGrade([]).percent, 0);
+    assert.equal(computeCourseGrade([{ topic: 'A', sets: [] }]).percent, 0);
+    assert.equal(computeCourseGrade(null).percent, 0);
+  });
+
+  it('agrees with the SCORM shim, which keeps its own copy of the arithmetic', async () => {
+    // The shim is a plain script (no imports), so the formula is duplicated there.
+    // Run the shim's TIER_CREDIT table and progressPercent shape against ours.
+    const shimSrc = await readFile(
+      new URL('../SCORM/templates/scorm-shim.js', import.meta.url), 'utf8');
+    const creditLine = shimSrc.match(/const TIER_CREDIT = (\[[^\]]*\]);/);
+    assert.ok(creditLine, 'shim no longer declares TIER_CREDIT — update this test');
+    assert.deepEqual(JSON.parse(creditLine[1]), TIER_CREDIT,
+      'shim and util disagree on what each rank is worth');
+    assert.ok(/Math\.round\(\(credit \/ totalSets\) \* 100\)/.test(shimSrc),
+      'shim no longer computes the score as credit/totalSets — update computeCourseGrade');
   });
 });
