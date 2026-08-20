@@ -36,6 +36,18 @@
     "feedback": "Unsupervised learning finds underlying structure, patterns, or clusters in unlabeled data without target guidance."
   },
   {
+    "question": "A streaming service feeds its subscribers' viewing histories to an algorithm that sorts them into groups nobody defined in advance, and a marketer then studies each group. Which kind of learning is this?",
+    "correct": [
+      "Unsupervised learning, since the groupings are found without any target answers"
+    ],
+    "incorrect": [
+      "Supervised learning, since the marketer ends up naming each of the groups afterwards",
+      "Supervised learning, since each subscriber's viewing history serves as their label",
+      "Reinforcement learning, since the system improves as subscribers react to what it shows"
+    ],
+    "feedback": "What makes learning supervised is having the right answer attached to each example while training, and here no such answer exists. Names invented by a human after the fact never reach the algorithm, and viewing history is the input rather than a target."
+  },
+  {
     "question": "In machine learning terminology, what is a feature?",
     "correct": [
       "An individual measurable property or variable used as an input to a model"
@@ -48,12 +60,41 @@
     "feedback": "Features are input variables (such as income, age, or word counts) fed into a model to make predictions."
   },
   {
+    "type": "cloze",
+    "question": "In a spam filter, the word counts fed into the model are its {{1}}, the human verdict \"spam\" or \"not spam\" attached to each training email is its {{2}}, and the number the model itself tunes to decide how much one word matters is a {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "features",
+          "feature"
+        ],
+        "hint": "inputs"
+      },
+      {
+        "accept": [
+          "label",
+          "labels"
+        ],
+        "hint": "target"
+      },
+      {
+        "accept": [
+          "weight",
+          "weights",
+          "parameter"
+        ],
+        "hint": "learned value"
+      }
+    ],
+    "feedback": "The first two come from the data and the third is produced by training, which is the line students most often blur. Once the model is trained the labels disappear from the picture entirely, but the inputs and the learned values are both still needed to make a prediction."
+  },
+  {
     "question": "A program tries every income cutoff from 20 to 60 and keeps the one that best matches past loan outcomes. What does this illustrate?",
     "correct": [
       "Machine learning stripped to its bones: the data chose the rule"
     ],
     "incorrect": [
-      "A brute-force search, which has nothing to do with learning",
+      "A hand-written rule, since a person chose the range of cutoffs to try",
       "Unsupervised learning, since no answers were provided",
       "A neural network, since many options were tried at once"
     ],
@@ -81,6 +122,38 @@
     "feedback": "A perceptron is the foundational artificial neuron, calculating a weighted sum of inputs and applying an activation threshold."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "A perceptron receives inputs x1 = {{x1}} and x2 = {{x2}}, with trained weights w1 = {{w1}} and w2 = {{w2}}. What is the weighted sum (w1 * x1) + (w2 * x2)?",
+    "variables": {
+      "x1": {
+        "min": 1,
+        "max": 9
+      },
+      "x2": {
+        "min": 1,
+        "max": 9
+      },
+      "w1": {
+        "min": 1,
+        "max": 5
+      },
+      "w2": {
+        "values": [
+          -3,
+          -2,
+          -1,
+          1,
+          2
+        ]
+      }
+    },
+    "answer": {
+      "expr": "(w1 * x1) + (w2 * x2)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each input is scaled by its own weight before anything is added: ({{w1}} x {{x1}}) + ({{w2}} x {{x2}}) = {{expected}}. A negative weight means that input pushes the neuron away from firing."
+  },
+  {
     "type": "fill_blank",
     "question": "In a perceptron, the numerical value that scales how strongly an input influences the output is called a ___.",
     "correct": [
@@ -88,6 +161,25 @@
     ],
     "case_sensitive": false,
     "feedback": "Weights adjust the relative importance of each input feature in a perceptron or neural network model."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A neural network layer has {{inputs}} inputs and {{neurons}} neurons. Each neuron holds one weight per input plus one bias value. How many numbers must this layer learn in total?",
+    "variables": {
+      "inputs": {
+        "min": 3,
+        "max": 10
+      },
+      "neurons": {
+        "min": 2,
+        "max": 6
+      }
+    },
+    "answer": {
+      "expr": "(inputs * neurons) + neurons",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Every neuron needs {{inputs}} weights and 1 bias, so {{neurons}} neurons need ({{inputs}} x {{neurons}}) + {{neurons}} = {{expected}} learned numbers. Forgetting the biases is the usual slip."
   },
   {
     "type": "fill_blank",
@@ -165,8 +257,8 @@
       "Unrepresentative sampling in training data that excludes specific demographic groups"
     ],
     "incorrect": [
-      "Compiling Python code using non-standard compiler optimization flags",
-      "Encrypting stored password hashes with random unique salt strings on disk"
+      "A random number generator seeded differently on each training run",
+      "Rounding error building up in the weights across many training epochs"
     ],
     "feedback": "Models reflect the patterns in their training data; if training data contains historical bias or skewed sampling, the model learns it."
   },
@@ -275,6 +367,29 @@
   },
   {
     "type": "dynamic_numeric",
+    "question": "Training sweeps through the whole dataset {{epochs}} times, and each sweep performs {{batches}} weight updates, one per batch. How many weight updates happen altogether?",
+    "variables": {
+      "epochs": {
+        "min": 3,
+        "max": 10
+      },
+      "batches": {
+        "values": [
+          10,
+          20,
+          25,
+          50
+        ]
+      }
+    },
+    "answer": {
+      "expr": "epochs * batches",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{epochs}} epochs of {{batches}} updates each gives {{expected}} adjustments of the weights. Learning is not one calculation but this long series of small corrections."
+  },
+  {
+    "type": "dynamic_numeric",
     "question": "A sentence of {{words}} words is tokenized into an average of {{tokens_per_word}} tokens per word. How many total tokens are produced?",
     "variables": {
       "words": {
@@ -369,16 +484,16 @@
     "feedback": "LLMs predict word patterns probabilistically based on training text; they have no internal mechanism to verify factual accuracy."
   },
   {
-    "question": "What is the role of activation functions in neural networks?",
+    "question": "In the perceptron you traced, the neuron multiplies, sums, and then compares the sum against a threshold. What does that final comparison contribute?",
     "correct": [
-      "Introducing non-linear transformations so networks can learn complex non-linear patterns"
+      "A yes-or-no decision, so the neuron outputs a choice rather than a raw total"
     ],
     "incorrect": [
-      "Setting the starting values of the weights before the first training example arrives",
-      "Measuring how far a prediction sits from the correct answer at each training step",
-      "Deciding how large a step the weights take when they are adjusted after an error"
+      "A rescaling of the inputs so that each weight counts equally",
+      "A correction to the weights whenever the neuron guesses wrong",
+      "A running average of every sum the neuron has produced so far"
     ],
-    "feedback": "Activation functions introduce non-linearity, allowing neural networks to learn intricate, non-linear relationships in data."
+    "feedback": "Multiply-and-sum produces a number; the threshold turns that number into an output of 1 or 0. Without that step a neuron could only ever report a total, never make a call. Larger networks use smoother versions of the same idea."
   },
   {
     "question": "Why does understanding next-token prediction explain the habit of verifying AI output?",
@@ -441,6 +556,18 @@
     "feedback": "The split has to happen before training, or the model is later tested on data it already memorised — which measures recall, not learning, and hides overfitting until real users arrive."
   },
   {
+    "question": "Building an image model took three weeks on a server farm, but the finished model labels a new photo on a phone in about 20 milliseconds. Which distinction does this illustrate?",
+    "correct": [
+      "Training fits the weights once at great cost; inference just reuses them cheaply"
+    ],
+    "incorrect": [
+      "Inference is the costly step, because the weights are recomputed for each new photo",
+      "Training is repeated on the phone every time the user takes another new photo",
+      "Both steps cost the same, and only the choice of hardware makes them look different"
+    ],
+    "feedback": "Once training ends the weights are frozen numbers, so predicting is just arithmetic on values that are already known. That asymmetry is why an expensive model can still ship to a device with a small battery."
+  },
+  {
     "type": "fill_blank",
     "question": "Learning from examples without explicit target labels to find natural clusters is ___ learning.",
     "correct": [
@@ -465,8 +592,8 @@
       "Evaluating potential labor disruption and workforce impacts"
     ],
     "incorrect": [
-      "Ensuring that AI models run on vintage microprocessors",
-      "Forbidding the use of version control software like git in AI development"
+      "Removing a protected attribute from the data, which by itself makes a model fair",
+      "Reporting training accuracy, since a high score shows the model treats groups equally"
     ],
     "feedback": "Responsible AI deployment requires considering user data privacy, consent, labor impacts, environmental costs, and fairness."
   },
@@ -543,7 +670,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "A model achieves {{correct_count}} correct predictions out of {{total_count}} total test cases. What is its accuracy percentage?",
+    "question": "A model achieves {{actual_correct}} correct predictions out of {{total_count}} total test cases. What is its accuracy percentage?",
     "variables": {
       "total_count": {
         "values": [
@@ -592,119 +719,6 @@
     "feedback": "Training data provides the empirical examples that guide weight updates during model learning."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "A perceptron receives inputs x1 = {{x1}} and x2 = {{x2}}, with trained weights w1 = {{w1}} and w2 = {{w2}}. What is the weighted sum (w1 * x1) + (w2 * x2)?",
-    "variables": {
-      "x1": {
-        "min": 1,
-        "max": 9
-      },
-      "x2": {
-        "min": 1,
-        "max": 9
-      },
-      "w1": {
-        "min": 1,
-        "max": 5
-      },
-      "w2": {
-        "values": [
-          -3,
-          -2,
-          -1,
-          1,
-          2
-        ]
-      }
-    },
-    "answer": {
-      "expr": "(w1 * x1) + (w2 * x2)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Each input is scaled by its own weight before anything is added: ({{w1}} x {{x1}}) + ({{w2}} x {{x2}}) = {{expected}}. A negative weight means that input pushes the neuron away from firing."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A neural network layer has {{inputs}} inputs and {{neurons}} neurons. Each neuron holds one weight per input plus one bias value. How many numbers must this layer learn in total?",
-    "variables": {
-      "inputs": {
-        "min": 3,
-        "max": 10
-      },
-      "neurons": {
-        "min": 2,
-        "max": 6
-      }
-    },
-    "answer": {
-      "expr": "(inputs * neurons) + neurons",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Every neuron needs {{inputs}} weights and 1 bias, so {{neurons}} neurons need ({{inputs}} x {{neurons}}) + {{neurons}} = {{expected}} learned numbers. Forgetting the biases is the usual slip."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "Training sweeps through the whole dataset {{epochs}} times, and each sweep performs {{batches}} weight updates, one per batch. How many weight updates happen altogether?",
-    "variables": {
-      "epochs": {
-        "min": 3,
-        "max": 10
-      },
-      "batches": {
-        "values": [
-          10,
-          20,
-          25,
-          50
-        ]
-      }
-    },
-    "answer": {
-      "expr": "epochs * batches",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "{{epochs}} epochs of {{batches}} updates each gives {{expected}} adjustments of the weights. Learning is not one calculation but this long series of small corrections."
-  },
-  {
-    "type": "cloze",
-    "question": "In a spam filter, the word counts fed into the model are its {{1}}, the human verdict \"spam\" or \"not spam\" attached to each training email is its {{2}}, and the number the model itself tunes to decide how much one word matters is a {{3}}.",
-    "blanks": [
-      {
-        "accept": [
-          "features",
-          "feature"
-        ],
-        "hint": "inputs"
-      },
-      {
-        "accept": [
-          "label",
-          "labels"
-        ],
-        "hint": "target"
-      },
-      {
-        "accept": [
-          "weight"
-        ],
-        "hint": "learned value"
-      }
-    ],
-    "feedback": "The first two come from the data and the third is produced by training, which is the line students most often blur. Once the model is trained the labels disappear from the picture entirely, but the inputs and the learned values are both still needed to make a prediction."
-  },
-  {
-    "question": "A streaming service feeds its subscribers' viewing histories to an algorithm that sorts them into groups nobody defined in advance, and a marketer then studies each group. Which kind of learning is this?",
-    "correct": [
-      "Unsupervised learning, since the groupings are found without any target answers"
-    ],
-    "incorrect": [
-      "Supervised learning, since the marketer ends up naming each of the groups afterwards",
-      "Supervised learning, since each subscriber's viewing history serves as their label",
-      "Reinforcement learning, since the system improves as subscribers react to what it shows"
-    ],
-    "feedback": "What makes learning supervised is having the right answer attached to each example while training, and here no such answer exists. Names invented by a human after the fact never reach the algorithm, and viewing history is the input rather than a target."
-  },
-  {
     "question": "A loan model scores 99% on the data it trained on but only 62% on held-out test data it has never seen. What is the most reasonable conclusion?",
     "correct": [
       "It overfit, memorising quirks of the training data that do not generalise"
@@ -715,18 +729,6 @@
       "Nothing is wrong, since training accuracy is the number that matters once deployed"
     ],
     "feedback": "The gap between the two scores is the diagnostic: a model that had genuinely learned the pattern would score similarly on both. Underfitting shows the opposite signature, poor performance on training data as well."
-  },
-  {
-    "question": "Building an image model took three weeks on a server farm, but the finished model labels a new photo on a phone in about 20 milliseconds. Which distinction does this illustrate?",
-    "correct": [
-      "Training fits the weights once at great cost; inference just reuses them cheaply"
-    ],
-    "incorrect": [
-      "Inference is the costly step, because the weights are recomputed for each new photo",
-      "Training is repeated on the phone every time the user takes another new photo",
-      "Both steps cost the same, and only the choice of hardware makes them look different"
-    ],
-    "feedback": "Once training ends the weights are frozen numbers, so predicting is just arithmetic on values that are already known. That asymmetry is why an expensive model can still ship to a device with a small battery."
   },
   {
     "question": "Before training begins, an engineer chooses a learning rate of 0.01 and decides to run 50 epochs. What are these two values, and how do they differ from the model's weights?",

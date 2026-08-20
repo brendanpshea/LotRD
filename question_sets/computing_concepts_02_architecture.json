@@ -59,6 +59,18 @@
     "feedback": "Each gate implements one Boolean rule. Stacking gates in the right pattern is how a chip performs arithmetic."
   },
   {
+    "question": "A designer wires the output of an AND gate straight into a NOT gate. For which inputs does this two-gate combination output 0?",
+    "correct": [
+      "Only when both of the inputs are 1"
+    ],
+    "incorrect": [
+      "Only when both of the inputs are 0",
+      "Only when the two inputs are different",
+      "For every input pair except 0 and 0"
+    ],
+    "feedback": "Push the signals through in order: the AND output is 1 for the 1-1 case alone, and the NOT flips every value it receives, so the pair outputs 0 there and 1 everywhere else. Wired this way the two gates form a NAND."
+  },
+  {
     "question": "What is a truth table used for?",
     "correct": [
       "Listing a gate's output for every possible input combination"
@@ -134,16 +146,28 @@
     "outro": "“Fetch, decode, execute. Everything else in this wing is that heartbeat, elaborated. Now prove you can keep time.”"
   },
   {
-    "question": "Put the stages of the fetch–decode–execute cycle in order. Which stage comes first?",
+    "question": "Which stage of the instruction cycle turns an instruction's bits into a decision about what to do?",
     "correct": [
-      "Fetch the next instruction from memory"
+      "Decode"
     ],
     "incorrect": [
-      "Decode the instruction into control signals",
-      "Execute the operation in the ALU",
-      "Store the final result back into memory"
+      "Fetch",
+      "Execute",
+      "Store"
     ],
-    "feedback": "The CPU first fetches the instruction at the address in the program counter, then decodes it, then executes it, repeating the cycle continuously."
+    "feedback": "Fetch brings the instruction in from memory, decode works out which operation those bits name, and execute carries it out. Decode is the interpretation step."
+  },
+  {
+    "question": "A CPU repeats the fetch-decode-execute cycle billions of times a second. What makes the next turn of the cycle fetch a different instruction than the last one did?",
+    "correct": [
+      "The program counter has advanced to the address of the next instruction"
+    ],
+    "incorrect": [
+      "The instruction register is cleared, so the old instruction cannot repeat",
+      "The control unit reloads the next section of the program from the disk",
+      "The ALU resets the registers so the following instruction starts clean"
+    ],
+    "feedback": "Moving through a program is bookkeeping done by a single register: updating the PC during each cycle is what makes the following fetch land on the next instruction, and changing it on purpose is how loops and jumps work. Wiping registers would destroy work in progress rather than advance anything."
   },
   {
     "type": "ordering",
@@ -168,6 +192,18 @@
     "feedback": "In a von Neumann machine an instruction is just another number in memory, sitting alongside the data. That is what makes a computer general-purpose: load different numbers and it becomes a different program."
   },
   {
+    "question": "You double-click an application icon and it starts running. Before the CPU can execute its first instruction, what has to happen?",
+    "correct": [
+      "The program's instructions are copied from storage into main memory"
+    ],
+    "incorrect": [
+      "The whole program is copied into the CPU's registers all at once",
+      "The control unit rewrites the instructions into hexadecimal form",
+      "The cache is emptied so the new program's data has somewhere to go"
+    ],
+    "feedback": "In the von Neumann design the CPU fetches instructions from main memory, so an executable sitting on disk is only data until it is loaded. A CPU has a few dozen registers holding one value each, nowhere near enough for a program."
+  },
+  {
     "type": "matching",
     "question": "Match each CPU register to the job it does.",
     "pairs": [
@@ -182,6 +218,10 @@
       {
         "term": "Accumulator",
         "definition": "Holds the numbers currently being worked on"
+      },
+      {
+        "term": "Memory Address Register (MAR)",
+        "definition": "Holds the address in memory currently being read or written"
       }
     ],
     "feedback": "The PC answers 'where am I in the program?', the IR answers 'what am I doing right now?', and the accumulator is the scratch space the ALU reads from and writes back to."
@@ -245,6 +285,18 @@
     "feedback": "The hierarchy trades speed for size: tiny fast layers near the CPU back up large slow layers, so common data stays close and bulk data still fits."
   },
   {
+    "question": "Cache memory is far faster than main memory. Why don't manufacturers simply build all of a computer's memory out of cache technology?",
+    "correct": [
+      "It costs far more per byte, so a large amount would be unaffordable"
+    ],
+    "incorrect": [
+      "It can hold instructions but is unable to hold ordinary program data",
+      "It forgets its contents whenever the CPU switches to a different task",
+      "It can only be read by the CPU and never written to by a program"
+    ],
+    "feedback": "Speed, capacity, and price pull against each other, and that tension is the whole reason the hierarchy exists: machines buy a little of the expensive fast memory near the CPU and a lot of the cheap slow memory behind it."
+  },
+  {
     "type": "ordering",
     "question": "Arrange these memory layers from fastest and smallest to slowest and largest.",
     "items": [
@@ -268,6 +320,14 @@
     "feedback": "A cache stores copies of data the CPU is likely to need soon, so it can be reached far faster than going all the way to main memory."
   },
   {
+    "type": "fill_blank",
+    "question": "Memory such as RAM, which loses everything it holds the moment the power is cut, is described as ___.",
+    "correct": [
+      "volatile"
+    ],
+    "feedback": "This is why unsaved work vanishes in a power cut: saving copies the data down to storage that holds its contents with no power at all."
+  },
+  {
     "question": "Caching speeds up real programs because of locality. Which statements about locality are correct? (Select all that apply)",
     "correct": [
       "Programs tend to reuse the same data again soon after using it",
@@ -281,13 +341,34 @@
     "feedback": "Locality means memory access is predictable: recently used data and nearby data are likely to be used again, which is exactly what a cache exploits."
   },
   {
-    "type": "fill_blank",
-    "question": "A small, fast layer of memory that holds recently used data close to the CPU is called a ___.",
+    "question": "A file contains just two bytes, holding the values 72 and 105. Which statements about those bytes are correct? (Select all that apply)",
     "correct": [
-      "cache"
+      "Read as ASCII text, the two bytes spell the word Hi",
+      "The same two bytes could just as well be read as two small numbers"
+    ],
+    "incorrect": [
+      "A byte carries a built-in tag saying whether it is text or a number",
+      "Values above 90 cannot be ASCII, because the table stops at Z",
+      "Two bytes is far too little storage to hold any character at all"
+    ],
+    "feedback": "Bits carry no meaning on their own; the meaning comes from how a program chooses to read them, which is why opening a photo in a text editor shows garbage rather than an error. ASCII runs from 0 to 127, so 105 is comfortably inside it as lowercase i."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A program's tendency to use the same data, and data stored near it, again soon afterwards is called ___.",
+    "correct": [
+      "locality"
     ],
     "case_sensitive": false,
-    "feedback": "The cache bridges the speed gap between the very fast CPU registers and slower main memory."
+    "feedback": "Locality is why caching works at all. If programs touched memory at random, keeping recently used data close by would buy nothing."
+  },
+  {
+    "type": "fill_blank",
+    "question": "When the data the CPU wants is not already in the cache and has to be fetched from main memory, that event is called a cache ___.",
+    "correct": [
+      "miss"
+    ],
+    "feedback": "Avoiding these is the entire point of the hierarchy: a program whose working data fits in cache can run many times faster than an identical program whose data does not."
   },
   {
     "type": "fill_blank",
@@ -297,6 +378,33 @@
     ],
     "case_sensitive": false,
     "feedback": "One byte (8 bits) can store a single ASCII character or an unsigned value from 0 to 255."
+  },
+  {
+    "type": "matching",
+    "question": "Match each unit of data to its size and a familiar example.",
+    "pairs": [
+      {
+        "term": "Bit",
+        "definition": "A single 0 or 1, the smallest piece of data"
+      },
+      {
+        "term": "Byte",
+        "definition": "Eight bits, enough to hold one ASCII character"
+      },
+      {
+        "term": "Kilobyte",
+        "definition": "About a thousand bytes, roughly a page of plain text"
+      },
+      {
+        "term": "Megabyte",
+        "definition": "About a million bytes, roughly a minute of music"
+      },
+      {
+        "term": "Gigabyte",
+        "definition": "About a billion bytes, roughly a movie-length video"
+      }
+    ],
+    "feedback": "Each step up the list is about a thousand times the one below it, so the prefix rather than the number in front of it tells you the real scale of a file."
   },
   {
     "type": "dynamic_numeric",
@@ -315,6 +423,29 @@
       "tolerance_abs": 0
     },
     "feedback_template": "Add the place values of each 1 bit: binary {{bits}} equals {{expected}} in decimal."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A circuit feeds two 4-bit patterns into AND gates, one gate per bit position. The patterns are {{abits}} and {{bbits}}. What is the result, written as a decimal number?",
+    "variables": {
+      "a": {
+        "min": 8,
+        "max": 15
+      },
+      "b": {
+        "min": 8,
+        "max": 15
+      }
+    },
+    "derived": {
+      "abits": "toBin(a)",
+      "bbits": "toBin(b)"
+    },
+    "answer": {
+      "expr": "bitAnd(a, b)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Line the patterns up and take them one column at a time: a result bit is 1 only where both {{abits}} and {{bbits}} have a 1. That gives {{expected}} in decimal."
   },
   {
     "type": "dynamic_numeric",
@@ -407,6 +538,18 @@
     "feedback_template": "Subtract the largest place value you can, over and over: {{n}} in binary is {{bits}}."
   },
   {
+    "type": "ordering",
+    "question": "Arrange these values from smallest to largest.",
+    "items": [
+      "binary 1010",
+      "decimal 12",
+      "hexadecimal F",
+      "binary 10001",
+      "hexadecimal 1A"
+    ],
+    "feedback": "Convert everything to decimal before comparing: 1010 is 10, F is 15, 10001 is 17, and 1A is 16 plus 10, or 26. A numeral that looks longer is not automatically a larger number, since the base decides what each place is worth."
+  },
+  {
     "type": "dynamic_numeric",
     "question": "How many different values can a group of {{k}} bits represent?",
     "variables": {
@@ -441,6 +584,21 @@
     "feedback_template": "Past 255 the counter wraps back to 0, so the stored value is ({{n}} + {{k}}) with 256 subtracted off: {{expected}}. This is integer overflow — the bug behind the Pac-Man kill screen."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "In ASCII, uppercase A is 65 and lowercase a is 97. An uppercase letter is stored as the code {{n}}. What code stores the lowercase version of that same letter?",
+    "variables": {
+      "n": {
+        "min": 65,
+        "max": 90
+      }
+    },
+    "answer": {
+      "expr": "n + 32",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The two halves of the alphabet sit in the table 32 apart, as 97 minus 65 shows, so {{n}} becomes {{expected}}. That fixed gap is why changing case is such a cheap operation."
+  },
+  {
     "question": "What problem does two's complement solve?",
     "correct": [
       "It gives a way to represent negative integers in binary"
@@ -467,10 +625,28 @@
     ],
     "incorrect": [
       "The rightmost (least significant) bit is 1",
-      "Each of the eight bits is set to 1",
+      "More of the eight bits are 1 than are 0",
       "The byte contains an odd number of 1 bits"
     ],
     "feedback": "In two's complement the high-order bit is the sign bit: 1 means the value is negative, 0 means it is zero or positive."
+  },
+  {
+    "type": "cloze",
+    "question": "In an 8-bit two's-complement byte the leftmost bit acts as the {{1}} bit, which is why such a byte can count upward only as far as {{2}} instead of 255.",
+    "blanks": [
+      {
+        "accept": [
+          "sign"
+        ]
+      },
+      {
+        "accept": [
+          "127"
+        ],
+        "hint": "a number"
+      }
+    ],
+    "feedback": "The byte still holds 256 different patterns; the scheme just spends half of them on negative values. Adding 1 to the largest positive value flips that leftmost bit, and the byte suddenly reads as -128."
   },
   {
     "type": "dynamic_numeric",
@@ -522,6 +698,25 @@
     "feedback": "An image is a grid of pixels, and each pixel's color is stored as numbers (for example, amounts of red, green, and blue)."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "A photo is {{w}} pixels wide and {{h}} pixels tall, and each pixel stores 3 bytes, one each for red, green, and blue. How many bytes does the raw image take?",
+    "variables": {
+      "w": {
+        "min": 20,
+        "max": 60
+      },
+      "h": {
+        "min": 20,
+        "max": 60
+      }
+    },
+    "answer": {
+      "expr": "w * h * 3",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Count the pixels first, {{w}} times {{h}}, then charge 3 bytes to each one: {{expected}} bytes. Doubling both the width and the height would quadruple this, which is why image files grow so fast."
+  },
+  {
     "type": "matching",
     "question": "Match each kind of data to how a computer represents it as numbers.",
     "pairs": [
@@ -545,81 +740,6 @@
     "feedback": "Different data types use different encodings, but in every case the underlying storage is just numbers in binary."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "A circuit feeds two 4-bit patterns into AND gates, one gate per bit position. The patterns are {{abits}} and {{bbits}}. What is the result, written as a decimal number?",
-    "variables": {
-      "a": {
-        "min": 8,
-        "max": 15
-      },
-      "b": {
-        "min": 8,
-        "max": 15
-      }
-    },
-    "derived": {
-      "abits": "toBin(a)",
-      "bbits": "toBin(b)"
-    },
-    "answer": {
-      "expr": "bitAnd(a, b)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Line the patterns up and take them one column at a time: a result bit is 1 only where both {{abits}} and {{bbits}} have a 1. That gives {{expected}} in decimal."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "In ASCII, uppercase A is 65 and lowercase a is 97. An uppercase letter is stored as the code {{n}}. What code stores the lowercase version of that same letter?",
-    "variables": {
-      "n": {
-        "min": 65,
-        "max": 90
-      }
-    },
-    "answer": {
-      "expr": "n + 32",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The two halves of the alphabet sit in the table 32 apart, as 97 minus 65 shows, so {{n}} becomes {{expected}}. That fixed gap is why changing case is such a cheap operation."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A photo is {{w}} pixels wide and {{h}} pixels tall, and each pixel stores 3 bytes, one each for red, green, and blue. How many bytes does the raw image take?",
-    "variables": {
-      "w": {
-        "min": 20,
-        "max": 60
-      },
-      "h": {
-        "min": 20,
-        "max": 60
-      }
-    },
-    "answer": {
-      "expr": "w * h * 3",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Count the pixels first, {{w}} times {{h}}, then charge 3 bytes to each one: {{expected}} bytes. Doubling both the width and the height would quadruple this, which is why image files grow so fast."
-  },
-  {
-    "type": "cloze",
-    "question": "In an 8-bit two's-complement byte the leftmost bit acts as the {{1}} bit, which is why such a byte can count upward only as far as {{2}} instead of 255.",
-    "blanks": [
-      {
-        "accept": [
-          "sign"
-        ]
-      },
-      {
-        "accept": [
-          "127"
-        ],
-        "hint": "a number"
-      }
-    ],
-    "feedback": "The byte still holds 256 different patterns; the scheme just spends half of them on negative values. Adding 1 to the largest positive value flips that leftmost bit, and the byte suddenly reads as -128."
-  },
-  {
     "type": "cloze",
     "question": "A photo is stored as a grid of pixels, each holding three numbers for red, green, and {{1}}, while a sound is stored as thousands of {{2}} of the wave's height taken every second.",
     "blanks": [
@@ -636,121 +756,5 @@
       }
     ],
     "feedback": "Both media end up as ordinary numbers, but they are chopped up along different dimensions: an image is divided across space and a sound across time. Taking more of either means more detail and a larger file."
-  },
-  {
-    "question": "A designer wires the output of an AND gate straight into a NOT gate. For which inputs does this two-gate combination output 0?",
-    "correct": [
-      "Only when both of the inputs are 1"
-    ],
-    "incorrect": [
-      "Only when both of the inputs are 0",
-      "Only when the two inputs are different",
-      "For every input pair except 0 and 0"
-    ],
-    "feedback": "Push the signals through in order: the AND output is 1 for the 1-1 case alone, and the NOT flips every value it receives, so the pair outputs 0 there and 1 everywhere else. Wired this way the two gates form a NAND."
-  },
-  {
-    "question": "You double-click an application icon and it starts running. Before the CPU can execute its first instruction, what has to happen?",
-    "correct": [
-      "The program's instructions are copied from storage into main memory"
-    ],
-    "incorrect": [
-      "The whole program is copied into the CPU's registers all at once",
-      "The control unit rewrites the instructions into hexadecimal form",
-      "The cache is emptied so the new program's data has somewhere to go"
-    ],
-    "feedback": "In the von Neumann design the CPU fetches instructions from main memory, so an executable sitting on disk is only data until it is loaded. A CPU has a few dozen registers holding one value each, nowhere near enough for a program."
-  },
-  {
-    "question": "Cache memory is far faster than main memory. Why don't manufacturers simply build all of a computer's memory out of cache technology?",
-    "correct": [
-      "It costs far more per byte, so a large amount would be unaffordable"
-    ],
-    "incorrect": [
-      "It can hold instructions but is unable to hold ordinary program data",
-      "It forgets its contents whenever the CPU switches to a different task",
-      "It can only be read by the CPU and never written to by a program"
-    ],
-    "feedback": "Speed, capacity, and price pull against each other, and that tension is the whole reason the hierarchy exists: machines buy a little of the expensive fast memory near the CPU and a lot of the cheap slow memory behind it."
-  },
-  {
-    "question": "A file contains just two bytes, holding the values 72 and 105. Which statements about those bytes are correct? (Select all that apply)",
-    "correct": [
-      "Read as ASCII text, the two bytes spell the word Hi",
-      "The same two bytes could just as well be read as two small numbers"
-    ],
-    "incorrect": [
-      "A byte carries a built-in tag saying whether it is text or a number",
-      "Values above 90 cannot be ASCII, because the table stops at Z",
-      "Two bytes is far too little storage to hold any character at all"
-    ],
-    "feedback": "Bits carry no meaning on their own; the meaning comes from how a program chooses to read them, which is why opening a photo in a text editor shows garbage rather than an error. ASCII runs from 0 to 127, so 105 is comfortably inside it as lowercase i."
-  },
-  {
-    "question": "A CPU repeats the fetch-decode-execute cycle billions of times a second. What makes the next turn of the cycle fetch a different instruction than the last one did?",
-    "correct": [
-      "The program counter has advanced to the address of the next instruction"
-    ],
-    "incorrect": [
-      "The instruction register is cleared, so the old instruction cannot repeat",
-      "The control unit reloads the next section of the program from the disk",
-      "The ALU resets the registers so the following instruction starts clean"
-    ],
-    "feedback": "Moving through a program is bookkeeping done by a single register: updating the PC during each cycle is what makes the following fetch land on the next instruction, and changing it on purpose is how loops and jumps work. Wiping registers would destroy work in progress rather than advance anything."
-  },
-  {
-    "type": "fill_blank",
-    "question": "When the data the CPU wants is not already in the cache and has to be fetched from main memory, that event is called a cache ___.",
-    "correct": [
-      "miss"
-    ],
-    "feedback": "Avoiding these is the entire point of the hierarchy: a program whose working data fits in cache can run many times faster than an identical program whose data does not."
-  },
-  {
-    "type": "fill_blank",
-    "question": "Memory such as RAM, which loses everything it holds the moment the power is cut, is described as ___.",
-    "correct": [
-      "volatile"
-    ],
-    "feedback": "This is why unsaved work vanishes in a power cut: saving copies the data down to storage that holds its contents with no power at all."
-  },
-  {
-    "type": "matching",
-    "question": "Match each unit of data to its size and a familiar example.",
-    "pairs": [
-      {
-        "term": "Bit",
-        "definition": "A single 0 or 1, the smallest piece of data"
-      },
-      {
-        "term": "Byte",
-        "definition": "Eight bits, enough to hold one ASCII character"
-      },
-      {
-        "term": "Kilobyte",
-        "definition": "About a thousand bytes, roughly a page of plain text"
-      },
-      {
-        "term": "Megabyte",
-        "definition": "About a million bytes, roughly a minute of music"
-      },
-      {
-        "term": "Gigabyte",
-        "definition": "About a billion bytes, roughly a movie-length video"
-      }
-    ],
-    "feedback": "Each step up the list is about a thousand times the one below it, so the prefix rather than the number in front of it tells you the real scale of a file."
-  },
-  {
-    "type": "ordering",
-    "question": "Arrange these values from smallest to largest.",
-    "items": [
-      "binary 1010",
-      "decimal 12",
-      "hexadecimal F",
-      "binary 10001",
-      "hexadecimal 1A"
-    ],
-    "feedback": "Convert everything to decimal before comparing: 1010 is 10, F is 15, 10001 is 17, and 1A is 16 plus 10, or 26. A numeral that looks longer is not automatically a larger number, since the base decides what each place is worth."
   }
 ]

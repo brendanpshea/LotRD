@@ -12,6 +12,26 @@
     "feedback": "The operating system acts as the software manager between applications and hardware, overseeing processes, files, and memory."
   },
   {
+    "question": "A laptop with a single CPU core appears to run a browser, a music player, and a text editor at the same moment. What is the operating system actually doing?",
+    "correct": [
+      "Switching the core rapidly among the processes so each gets short turns"
+    ],
+    "incorrect": [
+      "Merging the three programs into one process that shares a single instruction stream",
+      "Giving each program its own block of RAM so the core can execute them literally at once",
+      "Keeping only one program in memory and loading the others from disk when clicked"
+    ],
+    "feedback": "One core can execute one instruction stream at a time, so the appearance of simultaneity comes from the scheduler slicing time finely enough that no human notices the gaps. Separate memory blocks keep the programs from corrupting each other, but memory is not what lets them share the CPU."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The part of the operating system that decides which process gets to use the CPU next is called the ___.",
+    "correct": [
+      "scheduler"
+    ],
+    "feedback": "Deciding who runs next is a policy decision the OS must make thousands of times a second, and it is separate from deciding where a process's memory lives or which files it may open."
+  },
+  {
     "question": "In operating systems, what is a process?",
     "correct": [
       "An instance of a running program managed and scheduled by the OS"
@@ -85,7 +105,7 @@
   },
   {
     "type": "fill_blank",
-    "question": "The network protocol that breaks messages into chunks called packets and manages their routing is ___.",
+    "question": "The network protocol that addresses packets and routes them between networks is ___.",
     "correct": [
       "IP",
       "Internet Protocol"
@@ -104,16 +124,16 @@
     "feedback": "HTTP (Hypertext Transfer Protocol) is the application-layer foundation of web request/response communication."
   },
   {
-    "question": "What does TCP add on top of packets?",
+    "question": "A router along the path drops one packet in the middle of a TCP transfer. What happens next?",
     "correct": [
-      "Numbering, confirmation, re-sending, and reassembly in order"
+      "The sender notices the missing acknowledgement and sends that packet again"
     ],
     "incorrect": [
-      "The name-to-address lookup before the message is sent",
-      "Encryption of the contents so they are unreadable",
-      "The rule that the largest packets are delivered first"
+      "The whole transfer restarts from its first packet",
+      "The receiver fills the gap by repeating the previous packet",
+      "The file arrives with a hole in it, which the browser reports"
     ],
-    "feedback": "It works like a parcel-tracking system: number every parcel, confirm each arrival, re-send anything unconfirmed, and reassemble in order. The message arrives complete, or the sender knows it did not."
+    "feedback": "TCP numbers packets and waits for acknowledgements, so a loss is detected and just that packet is resent. IP alone would simply have lost it."
   },
   {
     "type": "fill_blank",
@@ -123,6 +143,16 @@
     ],
     "case_sensitive": false,
     "feedback": "Status code 200 OK signifies that an HTTP request succeeded and the response payload is returned."
+  },
+  {
+    "type": "code_line",
+    "question": "A response from the requests library is stored in the variable r. Write the Python expression that gives the numeric HTTP status code of that response.",
+    "language": "python",
+    "correct": [
+      "r.status_code"
+    ],
+    "case_sensitive": false,
+    "feedback": "The status code is an attribute already parsed from the response's status line, not a method you call, so no parentheses are needed. It is an int, which is why comparisons like == 200 work directly."
   },
   {
     "type": "fill_blank",
@@ -150,13 +180,14 @@
     "correct": [
       "Application layer",
       "Transport layer",
-      "Internet layer"
+      "Internet layer",
+      "Link layer"
     ],
     "incorrect": [
-      "Database layer",
-      "Graphics layer"
+      "Session layer",
+      "Presentation layer"
     ],
-    "feedback": "The standard TCP/IP 4-layer model consists of Application, Transport, Internet, and Link layers."
+    "feedback": "The four TCP/IP layers are link, internet, transport and application. Session and presentation belong to the seven-layer OSI model, which splits the application layer further."
   },
   {
     "type": "ordering",
@@ -184,7 +215,7 @@
   },
   {
     "type": "matching",
-    "question": "Match each cloud service model to its description.",
+    "question": "Match each computing deployment model to its description.",
     "pairs": [
       {
         "term": "IaaS",
@@ -284,7 +315,34 @@
       "expr": "(size_mb * 1000) / packet_kb",
       "tolerance_abs": 0
     },
-    "feedback_template": "Converting {{size_mb}} MB to {{size_mb * 1000}} KB and dividing by {{packet_kb}} KB gives {{expected}} packets."
+    "feedback_template": "{{size_mb}} MB is {{size_kb}} KB, and dividing that by {{packet_kb}} KB per packet gives {{expected}} packets.",
+    "derived": {
+      "size_kb": "size_mb * 1000"
+    }
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A browser keeps {{parallel}} connections open at once and each connection can download only one file at a time. If the page needs {{files}} files, how many rounds of downloading are needed?",
+    "variables": {
+      "parallel": {
+        "values": [
+          2,
+          3,
+          4,
+          6
+        ]
+      },
+      "files": {
+        "min": 6,
+        "max": 24,
+        "step": 6
+      }
+    },
+    "answer": {
+      "expr": "ceil(files / parallel)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each round moves at most {{parallel}} files, so {{files}} files need ceil({{files}} / {{parallel}}) = {{expected}} rounds; a partly full final round still counts as a round."
   },
   {
     "question": "What is an Application Programming Interface (API) in the context of web applications?",
@@ -466,8 +524,20 @@
     "feedback": "Names must become addresses before a connection can be opened, the request must go out before a response can come back, and only then is there any HTML to draw."
   },
   {
+    "question": "A team moves its price list from /old-prices to /pricing and wants existing bookmarks to keep working. What should the server send when someone requests /old-prices?",
+    "correct": [
+      "A 3xx redirect response naming the new location of the resource"
+    ],
+    "incorrect": [
+      "A 404, because the requested path no longer names a real page on the server",
+      "A 500, because the server can no longer complete a request for that path",
+      "A 200 with an empty body, letting the browser search for the moved page"
+    ],
+    "feedback": "The 3xx range exists exactly for resources that have moved: the browser is told where to go and follows automatically. A 404 would be honest but would break every bookmark, and a 500 would wrongly blame a server fault for a deliberate reorganisation."
+  },
+  {
     "type": "cloze",
-    "question": "Fetching a page takes three protocols in turn. First {{1}} turns the domain name into an IP address. Then the {{2}} layer carries the packets to that address, and the browser and server talk to each other in {{3}}.",
+    "question": "Fetching a page takes three separate jobs in turn. First {{1}} turns the domain name into an IP address. Then the {{2}} layer carries the packets to that address, and the browser and server talk to each other in {{3}}.",
     "blanks": [
       {
         "accept": [
@@ -504,6 +574,26 @@
       "The server runs the page's code inside the browser and saves the resulting HTML to the user's disk"
     ],
     "feedback": "In the request/response cycle, the client sends an HTTP request, the server processes it, and returns an HTTP response."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Loading a page takes one request for the HTML document itself, plus one request for each of its {{css}} stylesheets and each of its {{img}} images. How many HTTP requests does the browser send in total?",
+    "variables": {
+      "css": {
+        "min": 1,
+        "max": 4
+      },
+      "img": {
+        "min": 3,
+        "max": 12,
+        "step": 3
+      }
+    },
+    "answer": {
+      "expr": "1 + css + img",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The HTML page is only the first request; every stylesheet and image referenced inside it costs another round trip, so 1 + {{css}} + {{img}} = {{expected}} requests."
   },
   {
     "question": "A streaming site is down in one city but fine in another, and down at busy times but fine at quiet ones. Investigation found one of three server processes had crashed days earlier with nothing restarting it. Why does that explain the pattern?",
@@ -565,6 +655,33 @@
     "feedback": "HTTP headers pass additional metadata (like content type, length, authorization credentials, and cookies) between client and server."
   },
   {
+    "type": "cloze",
+    "question": "An HTTP response arrives in three parts. The {{1}} line carries the three-digit code such as 404, the {{2}} carry metadata such as Content-Type and Content-Length, and the {{3}} holds the HTML the browser actually renders.",
+    "blanks": [
+      {
+        "accept": [
+          "status"
+        ],
+        "hint": "which line"
+      },
+      {
+        "accept": [
+          "headers",
+          "header"
+        ],
+        "hint": "metadata"
+      },
+      {
+        "accept": [
+          "body",
+          "payload"
+        ],
+        "hint": "content"
+      }
+    ],
+    "feedback": "Students often call the whole response \"the page\", but the parts have separate jobs: the code reports how the request went, the headers describe the content without being part of it, and only the body is the content itself."
+  },
+  {
     "type": "dynamic_numeric",
     "question": "A server returns a JSON array of {{count}} items. If each item contains {{fields}} fields, how many total field values are returned?",
     "variables": {
@@ -608,118 +725,5 @@
       "Storing the results of recent database queries in server memory so repeats run faster"
     ],
     "feedback": "DNS caching saves recent domain-to-IP lookup results in local memory so subsequent requests avoid repeated DNS server lookups."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "Loading a page takes one request for the HTML document itself, plus one request for each of its {{css}} stylesheets and each of its {{img}} images. How many HTTP requests does the browser send in total?",
-    "variables": {
-      "css": {
-        "min": 1,
-        "max": 4
-      },
-      "img": {
-        "min": 3,
-        "max": 12,
-        "step": 3
-      }
-    },
-    "answer": {
-      "expr": "1 + css + img",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The HTML page is only the first request; every stylesheet and image referenced inside it costs another round trip, so 1 + {{css}} + {{img}} = {{expected}} requests."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A browser keeps {{parallel}} connections open at once and each connection can download only one file at a time. If the page needs {{files}} files, how many rounds of downloading are needed?",
-    "variables": {
-      "parallel": {
-        "values": [
-          2,
-          3,
-          4,
-          6
-        ]
-      },
-      "files": {
-        "min": 6,
-        "max": 24,
-        "step": 6
-      }
-    },
-    "answer": {
-      "expr": "ceil(files / parallel)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Each round moves at most {{parallel}} files, so {{files}} files need ceil({{files}} / {{parallel}}) = {{expected}} rounds; a partly full final round still counts as a round."
-  },
-  {
-    "type": "cloze",
-    "question": "An HTTP response arrives in three parts. The {{1}} line carries the three-digit code such as 404, the {{2}} carry metadata such as Content-Type and Content-Length, and the {{3}} holds the HTML the browser actually renders.",
-    "blanks": [
-      {
-        "accept": [
-          "status"
-        ],
-        "hint": "which line"
-      },
-      {
-        "accept": [
-          "headers",
-          "header"
-        ],
-        "hint": "metadata"
-      },
-      {
-        "accept": [
-          "body",
-          "payload"
-        ],
-        "hint": "content"
-      }
-    ],
-    "feedback": "Students often call the whole response \"the page\", but the parts have separate jobs: the code reports how the request went, the headers describe the content without being part of it, and only the body is the content itself."
-  },
-  {
-    "question": "A laptop with a single CPU core appears to run a browser, a music player, and a text editor at the same moment. What is the operating system actually doing?",
-    "correct": [
-      "Switching the core rapidly among the processes so each gets short turns"
-    ],
-    "incorrect": [
-      "Merging the three programs into one process that shares a single instruction stream",
-      "Giving each program its own block of RAM so the core can execute them literally at once",
-      "Keeping only one program in memory and loading the others from disk when clicked"
-    ],
-    "feedback": "One core can execute one instruction stream at a time, so the appearance of simultaneity comes from the scheduler slicing time finely enough that no human notices the gaps. Separate memory blocks keep the programs from corrupting each other, but memory is not what lets them share the CPU."
-  },
-  {
-    "question": "A team moves its price list from /old-prices to /pricing and wants existing bookmarks to keep working. What should the server send when someone requests /old-prices?",
-    "correct": [
-      "A 3xx redirect response naming the new location of the resource"
-    ],
-    "incorrect": [
-      "A 404, because the requested path no longer names a real page on the server",
-      "A 500, because the server can no longer complete a request for that path",
-      "A 200 with an empty body, letting the browser search for the moved page"
-    ],
-    "feedback": "The 3xx range exists exactly for resources that have moved: the browser is told where to go and follows automatically. A 404 would be honest but would break every bookmark, and a 500 would wrongly blame a server fault for a deliberate reorganisation."
-  },
-  {
-    "type": "code_line",
-    "question": "A response from the requests library is stored in the variable r. Write the Python expression that gives the numeric HTTP status code of that response.",
-    "language": "python",
-    "correct": [
-      "r.status_code"
-    ],
-    "case_sensitive": false,
-    "feedback": "The status code is an attribute already parsed from the response's status line, not a method you call, so no parentheses are needed. It is an int, which is why comparisons like == 200 work directly."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The part of the operating system that decides which process gets to use the CPU next is called the ___.",
-    "correct": [
-      "scheduler"
-    ],
-    "feedback": "Deciding who runs next is a policy decision the OS must make thousands of times a second, and it is separate from deciding where a process's memory lives or which files it may open."
   }
 ]

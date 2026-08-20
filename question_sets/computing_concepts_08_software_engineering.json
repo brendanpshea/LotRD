@@ -110,6 +110,14 @@
     "feedback": "Waterfall fits when requirements really are fixed, or when a regulator must approve one complete documented package. Most real teams run something agile-ish with as much up-front planning as the risk demands."
   },
   {
+    "type": "fill_blank",
+    "question": "The ordered list of work a team has not built yet, which sprint planning draws from, is called the product ___.",
+    "correct": [
+      "backlog"
+    ],
+    "feedback": "Keeping unstarted work in one ranked list is what lets a team say yes to an idea without committing to build it now. Ordering it means the most valuable item is always the next one picked up."
+  },
+  {
     "question": "Which of these is written in the correct user-story format?",
     "correct": [
       "As a student, I want to reset my password, so I can log in"
@@ -123,12 +131,25 @@
   },
   {
     "type": "fill_blank",
-    "question": "One short agile cycle, commonly one to four weeks, that ends with working software and user feedback is called a ___.",
+    "question": "The short review at the end of a sprint, where the team inspects how it worked and picks one thing to change, is called the ___.",
     "correct": [
-      "sprint"
+      "retrospective",
+      "retro"
     ],
     "case_sensitive": false,
-    "feedback": "A sprint delivers a thin slice of working software so that what the team learns can change the requirements before the next loop."
+    "feedback": "The retrospective is what makes agile iterative about the process itself, not just the software: each cycle the team adjusts how it works, not only what it builds."
+  },
+  {
+    "question": "Halfway through a two-week sprint, a stakeholder asks for a feature nobody planned. What does an agile team normally do?",
+    "correct": [
+      "Put it on the backlog so it can be weighed against other work at the next planning"
+    ],
+    "incorrect": [
+      "Add it to the current sprint right away, since agile means welcoming change any time",
+      "Turn it down for good, because requirements are frozen once the design stage ends",
+      "End the sprint early and start a fresh one so the feature can be built without waiting"
+    ],
+    "feedback": "Agile welcomes changing requirements between sprints, not inside one — a sprint's stable scope is what lets the team finish something and lets estimates mean anything. The backlog exists precisely so new requests are captured without derailing work in progress."
   },
   {
     "question": "A user story is best described as a requirement written from whose point of view?",
@@ -143,16 +164,16 @@
     "feedback": "A user story frames a requirement from the user's perspective: as a role, I want a goal, so that I get a benefit."
   },
   {
-    "question": "Which shape does a user story follow?",
+    "question": "A team writes: \"As a night-shift nurse, I want to see overdue medications first so that I can act on them before my rounds end.\" Which part is the acceptance test aimed at?",
     "correct": [
-      "As a kind of user, I want some capability, so that some benefit"
+      "The 'so that' clause, which names the outcome the story has to deliver"
     ],
     "incorrect": [
-      "Given some input, when an action happens, then some result",
-      "The system shall provide the capability under stated conditions",
-      "Some capability is needed, and here is how to implement it in code"
+      "The 'as a' clause, which names who is allowed to log in",
+      "The 'I want' clause, which fixes how the screen must be laid out",
+      "The role and the feature together, since the outcome is not testable"
     ],
-    "feedback": "The three blanks keep the focus on who needs what and why. The why is what stops a team from building a technically correct feature nobody actually needed."
+    "feedback": "The 'so that' clause states the value the story exists to deliver, which is what a reviewer checks. Role and feature describe who and what; the outcome says whether it worked."
   },
   {
     "type": "npc_demo",
@@ -241,6 +262,32 @@
     "feedback": "The flow is one way: edit, stage what you want, then commit it. Every button in GitHub or a code editor's source-control panel is running these commands underneath."
   },
   {
+    "type": "cloze",
+    "question": "You pick which edits belong in the next snapshot with git {{1}}, record that snapshot in your local history with git {{2}}, and upload your recorded snapshots to GitHub with git {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "add"
+        ],
+        "hint": "git ___"
+      },
+      {
+        "accept": [
+          "commit"
+        ],
+        "hint": "git ___"
+      },
+      {
+        "accept": [
+          "push"
+        ],
+        "hint": "git ___"
+      }
+    ],
+    "feedback": "These three are separate on purpose: choosing what goes in, recording it, and sharing it are different decisions. Work you have committed but not pushed still exists only on your own machine, which is why a lost laptop can still cost you a week of commits.",
+    "language": "bash"
+  },
+  {
     "type": "code_line",
     "question": "Write the git command that shows the current state of the working tree (which files have changed).",
     "language": "bash",
@@ -249,6 +296,16 @@
     ],
     "case_sensitive": true,
     "feedback": "git status shows which files are modified, staged, or untracked."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the git command that shows the exact line-by-line changes in your working tree that you have not staged yet.",
+    "language": "bash",
+    "correct": [
+      "git diff"
+    ],
+    "case_sensitive": true,
+    "feedback": "git status names the changed files; git diff shows the actual changed lines. Reading that output before committing is the cheapest code review there is, and it catches debug prints and stray edits."
   },
   {
     "question": "What is a branch used for?",
@@ -309,6 +366,18 @@
     "feedback": "A pull request proposes merging a branch into the main version and gives teammates a place to review the changes first."
   },
   {
+    "question": "Two teammates edited the same lines of the same file on different branches. Merging the second branch makes git report a conflict. What does that mean?",
+    "correct": [
+      "Git cannot tell which version to keep, so a person must choose and finish the merge"
+    ],
+    "incorrect": [
+      "Git threw away both sets of edits and put the file back to its state on main",
+      "Git kept the lines from the newer commit automatically and is only warning you",
+      "The branch history is damaged, so it has to be deleted and branched from main again"
+    ],
+    "feedback": "Git merges edits to different regions on its own; it stops only where two changes claim the same lines, because picking a winner would mean understanding what the code is for. Both versions are preserved in the file with markers around them, waiting for a human decision."
+  },
+  {
     "type": "ordering",
     "question": "Arrange the steps of getting one change from your machine into the shared project.",
     "items": [
@@ -358,16 +427,28 @@
     "feedback": "A regression is when something that used to work breaks after a later change. A saved test catches the regression the moment it happens."
   },
   {
-    "question": "In AI-assisted development, which task remains the engineer's rather than the AI's?",
+    "question": "A new feature works, but a test that passed last week now fails. What is the most reasonable first response?",
     "correct": [
-      "Decomposing the problem — deciding what pieces should exist"
+      "Treat the failure as a likely regression and find out what broke before merging"
     ],
     "incorrect": [
-      "Writing the body of a clearly described function",
-      "Producing a first draft of code quickly",
-      "Suggesting names for variables in a finished function"
+      "Delete the failing test, since the new feature has changed how the code behaves now",
+      "Merge it and file an issue, because a working new feature outranks an older test",
+      "Re-run the suite a few times and merge if it passes, since failures are usually flaky"
     ],
-    "feedback": "An AI is very good at filling in a box you have defined. Drawing the boxes — and deciding which of them is testable pure logic — is the engineering job."
+    "feedback": "A test that used to pass encodes behaviour someone decided mattered, so its failure is evidence that the change broke something unrelated to the new feature. If the behaviour genuinely should change, the test gets rewritten deliberately with a reason — that is a different act from deleting it to get green."
+  },
+  {
+    "question": "You ask an AI assistant to \"build a grade tracker\" and it returns one 200-line function that mostly works. What did the request leave out?",
+    "correct": [
+      "The decomposition — deciding what the pieces are before asking for any of them"
+    ],
+    "incorrect": [
+      "The programming language the assistant was expected to use",
+      "The instruction to add comments explaining each block of code",
+      "A request that it run the finished program before replying"
+    ],
+    "feedback": "Breaking the problem into named pieces is the engineer's job, not the assistant's. A vague request produces a vague shape, and the shape is the part you have to live with."
   },
   {
     "question": "Why are tests especially valuable over the long life of a project?",
@@ -382,7 +463,27 @@
     "feedback": "Tests guard against regressions forever after: each later change is re-checked automatically, so a newly introduced break shows up loudly."
   },
   {
-    "question": "The notebook says that in AI-assisted work the spec becomes the real artifact you author. Why?",
+    "type": "dynamic_numeric",
+    "question": "A project's automated test suite holds {{t}} tests. After one change is merged, {{f}} of them fail. How many tests still pass?",
+    "variables": {
+      "t": {
+        "min": 40,
+        "max": 120,
+        "step": 10
+      },
+      "f": {
+        "min": 2,
+        "max": 15
+      }
+    },
+    "answer": {
+      "expr": "t - f",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{t}} - {{f}} = {{expected}} tests still pass. The value of the suite is not the passing count but the {{f}} failures: they point at exactly what the change broke, before a user finds it."
+  },
+  {
+    "question": "In AI-assisted work, why does the spec become the real artifact you author?",
     "correct": [
       "The AI can regenerate code at will; the description of what to build is kept"
     ],
@@ -455,7 +556,7 @@
     "feedback": "Reviewing AI code means testing it, checking for hallucinated functions, and judging it against the requirement. Confidence and 'it runs' are not evidence of correctness."
   },
   {
-    "question": "According to the notebook, what does more AI-written code mean for planning, version control, and testing?",
+    "question": "As more code is written by AI, what happens to the importance of planning, version control, and testing?",
     "correct": [
       "They matter more, since the human's role shifts to being accountable"
     ],
@@ -543,6 +644,30 @@
     "feedback_template": "Each sprint is {{len}} weeks, so {{weeks}} weeks holds floor({{weeks}} / {{len}}) = {{expected}} full sprints."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "A feature is estimated at {{pts}} story points, and the team's velocity is {{v}} points per sprint. At that velocity, how many sprints will the feature take, counting a partly used sprint as a whole one?",
+    "variables": {
+      "pts": {
+        "min": 20,
+        "max": 60,
+        "step": 5
+      },
+      "v": {
+        "values": [
+          5,
+          10,
+          15
+        ]
+      }
+    },
+    "answer": {
+      "expr": "ceil(pts / v)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{pts}} points at {{v}} points per sprint rounds up to {{expected}} sprints, since leftover work still needs a sprint of its own. Velocity is a measured average from past sprints, not a target the team promises to hit.",
+    "language": "python"
+  },
+  {
     "type": "fill_blank",
     "question": "In AI-assisted work, the precise description of what to build — the artifact you author and keep, while the code is downstream — is called the ___.",
     "correct": [
@@ -569,129 +694,5 @@
       "tolerance_abs": 0
     },
     "feedback_template": "A correct add returns {{a}} + {{b}} = {{expected}}, so the test should assert the result equals {{expected}}."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A project's automated test suite holds {{t}} tests. After one change is merged, {{f}} of them fail. How many tests still pass?",
-    "variables": {
-      "t": {
-        "min": 40,
-        "max": 120,
-        "step": 10
-      },
-      "f": {
-        "min": 2,
-        "max": 15
-      }
-    },
-    "answer": {
-      "expr": "t - f",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "{{t}} - {{f}} = {{expected}} tests still pass. The value of the suite is not the passing count but the {{f}} failures: they point at exactly what the change broke, before a user finds it."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A feature is estimated at {{pts}} story points, and the team's velocity is {{v}} points per sprint. At that velocity, how many sprints will the feature take, counting a partly used sprint as a whole one?",
-    "variables": {
-      "pts": {
-        "min": 20,
-        "max": 60,
-        "step": 5
-      },
-      "v": {
-        "values": [
-          5,
-          10,
-          15
-        ]
-      }
-    },
-    "answer": {
-      "expr": "ceil(pts / v)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "{{pts}} points at {{v}} points per sprint rounds up to {{expected}} sprints, since leftover work still needs a sprint of its own. Velocity is a measured average from past sprints, not a target the team promises to hit.",
-    "language": "python"
-  },
-  {
-    "type": "cloze",
-    "question": "You pick which edits belong in the next snapshot with git {{1}}, record that snapshot in your local history with git {{2}}, and upload your recorded snapshots to GitHub with git {{3}}.",
-    "blanks": [
-      {
-        "accept": [
-          "add"
-        ],
-        "hint": "git ___"
-      },
-      {
-        "accept": [
-          "commit"
-        ],
-        "hint": "git ___"
-      },
-      {
-        "accept": [
-          "push"
-        ],
-        "hint": "git ___"
-      }
-    ],
-    "feedback": "These three are separate on purpose: choosing what goes in, recording it, and sharing it are different decisions. Work you have committed but not pushed still exists only on your own machine, which is why a lost laptop can still cost you a week of commits.",
-    "language": "bash"
-  },
-  {
-    "question": "Two teammates edited the same lines of the same file on different branches. Merging the second branch makes git report a conflict. What does that mean?",
-    "correct": [
-      "Git cannot tell which version to keep, so a person must choose and finish the merge"
-    ],
-    "incorrect": [
-      "Git threw away both sets of edits and put the file back to its state on main",
-      "Git kept the lines from the newer commit automatically and is only warning you",
-      "The branch history is damaged, so it has to be deleted and branched from main again"
-    ],
-    "feedback": "Git merges edits to different regions on its own; it stops only where two changes claim the same lines, because picking a winner would mean understanding what the code is for. Both versions are preserved in the file with markers around them, waiting for a human decision."
-  },
-  {
-    "question": "Halfway through a two-week sprint, a stakeholder asks for a feature nobody planned. What does an agile team normally do?",
-    "correct": [
-      "Put it on the backlog so it can be weighed against other work at the next planning"
-    ],
-    "incorrect": [
-      "Add it to the current sprint right away, since agile means welcoming change any time",
-      "Turn it down for good, because requirements are frozen once the design stage ends",
-      "End the sprint early and start a fresh one so the feature can be built without waiting"
-    ],
-    "feedback": "Agile welcomes changing requirements between sprints, not inside one — a sprint's stable scope is what lets the team finish something and lets estimates mean anything. The backlog exists precisely so new requests are captured without derailing work in progress."
-  },
-  {
-    "question": "A new feature works, but a test that passed last week now fails. What is the most reasonable first response?",
-    "correct": [
-      "Treat the failure as a likely regression and find out what broke before merging"
-    ],
-    "incorrect": [
-      "Delete the failing test, since the new feature has changed how the code behaves now",
-      "Merge it and file an issue, because a working new feature outranks an older test",
-      "Re-run the suite a few times and merge if it passes, since failures are usually flaky"
-    ],
-    "feedback": "A test that used to pass encodes behaviour someone decided mattered, so its failure is evidence that the change broke something unrelated to the new feature. If the behaviour genuinely should change, the test gets rewritten deliberately with a reason — that is a different act from deleting it to get green."
-  },
-  {
-    "type": "code_line",
-    "question": "Write the git command that shows the exact line-by-line changes in your working tree that you have not staged yet.",
-    "language": "bash",
-    "correct": [
-      "git diff"
-    ],
-    "case_sensitive": false,
-    "feedback": "git status names the changed files; git diff shows the actual changed lines. Reading that output before committing is the cheapest code review there is, and it catches debug prints and stray edits."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The ordered list of work a team has not built yet, which sprint planning draws from, is called the product ___.",
-    "correct": [
-      "backlog"
-    ],
-    "feedback": "Keeping unstarted work in one ranked list is what lets a team say yes to an idea without committing to build it now. Ordering it means the most valuable item is always the next one picked up."
   }
 ]

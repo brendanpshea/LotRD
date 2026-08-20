@@ -61,7 +61,7 @@
   },
   {
     "type": "fill_blank",
-    "question": "A column holding values that match the primary key of another table, tying the two together, is called a ___ key.",
+    "question": "A batches row stores candy_id 7 but not the candy's name, so the name lives in exactly one place. The candy_id column in batches is acting as a ___ key.",
     "correct": [
       "foreign"
     ],
@@ -123,29 +123,42 @@
     "feedback": "DML commands (SELECT, INSERT, UPDATE, DELETE) operate on data rows. DDL commands (CREATE, DROP, ALTER) modify structure."
   },
   {
-    "question": "A Python programmer writes  WHERE department == 'Fizzworks'  in SQL and gets an error. What is wrong?",
+    "question": "A Python programmer writes  WHERE department == 'Fizzworks'  in a query. Which operator does standard SQL use to test equality in a WHERE clause?",
     "correct": [
-      "SQL tests equality with a single equals sign"
+      "A single =, since SQL uses one equals sign for comparison"
     ],
     "incorrect": [
-      "SQL requires double quotes around a text value",
-      "SQL compares numeric columns but not text ones",
-      "The column name belongs after the value being compared"
+      "A double ==, the same as Python uses for comparison",
+      "The word EQUALS, spelled out before the value",
+      "A colon-equals :=, which assigns and compares at once"
     ],
-    "feedback": "This is a classic trap for Python speakers: in SQL, = is the comparison. Text values go in single quotes, as in 'Fizzworks'."
+    "feedback": "Standard SQL compares with a single =. SQLite happens to tolerate == as a synonym, so this particular query may well run for you — but it is not portable, and other database engines reject it."
+  },
+  {
+    "type": "code_line",
+    "question": "Finish this query so it keeps only candies with fewer than 10 grams of sugar:  SELECT * FROM candies ___ ;  Write the missing clause, using the sugar_grams column.",
+    "language": "sql",
+    "correct": [
+      "WHERE sugar_grams < 10",
+      "where sugar_grams < 10",
+      "WHERE sugar_grams<10"
+    ],
+    "case_sensitive": false,
+    "feedback": "The condition filters row by row: each candy is tested and kept or dropped. Note the single comparison operator — SQL has no double-equals, and the column name goes on the left of the comparison, not in quotes."
   },
   {
     "question": "Which of the following are Data Definition Language (DDL) commands in SQL? (Select all that apply)",
     "correct": [
       "CREATE TABLE",
-      "DROP TABLE"
+      "DROP TABLE",
+      "ALTER TABLE"
     ],
     "incorrect": [
-      "SELECT",
-      "INSERT",
-      "UPDATE"
+      "DELETE",
+      "COMMIT",
+      "GRANT"
     ],
-    "feedback": "DDL commands define or change table schemas (CREATE, DROP, ALTER), whereas DML statements manipulate actual rows."
+    "feedback": "DDL defines and changes the shape of the database itself: CREATE, DROP and ALTER act on tables. DELETE changes rows (DML), COMMIT ends a transaction, and GRANT manages permissions."
   },
   {
     "question": "The catalog contains Gloomberry Fizzer (Fizzworks, 22 g of sugar). Would it appear in the results of  WHERE department = 'Fizzworks' AND sugar_grams < 20?",
@@ -174,7 +187,7 @@
     "feedback": "SUM(), COUNT(), AVG(), MIN(), and MAX() are SQL aggregate functions that collapse multiple rows into a single value."
   },
   {
-    "question": "Which SQL clause is paired with aggregate functions to summarize rows by category? (Select all that apply)",
+    "question": "Which SQL clause is paired with aggregate functions to summarize rows by category?",
     "correct": [
       "GROUP BY"
     ],
@@ -223,6 +236,38 @@
       "INSERT, copying the candy name into the batches table"
     ],
     "feedback": "The ON clause says how rows pair up. This is the deal the relational model offers: store every fact once, in the table where it belongs, then use JOIN to recombine facts whenever a question needs them."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "The candies table holds {{c}} candies, and each one has exactly {{b}} rows in the batches table. How many rows does a JOIN of candies to batches on candy_id return?",
+    "variables": {
+      "c": {
+        "min": 3,
+        "max": 12
+      },
+      "b": {
+        "min": 2,
+        "max": 6
+      }
+    },
+    "answer": {
+      "expr": "c * b",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "A join produces one row per matching pair, so {{c}} candies with {{b}} batches each gives {{expected}} rows. The candy's details are repeated on every one of its batch rows — the join result is wider and taller than either table.",
+    "language": "sql"
+  },
+  {
+    "question": "A candy's name is stored once in the candies table, and thousands of rows in batches point to it by candy_id. Marketing renames the candy. What has to change?",
+    "correct": [
+      "One row in candies, because the batch rows only hold the key that points to it"
+    ],
+    "incorrect": [
+      "Every row in batches, because each batch row carries its own copy of the name",
+      "The candies row plus all the batch rows, so that the two tables still agree",
+      "Nothing at all, because the database keeps a synchronized copy of the name for you"
+    ],
+    "feedback": "This is the payoff of storing a fact in exactly one place: an update touches one row, and no other row can drift out of step with it. A spreadsheet that repeated the name on every batch line would need thousands of edits, and any missed line would become a silent contradiction."
   },
   {
     "type": "matching",
@@ -313,6 +358,27 @@
       "tolerance_abs": 0
     },
     "feedback_template": "Starting with {{initial}}, adding {{inserted}}, and removing {{deleted}} leaves {{expected}} rows."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "The batches table holds {{rows}} rows, and between them they refer to {{g}} different candies. How many rows does SELECT candy_id, COUNT(*) FROM batches GROUP BY candy_id return?",
+    "variables": {
+      "rows": {
+        "min": 40,
+        "max": 200,
+        "step": 20
+      },
+      "g": {
+        "min": 3,
+        "max": 12
+      }
+    },
+    "answer": {
+      "expr": "g",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "GROUP BY collapses the {{rows}} rows into one row per distinct candy_id, so the result has {{expected}} rows, not {{rows}}. The counts inside those {{expected}} rows add back up to {{rows}}.",
+    "language": "sql"
   },
   {
     "question": "What is an integrity constraint in a relational database?",
@@ -457,6 +523,33 @@
     "feedback": "SQL fixes this order: SELECT, FROM, WHERE, GROUP BY, ORDER BY. Writing WHERE after GROUP BY, or ORDER BY before FROM, is a syntax error no matter how sensible it reads."
   },
   {
+    "type": "cloze",
+    "question": "In a query, the {{1}} clause names the table the rows come from, the {{2}} clause decides which of those rows are kept, and the {{3}} clause decides the sequence the surviving rows are listed in.",
+    "blanks": [
+      {
+        "accept": [
+          "FROM"
+        ],
+        "hint": "clause"
+      },
+      {
+        "accept": [
+          "WHERE"
+        ],
+        "hint": "clause"
+      },
+      {
+        "accept": [
+          "ORDER BY",
+          "ORDER"
+        ],
+        "hint": "clause"
+      }
+    ],
+    "feedback": "Choosing rows and arranging rows are separate jobs, and mixing them up is a common early error: filtering with an ordering clause keeps every row, and sorting with a filtering clause is a syntax error. They also must appear in this written order.",
+    "language": "sql"
+  },
+  {
     "question": "Which SQL statement is used to create a new database table and define its columns?",
     "correct": [
       "CREATE TABLE"
@@ -518,6 +611,30 @@
     "feedback": "Without GROUP BY, aggregate functions treat all matching rows in the query result set as a single group."
   },
   {
+    "type": "code_line",
+    "question": "Write the complete SQL statement that returns every column of every row in the  candies  table.",
+    "language": "sql",
+    "correct": [
+      "SELECT * FROM candies;",
+      "SELECT * FROM candies"
+    ],
+    "case_sensitive": false,
+    "feedback": "The star is a shorthand for 'all columns', and FROM names where the rows come from. Real reports usually list the columns they need instead, so the query keeps working when someone adds a column later."
+  },
+  {
+    "type": "code_line",
+    "question": "Finish this query so it reports how many rows the table holds:  SELECT ___ FROM candies;  Write the missing expression.",
+    "language": "sql",
+    "correct": [
+      "COUNT(*)",
+      "count(*)",
+      "COUNT(1)",
+      "count(1)"
+    ],
+    "case_sensitive": false,
+    "feedback": "An aggregate with no GROUP BY folds every matching row into a single answer, so this returns one row holding one number. Counting the star counts rows themselves, which is why it is unaffected by empty values in any particular column."
+  },
+  {
     "type": "matching",
     "question": "Match each database model type to its characteristic.",
     "pairs": [
@@ -541,7 +658,7 @@
     "feedback": "Relational databases use tables, document databases store JSON, spreadsheets lack strict rules, and plain files lack query indexing."
   },
   {
-    "question": "What is SQLite?",
+    "question": "The candies database in this chapter lives in a single file on disk, with no server process running anywhere. Which database engine works that way?",
     "correct": [
       "A lightweight serverless relational database engine stored in a single file"
     ],
@@ -586,74 +703,6 @@
     "feedback": "The SELECT DISTINCT statement is used to return only distinct (different) values, removing duplicate rows."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "The candies table holds {{c}} candies, and each one has exactly {{b}} rows in the batches table. How many rows does a JOIN of candies to batches on candy_id return?",
-    "variables": {
-      "c": {
-        "min": 3,
-        "max": 12
-      },
-      "b": {
-        "min": 2,
-        "max": 6
-      }
-    },
-    "answer": {
-      "expr": "c * b",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "A join produces one row per matching pair, so {{c}} candies with {{b}} batches each gives {{expected}} rows. The candy's details are repeated on every one of its batch rows — the join result is wider and taller than either table.",
-    "language": "sql"
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "The batches table holds {{rows}} rows, which among them refer to {{g}} different candies. How many rows does SELECT candy_id, COUNT(*) FROM batches GROUP BY candy_id return?",
-    "variables": {
-      "rows": {
-        "min": 40,
-        "max": 200,
-        "step": 20
-      },
-      "g": {
-        "min": 3,
-        "max": 12
-      }
-    },
-    "answer": {
-      "expr": "g",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "GROUP BY collapses the {{rows}} rows into one row per distinct candy_id, so the result has {{expected}} rows, not {{rows}}. The counts inside those {{expected}} rows add back up to {{rows}}.",
-    "language": "sql"
-  },
-  {
-    "type": "cloze",
-    "question": "In a query, the {{1}} clause names the table the rows come from, the {{2}} clause decides which of those rows are kept, and the {{3}} clause decides the sequence the surviving rows are listed in.",
-    "blanks": [
-      {
-        "accept": [
-          "FROM"
-        ],
-        "hint": "clause"
-      },
-      {
-        "accept": [
-          "WHERE"
-        ],
-        "hint": "clause"
-      },
-      {
-        "accept": [
-          "ORDER BY",
-          "ORDER"
-        ],
-        "hint": "clause"
-      }
-    ],
-    "feedback": "Choosing rows and arranging rows are separate jobs, and mixing them up is a common early error: filtering with an ordering clause keeps every row, and sorting with a filtering clause is a syntax error. They also must appear in this written order.",
-    "language": "sql"
-  },
-  {
     "question": "A clerk means to remove one spoiled batch but runs  DELETE FROM batches;  with nothing after the table name. What happens?",
     "correct": [
       "Every row in batches is removed, since no condition narrowed the statement down"
@@ -664,57 +713,5 @@
       "The batches table is removed from the database along with all of the rows in it"
     ],
     "feedback": "A missing condition is not read as 'no rows' but as 'no restriction', so the statement applies to the whole table. The table itself survives, empty, because removing the table is a different command entirely — which is why the condition is worth double-checking before pressing enter."
-  },
-  {
-    "question": "A candy's name is stored once in the candies table, and thousands of rows in batches point to it by candy_id. Marketing renames the candy. What has to change?",
-    "correct": [
-      "One row in candies, because the batch rows only hold the key that points to it"
-    ],
-    "incorrect": [
-      "Every row in batches, because each batch row carries its own copy of the name",
-      "The candies row plus all the batch rows, so that the two tables still agree",
-      "Nothing at all, because the database keeps a synchronized copy of the name for you"
-    ],
-    "feedback": "This is the payoff of storing a fact in exactly one place: an update touches one row, and no other row can drift out of step with it. A spreadsheet that repeated the name on every batch line would need thousands of edits, and any missed line would become a silent contradiction."
-  },
-  {
-    "type": "code_line",
-    "question": "Write the complete SQL statement that returns every column of every row in the  candies  table.",
-    "language": "sql",
-    "correct": [
-      "SELECT * FROM candies;",
-      "select * from candies;",
-      "SELECT * FROM candies",
-      "select * from candies",
-      "Select * From candies;"
-    ],
-    "case_sensitive": false,
-    "feedback": "The star is a shorthand for 'all columns', and FROM names where the rows come from. Real reports usually list the columns they need instead, so the query keeps working when someone adds a column later."
-  },
-  {
-    "type": "code_line",
-    "question": "Finish this query so it keeps only candies with fewer than 10 grams of sugar:  SELECT * FROM candies ___ ;  Write the missing clause, using the sugar column.",
-    "language": "sql",
-    "correct": [
-      "WHERE sugar < 10",
-      "where sugar < 10",
-      "WHERE sugar<10",
-      "WHERE candies.sugar < 10"
-    ],
-    "case_sensitive": false,
-    "feedback": "The condition filters row by row: each candy is tested and kept or dropped. Note the single comparison operator — SQL has no double-equals, and the column name goes on the left of the comparison, not in quotes."
-  },
-  {
-    "type": "code_line",
-    "question": "Finish this query so it reports how many rows the table holds:  SELECT ___ FROM candies;  Write the missing expression.",
-    "language": "sql",
-    "correct": [
-      "COUNT(*)",
-      "count(*)",
-      "COUNT(1)",
-      "count(1)"
-    ],
-    "case_sensitive": false,
-    "feedback": "An aggregate with no GROUP BY folds every matching row into a single answer, so this returns one row holding one number. Counting the star counts rows themselves, which is why it is unaffected by empty values in any particular column."
   }
 ]

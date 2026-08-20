@@ -48,30 +48,6 @@
     "feedback": "Availability ensures that authorized users have timely, reliable access to computing systems and data."
   },
   {
-    "question": "A login function builds its query as  f\"SELECT * FROM users WHERE name = '{username}'\"  and someone types  ' OR '1'='1  as the username. What does the database receive?",
-    "correct": [
-      "A condition that is always true, so every user row is returned"
-    ],
-    "incorrect": [
-      "A syntax error, because the quotes do not balance",
-      "A request for the single user actually named ' OR '1'='1",
-      "An empty result, because no such name exists"
-    ],
-    "feedback": "The attacker's quote closed the string early and their OR clause bolted on a condition that is always true. Scale three rows to forty thousand patient records and you have the morning that started the notebook."
-  },
-  {
-    "question": "How does a SQL injection attack work?",
-    "correct": [
-      "Smuggling malicious SQL commands into a database query through unsanitized user input"
-    ],
-    "incorrect": [
-      "Injecting script tags into stored comments so they run inside another user's browser",
-      "Tricking a logged-in user's browser into sending an unwanted request to a trusted site",
-      "Guessing account passwords repeatedly using an automated dictionary of likely choices"
-    ],
-    "feedback": "SQL injection occurs when unsanitized user input is concatenated directly into SQL query strings, allowing attackers to run arbitrary SQL commands."
-  },
-  {
     "type": "npc_demo",
     "question": "NPC: The quote that opened the gate",
     "npc": "Ada the Artificer",
@@ -97,6 +73,30 @@
       }
     ],
     "outro": "“Name the fix, and remember why the clever character-filter is not it.”"
+  },
+  {
+    "question": "A login function builds its query as  f\"SELECT * FROM users WHERE name = '{username}'\"  and someone types  ' OR '1'='1  as the username. What does the database receive?",
+    "correct": [
+      "A condition that is always true, so every user row is returned"
+    ],
+    "incorrect": [
+      "A syntax error, because the quotes do not balance",
+      "A request for the single user actually named ' OR '1'='1",
+      "An empty result, because no such name exists"
+    ],
+    "feedback": "The attacker's quote closed the string early and their OR clause bolted on a condition that is always true. Scale three rows to forty thousand patient records and you have the morning that started the notebook."
+  },
+  {
+    "question": "How does a SQL injection attack work?",
+    "correct": [
+      "Smuggling malicious SQL commands into a database query through unsanitized user input"
+    ],
+    "incorrect": [
+      "Injecting script tags into stored comments so they run inside another user's browser",
+      "Tricking a logged-in user's browser into sending an unwanted request to a trusted site",
+      "Guessing account passwords repeatedly using an automated dictionary of likely choices"
+    ],
+    "feedback": "SQL injection occurs when unsanitized user input is concatenated directly into SQL query strings, allowing attackers to run arbitrary SQL commands."
   },
   {
     "question": "What is the primary method used to prevent SQL injection vulnerabilities in application code?",
@@ -154,6 +154,37 @@
     "feedback": "Hashing is a one-way transformation used to verify passwords without storing plaintext credentials."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "A hash function produces a digest of {{bits}} bits. Written out in hexadecimal, where each character stands for 4 bits, how many characters long is the digest?",
+    "variables": {
+      "bits": {
+        "values": [
+          128,
+          160,
+          256,
+          512
+        ]
+      }
+    },
+    "answer": {
+      "expr": "bits / 4",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each hex character encodes 4 bits, so {{bits}} bits print as {{expected}} characters. The length is fixed by the algorithm, not by the password, which is why a hash never reveals how long the original input was."
+  },
+  {
+    "question": "Two users of a properly salted password database happen to choose the very same password. What do their two stored hash values look like?",
+    "correct": [
+      "Different, because each password is hashed together with its own random salt"
+    ],
+    "incorrect": [
+      "Identical, because a hash function always maps one input to one fixed output value",
+      "Different, because the hash function mixes in fresh randomness on every single call",
+      "Identical, because the salt is attached after hashing and only pads the stored length"
+    ],
+    "feedback": "The hash function itself is deterministic, so without salts the two records would match and reveal the shared password at a glance. The randomness lives in the per-user salt that is combined with the password before hashing, not inside the algorithm."
+  },
+  {
     "type": "fill_blank",
     "question": "Random data mixed into a password before hashing to defeat precomputed rainbow table attacks is called a ___.",
     "correct": [
@@ -163,16 +194,44 @@
     "feedback": "A salt is a unique, random string appended to a password before hashing to prevent rainbow table dictionary attacks."
   },
   {
+    "type": "cloze",
+    "question": "Three steps that look alike: storing a password uses {{1}}, which is one-way and cannot be undone; mixing a fresh random value into each password before that step is called {{2}}; and protecting a message in transit uses {{3}}, which is deliberately reversible by someone holding the right key.",
+    "blanks": [
+      {
+        "accept": [
+          "hashing",
+          "a hash",
+          "hash"
+        ],
+        "hint": "one-way"
+      },
+      {
+        "accept": [
+          "salting",
+          "salt"
+        ],
+        "hint": "random value"
+      },
+      {
+        "accept": [
+          "encryption",
+          "encrypting"
+        ],
+        "hint": "reversible"
+      }
+    ],
+    "feedback": "Hashing is one-way, so a site that can email you your password is not hashing it. Salting makes two identical passwords hash differently, defeating precomputed rainbow tables. Encryption is the only one of the three meant to be undone — by whoever holds the key."
+  },
+  {
     "type": "ordering",
     "question": "Arrange what a secure system does, in order, when a user sets a new password.",
     "items": [
       "Receive the password the user typed",
       "Generate a fresh random salt for this user",
-      "Hash the salt and the password together",
-      "Store the resulting hash alongside the salt",
-      "Discard the plain password entirely"
+      "Combine that salt with the password and hash the result",
+      "Store the resulting hash together with its salt"
     ],
-    "feedback": "The salt must exist before the hash can include it, and the plain password is thrown away at the end — a system that can tell you your own password is a system that can leak it."
+    "feedback": "Each step needs the one before it: there is nothing to salt until the password arrives, nothing to hash until the salt exists, and nothing to store until the hash is computed. The plain password is never written down at all."
   },
   {
     "question": "A patient portal shows staff the comments patients leave. An attacker submits a comment containing a script tag. What is the danger?",
@@ -209,6 +268,17 @@
       "Embedding private API keys directly in public HTML and JavaScript web templates"
     ],
     "feedback": "Secrets must never be hardcoded or committed to git; store them in environment variables and exclude secret files via `.gitignore`."
+  },
+  {
+    "type": "code_line",
+    "question": "Using the already-imported os module, write the Python expression that reads the environment variable named KEY and returns None if it has not been set.",
+    "language": "python",
+    "correct": [
+      "os.getenv('KEY')",
+      "os.getenv(\"KEY\")"
+    ],
+    "case_sensitive": true,
+    "feedback": "Reading the secret from the environment at run time means the value never appears in the source file, so the code can be shared or committed safely. Returning None instead of raising lets the program report a clear \"secret not configured\" message."
   },
   {
     "question": "Which of the following measures help protect web applications against Cross-Site Scripting (XSS)? (Select all that apply)",
@@ -302,7 +372,33 @@
       "expr": "attempts_per_sec * minutes * 60",
       "tolerance_abs": 0
     },
-    "feedback_template": "At {{attempts_per_sec}} attempts/sec, {{minutes}} minutes ({{minutes * 60}} seconds) results in {{expected}} total attempts."
+    "feedback_template": "At {{attempts_per_sec}} guesses a second, {{minutes}} minutes is {{seconds}} seconds, which allows {{expected}} attempts in total.",
+    "derived": {
+      "seconds": "minutes * 60"
+    }
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A password is exactly {{chars}} characters long, and each character is chosen from an alphabet of {{alpha}} possible symbols. How many different passwords are possible?",
+    "variables": {
+      "chars": {
+        "min": 2,
+        "max": 4
+      },
+      "alpha": {
+        "values": [
+          10,
+          16,
+          26,
+          36
+        ]
+      }
+    },
+    "answer": {
+      "expr": "pow(alpha, chars)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each of the {{chars}} positions is chosen independently from {{alpha}} symbols, so the count is {{alpha}}^{{chars}} = {{expected}}. Adding one character multiplies the work for an attacker; adding one symbol to the alphabet barely helps."
   },
   {
     "question": "What is the principle of Defense in Depth in cybersecurity?",
@@ -353,6 +449,28 @@
     "feedback": "Plaintext passwords expose all user accounts if data is compromised; salted hashing ensures passwords cannot be read directly."
   },
   {
+    "question": "You click \"forgot password\" and the site emails you your existing password in readable text. What does that tell you about how it stores passwords?",
+    "correct": [
+      "The site can recover the original text, so it is not storing one-way hashes"
+    ],
+    "incorrect": [
+      "The site salted its hashes, and the salt is what makes the original recoverable again",
+      "The site hashed the password and simply ran the same hash algorithm backwards",
+      "The site stores only hashes, and what arrived in the email was the stored hash"
+    ],
+    "feedback": "A correctly hashed password cannot be turned back into text by anyone, including the site, which is why safe sites reset a password instead of sending it. Salting strengthens hashes rather than undoing them, and a hash you could reverse would not be a hash."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Requiring a second proof of identity, such as a code from the user's phone in addition to a password, is called ___-factor authentication.",
+    "correct": [
+      "two",
+      "multi",
+      "2"
+    ],
+    "feedback": "The point is that the two proofs fail in different ways: a stolen password is useless without the phone, so one leaked secret no longer hands over the account. It is defence in depth applied to logging in."
+  },
+  {
     "question": "A patient logs in over a coffee-shop Wi-Fi using plain HTTP. What is the risk?",
     "correct": [
       "Anyone on the network path can read the packets, password included"
@@ -363,6 +481,18 @@
       "The clinic's database will accept the login without checking it"
     ],
     "feedback": "Data is most exposed on the journey. The café router, the provider, and anyone snooping on the same Wi-Fi all sit on that path, and plain HTTP sends everything as readable text."
+  },
+  {
+    "question": "A logged-in student edits the address bar from /records/1042 to /records/1043 and sees a classmate's record. Which control failed here?",
+    "correct": [
+      "Authorization: the server knew who was asking but never checked their permission"
+    ],
+    "incorrect": [
+      "Authentication: the server never established which user was making the request",
+      "Input validation: the record number in the URL was never checked to be a number",
+      "Encryption: the record travelled over the network without any TLS protection"
+    ],
+    "feedback": "Log-in worked exactly as designed, so identity was established; what was missing was the per-record check that this identity may see this record. Note that 1043 is a perfectly valid number, so tighter type checking would have let the same request straight through."
   },
   {
     "question": "What is HTTPS?",
@@ -377,7 +507,7 @@
     "feedback": "HTTPS encrypts HTTP traffic using TLS/SSL certificates, protecting data confidentiality and integrity in transit."
   },
   {
-    "question": "What is Cross-Site Request Forgery (CSRF)?",
+    "question": "An attacker's page silently makes a logged-in user's browser submit a transfer form to their bank, and the bank accepts it because the browser attached the session cookie. What is this attack called?",
     "correct": [
       "Tricking a logged-in user's browser into unwanted actions on a trusted site"
     ],
@@ -441,6 +571,33 @@
       "A malicious intruder altering a patient's stored allergy record in the database"
     ],
     "feedback": "Availability breaches prevent legitimate users from accessing operating services (e.g. outages or DDoS attacks)."
+  },
+  {
+    "type": "cloze",
+    "question": "Naming what a breach broke: quietly altering a lab result in a patient record breaks {{1}}, while flooding the hospital's server with junk traffic in a {{2}} attack breaks {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "integrity"
+        ],
+        "hint": "CIA goal"
+      },
+      {
+        "accept": [
+          "DDoS",
+          "DoS",
+          "denial"
+        ],
+        "hint": "attack type"
+      },
+      {
+        "accept": [
+          "availability"
+        ],
+        "hint": "CIA goal"
+      }
+    ],
+    "feedback": "The flood attack never reads or changes a single record, and the altered lab result is perfectly readable to everyone entitled to see it, so neither one is a confidentiality problem. Naming the goal that actually failed is what decides the right response."
   },
   {
     "question": "A developer commits a file containing an API key, then deletes the key in the very next commit. Why is the key still exposed?",
@@ -557,160 +714,5 @@
       "Checking that data stored earlier has not been altered since it was written down"
     ],
     "feedback": "Input validation verifies that data entering a system strictly conforms to expected specifications before processing."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A password is exactly {{chars}} characters long, and each character is chosen from an alphabet of {{alpha}} possible symbols. How many different passwords are possible?",
-    "variables": {
-      "chars": {
-        "min": 2,
-        "max": 4
-      },
-      "alpha": {
-        "values": [
-          10,
-          16,
-          26,
-          36
-        ]
-      }
-    },
-    "answer": {
-      "expr": "pow(alpha, chars)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Each of the {{chars}} positions is chosen independently from {{alpha}} symbols, so the count is {{alpha}}^{{chars}} = {{expected}}. Adding one character multiplies the work for an attacker; adding one symbol to the alphabet barely helps."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A hash function produces a digest of {{bits}} bits. Written out in hexadecimal, where each character stands for 4 bits, how many characters long is the digest?",
-    "variables": {
-      "bits": {
-        "values": [
-          128,
-          160,
-          256,
-          512
-        ]
-      }
-    },
-    "answer": {
-      "expr": "bits / 4",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Each hex character encodes 4 bits, so {{bits}} bits print as {{expected}} characters. The length is fixed by the algorithm, not by the password, which is why a hash never reveals how long the original input was."
-  },
-  {
-    "type": "cloze",
-    "question": "Naming what a breach broke: quietly altering a lab result in a patient record breaks {{1}}, while flooding the hospital's server with junk traffic in a {{2}} attack breaks {{3}}.",
-    "blanks": [
-      {
-        "accept": [
-          "integrity"
-        ],
-        "hint": "CIA goal"
-      },
-      {
-        "accept": [
-          "DDoS",
-          "DoS",
-          "denial"
-        ],
-        "hint": "attack type"
-      },
-      {
-        "accept": [
-          "availability"
-        ],
-        "hint": "CIA goal"
-      }
-    ],
-    "feedback": "The flood attack never reads or changes a single record, and the altered lab result is perfectly readable to everyone entitled to see it, so neither one is a confidentiality problem. Naming the goal that actually failed is what decides the right response."
-  },
-  {
-    "type": "cloze",
-    "question": "Three steps that look alike: storing a password uses {{1}}, which is one-way and cannot be undone; mixing a fresh random value into each password before that step is called {{2}}; and protecting a message in transit uses {{3}}, which is deliberately reversible by someone holding the right key.",
-    "blanks": [
-      {
-        "accept": [
-          "hashing",
-          "a hash",
-          "hash"
-        ],
-        "hint": "one-way"
-      },
-      {
-        "accept": [
-          "salting",
-          "salt"
-        ],
-        "hint": "random value"
-      },
-      {
-        "accept": [
-          "encryption",
-          "encrypting"
-        ],
-        "hint": "reversible"
-      }
-    ],
-    "feedback": "Hashing is one-way, so a site that can email you your password is not hashing it. Salting makes two identical passwords hash differently, defeating precomputed rainbow tables. Encryption is the only one of the three meant to be undone — by whoever holds the key."
-  },
-  {
-    "question": "You click \"forgot password\" and the site emails you your existing password in readable text. What does that tell you about how it stores passwords?",
-    "correct": [
-      "The site can recover the original text, so it is not storing one-way hashes"
-    ],
-    "incorrect": [
-      "The site salted its hashes, and the salt is what makes the original recoverable again",
-      "The site hashed the password and simply ran the same hash algorithm backwards",
-      "The site stores only hashes, and what arrived in the email was the stored hash"
-    ],
-    "feedback": "A correctly hashed password cannot be turned back into text by anyone, including the site, which is why safe sites reset a password instead of sending it. Salting strengthens hashes rather than undoing them, and a hash you could reverse would not be a hash."
-  },
-  {
-    "question": "A logged-in student edits the address bar from /records/1042 to /records/1043 and sees a classmate's record. Which control failed here?",
-    "correct": [
-      "Authorization: the server knew who was asking but never checked their permission"
-    ],
-    "incorrect": [
-      "Authentication: the server never established which user was making the request",
-      "Input validation: the record number in the URL was never checked to be a number",
-      "Encryption: the record travelled over the network without any TLS protection"
-    ],
-    "feedback": "Log-in worked exactly as designed, so identity was established; what was missing was the per-record check that this identity may see this record. Note that 1043 is a perfectly valid number, so tighter type checking would have let the same request straight through."
-  },
-  {
-    "question": "Two users of a properly salted password database happen to choose the very same password. What do their two stored hash values look like?",
-    "correct": [
-      "Different, because each password is hashed together with its own random salt"
-    ],
-    "incorrect": [
-      "Identical, because a hash function always maps one input to one fixed output value",
-      "Different, because the hash function mixes in fresh randomness on every single call",
-      "Identical, because the salt is attached after hashing and only pads the stored length"
-    ],
-    "feedback": "The hash function itself is deterministic, so without salts the two records would match and reveal the shared password at a glance. The randomness lives in the per-user salt that is combined with the password before hashing, not inside the algorithm."
-  },
-  {
-    "type": "code_line",
-    "question": "Using the already-imported os module, write the Python expression that reads the environment variable named KEY and returns None if it has not been set.",
-    "language": "python",
-    "correct": [
-      "os.getenv('KEY')",
-      "os.getenv(\"KEY\")"
-    ],
-    "case_sensitive": false,
-    "feedback": "Reading the secret from the environment at run time means the value never appears in the source file, so the code can be shared or committed safely. Returning None instead of raising lets the program report a clear \"secret not configured\" message."
-  },
-  {
-    "type": "fill_blank",
-    "question": "Requiring a second proof of identity, such as a code from the user's phone in addition to a password, is called ___-factor authentication.",
-    "correct": [
-      "two",
-      "multi",
-      "2"
-    ],
-    "feedback": "The point is that the two proofs fail in different ways: a stolen password is useless without the phone, so one leaked secret no longer hands over the account. It is defence in depth applied to logging in."
   }
 ]

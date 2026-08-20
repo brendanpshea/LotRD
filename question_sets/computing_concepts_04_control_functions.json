@@ -105,6 +105,18 @@
     "feedback": "or needs just one true side, not flips its value, and and needs both sides true. The two wrong options fail because the 'and' has a false side and 6 > 4 is true (so 'not' makes it false)."
   },
   {
+    "question": "A program guards a division by writing  if count > 0 and total / count > 5:. Why does this avoid a divide-by-zero error?",
+    "correct": [
+      "and stops as soon as a test is False, so the division never runs when count is 0"
+    ],
+    "incorrect": [
+      "and always evaluates both tests, but ignores any error the second one raises",
+      "Swapping the two tests would change nothing, because and ignores the order given",
+      "The division happens first, since arithmetic is evaluated before any comparison"
+    ],
+    "feedback": "Short-circuiting is what makes the guard work, and it is why the order of the two tests is not interchangeable here: the cheap safety check has to come first."
+  },
+  {
     "question": "Python uses short-circuit evaluation. In  A or B, when is B skipped?",
     "correct": [
       "When A is already True, since the result is True anyway"
@@ -148,16 +160,16 @@
     "feedback": "Use a for loop when you know what to iterate over (like a range), and a while loop when you repeat until some condition changes."
   },
   {
-    "question": "How many times does the body of this loop run?\n\nfor i in range(5):\n    print(i)",
+    "question": "How many times does the innermost print run?\n\nfor i in range(3):\n    for j in range(4):\n        print(i, j)",
     "correct": [
-      "5"
+      "12"
     ],
     "incorrect": [
-      "4",
-      "6",
-      "0"
+      "7",
+      "3",
+      "4"
     ],
-    "feedback": "range(5) produces 0, 1, 2, 3, 4 — five values — so the body runs 5 times."
+    "feedback": "The inner loop runs all 4 of its passes for each of the outer loop's 3 passes, so the print runs 3 x 4 = 12 times. Nested loops multiply; they do not add."
   },
   {
     "question": "What does  range(2, 6)  produce in Python?",
@@ -191,6 +203,17 @@
   },
   {
     "type": "code_trace",
+    "question": "This loop skips some values with continue. What does the program print?",
+    "code": "total = 0\nfor n in [3, -1, 4, -2]:\n    if n < 0:\n        continue\n    total = total + n\nprint(total)",
+    "language": "python",
+    "correct": [
+      "7"
+    ],
+    "case_sensitive": true,
+    "feedback": "continue jumps straight to the next item, so the two negative values never reach the addition line. Only 3 and 4 are accumulated."
+  },
+  {
+    "type": "code_trace",
     "question": "This loop breaks early. What does the program print?",
     "code": "for i in range(5):\n    if i == 3:\n        break\n    print(i)",
     "language": "python",
@@ -212,6 +235,18 @@
       "An if statement whose condition is false"
     ],
     "feedback": "An infinite loop never stops: while True with no break, or a while whose condition never becomes false. A for loop over a range ends naturally, and an if is not a loop."
+  },
+  {
+    "question": "A loop walks a list of readings and should ignore any negative reading while still processing everything after it. Which statement belongs inside the if?",
+    "correct": [
+      "continue, which abandons this pass and moves on to the next item"
+    ],
+    "incorrect": [
+      "break, which leaves the loop at once so later items go unseen",
+      "return, which ends this pass and resumes with the next item",
+      "pass, which skips the rest of the pass just as continue does"
+    ],
+    "feedback": "The task is to skip one item, not to stop early, so the loop must keep going. pass is a do-nothing placeholder and changes no control flow at all."
   },
   {
     "type": "npc_demo",
@@ -253,7 +288,7 @@
       "expr": "n",
       "tolerance_abs": 0
     },
-    "feedback_template": "range({{n}}) yields the values 0 through {{n}} minus 1, so the body runs {{expected}} times."
+    "feedback_template": "range({{n}}) yields the values from 0 up to but not including {{n}}, so the body runs {{expected}} times."
   },
   {
     "type": "dynamic_numeric",
@@ -319,6 +354,32 @@
     "feedback_template": "Stepping by {{step}} from {{start}} up to (not including) {{stop}} gives {{expected}} iterations."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "A variable n starts at {{start}}. The loop  while n > 0: n = n - {{step}}  then runs. How many times does its body run?",
+    "variables": {
+      "step": {
+        "values": [
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "count": {
+        "min": 3,
+        "max": 9
+      }
+    },
+    "derived": {
+      "start": "step * count"
+    },
+    "answer": {
+      "expr": "count",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each pass removes {{step}} from n, and {{start}} divided by {{step}} is {{expected}}, so the body runs {{expected}} times before n reaches 0 and the test fails."
+  },
+  {
     "type": "code_line",
     "question": "Write the Python line that begins an endless loop using the while keyword and the value True. (Just the header line.)",
     "language": "python",
@@ -351,6 +412,17 @@
     "feedback": "A function definition uses def, the name, parentheses for parameters, and a colon: def f():"
   },
   {
+    "type": "code_line",
+    "question": "Write the Python header line that defines a function named f with one parameter n whose default value is 1. (Just the def line, no body.)",
+    "language": "python",
+    "correct": [
+      "def f(n=1):",
+      "def f(n = 1):"
+    ],
+    "case_sensitive": true,
+    "feedback": "The default is written as an assignment inside the parentheses, and the header still ends with a colon before the indented body."
+  },
+  {
     "question": "In the definition  def greet(name):, what is  name?",
     "correct": [
       "A parameter that receives a value when greet is called"
@@ -375,6 +447,18 @@
     "feedback": "return hands a value back to the caller and immediately exits the function. Returning is not the same as printing."
   },
   {
+    "question": "A function ends with  print(total)  where it should have said  return total. The caller then runs  x = compute(4). What is x?",
+    "correct": [
+      "None, because a function that returns no value hands back None"
+    ],
+    "incorrect": [
+      "The printed number, since print sends the value back to the caller",
+      "0, because Python gives a missing return value the value zero",
+      "An error, because assigning from a function requires a return"
+    ],
+    "feedback": "print sends characters to the screen; return sends a value to whoever called the function. The two are easy to confuse because both seem to 'produce' the number."
+  },
+  {
     "type": "code_line",
     "question": "Write the Python statement that returns the value of the variable x from a function.",
     "language": "python",
@@ -383,6 +467,25 @@
     ],
     "case_sensitive": true,
     "feedback": "return x sends the value of x back to whatever called the function."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A function is defined as  def total(a, b={{d}}):  with the single body line  return a * b. What value does the call  total({{a}})  return?",
+    "variables": {
+      "a": {
+        "min": 2,
+        "max": 12
+      },
+      "d": {
+        "min": 2,
+        "max": 9
+      }
+    },
+    "answer": {
+      "expr": "a * d",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Only one argument is supplied, so b falls back to its default of {{d}}, and the function returns {{a}} * {{d}} = {{expected}}."
   },
   {
     "type": "npc_demo",
@@ -467,10 +570,10 @@
       "A function can be called many times after being defined once"
     ],
     "incorrect": [
-      "A function must always return a value",
+      "A function must always include a return statement",
       "A function can be defined only once per program run"
     ],
-    "feedback": "Functions may take any number of parameters, may or may not return a value, and are reusable. A function without a return still runs; it just returns None."
+    "feedback": "Functions may take any number of parameters, may or may not return a value, and are reusable. A function without a return statement still runs; it just hands back None."
   },
   {
     "question": "What is a docstring?",
@@ -497,6 +600,15 @@
     "feedback": "Keyword arguments name the parameter they fill (base=3, exp=4), so order does not matter and the call is easier to read."
   },
   {
+    "type": "fill_blank",
+    "question": "A value written inside the parentheses of a function call, which is handed to the matching parameter, is called an ___.",
+    "correct": [
+      "argument",
+      "arg"
+    ],
+    "feedback": "Parameters are the names in the def line; arguments are the actual values supplied at the moment of the call. One name, many different arguments over a program's life."
+  },
+  {
     "type": "code_trace",
     "question": "A function reassigns its parameter. What does the program print?",
     "code": "def change(n):\n    n = n + 1\n\nx = 5\nchange(x)\nprint(x)",
@@ -521,11 +633,30 @@
   },
   {
     "type": "fill_blank",
-    "question": "The region of a program where a particular variable is visible is called its ___.",
+    "question": "A variable created inside a function, invisible to code outside it, is called a ___ variable.",
     "correct": [
-      "scope"
+      "local"
     ],
-    "feedback": "A variable created inside a function has local scope: it exists only while that call runs, which is why outside code cannot see it."
+    "feedback": "A local variable lives only for the duration of the call that created it. That is why code outside the function cannot see it, and why two calls never share one."
+  },
+  {
+    "type": "cloze",
+    "question": "In  def scale(v, factor=3):, the 3 makes factor a {{1}} value, used whenever the caller supplies only v; meanwhile a variable first assigned inside scale is {{2}}, so it disappears once the call ends.",
+    "blanks": [
+      {
+        "accept": [
+          "default"
+        ],
+        "hint": "kind of value"
+      },
+      {
+        "accept": [
+          "local"
+        ],
+        "hint": "scope word"
+      }
+    ],
+    "feedback": "These are two separate ideas that both live in the def line's neighbourhood: defaults decide what happens when an argument is missing, while scope decides how long a name inside the body survives."
   },
   {
     "question": "Which three building blocks are enough, on their own, to express any algorithm?",
@@ -562,136 +693,5 @@
       "An empty input makes Python skip the function body automatically"
     ],
     "feedback": "Code that handles typical inputs can still fail on boundaries like empty or zero values, so testing edge cases catches bugs before they ship."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A variable n starts at {{start}}. The loop  while n > 0: n = n - {{step}}  then runs. How many times does its body run?",
-    "variables": {
-      "step": {
-        "values": [
-          2,
-          3,
-          4,
-          5
-        ]
-      },
-      "count": {
-        "min": 3,
-        "max": 9
-      }
-    },
-    "derived": {
-      "start": "step * count"
-    },
-    "answer": {
-      "expr": "count",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Each pass removes {{step}} from n, and {{start}} divided by {{step}} is {{expected}}, so the body runs {{expected}} times before n reaches 0 and the test fails."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A function is defined as  def total(a, b={{d}}):  with the single body line  return a * b. What value does the call  total({{a}})  return?",
-    "variables": {
-      "a": {
-        "min": 2,
-        "max": 12
-      },
-      "d": {
-        "min": 2,
-        "max": 9
-      }
-    },
-    "answer": {
-      "expr": "a * d",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Only one argument is supplied, so b falls back to its default of {{d}}, and the function returns {{a}} * {{d}} = {{expected}}."
-  },
-  {
-    "type": "cloze",
-    "question": "In  def scale(v, factor=3):, the 3 makes factor a {{1}} value, used whenever the caller supplies only v; meanwhile a variable first assigned inside scale is {{2}}, so it disappears once the call ends.",
-    "blanks": [
-      {
-        "accept": [
-          "default"
-        ],
-        "hint": "kind of value"
-      },
-      {
-        "accept": [
-          "local"
-        ],
-        "hint": "scope word"
-      }
-    ],
-    "feedback": "These are two separate ideas that both live in the def line's neighbourhood: defaults decide what happens when an argument is missing, while scope decides how long a name inside the body survives."
-  },
-  {
-    "question": "A program guards a division by writing  if count > 0 and total / count > 5:. Why does this avoid a divide-by-zero error?",
-    "correct": [
-      "and stops as soon as a test is False, so the division never runs when count is 0"
-    ],
-    "incorrect": [
-      "and always evaluates both tests, but ignores any error the second one raises",
-      "Swapping the two tests would change nothing, because and ignores the order given",
-      "The division happens first, since arithmetic is evaluated before any comparison"
-    ],
-    "feedback": "Short-circuiting is what makes the guard work, and it is why the order of the two tests is not interchangeable here: the cheap safety check has to come first."
-  },
-  {
-    "question": "A loop walks a list of readings and should ignore any negative reading while still processing everything after it. Which statement belongs inside the if?",
-    "correct": [
-      "continue, which abandons this pass and moves on to the next item"
-    ],
-    "incorrect": [
-      "break, which leaves the loop at once so later items go unseen",
-      "return, which ends this pass and resumes with the next item",
-      "pass, which skips the rest of the pass just as continue does"
-    ],
-    "feedback": "The task is to skip one item, not to stop early, so the loop must keep going. pass is a do-nothing placeholder and changes no control flow at all."
-  },
-  {
-    "question": "A function ends with  print(total)  where it should have said  return total. The caller then runs  x = compute(4). What is x?",
-    "correct": [
-      "None, because a function that returns no value hands back None"
-    ],
-    "incorrect": [
-      "The printed number, since print sends the value back to the caller",
-      "0, because Python gives a missing return value the value zero",
-      "An error, because assigning from a function requires a return"
-    ],
-    "feedback": "print sends characters to the screen; return sends a value to whoever called the function. The two are easy to confuse because both seem to 'produce' the number."
-  },
-  {
-    "type": "fill_blank",
-    "question": "A value written inside the parentheses of a function call, which is handed to the matching parameter, is called an ___.",
-    "correct": [
-      "argument",
-      "arg"
-    ],
-    "feedback": "Parameters are the names in the def line; arguments are the actual values supplied at the moment of the call. One name, many different arguments over a program's life."
-  },
-  {
-    "type": "code_line",
-    "question": "Write the Python header line that defines a function named f with one parameter n whose default value is 1. (Just the def line, no body.)",
-    "language": "python",
-    "correct": [
-      "def f(n=1):",
-      "def f(n = 1):"
-    ],
-    "case_sensitive": false,
-    "feedback": "The default is written as an assignment inside the parentheses, and the header still ends with a colon before the indented body."
-  },
-  {
-    "type": "code_trace",
-    "question": "This loop skips some values with continue. What does the program print?",
-    "code": "total = 0\nfor n in [3, -1, 4, -2]:\n    if n < 0:\n        continue\n    total = total + n\nprint(total)",
-    "language": "python",
-    "correct": [
-      "7"
-    ],
-    "case_sensitive": true,
-    "feedback": "continue jumps straight to the next item, so the two negative values never reach the addition line. Only 3 and 4 are accumulated."
   }
 ]

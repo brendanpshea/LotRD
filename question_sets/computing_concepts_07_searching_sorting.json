@@ -50,6 +50,31 @@
     "feedback": "Each pass looks at the middle, compares, throws away the half the target cannot be in, and repeats on the rest — which is why the work grows only logarithmically."
   },
   {
+    "question": "A student runs a correct binary search function on a list that was never sorted. What is the most likely result?",
+    "correct": [
+      "It may report the target as missing, because it throws away the wrong half"
+    ],
+    "incorrect": [
+      "It still finds the target, but takes O(n) time rather than O(log n) time",
+      "Python raises an error, since binary search checks the ordering as it goes",
+      "It finds the target but hands back the position of a neighbouring item"
+    ],
+    "feedback": "Binary search decides which half to keep by assuming everything left of the middle is smaller. With no ordering, that assumption is simply false, and the half holding the target can be discarded on the very first comparison. Nothing in the code detects the problem, so the wrong answer comes back quietly."
+  },
+  {
+    "type": "code_line",
+    "question": "In binary search, lo and hi hold the ends of the range still in play. Write the Python expression that gives the index of the middle item, using integer division.",
+    "language": "python",
+    "correct": [
+      "(lo + hi) // 2",
+      "(lo+hi)//2",
+      "(hi + lo) // 2",
+      "(lo + hi)//2"
+    ],
+    "case_sensitive": false,
+    "feedback": "Integer division keeps the result a whole number, which matters because list indexes cannot be fractions. A single slash would produce a float and make the index unusable."
+  },
+  {
     "question": "What does binary search do on each pass?",
     "correct": [
       "Compares the middle item and discards the half that cannot contain it"
@@ -95,7 +120,34 @@
     "feedback": "Doubling the list doubles linear search's worst case, but adds only one step to binary search. Among a billion items, linear search may check a billion and binary search checks about 30."
   },
   {
-    "question": "Order these growth rates from fastest-growing to slowest-growing for large n. Which grows the fastest?",
+    "type": "cloze",
+    "question": "Doubling the size of a list roughly doubles the work of a {{1}} search, but adds only one extra step to a {{2}} search — which pays for that speed by requiring the list to be {{3}} before you start.",
+    "blanks": [
+      {
+        "accept": [
+          "linear",
+          "sequential"
+        ],
+        "hint": "search"
+      },
+      {
+        "accept": [
+          "binary"
+        ],
+        "hint": "search"
+      },
+      {
+        "accept": [
+          "sorted",
+          "ordered",
+          "in order"
+        ]
+      }
+    ],
+    "feedback": "O(n) work scales in step with the list, while O(log n) work grows by one step per doubling. Halving only works when order tells you which half to throw away, so binary search buys its speed with a precondition linear search does not need."
+  },
+  {
+    "question": "Which of these growth rates grows the fastest for large n?",
     "correct": [
       "O(n²)"
     ],
@@ -228,16 +280,41 @@
     "feedback": "The first pass finds the smallest item (1, at the end) and swaps it with whatever was in slot 0. The 7 that was displaced moves to where the 1 had been."
   },
   {
-    "question": "Why is selection sort O(n squared)?",
+    "question": "Selection sort scans the whole unsorted tail on every pass, and there is one pass per item. Which Big-O class does that give it?",
     "correct": [
-      "For each of the n slots it scans the rest, so work multiplies"
+      "O(n²), because roughly n passes each do work proportional to n"
     ],
     "incorrect": [
-      "It has to sort the list twice to be certain it is in order",
-      "Each swap requires copying the whole list into a new one",
-      "It compares every item to every other item exactly twice"
+      "O(n), because each item is placed exactly once into its final slot",
+      "O(n log n), because the unsorted tail halves on each pass",
+      "O(log n), because only the smallest item is examined each time"
     ],
-    "feedback": "A scan inside a loop means roughly n times n comparisons. Fine for a handful of cards; for a million items that is about a trillion comparisons."
+    "feedback": "Roughly n passes, each scanning up to n items, multiplies out to n². Doubling the list therefore roughly quadruples the work."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An O(n squared) algorithm takes {{t}} milliseconds on a list of {{n}} items. About how many milliseconds should it take on {{k}} times as many items?",
+    "variables": {
+      "t": {
+        "min": 4,
+        "max": 40
+      },
+      "n": {
+        "min": 100,
+        "max": 500,
+        "step": 100
+      },
+      "k": {
+        "min": 2,
+        "max": 5
+      }
+    },
+    "answer": {
+      "expr": "t * k * k",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Squared growth means multiplying the input by {{k}} multiplies the work by {{k}} x {{k}}, so {{t}} ms becomes about {{expected}} ms. The input grew {{k}} times, but the cost grew far more.",
+    "language": "python"
   },
   {
     "question": "What is the Big-O running time of selection sort?",
@@ -252,6 +329,21 @@
     "feedback": "Selection sort scans the remaining items on every pass, so its work grows with the square of n: O(n²)."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "Selection sort on a list of {{n}} items makes {{n}} - 1 comparisons on its first pass, {{n}} - 2 on the next, and so on down to 1. How many comparisons is that altogether?",
+    "variables": {
+      "n": {
+        "min": 5,
+        "max": 25
+      }
+    },
+    "answer": {
+      "expr": "n * (n - 1) / 2",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Adding {{n}}-1 + {{n}}-2 + ... + 1 gives {{n}} x ({{n}} - 1) / 2 = {{expected}} comparisons. That total grows with the square of {{n}}, which is why selection sort is O(n squared)."
+  },
+  {
     "question": "Merge sort uses divide and conquer. Which description matches it?",
     "correct": [
       "Split until each pile is one item, then merge sorted piles upward"
@@ -262,6 +354,27 @@
       "Compare the first and last items and work inwards to the middle"
     ],
     "feedback": "A single item is already sorted, and merging two sorted piles is cheap. There are about log n levels of splitting, each doing O(n) merging work, which is where O(n log n) comes from."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Merge sort splits a list in half over and over until every pile holds a single item. Starting from {{n}} items, how many rounds of splitting does that take?",
+    "variables": {
+      "n": {
+        "values": [
+          8,
+          16,
+          32,
+          64,
+          128,
+          256
+        ]
+      }
+    },
+    "answer": {
+      "expr": "bitLength(n) - 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each round halves the pile size, so the number of rounds is log2({{n}}) = {{expected}}. Those {{expected}} levels, each costing about n work to merge, are where the n log n in merge sort comes from."
   },
   {
     "question": "Why is merge sort (O(n log n)) usually preferred over selection sort (O(n²)) for large lists?",
@@ -287,6 +400,45 @@
       "items.sort() must be given a key function to work"
     ],
     "feedback": "Writing x = mylist.sort() and getting None back is a classic beginner bug. Use sorted() when you want a new list, and .sort() when you mean to rearrange the original in place."
+  },
+  {
+    "question": "A list of student dictionaries, each holding a 'score' key, must be listed from the highest score down to the lowest. Which approach does that?",
+    "correct": [
+      "Call sorted() with a key that returns the score and reverse set to True"
+    ],
+    "incorrect": [
+      "Call sorted() with a key that returns the score, which lists them highest first",
+      "Call sorted() with no key at all, since it compares the score values by itself",
+      "Call .sort() with reverse set to True and assign the list it returns to a name"
+    ],
+    "feedback": "A key function tells sorted() what to compare, but the default direction is still ascending, so descending order needs reverse=True as well. sorted() cannot guess which field of a dictionary matters, and .sort() rearranges the list in place and returns None, so assigning its result throws the data away."
+  },
+  {
+    "type": "matching",
+    "question": "Match each Python sorting call to what it produces, assuming nums is a list of numbers and words is a list of strings.",
+    "pairs": [
+      {
+        "term": "sorted(nums)",
+        "definition": "A new list running smallest to largest, with nums left untouched"
+      },
+      {
+        "term": "nums.sort()",
+        "definition": "Nothing returned at all — nums itself is rearranged in place"
+      },
+      {
+        "term": "sorted(nums, reverse=True)",
+        "definition": "A new list running largest to smallest"
+      },
+      {
+        "term": "sorted(words, key=len)",
+        "definition": "A new list of the same words ordered shortest to longest"
+      },
+      {
+        "term": "max(nums)",
+        "definition": "One value: the largest number in the list"
+      }
+    ],
+    "feedback": "The sorted() family always hands back a new list and leaves the original alone, while .sort() does the opposite and returns None. A key function changes what gets compared, and reverse changes the direction — they are independent settings you can use together."
   },
   {
     "question": "You need to search a large collection many times, and you are free to prepare it first. Which approach is best?",
@@ -415,7 +567,7 @@
       "Problems that can be solved quickly by an algorithm"
     ],
     "incorrect": [
-      "Problems whose answers can be checked quickly",
+      "Problems easy to check but not known to be easy to solve",
       "Problems that no algorithm can ever solve",
       "Problems that require a Turing machine to state"
     ],
@@ -577,157 +729,5 @@
     ],
     "case_sensitive": true,
     "feedback": "sorted(nums) hands back a new sorted list. nums.sort() would rearrange the original instead and return None."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "Selection sort on a list of {{n}} items makes {{n}} - 1 comparisons on its first pass, {{n}} - 2 on the next, and so on down to 1. How many comparisons is that altogether?",
-    "variables": {
-      "n": {
-        "min": 5,
-        "max": 25
-      }
-    },
-    "answer": {
-      "expr": "n * (n - 1) / 2",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Adding {{n}}-1 + {{n}}-2 + ... + 1 gives {{n}} x ({{n}} - 1) / 2 = {{expected}} comparisons. That total grows with the square of {{n}}, which is why selection sort is O(n squared)."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "An O(n squared) algorithm takes {{t}} milliseconds on a list of {{n}} items. About how many milliseconds should it take on {{k}} times as many items?",
-    "variables": {
-      "t": {
-        "min": 4,
-        "max": 40
-      },
-      "n": {
-        "min": 100,
-        "max": 500,
-        "step": 100
-      },
-      "k": {
-        "min": 2,
-        "max": 5
-      }
-    },
-    "answer": {
-      "expr": "t * k * k",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Squared growth means multiplying the input by {{k}} multiplies the work by {{k}} x {{k}}, so {{t}} ms becomes about {{expected}} ms. The input grew {{k}} times, but the cost grew far more.",
-    "language": "python"
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "Merge sort splits a list in half over and over until every pile holds a single item. Starting from {{n}} items, how many rounds of splitting does that take?",
-    "variables": {
-      "n": {
-        "values": [
-          8,
-          16,
-          32,
-          64,
-          128,
-          256
-        ]
-      }
-    },
-    "answer": {
-      "expr": "bitLength(n) - 1",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Each round halves the pile size, so the number of rounds is log2({{n}}) = {{expected}}. Those {{expected}} levels, each costing about n work to merge, are where the n log n in merge sort comes from."
-  },
-  {
-    "type": "cloze",
-    "question": "Doubling the size of a list roughly doubles the work of a {{1}} search, but adds only one extra step to a {{2}} search — which pays for that speed by requiring the list to be {{3}} before you start.",
-    "blanks": [
-      {
-        "accept": [
-          "linear",
-          "sequential"
-        ],
-        "hint": "search"
-      },
-      {
-        "accept": [
-          "binary"
-        ],
-        "hint": "search"
-      },
-      {
-        "accept": [
-          "sorted",
-          "ordered",
-          "in order"
-        ]
-      }
-    ],
-    "feedback": "O(n) work scales in step with the list, while O(log n) work grows by one step per doubling. Halving only works when order tells you which half to throw away, so binary search buys its speed with a precondition linear search does not need."
-  },
-  {
-    "question": "A student runs a correct binary search function on a list that was never sorted. What is the most likely result?",
-    "correct": [
-      "It may report the target as missing, because it throws away the wrong half"
-    ],
-    "incorrect": [
-      "It still finds the target, but takes O(n) time rather than O(log n) time",
-      "Python raises an error, since binary search checks the ordering as it goes",
-      "It finds the target but hands back the position of a neighbouring item"
-    ],
-    "feedback": "Binary search decides which half to keep by assuming everything left of the middle is smaller. With no ordering, that assumption is simply false, and the half holding the target can be discarded on the very first comparison. Nothing in the code detects the problem, so the wrong answer comes back quietly."
-  },
-  {
-    "question": "A list of student dictionaries, each holding a 'score' key, must be listed from the highest score down to the lowest. Which approach does that?",
-    "correct": [
-      "Call sorted() with a key that returns the score and reverse set to True"
-    ],
-    "incorrect": [
-      "Call sorted() with a key that returns the score, which lists them highest first",
-      "Call sorted() with no key at all, since it compares the score values by itself",
-      "Call .sort() with reverse set to True and assign the list it returns to a name"
-    ],
-    "feedback": "A key function tells sorted() what to compare, but the default direction is still ascending, so descending order needs reverse=True as well. sorted() cannot guess which field of a dictionary matters, and .sort() rearranges the list in place and returns None, so assigning its result throws the data away."
-  },
-  {
-    "type": "code_line",
-    "question": "In binary search, lo and hi hold the ends of the range still in play. Write the Python expression that gives the index of the middle item, using integer division.",
-    "language": "python",
-    "correct": [
-      "(lo + hi) // 2",
-      "(lo+hi)//2",
-      "(hi + lo) // 2",
-      "(lo + hi)//2"
-    ],
-    "case_sensitive": false,
-    "feedback": "Integer division keeps the result a whole number, which matters because list indexes cannot be fractions. A single slash would produce a float and make the index unusable."
-  },
-  {
-    "type": "matching",
-    "question": "Match each Python sorting call to what it produces, assuming nums is a list of numbers and words is a list of strings.",
-    "pairs": [
-      {
-        "term": "sorted(nums)",
-        "definition": "A new list running smallest to largest, with nums left untouched"
-      },
-      {
-        "term": "nums.sort()",
-        "definition": "Nothing returned at all — nums itself is rearranged in place"
-      },
-      {
-        "term": "sorted(nums, reverse=True)",
-        "definition": "A new list running largest to smallest"
-      },
-      {
-        "term": "sorted(words, key=len)",
-        "definition": "A new list of the same words ordered shortest to longest"
-      },
-      {
-        "term": "max(nums)",
-        "definition": "One value: the largest number in the list"
-      }
-    ],
-    "feedback": "The sorted() family always hands back a new list and leaves the original alone, while .sort() does the opposite and returns None. A key function changes what gets compared, and reverse changes the direction — they are independent settings you can use together."
   }
 ]

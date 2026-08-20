@@ -74,14 +74,29 @@
   {
     "question": "What does this program print?\n\ndusk = [\"cape\", \"fangs\"]\nmidnight = dusk\nmidnight.append(\"coffin\")\nprint(dusk)",
     "correct": [
-      "[\"cape\", \"fangs\", \"coffin\"]"
+      "['cape', 'fangs', 'coffin']"
     ],
     "incorrect": [
-      "[\"cape\", \"fangs\"]",
-      "[\"coffin\"]",
+      "['cape', 'fangs']",
+      "['coffin']",
       "An error, because dusk was never appended to"
     ],
     "feedback": "midnight = dusk does not copy anything — it makes a second name for the same list. Appending through either name changes the one list both names point at. This is aliasing."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "The lines  a = [0] * {{n}}  then  b = a  then  b = b + [0]  run in order. What number does  print(len(a))  show?",
+    "variables": {
+      "n": {
+        "min": 3,
+        "max": 15
+      }
+    },
+    "answer": {
+      "expr": "n",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "b = b + [0] builds a NEW list and points b at it, leaving the original untouched, so a still holds {{expected}} items. Only in-place changes such as append() are visible through the other name."
   },
   {
     "question": "You need to store a fixed pair of map coordinates (x, y) that should never change. Which collection fits best?",
@@ -150,6 +165,18 @@
     "feedback": "nums[1:3] includes index 1 and 2 but stops before index 3."
   },
   {
+    "question": "A list named  temps  holds exactly 10 readings. Which expression gives every reading except the first and the last?",
+    "correct": [
+      "temps[1:-1]"
+    ],
+    "incorrect": [
+      "temps[0:-1]",
+      "temps[1:10]",
+      "temps[2:-2]"
+    ],
+    "feedback": "A slice starts at its first index and stops just before its second, and -1 refers to the final item, so [1:-1] drops exactly one item from each end."
+  },
+  {
     "question": "What does  ages.get(\"Max\")  return if the key \"Max\" is not in the dictionary  ages?",
     "correct": [
       "None"
@@ -169,6 +196,16 @@
     ],
     "case_sensitive": true,
     "feedback": "d.get(key, default) returns the value if the key exists, or the default (None if not specified) if it does not."
+  },
+  {
+    "type": "code_line",
+    "question": "Given a dictionary named ages, write the Python expression that produces a view of all its keys.",
+    "language": "python",
+    "correct": [
+      "ages.keys()"
+    ],
+    "case_sensitive": true,
+    "feedback": "keys() is a method, so it needs the parentheses; without them you would get the method object itself rather than the keys."
   },
   {
     "question": "What is the difference between  masks[\"unicorn horn\"]  and  masks.get(\"unicorn horn\", 0)  when that key is missing?",
@@ -239,7 +276,7 @@
     "feedback": "Intersection, union, difference, and symmetric difference answer overlap questions in one line each, with no loop and no if statement."
   },
   {
-    "question": "To sort a list of names by their length instead of alphabetically, what do you pass to  sorted()?",
+    "question": "sorted() accepts a key function, which it applies to each item before comparing. To sort a list of names by their length instead of alphabetically, what do you pass to sorted()?",
     "correct": [
       "A sort key with key=len"
     ],
@@ -324,6 +361,17 @@
     "feedback": "a.copy(), list(a), and a full slice a[:] each build a separate list. b = a only makes another name for the same list, and a.alias() is not a real method."
   },
   {
+    "type": "code_trace",
+    "question": "One list here is aliased and another is copied. What does the program print?",
+    "code": "a = [1, 2, 3]\nb = a\nb.append(4)\nc = a.copy()\nc.append(5)\nprint(len(a))",
+    "language": "python",
+    "correct": [
+      "4"
+    ],
+    "case_sensitive": true,
+    "feedback": "b is another name for the same list, so its append is felt by a; c is a genuine independent copy, so its append is not."
+  },
+  {
     "type": "fill_blank",
     "question": "The list method that returns a new, independent copy of the list is .___().",
     "correct": [
@@ -356,6 +404,18 @@
       "Aliasing only happens with numbers, never with lists"
     ],
     "feedback": "Aliasing means two names share one object, so edits show up under both names. A copy creates a separate object and removes the shared link."
+  },
+  {
+    "question": "Inside a function, the line  items.append(1)  changes the caller's list, but the line  items = items + [1]  leaves it untouched. What explains the difference?",
+    "correct": [
+      "append changes the shared list in place, while items + [1] builds a new list that only the local name points at"
+    ],
+    "incorrect": [
+      "append copies the list back to the caller when the function ends, while the + version discards its own result",
+      "items + [1] gives back None, so the new list is thrown away before the caller could ever see the change",
+      "Both lines do change the caller's list, but the second one's change is undone as soon as the function ends"
+    ],
+    "feedback": "Mutating touches the object both names share; rebinding just points the local name somewhere else and leaves the caller's object exactly as it was."
   },
   {
     "question": "Real-world tabular data is most commonly stored in Python as a:",
@@ -480,6 +540,25 @@
     "feedback": "The hash of a key decides where its value is stored. If a key could change after filing, its hash would change too and Python could no longer find the shelf it used."
   },
   {
+    "type": "cloze",
+    "question": "A {{1}} is written with square brackets and can be changed after it is built, while a {{2}} is written with parentheses and cannot — which is exactly why the second of the two may serve as a dictionary key and the first may not.",
+    "blanks": [
+      {
+        "accept": [
+          "list"
+        ],
+        "hint": "collection"
+      },
+      {
+        "accept": [
+          "tuple"
+        ],
+        "hint": "collection"
+      }
+    ],
+    "feedback": "Dictionary keys must be immutable, because a key that could change value would no longer point at the slot where its entry was stored."
+  },
+  {
     "question": "Why is separating an ADT's interface from its implementation useful? (Select all that apply)",
     "correct": [
       "You can change the storage without breaking code that uses it",
@@ -531,35 +610,6 @@
     "feedback_template": "Indexing starts at 0, so a list of {{len}} items ends at index {{expected}}."
   },
   {
-    "type": "code_line",
-    "question": "Write the Python expression that gives the number of items in a list named line.",
-    "language": "python",
-    "correct": [
-      "len(line)"
-    ],
-    "case_sensitive": true,
-    "feedback": "len(line) reports how many items the list holds. It works on strings, sets, and dictionaries too."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "How many items are in the slice  data[{{a}}:{{b}}]  of a long list?",
-    "variables": {
-      "a": {
-        "min": 1,
-        "max": 5
-      },
-      "b": {
-        "min": 9,
-        "max": 18
-      }
-    },
-    "answer": {
-      "expr": "b - a",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "A slice [a:b] includes index a up to but not including b, giving {{b}} minus {{a}} = {{expected}} items."
-  },
-  {
     "type": "dynamic_numeric",
     "question": "A Python list has {{size}} items. The item written as  lst[-{{k}}]  can also be reached with which non-negative index?",
     "variables": {
@@ -577,6 +627,16 @@
       "tolerance_abs": 0
     },
     "feedback_template": "A negative index counts back from the end, so -{{k}} means {{size}} - {{k}} = {{expected}}. Index -1 is always the last item, never the first."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the Python expression that gives the number of items in a list named line.",
+    "language": "python",
+    "correct": [
+      "len(line)"
+    ],
+    "case_sensitive": true,
+    "feedback": "len(line) reports how many items the list holds. It works on strings, sets, and dictionaries too."
   },
   {
     "type": "dynamic_numeric",
@@ -599,81 +659,21 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "The lines  a = [0] * {{n}}  then  b = a  then  b.append(0)  run in order. What number does  print(len(a))  show?",
+    "question": "How many items are in the slice  data[{{a}}:{{b}}]  of a long list?",
     "variables": {
-      "n": {
-        "min": 3,
-        "max": 15
+      "a": {
+        "min": 1,
+        "max": 5
+      },
+      "b": {
+        "min": 9,
+        "max": 18
       }
     },
     "answer": {
-      "expr": "n + 1",
+      "expr": "b - a",
       "tolerance_abs": 0
     },
-    "feedback_template": "b = a copies the reference, not the list, so a and b name one list of {{n}} items. Appending through b lengthens that same list to {{expected}}."
-  },
-  {
-    "type": "cloze",
-    "question": "A {{1}} is written with square brackets and can be changed after it is built, while a {{2}} is written with parentheses and cannot — which is exactly why only the second may serve as a dictionary key.",
-    "blanks": [
-      {
-        "accept": [
-          "list"
-        ],
-        "hint": "collection"
-      },
-      {
-        "accept": [
-          "tuple"
-        ],
-        "hint": "collection"
-      }
-    ],
-    "feedback": "Dictionary keys must be immutable, because a key that could change value would no longer point at the slot where its entry was stored."
-  },
-  {
-    "question": "A list named  temps  holds exactly 10 readings. Which expression gives every reading except the first and the last?",
-    "correct": [
-      "temps[1:-1]"
-    ],
-    "incorrect": [
-      "temps[0:-1]",
-      "temps[1:10]",
-      "temps[2:-2]"
-    ],
-    "feedback": "A slice starts at its first index and stops just before its second, and -1 refers to the final item, so [1:-1] drops exactly one item from each end."
-  },
-  {
-    "question": "Inside a function, the line  items.append(1)  changes the caller's list, but the line  items = items + [1]  leaves it untouched. What explains the difference?",
-    "correct": [
-      "append changes the shared list in place, while items + [1] builds a new list that only the local name points at"
-    ],
-    "incorrect": [
-      "append copies the list back to the caller when the function ends, while the + version discards its own result",
-      "items + [1] gives back None, so the new list is thrown away before the caller could ever see the change",
-      "Both lines do change the caller's list, but the second one's change is undone as soon as the function ends"
-    ],
-    "feedback": "Mutating touches the object both names share; rebinding just points the local name somewhere else and leaves the caller's object exactly as it was."
-  },
-  {
-    "type": "code_line",
-    "question": "Given a dictionary named ages, write the Python expression that produces a view of all its keys.",
-    "language": "python",
-    "correct": [
-      "ages.keys()"
-    ],
-    "case_sensitive": false,
-    "feedback": "keys() is a method, so it needs the parentheses; without them you would get the method object itself rather than the keys."
-  },
-  {
-    "type": "code_trace",
-    "question": "One list here is aliased and another is copied. What does the program print?",
-    "code": "a = [1, 2, 3]\nb = a\nb.append(4)\nc = a.copy()\nc.append(5)\nprint(len(a))",
-    "language": "python",
-    "correct": [
-      "4"
-    ],
-    "case_sensitive": true,
-    "feedback": "b is another name for the same list, so its append is felt by a; c is a genuine independent copy, so its append is not."
+    "feedback_template": "A slice [a:b] includes index a up to but not including b, giving {{b}} minus {{a}} = {{expected}} items."
   }
 ]

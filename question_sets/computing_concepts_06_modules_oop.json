@@ -10,6 +10,18 @@
     "feedback": "import math makes the math module's functions and values available, accessed as math.something."
   },
   {
+    "question": "A program runs  from math import sqrt  at the top, and later a line calls  math.sqrt(9). What happens?",
+    "correct": [
+      "A NameError, because only sqrt was brought in, not the name math"
+    ],
+    "incorrect": [
+      "It works, since from-import also makes the module's own name available",
+      "A SyntaxError, because from-import may not be used on a function name",
+      "It works, because Python looks up any missing name in the library"
+    ],
+    "feedback": "from-import binds just the names you list. Either import the module and use math.sqrt, or import sqrt and call it bare — mixing the two forms is what fails."
+  },
+  {
     "question": "In the expression  math.pi, what does the  math  part tell you?",
     "correct": [
       "That pi lives inside the math namespace"
@@ -55,6 +67,16 @@
     "feedback": "A class definition starts with the keyword class, the name, and a colon: class Dog:"
   },
   {
+    "type": "code_line",
+    "question": "Write the Python header line that begins the definition of a class named B whose parent class is A. (Just the header, no body.)",
+    "language": "python",
+    "correct": [
+      "class B(A):"
+    ],
+    "case_sensitive": true,
+    "feedback": "The parent goes in parentheses after the new class's name, which is how Python knows to look in A for anything B does not define itself."
+  },
+  {
     "question": "Why does this method fail to change the object's balance?\n\ndef pay(self, amount):\n    balance = self.balance - amount",
     "correct": [
       "Without self. it creates a local variable that soon disappears"
@@ -87,6 +109,17 @@
     "feedback": "Construction is object-first: Python builds the empty object, calls __init__ with it as self, the body of __init__ attaches the starting attributes, and only then is the finished object handed back to your variable."
   },
   {
+    "type": "code_trace",
+    "question": "A child class calls super() and then adjusts what it inherited. What does this program print?",
+    "code": "class Beast:\n    def __init__(self, legs):\n        self.legs = legs\n\nclass Spider(Beast):\n    def __init__(self):\n        super().__init__(8)\n        self.legs = self.legs + 2\n\nprint(Spider().legs)",
+    "language": "python",
+    "correct": [
+      "10"
+    ],
+    "case_sensitive": true,
+    "feedback": "super().__init__(8) sets self.legs to 8 first; the next line reads that attribute back and stores 2 more onto the same object."
+  },
+  {
     "type": "fill_blank",
     "question": "A function defined inside a class, which acts on that object's own data, is called a ___.",
     "correct": [
@@ -108,7 +141,7 @@
     "feedback": "Python has no hard privacy. The underscore is a message to humans: reach this through a method such as check_pin() rather than touching it directly. That discipline is encapsulation."
   },
   {
-    "question": "What is an attribute?",
+    "question": "What is an attribute, as opposed to a method?",
     "correct": [
       "A piece of data stored on an object, such as self.name"
     ],
@@ -118,6 +151,18 @@
       "A value passed into __init__ but not stored on the object"
     ],
     "feedback": "An attribute is data that belongs to an object. You set it with self.name = ... and read it back with object.name."
+  },
+  {
+    "question": "A class defines  def speak(self):, yet code outside calls  dog.speak()  and passes no arguments at all. Why is that not an error?",
+    "correct": [
+      "Calling through the object hands that object in as self automatically"
+    ],
+    "incorrect": [
+      "self holds a default value that the class body quietly supplies",
+      "self is optional, so Python drops it when no argument is given",
+      "Python skips the first parameter of any function defined in a class"
+    ],
+    "feedback": "dog.speak() is shorthand for handing dog to the method as its first argument, which is why self is written in the definition but not at the call."
   },
   {
     "question": "What does defining a  __str__  method on a class change?",
@@ -156,6 +201,35 @@
     "feedback": "super() refers to the parent class. Calling its __init__ handles the shared fields, and then the child adds only what is new to it."
   },
   {
+    "type": "cloze",
+    "question": "In  class Knight(Guard):, Guard is the {{1}} class and Knight is the {{2}} class; inside Knight's own __init__, the call {{3}}().__init__(name) runs Guard's setup so it need not be retyped.",
+    "blanks": [
+      {
+        "accept": [
+          "parent",
+          "base",
+          "superclass"
+        ],
+        "hint": "role"
+      },
+      {
+        "accept": [
+          "child",
+          "subclass",
+          "derived"
+        ],
+        "hint": "role"
+      },
+      {
+        "accept": [
+          "super"
+        ],
+        "hint": "built-in"
+      }
+    ],
+    "feedback": "The name in the parentheses of the class header is the one being inherited from, and super() is the standard way for the new class to reach it without naming it twice."
+  },
+  {
     "question": "What is inheritance in object-oriented programming?",
     "correct": [
       "Building a child class on a parent and reusing its methods"
@@ -180,16 +254,16 @@
     "feedback": "Knight inherits __init__ from Guard, so the name is stored. Knight also defines its own patrol, which overrides the parent's version for knight objects."
   },
   {
-    "question": "What does  super()  refer to inside a child class?",
+    "question": "A Knight class overrides patrol() but defines no __init__ of its own. What happens when Knight(\"Lancelot\") is created?",
     "correct": [
-      "The parent class, so you can reuse its code"
+      "The parent's __init__ runs, so the object still gets its name attribute"
     ],
     "incorrect": [
-      "The child object that was just created",
-      "The most general object in all of Python",
-      "A brand-new copy of the current class"
+      "Python raises an error, because every class needs its own __init__",
+      "The object is built with no attributes at all until one is assigned",
+      "Knight's patrol() runs first so the object has something to work with"
     ],
-    "feedback": "super() gives access to the parent class. A common use is super().__init__(...) to run the parent's setup instead of retyping it."
+    "feedback": "A child that defines no __init__ simply inherits the parent's. Overriding one method has no effect on the others — Knight replaces patrol() and keeps everything else."
   },
   {
     "type": "fill_blank",
@@ -201,16 +275,16 @@
     "feedback": "Overriding lets a child specialize one behavior while keeping everything else it inherited."
   },
   {
-    "question": "What does it mean to override a method?",
+    "question": "A list holds Guard and Knight objects and a loop calls officer.patrol() on each. Knight overrides patrol(). Which version runs for the Knight objects?",
     "correct": [
-      "A child class redefines a parent method, and its version wins"
+      "Knight's, because the object's own class is checked first"
     ],
     "incorrect": [
-      "A child class hides the parent's method so neither one runs",
-      "Two methods in one class are given the exact same name",
-      "A method is renamed so it no longer conflicts with another"
+      "Guard's, because the list was declared to hold Guards",
+      "Both in turn, with the parent's running before the child's",
+      "Whichever class was defined first in the file"
     ],
-    "feedback": "Overriding means the child provides its own version of a parent method. For a child object, the child's version is used instead of the parent's."
+    "feedback": "Python looks at the object's actual class before its parent, so the child's version wins. That is what makes a single loop able to drive a mixed list of types."
   },
   {
     "question": "A list holds a mix of Guard and Knight objects, and a loop calls  officer.patrol()  on each without checking their types. Which idea makes this work?",
@@ -262,6 +336,18 @@
     "feedback": "Encapsulation keeps an object's data together with the methods that use it, and changes the data only through those methods to keep it valid."
   },
   {
+    "question": "A BankAccount keeps its total in  self._balance  and changes it only inside deposit() and withdraw(), which both reject negative amounts. What does that design actually buy?",
+    "correct": [
+      "Every change to the balance runs through code that can enforce the rules"
+    ],
+    "incorrect": [
+      "The balance becomes genuinely unreachable from outside the class in Python",
+      "The class no longer needs an __init__, since the methods set the balance",
+      "Each account ends up sharing one balance, keeping the bank's totals in step"
+    ],
+    "feedback": "This is encapsulation doing its job: the value and the rules that protect it live together, so no caller can put the object into a state it should never be in."
+  },
+  {
     "question": "Why is  members = []  written directly in a class body a bug when each object should have its own list?",
     "correct": [
       "One list is shared by every object, so adding shows up in all"
@@ -272,6 +358,21 @@
       "The list is rebuilt empty each time a new object is created"
     ],
     "feedback": "Anything that should differ between objects belongs in __init__ as self.members = []. This is the OOP cousin of the aliasing trap: one object, many names pointing at it."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A class Robot has the line  count = 0  in its class body, and its __init__ runs  Robot.count = Robot.count + 1. After {{n}} Robot objects are created, what is Robot.count?",
+    "variables": {
+      "n": {
+        "min": 2,
+        "max": 12
+      }
+    },
+    "answer": {
+      "expr": "n",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "count lives on the class, not on any one object, so every construction bumps the same shared number up to {{expected}}."
   },
   {
     "question": "What is abstraction in the context of OOP and computer science?",
@@ -359,16 +460,16 @@
     "feedback": "Tight coupling makes a program fragile: a small edit ripples outward. Classes that talk only through a few clean methods stay independent and safe to change."
   },
   {
-    "question": "A class is said to have high cohesion when it:",
+    "question": "A Report class is split so that gathering the data, formatting it, and emailing it each live in their own class. Which pair of qualities does that improve?",
     "correct": [
-      "Focuses on a single, clear responsibility"
+      "Higher cohesion within each class, and looser coupling between them"
     ],
     "incorrect": [
-      "Depends heavily on many other classes",
-      "Contains as many methods as possible",
-      "Stores its data in a shared global list"
+      "Higher cohesion, at the cost of tighter coupling between the pieces",
+      "Looser coupling, at the cost of lower cohesion inside each piece",
+      "Neither, since splitting a class only moves the same code around"
     ],
-    "feedback": "High cohesion means a class does one job well. Combined with low coupling (few dependencies), it makes code easier to change."
+    "feedback": "Each class now does one job (cohesion), and each depends on less of the others (coupling). The two usually improve together when a responsibility is separated cleanly."
   },
   {
     "question": "When should you prefer composition (a 'has-a' relationship) over inheritance (an 'is-a' relationship)?",
@@ -506,53 +607,6 @@
     "feedback_template": "Each bump() adds 1 to this object's n, so after {{calls}} calls self.n is {{expected}}."
   },
   {
-    "type": "fill_blank",
-    "question": "Building an object out of other objects, a \"has-a\" relationship rather than an \"is-a\" one, is called ___.",
-    "correct": [
-      "composition"
-    ],
-    "case_sensitive": false,
-    "feedback": "A famous guideline says to favour composition over inheritance: you can change what an object contains while the program runs, but you cannot change a class's parent."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "An Account object starts with self.balance = {{start}}. It calls deposit({{dep}}) once and then withdraw({{wd}}) once. What is self.balance afterward?",
-    "variables": {
-      "start": {
-        "min": 50,
-        "max": 120
-      },
-      "dep": {
-        "min": 10,
-        "max": 40
-      },
-      "wd": {
-        "min": 5,
-        "max": 20
-      }
-    },
-    "answer": {
-      "expr": "start + dep - wd",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Deposit adds and withdraw subtracts from the object's own balance: {{start}} + {{dep}} - {{wd}} = {{expected}}."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A class Robot has the line  count = 0  in its class body, and its __init__ runs  Robot.count = Robot.count + 1. After {{n}} Robot objects are created, what is Robot.count?",
-    "variables": {
-      "n": {
-        "min": 2,
-        "max": 12
-      }
-    },
-    "answer": {
-      "expr": "n",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "count lives on the class, not on any one object, so every construction bumps the same shared number up to {{expected}}."
-  },
-  {
     "type": "dynamic_numeric",
     "question": "A Deck object holds a list of {{n}} Card objects, and each Card stores  self.value = {{v}}. The deck's total() method adds up the value of every card it holds. What does total() return?",
     "variables": {
@@ -591,89 +645,35 @@
     "feedback_template": "{{a}} / {{b}} is a float, and floor drops down to the nearest whole number below it, giving {{expected}} rather than a rounded result."
   },
   {
-    "type": "cloze",
-    "question": "In  class Knight(Guard):, Guard is the {{1}} class and Knight is the {{2}} class; inside Knight's own __init__, the call {{3}}().__init__(name) runs Guard's setup so it need not be retyped.",
-    "blanks": [
-      {
-        "accept": [
-          "parent",
-          "base",
-          "superclass"
-        ],
-        "hint": "role"
+    "type": "fill_blank",
+    "question": "Building an object out of other objects, a \"has-a\" relationship rather than an \"is-a\" one, is called ___.",
+    "correct": [
+      "composition"
+    ],
+    "case_sensitive": false,
+    "feedback": "A famous guideline says to favour composition over inheritance: you can change what an object contains while the program runs, but you cannot change a class's parent."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An Account object starts with self.balance = {{start}}. It calls deposit({{dep}}) once and then withdraw({{wd}}) once. What is self.balance afterward?",
+    "variables": {
+      "start": {
+        "min": 50,
+        "max": 120
       },
-      {
-        "accept": [
-          "child",
-          "subclass",
-          "derived"
-        ],
-        "hint": "role"
+      "dep": {
+        "min": 10,
+        "max": 40
       },
-      {
-        "accept": [
-          "super"
-        ],
-        "hint": "built-in"
+      "wd": {
+        "min": 5,
+        "max": 20
       }
-    ],
-    "feedback": "The name in the parentheses of the class header is the one being inherited from, and super() is the standard way for the new class to reach it without naming it twice."
-  },
-  {
-    "question": "A program runs  from math import sqrt  at the top, and later a line calls  math.sqrt(9). What happens?",
-    "correct": [
-      "A NameError, because only sqrt was brought in, not the name math"
-    ],
-    "incorrect": [
-      "It works, since from-import also makes the module's own name available",
-      "A SyntaxError, because from-import may not be used on a function name",
-      "It works, because Python looks up any missing name in the library"
-    ],
-    "feedback": "from-import binds just the names you list. Either import the module and use math.sqrt, or import sqrt and call it bare — mixing the two forms is what fails."
-  },
-  {
-    "question": "A class defines  def speak(self):, yet code outside calls  dog.speak()  and passes no arguments at all. Why is that not an error?",
-    "correct": [
-      "Calling through the object hands that object in as self automatically"
-    ],
-    "incorrect": [
-      "self holds a default value that the class body quietly supplies",
-      "self is optional, so Python drops it when no argument is given",
-      "Python skips the first parameter of any function defined in a class"
-    ],
-    "feedback": "dog.speak() is shorthand for handing dog to the method as its first argument, which is why self is written in the definition but not at the call."
-  },
-  {
-    "question": "A BankAccount keeps its total in  self._balance  and changes it only inside deposit() and withdraw(), which both reject negative amounts. What does that design actually buy?",
-    "correct": [
-      "Every change to the balance runs through code that can enforce the rules"
-    ],
-    "incorrect": [
-      "The balance becomes genuinely unreachable from outside the class in Python",
-      "The class no longer needs an __init__, since the methods set the balance",
-      "Each account ends up sharing one balance, keeping the bank's totals in step"
-    ],
-    "feedback": "This is encapsulation doing its job: the value and the rules that protect it live together, so no caller can put the object into a state it should never be in."
-  },
-  {
-    "type": "code_line",
-    "question": "Write the Python header line that begins the definition of a class named B whose parent class is A. (Just the header, no body.)",
-    "language": "python",
-    "correct": [
-      "class B(A):"
-    ],
-    "case_sensitive": true,
-    "feedback": "The parent goes in parentheses after the new class's name, which is how Python knows to look in A for anything B does not define itself."
-  },
-  {
-    "type": "code_trace",
-    "question": "A child class calls super() and then adjusts what it inherited. What does this program print?",
-    "code": "class Beast:\n    def __init__(self, legs):\n        self.legs = legs\n\nclass Spider(Beast):\n    def __init__(self):\n        super().__init__(8)\n        self.legs = self.legs + 2\n\nprint(Spider().legs)",
-    "language": "python",
-    "correct": [
-      "10"
-    ],
-    "case_sensitive": true,
-    "feedback": "super().__init__(8) sets self.legs to 8 first; the next line reads that attribute back and stores 2 more onto the same object."
+    },
+    "answer": {
+      "expr": "start + dep - wd",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Deposit adds and withdraw subtracts from the object's own balance: {{start}} + {{dep}} - {{wd}} = {{expected}}."
   }
 ]
