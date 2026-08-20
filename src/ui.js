@@ -1611,6 +1611,19 @@ export class GameUI {
       this.controller.submitCodeWrite(input.value);
     });
 
+    // Indent buttons: a phone keyboard has no Tab key, so without these a
+    // student on a phone cannot write the indented body at all.
+    [["indent", false], ["outdent", true]].forEach(([action, dedent]) => {
+      const btn = $(this.root, `[data-action=${action}]`);
+      if (!btn) return;
+      // Keep the caret and the on-screen keyboard put while the button is used.
+      btn.addEventListener("pointerdown", e => e.preventDefault());
+      btn.addEventListener("click", () => {
+        this._shiftCodeLines(input, { dedent });
+        input.focus();
+      });
+    });
+
     this._kbAbort = new AbortController();
     this._bindCodeEditorKeys(input, this._kbAbort.signal);
     document.addEventListener("keydown", (e) => {
@@ -1632,6 +1645,38 @@ export class GameUI {
    * indentation, adding a level after a line that ends in a colon. Without this,
    * a student spends the exercise pressing space bar instead of thinking.
    */
+  /**
+   * Indent or dedent whole lines — every line a selection touches, or the one
+   * line the caret sits on. Shared by Tab/Shift+Tab and by the editor's indent
+   * buttons, which are the only route on a phone: soft keyboards have no Tab
+   * key, and Python without indentation does not run.
+   */
+  _shiftCodeLines(textarea, { dedent = false } = {}) {
+    const UNIT = "    ";
+    const { selectionStart: start, selectionEnd: end, value } = textarea;
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const nextNl    = value.indexOf("\n", end);
+    const blockEnd  = nextNl === -1 ? value.length : nextNl;
+
+    let firstDelta = 0;
+    const shifted = value.slice(lineStart, blockEnd).split("\n").map((line, i) => {
+      const out = dedent ? line.replace(/^ {1,4}/, "") : UNIT + line;
+      if (i === 0) firstDelta = out.length - line.length;
+      return out;
+    }).join("\n");
+
+    textarea.value = value.slice(0, lineStart) + shifted + value.slice(blockEnd);
+    if (start === end) {
+      // Keep the caret where the student left it rather than selecting the
+      // whole line, which on a phone pops up the text-selection toolbar.
+      const caret = Math.max(lineStart, start + firstDelta);
+      textarea.selectionStart = textarea.selectionEnd = caret;
+    } else {
+      textarea.selectionStart = lineStart;
+      textarea.selectionEnd   = lineStart + shifted.length;
+    }
+  }
+
   _bindCodeEditorKeys(textarea, signal) {
     const UNIT = "    ";
 
@@ -1646,20 +1691,10 @@ export class GameUI {
 
       if (e.key === "Tab") {
         e.preventDefault();
-        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-        if (start === end && !e.shiftKey) {
-          replaceRange(start, end, UNIT, start + UNIT.length);
-          return;
-        }
-        // A selection (or Shift+Tab) shifts whole lines rather than one spot.
-        const blockEnd = value.indexOf("\n", end) === -1 ? value.length : value.indexOf("\n", end);
-        const block = value.slice(lineStart, blockEnd);
-        const shifted = block.split("\n").map(line => (e.shiftKey
-          ? line.replace(/^ {1,4}/, "")
-          : UNIT + line)).join("\n");
-        textarea.value = value.slice(0, lineStart) + shifted + value.slice(blockEnd);
-        textarea.selectionStart = lineStart;
-        textarea.selectionEnd = lineStart + shifted.length;
+        // A bare caret gets one indent step where it stands; a selection (or
+        // Shift+Tab) shifts whole lines instead.
+        if (start === end && !e.shiftKey) replaceRange(start, end, UNIT, start + UNIT.length);
+        else this._shiftCodeLines(textarea, { dedent: e.shiftKey });
         return;
       }
 

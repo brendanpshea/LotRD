@@ -406,7 +406,7 @@ matches the number of questions actually in each file.
 Requires **Node.js 18+** (uses the built-in `node:test` runner — zero npm dependencies).
 
 ```bash
-node --test tests/model.test.js tests/controller.test.js tests/data.test.js tests/html.test.js tests/util.test.js
+node --test tests/*.test.js
 ```
 
 | File | What it checks |
@@ -416,6 +416,10 @@ node --test tests/model.test.js tests/controller.test.js tests/data.test.js test
 | `data.test.js` | All JSON files — required fields, type constraints, dynamic-question schema, image files exist, catalog/index consistency, question-count and duplicate-text checks |
 | `html.test.js` | HTML/template cross-checks — template IDs, data-ref/data-action usage, stale code checks, accessibility, CSS classes |
 | `util.test.js` | Shuffle and the spaced-review interval schedule |
+| `pytiny.test.js` | The Python subset used by write-the-code questions — parsing, evaluation, the runaway-program limits, and the wording of every student-facing error |
+| `ui.test.js` | UI logic reachable without a DOM — code-editor indentation (the only route on a phone) and the editor's markup |
+| `finishable.test.js` | Every set can be finished — no question can lock a run |
+| `scorm.test.js` | The SCORM wrapper — completion, scoring and suspend data |
 
 ---
 
