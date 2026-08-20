@@ -163,3 +163,45 @@ describe('useItem', () => {
     assert.ok(gm.current_monster.hit_points > 0);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Rapid input cannot be used to skip work or inflate a score
+// ────────────────────────────────────────────────────────────────────────────────
+describe('Rapid submits', () => {
+  it('counts one answer no matter how many times submit fires', () => {
+    // Held Enter autorepeats, a double-click, and an impatient student all land
+    // several submits before the next screen paints. Only the first may count.
+    const gm = encounterModel();
+    const c = stubController(gm);
+
+    for (let i = 0; i < 12; i++) c.submitAnswer(['A']);
+
+    assert.equal(gm.answer_history.length, 1, 'exactly one answer recorded');
+    assert.equal(gm.questions_asked, 1);
+    assert.equal(c.resolved.length, 1, 'battle resolved once');
+  });
+
+  it('ignores submits once the question is resolved and before the next appears', () => {
+    const gm = encounterModel();
+    const c = stubController(gm);
+    c.submitAnswer(['A']);
+    const xpAfterFirst = gm.player.xp;
+
+    c.submitAnswer(['A']);
+    c.submitAnswer(['A']);
+
+    assert.equal(gm.player.xp, xpAfterFirst, 'no extra XP from the dead clicks');
+    assert.equal(gm.answer_history.length, 1);
+  });
+
+  it('does not advance the run on an empty submission', () => {
+    const gm = encounterModel();
+    const c = stubController(gm);
+
+    for (let i = 0; i < 5; i++) c.submitAnswer([]);
+
+    assert.equal(gm.answer_history.length, 0);
+    assert.ok(gm.current_question, 'the question is still on screen');
+    assert.equal(c.resolved.length, 0);
+  });
+});

@@ -5,6 +5,7 @@ import { GameUI } from "./ui.js";
 import {
   shuffle, reviewDue, advanceReviewStage,
   TIER_APPRENTICE, TIER_MASTER, nextTierInfo, sampleTrialQuestions,
+  probeStorage, storageWarningText, STORAGE_OK, STORAGE_FULL,
 } from "./util.js";
 import { pickDragonLine } from "./dragon.js";
 
@@ -41,6 +42,12 @@ export class GameController {
     // Which set's historical miss counts this run should feed (null for the
     // multi-source review mixes, which don't belong to any single set).
     this._missRecordId = null;
+
+    // Check up front whether progress can be persisted at all, and say so loudly
+    // if it cannot. Losing a finished set to a silently blocked localStorage is
+    // the worst outcome this app has, and it is invisible without this probe.
+    this._storageState = probeStorage();
+    this._renderStorageWarning();
 
     const soundBtn = document.getElementById("sound-toggle");
     if (soundBtn) {
@@ -161,6 +168,36 @@ export class GameController {
     return shuffle(picked);
   }
 
+  /**
+   * Surface the storage state to the student. Kept out of game-root so it stays
+   * put across screen changes — a warning that vanishes on the next render is
+   * worse than none, because it reads as dismissed.
+   */
+  _renderStorageWarning() {
+    const el = document.getElementById("storage-warning");
+    if (!el) return;
+    if (this._storageState === STORAGE_OK) {
+      el.hidden = true;
+      el.textContent = "";
+      return;
+    }
+    let inLms = false;
+    try { inLms = !!window.LotrdScorm?.hasLms?.(); } catch (_) {}
+    el.textContent = storageWarningText(this._storageState, { inLms });
+    el.hidden = false;
+  }
+
+  /** Note that a write failed, and tell the student the first time it happens. */
+  _noteStorageFailure(err) {
+    const name = err?.name || "";
+    const quota = name === "QuotaExceededError" ||
+      name === "NS_ERROR_DOM_QUOTA_REACHED" || err?.code === 22;
+    const state = quota ? STORAGE_FULL : probeStorage();
+    if (state === this._storageState) return;
+    this._storageState = state;
+    this._renderStorageWarning();
+  }
+
   saveGame() {
     if (this._isReview) return;
     if (!this._setName || !this.model) return;
@@ -169,7 +206,12 @@ export class GameController {
         this._saveKey(this._setName),
         JSON.stringify({ ...this.model.toSaveData(), setName: this._setName, savedAt: new Date().toISOString() })
       );
-    } catch (_) {}
+      if (this._storageState !== STORAGE_OK) {
+        // Storage came back (quota freed, permission granted): clear the warning.
+        this._storageState = STORAGE_OK;
+        this._renderStorageWarning();
+      }
+    } catch (err) { this._noteStorageFailure(err); }
     this._saveGlobalLevel();
   }
 
@@ -306,7 +348,10 @@ export class GameController {
         score_pct: pct,
         level: p.level,
       }));
-    } catch (_) {}
+    } catch (err) {
+      // The one write whose loss actually costs the student credit.
+      this._noteStorageFailure(err);
+    }
     // First full clear starts the rank ladder at Apprentice. Replays of an
     // already-ranked set leave the record alone — rank only moves via trials.
     if (!this._loadTier(this._setName)) {

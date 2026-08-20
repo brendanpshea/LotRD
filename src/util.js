@@ -41,6 +41,57 @@ export function advanceReviewStage(stage) {
     return Math.min((stage ?? 0) + 1, REVIEW_INTERVALS_DAYS.length);
 }
 
+// ─── Storage health ──────────────────────────────────────────────────────────
+// Every localStorage call in this app is wrapped in a try/catch, which keeps the
+// game playable when storage is blocked — but silently. A student can then finish
+// a whole set and watch it vanish. These helpers let the app notice and say so.
+
+export const STORAGE_OK = "ok";
+/** Storage exists but is refusing writes — usually a full quota. */
+export const STORAGE_FULL = "full";
+/** No usable storage: private browsing, or an LMS iframe with storage partitioned. */
+export const STORAGE_UNAVAILABLE = "unavailable";
+
+/**
+ * Probe whether progress can actually be persisted, by writing and reading back.
+ * Presence of the API is not enough: Safari's private mode and third-party frame
+ * partitioning both expose localStorage and then throw (or silently drop) on write.
+ */
+export function probeStorage(store) {
+  const target = store ?? (typeof localStorage !== "undefined" ? localStorage : null);
+  if (!target) return STORAGE_UNAVAILABLE;
+  const key = "__lotrd_probe__";
+  try {
+    target.setItem(key, "1");
+    const readBack = target.getItem(key);
+    target.removeItem(key);
+    if (readBack !== "1") return STORAGE_UNAVAILABLE;
+    return STORAGE_OK;
+  } catch (err) {
+    // A quota error means storage works but is full — a different message, and a
+    // recoverable one, so it is worth distinguishing from being blocked outright.
+    const name = err?.name || "";
+    const quota = name === "QuotaExceededError" ||
+      name === "NS_ERROR_DOM_QUOTA_REACHED" || err?.code === 22;
+    return quota ? STORAGE_FULL : STORAGE_UNAVAILABLE;
+  }
+}
+
+/** Student-facing explanation of a non-OK storage state. */
+export function storageWarningText(state, { inLms = false } = {}) {
+  if (state === STORAGE_FULL) {
+    return "⚠ Your browser's storage is full, so progress may not save. " +
+      "Clearing space for this site should fix it.";
+  }
+  if (state === STORAGE_UNAVAILABLE) {
+    return "⚠ This browser is blocking saved data, so your progress will NOT be kept. " +
+      (inLms
+        ? "Try opening this activity in a new tab or window, or switch browsers, before working through a set."
+        : "Turn off private browsing, or allow site data for this page, before working through a set.");
+  }
+  return "";
+}
+
 // ─── Mastery tiers (Apprentice → Journeyman → Master) ────────────────────────
 // A set's first full clear earns Apprentice rank (partial gradebook credit).
 // A short "rank trial" — half the set, weighted toward past misses — upgrades

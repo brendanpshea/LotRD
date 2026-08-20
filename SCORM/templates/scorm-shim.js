@@ -135,6 +135,13 @@
     return Number.isFinite(ms) ? ms : 0;
   }
 
+  /** Timestamps used to be written in ms and are now written in seconds. */
+  function toMs(value) {
+    const n = Number(value) || 0;
+    if (n <= 0) return 0;
+    return n < 1e11 ? n * 1000 : n;
+  }
+
   function restoreSet(id, tier, aMs, jMs, mMs) {
     try {
       const doneKey = COMPLETION_PREFIX + id;
@@ -171,14 +178,15 @@
         for (const entry of data.sets) {
           if (!Array.isArray(entry) || typeof entry[0] !== "string") continue;
           const tier = Math.min(Math.max(Math.floor(entry[1]) || 0, 1), TIER_MASTER);
-          restoreSet(entry[0], tier, entry[2] || 0, entry[3] || 0, entry[4] || 0);
+          restoreSet(entry[0], tier, toMs(entry[2]), toMs(entry[3]), toMs(entry[4]));
         }
       }
     } catch (_) {}
   }
 
-  function writeSuspendData() {
-    if (!hasLms) return;
+  /** The rows that describe every cleared set, or null when there is no LMS. */
+  function buildSuspendSets() {
+    if (!hasLms) return null;
     const sets = [];
     for (const id of playableIds) {
       const done = readJson(COMPLETION_PREFIX + id);
@@ -198,27 +206,104 @@
         isoToMs(rec.masterAt),
       ]);
     }
-    const json = JSON.stringify({ v: 2, sets: sets });
-    if (json.length > 60000) return;
-    lmsCall("LMSSetValue", "cmi.suspend_data", json);
+    return sets;
+  }
+
+  // SCORM 1.2 guarantees only 4096 characters of suspend_data, and an LMS that
+  // exceeds it usually truncates silently — which would corrupt the JSON and lose
+  // every set at once. Timestamps are stored in seconds rather than milliseconds,
+  // and trailing zero timestamps are dropped, to buy headroom; if a payload still
+  // will not fit, the highest-ranked sets are kept and the rest are dropped rather
+  // than writing nothing at all.
+  const SUSPEND_LIMIT = 4000;
+
+  function encodeSets(sets) {
+    return JSON.stringify({
+      v: 2,
+      sets: sets.map(function (s) {
+        const row = [s[0], s[1], Math.floor(s[2] / 1000), Math.floor(s[3] / 1000), Math.floor(s[4] / 1000)];
+        while (row.length > 2 && !row[row.length - 1]) row.pop();
+        return row;
+      }),
+    });
+  }
+
+  function writeSets(sets) {
+    let payload = encodeSets(sets);
+    if (payload.length > SUSPEND_LIMIT) {
+      // Highest rank first: a dropped Master costs more credit than a dropped Apprentice.
+      const ordered = sets.slice().sort(function (a, b) { return b[1] - a[1]; });
+      const kept = [];
+      for (const entry of ordered) {
+        const next = kept.concat([entry]);
+        if (encodeSets(next).length > SUSPEND_LIMIT) break;
+        kept.push(entry);
+      }
+      console.warn("[scorm-shim] suspend_data over " + SUSPEND_LIMIT +
+        " chars; syncing " + kept.length + " of " + sets.length + " sets");
+      payload = encodeSets(kept);
+    }
+    lmsCall("LMSSetValue", "cmi.suspend_data", payload);
+    return payload;
   }
 
   // ---------- score reporting ----------
   let lastReportedPct = -1;
+  let lastSuspendPayload = null;
+  // Highest score the LMS has ever held for this student. Credit only ever rises
+  // by design, so a locally computed value BELOW this one means local data is
+  // missing (cleared storage, a fresh device, a failed restore) — never that the
+  // student lost credit. Reporting it would wipe a real grade, so we don't.
+  let scoreFloor = 0;
+
+  function readLmsScore() {
+    const raw = lmsCall("LMSGetValue", "cmi.core.score.raw");
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) && n >= 0 && n <= 100 ? n : 0;
+  }
 
   function report() {
-    const pct = progressPercent();
-    if (pct === lastReportedPct) return;
-    lastReportedPct = pct;
-    if (hasLms) {
-      lmsCall("LMSSetValue", "cmi.core.score.min", "0");
-      lmsCall("LMSSetValue", "cmi.core.score.max", "100");
-      lmsCall("LMSSetValue", "cmi.core.score.raw", String(pct));
-      lmsCall("LMSSetValue", "cmi.core.lesson_status",
-        pct >= 100 ? "completed" : "incomplete");
-      writeSuspendData();
-      lmsCall("LMSCommit", "");
+    // A failed catalog fetch (dropped connection inside the LMS frame) leaves
+    // totalSets at 0, which would compute as 0% and overwrite the gradebook with
+    // a zero. There is nothing meaningful to report until the catalog is loaded.
+    if (totalSets === 0) return;
+
+    const computed = progressPercent();
+    const pct = Math.max(computed, scoreFloor);
+    if (computed < scoreFloor) {
+      console.warn("[scorm-shim] computed " + computed + "% but the LMS holds " +
+        scoreFloor + "%; keeping the higher score");
     }
+
+    if (hasLms) {
+      // suspend_data has to be checked independently of the score: a rank-up can
+      // leave the ROUNDED percentage unchanged (Journeyman→Master on set 4 of 12
+      // stays 33%), and gating the sync on the score would silently strand the
+      // tier timestamps that gate the next trial.
+      const sets = buildSuspendSets();
+      const encoded = encodeSets(sets || []);
+      const scoreChanged = pct !== lastReportedPct;
+      const stateChanged = encoded !== lastSuspendPayload;
+      if (!scoreChanged && !stateChanged) return;
+
+      if (scoreChanged) {
+        lmsCall("LMSSetValue", "cmi.core.score.min", "0");
+        lmsCall("LMSSetValue", "cmi.core.score.max", "100");
+        lmsCall("LMSSetValue", "cmi.core.score.raw", String(pct));
+        lmsCall("LMSSetValue", "cmi.core.lesson_status",
+          pct >= 100 ? "completed" : "incomplete");
+      }
+      if (stateChanged) {
+        writeSets(sets || []);
+        lastSuspendPayload = encoded;
+      }
+      lmsCall("LMSCommit", "");
+      scoreFloor = Math.max(scoreFloor, pct);
+    } else if (pct === lastReportedPct) {
+      return;
+    }
+
+    lastReportedPct = pct;
     updateBanner(pct);
   }
 
@@ -258,6 +343,9 @@
   // ---------- main ----------
   async function start() {
     if (hasLms) lmsInit();
+    // Read the standing grade BEFORE anything local is consulted, so it can act as
+    // a floor even if the catalog fetch or the suspend_data restore fails.
+    if (hasLms) scoreFloor = readLmsScore();
     await loadCatalog();
     restoreFromSuspendData();
     report();
