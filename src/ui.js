@@ -1600,6 +1600,10 @@ export class GameUI {
         return;
       }
       this._renderCodeWriteRun(resultsEl, this.model.runCodeWrite(input.value));
+      // The table is what the student pressed Run for, and on a phone it can
+      // land under the pinned row. `nearest` leaves the view alone when it is
+      // already visible, so this never yanks the page mid-edit.
+      resultsEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     };
 
     runBtn.addEventListener("click", runTests);
@@ -1613,18 +1617,53 @@ export class GameUI {
 
     // Indent buttons: a phone keyboard has no Tab key, so without these a
     // student on a phone cannot write the indented body at all.
+    //
+    // Tapping a button blurs the editor first, and a blurred textarea is
+    // entitled to report a collapsed selection — so the caret is tracked while
+    // the editor has focus and handed back on the way in. The obvious
+    // alternative, cancelling pointerdown to hold focus, is what broke this on
+    // iOS: Safari drops the click that follows a cancelled pointerdown but
+    // moves focus to the button anyway, so the tap did nothing except take the
+    // student out of the editor. Nothing here cancels a pointer event.
+    let caret = { start: 0, end: 0 };
+    const rememberCaret = () => {
+      caret = { start: input.selectionStart, end: input.selectionEnd };
+    };
+    // Only while focused: reading the selection on blur is the unreliable case.
+    ["keyup", "pointerup", "input", "select"].forEach(type =>
+      input.addEventListener(type, rememberCaret));
+
     [["indent", false], ["outdent", true]].forEach(([action, dedent]) => {
       const btn = $(this.root, `[data-action=${action}]`);
       if (!btn) return;
-      // Keep the caret and the on-screen keyboard put while the button is used.
-      btn.addEventListener("pointerdown", e => e.preventDefault());
       btn.addEventListener("click", () => {
-        this._shiftCodeLines(input, { dedent });
+        // focus() inside the tap gesture, so the keyboard comes back up on iOS.
         input.focus();
+        input.setSelectionRange(caret.start, caret.end);
+        this._shiftCodeLines(input, { dedent });
+        rememberCaret();
       });
     });
 
     this._kbAbort = new AbortController();
+
+    // Hold the pinned row above the on-screen keyboard. iOS does not shrink the
+    // layout viewport when the keyboard opens, so a row anchored to the bottom
+    // of it would sit behind the keys — the visual viewport is the only thing
+    // that reports where the usable bottom edge actually is. Nothing to do on a
+    // desktop, where the inset stays 0.
+    const actions = this.root.querySelector(".code-write-actions");
+    const vv = window.visualViewport;
+    if (actions && vv) {
+      const trackKeyboard = () => {
+        const inset = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+        actions.style.setProperty("--kb-inset", `${Math.round(inset)}px`);
+      };
+      vv.addEventListener("resize", trackKeyboard, { signal: this._kbAbort.signal });
+      vv.addEventListener("scroll", trackKeyboard, { signal: this._kbAbort.signal });
+      trackKeyboard();
+    }
+
     this._bindCodeEditorKeys(input, this._kbAbort.signal);
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {

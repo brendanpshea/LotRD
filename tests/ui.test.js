@@ -111,8 +111,20 @@ describe('code-write editor markup', () => {
   });
 
   it('does not promise Tab as the only way in', () => {
-    const help = html.slice(html.indexOf('id="code-write-help"'), html.indexOf('code-write-results'));
+    const start = html.indexOf('id="code-write-help"');
+    const help = html.slice(start, html.indexOf('</div>', html.indexOf('</details>', start)));
     assert.match(help, /indent buttons/,
       'the help text must mention the buttons, not just Tab');
+  });
+
+  // Submit is the only irreversible control on this screen. Run is tapped over
+  // and over; if a redesign ever moves Submit into that pinned row, the two end
+  // up under the same thumb.
+  it('keeps Submit out of the pinned action row', () => {
+    const row = template.slice(template.indexOf('class="code-write-actions"'),
+                               template.indexOf('id="code-write-help"'));
+    assert.match(row, /data-action="run"/, 'Run belongs in the pinned row');
+    assert.doesNotMatch(row, /data-action="submit"/,
+      'Submit must not sit in the row that pins under the thumb');
   });
 });

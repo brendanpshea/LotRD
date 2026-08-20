@@ -1798,13 +1798,29 @@ summary.topic-heading:focus-visible {
    buttons are the only way to indent — which in Python is the difference
    between a program and a syntax error. They hang under the editor, small and
    side by side, so they read as editor furniture rather than answer buttons. */
+.code-write-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 0;
+}
+
 .code-write-tools {
     display: flex;
     gap: 8px;
-    margin: 6px 0 0;
 }
 
+/* Run sits with the indent controls rather than in the button row below. On a
+   wide screen it keeps its natural size and moves to the far end of the row;
+   on a phone it takes whatever the indent buttons leave. */
+.code-write-actions .run-btn { margin-left: auto; }
+
 .code-tool-btn {
+    /* No double-tap zoom and no tap delay: these get pressed repeatedly. */
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
     padding: 8px 14px;
     font-family: "Consolas", "Menlo", "Courier New", monospace;
     font-size: 0.9rem;
@@ -1826,6 +1842,16 @@ summary.topic-heading:focus-visible {
     line-height: 1.5;
     margin: 8px 0 4px;
 }
+
+/* The editor's key bindings are worth stating once and then getting out of the
+   way: on a phone the old three-sentence block stood taller than the editor it
+   described, on all 25 questions. */
+.code-write-keys > summary {
+    cursor: pointer;
+    display: list-item;
+    width: fit-content;
+}
+.code-write-keys[open] > summary { margin-bottom: 4px; }
 
 .code-write-results:not(:empty) { margin: 10px 0 4px; }
 
@@ -1925,16 +1951,51 @@ summary.topic-heading:focus-visible {
     .code-write-body      { font-size: 0.85rem; }
 
     /* The blanket mobile rule (button { width: 100%; max-width: 200px }) would
-       stack these into two fat pills above the keyboard. They are furniture:
-       keep them side by side, but at a 44px touch target. */
+       stack these into fat pills above the keyboard. They are furniture: keep
+       them in one row, but at a 44px touch target. */
     .code-tool-btn {
         width: auto;
         max-width: none;
-        flex: 1;
         min-height: 44px;
-        font-size: 0.95rem;
-        padding: 10px 12px;
+        font-size: 0.85rem;
+        padding: 10px 8px;
     }
+
+    /* All three must sit on one line: wrapped labels doubled the height of the
+       row, which defeats the point of pinning it. */
+    .code-write-actions .code-tool-btn,
+    .code-write-actions .run-btn { white-space: nowrap; }
+
+    /* The run-fix-run loop is the whole point of this question type, and with
+       the keyboard up the student could previously see the editor and nothing
+       else — Run was ~350px below the fold, so every cycle cost two scrolls.
+       Pin the row instead. Submit stays down in the flow on purpose: it is the
+       only irreversible control here, and it should not sit under the thumb
+       that is tapping Run twenty times. */
+    .code-write-actions {
+        position: sticky;
+        bottom: var(--kb-inset, 0px);
+        z-index: 5;
+        flex-wrap: nowrap;
+        margin: 8px -15px 0;
+        padding: 8px 15px calc(8px + env(safe-area-inset-bottom, 0px));
+        background: #0d120d;
+        border-top: 1px solid #1f4d2a;
+    }
+    .code-write-actions .run-btn {
+        flex: 1 1 auto;
+        margin-left: 0;
+        width: auto;
+        max-width: none;
+        min-height: 44px;
+        padding: 10px 10px;
+        font-size: 0.9rem;
+    }
+
+    /* Anything the browser scrolls to — the editor when it takes focus, a fresh
+       results table — has to clear the pinned row, or it lands underneath it. */
+    .code-write-results,
+    .code-write-body { scroll-margin-bottom: 76px; }
     .code-write-table     { font-size: 0.8rem; }
     .code-write-example-list { font-size: 0.85rem; padding-left: 18px; }
 
