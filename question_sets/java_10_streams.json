@@ -26,11 +26,11 @@
   {
     "question": "What is a Stream in Java?",
     "correct": [
-      "A sequence of elements processed by a pipeline of operations without modifying the source"
+      "A sequence of elements processed by a pipeline of operations without changing the source"
     ],
     "incorrect": [
+      "A synchronized collection class that stores its elements and allows safe access from many threads",
       "A subclass of InputStream for reading data from files",
-      "A synchronized version of ArrayList that supports concurrent access",
       "A queue-based data structure that guarantees FIFO order"
     ],
     "feedback": "java.util.stream.Stream provides a declarative way to process collections. Streams are lazy (intermediate ops run only when a terminal op is invoked), do not store elements, and do not modify the source collection."
@@ -41,35 +41,35 @@
       "A source, zero or more intermediate operations, and one terminal operation"
     ],
     "incorrect": [
-      "Source, filter, and collector â€” all three are required",
-      "open(), process(), and close() â€” modeled after Java I/O streams",
+      "Source, filter, and collector — all three are required",
+      "open(), process(), and close() — modeled after Java I/O streams",
       "InputOperation, MiddleOperation, and OutputOperation from the java.util.pipeline package"
     ],
-    "feedback": "Pipeline: source (list.stream()) â†’ intermediate ops (filter, map, sorted) â†’ terminal op (collect, count, forEach). Intermediate ops are lazy; the terminal op triggers execution of the entire pipeline."
+    "feedback": "Pipeline: source (list.stream()) → intermediate ops (filter, map, sorted) → terminal op (collect, count, forEach). Intermediate ops are lazy; the terminal op triggers execution of the entire pipeline."
   },
   {
     "question": "What does the filter() operation do in a Stream pipeline?",
     "correct": [
-      "Keeps only the elements that satisfy a given Predicate (condition)"
+      "Keeps only the elements that satisfy a given Predicate"
     ],
     "incorrect": [
-      "Removes all duplicate elements from the stream",
       "Transforms each element into a new value using a Function",
+      "Removes all duplicate elements from the stream",
       "Collects all elements into a new List"
     ],
-    "feedback": "stream.filter(s -> s.length() > 3) creates a new stream containing only strings longer than 3 characters. filter takes a Predicate<T> â€” a function that returns boolean. It is an intermediate operation."
+    "feedback": "stream.filter(s -> s.length() > 3) creates a new stream containing only strings longer than 3 characters. filter takes a Predicate<T> — a function that returns boolean. It is an intermediate operation."
   },
   {
     "question": "What does the map() operation do in a Stream pipeline?",
     "correct": [
-      "Transforms each element using a Function, producing a stream of the transformed values"
+      "Transforms each element using a Function, producing a stream of new values"
     ],
     "incorrect": [
-      "Maps each element to a key-value pair, returning a HashMap",
-      "Keeps only the elements for which the function returns true",
+      "Keeps only the elements for which the function returns true, discarding the rest",
+      "Maps each element to a key-value pair and returns a HashMap of the results",
       "Sorts the elements using the provided function as a comparator"
     ],
-    "feedback": "stream.map(String::toUpperCase) transforms each String to uppercase. map takes a Function<T,R> and returns Stream<R>. It is an intermediate operation â€” chained before a terminal op like collect()."
+    "feedback": "stream.map(String::toUpperCase) transforms each String to uppercase. map takes a Function<T,R> and returns Stream<R>. It is an intermediate operation — chained before a terminal op like collect()."
   },
   {
     "question": "What does collect(Collectors.toList()) do at the end of a Stream pipeline?",
@@ -93,17 +93,17 @@
       "Terminal operations run faster because they do not create new Stream objects",
       "Intermediate operations require lambda expressions; terminal operations do not"
     ],
-    "feedback": "Intermediate: filter, map, sorted, limit, skip, distinct â€” return Stream, lazy. Terminal: collect, count, forEach, findFirst, anyMatch â€” consume the stream and produce a value or side effect. A pipeline without a terminal op never runs."
+    "feedback": "Intermediate: filter, map, sorted, limit, skip, distinct — return Stream, lazy. Terminal: collect, count, forEach, findFirst, anyMatch — consume the stream and produce a value or side effect. A pipeline without a terminal op never runs."
   },
   {
     "question": "What does the count() terminal operation return?",
     "correct": [
-      "long â€” the number of elements in the stream"
+      "long — the number of elements in the stream"
     ],
     "incorrect": [
-      "int â€” the number of elements in the stream",
-      "Integer â€” boxed count for use in collections",
-      "Stream<Long> â€” a stream containing a single count value"
+      "int — the number of elements in the stream",
+      "Integer — boxed count for use in collections",
+      "Stream<Long> — a stream containing a single count value"
     ],
     "feedback": "count() returns long, not int. This matters in assignments: long n = list.stream().filter(x -> x > 0).count(); Storing in an int would require a cast."
   },
@@ -113,21 +113,21 @@
       "boolean — whether elements match the given Predicate"
     ],
     "incorrect": [
-      "Stream<Boolean> â€” one Boolean per element",
-      "Optional<T> â€” the first matching element or empty",
-      "long â€” the count of elements that matched"
+      "Stream<Boolean> — one Boolean per element",
+      "Optional<T> — the first matching element or empty",
+      "long — the count of elements that matched"
     ],
     "feedback": "These are short-circuit terminal operations that return boolean. anyMatch stops at the first true; allMatch stops at the first false; noneMatch stops at the first true match. All take a Predicate<T>."
   },
   {
     "question": "What does findFirst() return?",
     "correct": [
-      "Optional<T> â€” the first element of the stream, or an empty Optional if the stream is empty"
+      "Optional<T>, holding the first element, or empty if the stream has none"
     ],
     "incorrect": [
-      "T â€” the first element, or null if the stream is empty",
-      "Stream<T> â€” a stream containing only the first element",
-      "int â€” the index of the first matching element"
+      "T, the first element itself, or null when the stream is empty and nothing matched",
+      "Stream<T>, a single-element stream containing only the first element",
+      "int, the index of the first matching element"
     ],
     "feedback": "findFirst() returns Optional<T> to avoid returning null. Callers use .isPresent() and .get(), or .orElse(defaultValue). Example: Optional<String> first = names.stream().findFirst();"
   },
@@ -137,16 +137,16 @@
       "NullPointerException — it wraps a possibly-absent value and forces callers to check"
     ],
     "incorrect": [
-      "ClassCastException â€” it wraps a value of unknown type",
-      "Concurrent modification â€” it prevents two threads from modifying the same value",
-      "Integer overflow â€” it uses BigInteger internally for large values"
+      "ClassCastException — it wraps a value of unknown type",
+      "Concurrent modification — it prevents two threads from modifying the same value",
+      "Integer overflow — it uses BigInteger internally for large values"
     ],
     "feedback": "Optional<T> either contains a value (isPresent() == true) or is empty. Use .orElse(defaultValue) to safely provide a fallback. Calling .get() on an empty Optional throws NoSuchElementException."
   },
   {
     "question": "What is a functional interface in Java?",
     "correct": [
-      "An interface with exactly one abstract method, which can be implemented by a lambda expression or method reference"
+      "An interface with exactly one abstract method, which a lambda expression can implement"
     ],
     "incorrect": [
       "An interface that provides a full implementation for all its methods using default methods",
@@ -159,7 +159,7 @@
     "question": "Which claims about lambda expressions are correct?",
     "correct": [
       "A lambda can capture local variables from the enclosing scope if those variables are effectively final",
-      "Lambdas implement functional interfaces â€” interfaces with exactly one abstract method",
+      "Lambdas implement functional interfaces — interfaces with exactly one abstract method",
       "Parentheses around the parameter list are optional when there is exactly one parameter"
     ],
     "incorrect": [
@@ -171,7 +171,7 @@
   {
     "question": "Which claims about Stream pipelines are correct?",
     "correct": [
-      "A stream can only be consumed once â€” using it again after a terminal operation throws IllegalStateException",
+      "A stream can only be consumed once — using it again after a terminal operation throws IllegalStateException",
       "Intermediate operations are lazy and do not execute until a terminal operation is called",
       "A stream pipeline without a terminal operation performs no work"
     ],
@@ -192,7 +192,7 @@
       "skip(n) returns every nth element rather than skipping the first n",
       "filter() is a terminal operation because it accesses each element"
     ],
-    "feedback": "sorted(), limit(), skip(), distinct(), map(), filter() are all intermediate â€” they all return Stream. limit and skip are short-circuit-capable, making them efficient for large or infinite streams."
+    "feedback": "sorted(), limit(), skip(), distinct(), map(), filter() are all intermediate — they all return Stream. limit and skip are short-circuit-capable, making them efficient for large or infinite streams."
   },
   {
     "question": "Which claims about functional interfaces in java.util.function are correct?",
@@ -205,7 +205,7 @@
       "Supplier<T> takes a value of type T and produces a boolean result",
       "All functional interfaces must be annotated with @FunctionalInterface to work with lambdas"
     ],
-    "feedback": "Supplier<T>: T get() â€” takes nothing, produces T. Consumer<T>: void accept(T t). Predicate<T>: boolean test(T t). Function<T,R>: R apply(T t). @FunctionalInterface is optional (just a verification hint)."
+    "feedback": "Supplier<T>: T get() — takes nothing, produces T. Consumer<T>: void accept(T t). Predicate<T>: boolean test(T t). Function<T,R>: R apply(T t). @FunctionalInterface is optional (just a verification hint)."
   },
   {
     "type": "fill_blank",
@@ -223,7 +223,7 @@
       "intermediate"
     ],
     "case_sensitive": false,
-    "feedback": "Intermediate operations (filter, map, sorted, limit, skip, distinct) are lazy â€” they build the pipeline but do not execute until a terminal operation triggers evaluation."
+    "feedback": "Intermediate operations (filter, map, sorted, limit, skip, distinct) are lazy — they build the pipeline but do not execute until a terminal operation triggers evaluation."
   },
   {
     "type": "fill_blank",
@@ -254,7 +254,7 @@
   },
   {
     "type": "fill_blank",
-    "question": "A lambda expression in Java is used to implement a ___ interface â€” one with exactly one abstract method.",
+    "question": "A lambda expression in Java is used to implement a ___ interface — one with exactly one abstract method.",
     "correct": [
       "functional"
     ],
@@ -267,19 +267,19 @@
     "pairs": [
       {
         "term": "filter()",
-        "definition": "Intermediate â€” returns a Stream of elements that satisfy the predicate"
+        "definition": "Intermediate — returns a Stream of elements that satisfy the predicate"
       },
       {
         "term": "collect()",
-        "definition": "Terminal â€” gathers elements into a collection and ends the pipeline"
+        "definition": "Terminal — gathers elements into a collection and ends the pipeline"
       },
       {
         "term": "map()",
-        "definition": "Intermediate â€” transforms each element and returns a new Stream"
+        "definition": "Intermediate — transforms each element and returns a new Stream"
       },
       {
         "term": "count()",
-        "definition": "Terminal â€” returns the number of elements as a long"
+        "definition": "Terminal — returns the number of elements as a long"
       }
     ],
     "feedback": "Intermediate ops return Stream and are lazy. Terminal ops trigger execution and produce a value or side effect. A pipeline must end with exactly one terminal operation."
@@ -290,19 +290,19 @@
     "pairs": [
       {
         "term": "Predicate<T>",
-        "definition": "boolean test(T t) â€” evaluates a condition on the input"
+        "definition": "boolean test(T t) — evaluates a condition on the input"
       },
       {
         "term": "Function<T,R>",
-        "definition": "R apply(T t) â€” transforms T into R"
+        "definition": "R apply(T t) — transforms T into R"
       },
       {
         "term": "Consumer<T>",
-        "definition": "void accept(T t) â€” processes the input with no return value"
+        "definition": "void accept(T t) — processes the input with no return value"
       },
       {
         "term": "Supplier<T>",
-        "definition": "T get() â€” produces a T value with no input"
+        "definition": "T get() — produces a T value with no input"
       }
     ],
     "feedback": "Each functional interface represents a function shape. Predicate: T->boolean. Function: T->R. Consumer: T->void. Supplier: ()->T. All can be implemented with lambdas."
@@ -336,19 +336,19 @@
     "pairs": [
       {
         "term": "count()",
-        "definition": "long â€” the number of elements in the stream"
+        "definition": "long — the number of elements in the stream"
       },
       {
         "term": "findFirst()",
-        "definition": "Optional<T> â€” the first element, or empty if the stream is empty"
+        "definition": "Optional<T> — the first element, or empty if the stream is empty"
       },
       {
         "term": "anyMatch()",
-        "definition": "boolean â€” true if at least one element satisfies the predicate"
+        "definition": "boolean — true if at least one element satisfies the predicate"
       },
       {
         "term": "forEach()",
-        "definition": "void â€” performs an action on each element with no return value"
+        "definition": "void — performs an action on each element with no return value"
       }
     ],
     "feedback": "count() -> long. findFirst() -> Optional<T>. anyMatch/allMatch/noneMatch -> boolean. forEach -> void. collect() -> Collection. These terminal ops end the pipeline."

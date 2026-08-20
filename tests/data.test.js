@@ -913,6 +913,59 @@ describe('Question set quality heuristics', () => {
     );
   });
 
+  it('flags sets where the correct option is the longest (or shortest) far more often than chance', () => {
+    // The ratio tests above ask "how much longer", which stays quiet when the correct answer wins
+    // by only a few characters. But a test-taker doesn't measure ratios — they pick the option that
+    // looks longest. With four options that should be right 25% of the time. A set well above that
+    // is answerable by rank alone, and one well below it has simply been over-corrected.
+    const MIN_QUESTIONS = 15;
+    const MAX_RATE = 0.45;
+    const flaggedSets = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      let total = 0;
+      let longest = 0;
+      let shortest = 0;
+
+      for (const q of questions) {
+        if (q.type && q.type !== 'multiple_choice') continue;
+        const correct = q.correct || [];
+        const incorrect = q.incorrect || [];
+        // Only single-answer questions have one unambiguous "the correct option" to rank.
+        if (correct.length !== 1 || incorrect.length < 2) continue;
+        const correctLen = correct[0].length;
+        const incorrectLens = incorrect.map(a => a.length);
+        total++;
+        // Strictly longest: a tie gives the rank-guesser no signal to act on.
+        if (correctLen > Math.max(...incorrectLens)) longest++;
+        if (correctLen < Math.min(...incorrectLens)) shortest++;
+      }
+
+      if (total < MIN_QUESTIONS) continue;
+      const longestRate = longest / total;
+      const shortestRate = shortest / total;
+      if (longestRate > MAX_RATE) {
+        flaggedSets.push(
+          `${setId}: correct answer is the longest option ${longest}/${total} ` +
+          `(${(longestRate * 100).toFixed(0)}%, chance is ~25%)`
+        );
+      } else if (shortestRate > MAX_RATE) {
+        flaggedSets.push(
+          `${setId}: correct answer is the shortest option ${shortest}/${total} ` +
+          `(${(shortestRate * 100).toFixed(0)}%, chance is ~25%) — over-corrected`
+        );
+      }
+    }
+
+    assert.deepEqual(
+      flaggedSets,
+      [],
+      `Option-length rank bias detected — a student could score above chance by picking on ` +
+      `length alone:\n${flaggedSets.join('\n')}`
+    );
+  });
+
   it('flags individual single-answer MC questions where the correct option is much shorter than every distractor', () => {
     const flagged = [];
 

@@ -60,6 +60,8 @@ Use when there is **exactly one** unambiguous correct answer.
 
 1. **Make all answer options similar in length and structure.** If the correct answer is a full sentence, the distractors should be full sentences too. A conspicuously long or detailed answer is a giveaway.
 
+   Similar length is not enough on its own: what matters is *rank*. Across a set, the correct answer should be the longest option about a quarter of the time, because with four options that is chance. It drifts above that on its own, because a correct answer has to be precisely true and picks up qualifiers, while a distractor can be blunt. When you catch yourself over the line, prefer giving a distractor a concrete false rationale over trimming the key — that fixes the length and makes the distractor more tempting at the same time. `tests/data.test.js` fails a set that goes past 45% in either direction.
+
 2. **Avoid "all of the above" and "none of the above."** Answers are shuffled, so positional references break.
 
 3. **A distractor must be wrong about the RIGHT topic.** This is the single most common way a long question becomes trivially easy, and length parity does not protect you from it. The test to apply: *could someone who has never studied this topic eliminate two options on sight, just by noticing they are about something else?* If so, the question measures nothing.

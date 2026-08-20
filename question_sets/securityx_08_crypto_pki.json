@@ -17,7 +17,7 @@
       "Verify the identity of certificate requesters before the CA issues a certificate"
     ],
     "incorrect": [
-      "Sign issued end-entity certificates with the offline root key material",
+      "Sign issued end-entity certificates with the offline root key, replacing the CA in the issuance path",
       "Distribute certificate revocation lists to relying-party endpoints",
       "Decrypt and re-encrypt session traffic for inspection on the wire"
     ],
@@ -29,7 +29,7 @@
       "The server sends a recently signed OCSP response together with its certificate during the TLS handshake"
     ],
     "incorrect": [
-      "The client downloads the full certificate revocation list before connecting to the server",
+      "The client downloads the full certificate revocation list from the CA before connecting, so the server relays no status",
       "The certificate authority embeds revocation status directly into a long-lived static field",
       "The browser caches the issuing chain and skips revocation checking"
     ],
@@ -67,9 +67,9 @@
       "It limits exposure of the highest-trust key, reducing the impact of a compromise of issuing systems"
     ],
     "incorrect": [
-      "It lets the root key sign end-entity certificates at very high throughput",
-      "It removes the need to ever publish revocation information to relying parties",
-      "It eliminates the requirement for any subordinate intermediate CAs in the hierarchy"
+      "It removes the need to publish revocation information, since a key kept offline cannot be stolen or misused",
+      "It eliminates the requirement for any subordinate intermediate CAs in the hierarchy",
+      "It lets the root key sign end-entity certificates at very high throughput"
     ],
     "feedback": "An offline root issues only intermediate CA certificates infrequently, so a network compromise of issuing infrastructure does not expose the root key."
   },
@@ -88,12 +88,12 @@
   {
     "question": "Which property does forward secrecy provide to a TLS session?",
     "correct": [
-      "Compromise of the server's long-term private key does not let an attacker decrypt previously captured sessions"
+      "Compromise of the server's long-term private key does not reveal previously captured sessions"
     ],
     "incorrect": [
-      "Encryption of session data is performed without any per-session keys at all",
+      "Server certificates rotate automatically at sub-minute intervals, so recorded traffic becomes undecryptable",
       "Each handshake reuses the same ephemeral key pair across many sessions for speed",
-      "Server certificates rotate automatically at sub-minute intervals during steady traffic"
+      "Encryption of session data is performed without any per-session keys at all"
     ],
     "feedback": "Forward secrecy uses ephemeral key exchange (e.g., ECDHE) so each session has unique keys; recovering the long-term key later does not decrypt past traffic."
   },
@@ -129,7 +129,7 @@
       "Several organizations jointly compute a statistic over their data without revealing individual inputs"
     ],
     "incorrect": [
-      "A single user encrypts a backup before uploading it to consumer cloud storage",
+      "A single user encrypts a backup before uploading it to consumer cloud storage so the provider cannot read it",
       "A web server proves its identity to a browser during a normal TLS handshake",
       "An administrator hashes a password file before publishing it to a paste site"
     ],
@@ -153,9 +153,9 @@
       "Encrypting data with a data encryption key (DEK), then encrypting the DEK with a key encryption key (KEK)"
     ],
     "incorrect": [
+      "Storing the plaintext data key beside the ciphertext so decryption never needs a call to the key management service",
       "Encrypting both the data and the key with the same single shared symmetric key",
-      "Wrapping the ciphertext inside a printable envelope of base64-encoded text",
-      "Storing the plaintext key alongside the ciphertext for fast offline decryption"
+      "Wrapping the ciphertext inside a printable envelope of base64-encoded text"
     ],
     "feedback": "Envelope encryption protects each object with its own DEK and protects DEKs with a centrally managed KEK, enabling rotation and access control without re-encrypting bulk data."
   },
@@ -175,10 +175,10 @@
   {
     "question": "Which statement BEST describes tokenization compared with encryption?",
     "correct": [
-      "Tokenization replaces sensitive values with non-sensitive surrogates that have no mathematical relationship to the original"
+      "Tokenization replaces sensitive values with surrogates that have no mathematical relationship to the original"
     ],
     "incorrect": [
-      "Tokenization derives ciphertext from plaintext using a published symmetric key",
+      "Tokenization derives ciphertext from plaintext with a published symmetric key, so any key holder can reverse it",
       "Tokenization is a hashing function that produces a fixed-length digest of the input",
       "Tokenization compresses repeated values into smaller fixed-width binary tokens"
     ],
@@ -190,7 +190,7 @@
       "Removes or transforms data so individuals cannot be re-identified, even with additional data"
     ],
     "incorrect": [
-      "Replaces names with random strings while keeping a re-identification key elsewhere",
+      "Replaces names with random strings while a re-identification key is retained in a separate mapping table",
       "Encrypts user identifiers with a tenant-specific symmetric key for storage",
       "Hashes identifiers with a public salt that anyone can recompute on demand"
     ],
@@ -202,7 +202,7 @@
       "FIDO2 security key performing public-key challenge-response with the relying party"
     ],
     "incorrect": [
-      "Username and password entered into the same form as previous logins",
+      "Username and password entered into a form that fills the password from a browser-managed vault",
       "Username, password, and one-time SMS code typed into a portal field",
       "Username, password, and security question answer combined at sign-in"
     ],
@@ -251,7 +251,7 @@
       "Adversaries can capture encrypted traffic now and decrypt it later when quantum capability arrives"
     ],
     "incorrect": [
-      "Quantum computers already break AES-256 in production deployments today",
+      "Quantum computers already break AES-256 in production, forcing immediate replacement of every symmetric cipher",
       "PQC algorithms are mandated by current browsers for new TLS handshakes",
       "Classical algorithms have been shown to fail against ordinary CPUs at scale"
     ],
@@ -288,8 +288,8 @@
       "Automated certificate lifecycle management with renewal before expiry and monitoring alerts"
     ],
     "incorrect": [
+      "Issuing 10-year certificates so renewals fall outside employee tenure and cut administrative overhead",
       "A spreadsheet tracked manually by a single administrator close to expiration",
-      "Issuing 10-year certificates so renewals fall outside normal employee tenure",
       "Disabling certificate validation on internal services to avoid outage risk"
     ],
     "feedback": "Automation plus expiry monitoring is what saves the Mad Hatter from another outage. Manual tracking, very long lifetimes, and disabled validation each create or hide risk."
@@ -300,9 +300,9 @@
       "Digital signature created with the signer's private key bound to a verified identity"
     ],
     "incorrect": [
-      "Symmetric MAC computed with a key shared by the counterparties",
-      "Cleartext footer with the signer's typed name and printed timestamp",
-      "Server-side TLS certificate authenticating the host that displays the document"
+      "Symmetric MAC computed with a key shared by the counterparties and held in escrow by both",
+      "Server-side TLS certificate authenticating the host that displays the document",
+      "Cleartext footer with the signer's typed name and printed timestamp"
     ],
     "feedback": "Nonrepudiation requires a signature that only the signer could have created, which is what asymmetric digital signatures provide. Shared MACs cannot bind a single party, and TLS authenticates servers, not signers."
   },
