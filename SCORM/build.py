@@ -142,6 +142,59 @@ def write_filtered_question_sets(build_dir: Path, filtered_catalog: list) -> lis
     return copied
 
 
+def prune_npc_portraits(build_dir: Path) -> None:
+    """Ship only the mentor portraits this edition's scenes actually use.
+
+    The portraits are ~400 KB each and images/ is copied wholesale, so without
+    this every edition carries all eight (about 3 MB) to show at most three.
+    Also drops the gallery README, which is authoring documentation and is
+    never fetched at runtime.
+    """
+    npc_dir = build_dir / "images" / "npc"
+    if not npc_dir.is_dir():
+        return
+
+    used: set[str] = set()
+    for path in (build_dir / "question_sets").glob("*.json"):
+        if path.name in ("catalog.json", "index.json"):
+            continue
+        try:
+            entries = json.loads(path.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if isinstance(entry, dict) and entry.get("type") == "npc_demo" and entry.get("npc"):
+                used.add(str(entry["npc"]).strip().lower())
+
+    roster_path = build_dir / "assets" / "npcs.json"
+    keep = set()
+    if roster_path.exists():
+        for npc in json.loads(roster_path.read_text(encoding="utf-8")):
+            if npc.get("id", "").lower() in used:
+                keep.add(Path(npc.get("portrait", "")).name)
+
+    # An edition with no teaching scenes needs no portraits at all. But if it
+    # HAS scenes and none resolved, that is a roster mismatch rather than a
+    # green light to delete the artwork those scenes are about to ask for.
+    if used and not keep:
+        print("  Portraits: scenes present but no ids resolved — keeping all as a precaution")
+        return
+
+    removed = 0
+    for f in npc_dir.iterdir():
+        if not f.is_file():
+            continue
+        if f.name == "README.md" or f.name not in keep:
+            f.unlink()
+            removed += 1
+    # The now-empty directory is left in place: only files are written into the
+    # zip, and removing it trips over OneDrive's directory locks on Windows.
+    print(f"  Portraits: kept {sorted(keep) or 'none (edition has no teaching scenes)'}, "
+          f"removed {removed} file(s)")
+
+
 def patch_index_html(build_dir: Path, config: dict) -> None:
     path = build_dir / "index.html"
     html = path.read_text(encoding="utf-8")
@@ -250,6 +303,7 @@ def build(config_path: Path) -> Path:
     print(f"  Topics: {[t['topic'] for t in filtered]}")
     print(f"  Question set files: {len(copied)}")
 
+    prune_npc_portraits(work_dir)
     patch_index_html(work_dir, config)
     write_shim(work_dir)
     write_manifest(work_dir, config)

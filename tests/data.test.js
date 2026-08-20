@@ -287,6 +287,52 @@ describe('monsters.json', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────────
+// assets/npcs.json — the mentors who teach npc_demo scenes
+// ────────────────────────────────────────────────────────────────────────────────
+describe('assets/npcs.json', () => {
+  const npcs = loadJSON('assets/npcs.json');
+
+  it('is a non-empty array with the required fields', () => {
+    assert.ok(Array.isArray(npcs) && npcs.length > 0);
+    for (const n of npcs) {
+      assert.ok(typeof n.id === 'string' && /^[a-z0-9_-]+$/.test(n.id),
+        `bad npc id: ${n.id}`);
+      assert.ok(typeof n.name === 'string' && n.name.length > 0, `${n.id}: missing name`);
+      assert.ok(typeof n.portrait === 'string' && n.portrait.length > 0, `${n.id}: missing portrait`);
+      assert.ok(n.pronouns && n.pronouns.subject && n.pronouns.object,
+        `${n.id}: missing pronouns`);
+    }
+  });
+
+  it('no duplicate ids', () => {
+    const ids = npcs.map(n => n.id);
+    assert.deepEqual(ids.filter((x, i) => ids.indexOf(x) !== i), []);
+  });
+
+  it('every portrait file exists on disk', () => {
+    for (const n of npcs) {
+      assert.ok(existsSync(join(ROOT, n.portrait)),
+        `missing portrait file for ${n.id}: ${n.portrait}`);
+    }
+  });
+
+  it('every npc_demo names a mentor in the roster', () => {
+    const ids = new Set(npcs.map(n => n.id));
+    const index = loadJSON('question_sets/index.json');
+    const bad = [];
+    for (const setId of index) {
+      for (const q of loadJSON(`question_sets/${setId}`)) {
+        if (q.type !== 'npc_demo') continue;
+        if (!ids.has(String(q.npc || '').toLowerCase())) {
+          bad.push(`${setId}: scene "${q.question}" names unknown mentor ${JSON.stringify(q.npc)}`);
+        }
+      }
+    }
+    assert.deepEqual(bad, [], `unresolvable mentors:\n${bad.join('\n')}`);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
 // question_sets/index.json
 // ────────────────────────────────────────────────────────────────────────────────
 describe('question_sets/index.json', () => {

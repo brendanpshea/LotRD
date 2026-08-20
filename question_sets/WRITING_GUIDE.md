@@ -655,7 +655,7 @@ Because there are no options, a cloze cannot be solved by eliminating implausibl
 |-------|----------|------|-------|
 | `type` | yes | `"npc_demo"` | Must be exactly this string |
 | `question` | yes | string | The scene's title (shown as a caption; also its identity — must be unique). Prefix with `NPC:` by convention |
-| `npc` | no | string | Mentor's name; defaults to "Ada the Artificer" |
+| `npc` | yes | string | Mentor **id** from [`assets/npcs.json`](../assets/npcs.json) — `ada`, `nia`, `zoya`, `flint`, `kaelen`, `tariq`, `val`, `omu`. The game resolves the display name and portrait from the roster. Pick the mentor whose domain matches the lesson, and write the prose to fit them (Zoya uses they/them) |
 | `intro` / `outro` | no | string | Scene-setting and hand-off lines |
 | `steps` | yes | object[] | 2–4 steps; each needs `say`, may carry `beats` and one `check` |
 | `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is either `{"say": "..."}` (one spoken line) or `{"code": "...", "language": "..."}` (the artifact being examined). Without it the whole `say` string appears in one go |

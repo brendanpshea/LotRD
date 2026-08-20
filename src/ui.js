@@ -1,6 +1,7 @@
 import { shuffle, TIER_MASTER, TIER_NAMES, TIER_BADGES } from "./util.js";
 import { highlightJava } from "./highlight.js";
 import { parseClozeSegments } from "./model.js";
+import { loadNpcRoster, findNpc } from "./npcs.js";
 
 const LEVEL_TITLES = [
   { minLevel: 1,  title: "Apprentice" },
@@ -1039,7 +1040,27 @@ export class GameUI {
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-npc-scene");
 
-    $(this.root, "[data-ref=npcName]").textContent = q.npc || "Ada the Artificer";
+    // Name and portrait come from assets/npcs.json. Until it resolves (or if a
+    // scene names a mentor the roster doesn't have) the scene still runs, just
+    // with the raw value as a name and the placeholder glyph.
+    const nameEl = $(this.root, "[data-ref=npcName]");
+    nameEl.textContent = q.npc || "Your mentor";
+    loadNpcRoster().then(roster => {
+      const npc = findNpc(roster, q.npc);
+      if (!npc || !nameEl.isConnected) return;
+      nameEl.textContent = npc.name;
+      const slot = $(this.root, "[data-ref=npcPortrait]");
+      if (!slot) return;
+      const img = document.createElement("img");
+      img.className = "npc-portrait-img";
+      img.src = npc.portrait;
+      img.alt = "";                       // decorative; the name is right beside it
+      // Keep the glyph if the file is missing rather than showing a broken image.
+      img.addEventListener("error", () => img.remove(), { once: true });
+      slot.replaceChildren(img);
+      slot.classList.add("npc-portrait--image");
+    }).catch(() => {});
+
     // The `question` field is the scene's title (and its identity in the data).
     $(this.root, "[data-ref=npcSceneTitle]").textContent = q.question || "";
     const dialogue = $(this.root, "[data-ref=npcDialogue]");
