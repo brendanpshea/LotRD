@@ -45,12 +45,12 @@ tiers:
 A set's first full clear — victory or reaching the end of the question
 queue — earns Apprentice. The Journeyman trial unlocks 3 days after the
 first clear; the Master trial unlocks 7 days after completing
-Journeyman. Trials are ~half the set, weighted toward historically
-missed questions. Credit only ever rises, so the reported score is
-monotonic. Sets completed before the tier system existed are
-grandfathered at Master (full credit) so no existing student's score
-drops on upgrade. Review sets are excluded from both numerator and
-denominator.
+Journeyman. Trials are half the set, capped at 18 questions, and
+weighted toward historically missed questions. Credit only ever rises,
+so the reported score is monotonic. Sets completed before the tier
+system existed are grandfathered at Master (full credit) so no existing
+student's score drops on upgrade. Review sets are excluded from both
+numerator and denominator.
 
 `cmi.core.lesson_status` is set to `completed` at 100%, otherwise
 `incomplete`. The mastery threshold in the manifest is 100, but D2L

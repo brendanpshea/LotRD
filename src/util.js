@@ -65,6 +65,16 @@ export const JOURNEYMAN_WAIT_DAYS = 3;
 export const MASTER_WAIT_DAYS = 7;
 
 /**
+ * Hard ceiling on a rank trial, regardless of set size. Trials are the only
+ * route to full credit, so they have to stay short enough that students
+ * actually sit down for them — a trial that scales to half of a 50-question
+ * set becomes a second full run and gets skipped. The cap costs nothing in
+ * coverage: the sample is miss-weighted, so trimming it drops the questions
+ * the student has never gotten wrong first.
+ */
+export const TRIAL_MAX_QUESTIONS = 18;
+
+/**
  * When (and whether) the next rank trial is available.
  * @param {{tier?:number, apprenticeAt?:string, journeymanAt?:string}|null} tierRec
  * @param {number} now – epoch ms (injectable for tests)
@@ -83,16 +93,17 @@ export function nextTierInfo(tierRec, now = Date.now()) {
 }
 
 /**
- * Sample the questions for a rank trial: about half the set, taking every
- * question the student has historically missed first (most-missed leading),
- * then filling the remainder at random. NPC teaching scenes never appear in
- * a trial — they are first-exposure scaffolding, and trials are pure retrieval.
+ * Sample the questions for a rank trial: about half the set (capped at
+ * TRIAL_MAX_QUESTIONS), taking every question the student has historically
+ * missed first (most-missed leading), then filling the remainder at random.
+ * NPC teaching scenes never appear in a trial — they are first-exposure
+ * scaffolding, and trials are pure retrieval.
  * @param {object[]} questions   – the set's full question array
  * @param {Object<string,number>} missCounts – question text → historical miss count
  */
 export function sampleTrialQuestions(questions, missCounts = {}) {
     const pool = (questions || []).filter(q => q && q.type !== "npc_demo");
-    const size = Math.ceil(pool.length / 2);
+    const size = Math.min(Math.ceil(pool.length / 2), TRIAL_MAX_QUESTIONS);
     const missed = shuffle(pool.filter(q => (missCounts[q.question] || 0) > 0))
         .sort((a, b) => (missCounts[b.question] || 0) - (missCounts[a.question] || 0));
     const rest = shuffle(pool.filter(q => !(missCounts[q.question] > 0)));

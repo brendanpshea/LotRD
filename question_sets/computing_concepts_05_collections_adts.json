@@ -117,15 +117,14 @@
     "feedback": "Tuples are immutable: once built, their contents are fixed. That refusal is the point — when you see a tuple you know the record's shape and contents will not shift underneath you."
   },
   {
-    "question": "What does this program print?\n\nclient = (\"Mina\", 165, \"ghost\", 40)\nname, height, costume, deposit = client\nprint(deposit)",
+    "type": "code_trace",
+    "question": "A tuple is unpacked into four names. What does this print?",
+    "code": "client = (\"Mina\", 165, \"ghost\", 40)\nname, height, costume, deposit = client\nprint(deposit)",
+    "language": "python",
     "correct": [
       "40"
     ],
-    "incorrect": [
-      "\"Mina\"",
-      "165",
-      "4"
-    ],
+    "case_sensitive": true,
     "feedback": "This is tuple unpacking: the four positions are handed to four variables in order, so deposit receives the item at position 3, which is 40."
   },
   {
@@ -184,27 +183,25 @@
     "feedback": "Square-bracket lookup crashes on a missing key, which is what you want when missing means a bug. .get() returns None, or a default you supply, which is what you want when missing is normal."
   },
   {
-    "question": "What does this program print?\n\nprices = {\"cape\": 20, \"fangs\": 5}\ntotal = 0\nfor item, price in prices.items():\n    total = total + price\nprint(total)",
+    "type": "code_trace",
+    "question": "This loop totals a dictionary's values. What does it print?",
+    "code": "prices = {\"cape\": 20, \"fangs\": 5}\ntotal = 0\nfor item, price in prices.items():\n    total = total + price\nprint(total)",
+    "language": "python",
     "correct": [
       "25"
     ],
-    "incorrect": [
-      "2",
-      "\"capefangs\"",
-      "0"
-    ],
+    "case_sensitive": true,
     "feedback": ".items() hands over one key-value pair per pass, which is tuple-unpacked into item and price. The accumulator adds each price, giving 20 + 5 = 25."
   },
   {
-    "question": "What does this program print?\n\nguests = [\"Mina\", \"Hyde\", \"Mina\", \"Hyde\", \"Lucy\"]\nprint(len(set(guests)))",
+    "type": "code_trace",
+    "question": "Duplicates are removed with set(). What does this print?",
+    "code": "guests = [\"Mina\", \"Hyde\", \"Mina\", \"Hyde\", \"Lucy\"]\nprint(len(set(guests)))",
+    "language": "python",
     "correct": [
       "3"
     ],
-    "incorrect": [
-      "5",
-      "2",
-      "1"
-    ],
+    "case_sensitive": true,
     "feedback": "Building a set drops every duplicate, leaving Mina, Hyde, and Lucy — three distinct names. Converting to a set and taking the length is the standard way to count distinct values."
   },
   {
@@ -476,9 +473,9 @@
       "Keys must be immutable, or a change would move where the value sits"
     ],
     "incorrect": [
-      "Lists take up rather more memory than strings and tuples do",
-      "Keys must always be shorter than a fixed maximum length",
-      "Lists are already used for the dictionary's own internal storage"
+      "Lists can be keys, but only once they have been sorted first",
+      "A key must be a single value, and a list holds several at once",
+      "Lists are mutable, and a dict cannot hold a mutable object at all"
     ],
     "feedback": "The hash of a key decides where its value is stored. If a key could change after filing, its hash would change too and Python could no longer find the shelf it used."
   },
@@ -561,5 +558,122 @@
       "tolerance_abs": 0
     },
     "feedback_template": "A slice [a:b] includes index a up to but not including b, giving {{b}} minus {{a}} = {{expected}} items."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A Python list has {{size}} items. The item written as  lst[-{{k}}]  can also be reached with which non-negative index?",
+    "variables": {
+      "size": {
+        "min": 6,
+        "max": 15
+      },
+      "k": {
+        "min": 1,
+        "max": 5
+      }
+    },
+    "answer": {
+      "expr": "size - k",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "A negative index counts back from the end, so -{{k}} means {{size}} - {{k}} = {{expected}}. Index -1 is always the last item, never the first."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A list named nums holds the whole numbers 1 through {{n}}, with each number appearing {{r}} separate times. How many items does  set(nums)  contain?",
+    "variables": {
+      "n": {
+        "min": 4,
+        "max": 12
+      },
+      "r": {
+        "min": 2,
+        "max": 4
+      }
+    },
+    "answer": {
+      "expr": "n",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "A set keeps only distinct values, so all {{r}} copies of each number collapse into one, leaving the {{expected}} different numbers."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "The lines  a = [0] * {{n}}  then  b = a  then  b.append(0)  run in order. What number does  print(len(a))  show?",
+    "variables": {
+      "n": {
+        "min": 3,
+        "max": 15
+      }
+    },
+    "answer": {
+      "expr": "n + 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "b = a copies the reference, not the list, so a and b name one list of {{n}} items. Appending through b lengthens that same list to {{expected}}."
+  },
+  {
+    "type": "cloze",
+    "question": "A {{1}} is written with square brackets and can be changed after it is built, while a {{2}} is written with parentheses and cannot — which is exactly why only the second may serve as a dictionary key.",
+    "blanks": [
+      {
+        "accept": [
+          "list"
+        ],
+        "hint": "collection"
+      },
+      {
+        "accept": [
+          "tuple"
+        ],
+        "hint": "collection"
+      }
+    ],
+    "feedback": "Dictionary keys must be immutable, because a key that could change value would no longer point at the slot where its entry was stored."
+  },
+  {
+    "question": "A list named  temps  holds exactly 10 readings. Which expression gives every reading except the first and the last?",
+    "correct": [
+      "temps[1:-1]"
+    ],
+    "incorrect": [
+      "temps[0:-1]",
+      "temps[1:10]",
+      "temps[2:-2]"
+    ],
+    "feedback": "A slice starts at its first index and stops just before its second, and -1 refers to the final item, so [1:-1] drops exactly one item from each end."
+  },
+  {
+    "question": "Inside a function, the line  items.append(1)  changes the caller's list, but the line  items = items + [1]  leaves it untouched. What explains the difference?",
+    "correct": [
+      "append changes the shared list in place, while items + [1] builds a new list that only the local name points at"
+    ],
+    "incorrect": [
+      "append copies the list back to the caller when the function ends, while the + version discards its own result",
+      "items + [1] gives back None, so the new list is thrown away before the caller could ever see the change",
+      "Both lines do change the caller's list, but the second one's change is undone as soon as the function ends"
+    ],
+    "feedback": "Mutating touches the object both names share; rebinding just points the local name somewhere else and leaves the caller's object exactly as it was."
+  },
+  {
+    "type": "code_line",
+    "question": "Given a dictionary named ages, write the Python expression that produces a view of all its keys.",
+    "language": "python",
+    "correct": [
+      "ages.keys()"
+    ],
+    "case_sensitive": false,
+    "feedback": "keys() is a method, so it needs the parentheses; without them you would get the method object itself rather than the keys."
+  },
+  {
+    "type": "code_trace",
+    "question": "One list here is aliased and another is copied. What does the program print?",
+    "code": "a = [1, 2, 3]\nb = a\nb.append(4)\nc = a.copy()\nc.append(5)\nprint(len(a))",
+    "language": "python",
+    "correct": [
+      "4"
+    ],
+    "case_sensitive": true,
+    "feedback": "b is another name for the same list, so its append is felt by a; c is a genuine independent copy, so its append is not."
   }
 ]

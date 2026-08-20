@@ -6,7 +6,7 @@
 
 ## File Format Overview
 
-Each question set is a **JSON array** of question objects saved in `question_sets/`. Seven structured question types are documented below (plus the non-question NPC teaching scene), with multiple-choice split into single-answer and multi-answer variants:
+Each question set is a **JSON array** of question objects saved in `question_sets/`. Eight structured question types are documented below (plus the non-question NPC teaching scene), with multiple-choice split into single-answer and multi-answer variants:
 
 | Type | `type` field | Selection UI | Best for |
 |------|-------------|-------------|----------|
@@ -16,6 +16,7 @@ Each question set is a **JSON array** of question objects saved in `question_set
 | Matching | `"matching"` | Dropdowns | Associating terms with definitions |
 | Code Line | `"code_line"` | Text input + token-Wordle | Writing one line of code/command |
 | Ordering | `"ordering"` | Tap-to-sequence | Process steps, algorithm stages, Parsons-style code arrangement |
+| Multi-Blank Cloze | `"cloze"` | Inline text inputs | Synthesis: several related terms held in contrast in one passage |
 | NPC Teaching Scene | `"npc_demo"` | Dialogue walkthrough | Worked examples immediately before a paired question (not a question itself) |
 
 A good problem set uses a **mix of all types**. Aim for roughly:
@@ -24,6 +25,7 @@ A good problem set uses a **mix of all types**. Aim for roughly:
 - 10–20% dynamic numeric
 - 10–20% matching
 - a few ordering questions where the material has a real sequence
+- 1–2 multi-blank cloze items per set, for synthesis of contrasting ideas
 - 1–3 NPC scenes per set, each directly followed by its paired question
 
 Dynamic numeric questions use a safe built-in expression engine. JSON content does **not** execute arbitrary JavaScript.
@@ -60,11 +62,37 @@ Use when there is **exactly one** unambiguous correct answer.
 
 2. **Avoid "all of the above" and "none of the above."** Answers are shuffled, so positional references break.
 
-3. **Make distractors plausible.** Each wrong answer should represent a common misconception or a closely related concept—not an absurd option.
+3. **A distractor must be wrong about the RIGHT topic.** This is the single most common way a long question becomes trivially easy, and length parity does not protect you from it. The test to apply: *could someone who has never studied this topic eliminate two options on sight, just by noticing they are about something else?* If so, the question measures nothing.
 
-4. **Keep the stem self-contained.** A reader should understand what is being asked without reading the answer options first.
+   ❌ **Eliminable — every distractor is about a different subject:**
+   ```
+   Q: Why is concatenating user input into a SQL query dangerous?
+   ✔ The input can alter the query structure and execute unintended SQL commands
+   ✘ It causes the operating system to delete the underlying database file on disk
+   ✘ It automatically converts all database integer values into floating-point numbers
+   ✘ It prevents web browsers from rendering static CSS stylesheets on web pages
+   ```
+   Only one option is even about queries, so the answer is free.
 
-5. **Use precise language.** Avoid vague qualifiers ("sometimes," "usually") unless the ambiguity is the point of the question.
+   ✔ **Discriminating — every distractor is a real confusion:**
+   ```
+   Q: In the von Neumann architecture, what is the job of the ALU?
+   ✔ To perform arithmetic and logic, such as adding and comparing
+   ✘ To fetch the next instruction from main memory each cycle    ← the control unit
+   ✘ To hold the address of the instruction being executed now    ← the program counter
+   ✘ To store data permanently after the computer powers off      ← storage
+   ```
+   Each wrong option is a component students genuinely mix up with the ALU.
+
+   Note that **short options cannot drift off-topic** — if the answer is `private`, the distractors are forced to be `public` and `protected`. That makes shortening the options the cheapest repair when you cannot think of good long distractors.
+
+4. **Don't let the correct answer be the only option that echoes the stem.** If the stem says "algorithm" and only the right answer says "algorithm", students match vocabulary instead of reasoning.
+
+5. **Make distractors plausible.** Each wrong answer should represent a common misconception or a closely related concept—not an absurd option.
+
+6. **Keep the stem self-contained.** A reader should understand what is being asked without reading the answer options first.
+
+7. **Use precise language.** Avoid vague qualifiers ("sometimes," "usually") unless the ambiguity is the point of the question.
 
 ### Good Stem Patterns for Single-Answer
 
@@ -450,6 +478,8 @@ Use when the student should **write** (not just recognize) a single line of code
 
 ### Writing Good Code-Line Questions
 
+> **Typed-length limit:** `code_line` answers may be up to **20 characters after tokenization** — whitespace and punctuation are tokenized away, so `x = 5` counts as `x=5` (3). Every other typed type stays at **12**. The larger allowance exists because a complete short statement is the point of the exercise: `SELECT name FROM candies` cannot reach its `FROM` clause inside 12. `data.test.js` enforces both limits.
+
 1. **Pin every free variable in the stem.** "Declare a list of Strings" → infinite valid names. "Declare a list of Strings named `names`" → bounded answer set.
 2. **Enumerate every reasonable surface form** in `correct[]` (diamond vs explicit type, `var` vs declared type, alternate method orders for bash flags). Aim for 2–6 entries.
 3. **Keep it to one line.** Multi-line answers belong in `code_trace` or a different format.
@@ -549,7 +579,49 @@ Use when the material has a **genuine sequence**: stages of a process, steps of 
 
 ---
 
-## Type 8: NPC Teaching Scene (`npc_demo`)
+## Type 8: Multi-Blank Cloze
+
+A passage with **2–4 blanks**, all graded together in one submission. Use it for **synthesis** — when the point is holding several related ideas in contrast, not recalling one of them.
+
+Because there are no options, a cloze cannot be solved by eliminating implausible distractors. That makes it the strongest antidote to the "long multiple-choice answers are trivially easy" problem, and typed production resists being memorised across repeat encounters far better than recognition does.
+
+### Schema
+
+```json
+{
+  "type": "cloze",
+  "question": "The {{1}} layer routes packets between addresses, while the {{2}} layer makes delivery reliable end to end.",
+  "blanks": [
+    { "accept": ["Internet", "IP", "network"], "hint": "layer" },
+    { "accept": ["transport"] }
+  ],
+  "feedback": "IP gets packets to the right machine; TCP makes that delivery reliable."
+}
+```
+
+### Rules
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `type` | yes | `"cloze"` | Must be exactly this string |
+| `question` | yes | string | Uses `{{1}}`, `{{2}}`… placeholders, **1-based**. Every blank needs a placeholder and vice versa |
+| `blanks` | yes | object[] | 2–4 entries, in placeholder order |
+| `blanks[].accept` | yes | string[] | All acceptable spellings. **First entry is shown as "the" answer in feedback**, so put the canonical form first |
+| `blanks[].hint` | no | string | Placeholder text in the input (e.g. `"layer"`, `"protocol"`) — use it to disambiguate, not to give the answer away |
+| `blanks[].case_sensitive` | no | boolean | Default `false`. Set `true` only when case is the point |
+
+### Writing Good Cloze Questions
+
+1. **Every blank must have exactly one defensible answer.** This is the failure mode to guard against. If two words fit the sentence, either add surrounding context that rules one out, or list both in `accept`.
+2. **Each blank must be typable in ≤ 12 characters** (enforced by `data.test.js`, per blank).
+3. **Blank the concepts, not the connective tissue.** Never blank "the", "a", or a word recoverable from grammar alone.
+4. **Put contrasting ideas in one passage.** The type earns its keep when blanks 1 and 2 are things students routinely confuse.
+5. **Use `hint` when the answer's *category* isn't obvious** from the sentence — it narrows without revealing.
+6. Grading is per blank and proportional: each right blank rolls an attack die, each wrong one rolls a monster die, and the question re-queues unless every blank is right. A single-character typo on a long, case-insensitive answer is still forgiven.
+
+---
+
+## Type 9: NPC Teaching Scene (`npc_demo`)
 
 **Not a question** — a worked example an NPC mentor walks through, step by step, immediately **before a paired question that uses the same technique with different surface features**. Scenes deal no damage, award no XP, never requeue, never appear in reviews or rank trials, and don't count toward the set's `question_count`.
 

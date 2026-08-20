@@ -28,11 +28,11 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Features
 
-- **Seven question formats** plus NPC teaching scenes (described below)
+- **Eight question formats** plus NPC teaching scenes (described below)
 - **Main menu** with topic groupings, per-set progress badges, and a global stats bar
 - **Lesson intros** — sets can declare an `intro` (story + learning objectives) in `catalog.json`, shown before the run starts
 - **Sequential first pass** — full runs present questions in authored order (the set is written as a progression, and NPC scenes precede their paired questions); missed questions still requeue, and reviews/trials shuffle their samples
-- **Mastery tiers** — the first full clear earns **Apprentice** rank (80% of the set's gradebook credit). A **Journeyman trial** unlocks 3 days later (90%), and a **Master trial** 7 days after completing Journeyman (100%). Trials are ~half the set, weighted toward historically missed questions; finishing the run (retrieval boss included) earns the rank. Credit only ever rises. Sets cleared before tiers existed are grandfathered at Master
+- **Mastery tiers** — the first full clear earns **Apprentice** rank (80% of the set's gradebook credit). A **Journeyman trial** unlocks 3 days later (90%), and a **Master trial** 7 days after completing Journeyman (100%). Trials are half the set (capped at 18 questions), weighted toward historically missed questions; finishing the run (retrieval boss included) earns the rank. Credit only ever rises. Sets cleared before tiers existed are grandfathered at Master
 - **Auto-save** — every encounter result is saved to `localStorage`; the back button saves and returns to the menu
 - **Completion tracking** — `lotrd_done_${setId}` records cleared sets permanently, including runs that end because there are no questions left
 - **Global stats** — `lotrd_global` accumulates lifetime totals across all sets
@@ -187,6 +187,25 @@ The original type. Select all correct answers; partial credit is not given for i
 - Optional `language` renders items in monospace — use it for Parsons-style "arrange the code lines" questions.
 - **Scoring is positional** — each item in its correct slot rolls one attack die; each misplaced item rolls one monster die. Anything less than perfect re-queues.
 
+### Multi-Blank Cloze
+
+```json
+{
+  "type": "cloze",
+  "question": "The {{1}} layer routes packets, while the {{2}} layer makes delivery reliable.",
+  "blanks": [
+    { "accept": ["Internet", "IP"], "hint": "layer" },
+    { "accept": ["transport"] }
+  ],
+  "feedback": "Optional explanation."
+}
+```
+
+- The prompt renders as flowing text with an inline input wherever a `{{n}}` placeholder sits (1-based, and every blank needs one).
+- 2–4 blanks, each typable in ≤ 12 characters; each carries its own `accept` list, optional `hint` placeholder text, and optional `case_sensitive`.
+- **Graded per blank in one submission** — no three-attempt loop. Each correct blank rolls an attack die, each wrong one rolls a monster die, and the question re-queues unless all are right. A one-character typo on a long case-insensitive answer is still forgiven.
+- `Enter` advances to the next blank and submits from the last one.
+
 ### NPC Teaching Scene (`npc_demo`)
 
 Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a worked example step by step, with optional low-stakes `check` prompts ("what comes next?") that get a gentle correction when wrong. Scenes deal no damage, award no XP, never requeue, are skippable, don't count toward `question_count`, and are excluded from reviews and rank trials. Author each scene **immediately before a paired question** that uses the same technique with different surface features. See the [WRITING_GUIDE](question_sets/WRITING_GUIDE.md) for the schema.
@@ -265,18 +284,18 @@ matches the number of questions actually in each file.
 
 | Topic | Set | Questions |
 |-------|-----|-----------|
-| Computing Concepts | What Is Computing? | 37 |
-| Computing Concepts | Machine Architecture | 36 |
-| Computing Concepts | Python Basics | 41 |
-| Computing Concepts | Control Flow & Functions | 41 |
-| Computing Concepts | Collections & ADTs | 42 |
-| Computing Concepts | Modules & Objects | 41 |
-| Computing Concepts | Searching, Sorting & Big-O | 42 |
-| Computing Concepts | Software Engineering | 42 |
-| Computing Concepts | Databases & the Relational Model | 42 |
-| Computing Concepts | OS, Networks, Cloud & the Web | 42 |
-| Computing Concepts | Cybersecurity — Defending Systems | 41 |
-| Computing Concepts | AI, Machine Learning & Ethics | 41 |
+| Computing Concepts | What Is Computing? | 50 |
+| Computing Concepts | Machine Architecture | 50 |
+| Computing Concepts | Python Basics | 50 |
+| Computing Concepts | Control Flow & Functions | 50 |
+| Computing Concepts | Collections & ADTs | 50 |
+| Computing Concepts | Modules & Objects | 50 |
+| Computing Concepts | Searching, Sorting & Big-O | 50 |
+| Computing Concepts | Software Engineering | 50 |
+| Computing Concepts | Databases & the Relational Model | 50 |
+| Computing Concepts | OS, Networks, Cloud & the Web | 50 |
+| Computing Concepts | Cybersecurity — Defending Systems | 50 |
+| Computing Concepts | AI, Machine Learning & Ethics | 50 |
 | Database | Database Foundations | 33 |
 | Database | Introduction to SQL: SELECT | 30 |
 | Database | Joins and Set Operations | 30 |

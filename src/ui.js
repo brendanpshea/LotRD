@@ -1,5 +1,6 @@
 import { shuffle, TIER_MASTER, TIER_NAMES, TIER_BADGES } from "./util.js";
 import { highlightJava } from "./highlight.js";
+import { parseClozeSegments } from "./model.js";
 
 const LEVEL_TITLES = [
   { minLevel: 1,  title: "Apprentice" },
@@ -1110,6 +1111,92 @@ export class GameUI {
     renderStep();
   }
 
+  /**
+   * Multi-blank cloze: the prompt is rendered as flowing text with an inline
+   * input wherever a {{n}} placeholder sits. All blanks are graded together in
+   * one submission — no per-blank attempt loop.
+   */
+  showEncounterCloze() {
+    this._clearKeyboard();
+    const q = this.model.current_question;
+    renderTemplate(this.root, "tpl-encounter-cloze");
+    this._populateEncounterHeader(this.root);
+
+    const blanks = q.blanks || [];
+    const body = $(this.root, "[data-ref=clozeBody]");
+    const inputs = new Map();
+
+    parseClozeSegments(q.question).forEach(seg => {
+      if (seg.type === "text") {
+        body.appendChild(document.createTextNode(seg.value));
+        return;
+      }
+      const spec = blanks[seg.index];
+      if (!spec) return;
+      // A repeated {{n}} reuses the same input rather than making a second one.
+      if (inputs.has(seg.index)) {
+        body.appendChild(document.createTextNode("…"));
+        return;
+      }
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "cloze-input";
+      input.id = `cloze-blank-${seg.index}`;
+      input.autocomplete = "off";
+      input.autocapitalize = "off";
+      input.spellcheck = false;
+      // Wide enough for the longest accepted answer AND the placeholder hint,
+      // or the hint renders truncated and tells the student nothing.
+      const width = Math.max(
+        ...(spec.accept || [""]).map(a => a.length),
+        (spec.hint || "").length,
+        4);
+      input.size = width + 2;
+      input.setAttribute("aria-label",
+        `Blank ${seg.index + 1} of ${blanks.length}${spec.hint ? `: ${spec.hint}` : ""}`);
+      if (spec.hint) input.placeholder = spec.hint;
+      body.appendChild(input);
+      inputs.set(seg.index, input);
+    });
+
+    const hintEl = $(this.root, "[data-ref=clozeHint]");
+    if (hintEl) {
+      const n = blanks.length;
+      hintEl.textContent =
+        `Fill in all ${n} blank${n === 1 ? "" : "s"}. Each is graded separately, ` +
+        `so a partly-right answer still lands a partial hit.`;
+    }
+
+    const submitBtn = $(this.root, "[data-action=submit]");
+    submitBtn.addEventListener("click", () => {
+      const answers = blanks.map((_, i) => inputs.get(i)?.value ?? "");
+      if (answers.every(a => !a.trim())) {
+        this.showFeedbackInline("Fill in at least one blank before submitting.");
+        return;
+      }
+      this.controller.submitCloze(answers);
+    });
+
+    this._kbAbort = new AbortController();
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      const ae = document.activeElement;
+      if (!ae || !ae.classList?.contains("cloze-input")) return;
+      e.preventDefault();
+      // Enter walks to the next blank, and submits from the last one.
+      const ordered = [...inputs.keys()].sort((a, b) => a - b).map(k => inputs.get(k));
+      const pos = ordered.indexOf(ae);
+      if (pos > -1 && pos < ordered.length - 1) ordered[pos + 1].focus();
+      else submitBtn.click();
+    }, { signal: this._kbAbort.signal });
+
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
+    this._renderProgress(this.root);
+    const first = inputs.get([...inputs.keys()].sort((a, b) => a - b)[0]);
+    if (first) first.focus();
+  }
+
   showEncounterOrdering() {
     this._clearKeyboard();
     const q = this.model.current_question;
@@ -1335,8 +1422,11 @@ export class GameUI {
       container.appendChild(ul);
     };
 
-    const questionText = battleData.questionText || this.model.current_question?.question || null;
+    let questionText = battleData.questionText || this.model.current_question?.question || null;
     if (questionText) {
+      // Cloze prompts carry {{1}}-style placeholders; show them as blanks here.
+      // (Dynamic-numeric templates are already substituted before this point.)
+      questionText = questionText.replace(/\{\{\s*\d+\s*\}\}/g, "___");
       const qLine = document.createElement("div");
       qLine.className = "section";
       qLine.innerHTML =
@@ -1367,6 +1457,12 @@ export class GameUI {
         addVerdictLine(fbWrap, "missed", "✔ Correct answer:",
           battleData.missedCorrect[0] ?? "");
       }
+    } else if (battleData.perItemScoring) {
+      // Matching, ordering and cloze grade N independent items, so every item
+      // lands in one of the first two lists. A third list reading "None." is
+      // structurally always empty — pure noise.
+      addList(fbWrap, "correct", "✔ Correct:", battleData.correctSelections);
+      addList(fbWrap, "incorrect", "✖ Wrong:", battleData.incorrectSelections);
     } else {
       addList(fbWrap, "correct", "✔ Correctly selected:", battleData.correctSelections);
       addList(fbWrap, "incorrect", "✖ Incorrectly selected:", battleData.incorrectSelections);

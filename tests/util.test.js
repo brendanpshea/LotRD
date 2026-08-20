@@ -7,7 +7,7 @@ import {
   reviewDue,
   advanceReviewStage,
   TIER_APPRENTICE, TIER_JOURNEYMAN, TIER_MASTER, TIER_CREDIT,
-  JOURNEYMAN_WAIT_DAYS, MASTER_WAIT_DAYS,
+  JOURNEYMAN_WAIT_DAYS, MASTER_WAIT_DAYS, TRIAL_MAX_QUESTIONS,
   nextTierInfo, sampleTrialQuestions,
 } from '../src/util.js';
 
@@ -117,6 +117,30 @@ describe('sampleTrialQuestions', () => {
       const sample = sampleTrialQuestions(pool, { q4: 2, q6: 1, q1: 3 });
       const texts = sample.map(x => x.question).sort();
       assert.deepEqual(texts, ['q1', 'q4', 'q6']);
+    }
+  });
+
+  it('caps a large set at TRIAL_MAX_QUESTIONS instead of taking half', () => {
+    const big = Array.from({ length: 50 }, (_, i) => q(`b${i}`));
+    const sample = sampleTrialQuestions(big, {});
+    assert.equal(sample.length, TRIAL_MAX_QUESTIONS,
+      'a 50-question set must not produce a 25-question trial');
+    assert.equal(new Set(sample.map(x => x.question)).size, TRIAL_MAX_QUESTIONS,
+      'the capped sample must not repeat questions');
+  });
+
+  it('still takes half when half is under the cap', () => {
+    const small = Array.from({ length: 20 }, (_, i) => q(`s${i}`));
+    assert.equal(sampleTrialQuestions(small, {}).length, 10);
+  });
+
+  it('the cap keeps missed questions and drops never-missed ones first', () => {
+    const big = Array.from({ length: 50 }, (_, i) => q(`b${i}`));
+    const misses = Object.fromEntries(
+      Array.from({ length: 12 }, (_, i) => [`b${i}`, 12 - i]));
+    const texts = new Set(sampleTrialQuestions(big, misses).map(x => x.question));
+    for (let i = 0; i < 12; i++) {
+      assert.ok(texts.has(`b${i}`), `capped trial dropped missed question b${i}`);
     }
   });
 

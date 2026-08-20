@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { rollDice, Player, Monster, GameModel,
          levenshtein, levenshteinSimilarity, wordleFeedback,
          tokenize, tokenSimilarity, tokenWordleFeedback,
-         CL_MAX_ATTEMPTS, pickClozeBlank,
+         CL_MAX_ATTEMPTS, pickClozeBlank, parseClozeSegments,
          evaluateDynamicExpression } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
@@ -1738,5 +1738,121 @@ describe('sequential question order', () => {
       new GameModel(authored, SAMPLE_MONSTERS)
     ).every(gm => gm.questions_to_ask.every((q, i) => q.question === `q${i}`));
     assert.equal(stayedSorted, false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Multi-blank cloze
+// ────────────────────────────────────────────────────────────────────────────────
+describe('parseClozeSegments', () => {
+  it('splits text around {{n}} placeholders and 0-indexes them', () => {
+    assert.deepEqual(parseClozeSegments('A {{1}} b {{2}}.'), [
+      { type: 'text', value: 'A ' },
+      { type: 'blank', index: 0 },
+      { type: 'text', value: ' b ' },
+      { type: 'blank', index: 1 },
+      { type: 'text', value: '.' },
+    ]);
+  });
+
+  it('handles a leading placeholder and tolerates inner spaces', () => {
+    assert.deepEqual(parseClozeSegments('{{ 2 }} tail'), [
+      { type: 'blank', index: 1 },
+      { type: 'text', value: ' tail' },
+    ]);
+  });
+
+  it('returns plain text unchanged and copes with empty input', () => {
+    assert.deepEqual(parseClozeSegments('no blanks'), [{ type: 'text', value: 'no blanks' }]);
+    assert.deepEqual(parseClozeSegments(''), []);
+    assert.deepEqual(parseClozeSegments(null), []);
+  });
+});
+
+describe('GameModel.evaluateCloze', () => {
+  function clozeQuestion(overrides = {}) {
+    return {
+      type: 'cloze',
+      question: 'The {{1}} layer routes packets; the {{2}} layer makes delivery reliable.',
+      blanks: [
+        { accept: ['Internet', 'IP'] },
+        { accept: ['transport'] },
+      ],
+      feedback: 'IP routes; TCP makes it reliable.',
+      ...overrides,
+    };
+  }
+
+  function started(q = clozeQuestion()) {
+    const gm = new GameModel([q], SAMPLE_MONSTERS, null, null, { sequential: true });
+    gm.nextEncounter();
+    return gm;
+  }
+
+  it('all blanks right is perfect and does not requeue', () => {
+    const gm = started();
+    const res = gm.evaluateCloze(['Internet', 'transport']);
+    assert.equal(res.question_repeated, false);
+    assert.equal(res.correctSelections.length, 2);
+    assert.equal(res.incorrectSelections.length, 0);
+    assert.equal(gm.player.total_correct, 2);
+    assert.equal(gm.answer_history[0].was_perfect, true);
+  });
+
+  it('accepts any listed alternative for a blank', () => {
+    const gm = started();
+    const res = gm.evaluateCloze(['IP', 'transport']);
+    assert.equal(res.question_repeated, false);
+    assert.equal(res.incorrectSelections.length, 0);
+  });
+
+  it('is case-insensitive by default', () => {
+    const gm = started();
+    assert.equal(gm.evaluateCloze(['internet', 'TRANSPORT']).question_repeated, false);
+  });
+
+  it('honours per-blank case sensitivity', () => {
+    const gm = started(clozeQuestion({
+      blanks: [{ accept: ['Internet'] }, { accept: ['TCP'], case_sensitive: true }],
+    }));
+    const res = gm.evaluateCloze(['internet', 'tcp']);
+    assert.equal(res.correctSelections.length, 1, 'the case-sensitive blank should reject "tcp"');
+    assert.equal(res.incorrectSelections.length, 1);
+  });
+
+  it('forgives a one-character typo on a long case-insensitive blank', () => {
+    const gm = started();
+    assert.equal(gm.evaluateCloze(['Internt', 'transport']).question_repeated, false);
+  });
+
+  it('does not forgive a typo on a short answer', () => {
+    const gm = started(clozeQuestion({ blanks: [{ accept: ['IP'] }, { accept: ['transport'] }] }));
+    const res = gm.evaluateCloze(['IX', 'transport']);
+    assert.equal(res.incorrectSelections.length, 1);
+  });
+
+  it('scores partially and requeues when one blank is wrong', () => {
+    const gm = started();
+    const res = gm.evaluateCloze(['Internet', 'wrong']);
+    assert.equal(res.question_repeated, true);
+    assert.equal(res.correctSelections.length, 1);
+    assert.equal(res.incorrectSelections.length, 1);
+    assert.equal(gm.player.total_correct, 1);
+    assert.equal(gm.player.total_incorrect, 1);
+    assert.equal(gm.answer_history[0].was_perfect, false);
+  });
+
+  it('treats an empty blank as wrong and names the expected answer', () => {
+    const gm = started();
+    const res = gm.evaluateCloze(['', 'transport']);
+    assert.equal(res.correctSelections.length, 1);
+    assert.match(res.incorrectSelections[0], /Internet/);
+    assert.match(res.incorrectSelections[0], /\(blank\)/);
+  });
+
+  it('a missed cloze feeds the retrieval boss queue', () => {
+    const gm = started();
+    gm.evaluateCloze(['nope', 'nope']);
+    assert.equal(gm._buildBossQueue().length, 1);
   });
 });

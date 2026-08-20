@@ -153,6 +153,28 @@ export function tokenWordleFeedback(guessTokens, answerTokens) {
 export const FB_MAX_ATTEMPTS = 3;
 export const CL_MAX_ATTEMPTS = 3;
 
+/**
+ * Split a multi-blank cloze prompt into renderable pieces. Blanks are written
+ * as {{1}}, {{2}}… (1-based in the JSON, so authors can read them alongside
+ * the blanks array). Returns an ordered array of
+ *   { type: 'text', value }  |  { type: 'blank', index }
+ * with `index` 0-based for the UI. Placeholders may appear in any order and a
+ * number may repeat (the same word blanked twice shares one input).
+ */
+export function parseClozeSegments(text) {
+    const out = [];
+    const re = /\{\{\s*(\d+)\s*\}\}/g;
+    let last = 0;
+    let m;
+    while ((m = re.exec(String(text ?? ''))) !== null) {
+        if (m.index > last) out.push({ type: 'text', value: text.slice(last, m.index) });
+        out.push({ type: 'blank', index: Number(m[1]) - 1 });
+        last = m.index + m[0].length;
+    }
+    if (last < (text ?? '').length) out.push({ type: 'text', value: text.slice(last) });
+    return out;
+}
+
 // Auto-cloze: when a fill-blank answer is long, pre-fill all but one word so
 // the student doesn't have to type 30 chars. Triggers when canonical answer
 // is > FB_CLOZE_MIN_CHARS chars AND has ≥ 2 words. The blanked word is
@@ -1370,8 +1392,11 @@ export class GameModel {
         this._fbAttempts       = 0;
         this._fbBestGuess      = '';
         this._fbBestSimilarity = 0;
+        // Auto-cloze is a fill_blank affordance only. code_trace shares this
+        // submit path, but blanking a word of an expected program output would
+        // grade the student against one word of it — so never cloze anything else.
         const canonical = (q && q.correct && q.correct[0]) || '';
-        this._fbCloze = q ? pickClozeBlank(canonical) : null;
+        this._fbCloze = q && q.type === 'fill_blank' ? pickClozeBlank(canonical) : null;
     }
 
     /**
@@ -2015,7 +2040,89 @@ export class GameModel {
             correctSelections,
             incorrectSelections,
             missedCorrect: [],
+            perItemScoring: true,
             feedback:         q.feedback || null,
+        };
+    }
+
+    /**
+     * Evaluate a multi-blank cloze answer.
+     * `q.blanks` is an array of { accept: string[], case_sensitive?: boolean },
+     * one per {{1}}, {{2}}… placeholder in the question text.
+     * typedAnswers: the student's text for each blank, in the same order.
+     *
+     * Graded per blank and scored proportionally, the way matching is: each
+     * filled blank rolls one attack die, each missed one rolls a monster die,
+     * and the question re-queues unless every blank is right. There is no
+     * three-attempt Wordle loop here — that shape only works for a single
+     * answer, and with N blanks it would multiply into a slog.
+     */
+    evaluateCloze(typedAnswers) {
+        if (!this.current_question) return null;
+        const q = this.current_question;
+        const blanks = q.blanks || [];
+        const typed = Array.isArray(typedAnswers) ? typedAnswers : [];
+
+        const correctSelections   = [];
+        const incorrectSelections = [];
+        let correctCount = 0;
+
+        blanks.forEach((blank, i) => {
+            const caseSens = blank.case_sensitive === true;
+            const norm = s => caseSens ? String(s ?? '').trim() : String(s ?? '').trim().toLowerCase();
+            const given = norm(typed[i]);
+            const accept = blank.accept || [];
+
+            // Same forgiveness as fill-blank: an exact match, or a single-character
+            // typo on a reasonably long case-insensitive answer.
+            const hit = given.length > 0 && accept.some(a => {
+                const want = norm(a);
+                if (given === want) return true;
+                return !caseSens && want.length >= 5 && levenshtein(given, want) <= 1;
+            });
+
+            if (hit) {
+                correctCount++;
+                correctSelections.push(`Blank ${i + 1}: ${typed[i]}`);
+            } else {
+                incorrectSelections.push(
+                    `Blank ${i + 1}: wrote "${typed[i] || '(blank)'}" — correct: "${accept[0] ?? ''}"`);
+            }
+        });
+
+        const total = blanks.length;
+        const wrongCount = total - correctCount;
+        const isPerfect = wrongCount === 0 && total > 0;
+
+        this.player.total_correct   += correctCount;
+        this.player.total_incorrect += wrongCount;
+
+        const accuracy = total > 0 ? correctCount / total : 0;
+
+        const turn = this._resolveDamage({
+            playerHits: correctCount,
+            monsterHits: wrongCount,
+            isPerfect,
+            partialFraction: accuracy,
+            xpGained: 10,
+            requeue: !isPerfect,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: blanks.map((b, i) => `Blank ${i + 1}: ${b.accept?.[0] ?? ''}`),
+                selected: typed.map((t, i) => `Blank ${i + 1}: ${t}`),
+                correctSelections,
+                incorrectSelections,
+                missedCorrect: [],
+                isPerfect,
+            }),
+        });
+
+        return {
+            ...turn,
+            correctSelections,
+            incorrectSelections,
+            missedCorrect: [],
+            perItemScoring: true,
+            feedback: q.feedback || null,
         };
     }
 
@@ -2076,6 +2183,7 @@ export class GameModel {
             correctSelections,
             incorrectSelections,
             missedCorrect: [],
+            perItemScoring: true,
             feedback: q.feedback || null,
         };
     }

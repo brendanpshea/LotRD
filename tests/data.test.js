@@ -7,6 +7,15 @@ import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/mode
 
 const ROOT = join(import.meta.dirname, '..');
 const MAX_TYPED_ANSWER_CHARS = 12;
+// code_line asks the student to PRODUCE a line of code, where a complete short
+// statement is the point of the exercise — a SQL SELECT cannot reach its FROM
+// clause inside 12 tokenized characters. The other typed types stay at 12:
+// they ask for a term or an output, where brevity is a fair expectation.
+const MAX_TYPED_CODE_LINE_CHARS = 20;
+
+function maxTypedCharsFor(type) {
+  return type === 'code_line' ? MAX_TYPED_CODE_LINE_CHARS : MAX_TYPED_ANSWER_CHARS;
+}
 
 function loadJSON(relPath) {
   return JSON.parse(readFileSync(join(ROOT, relPath), 'utf-8'));
@@ -185,6 +194,22 @@ function getTypedAnswerRequirement(q, label) {
       requiredChars: shortest?.text.length || 0,
       detail: `normalized output is "${shortest?.text || ''}"`,
     };
+  }
+
+  if (q.type === 'cloze') {
+    // The student types every blank, so the binding constraint is the blank
+    // with the longest shortest-accepted answer.
+    let worst = { requiredChars: 0, detail: '' };
+    for (const [i, b] of (q.blanks || []).entries()) {
+      const shortest = (b.accept || []).reduce((best, a) => {
+        const t = String(a ?? '').trim();
+        return !best || t.length < best.length ? t : best;
+      }, null) ?? '';
+      if (shortest.length > worst.requiredChars) {
+        worst = { requiredChars: shortest.length, detail: `blank ${i + 1} shortest accepted is "${shortest}"` };
+      }
+    }
+    return worst;
   }
 
   if (q.type === 'dynamic_numeric') {
@@ -486,6 +511,33 @@ describe('Question set file validation', () => {
             const dupeItems = q.items.filter((it, idx) => q.items.indexOf(it) !== idx);
             assert.deepEqual(dupeItems, [],
               `${label}: ordering items must be unique (bank buttons are keyed by text)`);
+          } else if (type === 'cloze') {
+            assert.ok(Array.isArray(q.blanks) && q.blanks.length >= 2,
+              `${label}: cloze must have >= 2 blanks (use fill_blank for one)`);
+            assert.ok(q.blanks.length <= 4,
+              `${label}: cloze should have at most 4 blanks`);
+            for (const [bi, b] of q.blanks.entries()) {
+              assert.ok(b && typeof b === 'object' && !Array.isArray(b),
+                `${label}: blank ${bi + 1} must be an object`);
+              assert.ok(Array.isArray(b.accept) && b.accept.length > 0,
+                `${label}: blank ${bi + 1} needs a non-empty accept array`);
+              for (const a of b.accept) {
+                assert.ok(typeof a === 'string' && a.length > 0,
+                  `${label}: blank ${bi + 1} accept entries must be non-empty strings`);
+              }
+            }
+            // Every blank needs a placeholder, and every placeholder a blank —
+            // otherwise a blank is ungradeable or an input renders with no spec.
+            const refs = [...q.question.matchAll(/\{\{\s*(\d+)\s*\}\}/g)].map(m => Number(m[1]));
+            assert.ok(refs.length > 0, `${label}: cloze question needs {{1}}-style placeholders`);
+            for (const r of refs) {
+              assert.ok(r >= 1 && r <= q.blanks.length,
+                `${label}: placeholder {{${r}}} has no matching entry in blanks[]`);
+            }
+            for (let bi = 1; bi <= q.blanks.length; bi++) {
+              assert.ok(refs.includes(bi),
+                `${label}: blanks[${bi - 1}] has no {{${bi}}} placeholder in the question`);
+            }
           } else if (type === 'npc_demo') {
             // `question` doubles as the scene title and its identity key.
             assert.ok(Array.isArray(q.steps) && q.steps.length > 0,
@@ -549,27 +601,28 @@ describe('Question set file validation', () => {
         }
       });
 
-      it(`keeps required typed answers at ${MAX_TYPED_ANSWER_CHARS} chars or fewer`, () => {
+      it(`keeps required typed answers at ${MAX_TYPED_ANSWER_CHARS} chars (${MAX_TYPED_CODE_LINE_CHARS} for code_line) or fewer`, () => {
         const flagged = [];
 
         for (let i = 0; i < questions.length; i++) {
           const q = questions[i];
-          if (!['fill_blank', 'dynamic_numeric', 'code_trace', 'code_line'].includes(q.type)) continue;
+          if (!['fill_blank', 'dynamic_numeric', 'code_trace', 'code_line', 'cloze'].includes(q.type)) continue;
 
           const label = `${setId}[${i}]`;
           const requirement = getTypedAnswerRequirement(q, label);
           if (!requirement) continue;
-          if (requirement.requiredChars <= MAX_TYPED_ANSWER_CHARS) continue;
+          const limit = maxTypedCharsFor(q.type);
+          if (requirement.requiredChars <= limit) continue;
 
           flagged.push(
-            `${label}: ${q.type} requires ${requirement.requiredChars} typed chars. ${requirement.detail}`
+            `${label}: ${q.type} requires ${requirement.requiredChars} typed chars (limit ${limit}). ${requirement.detail}`
           );
         }
 
         assert.deepEqual(
           flagged,
           [],
-          `Typed-answer prompts must stay within ${MAX_TYPED_ANSWER_CHARS} chars:\n${flagged.join('\n')}`
+          `Typed-answer prompts exceed their limit:\n${flagged.join('\n')}`
         );
       });
 

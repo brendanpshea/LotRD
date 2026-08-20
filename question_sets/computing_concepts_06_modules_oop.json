@@ -34,15 +34,14 @@
     "feedback": "An instance is one specific thing built from a class. 'Object' and 'instance' mean the same thing."
   },
   {
-    "question": "What does this program print?\n\nclass Citizen:\n    def __init__(self, name, balance):\n        self.name = name\n        self.balance = balance\n\nelaine = Citizen(\"Elaine\", 120)\npercival = Citizen(\"Percival\", 40)\nelaine.balance = elaine.balance + 50\nprint(percival.balance)",
+    "type": "code_trace",
+    "question": "Two objects each hold their own data. What does this program print?",
+    "code": "class Citizen:\n    def __init__(self, name, balance):\n        self.name = name\n        self.balance = balance\n\nelaine = Citizen(\"Elaine\", 120)\npercival = Citizen(\"Percival\", 40)\nelaine.balance = elaine.balance + 50\nprint(percival.balance)",
+    "language": "python",
     "correct": [
       "40"
     ],
-    "incorrect": [
-      "90",
-      "170",
-      "120"
-    ],
+    "case_sensitive": true,
     "feedback": "Each object gets its own copy of the data set up in __init__, so changing elaine's balance leaves percival's alone. The class is shared; the instance data is not."
   },
   {
@@ -103,8 +102,8 @@
     ],
     "incorrect": [
       "It makes Python refuse any access from outside the class",
-      "It encrypts the value to stop it being printed by mistake",
-      "It tells Python to delete the value when the method ends"
+      "It hides the attribute from dir() and from the object's __dict__",
+      "It turns the attribute read-only, so assignment to it fails"
     ],
     "feedback": "Python has no hard privacy. The underscore is a message to humans: reach this through a method such as check_pin() rather than touching it directly. That discipline is encapsulation."
   },
@@ -114,9 +113,9 @@
       "A piece of data stored on an object, such as self.name"
     ],
     "incorrect": [
-      "A function that is defined outside of any class",
-      "A module that is imported from the standard library",
-      "The keyword that is used to create a new class"
+      "A function defined inside a class, such as speak(self)",
+      "The first parameter of every method, written as self",
+      "A value passed into __init__ but not stored on the object"
     ],
     "feedback": "An attribute is data that belongs to an object. You set it with self.name = ... and read it back with object.name."
   },
@@ -268,9 +267,9 @@
       "One list is shared by every object, so adding shows up in all"
     ],
     "incorrect": [
-      "Python forbids a list from appearing inside a class body",
-      "The list is deleted as soon as the first object is created",
-      "Each object gets a list, but the lists are locked as read-only"
+      "Each object gets its own copy, but the copies cannot be appended to",
+      "The list belongs to the class, so no object can read it through self",
+      "The list is rebuilt empty each time a new object is created"
     ],
     "feedback": "Anything that should differ between objects belongs in __init__ as self.members = []. This is the OOP cousin of the aliasing trap: one object, many names pointing at it."
   },
@@ -280,9 +279,9 @@
       "Hiding complicated details behind a simple surface"
     ],
     "incorrect": [
-      "Storing data in the smallest possible number of bits",
-      "Writing a program without using any classes at all",
-      "Translating Python source code directly into binary"
+      "Bundling data together with the methods that change it",
+      "Giving one method name a different body in each class",
+      "Building a new class on top of an existing parent class"
     ],
     "feedback": "Abstraction lets you use something through a simple interface without knowing its inner workings, like driving a car without understanding the engine."
   },
@@ -377,9 +376,9 @@
       "When one object merely contains another, not a kind of it"
     ],
     "incorrect": [
-      "When the two classes share the exact same name",
-      "When you want to avoid writing any methods",
-      "When the child is a more specific kind of the parent"
+      "When the child is a more specific kind of the parent",
+      "When the two classes already share several attributes and methods",
+      "When one class should automatically get all of another's methods"
     ],
     "feedback": "Use inheritance for 'is-a' (a Dog is an Animal) and composition for 'has-a' (a Car has an Engine). If one thing only contains another, compose."
   },
@@ -419,15 +418,14 @@
     "feedback": "Good design aims for high cohesion and low coupling, uses composition for 'has-a' links, and overrides methods to specialize behavior."
   },
   {
-    "question": "What does this program print?\n\nclass Squad:\n    def __init__(self, name):\n        self.name = name\n        self.members = []\n    def recruit(self, guard):\n        self.members.append(guard)\n\nwatch = Squad(\"Night Watch\")\nwatch.recruit(\"Gareth\")\nwatch.recruit(\"Lancelot\")\nprint(len(watch.members))",
+    "type": "code_trace",
+    "question": "What does this program print after two recruits?",
+    "code": "class Squad:\n    def __init__(self, name):\n        self.name = name\n        self.members = []\n    def recruit(self, guard):\n        self.members.append(guard)\n\nwatch = Squad(\"Night Watch\")\nwatch.recruit(\"Gareth\")\nwatch.recruit(\"Lancelot\")\nprint(len(watch.members))",
+    "language": "python",
     "correct": [
       "2"
     ],
-    "incorrect": [
-      "0",
-      "1",
-      "\"Night Watch\""
-    ],
+    "case_sensitive": true,
     "feedback": "Because self.members is created inside __init__, this squad has its own list. Two recruits were appended, so its length is 2."
   },
   {
@@ -463,9 +461,9 @@
       "It updates a local variable, leaving the attribute alone"
     ],
     "incorrect": [
-      "The program refuses to define the class at all",
       "Every object's count is increased at the same time",
-      "The attribute count is deleted from the object"
+      "It updates the attribute, but the change is undone on return",
+      "It reads the attribute correctly but stores the result on the class"
     ],
     "feedback": "Forgetting self. creates a throwaway local variable. The update vanishes when the method ends, and the object's real attribute is untouched."
   },
@@ -538,5 +536,144 @@
       "tolerance_abs": 0
     },
     "feedback_template": "Deposit adds and withdraw subtracts from the object's own balance: {{start}} + {{dep}} - {{wd}} = {{expected}}."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A class Robot has the line  count = 0  in its class body, and its __init__ runs  Robot.count = Robot.count + 1. After {{n}} Robot objects are created, what is Robot.count?",
+    "variables": {
+      "n": {
+        "min": 2,
+        "max": 12
+      }
+    },
+    "answer": {
+      "expr": "n",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "count lives on the class, not on any one object, so every construction bumps the same shared number up to {{expected}}."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A Deck object holds a list of {{n}} Card objects, and each Card stores  self.value = {{v}}. The deck's total() method adds up the value of every card it holds. What does total() return?",
+    "variables": {
+      "n": {
+        "min": 3,
+        "max": 10
+      },
+      "v": {
+        "min": 2,
+        "max": 9
+      }
+    },
+    "answer": {
+      "expr": "n * v",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "This is composition: the deck has cards rather than being one. Summing {{n}} cards worth {{v}} each gives {{expected}}."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "After  import math, what number does  math.floor({{a}} / {{b}})  produce?",
+    "variables": {
+      "a": {
+        "min": 10,
+        "max": 40
+      },
+      "b": {
+        "min": 3,
+        "max": 7
+      }
+    },
+    "answer": {
+      "expr": "floorDiv(a, b)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{a}} / {{b}} is a float, and floor drops down to the nearest whole number below it, giving {{expected}} rather than a rounded result."
+  },
+  {
+    "type": "cloze",
+    "question": "In  class Knight(Guard):, Guard is the {{1}} class and Knight is the {{2}} class; inside Knight's own __init__, the call {{3}}().__init__(name) runs Guard's setup so it need not be retyped.",
+    "blanks": [
+      {
+        "accept": [
+          "parent",
+          "base",
+          "superclass"
+        ],
+        "hint": "role"
+      },
+      {
+        "accept": [
+          "child",
+          "subclass",
+          "derived"
+        ],
+        "hint": "role"
+      },
+      {
+        "accept": [
+          "super"
+        ],
+        "hint": "built-in"
+      }
+    ],
+    "feedback": "The name in the parentheses of the class header is the one being inherited from, and super() is the standard way for the new class to reach it without naming it twice."
+  },
+  {
+    "question": "A program runs  from math import sqrt  at the top, and later a line calls  math.sqrt(9). What happens?",
+    "correct": [
+      "A NameError, because only sqrt was brought in, not the name math"
+    ],
+    "incorrect": [
+      "It works, since from-import also makes the module's own name available",
+      "A SyntaxError, because from-import may not be used on a function name",
+      "It works, because Python looks up any missing name in the library"
+    ],
+    "feedback": "from-import binds just the names you list. Either import the module and use math.sqrt, or import sqrt and call it bare — mixing the two forms is what fails."
+  },
+  {
+    "question": "A class defines  def speak(self):, yet code outside calls  dog.speak()  and passes no arguments at all. Why is that not an error?",
+    "correct": [
+      "Calling through the object hands that object in as self automatically"
+    ],
+    "incorrect": [
+      "self holds a default value that the class body quietly supplies",
+      "self is optional, so Python drops it when no argument is given",
+      "Python skips the first parameter of any function defined in a class"
+    ],
+    "feedback": "dog.speak() is shorthand for handing dog to the method as its first argument, which is why self is written in the definition but not at the call."
+  },
+  {
+    "question": "A BankAccount keeps its total in  self._balance  and changes it only inside deposit() and withdraw(), which both reject negative amounts. What does that design actually buy?",
+    "correct": [
+      "Every change to the balance runs through code that can enforce the rules"
+    ],
+    "incorrect": [
+      "The balance becomes genuinely unreachable from outside the class in Python",
+      "The class no longer needs an __init__, since the methods set the balance",
+      "Each account ends up sharing one balance, keeping the bank's totals in step"
+    ],
+    "feedback": "This is encapsulation doing its job: the value and the rules that protect it live together, so no caller can put the object into a state it should never be in."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the Python header line that begins the definition of a class named B whose parent class is A. (Just the header, no body.)",
+    "language": "python",
+    "correct": [
+      "class B(A):"
+    ],
+    "case_sensitive": true,
+    "feedback": "The parent goes in parentheses after the new class's name, which is how Python knows to look in A for anything B does not define itself."
+  },
+  {
+    "type": "code_trace",
+    "question": "A child class calls super() and then adjusts what it inherited. What does this program print?",
+    "code": "class Beast:\n    def __init__(self, legs):\n        self.legs = legs\n\nclass Spider(Beast):\n    def __init__(self):\n        super().__init__(8)\n        self.legs = self.legs + 2\n\nprint(Spider().legs)",
+    "language": "python",
+    "correct": [
+      "10"
+    ],
+    "case_sensitive": true,
+    "feedback": "super().__init__(8) sets self.legs to 8 first; the next line reads that attribute back and stores 2 more onto the same object."
   }
 ]

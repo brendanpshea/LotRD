@@ -302,15 +302,14 @@
     "feedback": "The % operator gives the remainder. Paired with a // b (the whole groups), it answers 'how many fit, and how much is left over?'"
   },
   {
-    "question": "What does this program print?\n\nname = \"Sam\"\nprint(f\"Hi {name}\")",
+    "type": "code_trace",
+    "question": "What does this f-string print?",
+    "code": "name = \"Sam\"\nprint(f\"Hi {name}\")",
+    "language": "python",
     "correct": [
       "Hi Sam"
     ],
-    "incorrect": [
-      "Hi {name}",
-      "Hi name",
-      "f\"Hi Sam\""
-    ],
+    "case_sensitive": true,
     "feedback": "An f-string (the f before the quotes) replaces {name} with the variable's value, so it prints Hi Sam."
   },
   {
@@ -335,15 +334,14 @@
     "feedback": "Inside an f-string, {name} is replaced by the variable's value. The { } characters are called curly braces."
   },
   {
-    "question": "A price is stored as  price = 19.5. What does  print(f\"{price:.2f}\")  display?",
+    "type": "code_trace",
+    "question": "What does this formatted price display?",
+    "code": "price = 19.5\nprint(f\"{price:.2f}\")",
+    "language": "python",
     "correct": [
       "19.50"
     ],
-    "incorrect": [
-      "19.5",
-      "20",
-      "19.500"
-    ],
+    "case_sensitive": true,
     "feedback": "The format specifier :.2f prints the value with exactly two decimal places, which is what you want for money. It changes only how the value prints, never the value itself."
   },
   {
@@ -470,9 +468,9 @@
       "age holds a string, and Python will not add a number to it"
     ],
     "incorrect": [
-      "input() reads text but is unable to read digits at all",
-      "The variable name age is reserved for use by Python",
-      "Addition is not a valid operation anywhere in Python"
+      "The prompt text shown to the user gets included in the value",
+      "Python needs the input converted with str() before arithmetic",
+      "Adding to a variable requires it to be declared with a type first"
     ],
     "feedback": "input() returns a string, so age holds \"25\", not 25. You must convert it with int(age) before doing arithmetic."
   },
@@ -525,9 +523,9 @@
       "It lets you plan the logic before worrying about syntax"
     ],
     "incorrect": [
-      "It runs faster on the computer than finished Python does",
-      "Python requires it before a program is allowed to run",
-      "It converts itself into a working Python program"
+      "It follows strict rules so two people write it identically",
+      "It measures how long the finished program will take to run",
+      "It replaces the need to test the program once it is written"
     ],
     "feedback": "Pseudocode captures the steps of an algorithm without syntax rules, so you can think through the logic before translating it to code."
   },
@@ -582,27 +580,152 @@
     "outro": "“The last monsters here carry trace puzzles. Show them your margin.”"
   },
   {
-    "question": "Trace this program. What does it print?\n\nx = 5\ny = 2\nx = x + y\nprint(x)",
+    "type": "code_trace",
+    "question": "Trace this program by hand. What does it print?",
+    "code": "x = 5\ny = 2\nx = x + y\nprint(x)",
+    "language": "python",
     "correct": [
       "7"
     ],
-    "incorrect": [
-      "5",
-      "2",
-      "52"
-    ],
+    "case_sensitive": true,
     "feedback": "x starts at 5, y is 2, then x becomes x + y = 7. The final print shows 7."
   },
   {
-    "question": "Trace this program. What does it print?\n\nprice = 10\nprice = price * 2\nprice = price - 3\nprint(price)",
+    "type": "code_trace",
+    "question": "Trace these three assignments. What does the program print?",
+    "code": "price = 10\nprice = price * 2\nprice = price - 3\nprint(price)",
+    "language": "python",
     "correct": [
       "17"
     ],
-    "incorrect": [
-      "20",
-      "14",
-      "7"
-    ],
+    "case_sensitive": true,
     "feedback": "price starts at 10, doubles to 20, then 3 is subtracted, leaving 17."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does  {{a}} + {{b}} ** {{c}}  evaluate to in Python?",
+    "variables": {
+      "a": {
+        "min": 5,
+        "max": 20
+      },
+      "b": {
+        "min": 2,
+        "max": 4
+      },
+      "c": {
+        "min": 2,
+        "max": 3
+      }
+    },
+    "answer": {
+      "expr": "a + pow(b, c)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The ** operator binds more tightly than +, so {{b}} ** {{c}} is worked out first and only then added to {{a}}, giving {{expected}}. Adding first would give a different result."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does  {{a}} // {{b}} + {{a}} % {{b}}  evaluate to in Python?",
+    "variables": {
+      "a": {
+        "min": 20,
+        "max": 60
+      },
+      "b": {
+        "min": 3,
+        "max": 9
+      }
+    },
+    "answer": {
+      "expr": "floorDiv(a, b) + mod(a, b)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The two operators split one division between them: // reports how many whole times {{b}} fits inside {{a}}, and % reports what is left over. Adding those two pieces gives {{expected}}."
+  },
+  {
+    "type": "cloze",
+    "question": "Because  10 / 5  gives 5.0 rather than 5, the / operator always produces a {{1}}, while // produces an {{2}} whenever both of its operands are whole numbers.",
+    "blanks": [
+      {
+        "accept": [
+          "float"
+        ],
+        "hint": "type name"
+      },
+      {
+        "accept": [
+          "int",
+          "integer"
+        ],
+        "hint": "type name"
+      }
+    ],
+    "feedback": "The difference is the type of the result, not just the rounding: / steps up to a decimal type even when the division comes out exact, which is why an unexpected .0 shows up in printed output."
+  },
+  {
+    "question": "A program runs  s = input().strip().lower()  and the user types three characters of text surrounded by spaces:  \"  Yes  \". What is stored in s?",
+    "correct": [
+      "\"yes\""
+    ],
+    "incorrect": [
+      "\"Yes\"",
+      "\"  yes  \"",
+      "\"  Yes  \""
+    ],
+    "feedback": "The methods run left to right, each one working on the string the previous one returned: strip removes the surrounding spaces, then lower converts what is left. Leaving either method off changes the result, which matters when you compare the answer against \"yes\"."
+  },
+  {
+    "question": "A program was meant to display  Total: 42  but the screen shows  Total: {n}  instead. The line that produced it was  print(\"Total: {n}\"). What went wrong?",
+    "correct": [
+      "The f was left off before the opening quote, so the braces stay literal"
+    ],
+    "incorrect": [
+      "The variable n had no value assigned before that line was reached",
+      "Braces must be doubled inside a Python string in order to show a value",
+      "print() cannot display a number until it is converted into a string"
+    ],
+    "feedback": "Only an f-string evaluates what sits inside the braces; without the prefix Python has no reason to look inside an ordinary string, so it prints the characters as written. An undefined variable would have raised a NameError rather than printing quietly."
+  },
+  {
+    "question": "A program runs  n = int(\"3.5\")  and crashes with a ValueError. Why does that line fail?",
+    "correct": [
+      "int() will not parse a string that contains a decimal point"
+    ],
+    "incorrect": [
+      "float(\"3.5\") would fail as well, since text can never become a number",
+      "int() rounds to the nearest whole number, and 3.5 is an exact tie",
+      "Python converts \"3.5\" into 3.5 first and then refuses to shrink it"
+    ],
+    "feedback": "int() accepts a string only when every character belongs to a whole number, so the dot stops it before any rounding could happen. The usual fix is int(float(\"3.5\")), which reads the decimal first and then truncates it to 3."
+  },
+  {
+    "type": "fill_blank",
+    "question": "To turn the number 7 into the text \"7\", you call the ___() function.",
+    "correct": [
+      "str"
+    ],
+    "feedback": "Conversion runs in both directions, and each direction has its own function: this one is what lets you join a number onto text with +, since Python refuses to add a number to a string."
+  },
+  {
+    "type": "code_line",
+    "question": "The variable s holds a string. Write the Python expression that gives that string with every letter in uppercase.",
+    "language": "python",
+    "correct": [
+      "s.upper()"
+    ],
+    "case_sensitive": false,
+    "feedback": "String methods are called on the string itself with a dot, and they hand back a new string rather than changing s, so the result is only useful if you print it or store it."
+  },
+  {
+    "type": "code_trace",
+    "question": "This program cleans up typed input before doing arithmetic. What does it print?",
+    "code": "text = \"  9 \"\nn = int(text.strip())\nprint(n * 3)",
+    "language": "python",
+    "correct": [
+      "27"
+    ],
+    "case_sensitive": true,
+    "feedback": "Work outward from the inside: strip turns the padded text into \"9\", int turns that text into the number 9, and only then can it be multiplied. Skipping the int step would repeat the text three times instead of multiplying."
   }
 ]
