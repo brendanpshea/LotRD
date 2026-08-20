@@ -54,7 +54,19 @@
     "intro": "Ada stops at a gatehouse where a clerk copies every visitor's name into a ledger query. “This gate has stood for years. I am going to walk through it without a key, and then show you the only fix that actually works.”",
     "steps": [
       {
-        "say": "The clerk builds the lookup by pasting text together:\nquery = f\"SELECT * FROM users WHERE name = '{username}'\"\nI give the name mina, and the database receives WHERE name = 'mina'. Perfectly fine — which is exactly why nobody notices the flaw."
+        "say": "The clerk builds the lookup by pasting text together:\nquery = f\"SELECT * FROM users WHERE name = '{username}'\"\nI give the name mina, and the database receives WHERE name = 'mina'. Perfectly fine — which is exactly why nobody notices the flaw.",
+        "beats": [
+          {
+            "say": "The clerk builds the lookup by pasting text together:"
+          },
+          {
+            "code": "query = f\"SELECT * FROM users WHERE name = '{username}'\"",
+            "language": "python"
+          },
+          {
+            "say": "I give the name mina, and the database receives WHERE name = 'mina'. Perfectly fine — which is exactly why nobody notices the flaw."
+          }
+        ]
       },
       {
         "say": "Now I hand over a stranger name: ' OR '1'='1\nThe clerk pastes it in as always, and the database receives WHERE name = '' OR '1'='1'.",
@@ -66,10 +78,37 @@
             "It reports a syntax error and runs nothing"
           ],
           "why": "My quote closed the name string early, so everything after it was read as SQL code rather than as a name. '1'='1' is always true."
-        }
+        },
+        "beats": [
+          {
+            "say": "Now I hand over a stranger name:"
+          },
+          {
+            "code": "' OR '1'='1",
+            "language": "typed by the attacker"
+          },
+          {
+            "say": "The clerk pastes it in as always, and the database receives WHERE name = '' OR '1'='1'."
+          }
+        ]
       },
       {
-        "say": "The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all. A parameterized query sends the skeleton and the value down separate channels:\ncursor.execute(\"SELECT * FROM users WHERE name = ?\", (username,))\nNow that same input is looked up as a literal name, matches nobody, and returns nothing."
+        "say": "The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all. A parameterized query sends the skeleton and the value down separate channels:\ncursor.execute(\"SELECT * FROM users WHERE name = ?\", (username,))\nNow that same input is looked up as a literal name, matches nobody, and returns nothing.",
+        "beats": [
+          {
+            "say": "The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all."
+          },
+          {
+            "say": "A parameterized query sends the skeleton and the value down separate channels:"
+          },
+          {
+            "code": "cursor.execute(\"SELECT * FROM users WHERE name = ?\", (username,))",
+            "language": "python"
+          },
+          {
+            "say": "Now that same input is looked up as a literal name, matches nobody, and returns nothing."
+          }
+        ]
       }
     ],
     "outro": "“Name the fix, and remember why the clever character-filter is not it.”"

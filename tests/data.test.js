@@ -545,6 +545,23 @@ describe('Question set file validation', () => {
             for (const step of q.steps) {
               assert.ok(typeof step.say === 'string' && step.say.length > 0,
                 `${label}: every npc_demo step needs non-empty say text`);
+              if ('beats' in step) {
+                // Beats are the authored breakdown the scene is revealed by —
+                // one spoken line or one code listing at a time.
+                assert.ok(Array.isArray(step.beats) && step.beats.length > 0,
+                  `${label}: beats must be a non-empty array when present`);
+                for (const [bi, b] of step.beats.entries()) {
+                  const hasSay = typeof b.say === 'string' && b.say.length > 0;
+                  const hasCode = typeof b.code === 'string' && b.code.length > 0;
+                  assert.ok(hasSay !== hasCode,
+                    `${label}: beat ${bi + 1} must carry exactly one of say or code`);
+                  if (hasSay) {
+                    assert.ok(b.say.length <= 320,
+                      `${label}: beat ${bi + 1} is ${b.say.length} chars — split it so the ` +
+                      `student is not handed a wall of text in one reveal`);
+                  }
+                }
+              }
               if (step.check) {
                 assert.ok(typeof step.check.prompt === 'string' && step.check.prompt.length > 0,
                   `${label}: npc_demo check needs a prompt`);

@@ -657,8 +657,27 @@ Because there are no options, a cloze cannot be solved by eliminating implausibl
 | `question` | yes | string | The scene's title (shown as a caption; also its identity — must be unique). Prefix with `NPC:` by convention |
 | `npc` | no | string | Mentor's name; defaults to "Ada the Artificer" |
 | `intro` / `outro` | no | string | Scene-setting and hand-off lines |
-| `steps` | yes | object[] | 2–4 steps; each needs `say`, may carry one `check` |
+| `steps` | yes | object[] | 2–4 steps; each needs `say`, may carry `beats` and one `check` |
+| `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is either `{"say": "..."}` (one spoken line) or `{"code": "...", "language": "..."}` (the artifact being examined). Without it the whole `say` string appears in one go |
 | `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues |
+
+### Revealing a scene
+
+The screen shows **one beat at a time** — a click reveals the next. Two rules follow from that:
+
+1. **Keep each spoken beat short.** One or two sentences. `data.test.js` rejects a beat over 320 characters, but the target is far shorter: a student who is handed a paragraph will skim it, which defeats the point of the scene.
+2. **Put code in its own `code` beat, never inside `say`.** Code beats render as a bordered monospace panel with a small label, visibly different from the mentor's speech. When code is embedded in a spoken line it renders in the same font and colour as the prose around it, and the student cannot tell the lesson from the narration.
+
+```json
+"beats": [
+  { "say": "Here's a scrap of pseudocode:" },
+  { "code": "SET count TO 10
+ADD 5 TO count", "language": "pseudocode" },
+  { "say": "Don't guess the answer — trace it." }
+]
+```
+
+Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase describing the artifact (`typed by the attacker`). It is shown as a caption above the panel.
 
 ### Writing Good NPC Scenes
 

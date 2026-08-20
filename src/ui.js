@@ -1046,7 +1046,7 @@ export class GameUI {
     const controls = $(this.root, "[data-ref=npcControls]");
     $(this.root, "[data-action=npc-skip]").addEventListener("click", () => onDone());
 
-    const addLine = (text, cls = "npc-line") => {
+    const addLine = (text, cls = "npc-line npc-say") => {
       const div = document.createElement("div");
       div.className = cls;
       div.textContent = text;
@@ -1055,10 +1055,18 @@ export class GameUI {
       return div;
     };
 
-    if (q.intro) addLine(q.intro, "npc-line npc-line--scene");
+    /** The artifact under discussion — set apart from what the mentor is saying. */
+    const addCode = (text, language) => {
+      const wrap = document.createElement("pre");
+      wrap.className = "npc-code";
+      if (language) wrap.dataset.lang = language;
+      wrap.textContent = text;
+      dialogue.appendChild(wrap);
+      wrap.scrollIntoView?.({ block: "nearest" });
+      return wrap;
+    };
 
-    const steps = q.steps || [];
-    let idx = 0;
+    if (q.intro) addLine(q.intro, "npc-line npc-line--scene");
 
     const makeButton = (label, cls, onClick) => {
       const b = document.createElement("button");
@@ -1070,34 +1078,52 @@ export class GameUI {
       return b;
     };
 
-    const finish = () => {
-      controls.innerHTML = "";
-      if (q.outro) addLine(q.outro);
-      makeButton("Continue the adventure ⚔", "action-button", () => onDone()).focus();
-    };
+    // Flatten the scene into one queue of reveals, so the student meets it a
+    // beat at a time instead of a wall of text. A step's `beats` array is the
+    // authored breakdown; a bare `say` string counts as a single beat.
+    const queue = [];
+    for (const step of (q.steps || [])) {
+      const beats = Array.isArray(step.beats) && step.beats.length
+        ? step.beats
+        : [{ say: step.say }];
+      for (const b of beats) queue.push({ kind: b.code != null ? "code" : "say", beat: b });
+      if (step.check) queue.push({ kind: "check", check: step.check });
+    }
 
-    const renderStep = () => {
+    let pos = 0;
+    const advance = () => {
       controls.innerHTML = "";
-      if (idx >= steps.length) { finish(); return; }
-      const step = steps[idx];
-      addLine(step.say);
-      if (step.check) {
-        addLine(step.check.prompt, "npc-line npc-check-prompt");
-        shuffle([step.check.answer, ...(step.check.wrong || [])]).forEach(opt => {
-          makeButton(opt, "action-button action-button--secondary npc-check-option", () => {
-            if (opt === step.check.answer) {
-              addLine(`✓ ${step.check.why || "Exactly right."}`, "npc-line npc-line--good");
-            } else {
-              addLine(`Not quite — it's "${step.check.answer}". ${step.check.why || ""}`.trim(),
-                "npc-line npc-line--gentle");
-            }
-            idx++;
-            renderStep();
-          });
-        });
-      } else {
-        makeButton("Continue ▸", "action-button", () => { idx++; renderStep(); }).focus();
+      if (pos >= queue.length) {
+        if (q.outro) addLine(q.outro, "npc-line npc-line--scene");
+        makeButton("Continue the adventure ⚔", "action-button", () => onDone()).focus();
+        return;
       }
+      const item = queue[pos++];
+
+      if (item.kind === "code") {
+        addCode(item.beat.code, item.beat.language);
+        makeButton("Continue ▸", "action-button", advance).focus();
+        return;
+      }
+      if (item.kind === "say") {
+        addLine(item.beat.say);
+        makeButton("Continue ▸", "action-button", advance).focus();
+        return;
+      }
+
+      const check = item.check;
+      addLine(check.prompt, "npc-line npc-check-prompt");
+      shuffle([check.answer, ...(check.wrong || [])]).forEach(opt => {
+        makeButton(opt, "action-button action-button--secondary npc-check-option", () => {
+          if (opt === check.answer) {
+            addLine(`✓ ${check.why || "Exactly right."}`, "npc-line npc-line--good");
+          } else {
+            addLine(`Not quite — it's "${check.answer}". ${check.why || ""}`.trim(),
+              "npc-line npc-line--gentle");
+          }
+          advance();
+        });
+      });
     };
 
     this._kbAbort = new AbortController();
@@ -1108,7 +1134,7 @@ export class GameUI {
       if (buttons.length === 1) { e.preventDefault(); buttons[0].click(); }
     }, { signal: this._kbAbort.signal });
 
-    renderStep();
+    advance();
   }
 
   /**
