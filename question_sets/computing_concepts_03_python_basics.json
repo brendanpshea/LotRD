@@ -340,36 +340,6 @@
     "allow_expression": false
   },
   {
-    "type": "code_line",
-    "question": "Write the Python expression that gives the remainder when the variable a is divided by the variable b.",
-    "language": "python",
-    "correct": [
-      "a % b"
-    ],
-    "case_sensitive": true,
-    "feedback": "The % operator gives the remainder. Paired with a // b (the whole groups), it answers 'how many fit, and how much is left over?'"
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "What does  {{a}} // {{b}} + {{a}} % {{b}}  evaluate to in Python?",
-    "variables": {
-      "a": {
-        "min": 20,
-        "max": 60
-      },
-      "b": {
-        "min": 3,
-        "max": 9
-      }
-    },
-    "answer": {
-      "expr": "floorDiv(a, b) + mod(a, b)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The two operators split one division between them: // reports how many whole times {{b}} fits inside {{a}}, and % reports what is left over. Adding those two pieces gives {{expected}}.",
-    "allow_expression": false
-  },
-  {
     "type": "code_trace",
     "question": "What does this f-string print?",
     "code": "name = \"Sam\"\nprint(f\"Hi {name}\")",
@@ -818,5 +788,285 @@
     ],
     "case_sensitive": true,
     "feedback": "price starts at 10, doubles to 20, then 3 is subtracted, leaving 17."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Writing a function the tests can see",
+    "npc": "nia",
+    "intro": "Nia clears a space on the rune-covered wall and chalks a bare function header onto it. “You have spent this whole chamber reading Python. Now you write some, and we find out whether it works the only honest way: by running it.”",
+    "steps": [
+      {
+        "say": "Here is how these rounds go. I give you the first line of a function and tell you what it should answer. You write the inside. This one should add two numbers.",
+        "beats": [
+          {
+            "say": "Here is how these rounds go. I give you the first line of a function and tell you what it should answer."
+          },
+          {
+            "say": "You write the inside — only the inside. The def line sits above your box already, and it does not change."
+          },
+          {
+            "code": "def add(a, b):\n    # you write this part",
+            "language": "python"
+          }
+        ]
+      },
+      {
+        "say": "Now the part that catches everyone. The tests cannot see what your function prints. They only see what it returns.",
+        "beats": [
+          {
+            "say": "Now the part that catches everyone. The tests cannot see what your function prints. They only see what it returns."
+          },
+          {
+            "code": "def add(a, b):\n    print(a + b)     # the tests see nothing\n\ndef add(a, b):\n    return a + b     # the tests see 7",
+            "language": "python"
+          }
+        ],
+        "check": {
+          "prompt": "So which line belongs in a function the tests will grade?",
+          "answer": "return a + b",
+          "wrong": [
+            "print(a + b)",
+            "a + b"
+          ],
+          "why": "return hands the value back to whoever called the function. print only puts it on the screen, and a bare a + b works out the answer and then throws it away."
+        }
+      },
+      {
+        "say": "When you think it is right, press Run. I call your function once for each example and show you what came back beside what it should have been.",
+        "beats": [
+          {
+            "say": "When you think it is right, press Run. I call your function once for each example and show you what came back beside what it should have been."
+          },
+          {
+            "code": "add(1, 2)    wanted 3     you gave 3     ✔\nadd(5, 5)    wanted 10    you gave 10    ✔\nadd(-1, 1)   wanted 0     you gave -2    ✖",
+            "language": "text"
+          },
+          {
+            "say": "That last row is the useful one. It does not just say you are wrong — it says which call goes wrong, so you know where to look."
+          }
+        ],
+        "check": {
+          "prompt": "Running the tests costs you nothing. How many times should you run before you submit?",
+          "answer": "As many as I like",
+          "wrong": [
+            "Once — running is the answer",
+            "Never, if I am confident"
+          ],
+          "why": "Running is free and unlimited here. Only Submit puts you back in the fight, so try, read the failing row, fix, and try again until the table is all ticks."
+        }
+      }
+    ],
+    "outro": "“Write the inside, return the answer, run it as often as you like. Nothing here bites until you press Submit.”",
+    "feedback": "Write the body, return the answer, run as often as you like, and read the failing row before you change anything."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the sum of the two numbers.",
+    "signature": "def add_numbers(a, b):",
+    "tests": [
+      {
+        "args": [
+          3,
+          4
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          10,
+          5
+        ],
+        "expect": 15
+      },
+      {
+        "args": [
+          0,
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          -2,
+          7
+        ],
+        "expect": 5
+      }
+    ],
+    "solution": "return a + b",
+    "hint": "Use the + operator.",
+    "feedback": "The whole body is one line: return a + b. A function hands its answer back with return — printing it would show the number on screen but hand back nothing."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the remainder left over when a is divided by b. Use the modulo operator, %.",
+    "signature": "def remainder_division(a, b):",
+    "tests": [
+      {
+        "args": [
+          10,
+          3
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          7,
+          2
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          8,
+          4
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          20,
+          6
+        ],
+        "expect": 2
+      }
+    ],
+    "solution": "return a % b",
+    "hint": "The % operator gives the remainder of integer division.",
+    "feedback": "% gives what is left after the division: 10 % 3 is 1, because 3 goes into 10 three times with 1 to spare."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the larger of the two numbers. Python has a built-in for this.",
+    "signature": "def max_number(a, b):",
+    "tests": [
+      {
+        "args": [
+          5,
+          10
+        ],
+        "expect": 10
+      },
+      {
+        "args": [
+          10,
+          5
+        ],
+        "expect": 10
+      },
+      {
+        "args": [
+          7,
+          7
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          -3,
+          -8
+        ],
+        "expect": -3
+      }
+    ],
+    "solution": "return max(a, b)",
+    "hint": "max(a, b) returns the larger one.",
+    "feedback": "max(a, b) hands back whichever is larger, and it copes with a tie by returning that same value."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the number of characters in the string.",
+    "signature": "def string_length(text):",
+    "tests": [
+      {
+        "args": [
+          "hello"
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          "python is fun"
+        ],
+        "expect": 13
+      }
+    ],
+    "solution": "return len(text)",
+    "hint": "len() works on strings too.",
+    "feedback": "len() counts items in anything with a length — the characters of a string here, the items of a list later on."
+  },
+  {
+    "type": "code_write",
+    "question": "Return True when the number is greater than zero, and False otherwise. You do not need an if for this one.",
+    "signature": "def is_positive(number):",
+    "tests": [
+      {
+        "args": [
+          5
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          -3
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          100
+        ],
+        "expect": true
+      }
+    ],
+    "solution": "return number > 0",
+    "hint": "`number > 0` is itself a Boolean. Just return it.",
+    "feedback": "A comparison like number > 0 IS a boolean — it evaluates to True or False on its own, so you can return it directly. Writing if number > 0: return True else: return False gets the same answer the long way round."
+  },
+  {
+    "type": "code_write",
+    "question": "Return True when the number is even, and False otherwise.",
+    "signature": "def is_even(number):",
+    "tests": [
+      {
+        "args": [
+          4
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          7
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          -2
+        ],
+        "expect": true
+      }
+    ],
+    "solution": "return number % 2 == 0",
+    "hint": "Combine % with ==.",
+    "feedback": "A number is even exactly when dividing it by 2 leaves no remainder, so number % 2 == 0 is already the True-or-False answer."
   }
 ]

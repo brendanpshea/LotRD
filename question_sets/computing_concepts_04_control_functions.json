@@ -513,16 +513,6 @@
     "feedback": "print sends characters to the screen; return sends a value to whoever called the function. The two are easy to confuse because both seem to 'produce' the number."
   },
   {
-    "type": "code_line",
-    "question": "Write the Python statement that returns the value of the variable x from a function.",
-    "language": "python",
-    "correct": [
-      "return x"
-    ],
-    "case_sensitive": true,
-    "feedback": "return x sends the value of x back to whatever called the function."
-  },
-  {
     "type": "dynamic_numeric",
     "question": "What value does the last line produce?\n\ndef total(a, b={{d}}):\n    return a * b\n\ntotal({{a}})",
     "variables": {
@@ -794,5 +784,305 @@
       "An empty input makes Python skip the function body automatically"
     ],
     "feedback": "Code that handles typical inputs can still fail on boundaries like empty or zero values, so testing edge cases catches bugs before they ship."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Writing the body of a function",
+    "npc": "nia",
+    "intro": "Nia chalks a function header on the wall and leaves the space under it empty. “You can read a call now. Writing one is the same five beats, run backwards — so let us write some.”",
+    "steps": [
+      {
+        "say": "I give you the def line and say what the function should answer. You write the inside, and only the inside — the header is already there and does not change.",
+        "beats": [
+          {
+            "say": "I give you the def line and say what the function should answer. You write the inside, and only the inside."
+          },
+          {
+            "code": "def triple(n):\n    # you write this part",
+            "language": "python"
+          }
+        ]
+      },
+      {
+        "say": "One rule catches everyone: the tests cannot see what your function prints. They only see what it returns. Press Run as often as you like — running costs nothing, and it names the call that fails.",
+        "beats": [
+          {
+            "say": "One rule catches everyone: the tests cannot see what your function prints. They only see what it returns."
+          },
+          {
+            "code": "def triple(n):\n    print(n * 3)     # the tests see nothing\n\ndef triple(n):\n    return n * 3     # the tests see 12",
+            "language": "python"
+          },
+          {
+            "say": "Press Run as often as you like. It costs nothing, it names the call that fails, and only Submit puts you back in the fight."
+          }
+        ],
+        "check": {
+          "prompt": "Your function works out the right number and prints it. What do the tests see?",
+          "answer": "Nothing — printing is not returning",
+          "wrong": [
+            "The number, because it was printed",
+            "An error, because printing is not allowed"
+          ],
+          "why": "print puts a value on the screen and hands nothing back. Only return gives the value to whoever called the function, which is what the tests are looking at."
+        }
+      }
+    ],
+    "outro": "“The def line is mine. The inside is yours. Run it until the table is all ticks.”",
+    "feedback": "Write the body, return the answer rather than printing it, and run the tests as often as you like before submitting."
+  },
+  {
+    "type": "code_write",
+    "question": "Return 'Negative' when the number is below zero, and 'Non-negative' otherwise.",
+    "signature": "def number_sign(number):",
+    "tests": [
+      {
+        "args": [
+          -5
+        ],
+        "expect": "Negative"
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": "Non-negative"
+      },
+      {
+        "args": [
+          10
+        ],
+        "expect": "Non-negative"
+      },
+      {
+        "args": [
+          -100
+        ],
+        "expect": "Negative"
+      }
+    ],
+    "solution": "if number < 0:\n    return 'Negative'\nreturn 'Non-negative'",
+    "hint": "One `if` and a final `return`. No `else` needed because the `if` returns early.",
+    "feedback": "Once an if returns, the rest of the function never runs — so a plain return after the if acts as the else."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the ticket price for an age: under 13 costs 5, 13 to 17 costs 8, 18 to 64 costs 12, and 65 or over costs 6.",
+    "signature": "def ticket_price(age):",
+    "tests": [
+      {
+        "args": [
+          10
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          15
+        ],
+        "expect": 8
+      },
+      {
+        "args": [
+          20
+        ],
+        "expect": 12
+      },
+      {
+        "args": [
+          70
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          13
+        ],
+        "expect": 8
+      },
+      {
+        "args": [
+          65
+        ],
+        "expect": 6
+      }
+    ],
+    "solution": "if age < 13:\n    return 5\nelif age <= 17:\n    return 8\nelif age <= 64:\n    return 12\nelse:\n    return 6",
+    "hint": "An if/elif chain handles the brackets in order from youngest to oldest.",
+    "feedback": "An if/elif chain stops at the first test that is True, so checking the brackets in order from youngest up means each test only has to name its upper edge."
+  },
+  {
+    "type": "code_write",
+    "question": "Return 'FizzBuzz' when n divides by both 3 and 5, 'Fizz' when it divides by 3 only, 'Buzz' when it divides by 5 only, and otherwise the number itself as a string.",
+    "signature": "def fizz_buzz(n):",
+    "tests": [
+      {
+        "args": [
+          15
+        ],
+        "expect": "FizzBuzz"
+      },
+      {
+        "args": [
+          3
+        ],
+        "expect": "Fizz"
+      },
+      {
+        "args": [
+          5
+        ],
+        "expect": "Buzz"
+      },
+      {
+        "args": [
+          7
+        ],
+        "expect": "7"
+      },
+      {
+        "args": [
+          30
+        ],
+        "expect": "FizzBuzz"
+      },
+      {
+        "args": [
+          1
+        ],
+        "expect": "1"
+      }
+    ],
+    "solution": "if n % 3 == 0 and n % 5 == 0:\n    return 'FizzBuzz'\nelif n % 3 == 0:\n    return 'Fizz'\nelif n % 5 == 0:\n    return 'Buzz'\nelse:\n    return str(n)",
+    "hint": "Check the most specific case first (divisible by both), then the rest.",
+    "feedback": "Check the both-at-once case first. Testing 3 first would catch 15 before the FizzBuzz test ever ran. The last case needs str(n), because the answer has to be text like the other three."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the total of every whole number from 1 up to n, counting n itself.",
+    "signature": "def sum_numbers(n):",
+    "tests": [
+      {
+        "args": [
+          4
+        ],
+        "expect": 10
+      },
+      {
+        "args": [
+          1
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          10
+        ],
+        "expect": 55
+      },
+      {
+        "args": [
+          100
+        ],
+        "expect": 5050
+      }
+    ],
+    "solution": "total = 0\nfor i in range(1, n + 1):\n    total += i\nreturn total",
+    "hint": "Start `total = 0`. Loop `for i in range(1, n+1)` and add each `i` to `total`.",
+    "feedback": "This is an accumulator: a total that starts at 0 outside the loop and grows inside it. range(1, n + 1) is what includes n, since range stops before its second number."
+  },
+  {
+    "type": "code_write",
+    "question": "You are given a list of heights in inches. Return how many of them are under 48 inches.",
+    "signature": "def count_munchkins(heights):",
+    "tests": [
+      {
+        "args": [
+          [
+            36,
+            42,
+            50,
+            45,
+            38
+          ]
+        ],
+        "expect": 4
+      },
+      {
+        "args": [
+          [
+            49,
+            52,
+            47,
+            50,
+            48
+          ]
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          [
+            30,
+            35,
+            40
+          ]
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [
+            60,
+            55,
+            58
+          ]
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "count = 0\nfor h in heights:\n    if h < 48:\n        count += 1\nreturn count",
+    "hint": "Loop over the list directly with `for h in heights:` and increment `count` when the condition is True.",
+    "feedback": "for h in heights: walks the values themselves, so there is no indexing to get wrong. The counter has to start at 0 before the loop, or there is nothing to add to."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the sum of the digits of a whole number. For 123 that is 1 + 2 + 3.",
+    "signature": "def sum_digits(number):",
+    "tests": [
+      {
+        "args": [
+          123
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          9
+        ],
+        "expect": 9
+      },
+      {
+        "args": [
+          1000
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          54321
+        ],
+        "expect": 15
+      }
+    ],
+    "solution": "total = 0\nwhile number > 0:\n    total += number % 10\n    number //= 10\nreturn total",
+    "hint": "`number % 10` gives the last digit; `number //= 10` chops it off. Loop while the number is greater than 0.",
+    "feedback": "number % 10 peels off the last digit and number // 10 throws it away, so the loop keeps going while there is anything left of the number."
   }
 ]

@@ -667,6 +667,7 @@ A CodingBat-style problem. The signature is fixed and shown above the box; the s
 | `tests` | yes | object[] | 3+ cases, each `{ "args": [...], "expect": value }`. `args` must match the parameter count |
 | `solution` | yes | string | A reference **body**. Shown to the student afterwards, and run by the test suite to prove the table is satisfiable |
 | `starter` | no | string | Prefilled body. Must not already pass the tests |
+| `hint` | no | string | One line, ≤ 240 chars, shown behind a *Stuck?* fold. A nudge toward the technique, never the answer |
 | `examples` | no | string[] | Worked examples shown above the box. Omit and the first three tests are used, which keeps them from drifting |
 | `feedback` | yes-ish | string | As everywhere: explain the idea, not just the answer |
 

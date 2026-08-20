@@ -221,12 +221,15 @@ A CodingBat-style problem: the signature is fixed and shown above the box, the s
     { "args": [2, 2], "expect": 8 }
   ],
   "solution": "if a == b:\n    return (a + b) * 2\nreturn a + b",
+  "hint": "optional one-line nudge, behind a Stuck? fold",
   "starter": "optional prefilled body",
   "examples": ["optional; the first three tests are used when this is absent"],
   "feedback": "Optional explanation."
 }
 ```
 
+- **Where they appear.** The standalone *Python Lab* set is all `code_write`; Computing Concepts chapters 3, 4 and 5 each end with six of them, after the reading and tracing questions that teach the same construct and after a mentor scene introducing the format. Chapter 3's are pure expressions (no `if`, no loops), chapter 4's use conditionals and loops, chapter 5's use lists and dictionaries — matching what each chapter has taught. Most are ported from the course's own PyQuiz banks, so a student meets the same problems the notebook set them.
+- **`hint`** is optional: one line, kept behind a *Stuck? Show a hint* fold so opening it is the student's decision.
 - **Run is free and unlimited.** The Run button executes the same tests that will grade the answer and shows expected against actual, row by row. Only Submit resolves the turn.
 - **Graded per test case**, like matching and cloze, but the attack dice are scaled to a fixed budget (`CODE_WRITE_HIT_BUDGET`) rather than one die per case — otherwise a ten-case problem would deal twice the damage of a five-case one for the same work. The question re-queues unless every case passes.
 - **A worked answer is shown afterwards**, whether or not the student's own passed. `solution` is required, and the test suite runs it through the real interpreter: a problem whose own answer key fails is a failing build. The suite also rejects a test table that `return None` / `return True` / `return 0` and friends can pass, since such a table grades nothing.

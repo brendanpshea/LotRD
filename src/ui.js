@@ -1587,6 +1587,14 @@ export class GameUI {
       examplesEl.hidden = false;
     }
 
+    // A hint stays folded away: it is there for a student who is stuck, and
+    // opening it should be their decision rather than the first thing they read.
+    const hint = $(this.root, "[data-ref=hint]");
+    if (hint && q.hint) {
+      $(this.root, "[data-ref=hintText]").textContent = q.hint;
+      hint.hidden = false;
+    }
+
     const input = $(this.root, "[data-ref=bodyInput]");
     input.value = q.starter ? String(q.starter) : "";
     const paintEditor = this._bindCodeEditorChrome(input);

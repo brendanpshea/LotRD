@@ -609,6 +609,16 @@ describe('Question set file validation', () => {
               `is shown afterwards, and what proves the test table is satisfiable`);
             assert.ok(/\breturn\b/.test(q.solution),
               `${label}: the reference solution never returns anything`);
+            if ('hint' in q) {
+              assert.ok(typeof q.hint === 'string' && q.hint.trim().length > 0,
+                `${label}: hint must be a non-empty string when present`);
+              // A hint is a nudge the student opens when stuck. Past a couple of
+              // sentences it stops being a nudge and becomes the answer.
+              assert.ok(q.hint.length <= 240,
+                `${label}: hint is ${q.hint.length} chars — keep it under 240`);
+              assert.ok(!q.hint.includes('\n'),
+                `${label}: hint should be a single line`);
+            }
             if ('starter' in q) {
               assert.ok(typeof q.starter === 'string',
                 `${label}: starter must be a string when present`);

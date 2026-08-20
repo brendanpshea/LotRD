@@ -756,5 +756,294 @@
       "tolerance_abs": 0
     },
     "feedback_template": "A slice [a:b] includes index a up to but not including b, giving {{b}} minus {{a}} = {{expected}} items."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Writing a function over a collection",
+    "npc": "zoya",
+    "intro": "Zoya sweeps the chests aside and chalks a function header on the bench top. “You have taken these collections apart all chapter. Now write the code that does it.”",
+    "steps": [
+      {
+        "say": "I give you the def line and say what it should answer. You write the inside — the header is already there. And the tests read what you return, never what you print.",
+        "beats": [
+          {
+            "say": "I give you the def line and say what it should answer. You write the inside; the header is already there."
+          },
+          {
+            "code": "def total(nums):\n    print(sum(nums))     # the tests see nothing\n\ndef total(nums):\n    return sum(nums)     # the tests see the total",
+            "language": "python"
+          }
+        ]
+      },
+      {
+        "say": "Building a list is the pattern to have ready: an empty list before the loop, and .append() inside it. Press Run as often as you like — it is free, and it names the call that fails.",
+        "beats": [
+          {
+            "say": "Building a list is the pattern to have ready: an empty list before the loop, and .append() inside it."
+          },
+          {
+            "code": "out = []\nfor item in items:\n    out.append(item)\nreturn out",
+            "language": "python"
+          },
+          {
+            "say": "Press Run as often as you like. It costs nothing, and only Submit puts you back in the fight."
+          }
+        ],
+        "check": {
+          "prompt": "Where does the empty list have to be created?",
+          "answer": "Before the loop starts",
+          "wrong": [
+            "Inside the loop, at the top",
+            "After the loop, just before the return"
+          ],
+          "why": "Creating it inside the loop would throw away everything collected so far on every pass, and creating it after the loop would discard the lot. It has to exist before the first append."
+        }
+      }
+    ],
+    "outro": "“Empty container, loop, append, return. That shape will carry you a long way.”",
+    "feedback": "Write the body, return the answer rather than printing it, and build a list with an empty list before the loop and .append() inside it."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the first item of the list.",
+    "signature": "def first_item(items):",
+    "tests": [
+      {
+        "args": [
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        "expect": "a"
+      },
+      {
+        "args": [
+          [
+            42
+          ]
+        ],
+        "expect": 42
+      }
+    ],
+    "solution": "return items[0]",
+    "hint": "Use index 0.",
+    "feedback": "Python counts from 0, so the first item is items[0] — not items[1]."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the total of all the numbers in the list.",
+    "signature": "def total_calories(calories):",
+    "tests": [
+      {
+        "args": [
+          [
+            200,
+            300,
+            150
+          ]
+        ],
+        "expect": 650
+      },
+      {
+        "args": [
+          [
+            0
+          ]
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            10,
+            20,
+            30,
+            40
+          ]
+        ],
+        "expect": 100
+      }
+    ],
+    "solution": "return sum(calories)",
+    "hint": "`sum(my_list)` returns the total.",
+    "feedback": "sum() adds up a whole list in one go, and sums an empty list to 0 rather than failing."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the longest string in the list. No two are the same length here.",
+    "signature": "def longest_name(names):",
+    "tests": [
+      {
+        "args": [
+          [
+            "Ada",
+            "Beatrice",
+            "Cyril"
+          ]
+        ],
+        "expect": "Beatrice"
+      },
+      {
+        "args": [
+          [
+            "hi",
+            "hello",
+            "hey"
+          ]
+        ],
+        "expect": "hello"
+      },
+      {
+        "args": [
+          [
+            "one"
+          ]
+        ],
+        "expect": "one"
+      }
+    ],
+    "solution": "return max(names, key=len)",
+    "hint": "`max(names, key=len)` picks the longest string.",
+    "feedback": "max(names, key=len) compares the names by their length instead of alphabetically, and hands back the name itself rather than its length."
+  },
+  {
+    "type": "code_write",
+    "question": "The menu is a dictionary of item names and prices. Return the price of the given item, or 0 when the menu does not have it.",
+    "signature": "def menu_price(menu, item):",
+    "tests": [
+      {
+        "args": [
+          {
+            "scone": 0.6,
+            "tea": 2.5
+          },
+          "tea"
+        ],
+        "expect": 2.5
+      },
+      {
+        "args": [
+          {
+            "scone": 0.6,
+            "tea": 2.5
+          },
+          "coffee"
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          {},
+          "anything"
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "return menu.get(item, 0)",
+    "hint": "`menu.get(item, 0)` returns 0 when the key is missing.",
+    "feedback": "menu[item] raises an error on a missing key, which ends the run. menu.get(item, 0) asks the same question but answers 0 when the key is not there."
+  },
+  {
+    "type": "code_write",
+    "question": "The menu is a dictionary of item names and prices. Return the NAME of the priciest item. Exactly one item is the priciest.",
+    "signature": "def most_expensive(menu):",
+    "tests": [
+      {
+        "args": [
+          {
+            "tea": 2.5,
+            "scone": 0.6,
+            "cake": 4.0
+          }
+        ],
+        "expect": "cake"
+      },
+      {
+        "args": [
+          {
+            "a": 1,
+            "b": 5,
+            "c": 3
+          }
+        ],
+        "expect": "b"
+      },
+      {
+        "args": [
+          {
+            "only": 7
+          }
+        ],
+        "expect": "only"
+      }
+    ],
+    "solution": "best = None\nfor item in menu:\n    if best is None or menu[item] > menu[best]:\n        best = item\nreturn best",
+    "hint": "Loop over the menu's keys, and remember the name of the biggest price you have seen so far.",
+    "feedback": "Looping over a dictionary gives you its keys, and menu[key] gets that key's price. Keep the best name seen so far and replace it whenever you meet a bigger price."
+  },
+  {
+    "type": "code_write",
+    "question": "Each guest is a dictionary with a 'name' key. Return a list of just the names, in the same order.",
+    "signature": "def guest_names(party):",
+    "tests": [
+      {
+        "args": [
+          [
+            {
+              "name": "Ada",
+              "age": 30
+            },
+            {
+              "name": "Beatrice",
+              "age": 45
+            }
+          ]
+        ],
+        "expect": [
+          "Ada",
+          "Beatrice"
+        ]
+      },
+      {
+        "args": [
+          [
+            {
+              "name": "Cyril",
+              "age": 22
+            }
+          ]
+        ],
+        "expect": [
+          "Cyril"
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": []
+      }
+    ],
+    "solution": "names = []\nfor guest in party:\n    names.append(guest['name'])\nreturn names",
+    "hint": "Start with an empty list, then append each guest's 'name' as you loop over the party.",
+    "feedback": "guest['name'] reaches into one guest's dictionary. Build the answer with an empty list before the loop and .append() inside it."
   }
 ]
