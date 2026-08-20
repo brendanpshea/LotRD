@@ -755,9 +755,22 @@ Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase descr
 
 1. **Always pair it.** The very next entry in the array should be a real question using the same technique with different numbers/words (dynamic_numeric pairs beautifully: the scene demos 13 → binary, the monster asks for 22).
 2. **Make at least one step a `check`** — a faded worked example beats a passive one. Put the check where the learner can predict the next move from what was just shown.
-3. **One idea per step.** If a `say` needs three sentences of new content, split it.
-4. **Don't re-teach what the set already tested** — scenes introduce technique for the questions that follow, not summaries of earlier material.
-5. Sets present in **array order** on a first full run, so the scene/question adjacency is preserved; reviews and trials skip scenes automatically.
+3. **Explain it like the student is twelve, and never hide behind the analogy.** A mentor may reach for a
+   concrete image — a chest with two tags, three desks in a scriptorium, a row of clay golems — but the image
+   is a way in, not the lesson. Every time one is used, bind it to the real word in the same breath: *each
+   golem is one object*, *the tray is the staging area*, *the foreign key is the thread*. Two failures to
+   watch for:
+   - **An unexplained metaphor.** If a student has to work out what the image stands for before the
+     explanation makes sense, the scene has taught them a riddle instead of the material.
+   - **Vocabulary the paired question needs but the scene never says.** Read the very next entry in the
+     array. If its options or feedback say *attribute*, *local variable* or *object*, the scene has to have
+     said those words too — a student who followed the demonstration perfectly should not meet a monster
+     speaking a language the demonstration avoided.
+   Scene-setting is fine and welcome, but a prop introduced in the `intro` and never used again is noise;
+   either give it something to do or leave it out.
+4. **One idea per step.** If a `say` needs three sentences of new content, split it.
+5. **Don't re-teach what the set already tested** — scenes introduce technique for the questions that follow, not summaries of earlier material.
+6. Sets present in **array order** on a first full run, so the scene/question adjacency is preserved; reviews and trials skip scenes automatically.
 
 ---
 
