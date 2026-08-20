@@ -2,7 +2,10 @@ import { loadJSON, GameModel } from "./model.js";
 import { ITEMS } from "./items.js";
 import { SoundSystem } from "./sound.js";
 import { GameUI } from "./ui.js";
-import { shuffle, reviewDue, advanceReviewStage } from "./util.js";
+import {
+  shuffle, reviewDue, advanceReviewStage,
+  TIER_APPRENTICE, TIER_MASTER, nextTierInfo, sampleTrialQuestions,
+} from "./util.js";
 import { pickDragonLine } from "./dragon.js";
 
 const SAVE_DATA_VERSION = "2026-04-26";
@@ -32,6 +35,12 @@ export class GameController {
     this.model = null;
     this._isReview = false;
     this._sharpenReviewId = null;
+    // Rank-trial state: set when the current run is a Journeyman/Master trial.
+    this._trialSetId = null;
+    this._trialTier = null;
+    // Which set's historical miss counts this run should feed (null for the
+    // multi-source review mixes, which don't belong to any single set).
+    this._missRecordId = null;
 
     const soundBtn = document.getElementById("sound-toggle");
     if (soundBtn) {
@@ -85,6 +94,8 @@ export class GameController {
   _completionKey(setName) { return `lotrd_done_${setName}`; }
   _attemptKey(setName)    { return `lotrd_attempt_${setName}`; }
   _reviewKey(setName)     { return `lotrd_review_${setName}`; }
+  _tierKey(setName)       { return `lotrd_tier_${setName}`; }
+  _missKey(setName)       { return `lotrd_misses_${setName}`; }
   _globalKey()            { return "lotrd_global"; }
   _globalLevelKey()       { return "lotrd_player_level"; }
 
@@ -124,7 +135,9 @@ export class GameController {
   _sampleReviewQuestions(sourceDatas, sampleSize) {
     const seen = new Set();
     const perSourceUnique = sourceDatas.map(data => {
-      const arr = Array.isArray(data) ? data : (data.questions || []);
+      const arr = (Array.isArray(data) ? data : (data.questions || []))
+        // NPC teaching scenes are first-exposure scaffolding, not retrieval.
+        .filter(q => q.type !== "npc_demo");
       const out = [];
       for (const q of arr) {
         const key = q.question;
@@ -177,15 +190,95 @@ export class GameController {
     try { const r = localStorage.getItem(this._reviewKey(setName)); return r ? JSON.parse(r) : null; } catch (_) { return null; }
   }
 
+  // ─── Mastery tiers (Apprentice → Journeyman → Master) ─────────────────────
+  // Tier record shape: { tier, apprenticeAt, journeymanAt?, masterAt?, legacy? }
+  // Timestamps are ISO strings. See util.js for the schedule math.
+
+  _loadTier(setName) {
+    try { const r = localStorage.getItem(this._tierKey(setName)); return r ? JSON.parse(r) : null; } catch (_) { return null; }
+  }
+
+  _saveTier(setName, rec) {
+    try { localStorage.setItem(this._tierKey(setName), JSON.stringify(rec)); } catch (_) {}
+  }
+
+  /**
+   * Sets cleared before tiers existed have a completion record but no tier
+   * record. Grandfather them at Master so the gradebook score of a student
+   * who already finished never drops when the tier system arrives.
+   */
+  _migrateLegacyTiers(catalog) {
+    for (const topic of catalog) {
+      for (const entry of (topic.sets || [])) {
+        if (entry.review || !entry.id) continue;
+        const done = this._loadCompletion(entry.id);
+        if (!done || this._loadTier(entry.id)) continue;
+        const at = done.completedAt || new Date(0).toISOString();
+        this._saveTier(entry.id, {
+          tier: TIER_MASTER, apprenticeAt: at, journeymanAt: at, masterAt: at, legacy: true,
+        });
+      }
+    }
+  }
+
+  /** Historical miss counts for a set: question text → times answered imperfectly. */
+  _loadMisses(setName) {
+    try {
+      const r = localStorage.getItem(this._missKey(setName));
+      const parsed = r ? JSON.parse(r) : null;
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch (_) { return {}; }
+  }
+
+  /**
+   * Fold this run's stumbles into the set's historical miss counts. Rank
+   * trials use these to weight their sample toward what actually needs work.
+   */
+  _recordMisses() {
+    if (!this._missRecordId || !this.model) return;
+    const counts = this._loadMisses(this._missRecordId);
+    let changed = false;
+    for (const h of this.model.answer_history) {
+      if (h && h.was_perfect === false && h.question) {
+        counts[h.question] = (counts[h.question] || 0) + 1;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    try { localStorage.setItem(this._missKey(this._missRecordId), JSON.stringify(counts)); } catch (_) {}
+  }
+
+  /** If the just-finished run was a rank trial, award the earned tier. */
+  _recordTierAdvanceIfTrial() {
+    if (!this._trialSetId) return;
+    const setId = this._trialSetId;
+    const earnedTier = this._trialTier;
+    this._trialSetId = null;
+    this._trialTier = null;
+    const rec = this._loadTier(setId);
+    const next = nextTierInfo(rec);
+    if (!next || next.nextTier !== earnedTier) return; // stale/duplicate finish
+    const nowIso = new Date().toISOString();
+    const merged = { ...(rec ?? {}), tier: earnedTier };
+    if (earnedTier === TIER_MASTER) merged.masterAt = nowIso;
+    else merged.journeymanAt = nowIso;
+    this._saveTier(setId, merged);
+  }
+
   /**
    * Whether a cleared set is due for spaced review, and how "deep" it is in the
-   * expanding schedule. Anchor is the last review (or the original completion if
-   * never reviewed); the interval grows with each completed review. Returns null
-   * when the set isn't cleared yet (not eligible).
+   * expanding schedule. Sharpen reviews only apply once a set reaches Master —
+   * below that, the rank trials ARE the spaced re-encounters. Anchor is the
+   * last review (falling back to the mastery timestamp, then the completion),
+   * and mastered sets start at stage 2 so the first Sharpen lands ~21 days
+   * after mastery rather than 2. Returns null when the set isn't cleared yet.
    */
-  _reviewDueInfo(setName, completion) {
+  _reviewDueInfo(setName, completion, tierRec = null) {
     if (!completion) return null;
-    return reviewDue(this._loadReview(setName), completion.completedAt);
+    const rec = this._loadReview(setName);
+    const anchor = tierRec?.masterAt ?? completion.completedAt;
+    const stage = Math.max(rec?.stage ?? 0, tierRec ? 2 : 0);
+    return reviewDue({ ...(rec ?? {}), stage }, anchor);
   }
 
   /** Advance the spaced-review schedule after a completed review run. */
@@ -206,13 +299,19 @@ export class GameController {
     const pct = (p.total_correct + p.total_incorrect) > 0
       ? Math.round(p.total_correct / (p.total_correct + p.total_incorrect) * 100)
       : 0;
+    const nowIso = new Date().toISOString();
     try {
       localStorage.setItem(this._completionKey(this._setName), JSON.stringify({
-        completedAt: new Date().toISOString(),
+        completedAt: nowIso,
         score_pct: pct,
         level: p.level,
       }));
     } catch (_) {}
+    // First full clear starts the rank ladder at Apprentice. Replays of an
+    // already-ranked set leave the record alone — rank only moves via trials.
+    if (!this._loadTier(this._setName)) {
+      this._saveTier(this._setName, { tier: TIER_APPRENTICE, apprenticeAt: nowIso });
+    }
   }
 
   _loadGlobalStats() {
@@ -280,6 +379,7 @@ export class GameController {
     try {
       const catalog = await loadJSON("question_sets/catalog.json");
       this._catalog = catalog;
+      this._migrateLegacyTiers(catalog);
       const globalStats = this._loadGlobalStats();
       const levelData = this._loadGlobalLevel();
 
@@ -292,7 +392,11 @@ export class GameController {
           try { attempted = !!localStorage.getItem(this._attemptKey(entry.id)); } catch (_) {}
           if (done) {
             entry.status = { type: "complete", ...done };
-            entry.reviewDue = !!this._reviewDueInfo(entry.id, done)?.due;
+            const tierRec = this._loadTier(entry.id);
+            entry.tier = tierRec?.tier ?? TIER_APPRENTICE;
+            entry.tierNext = nextTierInfo(tierRec);
+            entry.reviewDue = entry.tier >= TIER_MASTER
+              && !!this._reviewDueInfo(entry.id, done, tierRec)?.due;
           } else if (save && (save.questions_to_ask?.length ?? 0) > 0) {
             entry.status = { type: "in_progress", remaining: save.questions_to_ask.length };
           } else if (attempted) {
@@ -303,7 +407,10 @@ export class GameController {
         });
       });
 
-      this.ui.showMainMenu(catalog, globalStats, levelData, (setId, mode) => this._launchSet(setId, mode));
+      this.ui.showMainMenu(catalog, globalStats, levelData, (setId, mode) => {
+        if (mode === "trial") return this._launchTierTrial(setId);
+        return this._launchSet(setId, mode);
+      });
     } catch (err) {
       this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading catalog: ${escapeHtml(err.message)}</div></div>`;
     }
@@ -349,13 +456,67 @@ export class GameController {
       this._setName = setId;
       this._isReview = true;
       this._sharpenReviewId = setId;
+      this._trialSetId = null;
+      this._trialTier = null;
+      this._missRecordId = setId;
 
       const levelData = this._loadGlobalLevel();
       this.model = new GameModel(sample, monsters_data, null, levelData);
       this._createUi(this.model);
-      this.ui.showInitialScreen(() => this.startAdventure());
+      this.ui.showInitialScreen({
+        title: this._setTitle,
+        review: { questionCount: sample.length },
+      }, () => this.startAdventure());
     } catch (err) {
       this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading review for "${escapeHtml(setId)}": ${escapeHtml(err.message)}</div></div>`;
+    }
+  }
+
+  /**
+   * Launch a rank trial (Journeyman or Master) for an already-cleared set:
+   * about half of its questions, weighted toward the ones the student has
+   * historically missed, run in review mode (no save, no completion record).
+   * Finishing the run — including the retrieval boss — earns the rank, which
+   * raises the set's gradebook credit.
+   */
+  async _launchTierTrial(setId) {
+    try {
+      if (!this._catalog) {
+        try { this._catalog = await loadJSON("question_sets/catalog.json"); } catch (_) {}
+      }
+      this._applySetTitle(setId);
+
+      const tierRec = this._loadTier(setId);
+      const next = nextTierInfo(tierRec);
+      if (!next?.due) { this.showMainMenu(); return; }
+
+      const [questions_data, monsters_data] = await Promise.all([
+        loadJSON(`question_sets/${setId}`),
+        loadJSON("assets/monsters.json"),
+      ]);
+      const pool = Array.isArray(questions_data) ? questions_data : (questions_data.questions || []);
+      const sample = sampleTrialQuestions(pool, this._loadMisses(setId));
+
+      const newURL = new URL(window.location);
+      newURL.searchParams.set("set", setId);
+      window.history.replaceState({}, "", newURL);
+
+      this._setName = setId;
+      this._isReview = true;
+      this._sharpenReviewId = null;
+      this._trialSetId = setId;
+      this._trialTier = next.nextTier;
+      this._missRecordId = setId;
+
+      const levelData = this._loadGlobalLevel();
+      this.model = new GameModel(sample, monsters_data, null, levelData);
+      this._createUi(this.model);
+      this.ui.showInitialScreen({
+        title: this._setTitle,
+        trial: { tier: next.nextTier, questionCount: sample.length },
+      }, () => this.startAdventure());
+    } catch (err) {
+      this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading trial for "${escapeHtml(setId)}": ${escapeHtml(err.message)}</div></div>`;
     }
   }
 
@@ -393,15 +554,24 @@ export class GameController {
 
         this._setName = setId;
         this._isReview = true;
+        this._trialSetId = null;
+        this._trialTier = null;
+        this._missRecordId = null;
 
         const levelData = this._loadGlobalLevel();
         this.model = new GameModel(questions_data, monsters_data, null, levelData);
         this._createUi(this.model);
-        this.ui.showInitialScreen(() => this.startAdventure());
+        this.ui.showInitialScreen({
+          title: this._setTitle,
+          review: { questionCount: questions_data.length },
+        }, () => this.startAdventure());
         return;
       }
 
       this._isReview = false;
+      this._trialSetId = null;
+      this._trialTier = null;
+      this._missRecordId = setId;
 
       const [questions_data, monsters_data] = await Promise.all([
         loadJSON(`question_sets/${setId}`),
@@ -427,9 +597,16 @@ export class GameController {
       }
 
       const levelData = this._loadGlobalLevel();
-      this.model = new GameModel(questions_data, monsters_data, null, levelData);
+      // Full runs keep the authored order: sets are written as a progression,
+      // and NPC teaching scenes must precede their paired questions. Missed
+      // questions still requeue, and reviews/trials shuffle their samples.
+      this.model = new GameModel(questions_data, monsters_data, null, levelData, { sequential: true });
       this._createUi(this.model);
-      this.ui.showInitialScreen(() => this.startAdventure());
+      this.ui.showInitialScreen({
+        title: this._setTitle,
+        intro: catalogEntry?.intro || null,
+        questionCount: catalogEntry?.question_count ?? null,
+      }, () => this.startAdventure());
     } catch (err) {
       this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading "${escapeHtml(setId)}": ${escapeHtml(err.message)}</div></div>`;
     }
@@ -464,7 +641,9 @@ export class GameController {
   showEncounterStatus(status) {
     if (status === "victory") {
       this._clearSave();
+      this._recordMisses();
       this._recordCompletion();
+      this._recordTierAdvanceIfTrial();
       this._recordReviewIfReviewing();
       this._updateGlobalStats(!this._isReview);
       this._saveGlobalLevel();
@@ -473,7 +652,9 @@ export class GameController {
       this._showWithDragon(line => this.ui.showVictory(() => this.startReview("victory"), line));
     } else if (status === "no_questions") {
       this._clearSave();
+      this._recordMisses();
       this._recordCompletion();
+      this._recordTierAdvanceIfTrial();
       this._recordReviewIfReviewing();
       this._updateGlobalStats(!this._isReview);
       this._saveGlobalLevel();
@@ -510,9 +691,20 @@ export class GameController {
       this.ui.showEncounterCodeLine();
     } else if (qtype === "matching") {
       this.ui.showEncounterMatching();
+    } else if (qtype === "ordering") {
+      this.ui.showEncounterOrdering();
+    } else if (qtype === "npc_demo") {
+      this.ui.showNpcScene(() => this.completeNpcScene());
     } else {
       this.ui.showEncounter();
     }
+  }
+
+  /** An NPC teaching scene ended (finished or skipped) — no combat resolution. */
+  completeNpcScene() {
+    if (this.model.current_question?.type !== "npc_demo") return;
+    this.model.current_question = null;
+    this.continueAdventure();
   }
 
   _showWithDragon(render) {
@@ -633,6 +825,11 @@ export class GameController {
     this._evaluateWithMulligan(() => this.model.evaluateMatching(selectedPairs));
   }
 
+  submitOrdering(selectedItems) {
+    if (!this.model.current_question) return;
+    this._evaluateWithMulligan(() => this.model.evaluateOrdering(selectedItems));
+  }
+
   submitAnswer(selected) {
     if (!this.model.current_question) return;
     if (selected.length === 0) {
@@ -729,6 +926,7 @@ export class GameController {
     const afterResults = () => {
       if (battleData.defeated_player) {
         this._clearSave();
+        this._recordMisses();
         this._updateGlobalStats();
         this._saveGlobalLevel();
         this.sounds.gameOver();

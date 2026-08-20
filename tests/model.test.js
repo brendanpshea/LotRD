@@ -1611,3 +1611,132 @@ describe('Retrieval boss', () => {
     assert.deepEqual(gm2.boss_queue.map(q => q.question), ['C-q']);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Ordering questions
+// ────────────────────────────────────────────────────────────────────────────────
+describe('GameModel.evaluateOrdering', () => {
+  function orderingQuestion(overrides = {}) {
+    return {
+      type: 'ordering',
+      question: 'Arrange the steps.',
+      items: ['first', 'second', 'third', 'fourth'],
+      feedback: 'That is the cycle.',
+      ...overrides,
+    };
+  }
+
+  function startedModel() {
+    const gm = new GameModel([orderingQuestion()], SAMPLE_MONSTERS, null, null, { sequential: true });
+    gm.nextEncounter();
+    return gm;
+  }
+
+  it('perfect order counts every position, does not requeue', () => {
+    const gm = startedModel();
+    const res = gm.evaluateOrdering(['first', 'second', 'third', 'fourth']);
+    assert.equal(res.question_repeated, false);
+    assert.equal(res.correctSelections.length, 4);
+    assert.equal(res.incorrectSelections.length, 0);
+    assert.equal(gm.player.total_correct, 4);
+    assert.equal(gm.player.total_incorrect, 0);
+    assert.equal(gm.answer_history[0].was_perfect, true);
+  });
+
+  it('partial order gives proportional credit and requeues', () => {
+    const gm = startedModel();
+    const res = gm.evaluateOrdering(['first', 'third', 'second', 'fourth']);
+    assert.equal(res.question_repeated, true);
+    assert.equal(res.correctSelections.length, 2);
+    assert.equal(res.incorrectSelections.length, 2);
+    assert.equal(gm.player.total_correct, 2);
+    assert.equal(gm.player.total_incorrect, 2);
+    assert.equal(gm.answer_history[0].was_perfect, false);
+    assert.equal(gm.questions_to_ask.length, 1); // requeued
+  });
+
+  it('a wrong ordering feeds the retrieval boss queue', () => {
+    const gm = startedModel();
+    gm.evaluateOrdering(['fourth', 'third', 'second', 'first']);
+    const queue = gm._buildBossQueue();
+    assert.deepEqual(queue.map(q => q.question), ['Arrange the steps.']);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// NPC teaching scenes
+// ────────────────────────────────────────────────────────────────────────────────
+describe('npc_demo scenes', () => {
+  function npcScene(overrides = {}) {
+    return {
+      type: 'npc_demo',
+      question: 'NPC: worked example',
+      npc: 'Ada the Artificer',
+      steps: [{ say: 'Watch closely.' }],
+      ...overrides,
+    };
+  }
+
+  it('a scene is consumed without spawning a monster', () => {
+    const gm = new GameModel([npcScene(), mcQuestion()], SAMPLE_MONSTERS, null, null, { sequential: true });
+    assert.equal(gm.nextEncounter(), 'continue');
+    assert.equal(gm.current_question.type, 'npc_demo');
+    assert.equal(gm.current_monster, null);
+
+    // Controller path: scene ends, no combat resolution, no history entry.
+    gm.current_question = null;
+    assert.equal(gm.nextEncounter(), 'continue');
+    assert.equal(gm.current_question.type, undefined); // the MC question
+    assert.ok(gm.current_monster, 'combat resumes after the scene');
+    assert.equal(gm.answer_history.length, 0);
+  });
+
+  it('a scene mid-fight leaves the living monster alone', () => {
+    const gm = new GameModel([mcQuestion(), npcScene(), mcQuestion({ question: 'Q2' })],
+      SAMPLE_MONSTERS, null, null, { sequential: true });
+    gm.nextEncounter();
+    const monster = gm.current_monster;
+    monster.hit_points = monster.max_hit_points; // definitely alive
+    gm.current_question = null; // pretend the question resolved without killing it
+
+    gm.nextEncounter();
+    assert.equal(gm.current_question.type, 'npc_demo');
+    assert.equal(gm.current_monster, monster, 'monster untouched during the scene');
+  });
+
+  it('a scene never enters the retrieval boss queue', () => {
+    const gm = new GameModel([npcScene(), mcQuestion()], SAMPLE_MONSTERS, null, null, { sequential: true });
+    // Scenes never produce history entries, but even a malformed one can't
+    // drag a scene into the boss fight.
+    gm.answer_history = [{ question: 'NPC: worked example', was_perfect: false }];
+    assert.equal(gm._buildBossQueue().length, 0);
+  });
+
+  it('round-trips through save/load at the head of the queue', () => {
+    const gm = new GameModel([npcScene(), mcQuestion()], SAMPLE_MONSTERS, null, null, { sequential: true });
+    gm.nextEncounter(); // scene in flight
+    const gm2 = new GameModel(null, SAMPLE_MONSTERS, gm.toSaveData());
+    assert.equal(gm2.questions_to_ask[0].type, 'npc_demo', 'in-flight scene restored to the head');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Sequential option
+// ────────────────────────────────────────────────────────────────────────────────
+describe('sequential question order', () => {
+  const authored = Array.from({ length: 12 }, (_, i) => mcQuestion({ question: `q${i}` }));
+
+  it('sequential: true preserves the authored order', () => {
+    const gm = new GameModel(authored, SAMPLE_MONSTERS, null, null, { sequential: true });
+    assert.deepEqual(gm.questions_to_ask.map(q => q.question), authored.map(q => q.question));
+  });
+
+  it('default construction still shuffles (review/trial samples)', () => {
+    // With 12 questions the odds of 5 independent shuffles all landing in
+    // authored order are (1/12!)^5 — effectively impossible.
+    const stayedSorted = Array.from({ length: 5 }, () =>
+      new GameModel(authored, SAMPLE_MONSTERS)
+    ).every(gm => gm.questions_to_ask.every((q, i) => q.question === `q${i}`));
+    assert.equal(stayedSorted, false);
+  });
+});

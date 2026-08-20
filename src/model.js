@@ -830,8 +830,13 @@ export class GameModel {
      * @param {object[]} questions  – full question array (already loaded from JSON)
      * @param {object[]} monsters   – monster definitions
      * @param {object|null} saveData – optional: resume from a localStorage snapshot
+     * @param {object|null} levelData – persistent player level/xp to start from
+     * @param {{sequential?:boolean}} options – sequential: keep authored question
+     *        order (used for full set runs, where the authoring order scaffolds
+     *        the ideas and NPC demos must precede their paired questions);
+     *        review/trial runs pass shuffled samples and omit it.
      */
-    constructor(questions, monsters, saveData = null, levelData = null) {
+    constructor(questions, monsters, saveData = null, levelData = null, options = {}) {
         this.monsters         = monsters;
         this.current_monster  = null;
         this.current_question = null;
@@ -863,7 +868,7 @@ export class GameModel {
             this.boss_done       = false;
             this.boss_queue      = [];
             this.player          = Player.fresh(levelData);
-            this.questions       = shuffle(this.questions);
+            if (!options.sequential) this.questions = shuffle(this.questions);
             this.questions_to_ask = [...this.questions];
         }
     }
@@ -977,7 +982,8 @@ export class GameModel {
 
         const byText = new Map();
         for (const q of this.questions) {
-            if (q && !byText.has(q.question)) byText.set(q.question, q);
+            // NPC scenes can't be "re-asked" — they never belong in the boss fight.
+            if (q && q.type !== "npc_demo" && !byText.has(q.question)) byText.set(q.question, q);
         }
         const entries = shuffle([...missCounts.entries()].filter(([text]) => byText.has(text)))
             .sort((a, b) => b[1] - a[1]);
@@ -1056,6 +1062,14 @@ export class GameModel {
             this.current_monster  = null;
             this.current_question = null;
             return monsterSurvived ? "no_questions" : "victory";
+        }
+
+        // NPC teaching scenes are interludes, not combat: consume the entry
+        // without spawning a monster (a surviving monster simply waits out the
+        // scene). They never earn XP, never deal damage, and never requeue.
+        if (this.questions_to_ask[0]?.type === "npc_demo") {
+            this.current_question = this.questions_to_ask.shift();
+            return "continue";
         }
 
         if (!this.current_monster || this.current_monster.hit_points <= 0) {
@@ -2002,6 +2016,67 @@ export class GameModel {
             incorrectSelections,
             missedCorrect: [],
             feedback:         q.feedback || null,
+        };
+    }
+
+    /**
+     * Evaluate an ordering answer.
+     * selectedItems: the student's arrangement (array of item strings).
+     * q.items holds the correct order. Proportional scoring by position:
+     * correct positions drive player attack; wrong positions drive the monster.
+     * Re-queued unless every position matches.
+     */
+    evaluateOrdering(selectedItems) {
+        if (!this.current_question) return null;
+        const q      = this.current_question;
+        const items  = q.items || [];
+        const chosen = Array.isArray(selectedItems) ? selectedItems : [];
+
+        let correctCount = 0;
+        const correctSelections   = [];
+        const incorrectSelections = [];
+        items.forEach((item, i) => {
+            if (chosen[i] === item) {
+                correctCount++;
+                correctSelections.push(`${i + 1}. ${item}`);
+            } else {
+                incorrectSelections.push(
+                    `Position ${i + 1}: placed "${chosen[i] ?? "(nothing)"}" — correct: "${item}"`);
+            }
+        });
+
+        const total      = items.length;
+        const wrongCount = total - correctCount;
+        const isPerfect  = wrongCount === 0 && total > 0;
+
+        this.player.total_correct   += correctCount;
+        this.player.total_incorrect += wrongCount;
+
+        const accuracy = total > 0 ? correctCount / total : 0;
+
+        const turn = this._resolveDamage({
+            playerHits: correctCount,
+            monsterHits: wrongCount,
+            isPerfect,
+            partialFraction: accuracy,
+            xpGained: 10,
+            requeue: !isPerfect,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: items.map((it, i) => `${i + 1}. ${it}`),
+                selected: chosen.map((it, i) => `${i + 1}. ${it}`),
+                correctSelections,
+                incorrectSelections,
+                missedCorrect: [],
+                isPerfect,
+            }),
+        });
+
+        return {
+            ...turn,
+            correctSelections,
+            incorrectSelections,
+            missedCorrect: [],
+            feedback: q.feedback || null,
         };
     }
 

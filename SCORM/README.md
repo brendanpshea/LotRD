@@ -33,14 +33,24 @@ Output: `SCORM/dist/<edition>-scorm.zip`
 
 ## How scoring works
 
-Score reported to the LMS is a percentage:
+Score reported to the LMS is a percentage built from per-set mastery
+tiers:
 
-    score = (completed sets / total non-review sets in this edition) * 100
+    score = (sum of per-set credit / total non-review sets in this edition) * 100
 
-A "completed" set is one the player has cleared in the RPG sense —
-either by victory or by reaching the end of the question queue. This
-matches the in-game "Cleared" badge.
-Review sets are excluded from both numerator and denominator.
+    credit per set:  Apprentice (first clear)  0.8
+                     Journeyman (trial, +3d)   0.9
+                     Master     (trial, +7d)   1.0
+
+A set's first full clear — victory or reaching the end of the question
+queue — earns Apprentice. The Journeyman trial unlocks 3 days after the
+first clear; the Master trial unlocks 7 days after completing
+Journeyman. Trials are ~half the set, weighted toward historically
+missed questions. Credit only ever rises, so the reported score is
+monotonic. Sets completed before the tier system existed are
+grandfathered at Master (full credit) so no existing student's score
+drops on upgrade. Review sets are excluded from both numerator and
+denominator.
 
 `cmi.core.lesson_status` is set to `completed` at 100%, otherwise
 `incomplete`. The mastery threshold in the manifest is 100, but D2L
@@ -48,11 +58,12 @@ uses the raw score for the gradebook regardless.
 
 ## Cross-device persistence
 
-The shim mirrors the list of completed set IDs into `cmi.suspend_data`
-on every commit. On launch it reads `suspend_data` and restores any
-missing completion records to localStorage. So a student who completes
-two sets on a laptop will see those two sets marked complete when they
-open the SCO on another device.
+The shim mirrors completion AND tier records (with their timestamps,
+which gate the trials) into `cmi.suspend_data` on every commit as
+`{"v":2,"sets":[[id, tier, apprenticeMs, journeymanMs, masterMs], ...]}`.
+On launch it reads `suspend_data` and restores any missing records to
+localStorage. Legacy v1 payloads (a plain array of completed IDs) are
+restored as grandfathered Master completions.
 
 The full RPG save (HP, level, current question queue) stays in
 localStorage and is per-device. Only completion state syncs.

@@ -66,19 +66,119 @@
     <div data-ref="topicSections"></div>
   </template>
 
-  <!-- ── Initial welcome screen ─────────────────────────────────── -->
+  <!-- ── Initial welcome / lesson-intro screen ──────────────────── -->
   <template id="tpl-initial">
     <div class="bbs-container">
-      <h1 class="title">Welcome to the Loop of the Recursive Dragon!</h1>
-      <div class="section">
+      <h1 class="title" data-ref="introTitle">Welcome to the Loop of the Recursive Dragon!</h1>
+      <div class="section" data-ref="introGeneric">
         In this game, you'll battle monsters to master ideas about computer science, databases,
         cybersecurity, tech ethics, and more. Right answers hurt monsters; wrong answers hurt you.
         Good luck!
         <p>A game by Brendan Shea, PhD (<a href="mailto:Brendan.Shea@rctc.edu" style="color:inherit">Brendan.Shea@rctc.edu</a>)</p>
       </div>
+      <div class="section intro-story" data-ref="introStory" hidden></div>
+      <div class="section" data-ref="introObjectivesWrap" hidden>
+        <span class="bold">In this dungeon you will learn to:</span>
+        <ul class="intro-objectives" data-ref="introObjectives"></ul>
+      </div>
+      <div class="section intro-note dim" data-ref="introNote" hidden></div>
       <div class="button-container">
         <button class="action-button" data-action="start"
                 aria-label="Begin the adventure">Start Adventure</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- ── NPC teaching scene ─────────────────────────────────────── -->
+  <template id="tpl-npc-scene">
+    <div class="bbs-container npc-scene" role="region" aria-label="Teaching scene">
+      <div class="npc-header">
+        <span class="npc-portrait" aria-hidden="true">🧙</span>
+        <span class="npc-name bold" data-ref="npcName"></span>
+        <button type="button" class="action-button action-button--secondary npc-skip"
+                data-action="npc-skip"
+                aria-label="Skip this demonstration">Skip demonstration →</button>
+      </div>
+      <div class="npc-scene-title dim" data-ref="npcSceneTitle"></div>
+      <div class="npc-dialogue" data-ref="npcDialogue" aria-live="polite"></div>
+      <div class="npc-controls button-container" data-ref="npcControls"></div>
+    </div>
+  </template>
+
+  <!-- ── Ordering encounter (arrange the steps) ─────────────────── -->
+  <template id="tpl-encounter-ordering">
+    <div class="bbs-container" role="region" aria-label="Monster encounter">
+      <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
+      <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
+      <div class="monster-layout">
+        <div class="monster-image-container" data-ref="imgWrap" hidden>
+          <img class="monster-image" data-ref="img" alt="">
+        </div>
+        <div class="monster-details">
+          <div class="monster-name-line">
+            <span class="bold underline" data-ref="mName"></span><span data-ref="mDesc"></span>
+          </div>
+          <div class="monster-hp-block">
+            HP: <span class="yellow" data-ref="mHP"></span>
+            <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
+          </div>
+          <div class="player-hud" aria-label="Player stats">
+            <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
+            <span class="hud-sep" aria-hidden="true">·</span>
+            <span class="hud-item"><span aria-hidden="true">⭐</span><span class="sr-only">Level</span> Lvl <span data-ref="pLvl"></span></span>
+            <span class="hud-sep" aria-hidden="true">·</span>
+            <span class="hud-item"><span aria-hidden="true">✦</span><span class="sr-only">XP:</span> <span data-ref="pXP"></span></span>
+            <span class="hud-sep" aria-hidden="true">·</span>
+            <span class="hud-item"><span aria-hidden="true">⚗️</span><span class="sr-only">Revives:</span> <span data-ref="pRevive"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="inventory-row" data-ref="inventory" role="group" aria-label="Inventory: 2 item slots">
+        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot0" data-slot="0"
+                aria-label="Item slot 1, empty (shortcut Q)" disabled>
+          <span class="inv-slot-key" aria-hidden="true">Q</span>
+          <span class="inv-slot-icon" data-ref="invIcon0">·</span>
+          <span class="inv-slot-name" data-ref="invName0">empty</span>
+        </button>
+        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot1" data-slot="1"
+                aria-label="Item slot 2, empty (shortcut W)" disabled>
+          <span class="inv-slot-key" aria-hidden="true">W</span>
+          <span class="inv-slot-icon" data-ref="invIcon1">·</span>
+          <span class="inv-slot-name" data-ref="invName1">empty</span>
+        </button>
+        <span class="inv-pending" data-ref="invPending" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <!-- ── Journey progress ──────────────────────────────────────── -->
+    <div class="bbs-container progress-section" data-ref="progressSection"
+         role="region" aria-label="Journey progress">
+      <div class="prog-header">
+        <span class="prog-label">⚔ JOURNEY</span>
+        <span class="prog-stats" data-ref="progStats"></span>
+      </div>
+      <div class="prog-corridor" aria-hidden="true">
+        <div class="prog-blocks" data-ref="progBar"></div>
+        <span class="prog-dragon">🐉</span>
+      </div>
+      <div class="retry-row" data-ref="retryRow" hidden aria-live="polite">
+        <span class="retry-label">↺ Retry:</span>
+        <div class="prog-blocks prog-blocks--sm" data-ref="retryBar"></div>
+        <span class="retry-text" data-ref="retryText"></span>
+      </div>
+    </div>
+
+    <div class="bbs-container" role="region" aria-label="Ordering question">
+      <div class="section">
+        <span class="bold">Put the steps in order:</span>
+        <span data-ref="qText"></span>
+      </div>
+      <div class="order-seq" data-ref="orderSeq" role="group" aria-label="Your sequence"
+           aria-live="polite"></div>
+      <div class="order-bank" data-ref="orderBank" role="group" aria-label="Available steps"></div>
+      <div class="button-container">
+        <button class="action-button submit-btn" data-action="submit"
+                aria-label="Submit your sequence">Submit Order</button>
       </div>
     </div>
   </template>

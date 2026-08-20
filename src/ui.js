@@ -1,4 +1,4 @@
-import { shuffle } from "./util.js";
+import { shuffle, TIER_MASTER, TIER_NAMES, TIER_BADGES } from "./util.js";
 import { highlightJava } from "./highlight.js";
 
 const LEVEL_TITLES = [
@@ -211,7 +211,9 @@ export class GameUI {
     const section = $(root, "[data-ref=progressSection]");
     if (!section) return;
 
-    const total = this.model.questions.length;
+    // NPC teaching scenes never enter answer_history, so they'd read as
+    // permanently "unseen" — count only real questions.
+    const total = this.model.questions.filter(q => q.type !== "npc_demo").length;
     const status = new Map();
     this.model.answer_history.forEach(h => {
       if (h.was_perfect) {
@@ -394,8 +396,10 @@ export class GameUI {
         const status = entry.status ?? { type: "not_started" };
         const badge = document.createElement("span");
         if (status.type === "complete") {
-          badge.className = "status-badge status-complete";
-          badge.textContent = "✔ Cleared";
+          const tier = entry.tier ?? TIER_MASTER;
+          badge.className = `status-badge status-complete status-tier-${tier}`;
+          badge.textContent = `${TIER_BADGES[tier]} ${TIER_NAMES[tier]}`;
+          badge.title = `Cleared — current rank: ${TIER_NAMES[tier]}`;
         } else if (status.type === "in_progress") {
           badge.className = "status-badge status-progress";
           badge.textContent = `▶ ${status.remaining} left`;
@@ -429,6 +433,35 @@ export class GameUI {
           newLink.addEventListener("click", () => launchCallback(entry.id, "new"));
           actions.appendChild(btn);
           actions.appendChild(newLink);
+        } else if (status.type === "complete" && entry.tierNext?.due) {
+          const trialName = TIER_NAMES[entry.tierNext.nextTier];
+          btn.textContent = `⚒ ${trialName} Trial`;
+          btn.setAttribute("aria-label",
+            `Take the ${trialName} trial for ${entry.title} — a short review that raises your rank and credit`);
+          btn.addEventListener("click", () => launchCallback(entry.id, "trial"));
+          actions.appendChild(btn);
+
+          const again = document.createElement("button");
+          again.className = "action-button action-button--secondary set-btn-sm";
+          again.textContent = "Play Again";
+          again.setAttribute("aria-label", `Play ${entry.title} again`);
+          again.addEventListener("click", () => launchCallback(entry.id, "new"));
+          actions.appendChild(again);
+        } else if (status.type === "complete" && entry.tierNext && !entry.tierNext.due) {
+          const trialName = TIER_NAMES[entry.tierNext.nextTier];
+          const when = new Date(entry.tierNext.availableAt)
+            .toLocaleDateString(undefined, { month: "short", day: "numeric" });
+          const lock = document.createElement("span");
+          lock.className = "tier-lock dim";
+          lock.textContent = `🔒 ${trialName} trial ${when}`;
+          lock.title = `The ${trialName} trial unlocks ${when} — spacing out reviews is what makes them work.`;
+          actions.appendChild(lock);
+
+          btn.textContent = "Play Again";
+          btn.className = "action-button action-button--secondary set-btn-sm";
+          btn.setAttribute("aria-label", `Play ${entry.title} again`);
+          btn.addEventListener("click", () => launchCallback(entry.id, "new"));
+          actions.appendChild(btn);
         } else if (status.type === "complete" && entry.reviewDue) {
           btn.textContent = "🔁 Review";
           btn.setAttribute("aria-label", `Spaced review of ${entry.title} — a few questions`);
@@ -490,10 +523,70 @@ export class GameUI {
     }
   }
 
-  showInitialScreen(startCallback) {
+  /**
+   * Pre-run screen. `meta` shapes what it says:
+   *   { title, intro: {story, objectives[]}, questionCount } – full set run
+   *   { title, trial: {tier, questionCount} }               – rank trial
+   *   { title, review: {questionCount} }                    – spaced review / mix
+   *   null / no intro                                       – generic welcome
+   */
+  showInitialScreen(meta, startCallback) {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-initial");
-    const btn = $(this.root, "[data-action=start]");
+
+    const titleEl   = $(this.root, "[data-ref=introTitle]");
+    const genericEl = $(this.root, "[data-ref=introGeneric]");
+    const storyEl   = $(this.root, "[data-ref=introStory]");
+    const objWrap   = $(this.root, "[data-ref=introObjectivesWrap]");
+    const objList   = $(this.root, "[data-ref=introObjectives]");
+    const noteEl    = $(this.root, "[data-ref=introNote]");
+    const btn       = $(this.root, "[data-action=start]");
+
+    if (meta?.trial) {
+      const trialName = TIER_NAMES[meta.trial.tier];
+      titleEl.textContent = `⚒ ${trialName} Trial`;
+      genericEl.hidden = true;
+      storyEl.textContent = meta.title
+        ? `The Dragon returns to ${meta.title}, testing whether the ideas you claimed still hold.`
+        : "The Dragon returns, testing whether the ideas you claimed still hold.";
+      storyEl.hidden = false;
+      noteEl.textContent =
+        `${meta.trial.questionCount} questions drawn from this dungeon — weighted toward the ones ` +
+        `that gave you trouble. Finish the run to earn ${trialName} rank and raise your credit for this set.`;
+      noteEl.hidden = false;
+      btn.textContent = "Begin the Trial";
+    } else if (meta?.review) {
+      if (meta.title) titleEl.textContent = meta.title;
+      genericEl.hidden = true;
+      storyEl.textContent = "A quick return visit — a handful of questions to keep the ideas sharp.";
+      storyEl.hidden = false;
+      noteEl.textContent = `${meta.review.questionCount} questions. Reviews never lower your score.`;
+      noteEl.hidden = false;
+      btn.textContent = "Start Review";
+    } else if (meta?.intro) {
+      if (meta.title) titleEl.textContent = meta.title;
+      genericEl.hidden = true;
+      if (meta.intro.story) {
+        storyEl.textContent = meta.intro.story;
+        storyEl.hidden = false;
+      }
+      const objectives = meta.intro.objectives || [];
+      if (objectives.length > 0) {
+        objectives.forEach(obj => {
+          const li = document.createElement("li");
+          li.textContent = obj;
+          objList.appendChild(li);
+        });
+        objWrap.hidden = false;
+      }
+      if (meta.questionCount) {
+        noteEl.textContent = `${meta.questionCount} questions ahead. Missed ones return until you master them.`;
+        noteEl.hidden = false;
+      }
+    } else if (meta?.title) {
+      titleEl.textContent = meta.title;
+    }
+
     btn.addEventListener("click", () => startCallback());
     btn.focus();
   }
@@ -932,6 +1025,170 @@ export class GameUI {
     this._bindInventoryHotkeys(this._kbAbort.signal);
     this._renderProgress(this.root);
     if (selects.length > 0) selects[0].select.focus();
+  }
+
+  /**
+   * NPC teaching scene: a mentor walks through a worked example, step by step.
+   * Steps may carry a low-stakes `check` (predict the next move) — a wrong tap
+   * gets a gentle correction and the walkthrough continues. No damage, no XP,
+   * no requeue: the paired combat question that follows is where it counts.
+   */
+  showNpcScene(onDone) {
+    this._clearKeyboard();
+    const q = this.model.current_question;
+    renderTemplate(this.root, "tpl-npc-scene");
+
+    $(this.root, "[data-ref=npcName]").textContent = q.npc || "Ada the Artificer";
+    // The `question` field is the scene's title (and its identity in the data).
+    $(this.root, "[data-ref=npcSceneTitle]").textContent = q.question || "";
+    const dialogue = $(this.root, "[data-ref=npcDialogue]");
+    const controls = $(this.root, "[data-ref=npcControls]");
+    $(this.root, "[data-action=npc-skip]").addEventListener("click", () => onDone());
+
+    const addLine = (text, cls = "npc-line") => {
+      const div = document.createElement("div");
+      div.className = cls;
+      div.textContent = text;
+      dialogue.appendChild(div);
+      div.scrollIntoView?.({ block: "nearest" });
+      return div;
+    };
+
+    if (q.intro) addLine(q.intro, "npc-line npc-line--scene");
+
+    const steps = q.steps || [];
+    let idx = 0;
+
+    const makeButton = (label, cls, onClick) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = cls;
+      b.textContent = label;
+      b.addEventListener("click", onClick);
+      controls.appendChild(b);
+      return b;
+    };
+
+    const finish = () => {
+      controls.innerHTML = "";
+      if (q.outro) addLine(q.outro);
+      makeButton("Continue the adventure ⚔", "action-button", () => onDone()).focus();
+    };
+
+    const renderStep = () => {
+      controls.innerHTML = "";
+      if (idx >= steps.length) { finish(); return; }
+      const step = steps[idx];
+      addLine(step.say);
+      if (step.check) {
+        addLine(step.check.prompt, "npc-line npc-check-prompt");
+        shuffle([step.check.answer, ...(step.check.wrong || [])]).forEach(opt => {
+          makeButton(opt, "action-button action-button--secondary npc-check-option", () => {
+            if (opt === step.check.answer) {
+              addLine(`✓ ${step.check.why || "Exactly right."}`, "npc-line npc-line--good");
+            } else {
+              addLine(`Not quite — it's "${step.check.answer}". ${step.check.why || ""}`.trim(),
+                "npc-line npc-line--gentle");
+            }
+            idx++;
+            renderStep();
+          });
+        });
+      } else {
+        makeButton("Continue ▸", "action-button", () => { idx++; renderStep(); }).focus();
+      }
+    };
+
+    this._kbAbort = new AbortController();
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      // Enter advances only when there's a single unambiguous button.
+      const buttons = controls.querySelectorAll("button");
+      if (buttons.length === 1) { e.preventDefault(); buttons[0].click(); }
+    }, { signal: this._kbAbort.signal });
+
+    renderStep();
+  }
+
+  showEncounterOrdering() {
+    this._clearKeyboard();
+    const q = this.model.current_question;
+    renderTemplate(this.root, "tpl-encounter-ordering");
+    this._populateEncounterHeader(this.root);
+    $(this.root, "[data-ref=qText]").textContent = q.question;
+
+    const items  = q.items || [];
+    const isCode = !!q.language;
+
+    // Never present the bank already in the correct order.
+    let bankOrder = shuffle(items);
+    if (items.length > 2) {
+      let guard = 0;
+      while (bankOrder.every((it, i) => it === items[i]) && guard++ < 10) {
+        bankOrder = shuffle(items);
+      }
+    }
+
+    const bank     = $(this.root, "[data-ref=orderBank]");
+    const seqEl    = $(this.root, "[data-ref=orderSeq]");
+    const sequence = [];
+    const bankBtns = new Map();
+
+    const renderSeq = () => {
+      seqEl.innerHTML = "";
+      if (sequence.length === 0) {
+        const hint = document.createElement("span");
+        hint.className = "dim order-seq-empty";
+        hint.textContent = "Tap the steps below in order — tap a placed step to remove it.";
+        seqEl.appendChild(hint);
+        return;
+      }
+      sequence.forEach((item, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "order-seq-item" + (isCode ? " order-item--code" : "");
+        b.textContent = `${i + 1}. ${item}`;
+        b.setAttribute("aria-label", `Position ${i + 1}: ${item}. Click to remove.`);
+        b.addEventListener("click", () => {
+          sequence.splice(i, 1);
+          const bankBtn = bankBtns.get(item);
+          if (bankBtn) bankBtn.disabled = false;
+          renderSeq();
+        });
+        seqEl.appendChild(b);
+      });
+    };
+
+    bankOrder.forEach(item => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "order-bank-item" + (isCode ? " order-item--code" : "");
+      b.textContent = item;
+      b.setAttribute("aria-label", `Add to sequence: ${item}`);
+      b.addEventListener("click", () => {
+        if (b.disabled) return;
+        sequence.push(item);
+        b.disabled = true;
+        renderSeq();
+      });
+      bank.appendChild(b);
+      bankBtns.set(item, b);
+    });
+    renderSeq();
+
+    const submitBtn = $(this.root, "[data-action=submit]");
+    submitBtn.addEventListener("click", () => {
+      if (sequence.length !== items.length) {
+        this.showFeedbackInline("Place every step in the sequence before submitting.");
+        return;
+      }
+      this.controller.submitOrdering([...sequence]);
+    });
+
+    this._kbAbort = new AbortController();
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
+    this._renderProgress(this.root);
   }
 
   showFeedbackInline(msg) {

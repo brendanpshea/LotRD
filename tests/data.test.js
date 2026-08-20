@@ -318,6 +318,19 @@ describe('question_sets/catalog.json', () => {
           assert.ok(Number.isInteger(s.question_count) && s.question_count > 0,
             `Bad question_count for ${s.id}: ${s.question_count}`);
         }
+        if (s.intro != null) {
+          assert.ok(typeof s.intro === 'object' && !Array.isArray(s.intro),
+            `intro must be an object: ${s.id}`);
+          if (s.intro.story != null) {
+            assert.ok(typeof s.intro.story === 'string' && s.intro.story.length > 0,
+              `intro.story must be a non-empty string: ${s.id}`);
+          }
+          if (s.intro.objectives != null) {
+            assert.ok(Array.isArray(s.intro.objectives) && s.intro.objectives.length > 0
+              && s.intro.objectives.every(o => typeof o === 'string' && o.length > 0),
+              `intro.objectives must be a non-empty array of strings: ${s.id}`);
+          }
+        }
       }
     }
   });
@@ -340,14 +353,16 @@ describe('question_sets/catalog.json', () => {
 
   it('question_count matches the number of questions on disk', () => {
     // The main menu advertises this number, so a stale count is visible to
-    // students the moment a set gains or loses a question.
+    // students the moment a set gains or loses a question. NPC teaching
+    // scenes are interludes, not questions — they don't count.
     const mismatches = [];
     for (const topic of catalog) {
       for (const s of topic.sets) {
         if (isReviewSet(s)) continue;
         const p = join(ROOT, 'question_sets', s.id);
         if (!existsSync(p)) continue;
-        const actual = loadJSON(`question_sets/${s.id}`).length;
+        const actual = loadJSON(`question_sets/${s.id}`)
+          .filter(q => q.type !== 'npc_demo').length;
         if (actual !== s.question_count) {
           mismatches.push(`${s.id}: catalog says ${s.question_count}, file has ${actual}`);
         }
@@ -460,6 +475,34 @@ describe('Question set file validation', () => {
             for (const pair of q.pairs) {
               assert.ok(typeof pair.term === 'string', `${label}: pair missing term`);
               assert.ok(typeof pair.definition === 'string', `${label}: pair missing definition`);
+            }
+          } else if (type === 'ordering') {
+            assert.ok(Array.isArray(q.items) && q.items.length >= 3,
+              `${label}: ordering must have >= 3 items`);
+            for (const item of q.items) {
+              assert.ok(typeof item === 'string' && item.length > 0,
+                `${label}: ordering items must be non-empty strings`);
+            }
+            const dupeItems = q.items.filter((it, idx) => q.items.indexOf(it) !== idx);
+            assert.deepEqual(dupeItems, [],
+              `${label}: ordering items must be unique (bank buttons are keyed by text)`);
+          } else if (type === 'npc_demo') {
+            // `question` doubles as the scene title and its identity key.
+            assert.ok(Array.isArray(q.steps) && q.steps.length > 0,
+              `${label}: npc_demo must have a non-empty steps array`);
+            for (const step of q.steps) {
+              assert.ok(typeof step.say === 'string' && step.say.length > 0,
+                `${label}: every npc_demo step needs non-empty say text`);
+              if (step.check) {
+                assert.ok(typeof step.check.prompt === 'string' && step.check.prompt.length > 0,
+                  `${label}: npc_demo check needs a prompt`);
+                assert.ok(typeof step.check.answer === 'string' && step.check.answer.length > 0,
+                  `${label}: npc_demo check needs an answer`);
+                assert.ok(Array.isArray(step.check.wrong) && step.check.wrong.length >= 1,
+                  `${label}: npc_demo check needs at least one wrong option`);
+                assert.ok(!step.check.wrong.includes(step.check.answer),
+                  `${label}: npc_demo check answer must not appear in wrong[]`);
+              }
             }
           } else {
             // multiple choice (default)

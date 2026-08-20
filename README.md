@@ -28,8 +28,11 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Features
 
-- **Six question formats** (described below)
+- **Seven question formats** plus NPC teaching scenes (described below)
 - **Main menu** with topic groupings, per-set progress badges, and a global stats bar
+- **Lesson intros** — sets can declare an `intro` (story + learning objectives) in `catalog.json`, shown before the run starts
+- **Sequential first pass** — full runs present questions in authored order (the set is written as a progression, and NPC scenes precede their paired questions); missed questions still requeue, and reviews/trials shuffle their samples
+- **Mastery tiers** — the first full clear earns **Apprentice** rank (80% of the set's gradebook credit). A **Journeyman trial** unlocks 3 days later (90%), and a **Master trial** 7 days after completing Journeyman (100%). Trials are ~half the set, weighted toward historically missed questions; finishing the run (retrieval boss included) earns the rank. Credit only ever rises. Sets cleared before tiers existed are grandfathered at Master
 - **Auto-save** — every encounter result is saved to `localStorage`; the back button saves and returns to the menu
 - **Completion tracking** — `lotrd_done_${setId}` records cleared sets permanently, including runs that end because there are no questions left
 - **Global stats** — `lotrd_global` accumulates lifetime totals across all sets
@@ -41,7 +44,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat
 - **Retrieval boss** — when the questions run out, anything missed during the run comes back as the Recursive Dragon's HP bar; each concept only leaves the bar once it's answered cleanly (a flawless run skips the fight)
 - **Items** — two inventory slots (`Q`/`W`) hold drops from defeated monsters: heals, shields, 2× damage/XP, and a Mulligan that rewinds one wrong answer
-- **Spaced review** — a cleared set becomes "due" again on an expanding schedule (2/7/21/60 days) and offers a short 5-question refresher
+- **Spaced review** — once a set reaches Master rank, it becomes "due" again on an expanding schedule (first ~21 days after mastery, then 60) and offers a short 5-question refresher; below Master, the rank trials are the spaced re-encounters
 
 ---
 
@@ -165,6 +168,29 @@ The original type. Select all correct answers; partial credit is not given for i
 - Definitions are shuffled into per-row dropdowns.
 - **Scoring is proportional** — each correct pair rolls one attack die (d6); each wrong pair rolls one monster die. The question re-queues if any pair is wrong.
 
+### Ordering
+
+```json
+{
+  "type": "ordering",
+  "question": "Arrange one full turn of the instruction cycle in order.",
+  "items": [
+    "Fetch the next instruction from memory",
+    "Decode the instruction to see what it asks",
+    "Execute the operation"
+  ],
+  "feedback": "Optional explanation."
+}
+```
+
+- `items` is written **in the correct order** (3–6 unique strings); the game shuffles the bank and the student taps items into sequence (tap a placed item to remove it).
+- Optional `language` renders items in monospace — use it for Parsons-style "arrange the code lines" questions.
+- **Scoring is positional** — each item in its correct slot rolls one attack die; each misplaced item rolls one monster die. Anything less than perfect re-queues.
+
+### NPC Teaching Scene (`npc_demo`)
+
+Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a worked example step by step, with optional low-stakes `check` prompts ("what comes next?") that get a gentle correction when wrong. Scenes deal no damage, award no XP, never requeue, are skippable, don't count toward `question_count`, and are excluded from reviews and rank trials. Author each scene **immediately before a paired question** that uses the same technique with different surface features. See the [WRITING_GUIDE](question_sets/WRITING_GUIDE.md) for the schema.
+
 ---
 
 ## Damage Formula
@@ -239,18 +265,18 @@ matches the number of questions actually in each file.
 
 | Topic | Set | Questions |
 |-------|-----|-----------|
-| Computing Concepts | What Is Computing? | 34 |
-| Computing Concepts | Machine Architecture | 33 |
-| Computing Concepts | Python Basics | 38 |
-| Computing Concepts | Control Flow & Functions | 38 |
-| Computing Concepts | Collections & ADTs | 36 |
-| Computing Concepts | Modules & Objects | 32 |
-| Computing Concepts | Searching, Sorting & Big-O | 32 |
-| Computing Concepts | Software Engineering | 31 |
-| Computing Concepts | Databases | 31 |
-| Computing Concepts | OS, Networks & the Web | 30 |
-| Computing Concepts | Cybersecurity | 30 |
-| Computing Concepts | AI, Machine Learning & Ethics | 30 |
+| Computing Concepts | What Is Computing? | 37 |
+| Computing Concepts | Machine Architecture | 36 |
+| Computing Concepts | Python Basics | 41 |
+| Computing Concepts | Control Flow & Functions | 41 |
+| Computing Concepts | Collections & ADTs | 42 |
+| Computing Concepts | Modules & Objects | 41 |
+| Computing Concepts | Searching, Sorting & Big-O | 42 |
+| Computing Concepts | Software Engineering | 42 |
+| Computing Concepts | Databases & the Relational Model | 42 |
+| Computing Concepts | OS, Networks, Cloud & the Web | 42 |
+| Computing Concepts | Cybersecurity — Defending Systems | 41 |
+| Computing Concepts | AI, Machine Learning & Ethics | 41 |
 | Database | Database Foundations | 33 |
 | Database | Introduction to SQL: SELECT | 30 |
 | Database | Joins and Set Operations | 30 |
@@ -305,6 +331,9 @@ matches the number of questions actually in each file.
 |-----|----------|
 | `lotrd_save_${setId}` | In-progress game state for a set |
 | `lotrd_done_${setId}` | Completion record (timestamp, score %, level) |
+| `lotrd_tier_${setId}` | Mastery-tier record (tier, apprenticeAt/journeymanAt/masterAt timestamps) |
+| `lotrd_misses_${setId}` | Historical miss counts per question text (weights rank-trial samples) |
+| `lotrd_review_${setId}` | Spaced-review stage and last-reviewed timestamp |
 | `lotrd_global` | Lifetime totals: answered, correct, incorrect, best streak, sets completed |
 | `lotrd_player_level` | Global player level data (level, XP, revive charges) |
 | `lotrd_sound` | Sound preference: `"1"` on, `"0"` off |

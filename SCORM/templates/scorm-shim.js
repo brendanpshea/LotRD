@@ -1,9 +1,14 @@
 /* SCORM 1.2 shim for Loop of the Recursive Dragon.
  *
  * - Discovers the LMS API.
- * - Mirrors completed-set IDs into cmi.suspend_data so progress survives
- *   across devices.
- * - Reports score = (completed sets / total sets) * 100 to the gradebook.
+ * - Mirrors completed-set IDs AND mastery-tier records into cmi.suspend_data
+ *   so progress (including the tier timestamps that gate rank trials)
+ *   survives across devices.
+ * - Reports score = sum of per-set tier credit / total sets * 100:
+ *   Apprentice (first clear) 80%, Journeyman 90%, Master 100% of a set's
+ *   credit. Credit only ever rises, so the reported score stays monotonic.
+ *   Sets completed before the tier system existed count as Master
+ *   (grandfathered) so no student's score drops on upgrade.
  * - Renders a "Course progress" banner so students see live progress
  *   without waiting on the LMS gradebook view.
  *
@@ -14,6 +19,9 @@
   "use strict";
 
   const COMPLETION_PREFIX = "lotrd_done_";
+  const TIER_PREFIX = "lotrd_tier_";
+  const TIER_CREDIT = [0, 0.8, 0.9, 1.0];
+  const TIER_MASTER = 3;
   const POLL_MS = 3000;
 
   // ---------- LMS discovery ----------
@@ -86,41 +94,111 @@
     return n;
   }
 
+  function readJson(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) { return null; }
+  }
+
+  /** 0 = not cleared, 1..3 = Apprentice/Journeyman/Master. */
+  function tierForSet(id) {
+    const rec = readJson(TIER_PREFIX + id);
+    const t = rec && typeof rec.tier === "number" ? Math.floor(rec.tier) : 0;
+    if (t >= 1) return Math.min(t, TIER_MASTER);
+    // Cleared before the tier system existed: grandfathered at Master so the
+    // gradebook score never drops on upgrade.
+    try {
+      if (localStorage.getItem(COMPLETION_PREFIX + id)) return TIER_MASTER;
+    } catch (_) {}
+    return 0;
+  }
+
   function progressPercent() {
     if (totalSets === 0) return 0;
-    return Math.round((completedCount() / totalSets) * 100);
+    let credit = 0;
+    for (const id of playableIds) {
+      credit += TIER_CREDIT[tierForSet(id)] || 0;
+    }
+    return Math.round((credit / totalSets) * 100);
   }
 
   // ---------- suspend_data sync ----------
+  // v1 (legacy): a JSON array of completed set IDs.
+  // v2: { v: 2, sets: [[id, tier, apprenticeMs, journeymanMs, masterMs], ...] }
+  function msToIso(ms) {
+    return new Date(ms > 0 ? ms : 0).toISOString();
+  }
+
+  function isoToMs(iso) {
+    const ms = Date.parse(iso || "");
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  function restoreSet(id, tier, aMs, jMs, mMs) {
+    try {
+      const doneKey = COMPLETION_PREFIX + id;
+      if (!localStorage.getItem(doneKey)) {
+        localStorage.setItem(doneKey, JSON.stringify({
+          completedAt: msToIso(aMs),
+          score_pct: 100,
+          level: 0,
+          restored: true,
+        }));
+      }
+      const tierKey = TIER_PREFIX + id;
+      if (!localStorage.getItem(tierKey)) {
+        const rec = { tier: tier, apprenticeAt: msToIso(aMs), restored: true };
+        if (tier >= 2) rec.journeymanAt = msToIso(jMs);
+        if (tier >= 3) rec.masterAt = msToIso(mMs);
+        localStorage.setItem(tierKey, JSON.stringify(rec));
+      }
+    } catch (_) {}
+  }
+
   function restoreFromSuspendData() {
     if (!hasLms) return;
     const raw = lmsCall("LMSGetValue", "cmi.suspend_data");
     if (!raw) return;
     try {
-      const list = JSON.parse(raw);
-      if (!Array.isArray(list)) return;
-      for (const id of list) {
-        const key = COMPLETION_PREFIX + id;
-        try {
-          if (!localStorage.getItem(key)) {
-            localStorage.setItem(key, JSON.stringify({
-              completedAt: new Date(0).toISOString(),
-              score_pct: 100,
-              level: 0,
-              restored: true,
-            }));
-          }
-        } catch (_) {}
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) {
+        // Legacy format: completion implies full (grandfathered) credit.
+        for (const id of data) restoreSet(id, TIER_MASTER, 0, 0, 0);
+        return;
+      }
+      if (data && data.v === 2 && Array.isArray(data.sets)) {
+        for (const entry of data.sets) {
+          if (!Array.isArray(entry) || typeof entry[0] !== "string") continue;
+          const tier = Math.min(Math.max(Math.floor(entry[1]) || 0, 1), TIER_MASTER);
+          restoreSet(entry[0], tier, entry[2] || 0, entry[3] || 0, entry[4] || 0);
+        }
       }
     } catch (_) {}
   }
 
   function writeSuspendData() {
     if (!hasLms) return;
-    const done = playableIds.filter(id => {
-      try { return !!localStorage.getItem(COMPLETION_PREFIX + id); } catch (_) { return false; }
-    });
-    const json = JSON.stringify(done);
+    const sets = [];
+    for (const id of playableIds) {
+      const done = readJson(COMPLETION_PREFIX + id);
+      if (!done) continue;
+      let rec = readJson(TIER_PREFIX + id);
+      if (!rec || typeof rec.tier !== "number" || rec.tier < 1) {
+        // Legacy completion with no tier record: carry the grandfathered
+        // Master rank across devices too.
+        const at = isoToMs(done.completedAt);
+        rec = { tier: TIER_MASTER, apprenticeAt: msToIso(at), journeymanAt: msToIso(at), masterAt: msToIso(at) };
+      }
+      sets.push([
+        id,
+        Math.min(Math.floor(rec.tier), TIER_MASTER),
+        isoToMs(rec.apprenticeAt),
+        isoToMs(rec.journeymanAt),
+        isoToMs(rec.masterAt),
+      ]);
+    }
+    const json = JSON.stringify({ v: 2, sets: sets });
     if (json.length > 60000) return;
     lmsCall("LMSSetValue", "cmi.suspend_data", json);
   }
@@ -173,7 +251,8 @@
     const done = completedCount();
     const lmsTag = hasLms ? "" : " (offline)";
     el.textContent =
-      `Course progress: ${pct}%  ·  ${done} of ${totalSets} sets complete${lmsTag}`;
+      `Course score: ${pct}%  ·  ${done} of ${totalSets} sets cleared` +
+      ` — rank up cleared sets for full credit${lmsTag}`;
   }
 
   // ---------- main ----------

@@ -60,6 +60,14 @@
     "feedback": "A foreign key links two tables by referencing the primary key of another table, creating a relational link."
   },
   {
+    "type": "fill_blank",
+    "question": "A column holding values that match the primary key of another table, tying the two together, is called a ___ key.",
+    "correct": [
+      "foreign"
+    ],
+    "feedback": "A foreign key is the thread between tables: it stores another table's primary key so a row can point at the row holding the rest of the details."
+  },
+  {
     "question": "Which SQL statement is used to fetch and filter records from a database table?",
     "correct": [
       "SELECT"
@@ -176,6 +184,33 @@
       "LIMIT"
     ],
     "feedback": "GROUP BY partitions rows into summary groups so aggregate functions compute values for each category separately."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Following the thread between two ledgers",
+    "npc": "Ada the Artificer",
+    "intro": "The archive smells of dust and ink. Ada hauls down two ledgers and lays them side by side. “Beginners keep asking why the data is split up like this. Look at what the split buys you — and how you put it back together.”",
+    "steps": [
+      {
+        "say": "The candies ledger holds candy_id and name: 7 is Gloomberry Fizzer. The batches ledger holds batch_id, candy_id and made_on — it stores only the number 7, never the name. That is deliberate: the name is written in exactly one place, so renaming it can never leave half the archive stale."
+      },
+      {
+        "say": "But a report needs the dates WITH the names, so the two ledgers must be put back together.",
+        "check": {
+          "prompt": "What connects a batches row to the right candies row?",
+          "answer": "The candy_id in batches matching the candy_id in candies",
+          "wrong": [
+            "The two ledgers happen to be in the same row order",
+            "Sorting both ledgers alphabetically first"
+          ],
+          "why": "The foreign key is the thread. Row position means nothing in a relational table — only the matching key does."
+        }
+      },
+      {
+        "say": "You name that thread in the ON clause:\nSELECT candies.name, batches.made_on\nFROM batches\nJOIN candies ON batches.candy_id = candies.candy_id;\nEach batch row is paired with the one candy row whose key matches. That is all a JOIN is — following the foreign key back to the details."
+      }
+    ],
+    "outro": "“Now name the operation for yourself.”"
   },
   {
     "question": "The batches table stores only ID numbers, but a report needs each batch shown with its candy's name. Which SQL operation does that?",
@@ -408,6 +443,18 @@
       "Joining separate table columns together based on primary keys"
     ],
     "feedback": "ORDER BY sorts query results according to one or more specified columns (ASC or DESC)."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the clauses of a SQL SELECT query in the order they must be written.",
+    "items": [
+      "SELECT, naming the columns you want",
+      "FROM, naming the table they live in",
+      "WHERE, keeping only the rows that match",
+      "GROUP BY, folding rows into per-category summaries",
+      "ORDER BY, sorting the rows that come back"
+    ],
+    "feedback": "SQL fixes this order: SELECT, FROM, WHERE, GROUP BY, ORDER BY. Writing WHERE after GROUP BY, or ORDER BY before FROM, is a syntax error no matter how sensible it reads."
   },
   {
     "question": "Which SQL statement is used to create a new database table and define its columns?",

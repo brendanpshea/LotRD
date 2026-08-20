@@ -6,7 +6,7 @@
 
 ## File Format Overview
 
-Each question set is a **JSON array** of question objects saved in `question_sets/`. Five structured question types are documented below, with multiple-choice split into single-answer and multi-answer variants:
+Each question set is a **JSON array** of question objects saved in `question_sets/`. Seven structured question types are documented below (plus the non-question NPC teaching scene), with multiple-choice split into single-answer and multi-answer variants:
 
 | Type | `type` field | Selection UI | Best for |
 |------|-------------|-------------|----------|
@@ -15,12 +15,16 @@ Each question set is a **JSON array** of question objects saved in `question_set
 | Dynamic Numeric | `"dynamic_numeric"` | Numeric input | Randomized numeric reasoning, conversions, loop counts, storage math |
 | Matching | `"matching"` | Dropdowns | Associating terms with definitions |
 | Code Line | `"code_line"` | Text input + token-Wordle | Writing one line of code/command |
+| Ordering | `"ordering"` | Tap-to-sequence | Process steps, algorithm stages, Parsons-style code arrangement |
+| NPC Teaching Scene | `"npc_demo"` | Dialogue walkthrough | Worked examples immediately before a paired question (not a question itself) |
 
 A good problem set uses a **mix of all types**. Aim for roughly:
 - 60–70% multiple choice (split between single-answer and multi-answer)
 - 10–20% fill-in-the-blank
 - 10–20% dynamic numeric
 - 10–20% matching
+- a few ordering questions where the material has a real sequence
+- 1–3 NPC scenes per set, each directly followed by its paired question
 
 Dynamic numeric questions use a safe built-in expression engine. JSON content does **not** execute arbitrary JavaScript.
 
@@ -504,6 +508,93 @@ Use when the student should **write** (not just recognize) a single line of code
   "feedback": "List comprehensions filter with `if` and transform with the leading expression."
 }
 ```
+
+---
+
+## Type 7: Ordering
+
+Use when the material has a **genuine sequence**: stages of a process, steps of an algorithm, historical progression, or lines of a short program (Parsons-style).
+
+### Schema
+
+```json
+{
+  "type": "ordering",
+  "question": "Arrange one full turn of the instruction cycle in order.",
+  "items": [
+    "Fetch the next instruction from memory",
+    "Decode the instruction to see what it asks",
+    "Execute the operation"
+  ],
+  "feedback": "Fetch brings the instruction in, decode interprets it, execute carries it out."
+}
+```
+
+### Rules
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `type` | yes | `"ordering"` | Must be exactly this string |
+| `question` | yes | string | Say what is being ordered and in which direction |
+| `items` | yes | string[] | **In the correct order.** 3–6 items; must be unique strings |
+| `language` | no | string | Set (e.g. `"python"`) to render items in monospace for code lines |
+| `feedback` | no | string | Shown after answering |
+
+### Writing Good Ordering Questions
+
+1. **The order must be unambiguous.** Every adjacent pair should have exactly one defensible ordering. For code, make each line depend on the previous line's variable.
+2. **State the direction in the stem** ("earliest to latest", "fastest to slowest") — never assume.
+3. **Don't use ordering for lists without inherent sequence** — that's a matching or MC question.
+4. Scoring is positional: each item in its correct slot counts, so partially-right arrangements earn partial credit. Anything less than perfect requeues.
+
+---
+
+## Type 8: NPC Teaching Scene (`npc_demo`)
+
+**Not a question** — a worked example an NPC mentor walks through, step by step, immediately **before a paired question that uses the same technique with different surface features**. Scenes deal no damage, award no XP, never requeue, never appear in reviews or rank trials, and don't count toward the set's `question_count`.
+
+### Schema
+
+```json
+{
+  "type": "npc_demo",
+  "question": "NPC: Turning 13 into binary",
+  "npc": "Ada the Artificer",
+  "intro": "Scene-setting text shown in italics before the first step.",
+  "steps": [
+    { "say": "First teaching beat — one idea per step." },
+    { "say": "Second beat, ending just before a decision point.",
+      "check": {
+        "prompt": "What comes next?",
+        "answer": "The right next move",
+        "wrong": ["A plausible wrong move", "Another one"],
+        "why": "One sentence explaining the right move."
+      }
+    },
+    { "say": "Final beat: complete the example and state the takeaway pattern." }
+  ],
+  "outro": "Hand-off line pointing at the paired question that follows."
+}
+```
+
+### Rules
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `type` | yes | `"npc_demo"` | Must be exactly this string |
+| `question` | yes | string | The scene's title (shown as a caption; also its identity — must be unique). Prefix with `NPC:` by convention |
+| `npc` | no | string | Mentor's name; defaults to "Ada the Artificer" |
+| `intro` / `outro` | no | string | Scene-setting and hand-off lines |
+| `steps` | yes | object[] | 2–4 steps; each needs `say`, may carry one `check` |
+| `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues |
+
+### Writing Good NPC Scenes
+
+1. **Always pair it.** The very next entry in the array should be a real question using the same technique with different numbers/words (dynamic_numeric pairs beautifully: the scene demos 13 → binary, the monster asks for 22).
+2. **Make at least one step a `check`** — a faded worked example beats a passive one. Put the check where the learner can predict the next move from what was just shown.
+3. **One idea per step.** If a `say` needs three sentences of new content, split it.
+4. **Don't re-teach what the set already tested** — scenes introduce technique for the questions that follow, not summaries of earlier material.
+5. Sets present in **array order** on a first full run, so the scene/question adjacency is preserved; reviews and trials skip scenes automatically.
 
 ---
 
