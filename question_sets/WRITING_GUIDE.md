@@ -303,6 +303,17 @@ Use for **randomized numeric problems** where the prompt contains generated valu
 | `answer.tolerance_abs` | no | number | Absolute error allowed; default `0` |
 | `answer.display_decimals` | no | integer | Optional display rounding for the expected answer |
 | `feedback_template` | no | string | Template rendered after variables and `expected` are resolved |
+| `allow_expression` | no | boolean | Default `true`. Whether the student may type arithmetic instead of a number — see below |
+
+### Letting Students Type Arithmetic
+
+By default a student may answer `7 * 7 * 7` instead of `343`, and the same safe parser that computes the answer key works it out. This is usually what you want: for most numeric questions the setup is the skill and the multiplication is incidental, and the expression is *better* evidence of understanding than the number is — `343` could come from a calculator or a guess.
+
+**Set `"allow_expression": false` when the stem shows the arithmetic being asked for.** On *"What does `{{a}} + {{b}} ** {{c}}` evaluate to?"* the student could paste the expression straight back and let the grader do the work, which is the entire question.
+
+You do not have to spot these by eye. `data.test.js` renders every stem with its own variables, evaluates each arithmetic run inside it, and fails the build if one equals the answer while the question still allows expressions.
+
+> **Never state how far a wrong answer was off.** Feedback on a wrong attempt gives direction only — "Too low." or "Too high." Saying "off by 15" hands over the answer, because the student has three attempts and can simply add 15.
 
 ### Supported Dynamic Helpers
 

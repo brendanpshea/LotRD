@@ -1,6 +1,6 @@
 import { shuffle, TIER_MASTER, TIER_NAMES, TIER_BADGES } from "./util.js";
 import { highlightJava } from "./highlight.js";
-import { parseClozeSegments } from "./model.js";
+import { parseClozeSegments, evaluateDynamicExpression } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
 
 const LEVEL_TITLES = [
@@ -759,6 +759,29 @@ export class GameUI {
     if (inputs.length > 0) inputs[0].focus();
   }
 
+  /**
+   * An example expression for the hint that cannot itself be the answer.
+   * Advertising "such as 7 * 7 * 7" on a question whose answer is 343 would
+   * simply print the solution, so every candidate is checked against the
+   * expected value (and its tolerance) before being shown.
+   */
+  _safeExpressionExample(meta) {
+    const candidates = ["12 * 5", "9 + 4", "2 ** 6", "144 / 12", "25 - 8"];
+    const expected = Number(meta?.expected);
+    const tol = Number(meta?.tolerance_abs ?? 0);
+    for (const text of candidates) {
+      let value;
+      try {
+        value = evaluateDynamicExpression(text.replace(/\s+/g, ""), {});
+      } catch (_) {
+        continue;
+      }
+      if (!Number.isFinite(expected) || Math.abs(value - expected) > tol) return text;
+    }
+    // Every candidate collided, which needs no numbers at all to describe.
+    return "a product or a power";
+  }
+
   showEncounterFillBlank() {
     this._clearKeyboard();
     const q = this.model.current_question;
@@ -777,7 +800,14 @@ export class GameUI {
     if (isDynamicNumeric) {
       const meta = this.model.getDynamicNumericMeta();
       const tol = meta ? String(meta.tolerance_abs) : "0";
-      charHintEl.textContent = `Enter a number. Answers within +/- ${tol} count as correct.`;
+      const tolNote = Number(tol) > 0 ? ` Answers within +/- ${tol} count as correct.` : "";
+      if (q.allow_expression === false) {
+        charHintEl.textContent = `Enter a number.${tolNote}`;
+      } else {
+        const example = this._safeExpressionExample(meta);
+        charHintEl.textContent =
+          `Enter a number, or arithmetic such as ${example} and it will be worked out for you.${tolNote}`;
+      }
       input.setAttribute("inputmode", "decimal");
       input.placeholder = "Type a number…";
     } else {
@@ -999,7 +1029,15 @@ export class GameUI {
     const notices = [];
 
     if (isDynamicNumeric) {
-      if (result.feedbackText) notices.push(result.feedbackText);
+      // When the student typed arithmetic, show what it came to — otherwise
+      // "Too high" is puzzling next to an expression they haven't evaluated.
+      const typed = String(result.guessText ?? "").trim();
+      const value = result.evaluated;
+      const wasExpression = typed && Number.isFinite(value)
+        && typed.replace(/[,_\s]/g, "") !== String(value);
+      notices.push(wasExpression
+        ? `${typed} = ${value} — ${result.feedbackText || ""}`.trim()
+        : (result.feedbackText || ""));
     } else {
       this._appendWordleRow(result.feedback);
     }

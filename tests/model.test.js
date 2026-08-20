@@ -1856,3 +1856,81 @@ describe('GameModel.evaluateCloze', () => {
     assert.equal(gm._buildBossQueue().length, 1);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Numeric answers: expressions in, no answer leakage out
+// ────────────────────────────────────────────────────────────────────────────────
+describe('dynamic_numeric expression input', () => {
+  function lockQuestion(overrides = {}) {
+    return {
+      type: 'dynamic_numeric',
+      question: 'A lock has {{dials}} dials of {{positions}} settings. How many combinations?',
+      variables: { dials: { values: [3] }, positions: { values: [7] } },
+      answer: { expr: 'pow(positions, dials)', tolerance_abs: 0 },
+      feedback_template: 'That is {{expected}} combinations.',
+      ...overrides,
+    };
+  }
+  function started(q = lockQuestion()) {
+    const gm = new GameModel([q], SAMPLE_MONSTERS, null, { level: 40, xp: 0, revive_charges: 9 });
+    gm.nextEncounter();
+    gm.player.hit_points = 9999;
+    gm.player.max_hit_points = 9999;
+    return gm;
+  }
+
+  it('accepts an equivalent expression instead of the computed number', () => {
+    assert.equal(started().submitDynamicNumericGuess('7 * 7 * 7').status, 'won');
+    assert.equal(started().submitDynamicNumericGuess('7**3').status, 'won');
+    assert.equal(started().submitDynamicNumericGuess('343').status, 'won');
+  });
+
+  it('still accepts plain numbers with separators', () => {
+    const gm = new GameModel([lockQuestion({
+      variables: { dials: { values: [2] }, positions: { values: [10] } },
+    })], SAMPLE_MONSTERS, null, null);
+    gm.nextEncounter();
+    assert.equal(gm.submitDynamicNumericGuess('100').status, 'won');
+  });
+
+  it('rejects expressions when the author opted out', () => {
+    const gm = started(lockQuestion({ allow_expression: false }));
+    assert.equal(gm.submitDynamicNumericGuess('7 * 7 * 7').status, 'invalid');
+  });
+
+  it('does not resolve bare identifiers against the question variables', () => {
+    // "dials" must not evaluate to 3 just because the question has that variable.
+    const gm = started();
+    assert.equal(gm.submitDynamicNumericGuess('positions ** dials').status, 'invalid');
+  });
+
+  it('rejects nonsense and non-finite results rather than scoring them', () => {
+    assert.equal(started().submitDynamicNumericGuess('hello').status, 'invalid');
+    assert.equal(started().submitDynamicNumericGuess('7 +').status, 'invalid');
+    assert.equal(started().submitDynamicNumericGuess('((7 * 7)').status, 'invalid');
+    // Overflows to Infinity rather than throwing, so it needs the finite check.
+    assert.equal(started().submitDynamicNumericGuess('pow(9, 99999)').status, 'invalid');
+  });
+
+  it('whitespace is ignored, so spaced-out arithmetic still parses', () => {
+    assert.equal(started().submitDynamicNumericGuess('  7  *  7  *  7  ').status, 'won');
+  });
+
+  it('a wrong answer reveals direction only, never the distance', () => {
+    const gm = started();
+    const res = gm.submitDynamicNumericGuess('300');
+    assert.equal(res.status, 'wrong');
+    assert.equal(res.feedbackText, 'Too low.');
+    // Naming the gap would hand over the answer: 300 + 43 solves it outright.
+    assert.ok(!/43/.test(res.feedbackText), 'feedback must not contain the error size');
+    assert.ok(!/343/.test(res.feedbackText), 'feedback must not contain the answer');
+    const high = started().submitDynamicNumericGuess('400');
+    assert.equal(high.feedbackText, 'Too high.');
+  });
+
+  it('reports what an expression evaluated to, so the guess can be echoed', () => {
+    const res = started().submitDynamicNumericGuess('7 * 7');
+    assert.equal(res.status, 'wrong');
+    assert.equal(res.evaluated, 49);
+  });
+});

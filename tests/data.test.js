@@ -693,6 +693,67 @@ describe('Question set file validation', () => {
   }
 });
 
+describe('Numeric answers cannot be lifted straight from the stem', () => {
+  // A dynamic_numeric question may accept arithmetic in the answer box, so the
+  // student can type 7 * 7 * 7 rather than doing the multiplication by hand.
+  // That is only safe while the stem does not already contain an expression
+  // worth the answer -- otherwise it can be pasted back and the grader does the
+  // work. This checks the real thing rather than guessing from wording: it
+  // renders each stem with its own variables and evaluates every arithmetic
+  // run inside it.
+  const index = loadJSON('question_sets/index.json');
+  const ARITH = /[-+*/%(). \d]*\d[-+*/%(). \d]*/g;
+
+  it('no stem contains arithmetic equal to its own answer', () => {
+    const flagged = [];
+
+    for (const setId of index) {
+      const questions = loadJSON(`question_sets/${setId}`);
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (q.type !== 'dynamic_numeric') continue;
+        if (q.allow_expression === false) continue;   // author opted out
+
+        const stemTemplate = q.question_template || q.question;
+        for (const vars of expandDynamicAssignments(q.variables, `${setId}[${i}]`).slice(0, 60)) {
+          const derived = {};
+          for (const [name, expr] of Object.entries(q.derived || {})) {
+            derived[name] = evaluateDynamicExpression(expr, { ...vars, ...derived });
+          }
+          const scope = { ...vars, ...derived };
+          const expected = evaluateDynamicExpression(q.answer.expr, scope);
+          const tol = Number(q.answer.tolerance_abs ?? 0);
+
+          const rendered = stemTemplate.replace(
+            /\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}/g,
+            (m, key) => (key in scope ? String(scope[key]) : m));
+
+          for (const run of rendered.match(ARITH) || []) {
+            // Trim sentence punctuation the scan swept up ("... w2 = -1.").
+            const text = run.trim().replace(/[.\s]+$/, '');
+            // Only a genuine binary operation counts as "the arithmetic is on
+            // screen". A bare number, or a negative one, is not something the
+            // student can paste to avoid the work.
+            if (!/\d\s*[-+*/%]+\s*\(*\s*-?\s*\d/.test(text)) continue;
+            let value;
+            try { value = evaluateDynamicExpression(text.replace(/\s+/g, ''), {}); }
+            catch (_) { continue; }
+            if (Number.isFinite(value) && Math.abs(value - expected) <= tol) {
+              flagged.push(`${setId}[${i}]: stem contains "${text.trim()}" which equals the answer ` +
+                `(${expected}). Set "allow_expression": false, or reword the stem.`);
+              break;
+            }
+          }
+          if (flagged.length && flagged[flagged.length - 1].startsWith(`${setId}[${i}]`)) break;
+        }
+      }
+    }
+
+    assert.deepEqual(flagged, [],
+      `Answer can be lifted from the stem:\n${flagged.join('\n')}`);
+  });
+});
+
 describe('Question set quality heuristics', () => {
   const index = loadJSON('question_sets/index.json');
 

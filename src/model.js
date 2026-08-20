@@ -1431,14 +1431,37 @@ export class GameModel {
         this._dnBestAbsError = Infinity;
     }
 
+    /**
+     * Whether this question accepts arithmetic in the answer box. Default yes:
+     * for most numeric questions the setup is the skill and the multiplication
+     * is incidental, and "7 * 7 * 7" is better evidence of understanding than
+     * "343" is. Authors turn it off (allow_expression: false) where the stem
+     * shows the arithmetic, since there the student could paste it straight
+     * back and have the grader do the work.
+     */
+    _expressionsAllowed() {
+        return this.current_question?.allow_expression !== false;
+    }
+
     _parseDynamicNumericGuess(inputText) {
         const raw = String(inputText ?? '').trim();
         if (!raw) return null;
         const normalized = raw.replace(/[,_\s]/g, '');
         if (!normalized) return null;
         const value = Number(normalized);
-        if (!Number.isFinite(value)) return null;
-        return value;
+        if (Number.isFinite(value)) return value;
+
+        // Not a bare number. Hand it to the same parser that computes the
+        // answer key — a hand-written one, so nothing is evaluated as code —
+        // with an empty scope so bare identifiers are rejected rather than
+        // resolving to a variable of the question.
+        if (!this._expressionsAllowed()) return null;
+        try {
+            const computed = evaluateDynamicExpression(normalized, {});
+            return Number.isFinite(computed) ? computed : null;
+        } catch (_) {
+            return null;
+        }
     }
 
     _dynamicNumericDisplay(value, decimals = null) {
@@ -1471,7 +1494,9 @@ export class GameModel {
         if (guessValue === null) {
             return {
                 status: 'invalid',
-                message: 'Please enter a valid number.',
+                message: this._expressionsAllowed()
+                    ? "That isn't a number or an arithmetic expression this can work out."
+                    : 'Please enter a valid number.',
             };
         }
 
@@ -1527,13 +1552,17 @@ export class GameModel {
         }
         this.player.hit_points -= effective_monster_damage;
 
+        // Direction only. Naming the size of the error would hand over the
+        // answer: with three attempts, "off by 15" is just the answer minus 15.
         const direction = guessValue < expectedValue ? 'Too low.' : 'Too high.';
-        const errText = this._dynamicNumericDisplay(absError, q.display_decimals ?? q.answer?.display_decimals ?? null);
 
         return {
             status: 'wrong',
             feedback,
-            feedbackText: `${direction} Off by ${errText}; accepted error is +/- ${this._dynamicNumericDisplay(toleranceAbs)}.`,
+            feedbackText: direction,
+            // What the box made of the input, so an expression can be echoed
+            // back ("7*7*7 = 343") without revealing anything about the key.
+            evaluated: guessValue,
             guessText: inputText,
             attemptsUsed: this._dnAttempts,
             attemptsLeft: FB_MAX_ATTEMPTS - this._dnAttempts,
