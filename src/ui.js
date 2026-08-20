@@ -1386,6 +1386,23 @@ export class GameUI {
     const body = $(this.root, "[data-ref=clozeBody]");
     const inputs = new Map();
 
+    // A cloze over code needs a monospace face and literal indentation, or the
+    // shape of the program — which is half of what the question is testing —
+    // is lost to the prose font.
+    if (q.language) {
+      body.classList.add("cloze-body--code");
+      const label = $(this.root, "[data-ref=clozeLabel]");
+      if (label) label.textContent = "Complete the code:";
+    }
+
+    // Instructions belong outside the listing: inside it they inherit `pre`, so a
+    // sentence runs off the side of the screen instead of wrapping.
+    const prompt = $(this.root, "[data-ref=clozePrompt]");
+    if (prompt && q.prompt) {
+      prompt.textContent = q.prompt;
+      prompt.hidden = false;
+    }
+
     parseClozeSegments(q.question).forEach(seg => {
       if (seg.type === "text") {
         body.appendChild(document.createTextNode(seg.value));

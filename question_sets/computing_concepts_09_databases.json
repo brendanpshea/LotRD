@@ -199,6 +199,28 @@
     "feedback": "GROUP BY partitions rows into summary groups so aggregate functions compute values for each category separately."
   },
   {
+    "type": "cloze",
+    "prompt": "Fill in the blanks so this query reports how many candies each maker has.",
+    "question": "SELECT maker, {{1}}(*)\nFROM candies\n{{2}} maker;",
+    "language": "sql",
+    "blanks": [
+      {
+        "accept": [
+          "COUNT"
+        ],
+        "hint": "aggregate"
+      },
+      {
+        "accept": [
+          "GROUP BY",
+          "GROUP"
+        ],
+        "hint": "clause"
+      }
+    ],
+    "feedback": "The aggregate folds many rows into one number, and the grouping clause says what to fold them by — one result row per distinct maker. Without the grouping clause you get a single row counting the whole table."
+  },
+  {
     "type": "npc_demo",
     "question": "NPC: Following the thread between two ledgers",
     "npc": "kaelen",
@@ -256,6 +278,28 @@
       "INSERT, copying the candy name into the batches table"
     ],
     "feedback": "The ON clause says how rows pair up. This is the deal the relational model offers: store every fact once, in the table where it belongs, then use JOIN to recombine facts whenever a question needs them."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the blanks so this query pairs each batch with the name of the candy it holds.",
+    "question": "SELECT candies.name\nFROM batches\n{{1}} candies\n  {{2}} batches.candy_id = candies.id;",
+    "language": "sql",
+    "blanks": [
+      {
+        "accept": [
+          "JOIN",
+          "INNER JOIN"
+        ],
+        "hint": "clause"
+      },
+      {
+        "accept": [
+          "ON"
+        ],
+        "hint": "match on"
+      }
+    ],
+    "feedback": "The join names the second table, and the condition after it says which column in one table lines up with which column in the other. Leave that condition out and the database pairs every batch with every candy."
   },
   {
     "type": "dynamic_numeric",
@@ -543,6 +587,19 @@
     "feedback": "SQL fixes this order: SELECT, FROM, WHERE, GROUP BY, ORDER BY. Writing WHERE after GROUP BY, or ORDER BY before FROM, is a syntax error no matter how sensible it reads."
   },
   {
+    "type": "ordering",
+    "question": "The candies table has columns name, maker, and sugar_grams. Arrange these lines into a query that counts the low-sugar candies made by each maker, most first.",
+    "language": "sql",
+    "items": [
+      "SELECT maker, COUNT(*)",
+      "FROM candies",
+      "WHERE sugar_grams < 20",
+      "GROUP BY maker",
+      "ORDER BY COUNT(*) DESC;"
+    ],
+    "feedback": "SQL fixes this order and will not accept any other. Note where the filtering happens: WHERE runs before the rows are grouped, so it decides which candies get counted at all, not which totals survive."
+  },
+  {
     "type": "cloze",
     "question": "In a query, the {{1}} clause names the table the rows come from, the {{2}} clause decides which of those rows are kept, and the {{3}} clause decides the sequence the surviving rows are listed in.",
     "blanks": [
@@ -580,6 +637,17 @@
       "BUILD TABLE"
     ],
     "feedback": "CREATE TABLE is the DDL command used to establish a new table and specify column data types and constraints."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange these three statements into the order a database must receive them.",
+    "language": "sql",
+    "items": [
+      "CREATE TABLE makers (id INTEGER PRIMARY KEY, name TEXT);",
+      "INSERT INTO makers (id, name) VALUES (1, 'Fizzworks');",
+      "SELECT name FROM makers WHERE id = 1;"
+    ],
+    "feedback": "The shape has to exist before rows can go into it, and rows have to exist before a query can return them. The first line is DDL — it defines structure — while the other two are DML, working with the data inside that structure."
   },
   {
     "question": "A query pulls a  taste  field from three documents, and one comes back empty because that document has no taste field. What does this show about the document model?",
