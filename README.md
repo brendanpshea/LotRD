@@ -38,6 +38,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Global stats** — `lotrd_global` accumulates lifetime totals across all sets
 - **Session review** — question-by-question pass/fail breakdown with export to `.txt`
 - **Direct-link support** — instructors can share `?set=filename.json` URLs
+- **Encounter screen** — the monster sprite is shown at its native 128px, with its level and an HP bar; the player's HP mirrors it. Flavour text sits behind an **Examine** toggle that opens itself the first time you meet a monster in a run and stays folded away after, so the description is something you read once rather than on every question. The retrieval boss keeps its line always visible, since there it reports concepts remaining rather than flavour
 - **Sound effects** — Web Audio API; toggle with 🔊 button in toolbar
 - **Streak bonuses** — consecutive perfect answers multiply player damage (1.25×, 1.5×, 2×)
 - **Global level** — player level and revive charges persist across all question sets

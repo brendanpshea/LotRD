@@ -107,68 +107,8 @@
 
   <!-- ── Ordering encounter (arrange the steps) ─────────────────── -->
   <template id="tpl-encounter-ordering">
-    <div class="bbs-container" role="region" aria-label="Monster encounter">
-      <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
-      <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
-      <div class="monster-layout">
-        <div class="monster-image-container" data-ref="imgWrap" hidden>
-          <img class="monster-image" data-ref="img" alt="">
-        </div>
-        <div class="monster-details">
-          <div class="monster-name-line">
-            <span class="bold underline" data-ref="mName"></span><span data-ref="mDesc"></span>
-          </div>
-          <div class="monster-hp-block">
-            HP: <span class="yellow" data-ref="mHP"></span>
-            <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
-          </div>
-          <div class="player-hud" aria-label="Player stats">
-            <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⭐</span><span class="sr-only">Level</span> Lvl <span data-ref="pLvl"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">✦</span><span class="sr-only">XP:</span> <span data-ref="pXP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⚗️</span><span class="sr-only">Revives:</span> <span data-ref="pRevive"></span></span>
-          </div>
-        </div>
-      </div>
-      <div class="inventory-row" data-ref="inventory" role="group" aria-label="Inventory: 2 item slots">
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot0" data-slot="0"
-                aria-label="Item slot 1, empty (shortcut Q)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">Q</span>
-          <span class="inv-slot-icon" data-ref="invIcon0">·</span>
-          <span class="inv-slot-name" data-ref="invName0">empty</span>
-        </button>
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot1" data-slot="1"
-                aria-label="Item slot 2, empty (shortcut W)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">W</span>
-          <span class="inv-slot-icon" data-ref="invIcon1">·</span>
-          <span class="inv-slot-name" data-ref="invName1">empty</span>
-        </button>
-        <span class="inv-pending" data-ref="invPending" aria-live="polite"></span>
-      </div>
-    </div>
-
-    <!-- ── Journey progress ──────────────────────────────────────── -->
-    <div class="bbs-container progress-section" data-ref="progressSection"
-         role="region" aria-label="Journey progress">
-      <div class="prog-header">
-        <span class="prog-label">⚔ JOURNEY</span>
-        <span class="prog-stats" data-ref="progStats"></span>
-      </div>
-      <div class="prog-corridor" aria-hidden="true">
-        <div class="prog-blocks" data-ref="progBar"></div>
-        <span class="prog-dragon">🐉</span>
-      </div>
-      <div class="retry-row" data-ref="retryRow" hidden aria-live="polite">
-        <span class="retry-label">↺ Retry:</span>
-        <div class="prog-blocks prog-blocks--sm" data-ref="retryBar"></div>
-        <span class="retry-text" data-ref="retryText"></span>
-      </div>
-    </div>
-
-    <div class="bbs-container" role="region" aria-label="Ordering question">
+    <div data-ref="encounterChrome"></div>
+<div class="bbs-container" role="region" aria-label="Ordering question">
       <div class="section">
         <span class="bold">Put the steps in order:</span>
         <span data-ref="qText"></span>
@@ -212,8 +152,10 @@
     </div>
   </template>
 
-  <!-- ── Encounter screen ───────────────────────────────────────── -->
-  <template id="tpl-encounter">
+  <!-- ── Shared encounter chrome: monster header + journey progress ──
+       Cloned into every encounter screen's [data-ref=encounterChrome]
+       placeholder, so this markup exists once instead of seven times. -->
+  <template id="tpl-encounter-chrome">
     <div class="bbs-container" role="region" aria-label="Monster encounter">
       <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
       <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
@@ -223,7 +165,8 @@
         </div>
         <div class="monster-details">
           <div class="monster-name-line">
-            <span class="bold underline" data-ref="mName"></span><span data-ref="mDesc"></span>
+            <span class="bold underline" data-ref="mName"></span>
+            <span class="monster-tier dim" data-ref="mTier"></span>
           </div>
           <div class="monster-hp-block">
             HP: <span class="yellow" data-ref="mHP"></span>
@@ -231,6 +174,7 @@
           </div>
           <div class="player-hud" aria-label="Player stats">
             <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
+            <span class="player-hp-bar-wrap" aria-hidden="true"><span class="player-hp-bar" data-ref="pHPBar"></span></span>
             <span class="hud-sep" aria-hidden="true">·</span>
             <span class="hud-item"><span aria-hidden="true">⭐</span><span class="sr-only">Level</span> Lvl <span data-ref="pLvl"></span></span>
             <span class="hud-sep" aria-hidden="true">·</span>
@@ -240,6 +184,14 @@
           </div>
         </div>
       </div>
+      <!-- Flavour text is worth reading once per monster, not on every
+           encounter, so it folds away after the first sighting. Kept outside
+           the portrait row so it gets the full width instead of a narrow
+           column, which on a phone turned it into a ten-line ribbon. -->
+      <details class="monster-examine" data-ref="mExamine">
+        <summary class="monster-examine-toggle">Examine</summary>
+        <div class="monster-examine-body" data-ref="mDesc"></div>
+      </details>
       <div class="inventory-row" data-ref="inventory" role="group" aria-label="Inventory: 2 item slots">
         <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot0" data-slot="0"
                 aria-label="Item slot 1, empty (shortcut Q)" disabled>
@@ -274,8 +226,12 @@
         <span class="retry-text" data-ref="retryText"></span>
       </div>
     </div>
+  </template>
 
-    <div class="bbs-container" role="region" aria-label="Question and answers">
+  <!-- ── Encounter screen ───────────────────────────────────────── -->
+  <template id="tpl-encounter">
+    <div data-ref="encounterChrome"></div>
+<div class="bbs-container" role="region" aria-label="Question and answers">
       <div class="section">
         <span class="bold">Question:</span>
         <span data-ref="qText"></span>
@@ -296,68 +252,8 @@
 
   <!-- ── Fill-in-the-blank encounter ───────────────────────────── -->
   <template id="tpl-encounter-fill-blank">
-    <div class="bbs-container" role="region" aria-label="Monster encounter">
-      <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
-      <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
-      <div class="monster-layout">
-        <div class="monster-image-container" data-ref="imgWrap" hidden>
-          <img class="monster-image" data-ref="img" alt="">
-        </div>
-        <div class="monster-details">
-          <div class="monster-name-line">
-            <span class="bold underline" data-ref="mName"></span><span data-ref="mDesc"></span>
-          </div>
-          <div class="monster-hp-block">
-            HP: <span class="yellow" data-ref="mHP"></span>
-            <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
-          </div>
-          <div class="player-hud" aria-label="Player stats">
-            <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⭐</span><span class="sr-only">Level</span> Lvl <span data-ref="pLvl"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">✦</span><span class="sr-only">XP:</span> <span data-ref="pXP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⚗️</span><span class="sr-only">Revives:</span> <span data-ref="pRevive"></span></span>
-          </div>
-        </div>
-      </div>
-      <div class="inventory-row" data-ref="inventory" role="group" aria-label="Inventory: 2 item slots">
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot0" data-slot="0"
-                aria-label="Item slot 1, empty (shortcut Q)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">Q</span>
-          <span class="inv-slot-icon" data-ref="invIcon0">·</span>
-          <span class="inv-slot-name" data-ref="invName0">empty</span>
-        </button>
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot1" data-slot="1"
-                aria-label="Item slot 2, empty (shortcut W)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">W</span>
-          <span class="inv-slot-icon" data-ref="invIcon1">·</span>
-          <span class="inv-slot-name" data-ref="invName1">empty</span>
-        </button>
-        <span class="inv-pending" data-ref="invPending" aria-live="polite"></span>
-      </div>
-    </div>
-
-    <!-- ── Journey progress ──────────────────────────────────────── -->
-    <div class="bbs-container progress-section" data-ref="progressSection"
-         role="region" aria-label="Journey progress">
-      <div class="prog-header">
-        <span class="prog-label">⚔ JOURNEY</span>
-        <span class="prog-stats" data-ref="progStats"></span>
-      </div>
-      <div class="prog-corridor" aria-hidden="true">
-        <div class="prog-blocks" data-ref="progBar"></div>
-        <span class="prog-dragon">🐉</span>
-      </div>
-      <div class="retry-row" data-ref="retryRow" hidden aria-live="polite">
-        <span class="retry-label">↺ Retry:</span>
-        <div class="prog-blocks prog-blocks--sm" data-ref="retryBar"></div>
-        <span class="retry-text" data-ref="retryText"></span>
-      </div>
-    </div>
-
-    <div class="bbs-container" role="region" aria-label="Fill in the blank">
+    <div data-ref="encounterChrome"></div>
+<div class="bbs-container" role="region" aria-label="Fill in the blank">
       <div class="section">
         <span class="bold">Fill in the blank:</span>
         <span data-ref="qText"></span>
@@ -381,67 +277,8 @@
 
   <!-- ── Code-line encounter (single-line code authoring) ──────── -->
   <template id="tpl-encounter-code-line">
-    <div class="bbs-container" role="region" aria-label="Monster encounter">
-      <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
-      <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
-      <div class="monster-layout">
-        <div class="monster-image-container" data-ref="imgWrap" hidden>
-          <img class="monster-image" data-ref="img" alt="">
-        </div>
-        <div class="monster-details">
-          <div class="monster-name-line">
-            <span class="bold underline" data-ref="mName"></span><span data-ref="mDesc"></span>
-          </div>
-          <div class="monster-hp-block">
-            HP: <span class="yellow" data-ref="mHP"></span>
-            <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
-          </div>
-          <div class="player-hud" aria-label="Player stats">
-            <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⭐</span><span class="sr-only">Level</span> Lvl <span data-ref="pLvl"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">✦</span><span class="sr-only">XP:</span> <span data-ref="pXP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⚗️</span><span class="sr-only">Revives:</span> <span data-ref="pRevive"></span></span>
-          </div>
-        </div>
-      </div>
-      <div class="inventory-row" data-ref="inventory" role="group" aria-label="Inventory: 2 item slots">
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot0" data-slot="0"
-                aria-label="Item slot 1, empty (shortcut Q)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">Q</span>
-          <span class="inv-slot-icon" data-ref="invIcon0">·</span>
-          <span class="inv-slot-name" data-ref="invName0">empty</span>
-        </button>
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot1" data-slot="1"
-                aria-label="Item slot 2, empty (shortcut W)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">W</span>
-          <span class="inv-slot-icon" data-ref="invIcon1">·</span>
-          <span class="inv-slot-name" data-ref="invName1">empty</span>
-        </button>
-        <span class="inv-pending" data-ref="invPending" aria-live="polite"></span>
-      </div>
-    </div>
-
-    <div class="bbs-container progress-section" data-ref="progressSection"
-         role="region" aria-label="Journey progress">
-      <div class="prog-header">
-        <span class="prog-label">⚔ JOURNEY</span>
-        <span class="prog-stats" data-ref="progStats"></span>
-      </div>
-      <div class="prog-corridor" aria-hidden="true">
-        <div class="prog-blocks" data-ref="progBar"></div>
-        <span class="prog-dragon">🐉</span>
-      </div>
-      <div class="retry-row" data-ref="retryRow" hidden aria-live="polite">
-        <span class="retry-label">↺ Retry:</span>
-        <div class="prog-blocks prog-blocks--sm" data-ref="retryBar"></div>
-        <span class="retry-text" data-ref="retryText"></span>
-      </div>
-    </div>
-
-    <div class="bbs-container" role="region" aria-label="Write the code">
+    <div data-ref="encounterChrome"></div>
+<div class="bbs-container" role="region" aria-label="Write the code">
       <div class="section">
         <span class="bold">Write one line:</span>
         <span data-ref="qText"></span>
@@ -466,67 +303,8 @@
 
   <!-- ── Code-trace encounter ──────────────────────────────────── -->
   <template id="tpl-encounter-code-trace">
-    <div class="bbs-container" role="region" aria-label="Monster encounter">
-      <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
-      <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
-      <div class="monster-layout">
-        <div class="monster-image-container" data-ref="imgWrap" hidden>
-          <img class="monster-image" data-ref="img" alt="">
-        </div>
-        <div class="monster-details">
-          <div class="monster-name-line">
-            <span class="bold underline" data-ref="mName"></span><span data-ref="mDesc"></span>
-          </div>
-          <div class="monster-hp-block">
-            HP: <span class="yellow" data-ref="mHP"></span>
-            <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
-          </div>
-          <div class="player-hud" aria-label="Player stats">
-            <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⭐</span><span class="sr-only">Level</span> Lvl <span data-ref="pLvl"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">✦</span><span class="sr-only">XP:</span> <span data-ref="pXP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⚗️</span><span class="sr-only">Revives:</span> <span data-ref="pRevive"></span></span>
-          </div>
-        </div>
-      </div>
-      <div class="inventory-row" data-ref="inventory" role="group" aria-label="Inventory: 2 item slots">
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot0" data-slot="0"
-                aria-label="Item slot 1, empty (shortcut Q)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">Q</span>
-          <span class="inv-slot-icon" data-ref="invIcon0">·</span>
-          <span class="inv-slot-name" data-ref="invName0">empty</span>
-        </button>
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot1" data-slot="1"
-                aria-label="Item slot 2, empty (shortcut W)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">W</span>
-          <span class="inv-slot-icon" data-ref="invIcon1">·</span>
-          <span class="inv-slot-name" data-ref="invName1">empty</span>
-        </button>
-        <span class="inv-pending" data-ref="invPending" aria-live="polite"></span>
-      </div>
-    </div>
-
-    <div class="bbs-container progress-section" data-ref="progressSection"
-         role="region" aria-label="Journey progress">
-      <div class="prog-header">
-        <span class="prog-label">⚔ JOURNEY</span>
-        <span class="prog-stats" data-ref="progStats"></span>
-      </div>
-      <div class="prog-corridor" aria-hidden="true">
-        <div class="prog-blocks" data-ref="progBar"></div>
-        <span class="prog-dragon">🐉</span>
-      </div>
-      <div class="retry-row" data-ref="retryRow" hidden aria-live="polite">
-        <span class="retry-label">↺ Retry:</span>
-        <div class="prog-blocks prog-blocks--sm" data-ref="retryBar"></div>
-        <span class="retry-text" data-ref="retryText"></span>
-      </div>
-    </div>
-
-    <div class="bbs-container" role="region" aria-label="Code trace">
+    <div data-ref="encounterChrome"></div>
+<div class="bbs-container" role="region" aria-label="Code trace">
       <div class="section">
         <span class="bold">Predict the output:</span>
         <span data-ref="qText"></span>
@@ -553,68 +331,8 @@
 
   <!-- ── Matching encounter ─────────────────────────────────────── -->
   <template id="tpl-encounter-matching">
-    <div class="bbs-container" role="region" aria-label="Monster encounter">
-      <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
-      <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
-      <div class="monster-layout">
-        <div class="monster-image-container" data-ref="imgWrap" hidden>
-          <img class="monster-image" data-ref="img" alt="">
-        </div>
-        <div class="monster-details">
-          <div class="monster-name-line">
-            <span class="bold underline" data-ref="mName"></span><span data-ref="mDesc"></span>
-          </div>
-          <div class="monster-hp-block">
-            HP: <span class="yellow" data-ref="mHP"></span>
-            <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
-          </div>
-          <div class="player-hud" aria-label="Player stats">
-            <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⭐</span><span class="sr-only">Level</span> Lvl <span data-ref="pLvl"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">✦</span><span class="sr-only">XP:</span> <span data-ref="pXP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⚗️</span><span class="sr-only">Revives:</span> <span data-ref="pRevive"></span></span>
-          </div>
-        </div>
-      </div>
-      <div class="inventory-row" data-ref="inventory" role="group" aria-label="Inventory: 2 item slots">
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot0" data-slot="0"
-                aria-label="Item slot 1, empty (shortcut Q)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">Q</span>
-          <span class="inv-slot-icon" data-ref="invIcon0">·</span>
-          <span class="inv-slot-name" data-ref="invName0">empty</span>
-        </button>
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot1" data-slot="1"
-                aria-label="Item slot 2, empty (shortcut W)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">W</span>
-          <span class="inv-slot-icon" data-ref="invIcon1">·</span>
-          <span class="inv-slot-name" data-ref="invName1">empty</span>
-        </button>
-        <span class="inv-pending" data-ref="invPending" aria-live="polite"></span>
-      </div>
-    </div>
-
-    <!-- ── Journey progress ──────────────────────────────────────── -->
-    <div class="bbs-container progress-section" data-ref="progressSection"
-         role="region" aria-label="Journey progress">
-      <div class="prog-header">
-        <span class="prog-label">⚔ JOURNEY</span>
-        <span class="prog-stats" data-ref="progStats"></span>
-      </div>
-      <div class="prog-corridor" aria-hidden="true">
-        <div class="prog-blocks" data-ref="progBar"></div>
-        <span class="prog-dragon">🐉</span>
-      </div>
-      <div class="retry-row" data-ref="retryRow" hidden aria-live="polite">
-        <span class="retry-label">↺ Retry:</span>
-        <div class="prog-blocks prog-blocks--sm" data-ref="retryBar"></div>
-        <span class="retry-text" data-ref="retryText"></span>
-      </div>
-    </div>
-
-    <div class="bbs-container" role="region" aria-label="Matching question">
+    <div data-ref="encounterChrome"></div>
+<div class="bbs-container" role="region" aria-label="Matching question">
       <div class="section">
         <span class="bold">Match each term to its definition:</span>
         <span data-ref="qText"></span>
@@ -630,68 +348,8 @@
 
   <!-- ── Multi-blank cloze encounter ────────────────────────────── -->
   <template id="tpl-encounter-cloze">
-    <div class="bbs-container" role="region" aria-label="Monster encounter">
-      <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
-      <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
-      <div class="monster-layout">
-        <div class="monster-image-container" data-ref="imgWrap" hidden>
-          <img class="monster-image" data-ref="img" alt="">
-        </div>
-        <div class="monster-details">
-          <div class="monster-name-line">
-            <span class="bold underline" data-ref="mName"></span><span data-ref="mDesc"></span>
-          </div>
-          <div class="monster-hp-block">
-            HP: <span class="yellow" data-ref="mHP"></span>
-            <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
-          </div>
-          <div class="player-hud" aria-label="Player stats">
-            <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⭐</span><span class="sr-only">Level</span> Lvl <span data-ref="pLvl"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">✦</span><span class="sr-only">XP:</span> <span data-ref="pXP"></span></span>
-            <span class="hud-sep" aria-hidden="true">·</span>
-            <span class="hud-item"><span aria-hidden="true">⚗️</span><span class="sr-only">Revives:</span> <span data-ref="pRevive"></span></span>
-          </div>
-        </div>
-      </div>
-      <div class="inventory-row" data-ref="inventory" role="group" aria-label="Inventory: 2 item slots">
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot0" data-slot="0"
-                aria-label="Item slot 1, empty (shortcut Q)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">Q</span>
-          <span class="inv-slot-icon" data-ref="invIcon0">·</span>
-          <span class="inv-slot-name" data-ref="invName0">empty</span>
-        </button>
-        <button type="button" class="inv-slot inv-slot--empty" data-ref="invSlot1" data-slot="1"
-                aria-label="Item slot 2, empty (shortcut W)" disabled>
-          <span class="inv-slot-key" aria-hidden="true">W</span>
-          <span class="inv-slot-icon" data-ref="invIcon1">·</span>
-          <span class="inv-slot-name" data-ref="invName1">empty</span>
-        </button>
-        <span class="inv-pending" data-ref="invPending" aria-live="polite"></span>
-      </div>
-    </div>
-
-    <!-- ── Journey progress ──────────────────────────────────────── -->
-    <div class="bbs-container progress-section" data-ref="progressSection"
-         role="region" aria-label="Journey progress">
-      <div class="prog-header">
-        <span class="prog-label">⚔ JOURNEY</span>
-        <span class="prog-stats" data-ref="progStats"></span>
-      </div>
-      <div class="prog-corridor" aria-hidden="true">
-        <div class="prog-blocks" data-ref="progBar"></div>
-        <span class="prog-dragon">🐉</span>
-      </div>
-      <div class="retry-row" data-ref="retryRow" hidden aria-live="polite">
-        <span class="retry-label">↺ Retry:</span>
-        <div class="prog-blocks prog-blocks--sm" data-ref="retryBar"></div>
-        <span class="retry-text" data-ref="retryText"></span>
-      </div>
-    </div>
-
-    <div class="bbs-container" role="region" aria-label="Fill in the blanks">
+    <div data-ref="encounterChrome"></div>
+<div class="bbs-container" role="region" aria-label="Fill in the blanks">
       <div class="section">
         <span class="bold">Complete the passage:</span>
       </div>

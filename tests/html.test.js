@@ -27,7 +27,7 @@ describe('HTML template integrity', () => {
       'tpl-main-menu', 'tpl-initial', 'tpl-encounter',
       'tpl-encounter-fill-blank', 'tpl-encounter-code-line', 'tpl-encounter-code-trace',
       'tpl-encounter-matching', 'tpl-encounter-ordering', 'tpl-encounter-cloze',
-      'tpl-npc-scene',
+      'tpl-npc-scene', 'tpl-encounter-chrome',
       'tpl-results', 'tpl-levelup', 'tpl-victory',
       'tpl-no-questions', 'tpl-gameover', 'tpl-review',
     ];
@@ -196,5 +196,27 @@ describe('CSS animation classes', () => {
 
   it('player-hit class exists in CSS', () => {
     assert.ok(css.includes('.player-hit'), 'CSS missing .player-hit');
+  });
+});
+
+describe('Shared encounter chrome', () => {
+  const encounterTemplates = [...html.matchAll(/id="(tpl-encounter[a-z-]*)"/g)]
+    .map(m => m[1]).filter(id => id !== 'tpl-encounter-chrome');
+
+  it('the monster header is defined exactly once', () => {
+    assert.equal((html.match(/class="monster-layout"/g) || []).length, 1,
+      'monster header markup should live only in tpl-encounter-chrome');
+    assert.equal((html.match(/class="bbs-container progress-section"/g) || []).length, 1,
+      'journey progress markup should live only in tpl-encounter-chrome');
+  });
+
+  it('every encounter screen has a placeholder to clone it into', () => {
+    for (const id of encounterTemplates) {
+      const body = html.split(`id="${id}"`)[1].split('</template>')[0];
+      assert.ok(body.includes('data-ref="encounterChrome"'),
+        `${id} is missing the encounterChrome placeholder`);
+    }
+    assert.ok(encounterTemplates.length >= 7,
+      `expected the 7 encounter screens, found ${encounterTemplates.length}`);
   });
 });

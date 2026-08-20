@@ -59,7 +59,42 @@ export class GameUI {
     return this.controller?.getSetTitle?.() || "";
   }
 
-  _populateEncounterHeader(root) {
+  /**
+   * Every encounter screen carries a [data-ref=encounterChrome] placeholder
+   * where the shared monster header and journey progress belong. Clone the one
+   * definition into it. No-ops once mounted, so refreshHUD() can re-populate
+   * the same DOM without rebuilding it.
+   */
+  _mountEncounterChrome(root) {
+    const slot = $(root, "[data-ref=encounterChrome]");
+    if (!slot) return;
+    const tpl = document.getElementById("tpl-encounter-chrome");
+    if (!tpl) throw new Error("Missing template: tpl-encounter-chrome");
+    slot.replaceWith(tpl.content.cloneNode(true));
+  }
+
+  /**
+   * True only the very first time a monster of this name is drawn in this run.
+   * Every later encounter — including the next question against the same
+   * monster — starts folded away, which is the whole point: the description is
+   * worth reading once, not once per question. Tracked on the UI rather than in
+   * the save, so resuming a run re-introduces the cast, which is a feature.
+   */
+  _firstSighting(name) {
+    if (!name) return false;
+    this._seenMonsters ||= new Set();
+    if (this._seenMonsters.has(name)) return false;
+    this._seenMonsters.add(name);
+    return true;
+  }
+
+  /**
+   * @param {boolean} preserveExamine – true when re-drawing the HUD of an
+   *   encounter already on screen (using an item). The student may have opened
+   *   the description themselves; a HUD refresh must not slam it shut.
+   */
+  _populateEncounterHeader(root, preserveExamine = false) {
+    this._mountEncounterChrome(root);
     const p = this.model.player;
     const m = this.model.current_monster;
 
@@ -70,11 +105,29 @@ export class GameUI {
     }
 
     $(root, "[data-ref=mName]").textContent = m.is_boss ? "🐉 The Recursive Dragon" : m.monster_name;
+
+    const examine = $(root, "[data-ref=mExamine]");
+    const desc = $(root, "[data-ref=mDesc]");
+    const tier = $(root, "[data-ref=mTier]");
+
     if (m.is_boss) {
+      // The dragon's line is live state, not flavour: it says how many concepts
+      // are left. It must never be tucked behind a toggle.
       const left = m.hit_points;
-      $(root, "[data-ref=mDesc]").textContent = ` — ${left} concept${left === 1 ? "" : "s"} left to master`;
+      desc.textContent = `${left} concept${left === 1 ? "" : "s"} left to master`;
+      if (examine) { examine.open = true; examine.classList.add("monster-examine--pinned"); }
+      if (tier) tier.textContent = "";
     } else {
-      $(root, "[data-ref=mDesc]").textContent = m.initial_description ? ` — ${m.initial_description}` : "";
+      desc.textContent = m.initial_description || "";
+      if (tier) tier.textContent = m.hit_dice ? `Lv ${m.hit_dice}` : "";
+      if (examine) {
+        const wasOpen = examine.open;
+        examine.classList.remove("monster-examine--pinned");
+        examine.hidden = !m.initial_description;
+        // Introduce a monster in full the first time it turns up this run;
+        // after that the description is wallpaper, so leave it folded away.
+        examine.open = preserveExamine ? wasOpen : this._firstSighting(m.monster_name);
+      }
     }
 
     $(root, "[data-ref=mHP]").textContent = m.hit_points;
@@ -86,6 +139,14 @@ export class GameUI {
     }
 
     $(root, "[data-ref=pHP]").textContent = `${p.hit_points}/${p.max_hit_points}`;
+    // Mirror the monster's bar, so a fight reads as two combatants rather than
+    // a sprite with a stat list underneath it.
+    const pBar = $(root, "[data-ref=pHPBar]");
+    if (pBar) {
+      const pct = p.max_hit_points > 0 ? Math.max(0, p.hit_points) / p.max_hit_points : 1;
+      pBar.style.width = `${Math.max(0, Math.round(pct * 100))}%`;
+      pBar.className = "player-hp-bar " + (pct > 0.6 ? "hp-high" : pct > 0.25 ? "hp-mid" : "hp-low");
+    }
     $(root, "[data-ref=pLvl]").textContent = p.level;
     $(root, "[data-ref=pXP]").textContent = `${p.xp}/${p.xp_to_next_level}`;
     $(root, "[data-ref=pRevive]").textContent = p.revive_charges;
@@ -118,7 +179,7 @@ export class GameUI {
   /** Refresh just the per-encounter HUD (HP/XP/inventory) without rerendering the question. */
   refreshHUD() {
     if (!this.model || !this.model.current_question) return;
-    this._populateEncounterHeader(this.root);
+    this._populateEncounterHeader(this.root, true);
   }
 
   _renderInventory(root) {

@@ -381,18 +381,23 @@ select {
     margin-bottom: 4px;
 }
 
+/* The sprites are 128px native, so this is their true size — anything smaller
+   was throwing detail away. Narrow screens step down to keep the question
+   above the fold. */
 .monster-image-container {
-    flex: 0 0 80px;
+    flex: 0 0 128px;
     text-align: center;
 }
 
 .monster-image {
     width: 100%;
-    max-width: 80px;
+    max-width: 128px;
     height: auto;
     border: 2px solid #00c840;
     border-radius: 4px;
     image-rendering: pixelated;
+    background: #050c05;
+    box-shadow: 0 0 0 1px #041004, 0 0 10px rgba(0, 200, 64, 0.18);
 }
 
 .monster-details {
@@ -402,6 +407,77 @@ select {
 
 .monster-name-line {
     margin-bottom: 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Hit dice double as the monster's level, which is the RPG-legible form. */
+.monster-tier {
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+/* ── Examine: flavour on demand ───────────────────────────────────────────── */
+
+.monster-examine {
+    margin-top: 5px;
+}
+
+.monster-examine-toggle {
+    cursor: pointer;
+    list-style: none;
+    display: inline-block;
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #4a8a4a;
+    border: 1px solid #2a4a2a;
+    border-radius: 3px;
+    padding: 1px 8px;
+    user-select: none;
+}
+
+.monster-examine-toggle::-webkit-details-marker { display: none; }
+.monster-examine-toggle::marker { content: ""; }
+
+.monster-examine-toggle::before {
+    content: "\25B8 ";       /* right-pointing triangle, turns down when open */
+    display: inline-block;
+    transition: transform 0.12s ease;
+}
+
+.monster-examine[open] > .monster-examine-toggle::before {
+    transform: rotate(90deg);
+}
+
+.monster-examine-toggle:hover,
+.monster-examine-toggle:focus-visible {
+    color: #7CFC00;
+    border-color: #3a6a3a;
+}
+
+.monster-examine-body {
+    margin-top: 5px;
+    padding-left: 9px;
+    border-left: 2px solid #2a4a2a;
+    font-style: italic;
+    color: #8fd48f;
+}
+
+/* The boss's line is live state, so it is always open and needs no toggle. */
+.monster-examine--pinned > .monster-examine-toggle { display: none; }
+
+.monster-examine--pinned > .monster-examine-body {
+    margin-top: 0;
+    font-style: normal;
+    color: #ffd86b;
+    border-left-color: #6a5a1a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .monster-examine-toggle::before { transition: none; }
 }
 
 /* HP row: label, number, colour bar */
@@ -433,7 +509,8 @@ select {
 .hp-mid  { background: #ffaa22; }
 .hp-low  { background: #ff6b6b; }
 
-/* Player HUD: single-line icon strip */
+/* Player HUD: single-line icon strip, ruled off so it reads as "you" rather
+   than as more of the monster's stat block. */
 .player-hud {
     display: flex;
     flex-wrap: wrap;
@@ -441,6 +518,29 @@ select {
     gap: 3px 4px;
     font-size: 0.82rem;
     color: #a0d8a0;
+    margin-top: 7px;
+    padding-top: 6px;
+    border-top: 1px solid #1e341e;
+}
+
+.player-hp-bar-wrap {
+    width: 62px;
+    height: 6px;
+    background: #111a11;
+    border: 1px solid #2a4a2a;
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.player-hp-bar {
+    display: block;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .player-hp-bar { transition: none; }
 }
 
 .hud-item           { white-space: nowrap; }
@@ -1179,16 +1279,16 @@ summary.topic-heading:focus-visible {
 
     .checkbox-container label { font-size: 0.9rem; }
     select                    { font-size: 0.9rem; padding: 6px; }
-    .monster-image-container  { flex: 0 0 64px; }
-    .monster-image            { max-width: 64px; }
+    .monster-image-container  { flex: 0 0 96px; }
+    .monster-image            { max-width: 96px; }
     .level-up-title           { font-size: 1.75rem; }
     .battle-text              { font-size: 0.95rem; }
     .review-list-container    { max-height: 45vh; }
 }
 
 @media (max-width: 400px) {
-    .monster-image-container  { flex: 0 0 48px; }
-    .monster-image  { max-width: 48px; }
+    .monster-image-container  { flex: 0 0 72px; }
+    .monster-image  { max-width: 72px; }
     .title          { font-size: 1.1rem; }
     .level-up-title { font-size: 1.5rem; }
 
