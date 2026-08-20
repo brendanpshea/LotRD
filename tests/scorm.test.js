@@ -171,6 +171,22 @@ describe('SCORM shim never loses a grade', () => {
     assert.equal(Date.parse(rec.apprenticeAt), t0);
   });
 
+  it('exits as "suspend" so the LMS keeps the data for the next session', async () => {
+    // Rank trials unlock days later. A normal exit invites the LMS to close the
+    // attempt and hand back a clean one, losing the timestamps that gate them.
+    const lms = {};
+    const { shim, ctx } = boot({ lmsStore: lms, local: {} });
+    await settle();
+    let exitValue = null;
+    const realSet = ctx.window.API.LMSSetValue;
+    ctx.window.API.LMSSetValue = (k, v) => {
+      if (k === 'cmi.core.exit') exitValue = v;
+      return realSet(k, v);
+    };
+    shim().finishSession();
+    assert.equal(exitValue, 'suspend');
+  });
+
   it('still restores the v1 legacy array of completed set ids', async () => {
     const lms = { 'cmi.suspend_data': JSON.stringify([setId(1), setId(2)]) };
     const b = boot({ lmsStore: lms, local: {} });

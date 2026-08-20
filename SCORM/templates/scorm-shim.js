@@ -58,6 +58,12 @@
 
   function lmsFinish() {
     if (!api || !initialized) return;
+    // "suspend" tells the LMS this is a pause, not a finished attempt, so
+    // suspend_data survives to the next launch. Students come back days later for
+    // rank trials, and the default exit ("" = normal) invites an LMS to close the
+    // attempt and start the next one clean — which would discard the tier
+    // timestamps that gate those trials.
+    try { api.LMSSetValue("cmi.core.exit", "suspend"); } catch (_) {}
     try { api.LMSCommit(""); } catch (_) {}
     try { api.LMSFinish(""); } catch (_) {}
     initialized = false;
@@ -365,6 +371,7 @@
     totalSets: () => totalSets,
     hasLms: () => hasLms,
     forceReport: report,
+    finishSession: lmsFinish,
   };
 
   if (document.readyState === "loading") {

@@ -220,3 +220,14 @@ describe('Shared encounter chrome', () => {
       `expected the 7 encounter screens, found ${encounterTemplates.length}`);
   });
 });
+
+describe('SCORM manifest', () => {
+  it('declares no mastery score, so partial progress is not reported as failed', () => {
+    // Credit accrues over weeks. Under SCORM 1.2 an adlcp:masteryscore lets the
+    // LMS stamp passed/failed by comparing it to cmi.core.score.raw, which would
+    // mark a student who is legitimately mid-course as having failed.
+    const manifest = readFileSync(join(ROOT, 'SCORM/templates/imsmanifest.xml'), 'utf-8');
+    assert.ok(!/<adlcp:masteryscore>/.test(manifest),
+      'imsmanifest.xml must not declare a mastery score');
+  });
+});
