@@ -1589,6 +1589,7 @@ export class GameUI {
 
     const input = $(this.root, "[data-ref=bodyInput]");
     input.value = q.starter ? String(q.starter) : "";
+    const paintEditor = this._bindCodeEditorChrome(input);
 
     const resultsEl = $(this.root, "[data-ref=runResults]");
     const runBtn = $(this.root, "[data-action=run]");
@@ -1599,7 +1600,11 @@ export class GameUI {
         this._renderCodeWriteNotice(resultsEl, "Write some code first, then run it.");
         return;
       }
-      this._renderCodeWriteRun(resultsEl, this.model.runCodeWrite(input.value));
+      const outcome = this.model.runCodeWrite(input.value);
+      this._renderCodeWriteRun(resultsEl, outcome);
+      // Mark the line the interpreter blamed, so "line 3" in the message and
+      // line 3 in the gutter are visibly the same line.
+      paintEditor(outcome && !outcome.ok ? outcome.error.line : null);
       // The table is what the student pressed Run for, and on a phone it can
       // land under the pinned row. `nearest` leaves the view alone when it is
       // already visible, so this never yanks the page mid-edit.
@@ -1642,6 +1647,7 @@ export class GameUI {
         input.setSelectionRange(caret.start, caret.end);
         this._shiftCodeLines(input, { dedent });
         rememberCaret();
+        input.dispatchEvent(new Event("input"));
       });
     });
 
@@ -1685,6 +1691,64 @@ export class GameUI {
    * a student spends the exercise pressing space bar instead of thinking.
    */
   /**
+   * Dress the plain textarea with a line-number gutter and a keyword highlight
+   * layer, and return a repaint function.
+   *
+   * A textarea cannot colour its own text, so the highlighted copy is a <pre>
+   * sitting exactly behind it while the textarea's own text goes transparent —
+   * the caret and the selection still belong to the textarea, so typing,
+   * scrolling and the phone's own text handles behave normally. The two layers
+   * only line up while their font, line height, padding and tab size are
+   * identical: styles.css keeps them on shared declarations for that reason.
+   *
+   * The transparency is applied here, from script, rather than in the
+   * stylesheet: if this code never runs, the textarea keeps its own colour and
+   * the student sees plain unhighlighted text instead of an empty box.
+   *
+   * Line numbers are worth the trouble because the interpreter's errors say
+   * "line 3", counting the body the student typed — so the gutter is what turns
+   * that message into a place to look.
+   */
+  _bindCodeEditorChrome(textarea) {
+    const root = textarea.closest(".code-write-editor");
+    const gutter = root?.querySelector("[data-ref=gutter]");
+    const layer = root?.querySelector("[data-ref=highlight]");
+    if (!gutter || !layer) return () => {};
+
+    textarea.classList.add("code-write-body--overlaid");
+    let errorLine = null;
+
+    const paint = (blame) => {
+      if (blame !== undefined) errorLine = blame;
+      const value = textarea.value;
+      // The trailing newline keeps a final empty line from collapsing, so the
+      // last row of the gutter always has a line of text beside it.
+      layer.innerHTML = highlightPython(value) + "\n";
+
+      const count = value.split("\n").length;
+      const rows = [];
+      for (let n = 1; n <= count; n++) {
+        rows.push(n === errorLine
+          ? `<span class="code-gutter-line code-gutter-line--blamed">${n}</span>`
+          : `<span class="code-gutter-line">${n}</span>`);
+      }
+      gutter.innerHTML = rows.join("");
+      syncScroll();
+    };
+
+    const syncScroll = () => {
+      layer.scrollTop = textarea.scrollTop;
+      layer.scrollLeft = textarea.scrollLeft;
+      gutter.scrollTop = textarea.scrollTop;
+    };
+
+    textarea.addEventListener("input", () => paint());
+    textarea.addEventListener("scroll", syncScroll);
+    paint(null);
+    return paint;
+  }
+
+  /**
    * Indent or dedent whole lines — every line a selection touches, or the one
    * line the caret sits on. Shared by Tab/Shift+Tab and by the editor's indent
    * buttons, which are the only route on a phone: soft keyboards have no Tab
@@ -1719,6 +1783,10 @@ export class GameUI {
   _bindCodeEditorKeys(textarea, signal) {
     const UNIT = "    ";
 
+    // Setting .value from script fires no input event, so the highlight layer
+    // and the gutter would sit on stale text after every Tab and Enter.
+    const edited = () => textarea.dispatchEvent(new Event("input"));
+
     const replaceRange = (start, end, text, caret) => {
       const value = textarea.value;
       textarea.value = value.slice(0, start) + text + value.slice(end);
@@ -1734,6 +1802,7 @@ export class GameUI {
         // Shift+Tab) shifts whole lines instead.
         if (start === end && !e.shiftKey) replaceRange(start, end, UNIT, start + UNIT.length);
         else this._shiftCodeLines(textarea, { dedent: e.shiftKey });
+        edited();
         return;
       }
 
@@ -1745,6 +1814,7 @@ export class GameUI {
         const deeper = /:\s*$/.test(currentLine) ? UNIT : "";
         const insert = "\n" + indent + deeper;
         replaceRange(start, end, insert, start + insert.length);
+        edited();
         // Keep the caret in view when the box has scrolled.
         textarea.blur();
         textarea.focus();

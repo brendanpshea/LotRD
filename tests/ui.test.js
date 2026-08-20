@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GameUI } from '../src/ui.js';
+import { highlightPython } from '../src/highlight.js';
 
 const shift = (textarea, opts) => GameUI.prototype._shiftCodeLines(textarea, opts);
 
@@ -126,5 +127,87 @@ describe('code-write editor markup', () => {
     assert.match(row, /data-action="run"/, 'Run belongs in the pinned row');
     assert.doesNotMatch(row, /data-action="submit"/,
       'Submit must not sit in the row that pins under the thumb');
+  });
+});
+
+// The highlighted copy is painted on top of the textarea the student types in.
+// It only stays on top while it contains exactly the same characters: one
+// swallowed or invented character slides every colour after it off the caret.
+describe('highlighting preserves the text underneath it', () => {
+  const strip = html => html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+
+  const sources = [
+    'return a + b',
+    'if weekday and not holiday:\n    return False   # go to work',
+    'total = 0\nfor i in range(n):\n    total += i\nreturn total',
+    'return "return is not a keyword in here"',
+    "return 'if' + '#not a comment'",
+    'return a < b and c > d and e & f',
+    'return len(s) + 12 + 3.5',
+    'x = {"a": 1}\nreturn x["a"]',
+    '',
+    '\n\n',
+  ];
+
+  for (const src of sources) {
+    it(`round-trips ${JSON.stringify(src.slice(0, 34))}`, () => {
+      assert.equal(strip(highlightPython(src)), src);
+    });
+  }
+
+  it('escapes markup so a student cannot break the layer with their own code', () => {
+    const out = highlightPython('return "<script>x</script>"');
+    assert.ok(!/<script>/.test(out), 'raw markup must not survive into the layer');
+    assert.match(out, /&lt;script&gt;/);
+  });
+
+  it('colours keywords and leaves ordinary names alone', () => {
+    const out = highlightPython('return weekday');
+    assert.match(out, /class="hl-kw">return</);
+    assert.ok(!/hl-kw">weekday/.test(out));
+  });
+});
+
+// The gutter, the highlighted copy and the textarea are three stacked layers.
+// Anything that decides where a character lands has to be set on all three at
+// once, or they drift apart — so the stylesheet must never size one alone.
+describe('editor layers stay in lockstep', () => {
+  const css = readFileSync(join(import.meta.dirname, '..', 'styles.css'), 'utf-8');
+  const METRICS = /(^|[;{\s])(font-size|font-family|line-height|tab-size|padding|padding-top|padding-left|letter-spacing)\s*:/;
+
+  // Split into rules: everything up to a { is the selector, then the body.
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map(m => ({ selector: m[1].trim(), body: m[2] }));
+
+  it('never sets a metric on the textarea without setting it on the overlay', () => {
+    const offenders = rules
+      .filter(r => /\.code-write-body(?![\w-])/.test(r.selector))
+      .filter(r => METRICS.test(r.body))
+      .filter(r => !/\.code-highlight/.test(r.selector))
+      .map(r => `${r.selector} { ${r.body.trim().slice(0, 60)}… }`);
+    assert.deepEqual(offenders, [],
+      'these rules would move the textarea text without moving the highlight layer');
+  });
+
+  it('never sets a metric on the overlay without setting it on the textarea', () => {
+    const offenders = rules
+      .filter(r => /\.code-highlight(?![\w-])/.test(r.selector))
+      .filter(r => METRICS.test(r.body))
+      .filter(r => !/\.code-write-body/.test(r.selector))
+      .map(r => `${r.selector} { ${r.body.trim().slice(0, 60)}… }`);
+    assert.deepEqual(offenders, [], 'these rules would move the highlight layer off the caret');
+  });
+
+  it('keeps the overlay from bolding or slanting what the textarea draws plain', () => {
+    const palette = rules.filter(r => /\.code-highlight\s+\.hl-/.test(r.selector));
+    assert.ok(palette.length > 0, 'the overlay needs its own palette');
+    for (const rule of palette) {
+      assert.ok(!/font-weight:\s*(bold|[6-9]00)/.test(rule.body),
+        `${rule.selector} bolds text the textarea draws at normal weight`);
+      assert.ok(!/font-style:\s*italic|font-style:\s*oblique/.test(rule.body),
+        `${rule.selector} slants text the textarea draws upright`);
+    }
   });
 });

@@ -1770,26 +1770,114 @@ summary.topic-heading:focus-visible {
     white-space: pre;
 }
 
-.code-write-body {
-    width: 100%;
-    box-sizing: border-box;
+/* The gutter, the highlighted copy and the textarea itself are three layers
+   that have to agree to the pixel, or the numbers drift away from the lines and
+   the colours drift away from the caret. Everything that decides where a
+   character lands is declared once, here, for all three. */
+.code-write-editor {
+    display: flex;
+    align-items: stretch;
     background: #07100b;
-    color: #d8ffd8;
     border: 1px solid #2f5f2f;
     border-top: 1px dashed #24461f;
     border-radius: 0 0 6px 6px;
-    padding: 4px 10px 8px;
-    margin: 0;
+    overflow: hidden;
+}
+
+.code-gutter,
+.code-highlight,
+.code-write-body {
     font-family: "Consolas", "Menlo", "Courier New", monospace;
     font-size: 0.95rem;
     line-height: 1.5;
     tab-size: 4;
+    padding: 4px 10px 8px;
+    margin: 0;
+    border: none;
+}
+
+.code-gutter {
+    flex: 0 0 auto;
+    padding-right: 8px;
+    text-align: right;
+    color: #4c7a52;
+    background: #050c07;
+    border-right: 1px solid #1b3a20;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.code-gutter-line { display: block; }
+
+/* The line the interpreter named in its error message. */
+.code-gutter-line--blamed {
+    color: #ffb3b3;
+    background: #4a1414;
+    font-weight: bold;
+}
+
+.code-editor-stack {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.code-highlight {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    white-space: pre;
+    pointer-events: none;
+    color: #d8ffd8;
+}
+
+.code-write-body {
+    position: relative;
+    width: 100%;
+    /* The textarea's own height leads: `rows` sets it, dragging the grip changes
+       it, and the stack (whose only in-flow child it is) follows. Sizing it to
+       the parent instead would leave the overlay a few pixels taller than the
+       box it is covering after a resize. */
+    height: auto;
+    display: block;
+    box-sizing: border-box;
+    background: transparent;
+    color: #d8ffd8;
     white-space: pre;
     overflow-wrap: normal;
     overflow-x: auto;
     resize: vertical;
 }
-.code-write-body:focus {
+
+/* Same palette as the read-only listings, but colour ONLY: the overlay sits on
+   top of a textarea whose text is not bold and not italic, and a synthesised
+   bold or oblique glyph can advance by a different amount. One wide character
+   is all it takes for the colours to slide off the caret. */
+.code-highlight .hl-kw  { color: #ff8e4d; }
+.code-highlight .hl-str { color: #c8ffb0; }
+.code-highlight .hl-num { color: #ffe066; }
+.code-highlight .hl-cmt { color: #6a8a6a; }
+.code-highlight .hl-fn  { color: #6bd0ff; }
+.code-highlight .hl-kw,
+.code-highlight .hl-str,
+.code-highlight .hl-num,
+.code-highlight .hl-cmt,
+.code-highlight .hl-fn {
+    font-weight: inherit;
+    font-style: inherit;
+}
+
+/* Applied from script once the highlight layer is actually painting. Without
+   the class the textarea keeps its own visible text, so a failure of the
+   highlighter shows plain code rather than an empty box. */
+.code-write-body--overlaid {
+    color: transparent;
+    caret-color: #d8ffd8;
+}
+.code-write-body--overlaid::placeholder { color: #4c7a52; }
+/* The focus ring belongs on the whole editor now, not on the middle layer. */
+.code-write-body:focus { outline: none; }
+.code-write-editor:focus-within {
     outline: 2px solid #00c840;
     outline-offset: 1px;
 }
@@ -1948,7 +2036,10 @@ summary.topic-heading:focus-visible {
 
 @media (max-width: 600px) {
     .code-write-signature,
+    .code-gutter,
+    .code-highlight,
     .code-write-body      { font-size: 0.85rem; }
+    .code-gutter          { padding-left: 6px; padding-right: 6px; }
 
     /* The blanket mobile rule (button { width: 100%; max-width: 200px }) would
        stack these into fat pills above the keyboard. They are furniture: keep
