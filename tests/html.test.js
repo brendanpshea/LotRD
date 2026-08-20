@@ -27,6 +27,7 @@ describe('HTML template integrity', () => {
       'tpl-main-menu', 'tpl-initial', 'tpl-encounter',
       'tpl-encounter-fill-blank', 'tpl-encounter-code-line', 'tpl-encounter-code-trace',
       'tpl-encounter-matching', 'tpl-encounter-ordering', 'tpl-encounter-cloze',
+      'tpl-encounter-code-write',
       'tpl-npc-scene', 'tpl-encounter-chrome',
       'tpl-results', 'tpl-levelup', 'tpl-victory',
       'tpl-no-questions', 'tpl-gameover', 'tpl-review',

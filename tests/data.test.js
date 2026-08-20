@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
+import { runTestCases, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
 
 const ROOT = join(import.meta.dirname, '..');
 const MAX_TYPED_ANSWER_CHARS = 12;
@@ -584,6 +585,34 @@ describe('Question set file validation', () => {
               assert.ok(refs.includes(bi),
                 `${label}: blanks[${bi - 1}] has no {{${bi}}} placeholder in the question`);
             }
+          } else if (type === 'code_write') {
+            assert.ok(typeof q.signature === 'string' && /^def\s+\w+\s*\(.*\)\s*:$/.test(q.signature.trim()),
+              `${label}: code_write needs a signature line like "def add(a, b):"`);
+            assert.ok(Array.isArray(q.tests) && q.tests.length >= 3,
+              `${label}: code_write needs at least 3 test cases`);
+            for (const [ti, t] of q.tests.entries()) {
+              assert.ok(t && typeof t === 'object' && !Array.isArray(t),
+                `${label}: test ${ti + 1} must be an object`);
+              assert.ok(Array.isArray(t.args),
+                `${label}: test ${ti + 1} needs an args array (use [] for none)`);
+              assert.ok('expect' in t,
+                `${label}: test ${ti + 1} needs an expect value`);
+            }
+            const { params } = parseSignature(q.signature);
+            for (const [ti, t] of q.tests.entries()) {
+              assert.equal(t.args.length, params.length,
+                `${label}: test ${ti + 1} passes ${t.args.length} arguments but ` +
+                `${q.signature.trim()} takes ${params.length}`);
+            }
+            assert.ok(typeof q.solution === 'string' && q.solution.trim().length > 0,
+              `${label}: code_write needs a reference solution — it is what the student ` +
+              `is shown afterwards, and what proves the test table is satisfiable`);
+            assert.ok(/\breturn\b/.test(q.solution),
+              `${label}: the reference solution never returns anything`);
+            if ('starter' in q) {
+              assert.ok(typeof q.starter === 'string',
+                `${label}: starter must be a string when present`);
+            }
           } else if (type === 'npc_demo') {
             // `question` doubles as the scene title and its identity key.
             assert.ok(Array.isArray(q.steps) && q.steps.length > 0,
@@ -1060,4 +1089,70 @@ describe('Question set quality heuristics', () => {
       `Absolute/negative cue-word bias detected:\n${flaggedSets.join('\n')}`
     );
   });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Write-the-code problems, run for real
+// ────────────────────────────────────────────────────────────────────────────────
+//
+// A code_write question is only as good as its test table, and a test table is
+// easy to get quietly wrong: one expected value mistyped and the problem becomes
+// unsolvable, with the student — who cannot see the key — left to conclude they
+// cannot program. So every problem's own reference solution is run through the
+// same interpreter and the same grader the student's answer meets, and every
+// case has to pass.
+describe('code_write problems are solvable', () => {
+  const index = loadJSON('question_sets/index.json');
+
+  for (const setId of index) {
+    const questions = loadJSON(`question_sets/${setId}`);
+    const problems = questions
+      .map((q, i) => ({ q, i }))
+      .filter(({ q }) => q.type === 'code_write');
+    if (problems.length === 0) continue;
+
+    describe(setId, () => {
+      for (const { q, i } of problems) {
+        const { name } = parseSignature(q.signature);
+
+        it(`${name}() — the reference solution passes every test`, () => {
+          const outcome = runTestCases({ signature: q.signature, body: q.solution, tests: q.tests });
+          assert.ok(outcome.ok,
+            `${setId}[${i}] ${name}(): the reference solution does not run — ` +
+            `${outcome.error?.message} (line ${outcome.error?.line})`);
+          const failures = outcome.results
+            .filter(r => !r.passed)
+            .map(r => r.error
+              ? `${r.call} stopped: ${r.error.message}`
+              : `${r.call} gave ${r.actualRepr}, the key says ${r.expectedRepr}`);
+          assert.deepEqual(failures, [],
+            `${setId}[${i}] ${name}() reference solution fails its own tests:\n  ` +
+            failures.join('\n  '));
+        });
+
+        it(`${name}() — the tests can tell a right answer from a wrong one`, () => {
+          // A table every body passes grades nothing. Returning a constant is the
+          // laziest possible answer, so at least one case must reject each of the
+          // constants a student could stumble into.
+          for (const lazy of ['return None', 'return True', 'return False', 'return 0', 'return ""']) {
+            const outcome = runTestCases({ signature: q.signature, body: lazy, tests: q.tests });
+            assert.ok(!outcome.ok || outcome.passed < outcome.total,
+              `${setId}[${i}] ${name}(): "${lazy}" passes every test — the table needs a ` +
+              `case that rules it out`);
+          }
+        });
+
+        it(`${name}() — examples and starter are consistent with the problem`, () => {
+          // The examples shown above the box are generated from the first tests
+          // unless authored, so an authored set has to be checked by hand-eye;
+          // what can be checked here is that a starter body is a legal shape.
+          if (typeof q.starter === 'string' && q.starter.trim()) {
+            const outcome = runTestCases({ signature: q.signature, body: q.starter, tests: q.tests });
+            assert.ok(outcome.passed < outcome.total,
+              `${setId}[${i}] ${name}(): the starter code already passes every test`);
+          }
+        });
+      }
+    });
+  }
 });

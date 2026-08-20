@@ -1664,6 +1664,140 @@ describe('GameModel.evaluateOrdering', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────────
+// Write-the-code questions
+// ────────────────────────────────────────────────────────────────────────────────
+describe('GameModel.evaluateCodeWrite', () => {
+  function codeWriteQuestion(overrides = {}) {
+    return {
+      type: 'code_write',
+      question: 'Return the sum of two numbers.',
+      signature: 'def add(a, b):',
+      tests: [
+        { args: [1, 2], expect: 3 },
+        { args: [0, 0], expect: 0 },
+        { args: [-1, 5], expect: 4 },
+        { args: [10, 10], expect: 20 },
+      ],
+      solution: 'return a + b',
+      feedback: 'Add them and return the result.',
+      ...overrides,
+    };
+  }
+
+  function startedModel(overrides = {}) {
+    const gm = new GameModel([codeWriteQuestion(overrides)], SAMPLE_MONSTERS, null, null,
+      { sequential: true });
+    gm.nextEncounter();
+    return gm;
+  }
+
+  it('a body that passes every test is perfect and does not requeue', () => {
+    const gm = startedModel();
+    const res = gm.evaluateCodeWrite('return a + b');
+    assert.equal(res.question_repeated, false);
+    assert.equal(res.testsPassed, 4);
+    assert.equal(res.testsTotal, 4);
+    assert.equal(res.correctSelections.length, 4);
+    assert.equal(res.incorrectSelections.length, 0);
+    assert.equal(gm.answer_history[0].was_perfect, true);
+  });
+
+  it('accepts a body the student indented themselves', () => {
+    const gm = startedModel();
+    const res = gm.evaluateCodeWrite('    return a + b');
+    assert.equal(res.testsPassed, 4);
+  });
+
+  it('scores a partly-right body proportionally and requeues it', () => {
+    const gm = startedModel();
+    // Right for every case except the one where the two numbers are equal.
+    const res = gm.evaluateCodeWrite('if a == b:\n    return 0\nreturn a + b');
+    assert.equal(res.testsPassed, 3);
+    assert.equal(res.question_repeated, true);
+    assert.equal(res.correctSelections.length, 3);
+    assert.equal(res.incorrectSelections.length, 1);
+    assert.match(res.incorrectSelections[0], /add\(10, 10\) → got 0, expected 20/);
+    assert.equal(gm.answer_history[0].was_perfect, false);
+    assert.equal(gm.questions_to_ask.length, 1);
+  });
+
+  it('splits a fixed damage budget by the share of tests passed', () => {
+    // Test tables differ in length, so the hits must not: a ten-case problem
+    // should not deal twice the damage of a five-case one for the same work.
+    const gm = startedModel();
+    gm.evaluateCodeWrite('return a + b');
+    assert.equal(gm.player.total_correct, 4);
+    assert.equal(gm.player.total_incorrect, 0);
+
+    const gm2 = startedModel({
+      tests: [
+        { args: [1, 2], expect: 3 },
+        { args: [0, 0], expect: 0 },
+      ],
+    });
+    const res2 = gm2.evaluateCodeWrite('return a + b');
+    assert.equal(res2.testsTotal, 2);
+    assert.ok(res2.effective_player_damage >= 0);
+  });
+
+  it('reports a syntax error once rather than per test', () => {
+    const gm = startedModel();
+    const res = gm.evaluateCodeWrite('return a +');
+    assert.equal(res.testsPassed, 0);
+    assert.equal(res.correctSelections.length, 0);
+    assert.equal(res.incorrectSelections.length, 1);
+    assert.match(res.incorrectSelections[0], /did not run/);
+    assert.equal(res.question_repeated, true);
+  });
+
+  it('counts the line of an error in the lines the student typed', () => {
+    const gm = startedModel();
+    const res = gm.evaluateCodeWrite('x = 1\nreturn nope');
+    assert.ok(res.incorrectSelections.every(entry => /line 2|"nope"/.test(entry)),
+      `unexpected: ${res.incorrectSelections.join(' | ')}`);
+  });
+
+  it('shows a worked answer whether the student got it right or not', () => {
+    const right = startedModel().evaluateCodeWrite('return a + b');
+    const wrong = startedModel().evaluateCodeWrite('return 0');
+    assert.equal(right.referenceSolution, 'def add(a, b):\n    return a + b');
+    assert.equal(wrong.referenceSolution, 'def add(a, b):\n    return a + b');
+  });
+
+  it('notices a body that prints instead of returning', () => {
+    const gm = startedModel();
+    const res = gm.evaluateCodeWrite('print(a + b)');
+    assert.equal(res.printedOnly, true);
+    assert.equal(res.testsPassed, 0);
+  });
+
+  it('survives an infinite loop instead of hanging', () => {
+    const gm = startedModel();
+    const res = gm.evaluateCodeWrite('while True:\n    a = a\nreturn a');
+    assert.equal(res.testsPassed, 0);
+    assert.match(res.incorrectSelections[0], /stopped:/);
+  });
+
+  it('a wrong body feeds the retrieval boss queue', () => {
+    const gm = startedModel();
+    gm.evaluateCodeWrite('return 0');
+    assert.deepEqual(gm._buildBossQueue().map(q => q.question), ['Return the sum of two numbers.']);
+  });
+
+  it('running the tests changes nothing about the battle', () => {
+    const gm = startedModel();
+    const hpBefore = gm.player.hit_points;
+    const monsterBefore = gm.current_monster.hit_points;
+    const outcome = gm.runCodeWrite('return a + b');
+    assert.equal(outcome.passed, 4);
+    assert.equal(gm.player.hit_points, hpBefore);
+    assert.equal(gm.current_monster.hit_points, monsterBefore);
+    assert.equal(gm.answer_history.length, 0);
+    assert.ok(gm.current_question, 'the question is still on screen');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
 // NPC teaching scenes
 // ────────────────────────────────────────────────────────────────────────────────
 describe('npc_demo scenes', () => {

@@ -1,8 +1,8 @@
 import {
   shuffle, TIER_MASTER, TIER_NAMES, TIER_BADGES, TIER_CREDIT, computeCourseGrade,
 } from "./util.js";
-import { highlightJava } from "./highlight.js";
-import { parseClozeSegments, evaluateDynamicExpression } from "./model.js";
+import { highlightJava, highlightPython } from "./highlight.js";
+import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
 
 const LEVEL_TITLES = [
@@ -1555,6 +1555,265 @@ export class GameUI {
     this._renderProgress(this.root);
   }
 
+  /**
+   * Write-the-code: a CodingBat-style problem. The signature is fixed and shown
+   * above the box; the student writes the body and runs it against the same test
+   * table that will grade them. Running costs nothing and can be done as often as
+   * they like — the point of the format is that patience is what pays.
+   */
+  showEncounterCodeWrite() {
+    this._clearKeyboard();
+    const q = this.model.current_question;
+    renderTemplate(this.root, "tpl-encounter-code-write");
+    this._populateEncounterHeader(this.root);
+    $(this.root, "[data-ref=qText]").textContent = q.question;
+    $(this.root, "[data-ref=signature]").innerHTML = highlightPython(q.signature || "");
+
+    const examplesEl = $(this.root, "[data-ref=examples]");
+    const examples = codeWriteExamples(q);
+    if (examples.length) {
+      const label = document.createElement("span");
+      label.className = "bold";
+      label.textContent = "For example:";
+      examplesEl.appendChild(label);
+      const list = document.createElement("ul");
+      list.className = "code-write-example-list";
+      examples.forEach(text => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        list.appendChild(li);
+      });
+      examplesEl.appendChild(list);
+      examplesEl.hidden = false;
+    }
+
+    const input = $(this.root, "[data-ref=bodyInput]");
+    input.value = q.starter ? String(q.starter) : "";
+
+    const resultsEl = $(this.root, "[data-ref=runResults]");
+    const runBtn = $(this.root, "[data-action=run]");
+    const submitBtn = $(this.root, "[data-action=submit]");
+
+    const runTests = () => {
+      if (!input.value.trim()) {
+        this._renderCodeWriteNotice(resultsEl, "Write some code first, then run it.");
+        return;
+      }
+      this._renderCodeWriteRun(resultsEl, this.model.runCodeWrite(input.value));
+    };
+
+    runBtn.addEventListener("click", runTests);
+    submitBtn.addEventListener("click", () => {
+      if (!input.value.trim()) {
+        this.showFeedbackInline("Write the body of the function before submitting.");
+        return;
+      }
+      this.controller.submitCodeWrite(input.value);
+    });
+
+    this._kbAbort = new AbortController();
+    this._bindCodeEditorKeys(input, this._kbAbort.signal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        runTests();
+      }
+    }, { signal: this._kbAbort.signal });
+
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
+    this._renderProgress(this.root);
+    input.focus();
+  }
+
+  /**
+   * Make a plain textarea behave enough like a code editor to type Python in:
+   * Tab indents (and Shift+Tab out again), and Enter keeps the current
+   * indentation, adding a level after a line that ends in a colon. Without this,
+   * a student spends the exercise pressing space bar instead of thinking.
+   */
+  _bindCodeEditorKeys(textarea, signal) {
+    const UNIT = "    ";
+
+    const replaceRange = (start, end, text, caret) => {
+      const value = textarea.value;
+      textarea.value = value.slice(0, start) + text + value.slice(end);
+      textarea.selectionStart = textarea.selectionEnd = caret;
+    };
+
+    textarea.addEventListener("keydown", (e) => {
+      const { selectionStart: start, selectionEnd: end, value } = textarea;
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+        if (start === end && !e.shiftKey) {
+          replaceRange(start, end, UNIT, start + UNIT.length);
+          return;
+        }
+        // A selection (or Shift+Tab) shifts whole lines rather than one spot.
+        const blockEnd = value.indexOf("\n", end) === -1 ? value.length : value.indexOf("\n", end);
+        const block = value.slice(lineStart, blockEnd);
+        const shifted = block.split("\n").map(line => (e.shiftKey
+          ? line.replace(/^ {1,4}/, "")
+          : UNIT + line)).join("\n");
+        textarea.value = value.slice(0, lineStart) + shifted + value.slice(blockEnd);
+        textarea.selectionStart = lineStart;
+        textarea.selectionEnd = lineStart + shifted.length;
+        return;
+      }
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+        const currentLine = value.slice(lineStart, start);
+        const indent = (/^[ \t]*/.exec(currentLine) || [""])[0].replace(/\t/g, UNIT);
+        const deeper = /:\s*$/.test(currentLine) ? UNIT : "";
+        const insert = "\n" + indent + deeper;
+        replaceRange(start, end, insert, start + insert.length);
+        // Keep the caret in view when the box has scrolled.
+        textarea.blur();
+        textarea.focus();
+      }
+    }, { signal });
+  }
+
+  _renderCodeWriteNotice(container, message) {
+    container.innerHTML = "";
+    const note = document.createElement("div");
+    note.className = "code-write-notice dim";
+    note.textContent = message;
+    container.appendChild(note);
+  }
+
+  /** The results table the Run button fills in — expected against what ran. */
+  _renderCodeWriteRun(container, outcome) {
+    container.innerHTML = "";
+    if (!outcome) return;
+
+    if (!outcome.ok) {
+      const box = document.createElement("div");
+      box.className = "code-write-error";
+      const head = document.createElement("div");
+      head.className = "bold";
+      head.textContent = outcome.error.line
+        ? `Your code did not run — line ${outcome.error.line}`
+        : "Your code did not run";
+      box.appendChild(head);
+      const msg = document.createElement("div");
+      msg.textContent = outcome.error.message;
+      box.appendChild(msg);
+      if (outcome.error.hint) {
+        const hint = document.createElement("div");
+        hint.className = "code-write-hint";
+        hint.textContent = outcome.error.hint;
+        box.appendChild(hint);
+      }
+      container.appendChild(box);
+      return;
+    }
+
+    const summary = document.createElement("div");
+    const allPassed = outcome.passed === outcome.total;
+    summary.className = `code-write-summary ${allPassed ? "correct" : "incorrect"}`;
+    summary.textContent = allPassed
+      ? `✔ All ${outcome.total} tests passed — ready to submit.`
+      : `${outcome.passed} of ${outcome.total} tests passed.`;
+    container.appendChild(summary);
+
+    if (outcome.printedOnly) {
+      const note = document.createElement("div");
+      note.className = "code-write-hint";
+      note.textContent =
+        "Your code printed an answer but never returned one. A test can only see what you return.";
+      container.appendChild(note);
+    }
+
+    const scroller = document.createElement("div");
+    scroller.className = "code-write-table-wrap";
+    const table = document.createElement("table");
+    table.className = "code-write-table";
+
+    const header = document.createElement("tr");
+    ["", "Call", "Expected", "Your result"].forEach(text => {
+      const th = document.createElement("th");
+      th.textContent = text;
+      header.appendChild(th);
+    });
+    table.appendChild(header);
+
+    outcome.results.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.className = row.passed ? "code-write-row--pass" : "code-write-row--fail";
+
+      const mark = document.createElement("td");
+      mark.className = "code-write-mark";
+      mark.textContent = row.passed ? "✔" : "✖";
+      mark.setAttribute("aria-label", row.passed ? "passed" : "failed");
+      tr.appendChild(mark);
+
+      const callCell = document.createElement("td");
+      callCell.className = "code-write-call";
+      callCell.textContent = row.call;
+      tr.appendChild(callCell);
+
+      const expectedCell = document.createElement("td");
+      expectedCell.dataset.label = "Expected";
+      expectedCell.textContent = row.expectedRepr;
+      tr.appendChild(expectedCell);
+
+      const got = document.createElement("td");
+      got.dataset.label = "Your result";
+      if (row.error) {
+        // Only a marker here. The message itself goes under the table, once:
+        // an error usually stops every row, and repeating a sentence down four
+        // rows squeezes the columns to shreds on a phone.
+        got.className = "code-write-cell-error";
+        got.textContent = row.error.line ? `error on line ${row.error.line}` : "error";
+      } else {
+        got.textContent = row.actualRepr;
+      }
+      tr.appendChild(got);
+      table.appendChild(tr);
+    });
+
+    scroller.appendChild(table);
+    container.appendChild(scroller);
+
+    const firstError = outcome.results.find(r => r.error);
+    if (firstError) {
+      const box = document.createElement("div");
+      box.className = "code-write-error";
+      const head = document.createElement("div");
+      head.textContent = firstError.error.line
+        ? `Line ${firstError.error.line}: ${firstError.error.message}`
+        : firstError.error.message;
+      box.appendChild(head);
+      if (firstError.error.hint) {
+        const hint = document.createElement("div");
+        hint.className = "code-write-hint";
+        hint.textContent = firstError.error.hint;
+        box.appendChild(hint);
+      }
+      container.appendChild(box);
+    }
+
+    const printed = outcome.results.filter(r => r.output.length > 0);
+    if (printed.length && !outcome.printedOnly) {
+      const box = document.createElement("details");
+      box.className = "code-write-printed";
+      const label = document.createElement("summary");
+      label.textContent = "What your code printed";
+      box.appendChild(label);
+      printed.forEach(row => {
+        const line = document.createElement("div");
+        line.textContent = `${row.call}: ${row.output.join(" ⏎ ")}`;
+        box.appendChild(line);
+      });
+      container.appendChild(box);
+    }
+  }
+
   showFeedbackInline(msg) {
     const existing = this.root.querySelector(".inline-feedback");
     if (existing) existing.remove();
@@ -1744,6 +2003,25 @@ export class GameUI {
       addList(fbWrap, "correct", "✔ Correctly selected:", battleData.correctSelections);
       addList(fbWrap, "incorrect", "✖ Incorrectly selected:", battleData.incorrectSelections);
       addList(fbWrap, "missed", "⚠ Missed correct answers:", battleData.missedCorrect);
+    }
+
+    // A write-the-code question always ends by showing a worked answer, whether
+    // or not the student's own passed. Seeing one good version of the function
+    // is the point of the exercise, and the question will come round again.
+    if (battleData.referenceSolution) {
+      const wrap = document.createElement("div");
+      wrap.className = "reference-solution";
+      const label = document.createElement("div");
+      label.className = "bold";
+      label.textContent = battleData.testsPassed === battleData.testsTotal
+        ? "One way to write it:"
+        : "A correct answer:";
+      wrap.appendChild(label);
+      const pre = document.createElement("pre");
+      pre.className = "code-snippet";
+      pre.innerHTML = highlightPython(battleData.referenceSolution);
+      wrap.appendChild(pre);
+      body.appendChild(wrap);
     }
 
     const battleLine = this._battleSummary(battleData);

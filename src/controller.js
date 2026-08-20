@@ -740,6 +740,8 @@ export class GameController {
       this.ui.showEncounterOrdering();
     } else if (qtype === "cloze") {
       this.ui.showEncounterCloze();
+    } else if (qtype === "code_write") {
+      this.ui.showEncounterCodeWrite();
     } else if (qtype === "npc_demo") {
       this.ui.showNpcScene(() => this.completeNpcScene());
     } else {
@@ -880,6 +882,11 @@ export class GameController {
   submitCloze(typedAnswers) {
     if (!this.model.current_question) return;
     this._evaluateWithMulligan(() => this.model.evaluateCloze(typedAnswers));
+  }
+
+  submitCodeWrite(bodyText) {
+    if (!this.model.current_question) return;
+    this._evaluateWithMulligan(() => this.model.evaluateCodeWrite(bodyText));
   }
 
   submitAnswer(selected) {

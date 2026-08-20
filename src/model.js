@@ -17,6 +17,39 @@ export async function loadJSON(url) {
 }
 
 import { shuffle } from "./util.js";
+import { runTestCases, describeCall, fromJson, pyRepr, parseSignature } from "./pytiny.js";
+
+/**
+ * How many attack dice a write-the-code question is worth in total, split
+ * between the player and the monster by the share of tests that passed.
+ */
+export const CODE_WRITE_HIT_BUDGET = 4;
+
+/** The full worked answer for a code_write question: its signature plus body. */
+export function codeWriteSolutionText(question) {
+    const body = String(question?.solution ?? "").replace(/\r\n?/g, "\n");
+    const lines = body.split("\n").filter(l => l.trim().length > 0);
+    if (lines.length === 0) return String(question?.signature ?? "");
+    const base = Math.min(...lines.map(l => l.length - l.trimStart().length));
+    const indented = body.split("\n")
+        .map(l => (l.trim().length === 0 ? "" : "    " + l.slice(base)))
+        .join("\n");
+    return `${String(question?.signature ?? "").trim()}\n${indented}`;
+}
+
+/**
+ * The worked examples shown above the editor. Authors may write their own; when
+ * they do not, the first few test cases are the examples, which keeps the two
+ * from ever drifting apart.
+ */
+export function codeWriteExamples(question, limit = 3) {
+    if (Array.isArray(question?.examples) && question.examples.length > 0) {
+        return question.examples.slice(0, limit);
+    }
+    const { name } = parseSignature(question.signature);
+    return (question.tests || []).slice(0, limit).map(testCase =>
+        `${describeCall(name, (testCase.args || []).map(fromJson))} → ${pyRepr(fromJson(testCase.expect))}`);
+}
 
 export function rollDice(times, sides) {
     let total = 0;
@@ -2213,6 +2246,108 @@ export class GameModel {
             incorrectSelections,
             missedCorrect: [],
             perItemScoring: true,
+            feedback: q.feedback || null,
+        };
+    }
+
+    /**
+     * Run a write-the-code question's tests without grading anything.
+     * This is what the Run button calls: unlimited, free, and with no effect on
+     * the battle. Patience is the habit the question is trying to build, so it
+     * costs nothing to look.
+     */
+    runCodeWrite(bodyText) {
+        const q = this.current_question;
+        if (!q) return null;
+        return runTestCases({
+            signature: q.signature,
+            body: bodyText,
+            tests: q.tests || [],
+        });
+    }
+
+    /**
+     * Evaluate a write-the-code answer: the student's function body is run
+     * against the same test table the Run button shows them, and each passing
+     * case is a hit.
+     *
+     * Scored proportionally like matching and cloze, but the hits are scaled to
+     * a fixed budget rather than being one die per test — otherwise a ten-case
+     * problem would deal twice the damage of a five-case one for the same piece
+     * of work, and monster HP is tuned per question, not per test table.
+     */
+    evaluateCodeWrite(bodyText) {
+        if (!this.current_question) return null;
+        const q = this.current_question;
+        const outcome = runTestCases({
+            signature: q.signature,
+            body: bodyText,
+            tests: q.tests || [],
+        });
+
+        const correctSelections   = [];
+        const incorrectSelections = [];
+
+        if (!outcome.ok) {
+            // Nothing ran at all — a syntax error, or no such function. One line
+            // saying what stopped it beats N identical rows saying it stopped.
+            const where = outcome.error.line ? ` (line ${outcome.error.line})` : "";
+            incorrectSelections.push(
+                `Your code did not run${where}: ${outcome.error.message}` +
+                (outcome.error.hint ? ` — ${outcome.error.hint}` : ""));
+        } else {
+            outcome.results.forEach(row => {
+                if (row.passed) {
+                    correctSelections.push(`${row.call} → ${row.actualRepr}`);
+                } else if (row.error) {
+                    incorrectSelections.push(`${row.call} → stopped: ${row.error.message}`);
+                } else {
+                    incorrectSelections.push(
+                        `${row.call} → got ${row.actualRepr}, expected ${row.expectedRepr}`);
+                }
+            });
+        }
+
+        const total = Math.max(outcome.total, 1);
+        const correctCount = outcome.passed;
+        const isPerfect = outcome.ok && outcome.total > 0 && correctCount === outcome.total;
+        const accuracy = correctCount / total;
+
+        this.player.total_correct   += correctCount;
+        this.player.total_incorrect += (outcome.total - correctCount);
+
+        const playerHits  = Math.round(CODE_WRITE_HIT_BUDGET * accuracy);
+        const monsterHits = CODE_WRITE_HIT_BUDGET - playerHits;
+
+        const turn = this._resolveDamage({
+            playerHits,
+            monsterHits,
+            isPerfect,
+            partialFraction: accuracy,
+            xpGained: 15,
+            requeue: !isPerfect,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: [codeWriteSolutionText(q)],
+                selected: [String(bodyText ?? "").trim()],
+                correctSelections,
+                incorrectSelections,
+                missedCorrect: [],
+                isPerfect,
+            }),
+        });
+
+        return {
+            ...turn,
+            correctSelections,
+            incorrectSelections,
+            missedCorrect: [],
+            perItemScoring: true,
+            testsPassed: correctCount,
+            testsTotal: outcome.total,
+            printedOnly: outcome.printedOnly,
+            // Shown on the results screen whatever the outcome: a worked answer
+            // is the point of the question, not a punishment for missing it.
+            referenceSolution: codeWriteSolutionText(q),
             feedback: q.feedback || null,
         };
     }

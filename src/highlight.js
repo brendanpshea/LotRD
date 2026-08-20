@@ -42,3 +42,37 @@ export function highlightJava(code) {
   s = s.replace(/K(\d+)K/g, (_, i) => stash[+i]);
   return s;
 }
+
+const PYTHON_KEYWORDS = [
+  "and", "as", "assert", "break", "class", "continue", "def", "del", "elif",
+  "else", "except", "False", "finally", "for", "from", "global", "if", "import",
+  "in", "is", "lambda", "None", "nonlocal", "not", "or", "pass", "raise",
+  "return", "True", "try", "while", "with", "yield",
+];
+const PY_KEYWORD_RE = new RegExp(`\\b(${PYTHON_KEYWORDS.join("|")})\\b`, "g");
+const PY_BUILTIN_RE = new RegExp(
+  "\\b(print|len|range|str|int|float|bool|abs|min|max|sum|sorted|list|tuple|dict|" +
+  "enumerate|reversed|any|all|ord|chr|round)\\b(?=\\s*\\()", "g");
+
+/** The same stash-then-substitute approach as highlightJava, for Python. */
+export function highlightPython(code) {
+  const stash = [];
+  const placeholder = (cls, text) => {
+    const i = stash.length;
+    stash.push(`<span class="hl-${cls}">${escapeHtml(text)}</span>`);
+    return `K${i}K`;
+  };
+
+  let s = code;
+  s = s.replace(/#[^\n]*/g, m => placeholder("cmt", m));
+  s = s.replace(/[frFR]?"(?:\\.|[^"\\\n])*"/g, m => placeholder("str", m));
+  s = s.replace(/[frFR]?'(?:\\.|[^'\\\n])*'/g, m => placeholder("str", m));
+
+  s = escapeHtml(s);
+  s = s.replace(PY_KEYWORD_RE, '<span class="hl-kw">$1</span>');
+  s = s.replace(PY_BUILTIN_RE, '<span class="hl-fn">$1</span>');
+  s = s.replace(/\b\d+(?:\.\d+)?\b/g, m => `<span class="hl-num">${m}</span>`);
+
+  s = s.replace(/K(\d+)K/g, (_, i) => stash[+i]);
+  return s;
+}

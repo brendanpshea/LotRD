@@ -28,7 +28,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Features
 
-- **Eight question formats** plus NPC teaching scenes (described below)
+- **Nine question formats** plus NPC teaching scenes (described below)
 - **Main menu** with topic groupings, per-set progress badges, and a global stats bar
 - **Lesson intros** — sets can declare an `intro` (story + learning objectives) in `catalog.json`, shown before the run starts
 - **Sequential first pass** — full runs present questions in authored order (the set is written as a progression, and NPC scenes precede their paired questions); missed questions still requeue, and reviews/trials shuffle their samples
@@ -207,6 +207,34 @@ The original type. Select all correct answers; partial credit is not given for i
 - **Graded per blank in one submission** — no three-attempt loop. Each correct blank rolls an attack die, each wrong one rolls a monster die, and the question re-queues unless all are right. A one-character typo on a long case-insensitive answer is still forgiven.
 - `Enter` advances to the next blank and submits from the last one.
 
+### Write the Code (`code_write`)
+
+A CodingBat-style problem: the signature is fixed and shown above the box, the student writes the **body**, and the code is run against a table of test cases.
+
+```json
+{
+  "type": "code_write",
+  "question": "Return the sum of two numbers — except if they are equal, return double their sum.",
+  "signature": "def sum_double(a, b):",
+  "tests": [
+    { "args": [1, 2], "expect": 3 },
+    { "args": [2, 2], "expect": 8 }
+  ],
+  "solution": "if a == b:\n    return (a + b) * 2\nreturn a + b",
+  "starter": "optional prefilled body",
+  "examples": ["optional; the first three tests are used when this is absent"],
+  "feedback": "Optional explanation."
+}
+```
+
+- **Run is free and unlimited.** The Run button executes the same tests that will grade the answer and shows expected against actual, row by row. Only Submit resolves the turn.
+- **Graded per test case**, like matching and cloze, but the attack dice are scaled to a fixed budget (`CODE_WRITE_HIT_BUDGET`) rather than one die per case — otherwise a ten-case problem would deal twice the damage of a five-case one for the same work. The question re-queues unless every case passes.
+- **A worked answer is shown afterwards**, whether or not the student's own passed. `solution` is required, and the test suite runs it through the real interpreter: a problem whose own answer key fails is a failing build. The suite also rejects a test table that `return None` / `return True` / `return 0` and friends can pass, since such a table grades nothing.
+- `args` and `expect` are ordinary JSON. Whole numbers become Python ints and fractions become floats; `{"__float": 5}` forces `5.0` and `{"__tuple": [1, 2]}` makes a tuple. Comparison uses Python's `==`, so an int answer still matches a float expectation.
+- The body may be typed flush against the left margin or already indented — whichever the student does, the shallowest line becomes one level of indentation. Tab inserts four spaces, Shift+Tab removes them, Enter keeps the current indent and adds a level after a colon. `Ctrl`+`Enter` runs the tests.
+
+The code runs on `src/pytiny.js`, a small Python interpreter written for this purpose (see [Runtime Architecture](#runtime-architecture)).
+
 ### NPC Teaching Scene (`npc_demo`)
 
 Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a worked example step by step, with optional low-stakes `check` prompts ("what comes next?") that get a gentle correction when wrong. Scenes deal no damage, award no XP, never requeue, are skippable, don't count toward `question_count`, and are excluded from reviews and rank trials. Author each scene **immediately before a paired question** that uses the same technique with different surface features. See the [WRITING_GUIDE](question_sets/WRITING_GUIDE.md) for the schema.
@@ -243,6 +271,8 @@ src/
   sound.js          — SoundSystem; Web Audio API effects and keep-alive logic
   items.js          — ITEM_DROPS table for post-battle loot
   model.js          — Player, Monster, GameModel; game logic, battle math, save/load state
+  pytiny.js         — A small Python interpreter; runs student code for code_write questions
+  highlight.js      — Minimal Java and Python syntax highlighters
   util.js           — Shared helpers such as shuffle()
 assets/
   monsters.json     — Monster definitions (name, hit_dice, attack_die, defense, image)
@@ -256,6 +286,8 @@ tests/
   model.test.js     — Unit tests for game logic (Player, Monster, GameModel)
   data.test.js      — Validates all JSON data files (monsters, question sets, catalog)
   html.test.js      — Cross-reference checks (templates, data-refs, stale code)
+  pytiny.test.js    — The Python interpreter, checked against real CPython output
+  finishable.test.js— Every shipped set can be played to a terminal screen
 ```
 
 ### Runtime Architecture
@@ -264,6 +296,7 @@ tests/
 - `controller.js` owns application state transitions: loading sets, saving progress, resuming games, resolving battles, and routing to the right screen.
 - `ui.js` is intentionally presentation-focused: it renders templates, handles keyboard shortcuts, and calls controller methods instead of reaching through globals.
 - `model.js` owns the combat and progression rules: player/monster state, streaks, dynamic question materialization, safe expression evaluation, answer grading, shared damage resolution, and save snapshots.
+- `pytiny.js` is a self-contained Python interpreter — tokenizer, parser, tree-walking evaluator — with no dependencies and no reach into the page. It exists because `code_write` questions have to run student code, and the alternative (Pyodide) is several megabytes of WebAssembly that the offline SCORM packages could not carry. It runs the Python of a first course and refuses everything else *by name*; errors are phrased in the words of that course ("you tried to add text to a number"), and every run is bounded by step, time, recursion, integer-size and output limits so a runaway loop reports itself instead of freezing the tab. Student text is never passed to `eval` or `Function`. Its test suite compares it against output captured from real CPython.
 - `sound.js` is isolated from UI and model logic, so audio concerns stay separate from gameplay and rendering.
 - `items.js` and `util.js` hold small shared data/helpers that were previously duplicated inline.
 

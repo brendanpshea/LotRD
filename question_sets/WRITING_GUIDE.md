@@ -6,7 +6,7 @@
 
 ## File Format Overview
 
-Each question set is a **JSON array** of question objects saved in `question_sets/`. Eight structured question types are documented below (plus the non-question NPC teaching scene), with multiple-choice split into single-answer and multi-answer variants:
+Each question set is a **JSON array** of question objects saved in `question_sets/`. Nine structured question types are documented below (plus the non-question NPC teaching scene), with multiple-choice split into single-answer and multi-answer variants:
 
 | Type | `type` field | Selection UI | Best for |
 |------|-------------|-------------|----------|
@@ -17,6 +17,7 @@ Each question set is a **JSON array** of question objects saved in `question_set
 | Code Line | `"code_line"` | Text input + token-Wordle | Writing one line of code/command |
 | Ordering | `"ordering"` | Tap-to-sequence | Process steps, algorithm stages, Parsons-style code arrangement |
 | Multi-Blank Cloze | `"cloze"` | Inline text inputs | Synthesis: several related terms held in contrast in one passage |
+| Write the Code | `"code_write"` | Code editor + test table | Writing a whole small function, run against real test cases (Python only) |
 | NPC Teaching Scene | `"npc_demo"` | Dialogue walkthrough | Worked examples immediately before a paired question (not a question itself) |
 
 A good problem set uses a **mix of all types**. Aim for roughly:
@@ -26,6 +27,7 @@ A good problem set uses a **mix of all types**. Aim for roughly:
 - 10–20% matching
 - a few ordering questions where the material has a real sequence
 - 1–2 multi-blank cloze items per set, for synthesis of contrasting ideas
+- write-the-code problems where the set's job is writing Python, kept in their own set for now
 - 1–3 NPC scenes per set, each directly followed by its paired question
 
 Dynamic numeric questions use a safe built-in expression engine. JSON content does **not** execute arbitrary JavaScript.
@@ -634,7 +636,64 @@ Because there are no options, a cloze cannot be solved by eliminating implausibl
 
 ---
 
-## Type 9: NPC Teaching Scene (`npc_demo`)
+## Type 9: Write the Code (`code_write`)
+
+A CodingBat-style problem. The signature is fixed and shown above the box; the student writes the **body**, and the code is run against a table of test cases. Python only — the code runs on [`src/pytiny.js`](../src/pytiny.js), a small interpreter written for this game.
+
+### Schema
+
+```json
+{
+  "type": "code_write",
+  "question": "Return the sum of two numbers — except if the two are equal, return double their sum.",
+  "signature": "def sum_double(a, b):",
+  "tests": [
+    { "args": [1, 2], "expect": 3 },
+    { "args": [3, 2], "expect": 5 },
+    { "args": [2, 2], "expect": 8 }
+  ],
+  "solution": "if a == b:\n    return (a + b) * 2\nreturn a + b",
+  "feedback": "Handle the special case first and return from inside the if."
+}
+```
+
+### Rules
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `type` | yes | `"code_write"` | Must be exactly this string |
+| `question` | yes | string | The spec. State the rule exactly — this is the contract the tests enforce |
+| `signature` | yes | string | A `def name(params):` line. The student never edits it |
+| `tests` | yes | object[] | 3+ cases, each `{ "args": [...], "expect": value }`. `args` must match the parameter count |
+| `solution` | yes | string | A reference **body**. Shown to the student afterwards, and run by the test suite to prove the table is satisfiable |
+| `starter` | no | string | Prefilled body. Must not already pass the tests |
+| `examples` | no | string[] | Worked examples shown above the box. Omit and the first three tests are used, which keeps them from drifting |
+| `feedback` | yes-ish | string | As everywhere: explain the idea, not just the answer |
+
+### Values in `args` and `expect`
+
+Ordinary JSON, converted to Python values: whole numbers become ints, fractions become floats, arrays become lists, objects become dicts. Two escape hatches for what JSON cannot say: `{"__float": 5}` is `5.0` and `{"__tuple": [1, 2]}` is `(1, 2)`. Comparison uses Python's `==`, so an int result still matches a float expectation.
+
+### What the interpreter supports
+
+`def`, `return`, `if`/`elif`/`else`, `while`, `for ... in`, `break`, `continue`, `pass`, ints, floats, strings, bools, `None`, lists, tuples, dicts, indexing, slicing, f-strings, keyword arguments and defaults, conditional expressions, recursion, and the usual built-ins and string/list/dict methods.
+
+**Not supported, on purpose:** classes, imports, exceptions, comprehensions, generators, sets, lambdas, `global`. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.
+
+### Writing Good Write-the-Code Problems
+
+1. **One idea per problem, and say the rule exactly.** "Return True if the two numbers are equal, or if their sum is 10" leaves nothing to guess. Vagueness in the stem becomes an unfair test failure.
+2. **Make the test table decide the question.** Every rule in the stem needs a case that enforces it, and every branch of your own solution needs a case that reaches it. The suite rejects a table that `return True` (or `None`, `False`, `0`, `""`) can pass outright, but that is a floor, not a target.
+3. **Include the edges you actually mean:** the empty list, the empty string, zero, a negative, the one-element case. If an edge is not in the table, the problem does not test it and a student will not think about it.
+4. **Keep it to 4–8 cases.** They are all visible, and a student reads every row on every run.
+5. **Do not ask for printing.** The tests can only see what is returned; a problem that says "print" is unpassable. Say "return".
+6. **Order the set by what it teaches** — returning a comparison, then strings and slicing, then lists, then accumulator loops — and let the earlier problems be genuinely easy. The format is new; the first one should build confidence, not filter.
+7. **Write `feedback` about the technique, not the answer.** The worked answer is shown anyway; the feedback is where the pattern gets named ("the accumulator pattern: start at 0 before the loop, add inside, return after").
+8. Grading is per test case, scaled to a fixed damage budget, and the question re-queues unless every case passes. Running the tests is free, unlimited, and has no effect on the battle.
+
+---
+
+## Type 10: NPC Teaching Scene (`npc_demo`)
 
 **Not a question** — a worked example an NPC mentor walks through, step by step, immediately **before a paired question that uses the same technique with different surface features**. Scenes deal no damage, award no XP, never requeue, never appear in reviews or rank trials, and don't count toward the set's `question_count`.
 
