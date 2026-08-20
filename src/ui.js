@@ -765,6 +765,10 @@ export class GameUI {
     const isDynamicNumeric = q.type === "dynamic_numeric";
     renderTemplate(this.root, "tpl-encounter-fill-blank");
     this._populateEncounterHeader(this.root);
+    // This screen serves two types; "Fill in the blank" is wrong for the one
+    // that asks for a computed number.
+    const label = $(this.root, "[data-ref=qLabel]");
+    if (label) label.textContent = isDynamicNumeric ? "Work out the answer:" : "Fill in the blank:";
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
     const input = $(this.root, "[data-ref=answerInput]");
