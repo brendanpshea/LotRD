@@ -1014,17 +1014,36 @@ export class GameUI {
     el.textContent = `Guess ${next} of ${total} — type your answer below.`;
   }
 
+  /** How each tile colour reads aloud, since colour alone carries the meaning. */
+  static WORDLE_STATUS_WORDS = {
+    correct: "correct",
+    present: "wrong position",
+    absent: "not in the answer",
+  };
+
   _appendWordleRow(feedback) {
     const grid = $(this.root, "[data-ref=wordleGrid]");
     if (!grid) return;
     const row = document.createElement("div");
     row.className = "wordle-row";
+
+    // The tiles say "right letter, wrong place" with colour and nothing else, so
+    // a screen reader would hear only a string of letters. The row carries one
+    // spoken summary instead, which reads far better than tagging every tile.
+    const spoken = [];
     feedback.forEach(({ char, status }) => {
       const tile = document.createElement("span");
       tile.className = `wordle-tile wordle-tile--${status}`;
       tile.textContent = char;
+      tile.setAttribute("aria-hidden", "true");
       row.appendChild(tile);
+      const word = GameUI.WORDLE_STATUS_WORDS[status];
+      if (word) spoken.push(`${char} ${word}`);
     });
+
+    row.setAttribute("role", "group");
+    row.setAttribute("aria-label",
+      `Guess ${grid.children.length + 1}: ${spoken.join(", ")}`);
     grid.appendChild(row);
   }
 
