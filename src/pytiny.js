@@ -885,7 +885,7 @@ export function parse(source) {
 // Python values are held in the nearest honest JavaScript shape:
 //
 //   int    BigInt      (exact and unbounded, the way Python's is)
-//   float  number      (kept distinct from int so 10 / 5 can print as 5.0)
+//   float  number      (kept distinct from int so 10 / 2 can print as 5.0)
 //   str    string
 //   bool   boolean
 //   None   null
@@ -895,7 +895,7 @@ export function parse(source) {
 //   range  PyRange     (lazy, so range(10000000) costs nothing to make)
 //
 // Keeping int and float apart is the whole reason for the BigInt: a beginner's
-// first surprise in Python is that 10 / 5 is 5.0 and not 5, and an interpreter
+// first surprise in Python is that 10 / 2 is 5.0 and not 5, and an interpreter
 // that cannot show them that difference cannot teach it.
 
 export class PyTuple {

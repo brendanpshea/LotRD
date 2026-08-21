@@ -1166,3 +1166,152 @@ describe('code_write problems are solvable', () => {
     });
   }
 });
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Arithmetic in question text has to be true
+// ────────────────────────────────────────────────────────────────────────────────
+// A key that disagrees with real arithmetic is the worst kind of wrong question:
+// the students who actually know the material are the ones marked wrong, and the
+// feedback then teaches them the error. This shipped once — a question asked for
+// 10 / 5 and insisted the answer was 5.0 — so it is pinned here.
+
+// Integer division truncates in these languages and does not in Python.
+const INT_DIVISION_LANGUAGES = new Set(['java', 'sql', 'c', 'cpp']);
+
+// A run of numeric literals joined by operators, e.g. "2 + 3 * 4" or "10 // 3".
+const ARITHMETIC_RUN =
+  /(?<![\w.])(\d+(?:\.\d+)?(?:\s*(?:\/\/|\*\*|[-+*/%])\s*\(?\s*\d+(?:\.\d+)?\)?)+)(?![\w.])/g;
+const CLAIMED_RESULT =
+  /^\s*(?:is|gives|equals|evaluates to|produces|becomes|==|=|→)\s*(-?\d+(?:\.\d+)?)(?![\w.])/;
+
+/** Precedence-correct evaluator over numeric literals. Returns null if unparseable. */
+function evaluateArithmetic(text, { intDivision }) {
+  const tokens = text.match(/\d+\.\d+|\d+|\/\/|\*\*|[-+*/%()]/g) || [];
+  let pos = 0;
+  let sawFloat = false;
+  const peek = () => tokens[pos];
+
+  function atom() {
+    const t = tokens[pos++];
+    if (t === '(') {
+      const v = expr();
+      if (tokens[pos++] !== ')') throw new Error('unbalanced');
+      return v;
+    }
+    if (!/^\d+(\.\d+)?$/.test(t ?? '')) throw new Error('unexpected token');
+    if (t.includes('.')) sawFloat = true;
+    return Number(t);
+  }
+  function power() {
+    const base = atom();
+    if (peek() === '**') { pos++; return Math.pow(base, unary()); }
+    return base;
+  }
+  function unary() {
+    if (peek() === '-') { pos++; return -unary(); }
+    return power();
+  }
+  function term() {
+    let v = unary();
+    while (['*', '/', '//', '%'].includes(peek())) {
+      const op = tokens[pos++];
+      const r = unary();
+      if (op !== '*' && r === 0) throw new Error('division by zero');
+      if (op === '*') v = v * r;
+      else if (op === '/') v = (intDivision && !sawFloat) ? Math.trunc(v / r) : v / r;
+      else if (op === '//') v = Math.floor(v / r);
+      else v = v - r * Math.floor(v / r);          // Python %: sign follows divisor
+    }
+    return v;
+  }
+  function expr() {
+    let v = term();
+    while (['+', '-'].includes(peek())) {
+      const op = tokens[pos++];
+      const r = term();
+      v = op === '+' ? v + r : v - r;
+    }
+    return v;
+  }
+
+  try {
+    const value = expr();
+    if (pos !== tokens.length || !Number.isFinite(value)) return null;
+    return value;
+  } catch (_) {
+    return null;
+  }
+}
+
+const nearlyEqual = (a, b) => Math.abs(a - b) < 1e-9;
+
+describe('Arithmetic shown in questions is actually correct', () => {
+  const index = loadJSON('question_sets/index.json');
+
+  it('no answer key contradicts the expression in its own stem', () => {
+    const wrong = [];
+
+    for (const setId of index) {
+      // With no explicit language, assume the language the SET teaches: a Java
+      // set saying 5 / 2 is 2 is correct Java, and would be a false alarm here.
+      const fallback = setId.startsWith('java_') ? 'java' : 'python';
+      const questions = loadJSON(`question_sets/${setId}`);
+
+      for (const [i, q] of questions.entries()) {
+        const type = q.type || 'multiple_choice';
+        if (type !== 'multiple_choice' && type !== 'fill_blank') continue;
+        if ((q.correct || []).length !== 1) continue;
+
+        const key = String(q.correct[0]).trim();
+        if (!/^-?\d+(\.\d+)?$/.test(key)) continue;
+
+        const stem = q.question_template || q.question || '';
+        const runs = stem.match(ARITHMETIC_RUN);
+        // Only judge an unambiguous stem: exactly one arithmetic expression in it.
+        if (!runs || runs.length !== 1) continue;
+
+        const intDivision = INT_DIVISION_LANGUAGES.has((q.language || fallback).toLowerCase());
+        const value = evaluateArithmetic(runs[0], { intDivision });
+        if (value === null) continue;
+
+        if (!nearlyEqual(value, Number(key))) {
+          wrong.push(`${setId}[${i}]: stem has "${runs[0].trim()}" but the key says ${key} ` +
+            `(correct value is ${value})`);
+        }
+      }
+    }
+
+    assert.deepEqual(wrong, [], `Answer keys that contradict their own arithmetic:\n${wrong.join('\n')}`);
+  });
+
+  it('no stem or feedback asserts a result that is false', () => {
+    const wrong = [];
+
+    for (const setId of index) {
+      const fallback = setId.startsWith('java_') ? 'java' : 'python';
+      const questions = loadJSON(`question_sets/${setId}`);
+
+      for (const [i, q] of questions.entries()) {
+        if ((q.type || 'multiple_choice') === 'dynamic_numeric') continue;  // templated
+        const intDivision = INT_DIVISION_LANGUAGES.has((q.language || fallback).toLowerCase());
+        const blob = [q.question_template || q.question || '', q.prompt || '', q.feedback || '']
+          .join('  ');
+
+        ARITHMETIC_RUN.lastIndex = 0;
+        let m;
+        while ((m = ARITHMETIC_RUN.exec(blob)) !== null) {
+          const tail = CLAIMED_RESULT.exec(blob.slice(m.index + m[0].length));
+          if (!tail) continue;
+          const value = evaluateArithmetic(m[1], { intDivision });
+          if (value === null) continue;
+          if (!nearlyEqual(value, Number(tail[1]))) {
+            wrong.push(`${setId}[${i}]: claims "${m[1].trim()} = ${tail[1]}" ` +
+              `but the value is ${value}`);
+          }
+        }
+      }
+    }
+
+    assert.deepEqual(wrong, [], `False arithmetic claims in question text:\n${wrong.join('\n')}`);
+  });
+});
