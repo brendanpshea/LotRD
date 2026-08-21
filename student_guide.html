@@ -7,12 +7,12 @@
 <style>
   :root {
     --ink: #1c2419;
-    --muted: #5b6b55;
+    --muted: #4f5d4a;
     --rule: #d4ddcf;
-    --accent: #1f7a3d;
+    --accent: #1a6b35;
     --accent-soft: #eaf4ec;
     --warn-bg: #fdf3e3;
-    --warn-edge: #d9a441;
+    --warn-edge: #9a6b12;
   }
   * { box-sizing: border-box; }
   body {
@@ -36,23 +36,46 @@
   }
   p, li { margin: 0 0 10px; }
   ul { padding-left: 1.25rem; margin: 0 0 12px; }
-  strong { color: var(--ink); }
 
+  a { color: var(--accent); text-decoration: underline; }
+  a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Rank table — genuinely tabular, so it stays a table with real headers. */
   table { border-collapse: collapse; width: 100%; margin: 4px 0 14px; font-size: 0.95rem; }
+  caption {
+    text-align: left;
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding-bottom: 6px;
+  }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
-  th { background: var(--accent-soft); font-weight: 600; }
-  td:first-child { white-space: nowrap; font-weight: 600; }
+  thead th { background: var(--accent-soft); }
+  tbody th { font-weight: 600; white-space: nowrap; }
 
-  .callout {
+  /* Question kinds are term-and-definition, not a grid of data, so they are a
+     description list. Styled in two columns, but never a layout table. */
+  .defs { display: grid; grid-template-columns: 10.5rem 1fr; gap: 0; margin: 4px 0 14px; }
+  .defs dt {
+    font-weight: 600;
+    padding: 8px 10px 8px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .defs dd {
+    margin: 0;
+    padding: 8px 0 8px 10px;
+    border-top: 1px solid var(--rule);
+  }
+
+  aside {
     background: var(--warn-bg);
     border-left: 4px solid var(--warn-edge);
     padding: 12px 14px;
-    margin: 16px 0;
+    margin: 20px 0;
     border-radius: 0 4px 4px 0;
   }
-  .callout p:last-child { margin-bottom: 0; }
+  aside p:last-child { margin-bottom: 0; }
 
-  .key {
+  kbd, code {
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     font-size: 0.9em;
     background: #f2f5f1;
@@ -61,13 +84,19 @@
     padding: 1px 5px;
   }
   .footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.9rem; }
-  @media (max-width: 480px) {
+
+  @media (max-width: 520px) {
     body { font-size: 16px; padding: 18px 14px 36px; }
-    td:first-child { white-space: normal; }
+    /* Stack the definition list rather than squeezing two columns. */
+    .defs { grid-template-columns: 1fr; }
+    .defs dt { padding-bottom: 0; }
+    .defs dd { padding: 4px 0 10px; border-top: 0; }
+    tbody th { white-space: normal; }
   }
 </style>
 </head>
 <body>
+<main>
 
 <h1>Loop of the Recursive Dragon</h1>
 <p class="tagline">A quiz-RPG for practicing course material. Battle monsters by answering questions.</p>
@@ -88,13 +117,34 @@
 <h2>How your grade works</h2>
 <p>
   Every set is worth the same share of your total. How much of that share a set pays out
-  depends on the rank you have carried it to:
+  depends on the rank you have carried it to.
 </p>
 <table>
-  <tr><th>Rank</th><th>How you earn it</th><th>Credit</th></tr>
-  <tr><td>🥉 Apprentice</td><td>Finish the set once</td><td>80%</td></tr>
-  <tr><td>🥈 Journeyman</td><td>Pass a rank trial, 3+ days after finishing</td><td>90%</td></tr>
-  <tr><td>🥇 Master</td><td>Pass a second trial, 7+ days after Journeyman</td><td>100%</td></tr>
+  <caption>The three mastery ranks, how each is earned, and what it is worth.</caption>
+  <thead>
+    <tr>
+      <th scope="col">Rank</th>
+      <th scope="col">How you earn it</th>
+      <th scope="col">Credit</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row"><span aria-hidden="true">🥉</span> Apprentice</th>
+      <td>Finish the set once</td>
+      <td>80%</td>
+    </tr>
+    <tr>
+      <th scope="row"><span aria-hidden="true">🥈</span> Journeyman</th>
+      <td>Pass a rank trial, 3 or more days after finishing</td>
+      <td>90%</td>
+    </tr>
+    <tr>
+      <th scope="row"><span aria-hidden="true">🥇</span> Master</th>
+      <td>Pass a second trial, 7 or more days after Journeyman</td>
+      <td>100%</td>
+    </tr>
+  </tbody>
 </table>
 <p>
   A <strong>rank trial</strong> is short — about half the set, at most 18 questions, weighted
@@ -105,45 +155,62 @@
 <p>
   <strong>Your score never goes down.</strong> A trial can only add credit, so a bad day costs
   you nothing but the wait. The main screen shows your current score and a
-  <em>How is this calculated?</em> breakdown of exactly where it comes from.
+  “How is this calculated?” breakdown of exactly where it comes from.
 </p>
 
 <h2>Kinds of questions</h2>
-<table>
-  <tr><td>Multiple choice</td><td>Sometimes more than one answer is correct — select them all before submitting.</td></tr>
-  <tr><td>Fill in the blank</td><td>Type the missing term. Minor typos are forgiven.</td></tr>
-  <tr><td>Matching</td><td>Pair each term with its definition.</td></tr>
-  <tr><td>Put in order</td><td>Tap steps, or lines of code, into the right sequence.</td></tr>
-  <tr><td>Numeric</td><td>You may type arithmetic instead of the answer — <span class="key">12 * 5</span> works, and is worked out for you.</td></tr>
-  <tr><td>Trace the code</td><td>Say what a short program prints.</td></tr>
-  <tr><td>Write the code</td><td>Write a real Python function. Press <strong>▶ Run Tests</strong> as often as you like before submitting — it is free and does not count against you. <span class="key">return</span> your answer rather than printing it.</td></tr>
-</table>
+<dl class="defs">
+  <dt>Multiple choice</dt>
+  <dd>Sometimes more than one answer is correct — select them all before submitting.</dd>
+
+  <dt>Fill in the blank</dt>
+  <dd>Type the missing term. Minor typos are forgiven.</dd>
+
+  <dt>Matching</dt>
+  <dd>Pair each term with its definition.</dd>
+
+  <dt>Put in order</dt>
+  <dd>Tap steps, or lines of code, into the right sequence.</dd>
+
+  <dt>Numeric</dt>
+  <dd>You may type arithmetic instead of the answer — <code>12 * 5</code> works, and is worked out for you.</dd>
+
+  <dt>Trace the code</dt>
+  <dd>Say what a short program prints.</dd>
+
+  <dt>Write the code</dt>
+  <dd>Write a real Python function. Use the <strong>Run Tests</strong> button as often as you
+      like before submitting — it is free and does not count against you. Use
+      <code>return</code> to give back your answer rather than printing it.</dd>
+</dl>
 
 <h2>Getting through it</h2>
 <ul>
-  <li>Keys: <span class="key">1</span>–<span class="key">9</span> pick answers, <span class="key">Enter</span> submits.</li>
+  <li>Keys: <kbd>1</kbd> through <kbd>9</kbd> pick answers, and <kbd>Enter</kbd> submits.</li>
   <li><strong>Read the feedback after a wrong answer.</strong> It explains why, and that question is coming back.</li>
-  <li>Leaving mid-set is fine — press <strong>← Menu</strong> and pick <strong>Resume</strong> when you return.</li>
-  <li>Phones and tablets work. Code questions have <strong>⇥ Indent</strong> and <strong>⇤ Outdent</strong> buttons so you do not need a keyboard <span class="key">Tab</span>.</li>
-  <li>After a set reaches Master it occasionally shows <strong>🔁 Review due</strong> — a handful of questions to keep it fresh. Reviews do not change your grade.</li>
+  <li>Leaving mid-set is fine — choose <strong>Menu</strong> to step out, then <strong>Resume</strong> when you return.</li>
+  <li>Phones and tablets work. Code questions have <strong>Indent</strong> and <strong>Outdent</strong> buttons, so you do not need a keyboard <kbd>Tab</kbd> key.</li>
+  <li>After a set reaches Master it occasionally shows <strong>Review due</strong> — a handful of questions to keep it fresh. Reviews do not change your grade.</li>
 </ul>
 
-<div class="callout">
+<aside aria-labelledby="watch-out">
+  <h2 id="watch-out">Two things to watch out for</h2>
   <p>
     <strong>Use a normal browser window.</strong> Your progress is saved in the browser and
     synced to D2L. Private or incognito browsing blocks that, and your work will be lost —
-    the game will warn you in red if it cannot save.
+    the game shows a red warning if it cannot save.
   </p>
   <p>
     Finish a set in one sitting where you can. If your character dies partway through, that
     run is not saved.
   </p>
-</div>
+</aside>
 
-<div class="footer">
-  Questions or something broken? Email Brendan Shea —
-  <a href="mailto:Brendan.Shea@rctc.edu">Brendan.Shea@rctc.edu</a>
-</div>
+<p class="footer">
+  Questions, or something broken? Email Brendan Shea at
+  <a href="mailto:Brendan.Shea@rctc.edu">Brendan.Shea@rctc.edu</a>.
+</p>
 
+</main>
 </body>
 </html>
