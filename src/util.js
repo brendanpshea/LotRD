@@ -229,3 +229,79 @@ export function sampleTrialQuestions(questions, missCounts = {}) {
     const rest = shuffle(pool.filter(q => !(missCounts[q.question] > 0)));
     return shuffle([...missed, ...rest].slice(0, size));
 }
+
+// ─── Portable position (cross-device resume) ─────────────────────────────────
+// The full in-progress save holds every question object and cannot leave the
+// browser: an LMS gives a SCORM 1.2 package 4096 characters for everything. A
+// *position* is the part of a run worth carrying to another device — which
+// questions remain, which were missed, the running tally — written as question
+// numbers, which a run in authored order can be rebuilt from. HP, inventory and
+// the monster are deliberately left behind.
+
+/**
+ * Pack an ordered list of indices, collapsing ascending runs: a run in authored
+ * order is mostly one long tail ("12-49") plus a few requeued stragglers.
+ * Order and repeats are preserved.
+ */
+export function encodeIndexList(indices) {
+    const parts = [];
+    const list = indices || [];
+    for (let i = 0; i < list.length; i++) {
+        let j = i;
+        while (j + 1 < list.length && list[j + 1] === list[j] + 1) j++;
+        parts.push(j - i >= 2 ? `${list[i]}-${list[j]}` : list.slice(i, j + 1).join(","));
+        i = j;
+    }
+    return parts.join(",");
+}
+
+/**
+ * Inverse of encodeIndexList. Returns null — not a partial list — for anything
+ * malformed or out of range: this arrives from another device by way of the LMS,
+ * and a position that is only half understood must not be resumed from.
+ * @param {string} text
+ * @param {number} count – number of questions in the set; indices must be < count
+ */
+export function decodeIndexList(text, count) {
+    if (typeof text !== "string") return null;
+    if (text === "") return [];
+    const out = [];
+    for (const part of text.split(",")) {
+        const m = /^(\d+)(?:-(\d+))?$/.exec(part);
+        if (!m) return null;
+        const from = Number(m[1]);
+        const to = m[2] === undefined ? from : Number(m[2]);
+        if (to < from || to >= count) return null;
+        for (let n = from; n <= to; n++) out.push(n);
+        // A question can requeue, but not without bound; this is a corrupt list.
+        if (out.length > count * 4) return null;
+    }
+    return out;
+}
+
+/**
+ * A short fingerprint of a question set as authored. A position is a list of
+ * question NUMBERS, so it only means anything against the file it was taken
+ * from: after a content update that adds, drops or reorders questions, the same
+ * numbers would silently resume the student somewhere else.
+ */
+export function questionSetFingerprint(questions) {
+    const list = Array.isArray(questions) ? questions : [];
+    let h = 0x811c9dc5;   // FNV-1a, 32-bit
+    const feed = (s) => {
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 0x01000193);
+        }
+    };
+    feed(String(list.length));
+    for (const q of list) feed(`|${q?.type ?? ""}:${q?.question ?? ""}`);
+    return (h >>> 0).toString(36);
+}
+
+/** True when level record `a` is further along than `b` (XP resets each level). */
+export function levelAhead(a, b) {
+    const al = a?.level ?? 0, bl = b?.level ?? 0;
+    if (al !== bl) return al > bl;
+    return (a?.xp ?? 0) > (b?.xp ?? 0);
+}

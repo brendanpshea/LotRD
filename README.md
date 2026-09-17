@@ -387,6 +387,7 @@ matches the number of questions actually in each file.
 | Key | Contents |
 |-----|----------|
 | `lotrd_save_${setId}` | In-progress game state for a set |
+| `lotrd_pos_${setId}` | The same run reduced to question numbers (remaining, missed, tally, set fingerprint) — small enough for the SCORM shim to carry between devices |
 | `lotrd_done_${setId}` | Completion record (timestamp, score %, level) |
 | `lotrd_tier_${setId}` | Mastery-tier record (tier, apprenticeAt/journeymanAt/masterAt timestamps) |
 | `lotrd_misses_${setId}` | Historical miss counts per question text (weights rank-trial samples) |

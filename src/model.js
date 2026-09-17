@@ -886,10 +886,11 @@ export class GameModel {
      * @param {object[]} monsters   – monster definitions
      * @param {object|null} saveData – optional: resume from a localStorage snapshot
      * @param {object|null} levelData – persistent player level/xp to start from
-     * @param {{sequential?:boolean}} options – sequential: keep authored question
-     *        order (used for full set runs, where the authoring order scaffolds
-     *        the ideas and NPC demos must precede their paired questions);
-     *        review/trial runs pass shuffled samples and omit it.
+     * @param {{sequential?:boolean, position?:object}} options – sequential: keep
+     *        authored question order (used for full set runs, where the authoring
+     *        order scaffolds the ideas and NPC demos must precede their paired
+     *        questions); review/trial runs pass shuffled samples and omit it.
+     *        position: resume a run begun on another device (see toPosition).
      */
     constructor(questions, monsters, saveData = null, levelData = null, options = {}) {
         this.monsters         = monsters;
@@ -923,9 +924,89 @@ export class GameModel {
             this.boss_done       = false;
             this.boss_queue      = [];
             this.player          = Player.fresh(levelData);
+            // Each question remembers its number in the authored file, which is
+            // what lets a run be described compactly enough to cross devices.
+            this.questions.forEach((q, i) => { q.source_index = i; });
             if (!options.sequential) this.questions = shuffle(this.questions);
             this.questions_to_ask = [...this.questions];
+            if (options.position) this._applyPosition(options.position);
         }
+    }
+
+    /** The authored number of a queued question, or -1 if it cannot be placed. */
+    _sourceIndexOf(question) {
+        if (Number.isInteger(question?.source_index)) return question.source_index;
+        // Saves written before questions were numbered: match on the text, which
+        // within one save is identical between the queue and the full list.
+        return this.questions.findIndex(q =>
+            q.question === question?.question && q.type === question?.type);
+    }
+
+    /**
+     * The portable part of this run, as question numbers: what remains (in queue
+     * order, requeues included), what has been missed, and the running tally.
+     * Returns null when the run cannot be described this way. Only meaningful
+     * for runs in authored order — reviews and trials are never saved at all.
+     * @returns {{remaining:number[], missed:number[], correct:number, incorrect:number}|null}
+     */
+    toPosition() {
+        // During the boss the normal queue is empty; the boss is rebuilt from the
+        // misses, so a run resumed elsewhere faces the dragon from the start.
+        const queue = this.current_question && !this.boss_phase
+            ? [this.current_question, ...this.questions_to_ask]
+            : this.questions_to_ask;
+        const remaining = queue.map(q => this._sourceIndexOf(q));
+        if (remaining.includes(-1)) return null;
+
+        const byText = new Map();
+        for (const q of this.questions) {
+            if (!byText.has(q.question)) byText.set(q.question, this._sourceIndexOf(q));
+        }
+        const missed = new Set();
+        for (const h of this.answer_history) {
+            if (h && h.was_perfect === false && byText.has(h.question)) missed.add(byText.get(h.question));
+        }
+        missed.delete(-1);
+
+        // Nothing left and nothing missed is a finished run, not a position.
+        if (remaining.length === 0 && missed.size === 0) return null;
+        return {
+            remaining,
+            missed: [...missed].sort((a, b) => a - b),
+            correct: this.player.total_correct,
+            incorrect: this.player.total_incorrect,
+        };
+    }
+
+    /**
+     * Turn a fresh run into the continuation of one begun elsewhere. The history
+     * is reconstructed rather than carried: every question no longer queued is
+     * marked answered, and every missed one keeps its miss, which is all the
+     * progress bar and the retrieval boss read from it. These entries are flagged
+     * `carried` — nobody answered them in THIS browser, so the end-of-run review
+     * has nothing truthful to show for them.
+     */
+    _applyPosition(position) {
+        const at = i => this.questions[i];
+        this.questions_to_ask = position.remaining.map(at).filter(Boolean);
+
+        const queued = new Set(position.remaining);
+        const history = [];
+        const entry = (q, perfect) => ({
+            question: q.question, correct_answers: [], selected: [],
+            correct_selections: [], incorrect_selections: [], missed_correct: [],
+            was_perfect: perfect, carried: true,
+        });
+        for (const i of position.missed) if (at(i)) history.push(entry(at(i), false));
+        this.questions.forEach((q, i) => {
+            if (q.type !== "npc_demo" && !queued.has(i)) history.push(entry(q, true));
+        });
+        this.answer_history  = history;
+        this.questions_asked = history.length;
+        // Already counted toward lifetime stats on the device they happened on.
+        this.stats_offset    = history.length;
+        this.player.total_correct   = position.correct   || 0;
+        this.player.total_incorrect = position.incorrect || 0;
     }
 
     /** Migrate legacy single-slot saves; otherwise pad/truncate to INVENTORY_SIZE. */

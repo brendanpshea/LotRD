@@ -1,4 +1,4 @@
-import { loadJSON, GameModel } from "./model.js";
+import { loadJSON, GameModel, Player } from "./model.js";
 import { ITEMS } from "./items.js";
 import { SoundSystem } from "./sound.js";
 import { GameUI } from "./ui.js";
@@ -6,6 +6,7 @@ import {
   shuffle, reviewDue, advanceReviewStage,
   TIER_APPRENTICE, TIER_MASTER, nextTierInfo, sampleTrialQuestions,
   probeStorage, storageWarningText, STORAGE_OK, STORAGE_FULL,
+  encodeIndexList, decodeIndexList, questionSetFingerprint, levelAhead,
 } from "./util.js";
 import { pickDragonLine } from "./dragon.js";
 
@@ -42,6 +43,8 @@ export class GameController {
     // Which set's historical miss counts this run should feed (null for the
     // multi-source review mixes, which don't belong to any single set).
     this._missRecordId = null;
+    // Fingerprint of the current set's authored questions; stamps its position record.
+    this._setFingerprint = null;
 
     // Check up front whether progress can be persisted at all, and say so loudly
     // if it cannot. Losing a finished set to a silently blocked localStorage is
@@ -98,6 +101,7 @@ export class GameController {
   }
 
   _saveKey(setName)       { return `lotrd_save_${setName}`; }
+  _positionKey(setName)   { return `lotrd_pos_${setName}`; }
   _completionKey(setName) { return `lotrd_done_${setName}`; }
   _attemptKey(setName)    { return `lotrd_attempt_${setName}`; }
   _reviewKey(setName)     { return `lotrd_review_${setName}`; }
@@ -114,6 +118,13 @@ export class GameController {
       for (let index = localStorage.length - 1; index >= 0; index -= 1) {
         const key = localStorage.key(index);
         if (!key) continue;
+        // Position records (lotrd_pos_) are deliberately spared. A brand-new
+        // browser has no version key, so this purge runs on every first visit —
+        // moments after the SCORM shim restored a position from another device,
+        // which would then be deleted here AND, on the next sync, from the LMS.
+        // They need no purge: each carries a fingerprint of its question set and
+        // is ignored if the set has changed, and a run rebuilt from one reads
+        // the current question file anyway.
         if (key.startsWith("lotrd_save_")) {
           localStorage.removeItem(key);
         }
@@ -201,11 +212,13 @@ export class GameController {
   saveGame() {
     if (this._isReview) return;
     if (!this._setName || !this.model) return;
+    const savedAt = new Date();
     try {
       localStorage.setItem(
         this._saveKey(this._setName),
-        JSON.stringify({ ...this.model.toSaveData(), setName: this._setName, savedAt: new Date().toISOString() })
+        JSON.stringify({ ...this.model.toSaveData(), setName: this._setName, savedAt: savedAt.toISOString() })
       );
+      this._savePosition(savedAt);
       if (this._storageState !== STORAGE_OK) {
         // Storage came back (quota freed, permission granted): clear the warning.
         this._storageState = STORAGE_OK;
@@ -222,6 +235,115 @@ export class GameController {
   _clearSave() {
     if (!this._setName) return;
     try { localStorage.removeItem(this._saveKey(this._setName)); } catch (_) {}
+    try { localStorage.removeItem(this._positionKey(this._setName)); } catch (_) {}
+  }
+
+  // ─── Portable position ────────────────────────────────────────────────────
+  // Written beside every full save: the same run, reduced to question numbers
+  // (see util.js). The full save never leaves this browser; this record is what
+  // the SCORM shim carries through the LMS so a set begun on a phone can be
+  // picked up on a laptop. Shape: { h, r, m, c, w, t } — set fingerprint,
+  // remaining and missed index lists, correct/incorrect tally, saved-at seconds.
+
+  _savePosition(savedAt) {
+    const pos = this._setFingerprint ? this.model.toPosition() : null;
+    const key = this._positionKey(this._setName);
+    if (!pos) { localStorage.removeItem(key); return; }
+    localStorage.setItem(key, JSON.stringify({
+      h: this._setFingerprint,
+      r: encodeIndexList(pos.remaining),
+      m: encodeIndexList(pos.missed),
+      c: pos.correct,
+      w: pos.incorrect,
+      t: Math.floor(savedAt.getTime() / 1000),
+    }));
+  }
+
+  /** The raw position record for a set, or null. */
+  _loadPosition(setName) {
+    try {
+      const r = localStorage.getItem(this._positionKey(setName));
+      const rec = r ? JSON.parse(r) : null;
+      return rec && typeof rec === "object" && typeof rec.r === "string" ? rec : null;
+    } catch (_) { return null; }
+  }
+
+  /**
+   * A position record is newer than the full save only when it came from
+   * somewhere else: this browser always writes the two together, with the same
+   * timestamp. When they tie, the full save wins — it still has the HP,
+   * inventory and monster that a position leaves behind.
+   */
+  _positionIsNewer(pos, save) {
+    if (!pos) return false;
+    const savedAt = Date.parse(save?.savedAt ?? "");
+    if (!save || !Number.isFinite(savedAt)) return true;
+    return (pos.t || 0) > Math.floor(savedAt / 1000);
+  }
+
+  /**
+   * Decode a position against the set as it is authored NOW. Returns null if the
+   * record belongs to a different version of the file, or does not parse cleanly.
+   */
+  _decodePosition(pos, questions) {
+    if (!pos || pos.h !== questionSetFingerprint(questions)) return null;
+    const remaining = decodeIndexList(pos.r, questions.length);
+    const missed = decodeIndexList(pos.m ?? "", questions.length);
+    if (!remaining || !missed) return null;
+    if (remaining.length === 0 && missed.length === 0) return null;
+    return { remaining, missed, correct: Number(pos.c) || 0, incorrect: Number(pos.w) || 0 };
+  }
+
+  /**
+   * A run resumed from an older full save would otherwise drag the player back
+   * to the level they held when it was written — and, now that level is synced,
+   * publish that lower level to every other device.
+   */
+  _liftPlayerToGlobalLevel(p) {
+    const levelData = this._loadGlobalLevel();
+    if (!p || !levelAhead(levelData, p)) return;
+    const hpGain = Player.maxHpForLevel(levelData.level) - Player.maxHpForLevel(p.level);
+    p.level = levelData.level;
+    p.xp = levelData.xp ?? 0;
+    p.xp_to_next_level = Player.xpToNext(p.level);
+    p.max_hit_points += hpGain;
+    p.hit_points += hpGain;
+    p.base_defense = Math.max(p.base_defense, Player.baseDefenseForLevel(p.level));
+  }
+
+  /**
+   * How much of a saved run is left. A run saved during the retrieval boss has
+   * an empty question queue but is not finished: counting only the queue made
+   * such a run impossible to resume, and the student repeated the whole set.
+   */
+  _saveRemaining(save) {
+    if (!save) return 0;
+    const queued = save.questions_to_ask?.length ?? 0;
+    return queued > 0 ? queued : (save.boss_phase ? (save.boss_queue?.length ?? 0) : 0);
+  }
+
+  /**
+   * The model to resume a set with, or null when there is nothing to resume.
+   * A position carried in from another device beats this browser's own save
+   * only when it is newer; if it then turns out not to fit the set as authored
+   * now, the local save is still the better fallback than starting over.
+   */
+  _buildResumedModel(setId, questions_data, monsters_data) {
+    const save = this._loadSave(setId);
+    const pos = this._loadPosition(setId);
+    if (this._positionIsNewer(pos, save)) {
+      const position = this._decodePosition(pos, questions_data);
+      if (position) {
+        return new GameModel(questions_data, monsters_data, null,
+          this._loadGlobalLevel(), { sequential: true, position });
+      }
+    }
+    if (this._saveRemaining(save) > 0) {
+      const model = new GameModel(questions_data, monsters_data, save);
+      this._liftPlayerToGlobalLevel(model.player);
+      return model;
+    }
+    return null;
   }
 
   _loadCompletion(setName) {
@@ -442,8 +564,18 @@ export class GameController {
             entry.tierNext = nextTierInfo(tierRec);
             entry.reviewDue = entry.tier >= TIER_MASTER
               && !!this._reviewDueInfo(entry.id, done, tierRec)?.due;
-          } else if (save && (save.questions_to_ask?.length ?? 0) > 0) {
-            entry.status = { type: "in_progress", remaining: save.questions_to_ask.length };
+          } else if (this._positionIsNewer(this._loadPosition(entry.id), save)) {
+            // Begun, or carried further, on another device. The count is taken on
+            // trust until the set is loaded and the record can be checked against it.
+            const pos = this._loadPosition(entry.id);
+            const count = text => decodeIndexList(text ?? "", Number.MAX_SAFE_INTEGER)?.length ?? 0;
+            // Nothing queued but something missed: only the retrieval boss is left.
+            const left = count(pos.r) || count(pos.m);
+            entry.status = left > 0
+              ? { type: "in_progress", remaining: left }
+              : { type: "attempted" };
+          } else if (this._saveRemaining(save) > 0) {
+            entry.status = { type: "in_progress", remaining: this._saveRemaining(save) };
           } else if (attempted) {
             entry.status = { type: "attempted" };
           } else {
@@ -626,11 +758,12 @@ export class GameController {
       newURL.searchParams.set("set", setId);
       window.history.replaceState({}, "", newURL);
       this._setName = setId;
+      this._setFingerprint = questionSetFingerprint(questions_data);
 
       if (mode === "resume") {
-        const save = this._loadSave(setId);
-        if (save && (save.questions_to_ask?.length ?? 0) > 0) {
-          this.model = new GameModel(questions_data, monsters_data, save);
+        const resumed = this._buildResumedModel(setId, questions_data, monsters_data);
+        if (resumed) {
+          this.model = resumed;
           this._createUi(this.model);
           this.startAdventure();
           return;
@@ -776,7 +909,9 @@ export class GameController {
 
   startReview(outcomeType) {
     this.ui.showReview(
-      this.model.answer_history,
+      // Entries carried over from another device record THAT a question was
+      // answered, not what was answered; there is nothing to review in them.
+      this.model.answer_history.filter(h => !h.carried),
       this.model.player,
       outcomeType,
       this._setName,
