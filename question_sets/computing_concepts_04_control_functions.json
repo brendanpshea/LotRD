@@ -19,7 +19,7 @@
     "incorrect": [
       "elseif",
       "else if",
-      "elsef"
+      "elsif"
     ],
     "feedback": "Python uses elif (short for 'else if') to test another condition when the previous ones were false."
   },
@@ -160,16 +160,23 @@
     "feedback": "Use a for loop when you know what to iterate over (like a range), and a while loop when you repeat until some condition changes."
   },
   {
-    "question": "How many times does the innermost print run?\n\nfor i in range(3):\n    for j in range(4):\n        print(i, j)",
-    "correct": [
-      "12"
-    ],
-    "incorrect": [
-      "7",
-      "3",
-      "4"
-    ],
-    "feedback": "The inner loop runs all 4 of its passes for each of the outer loop's 3 passes, so the print runs 3 x 4 = 12 times. Nested loops multiply; they do not add."
+    "type": "dynamic_numeric",
+    "question": "How many times does the innermost print run?\n\nfor i in range({{a}}):\n    for j in range({{b}}):\n        print(i, j)",
+    "variables": {
+      "a": {
+        "min": 2,
+        "max": 6
+      },
+      "b": {
+        "min": 3,
+        "max": 7
+      }
+    },
+    "answer": {
+      "expr": "a * b",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The inner loop runs all {{b}} of its passes for each of the outer loop's {{a}} passes, so the print runs {{expected}} times. Nested loops multiply; they do not add."
   },
   {
     "question": "What does  range(2, 6)  produce in Python?",
@@ -297,21 +304,6 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "How many times does the loop body run?\n\nfor i in range({{n}}):",
-    "variables": {
-      "n": {
-        "min": 4,
-        "max": 20
-      }
-    },
-    "answer": {
-      "expr": "n",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "range({{n}}) yields the values from 0 up to but not including {{n}}, so the body runs {{expected}} times."
-  },
-  {
-    "type": "dynamic_numeric",
     "question": "How many values does  range({{a}}, {{b}})  produce?",
     "variables": {
       "a": {
@@ -328,6 +320,21 @@
       "tolerance_abs": 0
     },
     "feedback_template": "range(a, b) goes from {{a}} up to but not including {{b}}, giving {{b}} minus {{a}} = {{expected}} values."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What is the LAST value that i takes?\n\nfor i in range({{n}}):\n    print(i)",
+    "variables": {
+      "n": {
+        "min": 4,
+        "max": 20
+      }
+    },
+    "answer": {
+      "expr": "n - 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "range({{n}}) starts at 0 and stops BEFORE {{n}}, so it yields {{n}} values and the last one is {{expected}}. Counting from zero is why the stop value itself is never reached."
   },
   {
     "type": "cloze",
@@ -621,18 +628,6 @@
     "feedback": "The accumulator is set up once before the loop, updated once per item inside it, and returned after the loop finishes. Indenting the return one level deeper would return after the first number instead of the whole total."
   },
   {
-    "question": "In  def power(base, exp=2):, what does the  exp=2  part mean?",
-    "correct": [
-      "exp gets a default of 2 when the caller supplies nothing"
-    ],
-    "incorrect": [
-      "exp must be exactly 2 and cannot be changed by a caller",
-      "exp is compared to 2 each time the function runs",
-      "the function returns 2 whenever exp is left out"
-    ],
-    "feedback": "A default value lets a parameter be optional: if the caller omits exp, it is 2; if they pass a value, that value is used instead."
-  },
-  {
     "type": "cloze",
     "prompt": "Fill in the blanks so calling  shout(\"go\")  with no second argument prints  go! go! go!",
     "question": "{{1}} shout(text, times={{2}}):\n    return (text + \"! \") * times\nprint(shout(\"go\"))",
@@ -662,9 +657,10 @@
     ],
     "incorrect": [
       "A function must always include a return statement",
-      "A function can be defined only once per program run"
+      "A function can be defined only once per program run",
+      "A parameter keeps its value from one call to the next"
     ],
-    "feedback": "Functions may take any number of parameters, may or may not return a value, and are reusable. A function without a return statement still runs; it just hands back None."
+    "feedback": "Functions may take any number of parameters, may or may not return a value, and are reusable. A function without a return statement still runs; it just hands back None. Parameters are local: each call starts with fresh values, and nothing carries over."
   },
   {
     "question": "What is a docstring?",
@@ -721,14 +717,6 @@
       "The name does exist outside, but it still holds its pre-call value"
     ],
     "feedback": "A variable created inside a function has local scope: it exists only during that call, so outside code cannot see it."
-  },
-  {
-    "type": "fill_blank",
-    "question": "A variable created inside a function, invisible to code outside it, is called a ___ variable.",
-    "correct": [
-      "local"
-    ],
-    "feedback": "A local variable lives only for the duration of the call that created it. That is why code outside the function cannot see it, and why two calls never share one."
   },
   {
     "type": "cloze",

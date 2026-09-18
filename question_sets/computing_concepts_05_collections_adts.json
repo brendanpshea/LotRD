@@ -1,62 +1,26 @@
 [
   {
-    "question": "Which Python collection is written with square brackets, keeps its items in order, and lets you change them later?",
-    "correct": [
-      "A list"
-    ],
-    "incorrect": [
-      "A tuple",
-      "A set",
-      "A dictionary"
-    ],
-    "feedback": "A list keeps items in the order you wrote them and lets you append, overwrite, or remove. Tuples are ordered but fixed, sets have no order, and dictionaries look values up by key."
-  },
-  {
-    "question": "Which collection stores key-value pairs and looks up values quickly by key?",
-    "correct": [
-      "dict"
-    ],
-    "incorrect": [
-      "list",
-      "tuple",
-      "set"
-    ],
-    "feedback": "A dictionary maps each key to a value and is built for fast lookup by key, written as {key: value}."
-  },
-  {
-    "question": "Which collection is ordered but cannot be changed after it is created?",
-    "correct": [
-      "tuple"
-    ],
-    "incorrect": [
-      "list",
-      "dict",
-      "set"
-    ],
-    "feedback": "A tuple (written with parentheses) keeps its order but is immutable, so its contents are fixed once created."
-  },
-  {
     "type": "matching",
-    "question": "Match each list operation to what it does.",
+    "question": "Match each Python collection to what sets it apart.",
     "pairs": [
       {
-        "term": "lst.append(x)",
-        "definition": "Adds x to the end of the list"
+        "term": "list",
+        "definition": "Ordered and changeable, written with [ ]"
       },
       {
-        "term": "lst[2] = x",
-        "definition": "Overwrites whatever was at position 2"
+        "term": "tuple",
+        "definition": "Ordered but fixed once built, written with ( )"
       },
       {
-        "term": "lst.remove(x)",
-        "definition": "Deletes the first item equal to x"
+        "term": "dict",
+        "definition": "Values found by key instead of by position"
       },
       {
-        "term": "lst.copy()",
-        "definition": "Returns a new, independent list"
+        "term": "set",
+        "definition": "No duplicates and no positions"
       }
     ],
-    "feedback": "Appending grows the list, assigning to an index replaces one slot, remove deletes by value, and copy makes a separate list that can be changed safely."
+    "feedback": "Ask two questions of any collection: can it change, and how do you reach an item? A list changes and is reached by position; a tuple is reached by position but never changes; a dict is reached by key; a set only answers \"is it in here?\"."
   },
   {
     "question": "Which of the following Python collections are mutable (changeable after creation)? (Select all that apply)",
@@ -124,7 +88,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "What number does this program print?\n\na = [0] * {{n}}\nb = a\nb = b + [0]\nprint(len(a))",
+    "question": "What number does this program print?\n\na = [0] * {{n}}\nb = a\nb = b + [0]\nprint(len(a) + len(b))",
     "variables": {
       "n": {
         "min": 3,
@@ -132,10 +96,10 @@
       }
     },
     "answer": {
-      "expr": "n",
+      "expr": "n + n + 1",
       "tolerance_abs": 0
     },
-    "feedback_template": "b = b + [0] builds a NEW list and points b at it, leaving the original untouched, so a still holds {{expected}} items. Only in-place changes such as append() are visible through the other name."
+    "feedback_template": "b = b + [0] builds a NEW list and points b at it, leaving the original untouched: a still has {{n}} items while b has one more, so the total is {{expected}}. Only in-place changes such as append() show through the other name."
   },
   {
     "question": "You need to store a fixed pair of map coordinates (x, y) that should never change. Which collection fits best?",
@@ -237,16 +201,27 @@
     "feedback": "A slice starts at its first index and stops just before its second, and -1 refers to the final item, so [1:-1] drops exactly one item from each end."
   },
   {
-    "question": "What does  ages.get(\"Max\")  return if the key \"Max\" is not in the dictionary  ages?",
-    "correct": [
-      "None"
+    "type": "matching",
+    "question": "Match each list operation to what it does.",
+    "pairs": [
+      {
+        "term": "lst.append(x)",
+        "definition": "Adds x to the end of the list"
+      },
+      {
+        "term": "lst[2] = x",
+        "definition": "Overwrites whatever was at position 2"
+      },
+      {
+        "term": "lst.remove(x)",
+        "definition": "Deletes the first item equal to x"
+      },
+      {
+        "term": "lst.copy()",
+        "definition": "Returns a new, independent list"
+      }
     ],
-    "incorrect": [
-      "0",
-      "an error that stops the program",
-      "an empty string"
-    ],
-    "feedback": "Unlike ages[\"Max\"] (which raises an error), .get() returns None for a missing key, or a default if you supply one."
+    "feedback": "Appending grows the list, assigning to an index replaces one slot, remove deletes by value, and copy makes a separate list that can be changed safely."
   },
   {
     "type": "ordering",
@@ -404,9 +379,9 @@
     ],
     "incorrect": [
       "b = a",
-      "a.alias()"
+      "b = (a)"
     ],
-    "feedback": "a.copy(), list(a), and a full slice a[:] each build a separate list. b = a only makes another name for the same list, and a.alias() is not a real method."
+    "feedback": "a.copy(), list(a), and a full slice a[:] each build a separate list. b = a only makes another name for the same list, and a.alias() is not a real method. Wrapping a name in parentheses, as in b = (a), changes nothing: it is still the same list under a second name."
   },
   {
     "type": "code_trace",
@@ -418,15 +393,6 @@
     ],
     "case_sensitive": true,
     "feedback": "b is another name for the same list, so its append is felt by a; c is a genuine independent copy, so its append is not."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The list method that returns a new, independent copy of the list is .___().",
-    "correct": [
-      "copy"
-    ],
-    "case_sensitive": true,
-    "feedback": "a.copy() returns a separate list with the same items, avoiding the aliasing trap of b = a."
   },
   {
     "question": "Given  ball = [{\"name\": \"Mina\", \"age\": 24}, {\"name\": \"Hyde\", \"age\": 40}], what does  ball[1][\"age\"]  give?",
@@ -441,19 +407,6 @@
     "feedback": "Reading nested data is two steps: the list index picks the record, then the dictionary key picks the field. ball[1] is Hyde's whole dictionary, and [\"age\"] pulls one field out of it."
   },
   {
-    "question": "Which of the following are true about aliasing? (Select all that apply)",
-    "correct": [
-      "Two names can point at the same underlying list",
-      "A change made through one name is seen through the other",
-      "Making a copy breaks the link between the names"
-    ],
-    "incorrect": [
-      "Aliasing makes two fully independent lists",
-      "Aliasing only happens with numbers, never with lists"
-    ],
-    "feedback": "Aliasing means two names share one object, so edits show up under both names. A copy creates a separate object and removes the shared link."
-  },
-  {
     "question": "Inside a function, the line  items.append(1)  changes the caller's list, but the line  items = items + [1]  leaves it untouched. What explains the difference?",
     "correct": [
       "append changes the shared list in place, while items + [1] builds a new list that only the local name points at"
@@ -464,18 +417,6 @@
       "Both lines do change the caller's list, but the second one's change is undone as soon as the function ends"
     ],
     "feedback": "Mutating touches the object both names share; rebinding just points the local name somewhere else and leaves the caller's object exactly as it was."
-  },
-  {
-    "question": "Real-world tabular data is most commonly stored in Python as a:",
-    "correct": [
-      "List of dictionaries, with one dictionary per row"
-    ],
-    "incorrect": [
-      "Single tuple holding every value at once",
-      "Set of numbers with the duplicates removed",
-      "Plain string with the columns separated by spaces"
-    ],
-    "feedback": "A list of dictionaries is the everyday shape for tables: each dict is a row, and each key is a column name."
   },
   {
     "question": "Why is a list of dictionaries such a common shape for real data?",
@@ -576,6 +517,16 @@
     "feedback": "The if clause filters the sequence, keeping only the even numbers, so the result is [2, 4, 6]."
   },
   {
+    "type": "code_trace",
+    "question": "A dictionary comprehension builds a new dictionary. What does this print?",
+    "code": "prices = {\"cape\": 20, \"fangs\": 5}\ndoubled = {item: price * 2 for item, price in prices.items()}\nprint(doubled[\"fangs\"])",
+    "language": "python",
+    "correct": [
+      "10"
+    ],
+    "feedback": "A dictionary comprehension has the same shape as a list comprehension, but with key: value before the for. Every price is doubled, so \"fangs\" maps to 10 — and the original prices dictionary is left alone."
+  },
+  {
     "question": "In ADT terms, what is the interface?",
     "correct": [
       "The set of methods the ADT promises to other code"
@@ -586,6 +537,57 @@
       "The number of items currently in the collection"
     ],
     "feedback": "The interface is the agreed-upon set of methods. Other code uses only the interface, so the hidden implementation can change freely."
+  },
+  {
+    "question": "A print shop handles jobs strictly in the order they arrived. Which abstract data type describes that rule?",
+    "correct": [
+      "A queue: the first item in is the first out"
+    ],
+    "incorrect": [
+      "A stack: the last item in is the first out",
+      "A set: no duplicates and no positions",
+      "A dict: each value is found by its key"
+    ],
+    "feedback": "First come, first served is a queue. A stack would serve the NEWEST job first, like taking the top plate off a pile. Both can be stored in a Python list — the ADT is the rule about what comes out next, not the storage."
+  },
+  {
+    "type": "code_trace",
+    "question": "A list is used as a stack: append() pushes, pop() removes the newest. What does this print?",
+    "code": "stack = []\nstack.append(\"a\")\nstack.append(\"b\")\nstack.append(\"c\")\nstack.pop()\nprint(stack[-1])",
+    "language": "python",
+    "correct": [
+      "b"
+    ],
+    "feedback": "pop() with no argument removes the LAST item, \"c\", which is what makes a list behave as a stack. The newest item left is \"b\"."
+  },
+  {
+    "type": "code_trace",
+    "question": "A list is used as a queue: pop(0) removes the oldest. What does this print?",
+    "code": "line = [\"ann\", \"bo\", \"cy\"]\nfirst = line.pop(0)\nprint(first, len(line))",
+    "language": "python",
+    "correct": [
+      "ann 2"
+    ],
+    "feedback": "pop(0) removes and returns the item at the FRONT, \"ann\", leaving two people in line. Serving from the front is what makes it a queue."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A stack starts empty. {{p}} items are pushed with append(), and then pop() is called {{k}} times. How many items remain?",
+    "variables": {
+      "p": {
+        "min": 5,
+        "max": 12
+      },
+      "k": {
+        "min": 1,
+        "max": 4
+      }
+    },
+    "answer": {
+      "expr": "p - k",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each append() adds one item and each pop() removes one, so {{p}} pushes and {{k}} pops leave {{expected}}."
   },
   {
     "question": "Why can a string or a tuple be used as a dictionary key, while a list cannot?",
@@ -625,11 +627,11 @@
       "Other code only needs to learn the methods, not the internals"
     ],
     "incorrect": [
-      "It makes the program refuse to run until it is finished",
-      "It guarantees the collection can never contain a bug",
-      "It removes the need to write any methods at all"
+      "It makes the type faster, because callers reach the storage directly",
+      "It lets other code edit the stored data without calling a method",
+      "It means the interface has to change whenever the storage does"
     ],
-    "feedback": "Hiding storage behind methods lets you redesign the internals safely, and users only need the interface. It does not magically prevent all bugs."
+    "feedback": "The interface is a promise about WHAT the type does; the implementation is HOW. Keeping them apart means the storage can be swapped without touching any caller, and callers need learn only the methods. It is not about speed, and it works precisely because callers do NOT reach past the methods into the storage."
   },
   {
     "type": "matching",
@@ -644,15 +646,15 @@
         "definition": "The actual storage and code behind those methods"
       },
       {
-        "term": "Mutable",
-        "definition": "Can be changed after it is created"
+        "term": "Stack",
+        "definition": "The last item added is the first one removed"
       },
       {
-        "term": "Immutable",
-        "definition": "Cannot be changed after it is created"
+        "term": "Queue",
+        "definition": "The first item added is the first one removed"
       }
     ],
-    "feedback": "An ADT separates the promise (interface) from the storage (implementation); mutability describes whether the stored data can change."
+    "feedback": "An ADT is defined by its interface — the operations it promises — not by its implementation, the storage behind them. A stack and a queue can both be built on a Python list; what differs is the promise about which item comes out next."
   },
   {
     "type": "dynamic_numeric",
@@ -721,7 +723,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "A list named nums holds the whole numbers 1 through {{n}}, with each number appearing {{r}} separate times. How many items does  set(nums)  contain?",
+    "question": "A list named nums holds the whole numbers 1 through {{n}}, with each number appearing {{r}} separate times. What does  len(nums) - len(set(nums))  give?",
     "variables": {
       "n": {
         "min": 4,
@@ -733,10 +735,10 @@
       }
     },
     "answer": {
-      "expr": "n",
+      "expr": "n * r - n",
       "tolerance_abs": 0
     },
-    "feedback_template": "A set keeps only distinct values, so all {{r}} copies of each number collapse into one, leaving the {{expected}} different numbers."
+    "feedback_template": "nums has {{n}} x {{r}} items. A set keeps only distinct values, so every extra copy collapses and set(nums) has {{n}}. The difference, {{expected}}, is exactly how many duplicates were thrown away."
   },
   {
     "type": "dynamic_numeric",

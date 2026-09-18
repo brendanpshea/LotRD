@@ -46,16 +46,123 @@
     "feedback": "A namespace answers 'where does this name live?' math.pi means the name pi is found inside the math module's namespace."
   },
   {
-    "question": "What is another word for an object in Python?",
+    "question": "tools.py sits in the same folder as main.py and defines  def area(w, h). Which line in main.py makes  tools.area(2, 3)  work?",
     "correct": [
-      "An instance"
+      "import tools"
     ],
     "incorrect": [
-      "A module",
-      "A namespace",
-      "A parameter"
+      "import tools.py",
+      "from tools import area",
+      "import area from tools"
     ],
-    "feedback": "An instance is one specific thing built from a class. 'Object' and 'instance' mean the same thing."
+    "feedback": "Your own file is a module just like math: import it by its name without the .py, and reach what it defines through the dot. from tools import area would bring in area alone — the name tools would not exist, so tools.area(2, 3) would fail."
+  },
+  {
+    "type": "cloze",
+    "question": "{{1}} random\nroll = random.{{2}}(1, 6)\nprint(roll)\n\nComplete the program so that it prints a whole number from 1 to 6, like a die.",
+    "blanks": [
+      {
+        "accept": [
+          "import"
+        ],
+        "hint": "keyword"
+      },
+      {
+        "accept": [
+          "randint"
+        ],
+        "hint": "function"
+      }
+    ],
+    "feedback": "import random makes the module's name available, and everything inside it is then reached through the dot. randint(1, 6) includes BOTH ends, which is what a die needs."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "After  import math, what number does  math.floor({{a}} / {{b}})  produce?",
+    "variables": {
+      "a": {
+        "min": 10,
+        "max": 40
+      },
+      "b": {
+        "min": 3,
+        "max": 7
+      }
+    },
+    "answer": {
+      "expr": "floorDiv(a, b)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{a}} / {{b}} is a float, and floor drops down to the nearest whole number below it, giving {{expected}} rather than a rounded result.",
+    "allow_expression": false
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: One mould, many golems",
+    "npc": "zoya",
+    "intro": "Zoya lifts a wooden mould from the shelf and sets it beside a row of clay figures. “People mix these two up constantly,” they say. “The mould is the class. The figures are the objects. Let me show you in code.”",
+    "steps": [
+      {
+        "say": "This is a class. It is the mould: a description of what every golem will have. Writing it builds no golem at all.\nclass Golem:\n    def __init__(self, name):\n        self.name = name\nNothing exists yet. A class is only the blueprint.",
+        "beats": [
+          {
+            "say": "This is a class. It is the mould: a description of what every golem will have. Writing it builds no golem at all."
+          },
+          {
+            "code": "class Golem:\n    def __init__(self, name):\n        self.name = name",
+            "language": "python"
+          },
+          {
+            "say": "Nothing exists yet. A class is only the blueprint."
+          }
+        ]
+      },
+      {
+        "say": "Calling the class is what presses a figure out of the mould. Each call builds a new object, also called an instance.\nash = Golem(\"Ash\")\nbirch = Golem(\"Birch\")\nTwo calls, so two objects. Each one carries its own name attribute.",
+        "beats": [
+          {
+            "say": "Calling the class is what presses a figure out of the mould. Each call builds a new object, also called an instance."
+          },
+          {
+            "code": "ash = Golem(\"Ash\")\nbirch = Golem(\"Birch\")",
+            "language": "python"
+          },
+          {
+            "say": "Two calls, so two objects. Each one carries its own name attribute."
+          }
+        ],
+        "check": {
+          "prompt": "How many Golem objects exist after those two lines?",
+          "answer": "Two — each call to Golem() builds a new object",
+          "wrong": [
+            "One — ash and birch are two names for it",
+            "None — only the class exists"
+          ],
+          "why": "Every call to the class builds a fresh object. Two names for ONE object would need ash = birch, which is not what was written."
+        }
+      },
+      {
+        "say": "So count them separately: one class, written once, and as many objects as there were calls. Change ash.name and birch.name stays as it was.",
+        "beats": [
+          {
+            "say": "So count them separately: one class, written once, and as many objects as there were calls. Change ash.name and birch.name stays as it was."
+          }
+        ]
+      }
+    ],
+    "outro": "Zoya sets the mould down. “One blueprint, many objects. Now you count some.”"
+  },
+  {
+    "question": "A program defines  class Dog:  once, and later runs  rex = Dog()  and  fido = Dog(). How many classes and objects now exist?",
+    "correct": [
+      "One class, and two objects built from it"
+    ],
+    "incorrect": [
+      "Two classes, one made by each call to Dog()",
+      "One class and one object, shared by two names",
+      "One object, since rex and fido are both Dog"
+    ],
+    "feedback": "A class is the blueprint; an object (or instance) is one thing built from it. Each call to Dog() builds a NEW object, so rex and fido are two separate objects of the one class — unlike  fido = rex, which would give one object two names."
   },
   {
     "type": "code_trace",
@@ -89,6 +196,57 @@
     "feedback": "The parent goes in parentheses after the new class's name, which is how Python knows to look in A for anything B does not define itself."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: The word that makes a change stick",
+    "npc": "zoya",
+    "intro": "A row of half-finished clay golems lines Zoya's workbench. They tap one on the shoulder. “Each of these is one object — one thing built from a class. Every method you write is handed the particular object it is working on, and the name for that is self. Forgetting it is the quietest bug in this wing.”",
+    "steps": [
+      {
+        "say": "Here is a class for a tally. Every golem I build from it is one Tally object:\nclass Tally:\n    def __init__(self):\n        self.n = 0\nself.n = 0 writes the number onto this object, and it stays there after __init__ ends. A value kept on an object like that is called an attribute.",
+        "beats": [
+          {
+            "say": "Here is a class for a tally. Every golem I build from it is one Tally object:"
+          },
+          {
+            "code": "class Tally:\n    def __init__(self):\n        self.n = 0",
+            "language": "python"
+          },
+          {
+            "say": "self.n = 0 writes the number onto this object, and it stays there after __init__ ends. A value kept on an object like that is called an attribute."
+          }
+        ]
+      },
+      {
+        "say": "Now a method that means to count up, but slips:\n    def bump(self):\n        n = self.n + 1\nIt reads self.n correctly and adds one. But it stores the result in a plain n. That is a local variable — a scratch note on the bench rather than a mark on the golem — and it is thrown away the moment the method ends.",
+        "check": {
+          "prompt": "After calling bump() once on a fresh Tally, what is self.n?",
+          "answer": "Still 0 — the update went to a scratch variable",
+          "wrong": [
+            "1 — the addition worked",
+            "The program crashes on the missing attribute"
+          ],
+          "why": "The arithmetic was right, but nothing was written back to the object. n was a local variable, so it was swept away with the bench notes when the method ended, and the attribute self.n was never touched."
+        },
+        "beats": [
+          {
+            "say": "Now a method that means to count up, but slips:"
+          },
+          {
+            "code": "    def bump(self):\n        n = self.n + 1",
+            "language": "python"
+          },
+          {
+            "say": "It reads self.n correctly and adds one. But it stores the result in a plain n. That is a local variable — a scratch note on the bench rather than a mark on the golem — and it is thrown away the moment the method ends."
+          }
+        ]
+      },
+      {
+        "say": "The fix is one word on the LEFT of the equals sign: self.n = self.n + 1. Reading needs self. too, but the left side is what decides whether the change lands on the object or on a scratch note that is about to be thrown away."
+      }
+    ],
+    "outro": "“The next question shows you this exact slip. You already know where the change went.”"
+  },
+  {
     "question": "Why does this method fail to change the object's balance?\n\ndef pay(self, amount):\n    balance = self.balance - amount",
     "correct": [
       "Without self. it creates a local variable that soon disappears"
@@ -99,6 +257,77 @@
       "The method is missing a return statement at the end"
     ],
     "feedback": "Bare balance is a throwaway local name. The fix is one word: self.balance = self.balance - amount. When an update mysteriously does not stick, check for a missing self. first."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "After {{calls}} calls to bump() on one Counter, what is self.n?\n\nclass Counter:\n    def __init__(self):\n        self.n = {{start}}\n\n    def bump(self):\n        self.n = self.n + {{step}}",
+    "variables": {
+      "calls": {
+        "min": 3,
+        "max": 9
+      },
+      "start": {
+        "min": 5,
+        "max": 20
+      },
+      "step": {
+        "values": [
+          2,
+          3,
+          4
+        ]
+      }
+    },
+    "answer": {
+      "expr": "start + calls * step",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "__init__ starts this object's n at {{start}}, and each bump() adds {{step}} to it. Because the update is written to self.n, it persists between calls: {{calls}} calls leave {{expected}}."
+  },
+  {
+    "type": "cloze",
+    "question": "class Citizen:\n    def __init__(self, name, balance):\n        self.name = name\n        self.balance = balance\n    def pay(self, amount):\n        self.balance = self.balance - amount\n\nelaine = Citizen(\"Elaine\", 120)\npercival = Citizen(\"Percival\", 40)\nelaine.pay(30)\npercival.pay(5)\nelaine.pay(10)\n\nAfter this runs, elaine.balance is {{1}} and percival.balance is {{2}}.",
+    "blanks": [
+      {
+        "accept": [
+          "80"
+        ],
+        "hint": "number"
+      },
+      {
+        "accept": [
+          "35"
+        ],
+        "hint": "number"
+      }
+    ],
+    "feedback": "pay() is written once, but self is whichever object it was called on. elaine.pay(...) touches only Elaine's balance (120 - 30 - 10 = 80), and percival.pay(5) only Percival's (40 - 5 = 35). Same class, separate data."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "These are lines {{l0}} to {{l7}} of a larger file. The program prints 0 where 5 was expected. Type the number of the ONE line that has to change.\n\n{{l0}}  class Purse:\n{{l1}}      def __init__(self):\n{{l2}}          self.coins = 0\n{{l3}}      def add(self, n):\n{{l4}}          coins = self.coins + n\n{{l5}}  p = Purse()\n{{l6}}  p.add(5)\n{{l7}}  print(p.coins)",
+    "variables": {
+      "first": {
+        "min": 12,
+        "max": 80
+      }
+    },
+    "derived": {
+      "l0": "first + 0",
+      "l1": "first + 1",
+      "l2": "first + 2",
+      "l3": "first + 3",
+      "l4": "first + 4",
+      "l5": "first + 5",
+      "l6": "first + 6",
+      "l7": "first + 7"
+    },
+    "answer": {
+      "expr": "first + 4",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "Line {{expected}} computes the right number and then stores it in a plain coins — a local variable that vanishes when add() returns. It needs to say self.coins = self.coins + n. Every other line is fine, which is what makes this bug so quiet: nothing crashes, the purse just never fills."
   },
   {
     "type": "fill_blank",
@@ -137,6 +366,16 @@
     "feedback": "The setup method runs automatically when you call the class like a function. Assigning to self.fuel is what makes the value stick to this particular object — a bare fuel = fuel would set a local variable that vanishes when the method returns."
   },
   {
+    "type": "code_line",
+    "question": "Inside a method, write the Python statement that stores the parameter  n  onto the object as an attribute called n.",
+    "language": "python",
+    "correct": [
+      "self.n = n"
+    ],
+    "case_sensitive": true,
+    "feedback": "self.name = name puts the value on the object, so it travels with that object. Leaving off self. would create a local variable that vanishes."
+  },
+  {
     "type": "ordering",
     "question": "Arrange what Python does, in order, when you write dog = Dog(\"Rex\").",
     "items": [
@@ -146,6 +385,59 @@
       "Hand the finished object back to be named dog"
     ],
     "feedback": "Construction is object-first: Python builds the empty object, calls __init__ with it as self, the body of __init__ attaches the starting attributes, and only then is the finished object handed back to your variable."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Standing on the parent's shoulders",
+    "npc": "zoya",
+    "intro": "Zoya is fitting a helmet onto a golem that already has arms and legs. “I did not sculpt those again,” they say. “A child class starts from everything its parent class already does. That is inheritance, and super() is how the child asks the parent to do its part.”",
+    "steps": [
+      {
+        "say": "Here is a parent class. Its __init__ stores one attribute.\nclass Golem:\n    def __init__(self, name):\n        self.name = name",
+        "beats": [
+          {
+            "say": "Here is a parent class. Its __init__ stores one attribute."
+          },
+          {
+            "code": "class Golem:\n    def __init__(self, name):\n        self.name = name",
+            "language": "python"
+          }
+        ]
+      },
+      {
+        "say": "A child class names its parent in parentheses. Inside the child's __init__, super().__init__(name) runs the parent's setup, so self.name gets stored without being retyped.\nclass Sentinel(Golem):\n    def __init__(self, name):\n        super().__init__(name)\n        self.shield = 3\nAfter that line, the child adds what only a Sentinel has.",
+        "beats": [
+          {
+            "say": "A child class names its parent in parentheses. Inside the child's __init__, super().__init__(name) runs the parent's setup, so self.name gets stored without being retyped."
+          },
+          {
+            "code": "class Sentinel(Golem):\n    def __init__(self, name):\n        super().__init__(name)\n        self.shield = 3",
+            "language": "python"
+          },
+          {
+            "say": "After that line, the child adds what only a Sentinel has."
+          }
+        ],
+        "check": {
+          "prompt": "Which line is responsible for a Sentinel having a name attribute?",
+          "answer": "super().__init__(name), which runs the parent's __init__",
+          "wrong": [
+            "class Sentinel(Golem):, which copies every attribute across",
+            "self.shield = 3, which creates all the attributes"
+          ],
+          "why": "Naming the parent gives the child its METHODS. Attributes are created only when an __init__ actually runs — and super() is what runs the parent's."
+        }
+      },
+      {
+        "say": "Once super() has run, the child may use or change what the parent set up: self.shield = self.shield + 1 would work, and so would anything that reads self.name.",
+        "beats": [
+          {
+            "say": "Once super() has run, the child may use or change what the parent set up: self.shield = self.shield + 1 would work, and so would anything that reads self.name."
+          }
+        ]
+      }
+    ],
+    "outro": "Zoya taps the helmet. “Parent first, then the child's own additions. Trace one yourself.”"
   },
   {
     "type": "code_trace",
@@ -220,16 +512,14 @@
     "feedback": "dog.speak() is shorthand for handing dog to the method as its first argument, which is why self is written in the definition but not at the call."
   },
   {
-    "question": "What does defining a  __str__  method on a class change?",
+    "type": "code_trace",
+    "question": "This class defines __str__. What does the program print?",
+    "code": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n    def __str__(self):\n        return f\"{self.name} ({self.hp})\"\n\nayla = Hero(\"Ayla\", 9)\nprint(ayla)",
+    "language": "python",
     "correct": [
-      "What is displayed when an object is printed"
+      "Ayla (9)"
     ],
-    "incorrect": [
-      "The name Python uses for the class internally",
-      "Whether the object's attributes can be edited",
-      "The order in which the object's methods run"
-    ],
-    "feedback": "Without __str__, printing an object shows something like <__main__.Account object at 0x...>. With it, you decide the text — and you can leave sensitive fields out of it."
+    "feedback": "print() asks the object for its text form, and __str__ is the method that supplies it. Without __str__ you would see something like <__main__.Hero object at 0x...>: the object works either way, it just describes itself badly."
   },
   {
     "question": "What does the line  class Knight(Guard):  mean?",
@@ -265,16 +555,18 @@
     "feedback": "The parent class goes in the parentheses of the class header. Defining a method with the same name in the child overrides the inherited one, so Python finds the child version first and the parent version is never reached."
   },
   {
-    "question": "In a child class's  __init__, what does  super().__init__(name)  do?",
-    "correct": [
-      "Runs the parent's setup so the child need not retype it"
+    "type": "ordering",
+    "question": "Guard is already defined, and its __init__(self, name) stores self.name. Arrange these lines into a child class and a program that prints Sir Lia.",
+    "items": [
+      "class Knight(Guard):",
+      "    def __init__(self, name):",
+      "        super().__init__(name)",
+      "        self.title = \"Sir \" + self.name",
+      "k = Knight(\"Lia\")",
+      "print(k.title)"
     ],
-    "incorrect": [
-      "Creates a separate parent object stored inside the child",
-      "Replaces the parent's setup with the child's version",
-      "Copies the parent class definition into the child class"
-    ],
-    "feedback": "super() refers to the parent class. Calling its __init__ handles the shared fields, and then the child adds only what is new to it."
+    "language": "python",
+    "feedback": "super().__init__(name) runs the parent's setup, which is what creates self.name. The title line reads self.name, so it has to come AFTER the super() call: until the parent's __init__ has run, the attribute does not exist yet."
   },
   {
     "type": "cloze",
@@ -306,18 +598,6 @@
     "feedback": "The name in the parentheses of the class header is the one being inherited from, and super() is the standard way for the new class to reach it without naming it twice."
   },
   {
-    "question": "What is inheritance in object-oriented programming?",
-    "correct": [
-      "Building a child class on a parent and reusing its methods"
-    ],
-    "incorrect": [
-      "Copying a class file into a new module before editing it",
-      "Storing several objects of the same class inside a list",
-      "Calling a method automatically when an object is created"
-    ],
-    "feedback": "Inheritance lets a child class build on a parent, getting the parent's attributes and methods for free and adding or changing only what is different."
-  },
-  {
     "question": "What does this program print?\n\nclass Guard:\n    def __init__(self, name):\n        self.name = name\n    def patrol(self):\n        return f\"{self.name} is on patrol.\"\n\nclass Knight(Guard):\n    def patrol(self):\n        return f\"Sir {self.name} leads the patrol.\"\n\nprint(Knight(\"Lancelot\").patrol())",
     "correct": [
       "Sir Lancelot leads the patrol."
@@ -342,6 +622,29 @@
     "feedback": "A child that defines no __init__ simply inherits the parent's. Overriding one method has no effect on the others — Knight replaces patrol() and keeps everything else."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "What does the last line produce?\n\nclass Beast:\n    def __init__(self, legs):\n        self.legs = legs\n    def feet(self):\n        return self.legs\n\nclass Rider(Beast):\n    def feet(self):\n        return super().feet() + {{extra}}\n\nRider({{legs}}).feet()",
+    "variables": {
+      "legs": {
+        "values": [
+          2,
+          4,
+          6,
+          8
+        ]
+      },
+      "extra": {
+        "min": 1,
+        "max": 5
+      }
+    },
+    "answer": {
+      "expr": "legs + extra",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Rider has no __init__, so Beast's runs and stores legs = {{legs}}. Rider DOES override feet(): it asks the parent's version for {{legs}} through super(), then adds {{extra}}, giving {{expected}}."
+  },
+  {
     "type": "fill_blank",
     "question": "Defining a method in a child class with the same name as the parent's, so the child's version wins, is called an ___.",
     "correct": [
@@ -351,16 +654,14 @@
     "feedback": "Overriding lets a child specialize one behavior while keeping everything else it inherited."
   },
   {
-    "question": "A list holds Guard and Knight objects and a loop calls officer.patrol() on each. Knight overrides patrol(). Which version runs for the Knight objects?",
+    "type": "code_trace",
+    "question": "One loop calls the same method on a mix of objects. What does the program print?",
+    "code": "class Guard:\n    def cry(self):\n        return \"hi\"\n\nclass Knight(Guard):\n    def cry(self):\n        return \"ho\"\n\nfor officer in [Guard(), Knight(), Guard()]:\n    print(officer.cry())",
+    "language": "python",
     "correct": [
-      "Knight's, because the object's own class is checked first"
+      "hi\nho\nhi"
     ],
-    "incorrect": [
-      "Guard's, because the list was declared to hold Guards",
-      "Both in turn, with the parent's running before the child's",
-      "Whichever class was defined first in the file"
-    ],
-    "feedback": "Python looks at the object's actual class before its parent, so the child's version wins. That is what makes a single loop able to drive a mixed list of types."
+    "feedback": "The loop never checks a type. Each object looks for cry() in its OWN class first, so the Knight in the middle answers \"ho\" while the Guards answer \"hi\". One call, the right behaviour for each object: that is polymorphism."
   },
   {
     "question": "A list holds a mix of Guard and Knight objects, and a loop calls  officer.patrol()  on each without checking their types. Which idea makes this work?",
@@ -373,18 +674,6 @@
       "Abstraction — the loop is written at a higher level than the objects"
     ],
     "feedback": "One method name, many behaviors, chosen automatically by the object. Add a new kind of officer tomorrow and this loop keeps working untouched — no if-statement to update."
-  },
-  {
-    "question": "What is polymorphism?",
-    "correct": [
-      "One method name producing different behavior per object"
-    ],
-    "incorrect": [
-      "One object being stored under several different names",
-      "One class being split into several smaller modules",
-      "One variable changing its data type while running"
-    ],
-    "feedback": "Polymorphism means the same method name (like speak()) does the right thing for each kind of object, because each class can define its own version."
   },
   {
     "question": "You are deciding between inheritance and composition. Which of these are best modelled as \"is-a\" relationships, suited to inheritance? (Select all that apply)",
@@ -400,18 +689,6 @@
     "feedback": "A knight is a kind of guard, so inheritance fits. A squad is not a kind of guard — it has guards, which is composition. When one thing merely contains another, store it rather than inherit from it."
   },
   {
-    "question": "What is encapsulation?",
-    "correct": [
-      "Bundling data with the methods that act on it, guarding changes"
-    ],
-    "incorrect": [
-      "Hiding a class in a private module so that no other code can import it",
-      "Combining two separate classes into one much larger class",
-      "Running a method automatically at the moment of creation"
-    ],
-    "feedback": "Encapsulation keeps an object's data together with the methods that use it, and changes the data only through those methods to keep it valid."
-  },
-  {
     "question": "A BankAccount keeps its total in  self._balance  and changes it only inside deposit() and withdraw(), which both reject negative amounts. What does that design actually buy?",
     "correct": [
       "Every change to the balance runs through code that can enforce the rules"
@@ -422,6 +699,29 @@
       "Each account ends up sharing one balance, keeping the bank's totals in step"
     ],
     "feedback": "This is encapsulation doing its job: the value and the rules that protect it live together, so no caller can put the object into a state it should never be in."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An Account object starts with self.balance = {{start}}. It calls deposit({{dep}}) once and then withdraw({{wd}}) once. What is self.balance afterward?",
+    "variables": {
+      "start": {
+        "min": 50,
+        "max": 120
+      },
+      "dep": {
+        "min": 10,
+        "max": 40
+      },
+      "wd": {
+        "min": 5,
+        "max": 20
+      }
+    },
+    "answer": {
+      "expr": "start + dep - wd",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Deposit adds and withdraw subtracts from the object's own balance: {{start}} + {{dep}} - {{wd}} = {{expected}}."
   },
   {
     "question": "Why is  members = []  written directly in a class body a bug when each object should have its own list?",
@@ -436,19 +736,73 @@
     "feedback": "Anything that should differ between objects belongs in __init__ as self.members = []. This is the OOP cousin of the aliasing trap: one object, many names pointing at it."
   },
   {
+    "type": "code_trace",
+    "question": "members is written in the class body, not in __init__. What does the program print?",
+    "code": "class Squad:\n    members = []\n    def add(self, who):\n        self.members.append(who)\n\na = Squad()\nb = Squad()\na.add(\"Lia\")\nb.add(\"Oz\")\nprint(len(a.members))",
+    "language": "python",
+    "correct": [
+      "2"
+    ],
+    "feedback": "There is only ONE list, stored on the class, and both squads reach it through self.members. Oz was added through b, yet shows up in a. Writing self.members = [] inside __init__ gives every squad a list of its own, and the answer would be 1."
+  },
+  {
+    "question": "Which of the following are true about the 'forgot self.' and 'shared mutable class attribute' bugs? (Select all that apply)",
+    "correct": [
+      "Forgetting self. makes an update disappear when the method ends",
+      "A mutable class attribute is shared across every object",
+      "Putting self.items = [] in __init__ gives each object its own list"
+    ],
+    "incorrect": [
+      "Both bugs cause Python to refuse to start the program",
+      "Both bugs only appear in classes that use inheritance"
+    ],
+    "feedback": "Forgetting self. loses the change to a local variable; a class-body list is shared by all instances. Creating the list in __init__ fixes the sharing. Neither bug stops the program from running."
+  },
+  {
     "type": "dynamic_numeric",
-    "question": "After {{n}} Robot objects are created, what is Robot.count?\n\nclass Robot:\n    count = 0\n\n    def __init__(self):\n        Robot.count = Robot.count + 1",
+    "question": "These are lines {{l0}} to {{l5}} of a larger file. Every squad turns out to share the same recruits. Type the number of the line that causes it.\n\n{{l0}}  class Squad:\n{{l1}}      members = []\n{{l2}}      def __init__(self, name):\n{{l3}}          self.name = name\n{{l4}}      def recruit(self, who):\n{{l5}}          self.members.append(who)",
+    "variables": {
+      "first": {
+        "min": 20,
+        "max": 90
+      }
+    },
+    "derived": {
+      "l0": "first + 0",
+      "l1": "first + 1",
+      "l2": "first + 2",
+      "l3": "first + 3",
+      "l4": "first + 4",
+      "l5": "first + 5"
+    },
+    "answer": {
+      "expr": "first + 1",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "Line {{expected}} creates the list in the class body, so it is made once and belongs to the class: every Squad reaches that same list through self.members. The cure is to delete it and write self.members = [] inside __init__, which runs once per object. The append line is innocent — it does exactly what it says."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "After {{n}} Robot objects are created, what is Robot.count?\n\nclass Robot:\n    count = 0\n\n    def __init__(self):\n        Robot.count = Robot.count + {{step}}",
     "variables": {
       "n": {
         "min": 2,
-        "max": 12
+        "max": 9
+      },
+      "step": {
+        "values": [
+          2,
+          3,
+          5
+        ]
       }
     },
     "answer": {
-      "expr": "n",
+      "expr": "n * step",
       "tolerance_abs": 0
     },
-    "feedback_template": "count lives on the class, not on any one object, so every construction bumps the same shared number up to {{expected}}."
+    "feedback_template": "count lives on the class, not on any one object, so every construction adds {{step}} to the same shared number: {{n}} objects bring it to {{expected}}."
   },
   {
     "question": "What is abstraction in the context of OOP and computer science?",
@@ -461,20 +815,6 @@
       "Building a new class on top of an existing parent class"
     ],
     "feedback": "Abstraction lets you use something through a simple interface without knowing its inner workings, like driving a car without understanding the engine."
-  },
-  {
-    "question": "Which of the following are the four pillars of object-oriented programming? (Select all that apply)",
-    "correct": [
-      "Encapsulation",
-      "Abstraction",
-      "Inheritance",
-      "Polymorphism"
-    ],
-    "incorrect": [
-      "Compilation",
-      "Iteration"
-    ],
-    "feedback": "The four pillars are encapsulation, abstraction, inheritance, and polymorphism. Compilation and iteration are real ideas but are not OOP pillars."
   },
   {
     "question": "Using the noun/verb heuristic on a problem description, what do the nouns and verbs suggest?",
@@ -490,26 +830,26 @@
   },
   {
     "type": "matching",
-    "question": "Match each pillar of object-oriented programming to its description.",
+    "question": "Match each pillar of object-oriented programming to the situation that shows it.",
     "pairs": [
       {
         "term": "Encapsulation",
-        "definition": "Bundling data with the methods that guard it"
+        "definition": "A balance that changes only through deposit() and withdraw()"
       },
       {
         "term": "Abstraction",
-        "definition": "Hiding inner details behind a simple surface"
+        "definition": "Calling sorted() with no idea how it sorts"
       },
       {
         "term": "Inheritance",
-        "definition": "A child class reusing a parent's features"
+        "definition": "class Knight(Guard): getting patrol() without retyping it"
       },
       {
         "term": "Polymorphism",
-        "definition": "One method name behaving differently per object"
+        "definition": "One loop calling speak() on a mix of Wolf and Owl objects"
       }
     ],
-    "feedback": "These four ideas define object-oriented design: bundle and guard, hide details, reuse via parents, and let one name do many things."
+    "feedback": "Encapsulation guards data behind methods. Abstraction lets you use something without knowing its insides. Inheritance reuses a parent's code in a child. Polymorphism lets one call do the right thing for each kind of object."
   },
   {
     "question": "A class tracks packages, couriers, billing, and the weather. Which design idea does it violate?",
@@ -524,16 +864,16 @@
     "feedback": "That class has low cohesion: four unrelated jobs in one box. The design goal is high cohesion (each class minds one job) and low coupling (changing one class does not force rewrites elsewhere)."
   },
   {
-    "question": "Two classes are tightly coupled. What does that mean in practice?",
+    "question": "class Report:\n    def send(self, mailer):\n        mailer.server = \"mail.example\"\n        mailer.port = 25\n        mailer.deliver(self.text)\n\nThe Mailer class renames its server attribute to host. What follows?",
     "correct": [
-      "Changing one of them tends to force changes in the other"
+      "Report.send breaks too: Report depends on Mailer's insides"
     ],
     "incorrect": [
-      "They are stored in the same Python module file",
-      "One of them inherits each method from the other",
-      "They both create objects at the same point in the program"
+      "Nothing: an attribute is private to the class defining it",
+      "Only Mailer changes: a rename cannot reach another class",
+      "Python updates the old name wherever it has been used"
     ],
-    "feedback": "Tight coupling makes a program fragile: a small edit ripples outward. Classes that talk only through a few clean methods stay independent and safe to change."
+    "feedback": "Report reaches into Mailer and sets its attributes directly, so the two are tightly coupled: a change inside one forces a change in the other. Had Report called a method such as mailer.deliver(text) and nothing else, Mailer could rename whatever it liked. Python has no private attributes and renames nothing for you."
   },
   {
     "question": "A Report class is split so that gathering the data, formatting it, and emailing it each live in their own class. Which pair of qualities does that improve?",
@@ -548,16 +888,36 @@
     "feedback": "Each class now does one job (cohesion), and each depends on less of the others (coupling). The two usually improve together when a responsibility is separated cleanly."
   },
   {
-    "question": "When should you prefer composition (a 'has-a' relationship) over inheritance (an 'is-a' relationship)?",
+    "type": "matching",
+    "question": "Match each relationship to the line of Python that expresses it.",
+    "pairs": [
+      {
+        "term": "A Knight is a kind of Guard",
+        "definition": "class Knight(Guard):"
+      },
+      {
+        "term": "A Squad has many guards",
+        "definition": "self.members = []"
+      },
+      {
+        "term": "A Car has one engine",
+        "definition": "self.engine = Engine()"
+      },
+      {
+        "term": "A Wolf speaks in its own way",
+        "definition": "def speak(self): return \"howl\""
+      }
+    ],
+    "feedback": "\"Is a kind of\" is inheritance: the parent goes in the parentheses. \"Has\" is composition: the other object, or a list of them, is stored as an attribute. Prefer composition whenever one thing merely contains another — a Squad is not a kind of Guard. Behaving in its own way is an override, which needs no new relationship at all."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Building an object out of other objects, a \"has-a\" relationship rather than an \"is-a\" one, is called ___.",
     "correct": [
-      "When one object merely contains another, not a kind of it"
+      "composition"
     ],
-    "incorrect": [
-      "When the child is a more specific kind of the parent",
-      "When the two classes already share several attributes and methods",
-      "When one class should automatically get all of another's methods"
-    ],
-    "feedback": "Use inheritance for 'is-a' (a Dog is an Animal) and composition for 'has-a' (a Car has an Engine). If one thing only contains another, compose."
+    "case_sensitive": false,
+    "feedback": "A famous guideline says to favour composition over inheritance: you can change what an object contains while the program runs, but you cannot change a class's parent."
   },
   {
     "question": "The course describes a tower of abstraction layers. Which ordering matches it, from lowest to highest?",
@@ -606,105 +966,14 @@
     "feedback": "Because self.members is created inside __init__, this squad has its own list. Two recruits were appended, so its length is 2."
   },
   {
-    "type": "npc_demo",
-    "question": "NPC: The word that makes a change stick",
-    "npc": "zoya",
-    "intro": "A row of half-finished clay golems lines Zoya's workbench. They tap one on the shoulder. “Each of these is one object — one thing built from a class. Every method you write is handed the particular object it is working on, and the name for that is self. Forgetting it is the quietest bug in this wing.”",
-    "steps": [
-      {
-        "say": "Here is a class for a tally. Every golem I build from it is one Tally object:\nclass Tally:\n    def __init__(self):\n        self.n = 0\nself.n = 0 writes the number onto this object, and it stays there after __init__ ends. A value kept on an object like that is called an attribute.",
-        "beats": [
-          {
-            "say": "Here is a class for a tally. Every golem I build from it is one Tally object:"
-          },
-          {
-            "code": "class Tally:\n    def __init__(self):\n        self.n = 0",
-            "language": "python"
-          },
-          {
-            "say": "self.n = 0 writes the number onto this object, and it stays there after __init__ ends. A value kept on an object like that is called an attribute."
-          }
-        ]
-      },
-      {
-        "say": "Now a method that means to count up, but slips:\n    def bump(self):\n        n = self.n + 1\nIt reads self.n correctly and adds one. But it stores the result in a plain n. That is a local variable — a scratch note on the bench rather than a mark on the golem — and it is thrown away the moment the method ends.",
-        "check": {
-          "prompt": "After calling bump() once on a fresh Tally, what is self.n?",
-          "answer": "Still 0 — the update went to a scratch variable",
-          "wrong": [
-            "1 — the addition worked",
-            "The program crashes on the missing attribute"
-          ],
-          "why": "The arithmetic was right, but nothing was written back to the object. n was a local variable, so it was swept away with the bench notes when the method ended, and the attribute self.n was never touched."
-        },
-        "beats": [
-          {
-            "say": "Now a method that means to count up, but slips:"
-          },
-          {
-            "code": "    def bump(self):\n        n = self.n + 1",
-            "language": "python"
-          },
-          {
-            "say": "It reads self.n correctly and adds one. But it stores the result in a plain n. That is a local variable — a scratch note on the bench rather than a mark on the golem — and it is thrown away the moment the method ends."
-          }
-        ]
-      },
-      {
-        "say": "The fix is one word on the LEFT of the equals sign: self.n = self.n + 1. Reading needs self. too, but the left side is what decides whether the change lands on the object or on a scratch note that is about to be thrown away."
-      }
-    ],
-    "outro": "“The next question shows you this exact slip. You already know where the change went.”"
-  },
-  {
-    "question": "A method runs  count = count + 1  instead of  self.count = self.count + 1. What goes wrong?",
-    "correct": [
-      "It updates a local variable, leaving the attribute alone"
-    ],
-    "incorrect": [
-      "Every object's count is increased at the same time",
-      "It updates the attribute, but the change is undone on return",
-      "It reads the attribute correctly but stores the result on the class"
-    ],
-    "feedback": "Forgetting self. creates a throwaway local variable. The update vanishes when the method ends, and the object's real attribute is untouched."
-  },
-  {
-    "question": "Which of the following are true about the 'forgot self.' and 'shared mutable class attribute' bugs? (Select all that apply)",
-    "correct": [
-      "Forgetting self. makes an update disappear when the method ends",
-      "A mutable class attribute is shared across every object",
-      "Putting self.items = [] in __init__ gives each object its own list"
-    ],
-    "incorrect": [
-      "Both bugs cause Python to refuse to start the program",
-      "Both bugs only appear in classes that use inheritance"
-    ],
-    "feedback": "Forgetting self. loses the change to a local variable; a class-body list is shared by all instances. Creating the list in __init__ fixes the sharing. Neither bug stops the program from running."
-  },
-  {
-    "type": "code_line",
-    "question": "Inside a method, write the Python statement that stores the parameter  n  onto the object as an attribute called n.",
+    "type": "code_trace",
+    "question": "A small Stack class wraps a list. What does this program print?",
+    "code": "class Stack:\n    def __init__(self):\n        self.items = []\n    def push(self, x):\n        self.items.append(x)\n    def pop(self):\n        return self.items.pop()\n\ns = Stack()\ns.push(1)\ns.push(2)\ns.pop()\ns.push(3)\nprint(s.pop())",
     "language": "python",
     "correct": [
-      "self.n = n"
+      "3"
     ],
-    "case_sensitive": true,
-    "feedback": "self.name = name puts the value on the object, so it travels with that object. Leaving off self. would create a local variable that vanishes."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "After {{calls}} calls to bump() on one Counter, what is self.n?\n\nclass Counter:\n    def __init__(self):\n        self.n = 0\n\n    def bump(self):\n        self.n = self.n + 1",
-    "variables": {
-      "calls": {
-        "min": 3,
-        "max": 12
-      }
-    },
-    "answer": {
-      "expr": "calls",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Each bump() adds 1 to this object's n, so after {{calls}} calls self.n is {{expected}}."
+    "feedback": "The class is an abstract data type: callers see only push() and pop(), and the list behind them is a detail. After push 1, push 2, pop (removing 2) and push 3, the newest item is 3, so that is what pop() returns."
   },
   {
     "type": "dynamic_numeric",
@@ -724,57 +993,5 @@
       "tolerance_abs": 0
     },
     "feedback_template": "This is composition: the deck has cards rather than being one. Summing {{n}} cards worth {{v}} each gives {{expected}}."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "After  import math, what number does  math.floor({{a}} / {{b}})  produce?",
-    "variables": {
-      "a": {
-        "min": 10,
-        "max": 40
-      },
-      "b": {
-        "min": 3,
-        "max": 7
-      }
-    },
-    "answer": {
-      "expr": "floorDiv(a, b)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "{{a}} / {{b}} is a float, and floor drops down to the nearest whole number below it, giving {{expected}} rather than a rounded result.",
-    "allow_expression": false
-  },
-  {
-    "type": "fill_blank",
-    "question": "Building an object out of other objects, a \"has-a\" relationship rather than an \"is-a\" one, is called ___.",
-    "correct": [
-      "composition"
-    ],
-    "case_sensitive": false,
-    "feedback": "A famous guideline says to favour composition over inheritance: you can change what an object contains while the program runs, but you cannot change a class's parent."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "An Account object starts with self.balance = {{start}}. It calls deposit({{dep}}) once and then withdraw({{wd}}) once. What is self.balance afterward?",
-    "variables": {
-      "start": {
-        "min": 50,
-        "max": 120
-      },
-      "dep": {
-        "min": 10,
-        "max": 40
-      },
-      "wd": {
-        "min": 5,
-        "max": 20
-      }
-    },
-    "answer": {
-      "expr": "start + dep - wd",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Deposit adds and withdraw subtracts from the object's own balance: {{start}} + {{dep}} - {{wd}} = {{expected}}."
   }
 ]

@@ -1327,7 +1327,7 @@ describe('Arithmetic shown in questions is actually correct', () => {
 // that list when it has been brought up to the standard — never remove one.
 describe('Audit checks', () => {
   const index = loadJSON('question_sets/index.json');
-  const MEETS_AUDIT_STANDARD = setId => /^java_/.test(setId);
+  const MEETS_AUDIT_STANDARD = setId => /^java_|^computing_concepts_0[456]_/.test(setId);
   const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write']);
   const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
 
@@ -1388,6 +1388,9 @@ describe('Audit checks', () => {
       for (const setId of sets) {
         let run = 0, prev = null;
         for (const q of questionsOf(setId)) {
+          // A closing block of write-the-code problems is a capstone, ordered by
+          // what each one teaches; it is not "sorted by type".
+          if (q.type === 'code_write') { run = 0; prev = null; continue; }
           const kind = q.type || `mc${Math.min((q.correct || []).length, 2)}`;
           run = kind === prev ? run + 1 : 1;
           prev = kind;
@@ -1444,16 +1447,27 @@ describe('Audit checks', () => {
       assert.deepEqual(bad, []);
     });
 
-    it('do not make "never the longest option" a usable trick either', () => {
-      // The length tell had been over-corrected: in three sets the key was the
-      // longest option 0% of the time, where chance is 25%.
+    it('do not let a conspicuously long option predict the answer, either way', () => {
+      // The length tell had been over-corrected: in three Java sets the key was
+      // NEVER the longest option, so "rule out the long one" worked instead. A
+      // difference of a character or two is not a tell, though — so this looks
+      // only at questions where one option really stands out (20% and 5
+      // characters longer than the next), and asks that it be right sometimes
+      // and wrong sometimes.
       const bad = [];
       for (const setId of sets) {
-        const single = questionsOf(setId).filter(q => !q.type && (q.correct || []).length === 1 && (q.incorrect || []).length);
-        if (single.length < 8) continue;
-        const longest = single.filter(q => q.correct[0].length > Math.max(...q.incorrect.map(o => o.length))).length;
-        const rate = longest / single.length;
-        if (rate < 0.12 || rate > 0.40) bad.push(`${setId}: key is longest in ${Math.round(rate * 100)}%`);
+        let standsOut = 0, isKey = 0;
+        for (const q of questionsOf(setId)) {
+          if (q.type || (q.correct || []).length !== 1 || !(q.incorrect || []).length) continue;
+          const byLength = [q.correct[0], ...q.incorrect].sort((a, b) => b.length - a.length);
+          if (byLength[0].length >= 1.2 * byLength[1].length && byLength[0].length - byLength[1].length >= 5) {
+            standsOut++;
+            if (byLength[0] === q.correct[0]) isKey++;
+          }
+        }
+        if (standsOut < 5) continue;
+        const rate = isKey / standsOut;
+        if (rate < 0.15 || rate > 0.6) bad.push(`${setId}: of ${standsOut} stand-out options, ${isKey} are the key`);
       }
       assert.deepEqual(bad, []);
     });
