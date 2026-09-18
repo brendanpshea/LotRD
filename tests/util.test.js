@@ -223,3 +223,53 @@ describe('course grade', () => {
       'shim no longer computes the score as credit/totalSets — update computeCourseGrade');
   });
 });
+
+describe('fill-in length hint', () => {
+  it('shows the blanks for a single accepted answer, as it always has', async () => {
+    const { fillBlankLengthHint } = await import('../src/util.js');
+    assert.equal(fillBlankLengthHint(['break']), '_____ (5)');
+    assert.equal(fillBlankLengthHint(['primary key']), '_______ (7)  ___ (3)');
+  });
+
+  it('does not present one length as THE length when accepted answers differ', async () => {
+    // Reported by the instructor: the hint said 10 (for "tabulating", listed
+    // first) and the game then revealed "tabulator", the 9-letter answer closest
+    // to what was typed — so the hint read as wrong by one.
+    const { fillBlankLengthHint } = await import('../src/util.js');
+    const hint = fillBlankLengthHint(['tabulating', 'tabulator', 'tabulation']);
+    assert.ok(hint.startsWith('__________ (10)'));
+    assert.match(hint, /also accepted: an answer of 9 characters/);
+  });
+
+  it('says nothing extra when the alternatives have the same shape', async () => {
+    const { fillBlankLengthHint } = await import('../src/util.js');
+    assert.equal(fillBlankLengthHint(['braces', 'BRACES']), '______ (6)');
+    assert.equal(fillBlankLengthHint(['tabulating', 'tabulation']), '__________ (10)');
+  });
+
+  it('lists up to three other lengths, in order, and goes general beyond that', async () => {
+    const { fillBlankLengthHint } = await import('../src/util.js');
+    assert.match(fillBlankLengthHint(['#', 'hash', 'pound']), /also accepted: an answer of 4 or 5 characters$/);
+    assert.match(fillBlankLengthHint(['ALU', 'arithmetic logic unit']), /^___ \(3\)  · also accepted: an answer of 21 characters$/);
+    assert.match(fillBlankLengthHint(['a', 'bb', 'ccc', 'dddd', 'eeeee']), /answers of other lengths are accepted too$/);
+  });
+
+  it('covers every fill-in in the course without breaking', async () => {
+    const { fillBlankLengthHint } = await import('../src/util.js');
+    const { readdir } = await import('node:fs/promises');
+    const dir = new URL('../question_sets/', import.meta.url);
+    let seen = 0;
+    for (const name of await readdir(dir)) {
+      if (!name.endsWith('.json') || name === 'catalog.json' || name === 'index.json') continue;
+      for (const q of JSON.parse(await readFile(new URL(name, dir), 'utf8'))) {
+        if (q.type !== 'fill_blank') continue;
+        seen++;
+        const hint = fillBlankLengthHint(q.correct);
+        assert.ok(hint.startsWith('_'), `${name}: ${hint}`);
+        // The first accepted answer's length is always the one drawn.
+        assert.ok(hint.includes(`(${q.correct[0].trim().split(/\s+/)[0].length})`), `${name}: ${hint}`);
+      }
+    }
+    assert.ok(seen > 100);
+  });
+});

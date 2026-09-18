@@ -1,5 +1,6 @@
 import {
   shuffle, TIER_MASTER, TIER_NAMES, TIER_BADGES, TIER_CREDIT, computeCourseGrade,
+  fillBlankLengthHint,
 } from "./util.js";
 import { highlightJava, highlightPython } from "./highlight.js";
 import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples } from "./model.js";
@@ -922,7 +923,6 @@ export class GameUI {
       input.placeholder = "Type a number…";
     } else {
       const answers = q.correct || [];
-      const canonical = answers[0] || "";
       const caseSens = q.case_sensitive === true;
       const cloze = this.model.getFillBlankCloze();
 
@@ -937,9 +937,7 @@ export class GameUI {
             : w)
           .join("  ");
       } else {
-        charHint = canonical.split(" ")
-          .map(word => `${"_".repeat(word.length)} (${word.length})`)
-          .join("  ");
+        charHint = fillBlankLengthHint(answers);
       }
       charHintEl.textContent =
         `${charHint}${caseSens ? "  [case-sensitive]" : "  [not case-sensitive]"}`;

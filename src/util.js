@@ -305,3 +305,33 @@ export function levelAhead(a, b) {
     if (al !== bl) return al > bl;
     return (a?.xp ?? 0) > (b?.xp ?? 0);
 }
+
+
+// ─── Fill-in length hint ─────────────────────────────────────────────────────
+/**
+ * The "_____ (5)" hint under a fill-in. It is drawn for the FIRST accepted
+ * answer, but a third of fill-ins accept answers of other lengths ("tabulating"
+ * / "tabulator", "ALU" / "arithmetic logic unit"), and the game reveals whichever
+ * accepted answer was closest to what the student typed. Showing one length as if
+ * it were THE length made the hint look wrong afterwards — and could talk a
+ * student out of a correct answer that did not fit the blanks. So when the
+ * accepted answers differ in shape, the hint says so.
+ */
+export function fillBlankLengthHint(answers) {
+    const list = (answers || []).map(a => String(a).trim()).filter(Boolean);
+    if (list.length === 0) return "";
+    const shape = a => a.split(/\s+/).map(w => w.length).join(",");
+    const blanks = list[0].split(/\s+/).map(w => `${"_".repeat(w.length)} (${w.length})`).join("  ");
+
+    const canonicalShape = shape(list[0]);
+    const others = list.filter(a => shape(a) !== canonicalShape);
+    if (others.length === 0) return blanks;
+
+    const lengths = [...new Set(others.map(a => a.length))]
+        .filter(n => n !== list[0].length)
+        .sort((a, b) => a - b);
+    if (lengths.length === 0 || lengths.length > 3) return `${blanks}  · answers of other lengths are accepted too`;
+    const spoken = lengths.length === 1 ? `${lengths[0]}`
+        : `${lengths.slice(0, -1).join(", ")} or ${lengths[lengths.length - 1]}`;
+    return `${blanks}  · also accepted: an answer of ${spoken} characters`;
+}
