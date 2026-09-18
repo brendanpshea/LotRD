@@ -679,7 +679,9 @@ Ordinary JSON, converted to Python values: whole numbers become ints, fractions 
 
 `def`, `return`, `if`/`elif`/`else`, `while`, `for ... in`, `break`, `continue`, `pass`, ints, floats, strings, bools, `None`, lists, tuples, dicts, indexing, slicing, f-strings, keyword arguments and defaults, conditional expressions, recursion, and the usual built-ins and string/list/dict methods.
 
-**Not supported, on purpose:** classes, imports, exceptions, comprehensions, generators, sets, lambdas, `global`. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.
+**Classes run, but there is no class *problem* format yet.** The interpreter supports `class`, `__init__`, `self.` attributes, methods, class attributes and `__str__` (checked against real Python in `tests/pytiny-classes.test.js`), so a student may define a helper class inside a function body. What does not exist yet is a way to ask "write this method": a `code_write` problem is still one function under a fixed `def` line. Inheritance is refused by name.
+
+**Not supported, on purpose:** inheritance, imports, exceptions, comprehensions, generators, sets, lambdas, `global`. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.
 
 ### Writing Good Write-the-Code Problems
 

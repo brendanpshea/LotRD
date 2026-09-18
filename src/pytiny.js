@@ -49,13 +49,12 @@ const limitError   = (msg, hint, line = null) => new PyError(msg, { line, hint, 
 
 const KEYWORDS = new Set([
     'def', 'return', 'if', 'elif', 'else', 'while', 'for', 'in', 'not', 'and',
-    'or', 'True', 'False', 'None', 'break', 'continue', 'pass', 'is',
+    'or', 'True', 'False', 'None', 'break', 'continue', 'pass', 'is', 'class',
 ]);
 
 // Refused by name, so the student is told what is missing rather than shown a
 // parse failure three tokens later.
 const NOT_YET = new Map([
-    ['class',    'Classes are not part of this practice interpreter — these problems only need a function.'],
     ['import',   'You do not need to import anything here. Everything these problems need is already built in.'],
     ['from',     'You do not need to import anything here. Everything these problems need is already built in.'],
     ['try',      'try / except is not supported here yet. Check for the bad case with an if instead.'],
@@ -335,6 +334,7 @@ class Parser {
 
     parseStatement() {
         if (this.atKeyword('def'))    return this.parseFuncDef();
+        if (this.atKeyword('class'))  return this.parseClassDef();
         if (this.atKeyword('if'))     return this.parseIf();
         if (this.atKeyword('while'))  return this.parseWhile();
         if (this.atKeyword('for'))    return this.parseFor();
@@ -400,6 +400,28 @@ class Parser {
         }
         const body = this.parseBlock('def');
         return { type: 'FuncDef', name: nameTok.value, params, body, line };
+    }
+
+    /**
+     * `class Name:` with a body of methods and class-level assignments. A parent
+     * in parentheses is refused by name rather than half-supported: inheritance
+     * changes how every attribute is looked up, and a version that is only
+     * nearly right would teach the wrong thing.
+     */
+    parseClassDef() {
+        const line = this.line;
+        this.next();
+        const nameTok = this.expect('name', undefined, 'a class name');
+        if (this.atOp('(')) {
+            this.next();
+            if (!this.atOp(')')) {
+                throw syntaxError('Inheritance is not supported here yet — a class cannot name a parent in parentheses.', line,
+                    `Write "class ${nameTok.value}:" on its own, and put everything the class needs inside it.`);
+            }
+            this.next();
+        }
+        const body = this.parseBlock('class');
+        return { type: 'ClassDef', name: nameTok.value, body, line };
     }
 
     parseIf() {
@@ -926,6 +948,28 @@ class Builtin {
     constructor(name, fn) { this.name = name; this.fn = fn; }
 }
 
+// ── Classes and objects ──
+//
+// A class is a name plus a table of attributes (its methods, and anything
+// assigned in the class body). An object is a reference to its class plus a
+// table of its OWN attributes. Looking up `obj.x` tries the object first and
+// then the class — which is the whole explanation of the chapter's classic bug:
+// a list assigned in the class body lives in the class's table, so every
+// object that reaches it through self finds the same list.
+
+export class PyClass {
+    constructor(name, attrs) { this.name = name; this.attrs = attrs; }
+}
+
+export class PyInstance {
+    constructor(cls) { this.cls = cls; this.attrs = new Map(); }
+}
+
+/** `obj.method`, not yet called: the function together with the object it will receive as self. */
+export class PyBoundMethod {
+    constructor(self, func) { this.self = self; this.func = func; this.name = func.name; }
+}
+
 // Any int wider than this is a runaway loop, not a student's intent.
 const BIG_LIMIT = 10n ** 400n;
 
@@ -938,7 +982,10 @@ const isTuple = v => v instanceof PyTuple;
 const isDict  = v => v instanceof Map;
 const isRange = v => v instanceof PyRange;
 const isNumeric = v => isInt(v) || isFloat(v) || isBool(v);
-const isCallable = v => v instanceof PyFunction || v instanceof Builtin;
+const isInstance = v => v instanceof PyInstance;
+const isClass = v => v instanceof PyClass;
+const isCallable = v => v instanceof PyFunction || v instanceof Builtin
+    || v instanceof PyClass || v instanceof PyBoundMethod;
 
 /** The word a student would use for this value's type, for error messages. */
 export function typeName(v) {
@@ -951,6 +998,9 @@ export function typeName(v) {
     if (isTuple(v)) return 'a tuple';
     if (isDict(v)) return 'a dictionary';
     if (isRange(v)) return 'a range';
+    if (isInstance(v)) return `${/^[aeiou]/i.test(v.cls.name) ? 'an' : 'a'} ${v.cls.name} object`;
+    if (isClass(v)) return 'a class';
+    if (v instanceof PyBoundMethod) return 'a method';
     if (isCallable(v)) return 'a function';
     return 'a value';
 }
@@ -999,6 +1049,11 @@ export function pyRepr(v) {
     if (isRange(v)) {
         return v.step === 1n ? `range(${v.start}, ${v.stop})` : `range(${v.start}, ${v.stop}, ${v.step})`;
     }
+    // Python shows a memory address here. The class name is the useful part, and
+    // leaving the address out keeps output the same from one run to the next.
+    if (isInstance(v)) return `<${v.cls.name} object>`;
+    if (isClass(v)) return `<class '${v.name}'>`;
+    if (v instanceof PyBoundMethod) return `<method ${v.name} of ${pyRepr(v.self)}>`;
     if (isCallable(v)) return `<function ${v.name}>`;
     return String(v);
 }
@@ -1053,6 +1108,20 @@ export function pyEquals(a, b) {
         return isList(la) && isList(lb) && pyEquals(la, lb);
     }
     return a === b;
+}
+
+/**
+ * Python's `is`. Two lists with equal contents are NOT the same list, and that
+ * difference is the whole lesson of aliasing, so lists, dictionaries and objects
+ * are compared by identity. Numbers, text and None are compared by value and
+ * type: whether CPython happens to reuse one object for two equal small ints is
+ * an implementation detail no beginner should have to predict.
+ */
+function sameObject(a, b) {
+    const byIdentity = v => isList(v) || isDict(v) || v instanceof PyInstance || v instanceof PyClass
+        || v instanceof PyFunction || v instanceof PyBoundMethod;
+    if (byIdentity(a) || byIdentity(b)) return a === b;
+    return pyEquals(a, b) && typeName(a) === typeName(b);
 }
 
 /** Ordering for < <= > >=. Mixing text and numbers is an error, as in Python. */
@@ -1195,8 +1264,8 @@ export function compareOp(op, a, b, line) {
         case '>':  return pyLess(b, a, line);
         case '<=': return pyEquals(a, b) || pyLess(a, b, line);
         case '>=': return pyEquals(a, b) || pyLess(b, a, line);
-        case 'is': return pyEquals(a, b) && typeName(a) === typeName(b);
-        case 'is not': return !(pyEquals(a, b) && typeName(a) === typeName(b));
+        case 'is': return sameObject(a, b);
+        case 'is not': return !sameObject(a, b);
         case 'in': return containsValue(b, a, line);
         case 'not in': return !containsValue(b, a, line);
         default: throw runtimeError(`I do not understand the operator "${op}".`, line);
@@ -1323,7 +1392,7 @@ const BUILTINS = {
     print: (args, kw, line, interp) => {
         const sep = kw.sep !== undefined ? pyStr(kw.sep) : ' ';
         const end = kw.end !== undefined ? pyStr(kw.end) : '\n';
-        interp.write(args.map(pyStr).join(sep) + end, line);
+        interp.write(args.map(v => interp.toText(v, line)).join(sep) + end, line);
         return null;
     },
 
@@ -1351,7 +1420,7 @@ const BUILTINS = {
         return new PyRange(start, stop, step);
     },
 
-    str:  (args, kw, line) => { arity('str',  args, 0, 1, line); return args.length ? pyStr(args[0]) : ''; },
+    str:  (args, kw, line, interp) => { arity('str',  args, 0, 1, line); return args.length ? interp.toText(args[0], line) : ''; },
     bool: (args, kw, line) => { arity('bool', args, 0, 1, line); return args.length ? truthy(args[0]) : false; },
 
     int: (args, kw, line) => {
@@ -1825,9 +1894,16 @@ export class Interpreter {
     execStatement(node, scope) {
         this.tick(node.line);
         switch (node.type) {
-            case 'ExprStmt':
-                this.evaluate(node.expr, scope);
+            case 'ExprStmt': {
+                const value = this.evaluate(node.expr, scope);
+                // Legal Python, and always a bug: `c.bump` names the method and
+                // walks away without running it. Nothing fails; nothing happens.
+                if (value instanceof PyBoundMethod && node.expr.type === 'Attribute') {
+                    throw runtimeError(`You wrote ".${node.expr.attr}" without parentheses, so the method never ran.`,
+                        node.line, `A method only runs when you call it: .${node.expr.attr}()`);
+                }
                 return;
+            }
 
             case 'Assign': {
                 const value = this.evaluate(node.value, scope);
@@ -1838,6 +1914,22 @@ export class Interpreter {
             case 'AugAssign': {
                 const current = this.evaluate(node.target, scope);
                 const value = this.evaluate(node.value, scope);
+                // On a list, += and *= work IN PLACE: the list itself grows, so any
+                // other name for it sees the change. (a = a + [x] builds a new list
+                // instead — the pair is a classic aliasing question.)
+                if (isList(current) && node.op === '+') {
+                    const extra = [...iterate(value, node.line)];
+                    current.push(...extra);
+                    this.assign(node.target, current, scope, node.line);
+                    return;
+                }
+                if (isList(current) && node.op === '*' && isInt(value) && !isBool(value)) {
+                    const once = current.slice();
+                    current.length = 0;
+                    for (let k = 0n; k < value; k++) { this.tick(node.line); current.push(...once); }
+                    this.assign(node.target, current, scope, node.line);
+                    return;
+                }
                 this.assign(node.target, binaryOp(node.op, current, value, node.line), scope, node.line);
                 return;
             }
@@ -1885,9 +1977,34 @@ export class Interpreter {
                 return;
             }
 
-            case 'FuncDef':
-                scope.set(node.name, new PyFunction(node.name, node.params, node.body, scope));
+            case 'FuncDef': {
+                // A default is worked out once, when the def line runs, and the same
+                // value is reused by every call that leaves the argument out — which
+                // is why a default of [] keeps growing in real Python, and here.
+                const params = node.params.map(p => (p.default === null ? p
+                    : { name: p.name, default: p.default, value: this.evaluate(p.default, scope), ready: true }));
+                scope.set(node.name, new PyFunction(node.name, params, node.body, scope));
                 return;
+            }
+
+            case 'ClassDef': {
+                // The body runs once, in a scope of its own; whatever it defined
+                // becomes the class's attributes.
+                const bodyScope = new Scope(scope);
+                this.execBlock(node.body, bodyScope);
+                const cls = new PyClass(node.name, new Map(bodyScope.vars));
+                for (const value of cls.attrs.values()) {
+                    if (value instanceof PyFunction) {
+                        // As in Python, a method does NOT see class-level names as
+                        // bare names — it must say self.x or ClassName.x. So its
+                        // outward scope is where the class was written, not the body.
+                        value.scope = scope;
+                        value.owner = cls;
+                    }
+                }
+                scope.set(node.name, cls);
+                return;
+            }
 
             case 'Return':
                 throw new ReturnSignal(node.value ? this.evaluate(node.value, scope) : null);
@@ -1920,6 +2037,13 @@ export class Interpreter {
                     'Build a new string instead, for example word = word[:i] + "x" + word[i+1:].');
             }
             throw runtimeError(`You cannot store into ${typeName(container)} with [ ].`, line);
+        }
+
+        if (target.type === 'Attribute') {
+            const owner = this.evaluate(target.value, scope);
+            if (isInstance(owner) || isClass(owner)) { owner.attrs.set(target.attr, value); return; }
+            throw runtimeError(`Only an object can be given an attribute, and this is ${typeName(owner)}.`, line,
+                `".${target.attr} = ..." stores a value ON an object, as in self.${target.attr} = ... inside a class.`);
         }
 
         if (target.type === 'TupleLit' || target.type === 'ListLit') {
@@ -1961,7 +2085,7 @@ export class Interpreter {
                 for (const part of node.parts) {
                     if (part.kind === 'text') { out += part.value; continue; }
                     const value = this.evaluate(part.node, scope);
-                    out += formatValue(value, part.spec, node.line);
+                    out += formatValue(isInstance(value) ? this.toText(value, node.line) : value, part.spec, node.line);
                 }
                 return out;
             }
@@ -2025,10 +2149,13 @@ export class Interpreter {
                 return this.slice(container, lower, upper, step, node.line);
             }
 
-            case 'Attribute':
+            case 'Attribute': {
+                const owner = this.evaluate(node.value, scope);
+                if (isInstance(owner) || isClass(owner)) return this.getAttribute(owner, node.attr, node.line);
                 throw runtimeError(
                     `You wrote ".${node.attr}" without parentheses after it.`, node.line,
                     `A method only runs when you call it: .${node.attr}()`);
+            }
 
             case 'Call':
                 return this.evaluateCall(node, scope);
@@ -2040,6 +2167,12 @@ export class Interpreter {
 
     nameError(name, scope, line) {
         if (ABSENT.has(name)) return runtimeError(`"${name}" is not available here.`, line, ABSENT.get(name));
+        // Inside a method, a bare name that the object DOES have is the forgotten self.
+        const me = scope.lookup('self');
+        if (isInstance(me) && (me.attrs.has(name) || me.cls.attrs.has(name))) {
+            return runtimeError(`The name "${name}" has not been given a value yet.`, line,
+                `This object has a ${name}, but a method reaches it through self: write self.${name}.`);
+        }
         const known = [...scope.names(), ...Object.keys(BUILTINS)];
         const guess = suggestName(name, known);
         return runtimeError(`The name "${name}" has not been given a value yet.`, line,
@@ -2133,7 +2266,57 @@ export class Interpreter {
         return this.callValue(target, args, node.line, kw);
     }
 
+    /** `obj.name`: the object's own attributes first, then its class's. */
+    getAttribute(owner, name, line) {
+        if (isInstance(owner)) {
+            if (owner.attrs.has(name)) return owner.attrs.get(name);
+            if (owner.cls.attrs.has(name)) {
+                const found = owner.cls.attrs.get(name);
+                return found instanceof PyFunction ? new PyBoundMethod(owner, found) : found;
+            }
+            const known = [...owner.attrs.keys(), ...owner.cls.attrs.keys()];
+            const guess = suggestName(name, known);
+            throw runtimeError(`This ${owner.cls.name} object has no attribute called "${name}".`, line,
+                guess ? `Did you mean "${guess}"?`
+                      : `An attribute exists only once something has been stored in it, usually in __init__: self.${name} = ...`);
+        }
+        if (owner.attrs.has(name)) return owner.attrs.get(name);
+        const guess = suggestName(name, [...owner.attrs.keys()]);
+        throw runtimeError(`The class ${owner.name} has no attribute called "${name}".`, line,
+            guess ? `Did you mean "${guess}"?` : null);
+    }
+
+    /** What print(), str() and f-strings show: an object's own __str__ if its class has one. */
+    toText(value, line) {
+        if (!isInstance(value)) return pyStr(value);
+        const describe = value.cls.attrs.get('__str__') ?? value.cls.attrs.get('__repr__');
+        if (!(describe instanceof PyFunction)) return pyRepr(value);
+        const text = this.callValue(new PyBoundMethod(value, describe), [], line);
+        if (!isStr(text)) {
+            throw runtimeError(`${describe.name} has to return text, but this one returned ${typeName(text)}.`, line,
+                'Build the text with an f-string and return it.');
+        }
+        return text;
+    }
+
     callMethod(self, name, args, kw, line) {
+        if (isInstance(self) || isClass(self)) {
+            const has = self.attrs.has(name) || (isInstance(self) && self.cls.attrs.has(name));
+            if (!has) {
+                const cls = isInstance(self) ? self.cls : self;
+                const methods = [...cls.attrs.entries()].filter(([, v]) => v instanceof PyFunction).map(([k]) => k);
+                const guess = suggestName(name, methods);
+                throw runtimeError(`${isInstance(self) ? `This ${cls.name} object` : `The class ${cls.name}`} has no method called ".${name}()".`, line,
+                    guess ? `Did you mean ".${guess}()"?` : null);
+            }
+            const target = this.getAttribute(self, name, line);
+            if (!isCallable(target)) {
+                throw runtimeError(`"${name}" is ${typeName(target)}, not a method, so it cannot be called.`, line,
+                    `Read it without parentheses: .${name}`);
+            }
+            return this.callValue(target, args, line, kw);
+        }
+
         const table = isStr(self) ? STRING_METHODS
             : isList(self) ? LIST_METHODS
             : isDict(self) ? DICT_METHODS
@@ -2162,11 +2345,43 @@ export class Interpreter {
     }
 
     /** Call a function value with already-evaluated arguments. */
-    callValue(target, args, line, kw = {}) {
+    callValue(target, args, line, kw = {}, label = null) {
         if (target instanceof Builtin) return target.fn(args, kw, line, this);
+
+        if (target instanceof PyClass) {
+            const object = new PyInstance(target);
+            const init = target.attrs.get('__init__');
+            if (init instanceof PyFunction) {
+                const result = this.callValue(new PyBoundMethod(object, init), args, line, kw, `${target.name}`);
+                if (result !== null) {
+                    throw runtimeError('__init__ should not return a value.', line,
+                        'Its job is to store attributes on self. The new object is handed back for you.');
+                }
+            } else if (args.length || Object.keys(kw).length) {
+                throw runtimeError(`${target.name}() takes no values, because the class has no __init__ to receive them.`, line,
+                    'Add def __init__(self, ...): to the class and store the values on self.');
+            }
+            return object;
+        }
+
+        // A bound method supplies its object as the first argument. `hidden` keeps
+        // that argument out of every count a student reads: they wrote one value
+        // in the parentheses, so that is the number the message must use.
+        let hidden = 0;
+        if (target instanceof PyBoundMethod) {
+            const func = target.func;
+            if (func.params.length === 0) {
+                throw runtimeError(`${func.name}() is a method, so its first parameter has to be self.`, line,
+                    `Write def ${func.name}(self): — Python hands the object in there automatically.`);
+            }
+            args = [target.self, ...args];
+            hidden = 1;
+            target = func;
+        }
         if (!(target instanceof PyFunction)) {
             throw runtimeError(`${capitalize(typeName(target))} cannot be called like a function.`, line);
         }
+        label = label ?? target.name;
 
         if (++this.depth > this.depthLimit) {
             this.depth--;
@@ -2177,19 +2392,23 @@ export class Interpreter {
             const scope = new Scope(target.scope);
             const params = target.params;
             if (args.length > params.length) {
+                const takes = params.length - hidden;
                 throw runtimeError(
-                    `${target.name}() takes ${params.length} value${params.length === 1 ? '' : 's'}, ` +
-                    `but you gave it ${args.length}.`, line);
+                    `${label}() takes ${takes} value${takes === 1 ? '' : 's'}, ` +
+                    `but you gave it ${args.length - hidden}.`, line);
             }
             params.forEach((p, i) => {
                 if (i < args.length) { scope.set(p.name, args[i]); return; }
                 if (p.name in kw) { scope.set(p.name, kw[p.name]); return; }
-                if (p.default !== null) { scope.set(p.name, this.evaluate(p.default, target.scope)); return; }
-                throw runtimeError(`${target.name}() is missing a value for "${p.name}".`, line);
+                if (p.default !== null) { scope.set(p.name, p.ready ? p.value : this.evaluate(p.default, target.scope)); return; }
+                throw runtimeError(`${label}() is missing a value for "${p.name}".`, line,
+                    p.name === 'self' && target.owner
+                        ? `Call it on an object rather than on the class: thing = ${target.owner.name}(...) and then thing.${target.name}(...)`
+                        : null);
             });
             for (const key of Object.keys(kw)) {
                 if (!params.some(p => p.name === key)) {
-                    throw runtimeError(`${target.name}() has no parameter called "${key}".`, line);
+                    throw runtimeError(`${label}() has no parameter called "${key}".`, line);
                 }
             }
             try {

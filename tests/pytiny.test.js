@@ -179,7 +179,8 @@ describe('error messages', () => {
 
     it('refuses features it does not have, by name', () => {
         assert.match(failure('import math\n').message, /import anything/);
-        assert.match(failure('class Dog:\n    pass\n').message, /Classes are not part/);
+        // Classes are supported (tests/pytiny-classes.test.js); inheritance is the part still refused.
+        assert.match(failure('class Dog(Animal):\n    pass\n').message, /Inheritance is not supported/);
         assert.match(failure('x = [i for i in [1]]\n').message, /comprehensions/);
         assert.match(failure('x = {1, 2}\n').message, /Sets are not/);
         assert.match(failure('try:\n    pass\n').message, /try \/ except/);
