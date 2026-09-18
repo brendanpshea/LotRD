@@ -1,0 +1,867 @@
+[
+  {
+    "question": "What is a Git repository?",
+    "correct": [
+      "A project folder together with the history of changes Git has recorded for it"
+    ],
+    "incorrect": [
+      "A website such as GitHub where a project's code is hosted and shared with other people",
+      "A single saved snapshot of the project's files at one moment",
+      "A separate line of development inside a project"
+    ],
+    "feedback": "A repository is the project plus its recorded history, and it lives on your own machine as soon as you run git init or git clone. GitHub is a website that hosts copies of repositories; Git works without it. One saved snapshot is a commit, and a separate line of development is a branch: both live inside a repository."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Three desks and a tray",
+    "npc": "flint",
+    "intro": "Professor Flint clears three desks in the forge office and drops a wooden tray on the middle one. \"Git is three places and two commands,\" he says. \"Watch one change travel.\"",
+    "steps": [
+      {
+        "say": "The working tree is the folder you edit. The staging area is where you collect the changes you want in your next snapshot. The repository is the permanent history of snapshots, called commits.",
+        "beats": [
+          {
+            "say": "Left desk: the working tree. That is just your project folder, the files you open and edit."
+          },
+          {
+            "say": "Middle desk, with the tray: the staging area. It holds the changes you have chosen for your next snapshot."
+          },
+          {
+            "say": "Right desk: the repository, the permanent history. Each snapshot saved there is called a commit."
+          }
+        ]
+      },
+      {
+        "say": "I have edited three tracked files: Hero.java, Map.java and Shop.java. git add Hero.java copies that one file's changes from the working tree into the staging area.",
+        "beats": [
+          {
+            "say": "I have edited three files Git already tracks: Hero.java, Map.java and Shop.java. Then I run:"
+          },
+          {
+            "code": "git add Hero.java",
+            "language": "terminal"
+          },
+          {
+            "say": "git add copies Hero.java's changes from the working tree onto the tray, the staging area. The other two files are changed but not staged."
+          }
+        ],
+        "check": {
+          "prompt": "I run git status now. How many files does it list under \"Changes not staged for commit\"?",
+          "answer": "2: Map.java and Shop.java",
+          "wrong": [
+            "3: every file I edited",
+            "0: git add stages the whole folder"
+          ],
+          "why": "git add staged only the file it was given. The other two are modified in the working tree and nothing has moved them yet."
+        }
+      },
+      {
+        "say": "git commit records what is in the staging area as a new commit in the repository. Unstaged changes stay in the working tree. A brand-new file is untracked until you git add it.",
+        "beats": [
+          {
+            "code": "git commit -m \"Buff the hero\"",
+            "language": "terminal"
+          },
+          {
+            "say": "git commit records what is on the tray, and nothing else, as a new commit in the repository. Map.java and Shop.java are still sitting in the working tree, modified and unstaged."
+          },
+          {
+            "say": "One more word. A brand-new file that Git has never been told about is untracked. git status lists it in a section of its own, \"Untracked files\", until you git add it."
+          },
+          {
+            "say": "So: add moves changes from working tree to staging area. commit moves them from staging area to repository. git status reports where everything sits and changes nothing."
+          }
+        ]
+      }
+    ],
+    "outro": "\"A monster ahead has made a mess of its working tree,\" Flint says. \"Count what git status would show it.\""
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "You edit {{e}} files that Git already tracks and create {{n}} brand-new files. You then run git add on {{a}} of the edited files, by name, and on nothing else.\n\nWhen you run git status, how many files are listed under \"Changes not staged for commit\"?",
+    "variables": {
+      "e": {
+        "min": 5,
+        "max": 9
+      },
+      "n": {
+        "min": 1,
+        "max": 3
+      },
+      "a": {
+        "min": 1,
+        "max": 4
+      }
+    },
+    "answer": {
+      "expr": "e - a",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "\"Changes not staged for commit\" lists tracked files that are modified in the working tree but have not been added: {{e}} edited, {{a}} of them staged, so {{expected}} remain. The {{a}} staged files appear under \"Changes to be committed\", and the {{n}} new files appear under \"Untracked files\", because Git has never been told about them."
+  },
+  {
+    "type": "matching",
+    "question": "Match each Git command to what it moves, and where.",
+    "pairs": [
+      {
+        "term": "git add",
+        "definition": "Copies changes from the working tree into the staging area"
+      },
+      {
+        "term": "git commit",
+        "definition": "Records what is in the staging area as a new snapshot in local history"
+      },
+      {
+        "term": "git push",
+        "definition": "Uploads local commits that the remote repository does not have yet"
+      },
+      {
+        "term": "git pull",
+        "definition": "Downloads the remote's new commits and merges them into the current branch"
+      },
+      {
+        "term": "git clone",
+        "definition": "Creates a new local repository, history included, from a remote one"
+      }
+    ],
+    "feedback": "add and commit work entirely on your machine: working tree to staging area, then staging area to local history. push and pull are the two directions of traffic with a remote such as GitHub. clone is the one-time first download; after that you pull."
+  },
+  {
+    "type": "ordering",
+    "question": "A project lives on GitHub and you have never worked on it from this computer. Arrange the steps that get a change of yours onto GitHub, first to last.",
+    "items": [
+      "git clone the repository",
+      "Edit and save Hero.java",
+      "git add Hero.java",
+      "git commit -m \"Fix hero HP\"",
+      "git push"
+    ],
+    "feedback": "clone gives you a local repository to work in. An edit exists only in the working tree until add stages it; commit can record only what has been staged; push can upload only what has been committed. Skip a step and the next one has nothing to move."
+  },
+  {
+    "type": "code_line",
+    "question": "Your terminal is in the project's top folder. Write the Git command that stages every new and changed file in the project for the next commit.",
+    "language": "bash",
+    "correct": [
+      "git add .",
+      "git add -A",
+      "git add --all",
+      "git add -A .",
+      "git add --all ."
+    ],
+    "case_sensitive": true,
+    "feedback": "git add . stages everything new or changed in the current folder and below; git add -A does the same for the whole project wherever you are standing. From the top folder they are the same thing. git add -u is different: it stages changes to files Git already tracks and skips brand-new files."
+  },
+  {
+    "question": "You edit Hero.java and run\n\ngit add Hero.java\n\nThen you edit Hero.java a second time and run\n\ngit commit -m \"Buff hero\"\n\nWhat does the new commit contain?",
+    "correct": [
+      "The first edit; the second is still unstaged in the working tree"
+    ],
+    "incorrect": [
+      "Both edits, because a commit records the file as it is on disk",
+      "The second edit, because the newer change replaces the staged one",
+      "Neither edit, because Git refuses to commit a file changed after staging"
+    ],
+    "feedback": "git add copies the file's content AT THAT MOMENT into the staging area. Later edits change the working tree only, and commit reads the staging area, not the disk. After this commit git status still shows Hero.java as modified. To include the second edit you would run git add again before committing."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A branch has {{c}} commits. During the afternoon you save your files {{s}} times. On {{k}} separate occasions you run git add . followed by git commit -m \"...\", each time with new changes to record. You finish the day with one more save and one more git add . but no commit.\n\nHow many commits does the branch have now?",
+    "variables": {
+      "c": {
+        "min": 3,
+        "max": 9
+      },
+      "s": {
+        "min": 6,
+        "max": 12
+      },
+      "k": {
+        "min": 2,
+        "max": 4
+      }
+    },
+    "answer": {
+      "expr": "c + k",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Only git commit creates a commit: {{c}} to begin with plus {{k}} new ones makes {{expected}}. Saving a file changes the working tree and nothing else, so the {{s}} saves do not count. The final git add put changes in the staging area, where they wait until the next commit."
+  },
+  {
+    "question": "Which of these belong in a Java project's .gitignore, so that Git leaves them out of commits?",
+    "correct": [
+      "The .class files that javac produces",
+      "A local file holding a database password",
+      "The editor's per-user settings folder"
+    ],
+    "incorrect": [
+      "The JUnit test classes in the test folder",
+      "Source files that are not finished yet",
+      "The .gitignore file itself"
+    ],
+    "feedback": "Ignore what can be regenerated (.class files), what is personal to one machine (editor settings) and what is secret (passwords: a pushed commit is very hard to un-publish). Tests are source code and belong in history. Unfinished work belongs on a branch, not hidden from Git. The .gitignore file is committed so the whole team ignores the same things. One catch: .gitignore affects untracked files, so listing a file that is already committed does not remove it."
+  },
+  {
+    "type": "cloze",
+    "question": "A branch is a movable name that points at one {{1}}. Git's own name for whatever you currently have checked out is {{2}}; each time you record new work, the current branch moves forward to it.",
+    "blanks": [
+      {
+        "accept": [
+          "commit",
+          "a commit",
+          "snapshot"
+        ],
+        "hint": "Git object"
+      },
+      {
+        "accept": [
+          "HEAD"
+        ],
+        "hint": "four letters"
+      }
+    ],
+    "feedback": "A branch is not a copy of the project: it is a label on a commit, which is why creating one is instant. HEAD normally points at the current branch, and the branch points at its newest commit. Committing adds a commit and slides the current branch (and HEAD with it) forward; other branches stay where they were."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the Git command that creates a new branch named fix and switches to it, in one step.",
+    "language": "bash",
+    "correct": [
+      "git switch -c fix",
+      "git checkout -b fix",
+      "git switch --create fix"
+    ],
+    "case_sensitive": true,
+    "feedback": "git switch -c fix is the modern form; git checkout -b fix is the older one you will see in most tutorials. git branch fix on its own creates the branch but leaves you where you were, so your next commit would land on the old branch."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "main has {{m}} commits. You create the branch feature from main and make {{f}} commits on it. Meanwhile teammates add {{t}} new commits to main. You then switch to main and run git merge feature, and Git records the result as one merge commit.\n\nHow many commits does git log now list for main?",
+    "variables": {
+      "m": {
+        "min": 3,
+        "max": 7
+      },
+      "f": {
+        "min": 2,
+        "max": 4
+      },
+      "t": {
+        "min": 1,
+        "max": 3
+      }
+    },
+    "answer": {
+      "expr": "m + f + t + 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "A merge does not squash or copy anything: main's history now reaches the {{m}} original commits, the {{t}} added on main, the {{f}} made on feature, and the merge commit that joins the two lines, which makes {{expected}}. Before the merge, git log on feature listed the {{m}} shared commits plus its own {{f}}, and knew nothing of the {{t}} on main."
+  },
+  {
+    "question": "You are on main and run git merge feature. Git reports a conflict, and Hero.java now contains:\n\n<<<<<<< HEAD\nint hp = 100;\n=======\nint hp = 120;\n>>>>>>> feature\n\nWhat are you looking at?",
+    "correct": [
+      "main's version above the ======= line and feature's version below it"
+    ],
+    "incorrect": [
+      "feature's version above the ======= line and main's version below it",
+      "The old line above the ======= line and Git's suggested merge below it",
+      "Two lines that both belong to main; feature had deleted one of them"
+    ],
+    "feedback": "Both branches changed the same line, so Git will not choose. Between <<<<<<< HEAD and ======= is the version from HEAD, the branch you are on (main). Between ======= and >>>>>>> feature is the incoming version. Git never suggests a blend: you decide what the line should be."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the steps for getting through a merge conflict, first to last.",
+    "items": [
+      "Run git merge feature and read which file Git says is in conflict",
+      "Edit the file so it holds the code you want and no marker lines",
+      "Run git add on the file to mark the conflict as resolved",
+      "Run git commit to record the merge",
+      "Run git push to share the merged branch"
+    ],
+    "feedback": "The conflict only exists once the merge has been attempted. You fix the file by hand, deleting the <<<<<<<, ======= and >>>>>>> lines along with whichever code you are not keeping. git add is how you tell Git the file is settled, git commit completes the merge, and only a completed commit can be pushed."
+  },
+  {
+    "question": "Which statements about a GitHub pull request are correct?",
+    "correct": [
+      "It proposes merging one branch's commits into another branch",
+      "Pushing more commits to its branch adds them to the open request"
+    ],
+    "incorrect": [
+      "It downloads the remote's newest commits into your local branch",
+      "It has to be opened before the branch is pushed up to GitHub",
+      "It makes a copy of someone else's repository under your account"
+    ],
+    "feedback": "A pull request says \"please pull my branch into yours\": it is a proposal to merge, with a page where reviewers comment line by line. It follows the branch, so fixes you push after review appear in it automatically. Downloading new commits is git pull, a different thing with a confusingly similar name. The branch has to be on GitHub already before a request can be opened, and copying a repository to your account is a fork."
+  },
+  {
+    "question": "A teammate has pushed two commits to main on GitHub. On your machine, with main checked out, you run git fetch. What has changed locally?",
+    "correct": [
+      "The two commits are downloaded, but your main branch and your files stay as they were"
+    ],
+    "incorrect": [
+      "The two commits are downloaded and merged, so your files now include the teammate's work",
+      "The two commits are downloaded and staged, waiting for you to commit them",
+      "Nothing is downloaded; fetch reports how far behind the remote you are"
+    ],
+    "feedback": "fetch downloads the new commits and updates origin/main, your local record of where the remote is. Your own main, your staging area and your files are untouched, so it is safe at any time. git pull is fetch followed by a merge, and that is the step that changes your files."
+  },
+  {
+    "type": "cloze",
+    "question": "On GitHub, making your own server-side copy of someone else's repository, under your account, is called a {{1}}. Copying a repository from GitHub down to your own computer is a {{2}}. To contribute to a project you are not allowed to push to, you do the first, then the second, and finish by opening a pull request.",
+    "blanks": [
+      {
+        "accept": [
+          "fork",
+          "forking",
+          "a fork"
+        ],
+        "hint": "GitHub term"
+      },
+      {
+        "accept": [
+          "clone",
+          "cloning",
+          "git clone",
+          "a clone"
+        ],
+        "hint": "Git term"
+      }
+    ],
+    "feedback": "A fork is a GitHub feature: a copy of the repository that lives on GitHub under your name, where you ARE allowed to push. A clone is a Git operation: a copy on your own disk. You clone your fork, push your branch to the fork, and open a pull request asking the original project to take the change."
+  },
+  {
+    "question": "Which of these does an IDE, such as VS Code with its Java extensions, give you that a plain text editor and javac do not?",
+    "correct": [
+      "Compile errors underlined while you type",
+      "Renaming a method updates the calls to it",
+      "Pausing a running program to inspect variables",
+      "A terminal panel opened in the project folder"
+    ],
+    "incorrect": [
+      "Running Java programs without a JDK installed",
+      "A check that the program's output is correct"
+    ],
+    "feedback": "An IDE runs the compiler's checks continuously, understands the code well enough to refactor it safely (a rename changes the method and its callers, not every matching piece of text), hosts the debugger, and keeps a terminal for git and test commands. It still needs a JDK underneath: the IDE drives javac and java, it does not replace them. And no tool knows what your program is SUPPOSED to print. That is what tests are for."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Arrange, act, assert",
+    "npc": "flint",
+    "intro": "Flint pins a five-line method to the board. \"A test is a small method that runs your code and checks the result, so that you never have to check it by eye again.\"",
+    "steps": [
+      {
+        "say": "A JUnit test is a method marked @Test. JUnit finds the marked methods and runs them for you.",
+        "beats": [
+          {
+            "say": "Here is a JUnit 5 test for an Account class. The @Test line marks the method as a test, so JUnit will find it and run it."
+          },
+          {
+            "code": "@Test\nvoid depositAddsToBalance() {\n    Account acct = new Account(100);\n    acct.deposit(50);\n    assertEquals(150, acct.balance());\n}",
+            "language": "java"
+          },
+          {
+            "say": "Notice the name. It says what behaviour is being checked, so a failure report reads like a sentence."
+          }
+        ]
+      },
+      {
+        "say": "Three parts. Arrange: build what you need. Act: call the one thing being tested. Assert: compare the result with the value you expected.",
+        "beats": [
+          {
+            "say": "Three parts, top to bottom. Arrange: build the objects you need. Here, an account holding 100."
+          },
+          {
+            "say": "Act: call the one thing being tested. Here, deposit(50)."
+          },
+          {
+            "say": "Assert: compare what you got with what you worked out by hand. assertEquals takes the expected value first and the actual value second."
+          }
+        ],
+        "check": {
+          "prompt": "In assertEquals(150, acct.balance()), which argument is the expected value?",
+          "answer": "150, the value I worked out by hand",
+          "wrong": [
+            "acct.balance(), the value the code produces",
+            "Either: the order makes no difference"
+          ],
+          "why": "Expected first, actual second. JUnit uses that order to word its failure message, so swapping them makes the message lie."
+        }
+      },
+      {
+        "say": "If the values match the test passes (green). If not, the assertion throws and the test fails (red) with a message naming both values.",
+        "beats": [
+          {
+            "say": "If the two values match, the test passes and shows green. If deposit were broken and balance() came back 100, the assertion would throw and the test would show red, with this message:"
+          },
+          {
+            "code": "expected: <150> but was: <100>",
+            "language": "JUnit failure message"
+          },
+          {
+            "say": "Expected is my first argument. \"But was\" is my second. Arrange, act, assert, and expected before actual."
+          }
+        ]
+      }
+    ],
+    "outro": "\"The next monster has torn a test into strips,\" Flint says. \"Put it back together: arrange, act, assert.\""
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange these lines into a JUnit 5 test that follows arrange, act, assert.",
+    "language": "java",
+    "items": [
+      "@Test",
+      "void addingOnePotionGivesSizeOne() {",
+      "    Inventory inv = new Inventory();",
+      "    inv.add(\"potion\");",
+      "    assertEquals(1, inv.size());",
+      "}"
+    ],
+    "feedback": "@Test goes directly above the method it marks. Inside, arrange comes first (inv has to exist before anything can be added to it), then the act (add), and the assert last, because it checks the state the act left behind. Asserting before acting would compare 1 with the size of an empty inventory."
+  },
+  {
+    "type": "code_line",
+    "question": "int n = inv.size();\n\nWrite the JUnit 5 assertion that checks that n is 3.",
+    "language": "java",
+    "correct": [
+      "assertEquals(3, n);",
+      "assertEquals(3, n)",
+      "assertTrue(n == 3);",
+      "assertTrue(n == 3)",
+      "assertTrue(3 == n);"
+    ],
+    "case_sensitive": true,
+    "feedback": "assertEquals(expected, actual): the value you worked out goes first and the value under test second. assertTrue(n == 3) also passes and fails at the right times, but when it fails it can only say \"expected: <true> but was: <false>\", while assertEquals tells you the size it actually found."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "The method price is not shown. This JUnit 5 test\n\n@Test\nvoid threeItems() {\n    assertEquals(price(3), {{y}});\n}\n\nfails with the message\n\nexpected: <{{x}}> but was: <{{y}}>\n\nWhat number did price(3) actually return?",
+    "variables": {
+      "x": {
+        "min": 41,
+        "max": 59
+      },
+      "d": {
+        "min": 2,
+        "max": 9
+      }
+    },
+    "derived": {
+      "y": "x - d"
+    },
+    "answer": {
+      "expr": "x",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "JUnit calls its FIRST argument \"expected\" and its second \"but was\". This test has them the wrong way round, so the message's labels are backwards: the first argument was price(3), which returned {{expected}}, and {{y}} is what the author was hoping for. Written correctly, assertEquals({{y}}, price(3)), the message would read expected: <{{y}}> but was: <{{expected}}>."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Spec: orders of {{t}} items or more ship free.\n\nstatic boolean shipsFree(int qty) {\n    return qty > {{u}};\n}\n\nYou write one assertion for each quantity from 1 to 60, each comparing shipsFree(qty) with what the spec says. How many of the 60 assertions fail?",
+    "variables": {
+      "t": {
+        "min": 10,
+        "max": 20
+      },
+      "k": {
+        "min": 0,
+        "max": 3
+      }
+    },
+    "derived": {
+      "u": "t + k"
+    },
+    "answer": {
+      "expr": "k + 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The spec says free from {{t}} upward; the code says free from above {{u}}. They disagree for every quantity from {{t}} to {{u}} inclusive, which is {{expected}} of the 60, and agree everywhere else. That is why tests belong AT a boundary and on each side of it: dozens of 'typical' quantities pass, and only the values at the edge expose the bug."
+  },
+  {
+    "question": "Stats.largest(List<Integer> xs) should return the largest value in the list. One test already passes:\n\nassertEquals(9, Stats.largest(List.of(3, 9, 4)));\n\nWhich further inputs are edge cases that deserve a test of their own?",
+    "correct": [
+      "List.of(), a list with nothing in it",
+      "List.of(7), a list with a single value",
+      "List.of(-7, -2), where every value is below zero"
+    ],
+    "incorrect": [
+      "List.of(30, 90, 40), the same case with larger numbers",
+      "List.of(5, 9, 6), where the largest is again in the middle"
+    ],
+    "feedback": "An edge case is an input the code might treat differently: empty, a single element, zero, negatives, a boundary. Each of the three could take a different path through largest or expose a bad starting value. The other two exercise exactly the path the existing test already covers, so they add running time and no information. More tests are not better tests; different tests are."
+  },
+  {
+    "type": "code_trace",
+    "question": "check prints P when the two values match, as a passing assertion would, and F when they differ. What does this program print?",
+    "code": "public class Main {\n    static int largest(int[] xs) {\n        int best = 0;\n        for (int x : xs) {\n            if (x > best) best = x;\n        }\n        return best;\n    }\n\n    static void check(int expected, int actual) {\n        System.out.print(expected == actual ? \"P\" : \"F\");\n    }\n\n    public static void main(String[] args) {\n        check(9, largest(new int[]{3, 9, 4}));\n        check(5, largest(new int[]{5}));\n        check(-2, largest(new int[]{-7, -2}));\n        check(0, largest(new int[]{0, 0}));\n    }\n}",
+    "language": "java",
+    "correct": [
+      "PPFP"
+    ],
+    "case_sensitive": true,
+    "feedback": "best starts at 0, so with {-7, -2} no value is ever greater than best and largest returns 0 instead of -2: the third check fails. The other three pass, including {0, 0}, which gets the right answer for the wrong reason. Only the all-negative case exposes the bug. The fix is to start best at xs[0], not at a number you made up."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Stats.largest should reject an empty list by throwing IllegalArgumentException. Complete the JUnit 5 test with the name of the assertion:\n\n@Test\nvoid emptyListIsRejected() {\n    ___(IllegalArgumentException.class, () -> Stats.largest(List.of()));\n}",
+    "correct": [
+      "assertThrows"
+    ],
+    "case_sensitive": false,
+    "feedback": "assertThrows(Type.class, () -> call) runs the lambda and passes only if it throws that type of exception. The call has to be wrapped in a lambda so that JUnit, not your test method, is the one that runs it and catches what comes out. Without assertThrows the exception would escape the test and be reported as a failure, which is the opposite of what you want to say."
+  },
+  {
+    "question": "In this JUnit 5 test the FIRST assertion fails.\n\n@Test\nvoid heroBasics() {\n    Hero h = new Hero(\"Ayla\");\n    assertEquals(100, h.hp());\n    assertEquals(\"Ayla\", h.name());\n    assertTrue(h.isAlive());\n}\n\nWhat does the test report tell you about name() and isAlive()?",
+    "correct": [
+      "Nothing: the method stopped at the first failure, so those two lines did not run"
+    ],
+    "incorrect": [
+      "Both results are shown, since each assertion is reported on a line of its own",
+      "Both passed, since JUnit would have listed any other assertion that failed",
+      "Both were skipped and will run by themselves the next time the tests start"
+    ],
+    "feedback": "A failing assertion throws an exception, and an exception ends the method on the spot. The report shows one red test and says nothing about the lines after the failure. That is the practical reason for \"one behaviour per test\": three small tests (hpStartsAt100, nameIsKept, startsAlive) give three independent answers, and their names tell you what broke."
+  },
+  {
+    "question": "Spec: Shop.discount takes 10% off, so discount(200.0) should be 180.0.\n\n@Test\nvoid discountIsApplied() {\n    double expected = Shop.discount(200.0);\n    assertEquals(expected, Shop.discount(200.0));\n}\n\nWhat is the weakness of this test?",
+    "correct": [
+      "It compares discount with itself, so it passes whatever discount returns"
+    ],
+    "incorrect": [
+      "It compares doubles with no tolerance, so it fails at random on some runs",
+      "It has its arguments reversed: the call to discount belongs in first position",
+      "It calls discount twice, and the second call can see state left by the first"
+    ],
+    "feedback": "The 'expected' value comes from the code under test, so the test is green if discount returns 180.0, 200.0 or -1.0. A test that cannot fail tells you nothing. The expected value has to come from the spec: assertEquals(180.0, Shop.discount(200.0)). A good habit is to see a new test go red at least once (for example, before the method is written), which proves that it is able to."
+  },
+  {
+    "question": "In a debugger, what is a breakpoint?",
+    "correct": [
+      "A marker on a line where the debugger pauses the program so you can inspect it"
+    ],
+    "incorrect": [
+      "The line where the program stopped because an exception was thrown there",
+      "A print statement added to a line to show the value of a variable there",
+      "A marker on a line where the program ends so that later code does not run"
+    ],
+    "feedback": "You set a breakpoint yourself, before or during a run, by clicking beside a line. The debugger pauses just BEFORE that line executes, shows every variable in scope, and lets you resume: the program is paused, not finished. It is not the crash site (that is what a stack trace reports), and unlike a print statement it changes nothing in your source code."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Over, into, out",
+    "npc": "flint",
+    "intro": "Flint runs the forge's damage calculator under the debugger. A red dot sits beside line 12, and the program has frozen there. \"Paused at my breakpoint,\" he says. \"Now I choose how to move.\"",
+    "steps": [
+      {
+        "say": "The highlighted line has NOT run yet. The variables panel shows the values as they are before it.",
+        "beats": [
+          {
+            "code": "int dmg = roll(sides) + bonus;   // line 12  <- paused here\nhp = hp - dmg;                   // line 13",
+            "language": "java"
+          },
+          {
+            "say": "The highlighted line has not run yet. The variables panel shows sides = 6, bonus = 2, hp = 40, and no dmg at all, because line 12 has not created it."
+          }
+        ]
+      },
+      {
+        "say": "Step Over runs the whole line, calls included, and pauses on the next line. Step Into follows the call and pauses on the first line inside the method.",
+        "beats": [
+          {
+            "say": "Step Over runs the whole of line 12, including the call to roll, and pauses again on line 13. I see dmg appear, but nothing of what happened inside roll."
+          },
+          {
+            "say": "Step Into follows the call instead. The debugger jumps to the first line inside roll and pauses there, so I can walk through that method line by line."
+          }
+        ],
+        "check": {
+          "prompt": "I suspect roll itself is returning numbers that are too big. Which do I press on line 12?",
+          "answer": "Step Into",
+          "wrong": [
+            "Step Over",
+            "Continue"
+          ],
+          "why": "Step Into is the one that goes inside the method being called. Step Over would run roll out of sight, and Continue would run on to the next breakpoint."
+        }
+      },
+      {
+        "say": "Step Out finishes the current method and pauses back in the caller. Continue runs until the next breakpoint.",
+        "beats": [
+          {
+            "say": "Once I have seen enough inside roll, Step Out runs the rest of it and pauses back on line 12, in the caller."
+          },
+          {
+            "say": "And Continue lets the program run freely until it reaches another breakpoint or ends. Over, into, out, continue: four ways to move from a pause."
+          }
+        ]
+      }
+    ],
+    "outro": "\"Your turn,\" Flint says. \"A monster is paused on a line with a call in it, and it does not care what is inside.\""
+  },
+  {
+    "type": "fill_blank",
+    "question": "The debugger is paused on this line:\n\ndouble total = subtotal(cart) + tax;\n\nYou already trust subtotal. You just want this line finished so that you can look at total on the next line. The stepping command to use is Step ___.",
+    "correct": [
+      "Over",
+      "Step Over",
+      "stepover"
+    ],
+    "case_sensitive": false,
+    "feedback": "Step Over executes the whole line, including the call to subtotal, and pauses on the following line with total now visible. Step Into would take you to the first line inside subtotal, which you said you trust. Step Out would finish the method you are currently in and pause in ITS caller, skipping the line where you wanted to look at total."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "You wrote Shop.java. Running it ends with this stack trace:\n\nException in thread \"main\" java.lang.NumberFormatException: For input string: \"ten\"\n    at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)\n    at java.base/java.lang.Integer.parseInt(Integer.java:565)\n    at java.base/java.lang.Integer.parseInt(Integer.java:662)\n    at Shop.readQty(Shop.java:{{a}})\n    at Shop.sell(Shop.java:{{b}})\n    at Shop.main(Shop.java:{{c}})\n\nWhich line number of Shop.java should you open first: the line of YOUR code that was running when the exception was thrown?",
+    "variables": {
+      "a": {
+        "min": 12,
+        "max": 29
+      },
+      "b": {
+        "min": 31,
+        "max": 48
+      },
+      "c": {
+        "min": 50,
+        "max": 70
+      }
+    },
+    "answer": {
+      "expr": "a",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "A stack trace lists the active method calls, most recent first. The top three frames are inside the JDK (java.base/...): that is where the exception was created, but not where the mistake is. Read DOWN to the first frame in a file you wrote: Shop.readQty at line {{expected}}, the line that handed \"ten\" to Integer.parseInt. The frames below it ({{b}}, then {{c}}) show how the program got there."
+  },
+  {
+    "type": "code_trace",
+    "question": "e.getStackTrace() gives the lines of the stack trace as an array, top line first. What does this program print?",
+    "code": "public class Main {\n    static int pick(int[] xs, int i) {\n        return xs[i];\n    }\n\n    static int last(int[] xs) {\n        return pick(xs, xs.length);\n    }\n\n    public static void main(String[] args) {\n        try {\n            last(new int[]{4, 8});\n        } catch (RuntimeException e) {\n            StackTraceElement[] trace = e.getStackTrace();\n            System.out.println(trace[0].getMethodName() + \" \" + trace[1].getMethodName());\n        }\n    }\n}",
+    "language": "java",
+    "correct": [
+      "pick last"
+    ],
+    "case_sensitive": true,
+    "feedback": "The top line of a trace is the method that was running when the exception was thrown: pick, at xs[i]. The line below it is its caller, last. But look where the MISTAKE is: pick did what it was told, and last told it to read index xs.length, one past the end. The top frame tells you where it blew up; the cause is often one or two frames further down."
+  },
+  {
+    "type": "matching",
+    "question": "Match each debugging technique to what you do when you use it.",
+    "pairs": [
+      {
+        "term": "Print debugging",
+        "definition": "Add output lines that show values at chosen points, then run again"
+      },
+      {
+        "term": "Stepping",
+        "definition": "Pause the running program and advance one line at a time, watching the variables"
+      },
+      {
+        "term": "Rubber-ducking",
+        "definition": "Explain the code aloud, line by line, to a listener that need not answer"
+      },
+      {
+        "term": "Bisecting",
+        "definition": "Test the version halfway between a good one and a bad one, then repeat"
+      },
+      {
+        "term": "Trace reading",
+        "definition": "Follow the list of active calls down to the first line in a file you wrote"
+      }
+    ],
+    "feedback": "Print debugging is quick and works anywhere, but you must guess in advance what to show and remember to remove the lines. Stepping shows everything without editing the code. Rubber-ducking works because explaining forces you to state what each line really does, not what you meant by it. Bisecting finds WHEN a bug arrived without needing to understand it first, and git bisect automates it."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A feature worked at a commit you remember. Since then there have been {{n}} commits, and the newest of them is broken. You bisect: test the commit in the middle of the suspects, keep the half that must contain the first broken commit, and repeat.\n\nHow many commits do you have to test to be certain which one broke it?",
+    "variables": {
+      "n": {
+        "values": [
+          8,
+          16,
+          32,
+          64
+        ]
+      }
+    },
+    "answer": {
+      "expr": "bitLength(n) - 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Any of the {{n}} commits could be the first broken one. Each test cuts the suspects in half, and it takes {{expected}} halvings to get from {{n}} down to 1. This is binary search over history: doubling the number of commits adds a single test, where checking them one by one could take {{n}} - 1."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The confident echo",
+    "npc": "omu",
+    "intro": "Elder Omu holds up a slate on which an AI assistant has answered her question, in tidy, confident handwriting. \"I asked it how to reverse a String in Java,\" she says. \"Listen to how sure it sounds.\"",
+    "steps": [
+      {
+        "say": "The assistant answered with a call to name.reverse(). It reads well, and it is stated without any doubt.",
+        "beats": [
+          {
+            "say": "It wrote: \"Strings have a built-in reverse method. Use this.\""
+          },
+          {
+            "code": "String back = name.reverse();",
+            "language": "java, written by the assistant"
+          },
+          {
+            "say": "It reads well. An assistant produces text that is LIKELY, given everything it has read, and likely is not the same as true. It sounds exactly this sure whether it is right or wrong."
+          }
+        ]
+      },
+      {
+        "say": "The way to find out is not to ask it again. It is to check the claim against something that cannot be talked round: the compiler, a run, a test.",
+        "beats": [
+          {
+            "say": "So how do I find out? Not by asking it whether it is sure. It would answer that just as smoothly."
+          }
+        ],
+        "check": {
+          "prompt": "What is the quickest check I can trust?",
+          "answer": "Compile and run the line",
+          "wrong": [
+            "Ask the assistant if it is certain",
+            "Read the line again, slowly"
+          ],
+          "why": "The compiler and the running program do not care how confident the text sounded. They only report what is so."
+        }
+      },
+      {
+        "say": "javac reports: cannot find symbol, method reverse(). String has no such method; StringBuilder does. But the compiler only catches claims that break Java's rules. Code can compile and still do the wrong thing, and for that you must run it.",
+        "beats": [
+          {
+            "say": "javac answers: cannot find symbol, method reverse(). String has no such method. The assistant invented it. StringBuilder is the class that has one:"
+          },
+          {
+            "code": "String back = new StringBuilder(name).reverse().toString();",
+            "language": "java, checked by running it"
+          },
+          {
+            "say": "One warning. The compiler only catches claims that break Java's rules. Code can compile perfectly and still do the wrong thing. For that, you have to run it, and better still, test it."
+          }
+        ]
+      }
+    ],
+    "outro": "\"The next echo is subtler,\" Omu says. \"What it claims will compile. Decide how you would catch it.\""
+  },
+  {
+    "question": "An AI assistant tells you that this code prints [1, 2, 3, 4]:\n\nList<Integer> xs = List.of(1, 2, 3);\nxs.add(4);\nSystem.out.println(xs);\n\nWhich check would show you whether that claim is true?",
+    "correct": [
+      "Run it, for example in jshell, and read what happens"
+    ],
+    "incorrect": [
+      "Compile it, since javac rejects code that misuses a list",
+      "Ask the assistant to double-check and explain its reasoning",
+      "Ask a second assistant and see whether the two of them agree"
+    ],
+    "feedback": "The code compiles without complaint, because add is a real List method. It fails when it RUNS: List.of makes an immutable list, and add throws UnsupportedOperationException. Only running it shows that. Asking the same assistant again, or a second one, produces more confident text; two assistants trained on similar material can share a mistake. An assistant's claim about behaviour is a hypothesis until you have run it."
+  },
+  {
+    "question": "Which statements describe an agentic AI coding tool, as opposed to one that suggests completions as you type?",
+    "correct": [
+      "It can plan a task and carry it out over several steps",
+      "It can run commands such as the compiler, the tests or git",
+      "It can read and change several files in one task"
+    ],
+    "incorrect": [
+      "It completes the line you are typing and then waits",
+      "It can see the file that is open and no others",
+      "Its changes are safe to merge once the project compiles"
+    ],
+    "feedback": "\"Agentic\" means the tool acts: given a goal it plans, edits files across the project, runs commands, reads the results and tries again. Completing the current line is autocomplete, the earlier style of tool. Because an agent really does run git and really does edit files, its mistakes are real too, and code that compiles can still be wrong. Its work needs the same review and tests as a teammate's."
+  },
+  {
+    "question": "You are about to let an agentic assistant edit files and run commands in your project. Which habit protects your work best?",
+    "correct": [
+      "Commit first, so that git diff shows what it changed and you can go back"
+    ],
+    "incorrect": [
+      "Tell it which one file it may touch, so that the other files stay as they are",
+      "Zip the project folder once it has finished, so that the result is kept safe",
+      "Read its summary of what it did, so that you know which files were changed"
+    ],
+    "feedback": "With a clean commit behind you, git status and git diff show every line the agent touched, whatever it says it did, and one command takes you back. An instruction in a prompt is a request, not a lock: the agent may still edit other files. A zip made afterwards preserves the result, not the state you might want to return to. And the agent's own summary is another claim to verify, not a record."
+  },
+  {
+    "question": "Your method throws an exception, and you ask an AI assistant for help. Which of these make the prompt more useful?",
+    "correct": [
+      "The exact exception message and stack trace",
+      "The method that fails and the input that triggers it",
+      "What you expected the method to return instead"
+    ],
+    "incorrect": [
+      "An instruction to be careful and avoid mistakes",
+      "The whole project pasted in, so nothing is missing"
+    ],
+    "feedback": "An assistant can work from what is in the prompt and nothing else: the actual error, the code involved, a way to reproduce it and the behaviour you wanted are what a human helper would ask for too. Telling it to be careful adds no information. Pasting everything buries the relevant twenty lines under two thousand irrelevant ones, and may hand over things you should not be sharing."
+  },
+  {
+    "question": "Your course allows AI assistance as long as you cite it. An assistant helped you write a method for an assignment. Which is the best sign that you are ready to submit it?",
+    "correct": [
+      "You could explain each line and change it without the assistant's help"
+    ],
+    "incorrect": [
+      "It passes the tests that the assistant wrote to go along with the method",
+      "You have read it through and nothing in it looked wrong to you",
+      "The assistant, asked to review it, confirmed that it meets the spec"
+    ],
+    "feedback": "Your name on the work means you answer for it: in an exam, in a code review, and when it breaks. Tests written by the same assistant can share its misunderstanding of the task. Reading code and finding nothing wrong is weak evidence when you could not have written it. The assistant's review of its own output is one more unverified claim. And where a course does NOT permit AI help, submitting its work as yours is an academic-integrity matter however well you understand it, so check the policy first."
+  },
+  {
+    "question": "Which of these are a privacy or confidentiality problem to paste into a public AI chat assistant?",
+    "correct": [
+      "Your project's config file, API key included",
+      "A classmate's code, with their name and student ID",
+      "Source code from your internship, to find a bug in it"
+    ],
+    "incorrect": [
+      "A stack trace from your own practice program",
+      "Your own method and the test that it fails",
+      "A compiler error message copied from javac"
+    ],
+    "feedback": "Whatever you paste leaves your machine and may be stored or reviewed by the service. A key or password should be treated as leaked from that moment. A classmate's identity and work are not yours to share, and an employer's code belongs to the employer, however good your intentions. Your own practice code, its errors and its failing tests are exactly what an assistant is useful for: strip out secrets and personal details, then share those."
+  },
+  {
+    "question": "You are learning to write loops this week, and your assignment is about loops. Which uses of an AI assistant support that learning rather than replace it?",
+    "correct": [
+      "Asking it to explain a compiler error in your own loop",
+      "Asking it for practice tracing problems, then solving them"
+    ],
+    "incorrect": [
+      "Having it write the loop, then reading its answer closely",
+      "Having it write the loop, then retyping it line by line",
+      "Having it fix your loop, then moving on when tests pass",
+      "Asking for a model answer to study before you begin"
+    ],
+    "feedback": "The skill being built is producing a loop yourself, and only attempts at doing that build it. Reading, retyping or studying a finished answer feels like learning, since it all makes sense as you read it, but recognising a solution is far easier than producing one, and the exam asks you to produce. Delegate what you can already do and want done faster; keep for yourself whatever the assignment exists to teach. Handing in the assistant's loop as your own is also an integrity problem unless the course says otherwise."
+  },
+  {
+    "question": "Spec: half(n) rounds halves UP, so half(7) should be 4.\n\nstatic int half(int n) { return n / 2; }\n\nYou ask an assistant to \"write a JUnit test for half\". It produces\n\n@Test\nvoid halfOfSeven() {\n    assertEquals(3, half(7));\n}\n\nand the test is green. What has happened?",
+    "correct": [
+      "The expected value was read off the code, so the test now protects the bug"
+    ],
+    "incorrect": [
+      "The test is sound and the spec is out of date, since green means the code is right",
+      "The arguments are swapped, which lets a wrong result show up as a pass",
+      "Nothing is wrong: 7 / 2 is 3.5, and assertEquals rounds before comparing"
+    ],
+    "feedback": "The assistant was shown the code and not the spec, so it wrote down what the code DOES: integer division gives 7 / 2 = 3. The test passes, and will now fail the day someone fixes half. Green means only \"the code agrees with the test\". Expected values have to come from the spec, which here says 4. When you delegate test-writing, give the assistant the spec, and check every expected value yourself."
+  },
+  {
+    "type": "ordering",
+    "question": "You are using an agentic assistant to fix a scoring bug in a team project on GitHub. Arrange the steps in a responsible order, first to last.",
+    "items": [
+      "Create a branch for the fix with git switch -c",
+      "Ask the assistant to make the change on that branch",
+      "Read the diff and run the tests yourself",
+      "Commit the change with a message that says what it does",
+      "Push the branch to GitHub",
+      "Open a pull request so that a teammate can review it"
+    ],
+    "feedback": "The branch comes first so that main stays clean whatever the assistant does. Its change is a proposal until you have read the diff and seen the tests pass: only then is it worth a commit under your name. A commit has to exist before it can be pushed, and the branch has to be on GitHub before a pull request can point at it. The teammate's review is a second check, not a substitute for your own."
+  }
+]

@@ -1315,3 +1315,162 @@ describe('Arithmetic shown in questions is actually correct', () => {
     assert.deepEqual(wrong, [], `False arithmetic claims in question text:\n${wrong.join('\n')}`);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Checks that came out of the September 2026 audit of the Java sets
+// ────────────────────────────────────────────────────────────────────────────────
+// Each one is a defect that was found in shipped questions, and that a script can
+// see. The first group holds everywhere. The second group describes the standard
+// the rebuilt Java sets meet; the other topics do not meet it yet (the database
+// sets, for one, have almost no questions that survive being seen three times),
+// so it is enforced only on the sets listed in MEETS_AUDIT_STANDARD. Add a set to
+// that list when it has been brought up to the standard — never remove one.
+describe('Audit checks', () => {
+  const index = loadJSON('question_sets/index.json');
+  const MEETS_AUDIT_STANDARD = setId => /^java_/.test(setId);
+  const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write']);
+  const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
+
+  it('no question points at code it does not show', () => {
+    // Three Java questions asked what "this" code printed after a type conversion
+    // had dropped the code. One of them was unanswerable.
+    const bad = [];
+    for (const setId of index) {
+      questionsOf(setId).forEach((q, i) => {
+        if (q.type === 'code_trace' || q.type === 'code_write' || q.code) return;
+        const stem = q.question || '';
+        const refers = /\b(this|the following) (code|loop|method|snippet|program|class|statement)\b|what (does|will) (this|it) print/i.test(stem);
+        if (refers && !/[;{}]|\n/.test(stem)) bad.push(`${setId}[${i}]: ${stem.slice(0, 70)}`);
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('multiple choice never carries a "code" field, which the engine does not display', () => {
+    const bad = [];
+    for (const setId of index) {
+      questionsOf(setId).forEach((q, i) => { if (!q.type && q.code) bad.push(`${setId}[${i}]`); });
+    }
+    assert.deepEqual(bad, [], 'put the code in the stem, on its own lines');
+  });
+
+  it('no matching question has two identical definitions', () => {
+    // The grader compares definition strings, so a student who pairs them the
+    // "other" way round is marked wrong for a correct answer.
+    const bad = [];
+    for (const setId of index) {
+      questionsOf(setId).forEach((q, i) => {
+        if (q.type !== 'matching') return;
+        const defs = (q.pairs || []).map(p => p.definition);
+        if (new Set(defs).size !== defs.length) bad.push(`${setId}[${i}]`);
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  describe('sets brought up to the audit standard', () => {
+    const sets = index.filter(MEETS_AUDIT_STANDARD);
+
+    it('there are some', () => assert.ok(sets.length > 0));
+
+    it('at least 30% of questions resist being memorised across three encounters', () => {
+      const bad = [];
+      for (const setId of sets) {
+        const qs = questionsOf(setId);
+        const share = qs.filter(q => REPEAT_RESISTANT.has(q.type)).length / qs.length;
+        if (share < 0.30) bad.push(`${setId}: ${Math.round(share * 100)}%`);
+      }
+      assert.deepEqual(bad, []);
+    });
+
+    it('are ordered by concept, not by question type (no six of one type in a row)', () => {
+      const bad = [];
+      for (const setId of sets) {
+        let run = 0, prev = null;
+        for (const q of questionsOf(setId)) {
+          const kind = q.type || `mc${Math.min((q.correct || []).length, 2)}`;
+          run = kind === prev ? run + 1 : 1;
+          prev = kind;
+          if (run === 6) { bad.push(`${setId}: six ${kind} in a row`); break; }
+        }
+      }
+      assert.deepEqual(bad, []);
+    });
+
+    it('have a teaching scene or two, each followed by the question it prepares', () => {
+      const bad = [];
+      for (const setId of sets) {
+        const all = loadJSON(`question_sets/${setId}`);
+        const scenes = all.map((q, i) => (q.type === 'npc_demo' ? i : -1)).filter(i => i >= 0);
+        if (scenes.length === 0) bad.push(`${setId}: no npc_demo scene`);
+        for (const i of scenes) {
+          if (!all[i + 1] || all[i + 1].type === 'npc_demo') bad.push(`${setId}[${i}]: scene is not followed by a question`);
+        }
+      }
+      assert.deepEqual(bad, []);
+    });
+
+    it('have a catalog intro with a story and objectives', () => {
+      const catalog = loadJSON('question_sets/catalog.json');
+      const entries = new Map(catalog.flatMap(t => t.sets).map(s => [s.id, s]));
+      const bad = sets.filter(id => !(entries.get(id)?.intro?.story && entries.get(id)?.intro?.objectives?.length >= 3));
+      assert.deepEqual(bad, []);
+    });
+
+    it('give single-answer multiple choice three distractors', () => {
+      const bad = [];
+      for (const setId of sets) {
+        questionsOf(setId).forEach((q, i) => {
+          if (!q.type && (q.correct || []).length === 1 && (q.incorrect || []).length < 3) bad.push(`${setId}[${i}]`);
+        });
+      }
+      assert.deepEqual(bad, []);
+    });
+
+    it('do not let one select-all shape dominate a set', () => {
+      // 58 of 81 Java select-alls were "3 right, 2 wrong", and the game shows the count.
+      const bad = [];
+      for (const setId of sets) {
+        const multi = questionsOf(setId).filter(q => !q.type && (q.correct || []).length > 1);
+        if (multi.length < 3) continue;
+        const shapes = new Map();
+        for (const q of multi) {
+          const k = `${q.correct.length}/${q.incorrect.length}`;
+          shapes.set(k, (shapes.get(k) || 0) + 1);
+        }
+        const [shape, count] = [...shapes.entries()].sort((a, b) => b[1] - a[1])[0];
+        if (count / multi.length > 0.5) bad.push(`${setId}: ${count} of ${multi.length} are ${shape}`);
+      }
+      assert.deepEqual(bad, []);
+    });
+
+    it('do not make "never the longest option" a usable trick either', () => {
+      // The length tell had been over-corrected: in three sets the key was the
+      // longest option 0% of the time, where chance is 25%.
+      const bad = [];
+      for (const setId of sets) {
+        const single = questionsOf(setId).filter(q => !q.type && (q.correct || []).length === 1 && (q.incorrect || []).length);
+        if (single.length < 8) continue;
+        const longest = single.filter(q => q.correct[0].length > Math.max(...q.incorrect.map(o => o.length))).length;
+        const rate = longest / single.length;
+        if (rate < 0.12 || rate > 0.40) bad.push(`${setId}: key is longest in ${Math.round(rate * 100)}%`);
+      }
+      assert.deepEqual(bad, []);
+    });
+
+    it('never put a fill-in answer in its own stem', () => {
+      const bad = [];
+      for (const setId of sets) {
+        questionsOf(setId).forEach((q, i) => {
+          if (q.type !== 'fill_blank') return;
+          const bare = (q.question || '').toLowerCase().replace(/___/g, '');
+          for (const a of q.correct || []) {
+            const word = a.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            if (a.length > 3 && new RegExp(`(?<![a-z])${word}(?![a-z])`).test(bare)) { bad.push(`${setId}[${i}]: "${a}"`); break; }
+          }
+        });
+      }
+      assert.deepEqual(bad, []);
+    });
+  });
+});

@@ -347,18 +347,19 @@ matches the number of questions actually in each file.
 | Database | Architecture, Deployment & Testing | 30 |
 | Database | SQLite Final Project | 30 |
 | Java | Java Review Mix | 30 (random mix) |
-| Java | Hour of Java | 11 |
-| Java | Java Basics | 36 |
-| Java | Control Flow | 36 |
-| Java | Algorithms | 30 |
-| Java | Functions & Methods | 33 |
-| Java | Types, Null & Imports | 29 |
-| Java | Collections | 31 |
-| Java | Object-Oriented Programming | 33 |
-| Java | Inheritance & Polymorphism | 33 |
-| Java | Exceptions | 33 |
-| Java | Streams & Lambdas | 33 |
-| Java | GUI, Git & Dev Workflow | 33 |
+| Java | Hour of Java | 15 |
+| Java | Java Basics | 42 |
+| Java | Control Flow | 43 |
+| Java | Algorithms | 36 |
+| Java | Methods, Strings & Recursion | 39 |
+| Java | Casts, Null & Imports | 41 |
+| Java | Collections: Lists, Sets and Maps | 41 |
+| Java | Objects and Classes | 41 |
+| Java | Inheritance and Polymorphism | 40 |
+| Java | Exceptions | 34 |
+| Java | Lambdas & Streams | 39 |
+| Java | GUIs & Event-Driven Programming | 39 |
+| Java | Git, Testing & Working with AI | 41 |
 | Networking | Network+ Review Mix | 30 (random mix) |
 | Networking | Network+ Fundamentals | 30 |
 | Networking | Media, Topology & IPv4 Addressing | 30 |

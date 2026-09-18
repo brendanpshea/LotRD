@@ -1,6 +1,6 @@
 [
   {
-    "question": "Which keyword establishes an inheritance relationship between two classes in Java?",
+    "question": "Which keyword completes this header so that Dog becomes a subclass of Animal?\nclass Dog ___ Animal { }",
     "correct": [
       "extends"
     ],
@@ -9,413 +9,664 @@
       "inherits",
       "super"
     ],
-    "feedback": "class Dog extends Animal declares that Dog is a subclass of Animal. Dog inherits all non-private fields and methods from Animal. implements is for interfaces, not class inheritance."
+    "feedback": "class Dog extends Animal { } makes Dog a subclass of Animal: Dog gets Animal's accessible fields and methods (though not its constructors). implements is the keyword for interfaces, inherits is what some other languages use but is not Java, and super is used inside a subclass to reach the parent's constructor or methods."
   },
   {
-    "question": "What does the super() call inside a subclass constructor do?",
+    "type": "code_trace",
+    "question": "Trace the inherited method. What does this print?",
+    "code": "class Animal {\n    String name() { return \"pet\"; }\n}\nclass Dog extends Animal {\n    String trick() { return \"sit\"; }\n}\n\nDog d = new Dog();\nSystem.out.println(d.name() + \" \" + d.trick());",
+    "language": "java",
     "correct": [
-      "Invokes the parent class constructor to initialize inherited fields"
-    ],
-    "incorrect": [
-      "Creates a separate parent object that the subclass delegates to",
-      "Overrides the parent class's no-argument constructor with the subclass's",
-      "Returns a reference to the parent portion of the object"
-    ],
-    "feedback": "super() must be the first statement in a subclass constructor. If omitted, Java inserts super() automatically — but only if the parent has a no-argument constructor. If the parent requires arguments, super(...) must be called explicitly."
-  },
-  {
-    "question": "What does it mean to override a method in Java?",
-    "correct": [
-      "A subclass replaces an inherited method's body, keeping the same signature"
-    ],
-    "incorrect": [
-      "A subclass adds extra parameters to a method it inherits from the parent",
-      "A class defines two methods with the same name but different parameter lists",
-      "A subclass declares a field with the same name, hiding the parent's method"
-    ],
-    "feedback": "Method overriding: same name, same parameter types, same (or covariant) return type, in a subclass. The @Override annotation tells the compiler to verify this. Overloading (different parameters) is a separate concept."
-  },
-  {
-    "question": "What is polymorphism in Java?",
-    "correct": [
-      "Calling a method on a parent-type reference and getting the subclass's version"
-    ],
-    "incorrect": [
-      "Creating several constructors that differ in their parameter lists so one class can be built many ways",
-      "Defining the same method name in two classes that share no parent",
-      "Casting an object to another type so it gains that type's methods"
-    ],
-    "feedback": "Polymorphism allows Animal a = new Dog(); When a.speak() is called, Java calls Dog's speak(), not Animal's. The actual type at runtime (Dog) determines which method runs, not the declared type (Animal)."
-  },
-  {
-    "question": "What does the abstract keyword mean when applied to a class?",
-    "correct": [
-      "The class cannot be instantiated directly; it must be subclassed"
-    ],
-    "incorrect": [
-      "The class has no methods or fields",
-      "All methods in the class are automatically hidden from subclasses",
-      "The class can only be used as a parameter type, not as a variable type"
-    ],
-    "feedback": "An abstract class cannot be instantiated with new — you can only create objects from its concrete subclasses. Abstract classes often define abstract methods (no body) that subclasses must implement."
-  },
-  {
-    "question": "What is an interface in Java?",
-    "correct": [
-      "A contract of method signatures that implementing classes must provide"
-    ],
-    "incorrect": [
-      "A class that can be instantiated directly to supply default behavior to callers",
-      "A collection of static utility methods grouped under a common name",
-      "An abstract class that stores shared instance fields for its subtypes"
-    ],
-    "feedback": "An interface declares what a class can do, not how. Implementing a class must provide concrete implementations for all abstract methods. Interfaces support multiple implementation: class Dog implements Animal, Trainable is valid."
-  },
-  {
-    "question": "What does the instanceof operator do?",
-    "correct": [
-      "Returns true if the object is an instance of that type or a subtype"
-    ],
-    "incorrect": [
-      "Casts the object to the named type, throwing a ClassCastException if it does not fit",
-      "Returns the object's class name as a String for printing",
-      "Checks whether two references point to the exact same object"
-    ],
-    "feedback": "instanceof is a boolean check: if (animal instanceof Dog). It is used before a downcast to avoid ClassCastException. A Dog object returns true for instanceof Dog, instanceof Animal, and instanceof Object."
-  },
-  {
-    "question": "What does the final keyword mean when applied to a class?",
-    "correct": [
-      "The class cannot be extended (subclassed)"
-    ],
-    "incorrect": [
-      "The class cannot have any instance fields",
-      "The class can only be instantiated once",
-      "All methods in the class are implicitly static"
-    ],
-    "feedback": "final prevents extension: class String in Java is final, so you cannot create a subclass of String. final on a method prevents overriding. final on a variable prevents reassignment after initialization."
-  },
-  {
-    "question": "What is dynamic method dispatch in Java?",
-    "correct": [
-      "Java picks the overridden method using the object's runtime type, not its declared type"
-    ],
-    "incorrect": [
-      "Java picks the method at compile time from the declared reference type, ignoring the object's actual class",
-      "Java runs every matching method up the inheritance chain in order",
-      "Java chooses the fastest implementation available when it compiles the class"
-    ],
-    "feedback": "With Animal a = new Dog(); the declared (static) type is Animal, but when a.speak() is called, Java looks at the actual (dynamic) type — Dog — at runtime and calls Dog's speak(). This is the mechanism behind polymorphism."
-  },
-  {
-    "question": "What is upcasting in Java?",
-    "correct": [
-      "Treating a subclass object as its parent type, which is safe and implicit"
-    ],
-    "incorrect": [
-      "Converting a parent reference to a subclass type, which needs an explicit cast",
-      "Calling a parent class method from inside a subclass with super",
-      "Widening a numeric primitive, such as int to long, without a cast"
-    ],
-    "feedback": "Upcasting is automatic: Animal a = new Dog(); is always safe because every Dog is-an Animal. Downcasting goes the other way (Dog d = (Dog) a;) and requires an explicit cast and is only safe when the runtime type actually is Dog."
-  },
-  {
-    "question": "Which claims about method overriding are correct?",
-    "correct": [
-      "The overriding method must have the same name and parameter list as the parent method",
-      "The @Override annotation causes the compiler to verify the override is valid",
-      "An overriding method can have the same or a covariant (narrower) return type"
-    ],
-    "incorrect": [
-      "An overriding method can declare additional checked exceptions not declared by the parent",
-      "Overriding and overloading are the same thing"
-    ],
-    "feedback": "A valid override: same name, same parameters, same or covariant return type. Overriding a method cannot declare broader checked exceptions than the parent. Overloading is different parameters — completely separate concept."
-  },
-  {
-    "question": "Which claims about abstract classes are correct?",
-    "correct": [
-      "An abstract class can contain both abstract methods (no body) and concrete methods (with body)",
-      "Attempting to instantiate an abstract class directly causes a compilation error",
-      "A subclass must implement all abstract methods or also be declared abstract"
-    ],
-    "incorrect": [
-      "An abstract class cannot have any constructors",
-      "An abstract class cannot have any fields"
-    ],
-    "feedback": "Abstract classes can have constructors (called via super()), fields, concrete methods, and abstract methods. They cannot be instantiated directly. A concrete subclass must implement all inherited abstract methods."
-  },
-  {
-    "question": "Which claims about interfaces are correct?",
-    "correct": [
-      "A class can implement multiple interfaces",
-      "Interface methods are public and abstract by default (unless default or static)",
-      "Interfaces cannot be instantiated directly"
-    ],
-    "incorrect": [
-      "A class can only implement one interface at a time",
-      "Interfaces can declare instance fields to share state between implementing classes"
-    ],
-    "feedback": "Multiple interface implementation (implements A, B, C) is one of Java's key features. Interface methods are implicitly public abstract unless declared default or static. Interfaces can have constants (static final fields) but not mutable instance state."
-  },
-  {
-    "question": "Which claims about the super keyword are correct?",
-    "correct": [
-      "super() calls the parent class's constructor and must be the first statement in the subclass constructor",
-      "super.methodName() explicitly calls the parent class's version of an overridden method",
-      "super can only be used inside a subclass"
-    ],
-    "incorrect": [
-      "super refers to an object of the parent class that is stored as a field",
-      "super() can appear anywhere in a constructor, as long as it is before any return statement"
-    ],
-    "feedback": "super is a reference to the parent portion of the current object, not a separate object. super() in a constructor must be the very first statement. super.method() calls the parent's implementation."
-  },
-  {
-    "question": "Which claims about the final keyword are correct?",
-    "correct": [
-      "A final variable cannot be reassigned after its initial assignment",
-      "A final method cannot be overridden in a subclass",
-      "A final class cannot be extended"
-    ],
-    "incorrect": [
-      "A final class cannot have any methods",
-      "A final method cannot be called from outside the class"
-    ],
-    "feedback": "final has the same restriction idea in all three contexts: no reassignment (variable), no overriding (method), no extending (class). It does not affect visibility (public/private) or callability."
-  },
-  {
-    "question": "Which claims about static methods and fields are correct?",
-    "correct": [
-      "Static members belong to the class, not to any individual object",
-      "Static methods cannot access instance fields or call instance methods directly",
-      "Static fields are shared across all instances of the class"
-    ],
-    "incorrect": [
-      "Static methods can use the this keyword to refer to the current instance",
-      "Each object has its own copy of a static field"
-    ],
-    "feedback": "Static members are class-level. Since no specific instance exists when a static method runs, this is unavailable and instance members cannot be accessed. Changing a static field from any object or from the class itself changes it for everyone."
-  },
-  {
-    "question": "Which claims about the protected access modifier are correct?",
-    "correct": [
-      "Protected members are visible to subclasses regardless of which package they are in",
-      "Protected members are also visible to all classes in the same package",
-      "Protected is less restrictive than private but more restrictive than public"
-    ],
-    "incorrect": [
-      "Protected members are visible only to subclasses — not to other classes in the same package",
-      "Protected and default (package-private) access have the same scope"
-    ],
-    "feedback": "protected = same package + subclasses (anywhere). default (no modifier) = same package only (no subclasses in other packages). protected is strictly broader than default."
-  },
-  {
-    "type": "fill_blank",
-    "question": "In Java, a subclass declares its parent using the keyword ___.",
-    "correct": [
-      "extends"
+      "pet sit"
     ],
     "case_sensitive": true,
-    "feedback": "class Cat extends Animal { } declares Cat as a subclass of Animal. Use implements for interfaces (class Cat implements Runnable)."
+    "feedback": "Dog never declares name(), but it extends Animal, so every Dog has Animal's name() as well as its own trick(). Inheritance means the subclass starts with what the parent has and then adds to it."
   },
   {
-    "type": "fill_blank",
-    "question": "The keyword used to call the parent class's constructor from inside a subclass constructor is ___.",
+    "question": "Inheritance should model an \"is-a\" relationship. Which of these headers is a sound use of extends?",
     "correct": [
-      "super"
+      "class Sword extends Weapon"
     ],
-    "case_sensitive": true,
-    "feedback": "super() invokes the parent constructor and must be the first statement. It initializes the inherited part of the object before the subclass constructor continues."
-  },
-  {
-    "type": "fill_blank",
-    "question": "A class that cannot be instantiated directly and may contain abstract methods is declared with the keyword ___.",
-    "correct": [
-      "abstract"
+    "incorrect": [
+      "class Car extends Engine",
+      "class Knight extends Sword",
+      "class Library extends Book"
     ],
-    "case_sensitive": true,
-    "feedback": "abstract class Shape cannot be created with new Shape(). Its subclasses (Circle, Rectangle) can be instantiated if they implement all abstract methods."
+    "feedback": "A sword is a weapon, so Sword extends Weapon makes sense: anywhere a Weapon is expected, a Sword will do. A car HAS an engine, a knight HAS a sword and a library HAS books - those are \"has-a\" relationships, which you model with a field (Car holds an Engine field), not with extends."
   },
   {
     "type": "fill_blank",
-    "question": "A class that cannot be subclassed is declared with the keyword ___.",
+    "question": "After the keyword extends, how many parent classes may a Java class header name at most? (Type a number.) ___",
     "correct": [
-      "final"
-    ],
-    "case_sensitive": true,
-    "feedback": "final class String in Java cannot be extended. This prevents subclasses from altering the class's behavior, which is important for security and correctness."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The operator used to check whether an object is an instance of a given type at runtime is ___.",
-    "correct": [
-      "instanceof"
-    ],
-    "case_sensitive": true,
-    "feedback": "if (animal instanceof Dog) returns true if animal holds a Dog object (or a subclass of Dog). Always use instanceof before a downcast to avoid ClassCastException."
-  },
-  {
-    "type": "fill_blank",
-    "question": "An abstract method in Java has no ___ — it only declares the signature.",
-    "correct": [
-      "body"
+      "1",
+      "one"
     ],
     "case_sensitive": false,
-    "feedback": "Abstract methods are declared without curly braces: public abstract void makeSound(); Concrete subclasses must provide the implementation. This forces subclasses to define specific behavior."
+    "feedback": "Java has single inheritance of classes: class Dog extends Animal, Robot { } does not compile. Every class has exactly one direct parent class. (Interfaces are different - a class may implement several - and that is how Java gets most of the benefit without the ambiguity of two parents supplying the same method.)"
   },
   {
-    "type": "matching",
-    "question": "Match each inheritance keyword to its purpose.",
-    "pairs": [
-      {
-        "term": "extends",
-        "definition": "Declares that a class inherits from a parent class"
-      },
-      {
-        "term": "implements",
-        "definition": "Declares that a class fulfills an interface contract"
-      },
-      {
-        "term": "super",
-        "definition": "References the parent class's constructor or methods"
-      },
-      {
-        "term": "abstract",
-        "definition": "Marks a class or method as incomplete — cannot be instantiated directly"
-      }
-    ],
-    "feedback": "extends is for class-to-class; implements is for class-to-interface. super accesses the parent. abstract forces subclasses to provide implementation."
-  },
-  {
-    "type": "matching",
-    "question": "Match each concept to whether it describes overriding or overloading.",
-    "pairs": [
-      {
-        "term": "Same name, same parameters, in a subclass",
-        "definition": "Overriding — the subclass replaces the parent's behavior"
-      },
-      {
-        "term": "Same name, different parameters, same class",
-        "definition": "Overloading — multiple versions of a method with different signatures"
-      },
-      {
-        "term": "@Override annotation",
-        "definition": "Overriding — the annotation asks the compiler to verify the signature"
-      },
-      {
-        "term": "Resolved at runtime (dynamic dispatch)",
-        "definition": "Overriding — the actual runtime type determines which version runs"
-      }
-    ],
-    "feedback": "Override = subclass, same signature, runtime resolution. Overload = same class, different signature, compile-time resolution. They are unrelated concepts that share the same method name."
-  },
-  {
-    "type": "matching",
-    "question": "Match each OOP mechanism to the problem it solves.",
-    "pairs": [
-      {
-        "term": "Abstract class",
-        "definition": "Shares common code among related classes while forcing specific behavior to be implemented by subclasses"
-      },
-      {
-        "term": "Interface",
-        "definition": "Defines a contract that unrelated classes can fulfill, enabling polymorphism without inheritance"
-      },
-      {
-        "term": "final class",
-        "definition": "Prevents unintended modification of critical class behavior through subclassing"
-      },
-      {
-        "term": "instanceof",
-        "definition": "Safely checks type before downcasting to avoid ClassCastException"
-      }
-    ],
-    "feedback": "Use abstract class when classes share implementation; use interface when they just share a contract. final protects against unsafe extension. instanceof is the safe-cast guard."
-  },
-  {
-    "type": "matching",
-    "question": "Match each term to the casting scenario it describes.",
-    "pairs": [
-      {
-        "term": "Upcasting",
-        "definition": "Treating a subclass as its parent type — automatic and always safe"
-      },
-      {
-        "term": "Downcasting",
-        "definition": "Treating a parent reference as a specific subclass — explicit cast, only safe when the runtime type matches"
-      },
-      {
-        "term": "ClassCastException",
-        "definition": "The exception thrown when a downcast fails because the runtime type is incompatible"
-      },
-      {
-        "term": "instanceof",
-        "definition": "The operator used to verify a type before performing a downcast"
-      }
-    ],
-    "feedback": "Upcasting: Animal a = new Dog() — safe and automatic. Downcasting: Dog d = (Dog) a — explicit, must check with instanceof first. A failed downcast throws ClassCastException at runtime."
-  },
-  {
-    "type": "code_trace",
-    "question": "What does this overriding example print? (Captain Doran is demonstrating polymorphic dispatch.)",
-    "code": "class Animal {\n    String sound() { return \"...\"; }\n}\nclass Dog extends Animal {\n    String sound() { return \"woof\"; }\n}\n\nAnimal a = new Dog();\nSystem.out.println(a.sound());",
-    "language": "java",
+    "question": "Animal declares a private field hp, a public method eat(), and two constructors: Animal() and Animal(String name). Then:\nclass Dog extends Animal { }\nWhich of these statements are true?",
     "correct": [
-      "woof"
-    ],
-    "case_sensitive": true,
-    "feedback": "Even though the variable a is declared as Animal, the object is actually a Dog. Java dispatches to the Dog's sound() override at runtime. This is dynamic dispatch (runtime polymorphism)."
-  },
-  {
-    "type": "code_trace",
-    "question": "What does this super call print?",
-    "code": "class Shape {\n    String describe() { return \"shape\"; }\n}\nclass Circle extends Shape {\n    String describe() {\n        return super.describe() + \"+circle\";\n    }\n}\n\nSystem.out.println(new Circle().describe());",
-    "language": "java",
-    "correct": [
-      "shape+circle"
-    ],
-    "case_sensitive": true,
-    "feedback": "Circle.describe() calls super.describe() first, which returns \"shape\". It then concatenates \"+circle\" to get \"shape+circle\". super lets a subclass extend rather than fully replace its parent's behavior."
-  },
-  {
-    "question": "If Bike.wheels() returns 2, what does new Bike().describe() print?",
-    "correct": [
-      "vehicle with 2 wheels"
+      "new Dog().eat() compiles, because Dog inherits the eat() method",
+      "A Dog object still contains an hp field, though Dog's code cannot name it"
     ],
     "incorrect": [
-      "vehicle with wheels 2",
-      "Bike",
-      "2"
+      "new Dog(\"Rex\") compiles, because Dog inherits Animal(String name)",
+      "Code inside Dog can read the private field by writing super.hp",
+      "Dog could gain a second parent class with extends Animal, Robot"
     ],
-    "feedback": "The concrete describe method calls wheels(), and dynamic dispatch uses Bike.wheels()."
+    "feedback": "Methods are inherited, so eat() works on a Dog. Constructors are NOT inherited: an empty Dog gets only a no-argument constructor, so new Dog(\"Rex\") is a compile error. Private fields are still part of every Dog object (Animal's own methods use them) but are not accessible from Dog's code, with or without super. And a class may extend just one class."
   },
   {
     "type": "fill_blank",
-    "question": "In the class header for Dog inheriting from Animal, the keyword between the class names is ___.",
+    "question": "A private member is hidden even from subclasses. The access modifier that opens a member to subclasses (and to classes in the same package) while still hiding it from unrelated classes in other packages is ___.",
     "correct": [
-      "extends"
+      "protected"
     ],
-    "case_sensitive": true,
-    "feedback": "Use extends for class-to-class inheritance."
+    "case_sensitive": false,
+    "feedback": "protected sits between package-private (no modifier) and public: the same package can see it, and so can subclasses wherever they live. It is the usual choice for a field or helper method that a parent class wants its subclasses - but not the whole world - to use. Many designs still keep fields private and give subclasses a protected getter instead."
   },
   {
-    "type": "fill_blank",
-    "question": "In a class header where Circle fulfills the Drawable interface, the keyword is ___.",
+    "question": "What does a call such as super(name) inside a subclass constructor do?",
     "correct": [
-      "implements"
+      "Runs the parent class's constructor, so the inherited fields get set up"
     ],
-    "case_sensitive": true,
-    "feedback": "Use implements when a class fulfills an interface contract."
+    "incorrect": [
+      "Creates a separate parent object that the subclass object delegates to",
+      "Replaces the parent's constructor with the subclass's constructor",
+      "Returns a reference to the parent portion of the object being built"
+    ],
+    "feedback": "There is one object, with a parent part and a subclass part. super(...) runs the parent's constructor so the parent part is initialised by the class that owns it. If you write no super(...) call at all, Java inserts super() for you - which compiles only when the parent has a no-argument constructor. It returns nothing and it creates no second object."
   },
   {
     "type": "code_line",
-    "question": "Inside a subclass constructor, write the Java statement that calls the parent class constructor with the single argument name.",
+    "question": "Animal's only constructor is Animal(String name). Inside the constructor Dog(String name), write the statement that passes name up to Animal's constructor.",
     "language": "java",
     "correct": [
       "super(name);"
     ],
     "case_sensitive": true,
-    "feedback": "super(name); invokes the parent class constructor. It must be the first statement in the subclass constructor. If omitted and the parent has no no-arg constructor, the code will not compile."
+    "feedback": "super(name); runs Animal(String name). Because Animal has no no-argument constructor, leaving this line out would not compile: the super() that Java inserts automatically would have nothing to call. Older Java insisted this call open the constructor; since Java 25 other statements may come before it, provided they do not use the object being built."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Who gets built first?",
+    "npc": "zoya",
+    "intro": "Zoya sets two clay moulds on the bench, a plain one stamped Animal and a finer one stamped Dog. \"A Dog is an Animal with extras,\" they say. \"So when I ask for a new Dog, which constructor do you think finishes first?\"",
+    "steps": [
+      {
+        "say": "Here are two classes. Each constructor prints one letter, so we can watch the order.\nclass Animal {\n    Animal() { System.out.print(\"A\"); }\n}\nclass Dog extends Animal {\n    Dog() { System.out.print(\"D\"); }\n}\n\nnew Dog();\nNotice that Dog's constructor never mentions super.",
+        "beats": [
+          {
+            "say": "Here are two classes. Each constructor prints one letter, so we can watch the order."
+          },
+          {
+            "code": "class Animal {\n    Animal() { System.out.print(\"A\"); }\n}\nclass Dog extends Animal {\n    Dog() { System.out.print(\"D\"); }\n}\n\nnew Dog();",
+            "language": "java"
+          },
+          {
+            "say": "Notice that Dog's constructor never mentions super."
+          }
+        ]
+      },
+      {
+        "say": "When a constructor has no super(...) call, the compiler quietly adds super(); at the top. So Dog's constructor really begins by running Animal's constructor, and only then prints its own letter.",
+        "check": {
+          "prompt": "So what does new Dog(); print?",
+          "answer": "AD",
+          "wrong": [
+            "DA",
+            "D"
+          ],
+          "why": "The hidden super() runs Animal's constructor first, printing A. Then the rest of Dog's constructor prints D."
+        }
+      },
+      {
+        "say": "This is called constructor chaining: each constructor hands control to its parent's constructor before finishing its own work. The parent part of the object is ready before the subclass part builds on it - foundations first, then the extras."
+      }
+    ],
+    "outro": "\"The next monster has three generations in its family, not two. Same rule - follow the chain to the top, then come back down.\""
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace the constructors. What does this print?",
+    "code": "class Item {\n    Item() { System.out.print(\"I\"); }\n}\nclass Weapon extends Item {\n    Weapon() { System.out.print(\"W\"); }\n}\nclass Sword extends Weapon {\n    Sword() { System.out.print(\"S\"); }\n}\n\nnew Sword();",
+    "language": "java",
+    "correct": [
+      "IWS"
+    ],
+    "case_sensitive": true,
+    "feedback": "None of these constructors writes super(...), so the compiler adds super() to each. Sword's constructor starts by running Weapon's, which starts by running Item's (which in turn runs Object's). Item prints I, control returns to Weapon which prints W, and finally Sword prints S: the chain always completes from the top of the family tree downwards."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "You write a chain of {{d}} classes: each one extends the class before it, and each has a single no-argument constructor that prints exactly one line. A loop then creates {{n}} objects of the LAST class in the chain. How many lines are printed in total?",
+    "variables": {
+      "d": {
+        "values": [
+          2,
+          3,
+          4
+        ]
+      },
+      "n": {
+        "min": 3,
+        "max": 9
+      }
+    },
+    "answer": {
+      "expr": "n * d",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Creating one object of the last class runs every constructor in the chain once, from the top class down: {{d}} lines per object. With {{n}} objects that is {{expected}} lines. Building a subclass object runs its parents' constructors as well as its own."
+  },
+  {
+    "question": "Animal has the constructor Animal(String name). On JDK 25, what happens when this class is compiled?\nclass Dog extends Animal {\n    Dog(String name) {\n        if (name.isBlank()) throw new IllegalArgumentException(\"no name\");\n        super(name);\n    }\n}",
+    "correct": [
+      "It compiles: code may run before super(...) if it leaves the new object alone"
+    ],
+    "incorrect": [
+      "Compile error: the super(...) call has to come ahead of any other statement",
+      "It compiles, but Java quietly moves super(name) above the if when it runs",
+      "Compile error: a constructor may not throw anything before super(...) runs"
+    ],
+    "feedback": "Java 25 made flexible constructor bodies final: statements may come before super(...) so you can check or prepare arguments before the parent constructor sees them. The check really does run first - a blank name is rejected before Animal's constructor starts. Older compilers (before 25) rejected this file, and older books still state that rule. What remains forbidden before super(...) is using the object under construction: calling its instance methods, reading its fields, or passing this anywhere."
+  },
+  {
+    "type": "code_trace",
+    "question": "This is compiled and run on JDK 25. What does it print?",
+    "code": "class Base {\n    Base() { System.out.print(\"B\"); }\n}\nclass Kid extends Base {\n    Kid() {\n        System.out.print(\"k\");\n        super();\n        System.out.print(\"K\");\n    }\n}\n\nnew Kid();",
+    "language": "java",
+    "correct": [
+      "kBK"
+    ],
+    "case_sensitive": true,
+    "feedback": "Statements run in the order written. The println before super() does not touch the Kid object, so Java 25 allows it, and k appears first. Then super() runs Base's constructor (B), and the rest of Kid's constructor prints K. The parent's constructor still finishes before Kid does anything with the object itself."
+  },
+  {
+    "question": "Dog extends Animal, and Animal declares an instance method bark(). On JDK 25, which of these lines may legally appear BEFORE super(name); inside the constructor Dog(String name)?",
+    "correct": [
+      "System.out.println(\"making a dog\");",
+      "String n = name.trim();",
+      "if (name == null) name = \"?\";"
+    ],
+    "incorrect": [
+      "bark();",
+      "System.out.println(this);",
+      "String s = toString();"
+    ],
+    "feedback": "Before super(...) runs, the parent part of the object does not exist yet, so the compiler rejects anything that uses the object: bark() and toString() are instance method calls on it, and println(this) hands it to other code (\"cannot reference this before supertype constructor has been called\"). Printing a message, working on the parameter, or fixing up an argument involve only local values, so they are fine."
+  },
+  {
+    "question": "What does it mean for a subclass to override a method?",
+    "correct": [
+      "It gives an inherited method a new body, keeping the same name and parameters"
+    ],
+    "incorrect": [
+      "It adds extra parameters to a method that it inherits from its parent class",
+      "It defines two methods with the same name but different parameter lists",
+      "It declares a field with the same name, which hides the parent's method"
+    ],
+    "feedback": "An override has the same name and the same parameter types as the inherited method, and supplies a different body; objects of the subclass then use the new version. Changing the parameters does not override anything - it creates a separate method alongside the inherited one. Fields and methods live in separate namespaces, so a field cannot replace a method."
+  },
+  {
+    "question": "What happens when this is compiled and run?\nclass Animal {\n    String speak() { return \"...\"; }\n}\nclass Dog extends Animal {\n    @Override\n    String speek() { return \"woof\"; }\n}\n\nAnimal a = new Dog();\nSystem.out.println(a.speak());",
+    "correct": [
+      "Compile error: speek() does not override anything"
+    ],
+    "incorrect": [
+      "It prints ... because speek() is a separate new method",
+      "It prints woof because @Override links speek() to speak()",
+      "It compiles, then throws an exception when speak() runs"
+    ],
+    "feedback": "@Override asks the compiler to confirm that the method really replaces an inherited one. Animal has no speek(), so compilation stops with \"method does not override or implement a method from a supertype\". Delete the annotation and the typo goes unnoticed: the program compiles and prints ... because Dog merely gained an unrelated method. That silent failure is why you write @Override on every override."
+  },
+  {
+    "type": "cloze",
+    "question": "class Bard {\n    void play(int times) { }\n    void play(String tune) { }\n}\nclass Skald extends Bard {\n    @Override void play(int times) { }\n}\nThe two play methods inside Bard are an example of {{1}}. Skald's play(int times) is an example of {{2}}. For {{2}}, which version runs is decided at {{3}} time, from the object's actual class.",
+    "blanks": [
+      {
+        "accept": [
+          "overloading",
+          "overload",
+          "overloaded",
+          "overloads"
+        ],
+        "hint": "over..."
+      },
+      {
+        "accept": [
+          "overriding",
+          "override",
+          "overridden",
+          "overrides"
+        ],
+        "hint": "over..."
+      },
+      {
+        "accept": [
+          "run",
+          "runtime",
+          "run-time",
+          "execution"
+        ],
+        "hint": "compile or run"
+      }
+    ],
+    "feedback": "Overloading: one class, same name, DIFFERENT parameter lists - the compiler picks between play(int) and play(String) from the argument's type, at compile time. Overriding: a subclass, same name, SAME parameter list - the choice between Bard's and Skald's play(int) is made at run time from the object's actual class."
+  },
+  {
+    "question": "Animal declares this method:\nprotected Animal mate() { ... }\nWhich of these declarations inside class Dog extends Animal are legal overrides of it?",
+    "correct": [
+      "@Override protected Animal mate() { ... }",
+      "@Override public Animal mate() { ... }",
+      "@Override protected Dog mate() { ... }"
+    ],
+    "incorrect": [
+      "@Override private Animal mate() { ... }",
+      "@Override protected Animal mate(int n) { ... }",
+      "@Override protected Object mate() { ... }"
+    ],
+    "feedback": "An override keeps the name and parameter list. It may make the method MORE visible (protected to public) and may return a more specific type (Dog is an Animal, so callers expecting an Animal are still satisfied). It may not make the method less visible (private), may not return a broader type (Object), and mate(int n) has a different parameter list, so it is an overload - which @Override then rejects."
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace the calls that go through super. What does this print?",
+    "code": "class A {\n    String tag() { return \"A\"; }\n}\nclass B extends A {\n    @Override String tag() { return super.tag() + \"B\"; }\n}\nclass C extends B {\n    @Override String tag() { return \"C\" + super.tag(); }\n}\n\nSystem.out.println(new C().tag());",
+    "language": "java",
+    "correct": [
+      "CAB"
+    ],
+    "case_sensitive": true,
+    "feedback": "super.tag() calls the parent's version of an overridden method, so an override can build on the inherited behaviour rather than throw it away. C's tag() is \"C\" + B's tag(); B's tag() is A's tag() + \"B\", which is \"AB\". Put together: \"C\" + \"AB\" = CAB. Where each class puts its own letter - before or after the super call - decides the order."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The label and the golem",
+    "npc": "zoya",
+    "intro": "Zoya hangs a wooden tag reading Golem around the neck of a hulking stone figure. \"The tag is the variable's type. The thing wearing it is the object. They are allowed to disagree - a little.\"",
+    "steps": [
+      {
+        "say": "Two classes. StoneGolem overrides greet() and adds a method of its own, smash().\nclass Golem {\n    String greet() { return \"hum\"; }\n}\nclass StoneGolem extends Golem {\n    @Override String greet() { return \"GRIND\"; }\n    void smash() { }\n}\n\nGolem g = new StoneGolem();\nThe variable g has the declared type Golem. The object it refers to has the runtime type StoneGolem. That is legal because a StoneGolem is a Golem.",
+        "beats": [
+          {
+            "say": "Two classes. StoneGolem overrides greet() and adds a method of its own, smash()."
+          },
+          {
+            "code": "class Golem {\n    String greet() { return \"hum\"; }\n}\nclass StoneGolem extends Golem {\n    @Override String greet() { return \"GRIND\"; }\n    void smash() { }\n}\n\nGolem g = new StoneGolem();",
+            "language": "java"
+          },
+          {
+            "say": "The variable g has the declared type Golem. The object it refers to has the runtime type StoneGolem. That is legal because a StoneGolem is a Golem."
+          }
+        ]
+      },
+      {
+        "say": "Rule one: when the program RUNS, the object decides which version of an overridden method you get. g.greet() returns GRIND, because the object is a StoneGolem. That is dynamic dispatch - and using one variable type for many kinds of object is polymorphism."
+      },
+      {
+        "say": "Rule two: when the program COMPILES, the compiler sees only the tag. It checks each call against the declared type, Golem, and nothing else.",
+        "check": {
+          "prompt": "So what happens with g.smash(); ?",
+          "answer": "Compile error: Golem has no smash()",
+          "wrong": [
+            "It runs StoneGolem's smash()",
+            "It compiles, then fails at run time"
+          ],
+          "why": "The compiler looks at the declared type, Golem, which has no smash(). It does not matter that the object happens to be a StoneGolem."
+        }
+      },
+      {
+        "say": "So: the declared type decides what you are ALLOWED to call; the runtime type decides WHICH VERSION runs. Two questions, two different answers."
+      }
+    ],
+    "outro": "\"Animals next, not golems. Ask both questions of every line: what does the tag allow, and who is really wearing it?\""
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace the two calls through Animal variables. What does this print?",
+    "code": "class Animal {\n    String sound() { return \"...\"; }\n}\nclass Dog extends Animal {\n    @Override String sound() { return \"woof\"; }\n}\nclass Cat extends Animal {\n}\n\nAnimal a = new Dog();\nAnimal b = new Cat();\nSystem.out.println(a.sound() + \" \" + b.sound());",
+    "language": "java",
+    "correct": [
+      "woof ..."
+    ],
+    "case_sensitive": true,
+    "feedback": "Both variables are declared as Animal, but the objects differ. a refers to a Dog, and Dog overrides sound(), so the runtime type picks woof. b refers to a Cat, which does not override sound(), so it uses the version it inherited from Animal. The declared type did not choose either result."
+  },
+  {
+    "question": "Only Dog declares fetch(). What happens here?\nclass Animal { }\nclass Dog extends Animal {\n    void fetch() { System.out.println(\"got it\"); }\n}\n\nAnimal a = new Dog();\na.fetch();",
+    "correct": [
+      "Compile error: the type Animal has no fetch() method"
+    ],
+    "incorrect": [
+      "It prints got it, since the object really is a Dog",
+      "It compiles, then throws a ClassCastException at run time",
+      "It compiles, then throws a NoSuchMethodError at run time"
+    ],
+    "feedback": "The compiler checks a call against the variable's declared type. a is an Animal, and Animal has no fetch(), so the line is rejected (\"cannot find symbol\") before anything runs - the compiler does not reason about which object a will hold. To call fetch() you need a reference whose type is Dog."
+  },
+  {
+    "question": "What is printed, and why?\nclass Animal {\n    String speak() { return \"...\"; }\n}\nclass Dog extends Animal {\n    @Override String speak() { return \"woof\"; }\n}\n\nDog d = new Dog();\nSystem.out.println(((Animal) d).speak());",
+    "correct": [
+      "woof: a cast changes how the reference is typed, not what the object is"
+    ],
+    "incorrect": [
+      "...: the cast to Animal makes the call use Animal's version of speak()",
+      "...: the compiler picks speak() from the type that is written in the cast",
+      "Compile error: a Dog reference may not be cast upward to its parent type"
+    ],
+    "feedback": "A cast never changes the object; it only changes the type the compiler uses for that expression. The object is still a Dog, and an overridden method is chosen from the object's runtime class, so Dog's speak() runs. Casting up to a parent type is legal (and unnecessary - it happens automatically). The way to reach a parent's version is super.speak(), and only from inside the subclass."
+  },
+  {
+    "type": "matching",
+    "question": "Dog and Cat both extend Animal. Given\nAnimal a = new Dog();\nAnimal c = new Cat();\nmatch each further line to what happens.",
+    "pairs": [
+      {
+        "term": "Object o = a;",
+        "definition": "Compiles with no cast, since moving up the family tree is safe"
+      },
+      {
+        "term": "Dog d = (Dog) a;",
+        "definition": "Needs its cast to compile, then succeeds when run"
+      },
+      {
+        "term": "Dog d = (Dog) c;",
+        "definition": "Compiles, then throws ClassCastException when run"
+      },
+      {
+        "term": "Dog d = a;",
+        "definition": "Compile error: incompatible types"
+      }
+    ],
+    "feedback": "Going up (Dog to Animal to Object) is automatic. Going down needs an explicit cast, because the compiler knows only that a is some Animal; without the cast, Dog d = a; is rejected. With a cast the compiler trusts you and the check moves to run time: a really holds a Dog, so it succeeds, while c holds a Cat, so the JVM throws ClassCastException."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Ask before you cast",
+    "npc": "zoya",
+    "intro": "A clay golem shuffles past wearing the plain Golem tag. Zoya lowers their voice. \"Suppose I am sure that one is stone. Watch what my certainty is worth.\"",
+    "steps": [
+      {
+        "say": "StoneGolem and ClayGolem both extend Golem; only StoneGolem has smash().\nGolem g = new ClayGolem();\nStoneGolem s = (StoneGolem) g;\ns.smash();\nThe cast is my promise to the compiler that g holds a StoneGolem. It compiles. But at run time the object is clay, the promise is false, and the program dies with a ClassCastException.",
+        "beats": [
+          {
+            "say": "StoneGolem and ClayGolem both extend Golem; only StoneGolem has smash()."
+          },
+          {
+            "code": "Golem g = new ClayGolem();\nStoneGolem s = (StoneGolem) g;\ns.smash();",
+            "language": "java"
+          },
+          {
+            "say": "The cast is my promise to the compiler that g holds a StoneGolem. It compiles. But at run time the object is clay, the promise is false, and the program dies with a ClassCastException."
+          }
+        ]
+      },
+      {
+        "say": "So ask first. The instanceof operator tests an object's runtime type, and modern Java lets you name a new variable right inside the test.\nif (g instanceof StoneGolem s) {\n    s.smash();\n}\nIf g holds a StoneGolem, then s is that same object, already typed as StoneGolem - no cast to write. This form is called a type pattern.",
+        "beats": [
+          {
+            "say": "So ask first. The instanceof operator tests an object's runtime type, and modern Java lets you name a new variable right inside the test."
+          },
+          {
+            "code": "if (g instanceof StoneGolem s) {\n    s.smash();\n}",
+            "language": "java"
+          },
+          {
+            "say": "If g holds a StoneGolem, then s is that same object, already typed as StoneGolem - no cast to write. This form is called a type pattern."
+          }
+        ],
+        "check": {
+          "prompt": "g still holds a ClayGolem. What does this if statement do?",
+          "answer": "Skips the block; nothing is thrown",
+          "wrong": [
+            "Throws ClassCastException",
+            "Runs smash() on the clay golem"
+          ],
+          "why": "instanceof simply answers false when the object is not a StoneGolem, so the block is skipped. Asking is safe; only a wrong cast throws."
+        }
+      },
+      {
+        "say": "Older code does it in two steps - test with instanceof, then cast on the next line. You will still read that, but the pattern form says the same thing once, and cannot get the cast wrong."
+      }
+    ],
+    "outro": "\"Your turn to write one. Different creature, same shape: variable, instanceof, type, new name.\""
+  },
+  {
+    "type": "code_line",
+    "question": "The variable a is declared as Animal. Write the condition - just the expression that goes inside the parentheses of an if - that is true when a holds a Dog and, in that case, binds the Dog to a new variable named d.",
+    "language": "java",
+    "correct": [
+      "a instanceof Dog d",
+      "(a instanceof Dog d)",
+      "if (a instanceof Dog d)"
+    ],
+    "case_sensitive": true,
+    "feedback": "a instanceof Dog d tests the runtime type and, when the test passes, declares d as a Dog referring to the same object - so inside the if you can write d.fetch() with no cast. The older two-step form, if (a instanceof Dog) { Dog d = (Dog) a; ... }, still works and you will meet it in older code."
+  },
+  {
+    "question": "class Gem { } declares nothing at all, yet System.out.println(new Gem()) prints text such as Gem@1b6d3586. Where does the toString() method that produced this text come from?",
+    "correct": [
+      "Gem inherits it from Object, the root of every class"
+    ],
+    "incorrect": [
+      "The compiler writes one into each class, as it does for records",
+      "println builds the text itself when a class has no toString()",
+      "Gem inherits it from String, since println works with Strings"
+    ],
+    "feedback": "A class with no extends clause silently extends java.lang.Object, so every object has Object's methods - toString(), equals() and hashCode() among them. Object's toString() returns the class name, @, and a hash code in hexadecimal. When you write your own toString() you are overriding that inherited method, which is why it takes @Override and has to be public."
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace the loop over the Object array. What does this print?",
+    "code": "Object[] bag = { \"hi\", 3, \"yo\", 2.5, 7 };\nint sum = 0;\nfor (Object o : bag) {\n    if (o instanceof Integer n) {\n        sum += n;\n    }\n}\nSystem.out.println(sum);",
+    "language": "java",
+    "correct": [
+      "10"
+    ],
+    "case_sensitive": true,
+    "feedback": "Since every class descends from Object, an Object[] can hold anything: here two Strings, two Integers (the ints 3 and 7 are autoboxed) and a Double. The pattern o instanceof Integer n is true just for the two Integers and binds each to n, so sum is 3 + 7 = 10. The Double 2.5 is not an Integer, so it is skipped rather than truncated."
+  },
+  {
+    "question": "What does the keyword abstract mean when it is applied to a class?",
+    "correct": [
+      "The class cannot be instantiated with new; it exists to be extended"
+    ],
+    "incorrect": [
+      "Each of its methods has to be abstract, declared without a body",
+      "The class may hold method signatures but no constructors or fields",
+      "The class is closed to extension and has to be used as written"
+    ],
+    "feedback": "An abstract class is an unfinished parent: new Shape() is a compile error, and objects come from its concrete subclasses. It MAY contain abstract methods, but it can also have ordinary methods, fields and constructors - the description with signatures and nothing else fits an interface. A class closed to extension is a final class, the opposite idea."
+  },
+  {
+    "type": "fill_blank",
+    "question": "public abstract int wheels(); is a complete declaration of an abstract method. Compared with an ordinary method, the thing it lacks is a ___.",
+    "correct": [
+      "body",
+      "method body",
+      "implementation",
+      "code block",
+      "block",
+      "braces"
+    ],
+    "case_sensitive": false,
+    "feedback": "An abstract method ends in a semicolon where an ordinary method has { ... }. It states the name, parameters and return type, and leaves the body to each concrete subclass - which the compiler then insists on."
+  },
+  {
+    "question": "Which statements about an abstract class Shape are correct?",
+    "correct": [
+      "Shape may mix abstract methods with ordinary methods that have bodies",
+      "Shape may declare a constructor, which subclasses run through super(...)",
+      "A variable of type Shape may refer to an object of a concrete subclass"
+    ],
+    "incorrect": [
+      "new Shape() compiles, but throws an exception once the program runs",
+      "A concrete subclass may skip an abstract method that it does not call"
+    ],
+    "feedback": "An abstract class can hold fields, constructors and finished methods next to its abstract ones, and Shape s = new Circle(); is the normal way to use it. new Shape() is rejected by the compiler (\"Shape is abstract; cannot be instantiated\"), not at run time. A subclass that leaves any abstract method without a body does not compile unless it is declared abstract itself - whether the method is called is irrelevant."
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace the abstract class. What does this print?",
+    "code": "abstract class Vehicle {\n    abstract int wheels();\n    String describe() { return wheels() + \" wheels\"; }\n}\nclass Bike extends Vehicle {\n    @Override int wheels() { return 2; }\n}\nclass Trike extends Vehicle {\n    @Override int wheels() { return 3; }\n}\n\nVehicle v = new Trike();\nSystem.out.println(v.describe());",
+    "language": "java",
+    "correct": [
+      "3 wheels"
+    ],
+    "case_sensitive": true,
+    "feedback": "describe() is written once, in the abstract parent, and calls wheels() - a method Vehicle itself leaves unfinished. When describe() runs on a Trike, that inner call is dispatched to the object's runtime class, so Trike's wheels() supplies 3. This is the main use of an abstract class: shared code in the parent, with the varying step filled in by each subclass."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "abstract class Shape { abstract int sides(); }\nclass Triangle extends Shape { @Override int sides() { return 3; } }\nclass Square extends Shape { @Override int sides() { return 4; } }\n\nA Shape[] named shapes holds {{t}} Triangle objects and {{s}} Square objects, in a mixed order. What is total after this loop?\nint total = 0;\nfor (Shape sh : shapes) {\n    total += sh.sides();\n}",
+    "variables": {
+      "t": {
+        "min": 2,
+        "max": 6
+      },
+      "s": {
+        "min": 2,
+        "max": 6
+      }
+    },
+    "answer": {
+      "expr": "3 * t + 4 * s",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The loop only ever sees the declared type Shape, but each call to sides() runs the version belonging to the actual object: 3 for every Triangle and 4 for every Square. {{t}} triangles give 3 x {{t}} and {{s}} squares give 4 x {{s}}, so total is {{expected}}. One loop, no if statements - that is what polymorphism buys you."
+  },
+  {
+    "type": "fill_blank",
+    "question": "interface Drawable { void draw(); }\nAn interface lists methods that a class promises to supply. Circle makes that promise with the header: class Circle ___ Drawable",
+    "correct": [
+      "implements"
+    ],
+    "case_sensitive": false,
+    "feedback": "A class implements an interface and extends a class; mixing the two up is a compile error. Having made the promise, Circle has to provide a public draw() method, and a Circle can then be used wherever a Drawable is expected: Drawable d = new Circle();"
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace the interface and its default method. What does this print?",
+    "code": "interface Greeter {\n    String name();\n    default String greet() { return \"hi \" + name(); }\n}\nclass Elf implements Greeter {\n    @Override public String name() { return \"Lia\"; }\n}\nclass Orc implements Greeter {\n    @Override public String name() { return \"Gor\"; }\n    @Override public String greet() { return \"grr\"; }\n}\n\nSystem.out.println(new Elf().greet() + \" \" + new Orc().greet());",
+    "language": "java",
+    "correct": [
+      "hi Lia grr"
+    ],
+    "case_sensitive": true,
+    "feedback": "name() has no body, so every implementing class has to supply it. greet() is a default method: the interface gives it a body, which implementing classes inherit unless they override it. Elf inherits it, so its greeting is \"hi \" plus Elf's own name(). Orc overrides it and prints grr - its name() is never used."
+  },
+  {
+    "question": "Which statements about Java interfaces are correct?",
+    "correct": [
+      "A class may implement several interfaces in the same header",
+      "A default method's body is inherited by the implementing classes"
+    ],
+    "incorrect": [
+      "A class may leave some of an interface's abstract methods out and still be instantiated",
+      "An interface may declare a constructor for its implementing classes to call",
+      "An interface may declare instance fields, so each implementing object gets a copy",
+      "new Drawable() creates an object, provided every method has a default body"
+    ],
+    "feedback": "class Duck implements Swimmer, Flyer { } is legal, and default methods come along for free. An interface has no constructors and no per-object fields (any field in an interface is a static final constant), and it can never be instantiated with new, however many default methods it has. A class that skips an abstract method of its interface does not compile unless it is declared abstract."
+  },
+  {
+    "type": "cloze",
+    "question": "An abstract class and an interface both leave methods for other classes to finish, but they differ. Of the two, the one that can declare constructors and instance fields is the {{1}}. The one that a class can combine with several others of its kind in a single header is the {{2}}. And when a class supplies a method promised by an interface, it has to give that method the access modifier {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "abstract class",
+          "abstract"
+        ],
+        "hint": "which of the two"
+      },
+      {
+        "accept": [
+          "interface",
+          "interfaces"
+        ],
+        "hint": "which of the two"
+      },
+      {
+        "accept": [
+          "public"
+        ],
+        "hint": "modifier"
+      }
+    ],
+    "feedback": "An abstract class is still a class: it has state and constructors, and a subclass may extend just one class. An interface carries no per-object state, which is what makes it safe to implement many at once. Interface methods are public automatically, and an implementing method may not be less visible than the one it implements - leave off public and the compiler reports \"attempting to assign weaker access privileges\"."
+  },
+  {
+    "question": "Bird extends Animal, and Plane extends Vehicle. Both need a fly() method, and one loop should be able to call fly() on a list that mixes birds and planes. Which design works?",
+    "correct": [
+      "Declare an interface Flyer and have both classes implement it"
+    ],
+    "incorrect": [
+      "Declare an abstract class Flyer and have both classes extend it too",
+      "Make Plane extend Bird, so that Plane inherits Bird's fly() method",
+      "Put them in a List<Object> and call fly() on each element in turn"
+    ],
+    "feedback": "Bird and Plane already have parent classes, and a class can extend just one, so a second parent class Flyer is impossible. A plane is not a bird, so Plane extends Bird abuses is-a (and Plane already has a parent). A List<Object> compiles only until you call fly(): the declared type Object has no such method. An interface is the tool for a shared ability across unrelated classes: List<Flyer> holds both, and fly() is callable on every element."
+  },
+  {
+    "question": "interface Pet { }\nclass Animal { }\nclass Dog extends Animal implements Pet { }\nclass Cat extends Animal { }\n\nAnimal a = new Dog();\nAnimal n = null;\nWhich of these expressions evaluate to true?",
+    "correct": [
+      "a instanceof Dog",
+      "a instanceof Animal",
+      "a instanceof Pet",
+      "a instanceof Object"
+    ],
+    "incorrect": [
+      "a instanceof Cat",
+      "n instanceof Animal"
+    ],
+    "feedback": "instanceof asks about the object, not the variable: the object is a Dog, and a Dog is also an Animal, a Pet (through implements) and an Object, so all four are true. It is not a Cat - sharing a parent does not make siblings interchangeable. And n refers to no object at all, so instanceof answers false for null whatever n's declared type says; that is why no separate null check is needed before it."
+  },
+  {
+    "question": "What does the keyword final mean when it is applied to a class?",
+    "correct": [
+      "No other class is allowed to extend it"
+    ],
+    "incorrect": [
+      "Its objects are frozen once they are constructed",
+      "It may be subclassed but not instantiated with new",
+      "Its methods are locked, yet it may still be extended"
+    ],
+    "feedback": "final class Key { } means class Master extends Key is a compile error (\"cannot inherit from final Key\"). String is final, and so is every record. It says nothing about whether objects can change - a final class can have setters; immutability is a separate design choice. \"Subclassed but not instantiated\" describes abstract, the opposite. Locking individual methods is what final on a METHOD does, leaving the class open."
+  },
+  {
+    "question": "What does this header do?\nsealed interface Shape permits Circle, Square { }",
+    "correct": [
+      "Lets Circle and Square implement Shape, and turns every other type away"
+    ],
+    "incorrect": [
+      "Stops all classes from implementing Shape, as final does for a class",
+      "Creates Circle and Square automatically as empty implementing classes",
+      "Lets any class implement Shape, but documents the two expected ones"
+    ],
+    "feedback": "sealed sits between open and final: the type can be implemented, but by exactly the types on its permits list, which you still have to write yourself. A record Triangle() implements Shape elsewhere is a compile error. The payoff is that the compiler knows the complete list of Shapes, so a switch over a Shape can be checked for missing cases."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange these lines from top to bottom so that every name is declared before the line that uses it, ending with the line that prints 3.",
+    "language": "java",
+    "items": [
+      "interface Shape { int sides(); }",
+      "record Tri() implements Shape { public int sides() { return 3; } }",
+      "Shape s = new Tri();",
+      "System.out.println(s.sides());"
+    ],
+    "feedback": "The interface comes first because Tri's header names it. Tri has to exist before new Tri() can build one, and s has to hold an object before s.sides() can be called. Note that a record can implement an interface (it cannot extend a class), and that its sides() is public because interface methods are public."
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace the switch over the sealed type. What does this print?",
+    "code": "sealed interface Shape permits Circle, Square { }\nrecord Circle(int r) implements Shape { }\nrecord Square(int side) implements Shape { }\n\nShape s = new Square(4);\nString out = switch (s) {\n    case Circle c -> \"r \" + c.r();\n    case Square q -> \"side \" + q.side();\n};\nSystem.out.println(out);",
+    "language": "java",
+    "correct": [
+      "side 4"
+    ],
+    "case_sensitive": true,
+    "feedback": "s is declared as Shape but holds a Square, so the switch skips case Circle c and matches case Square q, binding q to the object exactly as an instanceof pattern would; q.side() is 4. There is no default branch, and none is needed: Shape is sealed, so the compiler knows Circle and Square are the only possibilities - and would refuse to compile the switch if a third permitted type were added and not handled."
   }
 ]

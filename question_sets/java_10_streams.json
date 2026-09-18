@@ -1,422 +1,764 @@
 [
   {
-    "question": "What is a lambda expression in Java?",
+    "question": "Which expression completes this line so that it compiles?\nFunction<Integer, Integer> twice = ___;",
     "correct": [
-      "A concise syntax for an anonymous function that can be passed as an argument"
+      "n -> n * 2"
     ],
     "incorrect": [
-      "A special kind of loop that processes collections in parallel",
-      "A shorthand notation for instantiating anonymous inner classes with multiple methods",
-      "A way to declare a static method without a class name"
+      "n => n * 2",
+      "lambda n: n * 2",
+      "n :: n * 2"
     ],
-    "feedback": "Lambda syntax: (parameters) -> expression or (parameters) -> { statements; }. Lambdas implement functional interfaces (interfaces with exactly one abstract method). Example: (int x) -> x * 2."
+    "feedback": "A Java lambda is written parameters -> body, with a thin arrow made of a minus sign and a greater-than sign. The fat arrow => belongs to JavaScript and C#, lambda n: is Python, and :: is Java's method-reference symbol, which joins a class to a method name and is never followed by an expression."
   },
   {
-    "question": "What is the correct lambda arrow operator in Java?",
-    "correct": [
-      "->"
-    ],
-    "incorrect": [
-      "=>",
-      "-->",
-      "<-"
-    ],
-    "feedback": "Java uses -> (not => like JavaScript/C#). Example: list.forEach(s -> System.out.println(s)). The arrow separates the parameter list from the body."
-  },
-  {
-    "question": "What is a Stream in Java?",
-    "correct": [
-      "A sequence of elements processed by a pipeline of operations without changing the source"
-    ],
-    "incorrect": [
-      "A synchronized collection class that stores its elements and allows safe access from many threads",
-      "A subclass of InputStream for reading data from files",
-      "A queue-based data structure that guarantees FIFO order"
-    ],
-    "feedback": "java.util.stream.Stream provides a declarative way to process collections. Streams are lazy (intermediate ops run only when a terminal op is invoked), do not store elements, and do not modify the source collection."
-  },
-  {
-    "question": "What are the three parts of a Stream pipeline?",
-    "correct": [
-      "A source, zero or more intermediate operations, and one terminal operation"
-    ],
-    "incorrect": [
-      "Source, filter, and collector — all three are required",
-      "open(), process(), and close() — modeled after Java I/O streams",
-      "InputOperation, MiddleOperation, and OutputOperation from the java.util.pipeline package"
-    ],
-    "feedback": "Pipeline: source (list.stream()) → intermediate ops (filter, map, sorted) → terminal op (collect, count, forEach). Intermediate ops are lazy; the terminal op triggers execution of the entire pipeline."
-  },
-  {
-    "question": "What does the filter() operation do in a Stream pipeline?",
-    "correct": [
-      "Keeps only the elements that satisfy a given Predicate"
-    ],
-    "incorrect": [
-      "Transforms each element into a new value using a Function",
-      "Removes all duplicate elements from the stream",
-      "Collects all elements into a new List"
-    ],
-    "feedback": "stream.filter(s -> s.length() > 3) creates a new stream containing only strings longer than 3 characters. filter takes a Predicate<T> — a function that returns boolean. It is an intermediate operation."
-  },
-  {
-    "question": "What does the map() operation do in a Stream pipeline?",
-    "correct": [
-      "Transforms each element using a Function, producing a stream of new values"
-    ],
-    "incorrect": [
-      "Keeps only the elements for which the function returns true, discarding the rest",
-      "Maps each element to a key-value pair and returns a HashMap of the results",
-      "Sorts the elements using the provided function as a comparator"
-    ],
-    "feedback": "stream.map(String::toUpperCase) transforms each String to uppercase. map takes a Function<T,R> and returns Stream<R>. It is an intermediate operation — chained before a terminal op like collect()."
-  },
-  {
-    "question": "What does collect(Collectors.toList()) do at the end of a Stream pipeline?",
-    "correct": [
-      "It is a terminal operation that gathers the stream's elements into a new List"
-    ],
-    "incorrect": [
-      "It is an intermediate operation that stores a snapshot of the stream for later reuse",
-      "It merges the stream's elements into a single String",
-      "It filters the stream down to a single element"
-    ],
-    "feedback": "collect() is a terminal operation that triggers pipeline execution and accumulates results. Collectors.toList() produces a List<T>. Other collectors: Collectors.toSet(), Collectors.joining(), Collectors.groupingBy()."
-  },
-  {
-    "question": "What is the difference between an intermediate and a terminal stream operation?",
-    "correct": [
-      "Intermediate operations are lazy and return a Stream; terminal operations trigger evaluation"
-    ],
-    "incorrect": [
-      "Intermediate operations modify the original collection; terminal operations create a new collection",
-      "Terminal operations run faster because they do not create new Stream objects",
-      "Intermediate operations require lambda expressions; terminal operations do not"
-    ],
-    "feedback": "Intermediate: filter, map, sorted, limit, skip, distinct — return Stream, lazy. Terminal: collect, count, forEach, findFirst, anyMatch — consume the stream and produce a value or side effect. A pipeline without a terminal op never runs."
-  },
-  {
-    "question": "What does the count() terminal operation return?",
-    "correct": [
-      "long — the number of elements in the stream"
-    ],
-    "incorrect": [
-      "int — the number of elements in the stream",
-      "Integer — boxed count for use in collections",
-      "Stream<Long> — a stream containing a single count value"
-    ],
-    "feedback": "count() returns long, not int. This matters in assignments: long n = list.stream().filter(x -> x > 0).count(); Storing in an int would require a cast."
-  },
-  {
-    "question": "What do anyMatch(), allMatch(), and noneMatch() return?",
-    "correct": [
-      "boolean — whether elements match the given Predicate"
-    ],
-    "incorrect": [
-      "Stream<Boolean> — one Boolean per element",
-      "Optional<T> — the first matching element or empty",
-      "long — the count of elements that matched"
-    ],
-    "feedback": "These are short-circuit terminal operations that return boolean. anyMatch stops at the first true; allMatch stops at the first false; noneMatch stops at the first true match. All take a Predicate<T>."
-  },
-  {
-    "question": "What does findFirst() return?",
-    "correct": [
-      "Optional<T>, holding the first element, or empty if the stream has none"
-    ],
-    "incorrect": [
-      "T, the first element itself, or null when the stream is empty and nothing matched",
-      "Stream<T>, a single-element stream containing only the first element",
-      "int, the index of the first matching element"
-    ],
-    "feedback": "findFirst() returns Optional<T> to avoid returning null. Callers use .isPresent() and .get(), or .orElse(defaultValue). Example: Optional<String> first = names.stream().findFirst();"
-  },
-  {
-    "question": "What does Optional protect against?",
-    "correct": [
-      "NullPointerException — it wraps a possibly-absent value and forces callers to check"
-    ],
-    "incorrect": [
-      "ClassCastException — it wraps a value of unknown type",
-      "Concurrent modification — it prevents two threads from modifying the same value",
-      "Integer overflow — it uses BigInteger internally for large values"
-    ],
-    "feedback": "Optional<T> either contains a value (isPresent() == true) or is empty. Use .orElse(defaultValue) to safely provide a fallback. Calling .get() on an empty Optional throws NoSuchElementException."
-  },
-  {
-    "question": "What is a functional interface in Java?",
-    "correct": [
-      "An interface with exactly one abstract method, which a lambda expression can implement"
-    ],
-    "incorrect": [
-      "An interface that provides a full implementation for all its methods using default methods",
-      "An interface that can only be used as a parameter type, not as a variable type",
-      "An interface that extends java.util.function.Interface"
-    ],
-    "feedback": "Functional interfaces: Predicate<T> (T -> boolean), Function<T,R> (T -> R), Consumer<T> (T -> void), Supplier<T> (() -> T). The @FunctionalInterface annotation asks the compiler to verify there is exactly one abstract method."
-  },
-  {
-    "question": "Which claims about lambda expressions are correct?",
-    "correct": [
-      "A lambda can capture local variables from the enclosing scope if those variables are effectively final",
-      "Lambdas implement functional interfaces — interfaces with exactly one abstract method",
-      "Parentheses around the parameter list are optional when there is exactly one parameter"
-    ],
-    "incorrect": [
-      "Lambdas can refer to and reassign any local variable from the enclosing method",
-      "Lambdas require an explicit return statement even for single-expression bodies"
-    ],
-    "feedback": "Captured variables must be effectively final (not reassigned after initial assignment). Single-parameter: x -> x * 2 (no parens needed). Single expression: no curly braces or return needed. Multi-statement: { return x * 2; } with return."
-  },
-  {
-    "question": "Which claims about Stream pipelines are correct?",
-    "correct": [
-      "A stream can only be consumed once — using it again after a terminal operation throws IllegalStateException",
-      "Intermediate operations are lazy and do not execute until a terminal operation is called",
-      "A stream pipeline without a terminal operation performs no work"
-    ],
-    "incorrect": [
-      "Calling filter() or map() on a stream modifies the original collection",
-      "A stream pipeline can have at most one intermediate operation"
-    ],
-    "feedback": "Streams are single-use: call stream() again on the source to get a fresh stream. Laziness means filter() and map() build a description of the pipeline; only collect() or count() triggers actual processing. Source collections are never modified."
-  },
-  {
-    "question": "Which claims about intermediate stream operations are correct?",
-    "correct": [
-      "sorted() returns a new stream with elements in natural order unless a Comparator is provided",
-      "limit(n) returns a stream of at most n elements from the front",
-      "distinct() removes duplicate elements based on equals()"
-    ],
-    "incorrect": [
-      "skip(n) returns every nth element rather than skipping the first n",
-      "filter() is a terminal operation because it accesses each element"
-    ],
-    "feedback": "sorted(), limit(), skip(), distinct(), map(), filter() are all intermediate — they all return Stream. limit and skip are short-circuit-capable, making them efficient for large or infinite streams."
-  },
-  {
-    "question": "Which claims about functional interfaces in java.util.function are correct?",
-    "correct": [
-      "Predicate<T> has a single abstract method test(T t) that returns boolean",
-      "Function<T,R> transforms a value of type T into a value of type R",
-      "Consumer<T> accepts a value and returns nothing (void)"
-    ],
-    "incorrect": [
-      "Supplier<T> takes a value of type T and produces a boolean result",
-      "All functional interfaces must be annotated with @FunctionalInterface to work with lambdas"
-    ],
-    "feedback": "Supplier<T>: T get() — takes nothing, produces T. Consumer<T>: void accept(T t). Predicate<T>: boolean test(T t). Function<T,R>: R apply(T t). @FunctionalInterface is optional (just a verification hint)."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The Java lambda arrow operator is ___ (two characters).",
-    "correct": [
-      "->"
-    ],
-    "case_sensitive": true,
-    "feedback": "Java: (x) -> x * 2. JavaScript/C#/Kotlin use =>. Using => in Java is a syntax error."
-  },
-  {
-    "type": "fill_blank",
-    "question": "A stream operation that returns another Stream and is evaluated lazily is called an ___ operation.",
-    "correct": [
-      "intermediate"
-    ],
-    "case_sensitive": false,
-    "feedback": "Intermediate operations (filter, map, sorted, limit, skip, distinct) are lazy — they build the pipeline but do not execute until a terminal operation triggers evaluation."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The stream terminal operation that returns the number of elements as a long is ___().",
-    "correct": [
-      "count"
-    ],
-    "case_sensitive": true,
-    "feedback": "count() is a terminal operation returning long. Example: long n = list.stream().filter(x -> x > 0).count();"
-  },
-  {
-    "type": "fill_blank",
-    "question": "The functional interface type whose single abstract method takes an argument and returns a boolean is ___.",
-    "correct": [
-      "Predicate"
-    ],
-    "case_sensitive": true,
-    "feedback": "Predicate<T> has boolean test(T t). It is used with filter(): stream.filter(s -> s.length() > 3) passes a Predicate<String> to filter."
-  },
-  {
-    "type": "fill_blank",
-    "question": "findFirst() returns an ___ to safely represent a potentially absent value without returning null.",
-    "correct": [
-      "Optional"
-    ],
-    "case_sensitive": true,
-    "feedback": "Optional<T> wraps a value that may or may not be present. Use .orElse(defaultValue) for safe access. Optional<String> first = names.stream().findFirst();"
-  },
-  {
-    "type": "fill_blank",
-    "question": "A lambda expression in Java is used to implement a ___ interface — one with exactly one abstract method.",
-    "correct": [
-      "functional"
-    ],
-    "case_sensitive": false,
-    "feedback": "Functional interface = exactly one abstract method. Examples: Predicate, Function, Consumer, Supplier, Runnable, Comparator. The @FunctionalInterface annotation asks the compiler to verify this."
-  },
-  {
-    "type": "matching",
-    "question": "Match each stream operation to whether it is intermediate or terminal.",
-    "pairs": [
-      {
-        "term": "filter()",
-        "definition": "Intermediate — returns a Stream of elements that satisfy the predicate"
-      },
-      {
-        "term": "collect()",
-        "definition": "Terminal — gathers elements into a collection and ends the pipeline"
-      },
-      {
-        "term": "map()",
-        "definition": "Intermediate — transforms each element and returns a new Stream"
-      },
-      {
-        "term": "count()",
-        "definition": "Terminal — returns the number of elements as a long"
-      }
-    ],
-    "feedback": "Intermediate ops return Stream and are lazy. Terminal ops trigger execution and produce a value or side effect. A pipeline must end with exactly one terminal operation."
-  },
-  {
-    "type": "matching",
-    "question": "Match each functional interface to its abstract method signature.",
-    "pairs": [
-      {
-        "term": "Predicate<T>",
-        "definition": "boolean test(T t) — evaluates a condition on the input"
-      },
-      {
-        "term": "Function<T,R>",
-        "definition": "R apply(T t) — transforms T into R"
-      },
-      {
-        "term": "Consumer<T>",
-        "definition": "void accept(T t) — processes the input with no return value"
-      },
-      {
-        "term": "Supplier<T>",
-        "definition": "T get() — produces a T value with no input"
-      }
-    ],
-    "feedback": "Each functional interface represents a function shape. Predicate: T->boolean. Function: T->R. Consumer: T->void. Supplier: ()->T. All can be implemented with lambdas."
-  },
-  {
-    "type": "matching",
-    "question": "Match each stream intermediate operation to what it does.",
-    "pairs": [
-      {
-        "term": "filter(Predicate)",
-        "definition": "Keeps only elements for which the predicate returns true"
-      },
-      {
-        "term": "map(Function)",
-        "definition": "Transforms each element into a new value using the function"
-      },
-      {
-        "term": "limit(n)",
-        "definition": "Truncates the stream to at most n elements"
-      },
-      {
-        "term": "sorted()",
-        "definition": "Returns a stream with elements in natural ascending order"
-      }
-    ],
-    "feedback": "All four are intermediate (lazy, return Stream). filter keeps/removes; map converts; limit truncates; sorted reorders. None trigger execution on their own."
-  },
-  {
-    "type": "matching",
-    "question": "Match each terminal operation to what it returns.",
-    "pairs": [
-      {
-        "term": "count()",
-        "definition": "long — the number of elements in the stream"
-      },
-      {
-        "term": "findFirst()",
-        "definition": "Optional<T> — the first element, or empty if the stream is empty"
-      },
-      {
-        "term": "anyMatch()",
-        "definition": "boolean — true if at least one element satisfies the predicate"
-      },
-      {
-        "term": "forEach()",
-        "definition": "void — performs an action on each element with no return value"
-      }
-    ],
-    "feedback": "count() -> long. findFirst() -> Optional<T>. anyMatch/allMatch/noneMatch -> boolean. forEach -> void. collect() -> Collection. These terminal ops end the pipeline."
-  },
-  {
-    "type": "code_trace",
-    "question": "Zinna is reviewing a stream pipeline for the Marketstone Exchange Engine. What does this print?",
-    "code": "import java.util.List;\nimport java.util.stream.Collectors;\n\nList<Integer> nums = List.of(1, 2, 3, 4, 5);\nList<Integer> result = nums.stream()\n    .filter(n -> n % 2 == 0)\n    .map(n -> n * 10)\n    .collect(Collectors.toList());\nSystem.out.println(result);",
+    "type": "code_line",
+    "question": "Complete the declaration  Function<Integer, Integer> addTen = ___;  Write only the lambda: it takes a parameter named x and returns x plus 10.",
     "language": "java",
     "correct": [
-      "[20, 40]"
+      "x -> x + 10",
+      "(x) -> x + 10",
+      "x -> 10 + x",
+      "(x) -> 10 + x",
+      "(Integer x) -> x + 10",
+      "x -> { return x + 10; }"
     ],
     "case_sensitive": true,
-    "feedback": "filter keeps only even numbers: [2, 4]. map multiplies each by 10: [20, 40]. collect gathers them into a List, which println renders as [20, 40]."
+    "feedback": "Parameter, arrow, body: x -> x + 10. When the body is a single expression its value is returned automatically, so no braces and no return are needed. The longer form x -> { return x + 10; } means exactly the same thing."
+  },
+  {
+    "question": "A lambda can only be used where Java expects a functional interface. What makes an interface a functional interface?",
+    "correct": [
+      "It declares exactly one abstract method"
+    ],
+    "incorrect": [
+      "It carries the @FunctionalInterface annotation, however many abstract methods it declares",
+      "It declares exactly one method of any kind, with default methods counted too",
+      "It gives every one of its methods a default body, so none is left abstract"
+    ],
+    "feedback": "A lambda supplies the body of one method, so the interface must have exactly one abstract method waiting for a body. Default methods do not count, which is why Comparator is functional despite its many default methods. @FunctionalInterface is optional: it only asks the compiler to check the rule, and putting it on an interface with two abstract methods is a compile error."
+  },
+  {
+    "type": "matching",
+    "question": "Each lambda below fits exactly one of these functional interface types. Match each type to the lambda that could be assigned to it.",
+    "pairs": [
+      {
+        "term": "Predicate<String>",
+        "definition": "s -> s.length() > 3"
+      },
+      {
+        "term": "Function<String, Integer>",
+        "definition": "s -> s.length() + 1"
+      },
+      {
+        "term": "Consumer<String>",
+        "definition": "s -> System.out.println(s)"
+      },
+      {
+        "term": "Supplier<String>",
+        "definition": "() -> \"guild\""
+      },
+      {
+        "term": "Comparator<String>",
+        "definition": "(a, b) -> a.length() - b.length()"
+      }
+    ],
+    "feedback": "Read the shape of each lambda. One String in, a boolean out is a Predicate (its method is test). One String in, an Integer out is a Function (apply). One String in, nothing out is a Consumer (accept). Nothing in, a String out is a Supplier (get). Two Strings in, an int out is a Comparator (compare)."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A lambda is stored like this:\nPredicate<String> isLong = s -> s.length() > 5;\nStoring it runs nothing. To ask it about the word \"dragon\" you call  isLong.___(\"dragon\")",
+    "correct": [
+      "test",
+      "test()",
+      ".test",
+      ".test()"
+    ],
+    "case_sensitive": true,
+    "feedback": "A lambda is an object that implements the interface's one abstract method, and you run it by calling that method by name. For Predicate the method is test, and it returns a boolean. Function uses apply, Consumer uses accept and Supplier uses get."
   },
   {
     "type": "code_trace",
-    "question": "What does this stream reduction print?",
-    "code": "import java.util.stream.IntStream;\n\nint sum = IntStream.rangeClosed(1, 5)\n    .reduce(0, Integer::sum);\nSystem.out.println(sum);",
+    "question": "Two lambdas are stored and then called. What does this print?",
+    "code": "Function<Integer, Integer> twice = n -> n * 2;\nSupplier<Integer> seven = () -> 7;\nSystem.out.println(twice.apply(seven.get()) + 1);",
     "language": "java",
     "correct": [
       "15"
     ],
     "case_sensitive": true,
-    "feedback": "IntStream.rangeClosed(1,5) produces 1,2,3,4,5. reduce(0, Integer::sum) starts with identity 0 and adds each element: 0+1+2+3+4+5 = 15."
+    "feedback": "Work from the inside out. seven.get() runs the Supplier, which takes nothing and hands back 7. twice.apply(7) runs the Function with n = 7 and gives 14. Adding 1 gives 15. Neither lambda ran when it was declared; each ran when its method was called."
+  },
+  {
+    "question": "Each option below would replace the blank in\nFunction<Integer, Integer> next = ___;\nWhich versions compile?",
+    "correct": [
+      "x -> x + 1",
+      "(Integer x) -> { return x + 1; }"
+    ],
+    "incorrect": [
+      "Integer x -> x + 1",
+      "x -> { x + 1; }",
+      "x -> return x + 1"
+    ],
+    "feedback": "The parentheses around a single parameter may be dropped only when its type is left out too, so Integer x -> x + 1 fails while (Integer x) -> ... is fine. A body in braces is a block of statements and must say return itself, so { x + 1; } fails. And return is a statement, so it can appear only inside braces."
+  },
+  {
+    "question": "In  names.stream().map(String::toUpperCase)  the argument is a method reference. Which lambda does  String::toUpperCase  stand for?",
+    "correct": [
+      "s -> s.toUpperCase()"
+    ],
+    "incorrect": [
+      "s -> String.toUpperCase(s)",
+      "() -> String.toUpperCase()",
+      "s -> s::toUpperCase"
+    ],
+    "feedback": "ClassName::instanceMethod means: take the incoming element and call that method ON it, so String::toUpperCase is s -> s.toUpperCase(). toUpperCase is an instance method, so String.toUpperCase(s) does not exist. A method reference is shorthand for a whole lambda, so it cannot appear as the body of one."
+  },
+  {
+    "type": "code_line",
+    "question": "Rewrite the lambda  s -> s.trim()  as a method reference. (s is a String.)",
+    "language": "java",
+    "correct": [
+      "String::trim"
+    ],
+    "case_sensitive": true,
+    "feedback": "When a lambda does nothing except call one method on its parameter, name the parameter's class, then ::, then the method, with no parentheses and no parameter: String::trim. The same pattern gives String::length and Hero::name. A static method works the same way with the argument passed in instead: Integer::parseInt means s -> Integer.parseInt(s)."
+  },
+  {
+    "question": "What happens when this code is compiled and run?\nint bonus = 10;\nFunction<Integer, Integer> add = n -> n + bonus;\nbonus = 20;\nSystem.out.println(add.apply(5));",
+    "correct": [
+      "It does not compile, because bonus is reassigned and so the lambda may not use it"
+    ],
+    "incorrect": [
+      "It prints 15, because the lambda copied bonus at the moment it was created",
+      "It prints 25, because the lambda reads bonus at the moment apply is called",
+      "It compiles, but apply throws an exception because bonus has changed"
+    ],
+    "feedback": "A lambda may use a local variable from the surrounding method only if that variable is effectively final, meaning it is assigned once and never changed. Java refuses to make you guess between 15 and 25: the reassignment bonus = 20 makes the lambda's use of bonus a compile error. Delete that line and the code prints 15."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Following one list down the pipeline",
+    "npc": "zoya",
+    "intro": "Zoya sets four numbered clay tokens on a long workbench and chalks three lines across it. “A stream pipeline looks like one long sentence. I read it as a row of stations, and I walk the tokens through one station at a time.”",
+    "steps": [
+      {
+        "say": "Here is the pipeline. The list is the source: stream() sends its elements down the line one after another.",
+        "beats": [
+          {
+            "say": "Here is the whole pipeline. The list is the source: stream() sends its elements down the line, one after another."
+          },
+          {
+            "code": "List<Integer> costs = List.of(4, 9, 6, 15);\nList<Integer> out = costs.stream()\n    .filter(c -> c > 5)\n    .map(c -> c * 2)\n    .toList();",
+            "language": "java"
+          },
+          {
+            "say": "I never trace it in my head. I write down what is still on the bench after each station."
+          }
+        ]
+      },
+      {
+        "say": "filter is a gate. It asks its question, c > 5, of every element, and lets through the ones that answer true. It never changes an element; it only keeps it or drops it.",
+        "check": {
+          "prompt": "What is left after  .filter(c -> c > 5) ?",
+          "answer": "9, 6, 15",
+          "wrong": [
+            "4",
+            "18, 12, 30"
+          ],
+          "why": "4 fails the test c > 5 and is dropped. The others pass through exactly as they were, in their original order. Doubling is the next station's job."
+        }
+      },
+      {
+        "say": "map is a stamp. It runs its function on every element and sends on the results, so 9, 6, 15 becomes 18, 12, 30. It never drops anything.",
+        "beats": [
+          {
+            "say": "map is a stamp. It runs its function, c * 2, on every element and sends on the results: 9, 6, 15 becomes 18, 12, 30. It never drops anything."
+          },
+          {
+            "say": "toList() is the last station. It ends the pipeline and hands back a List, so out is [18, 12, 30]."
+          },
+          {
+            "say": "Gate, then stamp, then collect. Write the survivors down after every station and a pipeline cannot fool you."
+          }
+        ]
+      }
+    ],
+    "outro": "“The next monster carries a pipeline with different numbers and a different gate. Walk its tokens down the bench the same way.”"
   },
   {
     "type": "code_trace",
-    "question": "What does this stream with sorted and limit print?",
-    "code": "import java.util.List;\n\nList.of(\"banana\", \"apple\", \"cherry\", \"date\")\n    .stream()\n    .sorted()\n    .limit(2)\n    .forEach(System.out::println);",
+    "question": "Trace the elements through each stage of this pipeline. What does it print?",
+    "code": "List<Integer> nums = List.of(3, 8, 5, 12, 7);\nList<Integer> out = nums.stream()\n    .filter(n -> n > 5)\n    .map(n -> n + 1)\n    .toList();\nSystem.out.println(out);",
     "language": "java",
     "correct": [
-      "apple\nbanana"
+      "[9, 13, 8]",
+      "[9,13,8]",
+      "9, 13, 8",
+      "9 13 8"
     ],
     "case_sensitive": true,
-    "feedback": "sorted() arranges strings alphabetically: apple, banana, cherry, date. limit(2) keeps only the first two. forEach prints each on its own line, giving apple then banana."
+    "feedback": "filter keeps the elements greater than 5 and leaves them unchanged and in their original order: 8, 12, 7. (5 is not greater than 5.) map then adds 1 to each survivor: 9, 13, 8. toList gathers them, and a List prints in square brackets. Nothing sorted them, so they stay in source order."
   },
   {
-    "question": "Which stream operation keeps only elements whose length is greater than 3?",
+    "question": "names is a List<String>. You want a List<Integer> holding the length of every name. Which pipeline does that?",
     "correct": [
-      ".filter(s -> s.length() > 3)"
+      "names.stream().map(String::length).toList()"
     ],
     "incorrect": [
-      ".map(s -> s.length() > 3)",
-      ".filter(s.length() > 3)",
-      ".filter(s => s.length() > 3)"
+      "names.stream().filter(String::length).toList()",
+      "names.stream().forEach(String::length).toList()",
+      "names.map(String::length)"
     ],
-    "feedback": "Use filter with a boolean-returning lambda."
+    "feedback": "Turning each element into something else, here a String into its length, is the job of map. filter can only keep or drop elements and needs a lambda that answers true or false, so it rejects String::length. forEach is a terminal operation that returns nothing, so there is nothing to call toList on. And a List has no map method: you must open a stream first."
   },
   {
-    "question": "Which stream operation converts each String element to uppercase using a method reference?",
+    "type": "cloze",
+    "question": "In a stream pipeline, {{1}} keeps or drops elements using a Predicate and never changes them, while {{2}} changes every element using a Function and never drops any. Both hand back another stream, which makes them {{3}} operations. count() and toList() hand back a finished result instead, which makes them {{4}} operations.",
+    "blanks": [
+      {
+        "accept": [
+          "filter",
+          "filter()",
+          ".filter()",
+          ".filter"
+        ],
+        "hint": "method"
+      },
+      {
+        "accept": [
+          "map",
+          "map()",
+          ".map()",
+          ".map"
+        ],
+        "hint": "method"
+      },
+      {
+        "accept": [
+          "intermediate"
+        ],
+        "hint": "kind"
+      },
+      {
+        "accept": [
+          "terminal"
+        ],
+        "hint": "kind"
+      }
+    ],
+    "feedback": "filter decides which elements continue; map decides what they look like. Because each returns a stream, you can chain as many of them as you like, which is why they are called intermediate operations. A pipeline ends with exactly one terminal operation, which produces the answer: a number, a list, a boolean, or an action performed on each element."
+  },
+  {
+    "question": "Which of these stream operations are terminal operations?",
     "correct": [
-      ".map(String::toUpperCase)"
+      "forEach",
+      "findFirst",
+      "reduce",
+      "anyMatch"
     ],
     "incorrect": [
-      ".filter(String::toUpperCase)",
-      ".map(toUpperCase)",
-      ".map(String.toUpperCase())"
+      "sorted",
+      "limit"
     ],
-    "feedback": "Use map for transformation and a String method reference on the right side."
+    "feedback": "Look at what each one hands back. forEach returns nothing, findFirst returns an Optional, reduce returns a combined value and anyMatch returns a boolean: none of those is a stream, so nothing more can be chained and the pipeline ends there. sorted and limit each return a new stream for the next stage to work on, so they are intermediate."
   },
   {
-    "type": "fill_blank",
-    "question": "In collect(Collectors.___()), which helper gathers stream elements into a List?",
+    "question": "names is a List<String>. Which declaration compiles?",
     "correct": [
-      "toList"
+      "long n = names.stream().count();"
+    ],
+    "incorrect": [
+      "int n = names.stream().count();",
+      "Integer n = names.stream().count();",
+      "Optional<Long> n = names.stream().count();"
+    ],
+    "feedback": "count() returns a long, because a stream may hold more elements than an int can count. Java will not narrow a long into an int without a cast, and it will not box a long into an Integer. count needs no Optional either: an empty stream simply has a count of 0. Writing var n = names.stream().count(); also works, and n is then a long."
+  },
+  {
+    "type": "matching",
+    "question": "An IntStream is a stream of plain int values, and these factory methods build one without any list. Match each call to the numbers it produces.",
+    "pairs": [
+      {
+        "term": "IntStream.range(1, 4)",
+        "definition": "1, 2, 3"
+      },
+      {
+        "term": "IntStream.rangeClosed(1, 4)",
+        "definition": "1, 2, 3, 4"
+      },
+      {
+        "term": "IntStream.range(0, 3)",
+        "definition": "0, 1, 2"
+      },
+      {
+        "term": "IntStream.rangeClosed(2, 4)",
+        "definition": "2, 3, 4"
+      }
+    ],
+    "feedback": "range(a, b) stops BEFORE b, exactly like the loop for (int i = a; i < b; i++). rangeClosed(a, b) includes b, like i <= b. So range(0, n) gives the n valid indexes of an array of length n, and rangeClosed(1, n) counts from 1 to n."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does this print?\nSystem.out.println(IntStream.range({{a}}, {{b}}).sum());",
+    "variables": {
+      "a": {
+        "min": 1,
+        "max": 5
+      },
+      "len": {
+        "min": 3,
+        "max": 5
+      }
+    },
+    "derived": {
+      "b": "a + len",
+      "last": "a + len - 1"
+    },
+    "answer": {
+      "expr": "sumRange(a, a + len - 1)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "range stops before its second argument, so the stream holds {{a}} up to {{last}} and {{b}} itself is left out. sum() is a terminal operation that adds them all: {{expected}}. Including {{b}} would be the right answer for rangeClosed."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does this print?\nlong hits = IntStream.rangeClosed(1, {{n}})\n    .filter(i -> i % {{k}} == 0)\n    .count();\nSystem.out.println(hits);",
+    "variables": {
+      "n": {
+        "min": 11,
+        "max": 30
+      },
+      "k": {
+        "values": [
+          3,
+          4,
+          6,
+          7
+        ]
+      }
+    },
+    "answer": {
+      "expr": "floorDiv(n, k)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "rangeClosed(1, {{n}}) supplies every whole number from 1 to {{n}}, both ends included. The filter lets through the ones that divide evenly by {{k}}, that is {{k}}, then twice {{k}}, and so on up to {{n}}. count() reports how many got through: {{expected}}."
+  },
+  {
+    "type": "matching",
+    "question": "nums is List.of(5, 3, 5, 1, 3). Each operation below is dropped into\nnums.stream().___.toList()\nMatch each operation to the list that results.",
+    "pairs": [
+      {
+        "term": ".distinct()",
+        "definition": "[5, 3, 1]"
+      },
+      {
+        "term": ".sorted()",
+        "definition": "[1, 3, 3, 5, 5]"
+      },
+      {
+        "term": ".limit(2)",
+        "definition": "[5, 3]"
+      },
+      {
+        "term": ".skip(3)",
+        "definition": "[1, 3]"
+      },
+      {
+        "term": ".skip(1).limit(2)",
+        "definition": "[3, 5]"
+      }
+    ],
+    "feedback": "distinct drops repeats and keeps the first appearance of each value. sorted puts the elements in natural order and keeps duplicates. limit(n) keeps the first n elements in the order they arrive, and skip(n) throws away the first n. Chained, skip(1) leaves 3, 5, 1, 3 and limit(2) then keeps 3, 5."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does this print?\nint total = IntStream.rangeClosed(1, 20)\n    .skip({{s}})\n    .limit({{l}})\n    .sum();\nSystem.out.println(total);",
+    "variables": {
+      "s": {
+        "min": 2,
+        "max": 7
+      },
+      "l": {
+        "min": 2,
+        "max": 4
+      }
+    },
+    "derived": {
+      "first": "s + 1",
+      "lastKept": "s + l"
+    },
+    "answer": {
+      "expr": "sumRange(s + 1, s + l)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "skip({{s}}) throws away 1 to {{s}}, so the first number to get through is {{first}}. limit({{l}}) then keeps {{l}} numbers and stops, which takes it as far as {{lastKept}}. The rest of the range is never used. Adding {{first}} up to {{lastKept}} gives {{expected}}."
+  },
+  {
+    "question": "What does this print?\nSystem.out.println(List.of(1, 2, 3, 4, 5, 6).stream()\n    .limit(3)\n    .filter(n -> n % 2 == 0)\n    .toList());",
+    "correct": [
+      "[2]"
+    ],
+    "incorrect": [
+      "[2, 4, 6]",
+      "[2, 4]",
+      "[1, 2, 3]"
+    ],
+    "feedback": "Stages run in the order they are written. limit(3) comes first and keeps 1, 2, 3; only then does filter look for even numbers, and it finds just 2. Swap the two lines and the answer changes: filter would pass 2, 4, 6 and limit(3) would keep all three. 'The first three, then the even ones' is not 'the first three even ones'."
+  },
+  {
+    "type": "code_trace",
+    "question": "Mind the order of the stages. What does this print?",
+    "code": "Stream.of(\"pear\", \"fig\", \"kiwi\", \"apple\")\n    .limit(2)\n    .sorted()\n    .forEach(System.out::println);",
+    "language": "java",
+    "correct": [
+      "fig\npear",
+      "fig pear",
+      "fig, pear"
     ],
     "case_sensitive": true,
-    "feedback": "Collectors.toList gathers the stream elements into a List."
+    "feedback": "limit(2) runs first and keeps the first two elements as they arrive: pear, fig. sorted then puts just those two into alphabetical order, and forEach prints each on its own line: fig, then pear. apple never gets a chance, because it was cut off before any sorting happened. Writing sorted before limit would print apple and fig instead."
+  },
+  {
+    "question": "nums is a List<Integer>. A student tries to add it up like this, and it does not compile:\nint total = 0;\nnums.forEach(n -> total += n);\nWhich replacements compile and give the correct total?",
+    "correct": [
+      "int total = nums.stream().mapToInt(n -> n).sum();",
+      "int total = nums.stream().reduce(0, Integer::sum);",
+      "int total = nums.stream().mapToInt(Integer::intValue).sum();"
+    ],
+    "incorrect": [
+      "int total = nums.stream().sum();",
+      "int total = nums.stream().map(n -> n).sum();",
+      "int total = nums.stream().count();"
+    ],
+    "feedback": "The original fails because a lambda may not change a local variable of the method around it. The stream way is to let a terminal operation build the total. sum() exists only on the number streams such as IntStream, so a Stream<Integer> must first be converted with mapToInt; plain map still gives a Stream<Integer>, which has no sum(). reduce(0, Integer::sum) starts at 0 and folds each element in with addition. count() compiles nowhere near a total: it returns how many elements there are, as a long."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does this print?\nList<String> beasts = List.of(\"ox\", \"cat\", \"wolf\", \"drake\", \"dragon\", \"phoenix\");\nint total = beasts.stream()\n    .mapToInt(String::length)\n    .filter(n -> n >= {{lo}} && n <= {{hi}})\n    .sum();\nSystem.out.println(total);",
+    "variables": {
+      "lo": {
+        "min": 2,
+        "max": 4
+      },
+      "hi": {
+        "min": 5,
+        "max": 7
+      }
+    },
+    "answer": {
+      "expr": "sumRange(lo, hi)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "mapToInt(String::length) replaces each word with its length, so the stream becomes 2, 3, 4, 5, 6, 7. From that point on the words are gone and the filter is testing numbers: it keeps the lengths from {{lo}} to {{hi}}, both included. sum() adds those survivors to give {{expected}}."
+  },
+  {
+    "type": "ordering",
+    "question": "words is a List<String> of lower-case words. Arrange the lines, first to last, so that total ends up as DOUBLE the combined length of the words that start with \"a\". Only one arrangement compiles.",
+    "items": [
+      "int total = words.stream()",
+      "    .filter(w -> w.startsWith(\"a\"))",
+      "    .mapToInt(String::length)",
+      "    .map(n -> n * 2)",
+      "    .sum();"
+    ],
+    "language": "java",
+    "feedback": "The source comes first and the terminal operation sum() comes last. In between, follow the type travelling down the pipe. startsWith is a String method, so the filter has to run while the elements are still Strings. mapToInt turns them into ints, and only an int can be multiplied by 2, so map(n -> n * 2) must come after it. sum() exists only once the stream holds ints."
+  },
+  {
+    "question": "nums is List.of(2, 4, 7). Which of these expressions are true?",
+    "correct": [
+      "nums.stream().anyMatch(n -> n > 6)",
+      "nums.stream().noneMatch(n -> n > 9)"
+    ],
+    "incorrect": [
+      "nums.stream().allMatch(n -> n % 2 == 0)",
+      "nums.stream().anyMatch(n -> n < 2)",
+      "nums.stream().noneMatch(n -> n == 4)"
+    ],
+    "feedback": "Each of these terminal operations takes a Predicate and returns one boolean. anyMatch needs at least one element to pass: 7 is greater than 6, but nothing is below 2. noneMatch needs every element to fail: nothing is above 9, but 4 does equal 4. allMatch needs every element to pass, and 7 is odd."
+  },
+  {
+    "type": "code_trace",
+    "question": "reduce folds a whole stream into one value: it starts from its first argument and combines each element in turn using its second. What does this print?",
+    "code": "int result = Stream.of(2, 3, 4)\n    .reduce(1, (a, b) -> a * b);\nSystem.out.println(result);",
+    "language": "java",
+    "correct": [
+      "24"
+    ],
+    "case_sensitive": true,
+    "feedback": "The running value a starts at 1. Then each element arrives as b: 1 * 2 = 2, then 2 * 3 = 6, then 6 * 4 = 24. The starting value matters: 1 is the right start for multiplying, just as 0 is the right start for adding. For plain totals prefer mapToInt(...).sum(), which says what it means."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The pipeline that did nothing",
+    "npc": "nia",
+    "intro": "Nia holds up a slate with three lines of code and a small, wicked smile. “Tell me what this prints. Every apprentice gets it wrong the first time, so get it wrong here, with me, and not in front of the dragon.”",
+    "steps": [
+      {
+        "say": "peek is a spy-hole: an intermediate operation that runs a small action on each element as it passes and sends the element on unchanged.",
+        "beats": [
+          {
+            "say": "One new tool first. peek is a spy-hole: an intermediate operation that runs a small action on each element as it goes by, and sends the element on unchanged."
+          },
+          {
+            "code": "Stream<String> s = Stream.of(\"orc\", \"elf\")\n    .peek(w -> System.out.println(\"saw \" + w));\nSystem.out.println(\"ready\");",
+            "language": "java"
+          },
+          {
+            "say": "Most people expect saw orc, saw elf, ready. Run it and the screen shows one word: ready."
+          }
+        ]
+      },
+      {
+        "say": "Intermediate operations are lazy. filter, map, peek and the rest only describe work; they do none of it. Elements move only when a terminal operation asks for them.",
+        "beats": [
+          {
+            "say": "Here is why. Intermediate operations are lazy: filter, map, peek and the rest only DESCRIBE the work. Writing them builds the pipeline and moves nothing through it."
+          },
+          {
+            "say": "Elements start to move only when a terminal operation asks for them. My slate has no terminal operation, so nothing ever flowed."
+          }
+        ],
+        "check": {
+          "prompt": "I add a fourth line:  s.toList();  What appears on the screen after ready?",
+          "answer": "saw orc, then saw elf",
+          "wrong": [
+            "Nothing more, because the stream was already built",
+            "saw orc and nothing else"
+          ],
+          "why": "toList() is a terminal operation. It pulls every element through the pipeline, so each one passes the spy-hole on its way: saw orc, then saw elf, both printed AFTER ready."
+        }
+      },
+      {
+        "say": "The rule: no terminal operation, no work. A pipeline is a plan, and the terminal operation is the order to carry it out."
+      }
+    ],
+    "outro": "“The next monster hides its spy-hole inside a filter and keeps a tally. Ask yourself, at every line: has anything been told to run yet?”"
+  },
+  {
+    "type": "code_trace",
+    "question": "The filter's lambda writes every number it is asked about into the list seen. What does this print?",
+    "code": "List<Integer> seen = new ArrayList<>();\nStream<Integer> s = Stream.of(4, 5, 6)\n    .filter(n -> { seen.add(n); return n > 4; });\nSystem.out.println(seen.size());\nlong big = s.count();\nSystem.out.println(seen.size() + \" \" + big);",
+    "language": "java",
+    "correct": [
+      "0\n3 2",
+      "0 3 2",
+      "0, 3 2"
+    ],
+    "case_sensitive": true,
+    "feedback": "Building the pipeline runs nothing, because filter is lazy, so at the first println the lambda has not been called even once and seen is empty: 0. count() is a terminal operation, so it pulls all three numbers through the filter. The lambda runs three times (seen grows to 3) and two numbers, 5 and 6, pass: 3 2. The lambda may add to seen because it never reassigns the variable; it only calls a method on the list."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "How many lines does this print?\nIntStream.rangeClosed(1, 50)\n    .peek(i -> System.out.println(\"check \" + i))\n    .filter(i -> i % {{k}} == 0)\n    .findFirst();",
+    "variables": {
+      "k": {
+        "min": 3,
+        "max": 9
+      }
+    },
+    "answer": {
+      "expr": "k",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "A stream does not push all 50 numbers through peek and then all 50 through filter. The terminal operation pulls ONE element at a time through the whole pipeline. findFirst is short-circuiting: it stops as soon as it has an answer. Here that is the first multiple of {{k}}, so only 1 to {{k}} ever pass the peek, and {{expected}} lines are printed."
+  },
+  {
+    "question": "What happens when this runs?\nStream<String> s = List.of(\"a\", \"b\").stream();\nSystem.out.println(s.count());\nSystem.out.println(s.count());",
+    "correct": [
+      "It prints 2, then throws an IllegalStateException"
+    ],
+    "incorrect": [
+      "It prints 2, then prints 2 again",
+      "It prints 2, then prints 0 because the stream has been emptied",
+      "It does not compile, because s has two terminal operations"
+    ],
+    "feedback": "A stream can be consumed once. After a terminal operation it is finished, and a second terminal operation throws IllegalStateException when the program runs; the compiler cannot see the problem. The fix is cheap: ask the source for a fresh stream each time, by calling list.stream() again. This is why streams are rarely stored in variables at all."
+  },
+  {
+    "type": "code_trace",
+    "question": "A list is sorted through a stream. What does this print?",
+    "code": "List<String> names = new ArrayList<>(List.of(\"bo\", \"al\"));\nList<String> sorted = names.stream().sorted().toList();\nSystem.out.println(names.getFirst() + \" \" + sorted.getFirst());",
+    "language": "java",
+    "correct": [
+      "bo al"
+    ],
+    "case_sensitive": true,
+    "feedback": "A stream reads from its source and never writes to it. sorted() produces a NEW ordering that ends up in the new list, so sorted starts with al, while names is exactly as it was and still starts with bo. Compare names.sort(null), a List method, which would reorder names itself."
+  },
+  {
+    "question": "nums is List.of(1, 2, 3, 4). What happens at the second line?\nList<Integer> big = nums.stream().filter(n -> n > 2).toList();\nbig.add(99);",
+    "correct": [
+      "It throws UnsupportedOperationException, because toList() returns an unmodifiable list"
+    ],
+    "incorrect": [
+      "It adds 99 to big alone, because big is a separate copy of part of nums",
+      "It adds 99 to big and to nums, because big is a filtered view of nums",
+      "It does not compile, because big was declared as a List and not an ArrayList"
+    ],
+    "feedback": "Stream.toList() hands back a list that cannot be changed, just like List.of: add, remove and set all throw UnsupportedOperationException at run time, although they compile. That is usually what you want from a result. If you need to keep editing it, copy it: new ArrayList<>(big). In older code you will read collect(Collectors.toList()), the pre-Java-16 spelling, which in practice returns an ArrayList but promises nothing about it."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The box that might be empty",
+    "npc": "zoya",
+    "intro": "Zoya slides a small lidded box across the bench. “Some questions have no answer. Which crew member's name starts with Q? Perhaps nobody's. Java needs a way to say so that is more honest than null.”",
+    "steps": [
+      {
+        "say": "findFirst cannot promise a result, so it returns an Optional: an object that holds either one value or nothing.",
+        "beats": [
+          {
+            "say": "findFirst cannot promise there IS a first element, because the filter may have dropped everything. So it does not return a String. It returns an Optional<String>."
+          },
+          {
+            "code": "List<String> crew = List.of(\"Mira\", \"Tov\", \"Quill\");\nOptional<String> hit = crew.stream()\n    .filter(n -> n.startsWith(\"Q\"))\n    .findFirst();\nSystem.out.println(hit);",
+            "language": "java"
+          },
+          {
+            "say": "An Optional is this box: it holds one value, or it is empty. Here it prints Optional[Quill]. The value is inside the box, and you still have to take it out."
+          }
+        ]
+      },
+      {
+        "say": "The safe way to open the box is to say what you want if it is empty: hit.orElse(\"nobody\").",
+        "beats": [
+          {
+            "say": "The safe way to open the box is to say what you want if it turns out to be empty. That is orElse."
+          },
+          {
+            "code": "String name = hit.orElse(\"nobody\");",
+            "language": "java"
+          },
+          {
+            "say": "The box holds Quill, so name is Quill and the fallback is ignored."
+          }
+        ],
+        "check": {
+          "prompt": "I change the filter to startsWith(\"Z\"). Nobody matches. What is name now?",
+          "answer": "nobody",
+          "wrong": [
+            "null",
+            "Optional.empty"
+          ],
+          "why": "The Optional is empty, so orElse hands back its fallback. name is an ordinary String either way: never null, and never the box itself."
+        }
+      },
+      {
+        "say": "Two more ways to use the box without opening it blindly: ifPresent(action) runs the action only when there is a value, and map(function) changes the value inside the box and leaves an empty box empty.",
+        "beats": [
+          {
+            "say": "Two more tools work on the box without opening it blindly. ifPresent(action) runs the action on the value, and does nothing at all if the Optional is empty."
+          },
+          {
+            "say": "map(function) changes the value INSIDE the Optional and gives you a new Optional. An empty one stays empty, so you can map first and choose a fallback with orElse last."
+          }
+        ]
+      }
+    ],
+    "outro": "“The next monster runs two searches, one that finds something and one that does not. Open both boxes the safe way.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Two searches run over the same list; one of them finds nothing. What does this print?",
+    "code": "List<String> names = List.of(\"Ada\", \"Bo\", \"Cy\");\nString a = names.stream()\n    .filter(n -> n.startsWith(\"Z\"))\n    .findFirst().orElse(\"none\");\nString b = names.stream()\n    .filter(n -> n.length() == 2)\n    .findFirst().orElse(\"none\");\nSystem.out.println(a + \" \" + b);",
+    "language": "java",
+    "correct": [
+      "none Bo"
+    ],
+    "case_sensitive": true,
+    "feedback": "No name starts with Z, so the first findFirst returns an empty Optional and orElse supplies its fallback: none. In the second search both Bo and Cy have length 2; findFirst takes the first of them in list order, the Optional holds Bo, and orElse hands that over and ignores the fallback."
+  },
+  {
+    "question": "No name in names starts with \"Z\". What does the call to get() do?\nString z = names.stream()\n    .filter(n -> n.startsWith(\"Z\"))\n    .findFirst()\n    .get();",
+    "correct": [
+      "It throws NoSuchElementException"
+    ],
+    "incorrect": [
+      "It returns null",
+      "It throws NullPointerException",
+      "It returns an empty String"
+    ],
+    "feedback": "get() on an empty Optional throws NoSuchElementException, and the compiler does nothing to stop you: Optional does not force anyone to check. There is no null anywhere in this code, which is the whole point of Optional, so there is no NullPointerException either. Treat get() as a last resort and say what should happen when nothing is found: orElse(fallback), ifPresent(action), or orElseThrow() when absence really is a bug."
+  },
+  {
+    "type": "code_trace",
+    "question": "An Optional is transformed before it is opened. What does this print?",
+    "code": "Optional<String> hit = Stream.of(\"elf\", \"dwarf\", \"goblin\")\n    .filter(w -> w.length() > 3)\n    .findFirst();\nSystem.out.println(hit.map(String::length).orElse(0));",
+    "language": "java",
+    "correct": [
+      "5"
+    ],
+    "case_sensitive": true,
+    "feedback": "elf is too short, so the first word to pass the filter is dwarf, and findFirst stops there without ever reaching goblin. hit holds dwarf. map(String::length) turns the value inside the Optional into 5, giving an Optional<Integer>, and orElse(0) takes it out. Had nothing passed the filter, map would have left the Optional empty and the line would print 0."
+  },
+  {
+    "type": "cloze",
+    "question": "hit is an Optional<String> that may be empty.\nhit.{{1}}(\"none\") hands back the value inside, or \"none\" when there is nothing inside.\nhit.{{2}}(System.out::println) prints the value, and does nothing at all when hit is empty.\nhit.{{3}}(String::length) gives a new Optional holding the length, or an empty one when hit is empty.",
+    "blanks": [
+      {
+        "accept": [
+          "orElse",
+          "orElse()",
+          ".orElse"
+        ],
+        "hint": "method"
+      },
+      {
+        "accept": [
+          "ifPresent",
+          "ifPresent()",
+          ".ifPresent"
+        ],
+        "hint": "method"
+      },
+      {
+        "accept": [
+          "map",
+          "map()",
+          ".map"
+        ],
+        "hint": "method"
+      }
+    ],
+    "feedback": "These three cover nearly every use of an Optional, and none of them can blow up on an empty one. orElse takes a fallback value, ifPresent takes a Consumer and runs it only when there is a value, and map takes a Function and transforms the value while it is still inside. Note the spelling: isPresent() with an s is a different method that merely answers true or false, and checking it before get() is the clumsy style these methods replace."
+  },
+  {
+    "type": "code_trace",
+    "question": "toList() is one way to gather results. collect(...) takes a Collector that gathers them some other way; Collectors.joining glues Strings together with a separator between them. What does this print?",
+    "code": "String line = Stream.of(\"rune\", \"gem\", \"key\")\n    .filter(w -> w.length() == 3)\n    .map(String::toUpperCase)\n    .collect(Collectors.joining(\"-\"));\nSystem.out.println(line);",
+    "language": "java",
+    "correct": [
+      "GEM-KEY"
+    ],
+    "case_sensitive": true,
+    "feedback": "filter keeps the three-letter words, gem and key. map upper-cases each one. joining(\"-\") then builds a single String with the separator BETWEEN elements, never at the start or the end, so the result is GEM-KEY. rune was dropped before the map, so it is never upper-cased at all."
+  },
+  {
+    "type": "code_trace",
+    "question": "Collectors.groupingBy sorts elements into a Map: the function you pass works out each element's key, and each key maps to a List of the elements that produced it. What does this print?",
+    "code": "Map<Integer, List<String>> byLen =\n    Stream.of(\"ox\", \"cat\", \"elk\", \"wolf\")\n        .collect(Collectors.groupingBy(String::length));\nSystem.out.println(byLen.get(3));",
+    "language": "java",
+    "correct": [
+      "[cat, elk]",
+      "[cat,elk]",
+      "cat, elk",
+      "cat elk"
+    ],
+    "case_sensitive": true,
+    "feedback": "String::length gives each word its key: ox goes under 2, cat and elk under 3, wolf under 4. The whole map is {2=[ox], 3=[cat, elk], 4=[wolf]}. get(3) fetches the list stored under key 3, and within a group the words keep the order in which they arrived."
+  },
+  {
+    "type": "code_trace",
+    "question": "A pipeline over a list of records. What does this print?",
+    "code": "record Hero(String name, int level) {}\n\nList<Hero> party = List.of(new Hero(\"Ada\", 7), new Hero(\"Bo\", 12),\n                           new Hero(\"Cy\", 3), new Hero(\"Di\", 9));\nList<String> out = party.stream()\n    .filter(h -> h.level() > 5)\n    .sorted(Comparator.comparing(Hero::level))\n    .map(Hero::name)\n    .toList();\nSystem.out.println(out);",
+    "language": "java",
+    "correct": [
+      "[Ada, Di, Bo]",
+      "[Ada,Di,Bo]",
+      "Ada, Di, Bo",
+      "Ada Di Bo"
+    ],
+    "case_sensitive": true,
+    "feedback": "filter drops Cy (level 3) and keeps Ada 7, Bo 12, Di 9. sorted is given a Comparator built by Comparator.comparing(Hero::level), which means 'order by whatever level() returns', so the heroes line up as 7, 9, 12: Ada, Di, Bo. Only then does map swap each Hero for its name. Sorting had to happen while the elements were still Heroes; after the map there are no levels left to sort by."
   }
 ]

@@ -95,6 +95,8 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
     let result;
     try {
       await until(() => win().gameController && win().LotrdScorm && doc().querySelector('#game-root button'), 'the game to start');
+      // The shim draws its banner only after its own catalog fetch, which can land after the menu.
+      await until(() => doc().getElementById('scorm-progress-banner'), 'the progress banner');
       result = await SCENARIOS[params.scenario](params);
     } catch (err) { result = { error: String(err && err.stack || err) }; }
     document.getElementById('out').textContent = JSON.stringify(result);
