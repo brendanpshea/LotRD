@@ -75,3 +75,32 @@ describe('in a real browser: work done on one device is there on the next', { sk
     assert.equal(second.lmsStillHasPosition, true);
   });
 });
+
+describe('in a real browser: a write-the-method problem', { skip }, () => {
+  let server, seen;
+  before(async () => {
+    server = await startServer();
+    seen = await visit(browser, server.origin, 'classProblem', { set: 'computing_concepts_06_modules_oop.json' });
+  });
+  after(async () => { await server?.close(); });
+
+  it('shows the class so far, ending in the method line the student completes', () => {
+    assert.equal(seen.label, 'Write the method:');
+    assert.match(seen.shown, /class Purse:/);
+    assert.match(seen.shown, /self\.coins = 0/);
+    assert.match(seen.shown.trimEnd(), /def add\(self, n\):$/);
+  });
+
+  it('gives examples as the steps taken and what they should leave behind', () => {
+    assert.match(seen.examples, /p = Purse\(\); p\.add\(5\); p\.coins → 5/);
+  });
+
+  it('fails the forgotten self. by showing the purse still empty, rather than by crashing', () => {
+    assert.match(seen.forgotSelf, /0/);
+    assert.doesNotMatch(seen.forgotSelf, /did not run/i);
+  });
+
+  it('passes every test for the right method', () => {
+    assert.match(seen.correct, /4 (of|\/) 4|all 4|4 passed/i);
+  });
+});

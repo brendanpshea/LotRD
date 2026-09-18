@@ -4,6 +4,7 @@ import {
 } from "./util.js";
 import { highlightJava, highlightPython } from "./highlight.js";
 import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples } from "./model.js";
+import { problemHeader } from "./pytiny.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
 
 const LEVEL_TITLES = [
@@ -1584,7 +1585,17 @@ export class GameUI {
     renderTemplate(this.root, "tpl-encounter-code-write");
     this._populateEncounterHeader(this.root);
     $(this.root, "[data-ref=qText]").textContent = q.question;
-    $(this.root, "[data-ref=signature]").innerHTML = highlightPython(q.signature || "");
+    // A method problem shows the class so far, read-only, ending in the def line
+    // the student is completing; a whole-class problem shows just its class line.
+    const writingClass = /^\s*class\s/.test(q.signature || "");
+    const kind = q.scaffold ? "method" : writingClass ? "class" : "function";
+    $(this.root, "[data-ref=signature]").innerHTML = highlightPython(problemHeader(q));
+    $(this.root, "[data-ref=signature]").setAttribute("aria-label",
+      q.scaffold ? "The class so far, ending in the method you are writing" : `${kind} definition`);
+    const taskLabel = $(this.root, "[data-ref=taskLabel]");
+    if (taskLabel) taskLabel.textContent = `Write the ${kind}:`;
+    const bodyLabel = $(this.root, "[data-ref=bodyLabel]");
+    if (bodyLabel) bodyLabel.textContent = `Your code, the body of the ${kind}`;
 
     const examplesEl = $(this.root, "[data-ref=examples]");
     const examples = codeWriteExamples(q);
@@ -1639,7 +1650,7 @@ export class GameUI {
     runBtn.addEventListener("click", runTests);
     submitBtn.addEventListener("click", () => {
       if (!input.value.trim()) {
-        this.showFeedbackInline("Write the body of the function before submitting.");
+        this.showFeedbackInline(`Write the body of the ${kind} before submitting.`);
         return;
       }
       this.controller.submitCodeWrite(input.value);

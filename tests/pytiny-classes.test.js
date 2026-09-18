@@ -601,6 +601,21 @@ describe('classes: what a student is told when it goes wrong', () => {
     assert.match(interpreter.output.join(''), /Hero object/);
   });
 
+  it('return outside a function is a syntax error, as in Python — at the top level and in a class body', () => {
+    // Left to run, either of these used to escape as an internal signal instead of an error.
+    assert.equal(failure('x = 1\nreturn x\n').kind, 'syntax');
+    const inClass = failure('class Stack:\n    return "not the answer"\n');
+    assert.equal(inClass.kind, 'syntax');
+    assert.equal(inClass.line, 2);
+    assert.match(inClass.message, /inside a function/);
+  });
+
+  it('return inside a method, or a function nested in one, is of course fine', () => {
+    const interpreter = new Interpreter();
+    interpreter.run(parse('class A:\n    def f(self):\n        def g():\n            return 2\n        return g() + 1\nprint(A().f())\n'));
+    assert.equal(interpreter.output.join(''), '3\n');
+  });
+
   it('endless recursion through a method is still caught', () => {
     const err = failure('class Loop:\n    def go(self):\n        return self.go()\nLoop().go()\n');
     assert.equal(err.kind, 'limit');

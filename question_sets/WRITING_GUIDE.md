@@ -679,9 +679,54 @@ Ordinary JSON, converted to Python values: whole numbers become ints, fractions 
 
 `def`, `return`, `if`/`elif`/`else`, `while`, `for ... in`, `break`, `continue`, `pass`, ints, floats, strings, bools, `None`, lists, tuples, dicts, indexing, slicing, f-strings, keyword arguments and defaults, conditional expressions, recursion, and the usual built-ins and string/list/dict methods.
 
-**Classes run, but there is no class *problem* format yet.** The interpreter supports `class`, `__init__`, `self.` attributes, methods, class attributes and `__str__` (checked against real Python in `tests/pytiny-classes.test.js`), so a student may define a helper class inside a function body. What does not exist yet is a way to ask "write this method": a `code_write` problem is still one function under a fixed `def` line. Inheritance is refused by name.
+**Classes are supported** — `class`, `__init__`, `self.` attributes, methods, class attributes and `__str__` — and checked against real Python in `tests/pytiny-classes.test.js`. Inheritance is refused by name. See *Class problems* below for how to ask a student to write one.
 
 **Not supported, on purpose:** inheritance, imports, exceptions, comprehensions, generators, sets, lambdas, `global`. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.
+
+### Class problems
+
+A function is graded by calling it: arguments in, value out. An object cannot be — what a method *does* shows only in what the object has become. So a class problem's tests are short scripts, each followed by one expression to look at:
+
+```json
+{
+  "type": "code_write",
+  "question": "Write add so that it puts n more coins in THIS purse. It does not need to return anything.",
+  "scaffold": "class Purse:
+    def __init__(self):
+        self.coins = 0",
+  "signature": "def add(self, n):",
+  "tests": [
+    { "run": "p = Purse()
+p.add(5)",             "check": "p.coins", "expect": 5 },
+    { "run": "p = Purse()
+p.add(5)
+p.add(2)",   "check": "p.coins", "expect": 7 },
+    { "run": "a = Purse()
+b = Purse()
+a.add(3)", "check": "b.coins", "expect": 0 }
+  ],
+  "solution": "self.coins = self.coins + n",
+  "feedback": "The update has to be written to self.coins…"
+}
+```
+
+| Field | Notes |
+|-------|-------|
+| `scaffold` | The class so far, shown read-only above the box. Begins `class Name:`; may hold several classes, as long as it ENDS inside the one the method belongs to. Omit it to ask for a whole class |
+| `signature` | With a scaffold: the method's `def` line, first parameter `self`. Without one: the class line, `class Stack:`, and the student writes every method |
+| `tests[].run` | Optional setup script. Each test starts from a fresh program, so build the objects here |
+| `tests[].check` | One expression, evaluated after `run`. `run` plus `check` must fit in 120 characters — the whole row is shown to the student, on a phone too |
+| `tests[].expect` | As for function problems |
+
+Both natural things to type are accepted: just the body, or the method (or class) pasted in with its header line. Error messages count lines in the student's box; an error raised by the *test's* own line — almost always a missing or misnamed method — is reported without a line number, because it points at nothing the student can see.
+
+Writing good ones:
+
+1. **Always include a test with two objects.** `a = Purse(); b = Purse(); a.add(3)` then check `b.coins`. It is the only thing that catches a list or counter put in the class body instead of `__init__`, and it costs one line.
+2. **Test the state, not only the return value.** For a method that returns True/False *and* changes something, check both, in separate tests — including that a refused operation changed nothing.
+3. **Let the classic bug fail, not crash.** `coins = self.coins + n` should come back as "expected 5, got 0". If your tests would raise instead, the student learns less.
+4. **Say exactly what is stored and what is returned**, including attribute names: the tests look for `lamp.fuel`, so the question has to say "an attribute called fuel".
+5. **End a block on a whole class**, once the single-method problems have built up to it.
 
 ### Writing Good Write-the-Code Problems
 

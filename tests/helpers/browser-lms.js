@@ -80,6 +80,27 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
       report.lmsHasPosition = (lms.record()['cmi.suspend_data'] || '').includes(leave);
       return report;
     },
+    // A write-the-method problem: the class so far is shown read-only above the box,
+    // Run grades what the object has BECOME, and the classic bug fails without crashing.
+    async classProblem({ set }) {
+      const gc = win().gameController;
+      await gc._launchSet(set, 'new');
+      await until(() => gc.model, 'the set to load');
+      const problem = gc.model.questions.find(x => x.type === 'code_write' && x.scaffold && String(x.signature).startsWith('def add('));
+      gc.model.questions_to_ask = [problem];
+      gc.model.current_question = null;
+      gc.continueAdventure();
+      await until(() => doc().querySelector('[data-ref=bodyInput]'), 'the editor');
+      const box = doc().querySelector('[data-ref=bodyInput]');
+      const run = async body => { box.value = body; doc().querySelector('[data-action=run]').click(); await sleep(200); return doc().querySelector('[data-ref=runResults]').innerText; };
+      return {
+        label: doc().querySelector('[data-ref=taskLabel]').textContent,
+        shown: doc().querySelector('[data-ref=signature]').innerText,
+        examples: doc().querySelector('[data-ref=examples]').innerText,
+        forgotSelf: await run('coins = self.coins + n'),
+        correct: await run('self.coins = self.coins + n'),
+      };
+    },
     // Device two: a browser that has never seen the game. Just look at the menu.
     async look({ clear, leave, clearTitle, leaveTitle }) {
       for (const d of doc().querySelectorAll('details')) d.open = true;

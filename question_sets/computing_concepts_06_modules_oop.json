@@ -993,5 +993,241 @@
       "tolerance_abs": 0
     },
     "feedback_template": "This is composition: the deck has cards rather than being one. Summing {{n}} cards worth {{v}} each gives {{expected}}."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Writing a method yourself",
+    "npc": "zoya",
+    "intro": "Zoya clears a space on the bench and slides a slate across. “You have read enough classes,” they say. “Now you write them. The class is given; you supply one method. Two habits will carry you through.”",
+    "steps": [
+      {
+        "say": "First habit: anything the object must REMEMBER is written through self.\nclass Lamp:\n    def __init__(self, fuel):\n        self.fuel = fuel\nself.fuel is an attribute: it is still there after __init__ ends. A plain fuel would be gone.",
+        "beats": [
+          {
+            "say": "First habit: anything the object must REMEMBER is written through self."
+          },
+          {
+            "code": "class Lamp:\n    def __init__(self, fuel):\n        self.fuel = fuel",
+            "language": "python"
+          },
+          {
+            "say": "self.fuel is an attribute: it is still there after __init__ ends. A plain fuel would be gone."
+          }
+        ]
+      },
+      {
+        "say": "Second habit: a method that changes the object reads the old value from self and stores the new one back on self.\n    def burn(self):\n        self.fuel = self.fuel - 1\nBoth sides say self.fuel. Leave it off the left side and the lamp never gets dimmer.",
+        "beats": [
+          {
+            "say": "Second habit: a method that changes the object reads the old value from self and stores the new one back on self."
+          },
+          {
+            "code": "    def burn(self):\n        self.fuel = self.fuel - 1",
+            "language": "python"
+          },
+          {
+            "say": "Both sides say self.fuel. Leave it off the left side and the lamp never gets dimmer."
+          }
+        ],
+        "check": {
+          "prompt": "lamp = Lamp(3), then lamp.burn() twice. What is lamp.fuel?",
+          "answer": "1 — each call stored the smaller number back on the lamp",
+          "wrong": [
+            "3 — burn() works on a copy of the lamp",
+            "2 — only the first call counts"
+          ],
+          "why": "burn() writes to self.fuel, and self IS the lamp it was called on, so the change stays: 3, then 2, then 1."
+        }
+      },
+      {
+        "say": "Your code is tested by building objects, calling your method, and then looking at what the object has become. Press Run as often as you like; it costs nothing.",
+        "beats": [
+          {
+            "say": "Your code is tested by building objects, calling your method, and then looking at what the object has become. Press Run as often as you like; it costs nothing."
+          }
+        ]
+      }
+    ],
+    "outro": "Zoya hands you the chalk. “Start small: teach a lantern to remember its fuel.”"
+  },
+  {
+    "type": "code_write",
+    "question": "Finish __init__ so that every new Lantern stores the fuel it was given in an attribute called fuel, and starts with an attribute called lit set to False.",
+    "scaffold": "class Lantern:",
+    "signature": "def __init__(self, fuel):",
+    "tests": [
+      {
+        "run": "lamp = Lantern(3)",
+        "check": "lamp.fuel",
+        "expect": 3
+      },
+      {
+        "run": "lamp = Lantern(3)",
+        "check": "lamp.lit",
+        "expect": false
+      },
+      {
+        "run": "a = Lantern(9)\nb = Lantern(1)",
+        "check": "a.fuel - b.fuel",
+        "expect": 8
+      }
+    ],
+    "solution": "self.fuel = fuel\nself.lit = False",
+    "hint": "An attribute is made by assigning to it through self: self.fuel = fuel keeps the value on this lantern after __init__ ends.",
+    "feedback": "__init__ runs once for each new object, and its job is to store what that object needs on self. fuel on its own is only a parameter, gone when __init__ returns; self.fuel is the attribute that stays."
+  },
+  {
+    "type": "code_write",
+    "question": "Write add so that it puts n more coins in THIS purse. It does not need to return anything.",
+    "scaffold": "class Purse:\n    def __init__(self):\n        self.coins = 0",
+    "signature": "def add(self, n):",
+    "tests": [
+      {
+        "run": "p = Purse()\np.add(5)",
+        "check": "p.coins",
+        "expect": 5
+      },
+      {
+        "run": "p = Purse()\np.add(5)\np.add(2)",
+        "check": "p.coins",
+        "expect": 7
+      },
+      {
+        "run": "a = Purse()\nb = Purse()\na.add(3)",
+        "check": "b.coins",
+        "expect": 0
+      },
+      {
+        "run": "p = Purse()\np.add(0)",
+        "check": "p.coins",
+        "expect": 0
+      }
+    ],
+    "solution": "self.coins = self.coins + n",
+    "hint": "Read the old amount from self.coins, and store the new amount back in self.coins. A plain coins would be a local variable.",
+    "feedback": "The update has to be written to self.coins. coins = self.coins + n works out the right number and then drops it, because coins without self. is a local variable that vanishes when add() ends — the quietest bug in this chapter."
+  },
+  {
+    "type": "code_write",
+    "question": "Write withdraw. If amount is more than the balance, change nothing and return False. Otherwise take amount off the balance and return True.",
+    "scaffold": "class Account:\n    def __init__(self, balance):\n        self.balance = balance",
+    "signature": "def withdraw(self, amount):",
+    "tests": [
+      {
+        "run": "a = Account(50)",
+        "check": "a.withdraw(20)",
+        "expect": true
+      },
+      {
+        "run": "a = Account(50)\na.withdraw(20)",
+        "check": "a.balance",
+        "expect": 30
+      },
+      {
+        "run": "a = Account(50)",
+        "check": "a.withdraw(80)",
+        "expect": false
+      },
+      {
+        "run": "a = Account(50)\na.withdraw(80)",
+        "check": "a.balance",
+        "expect": 50
+      },
+      {
+        "run": "a = Account(50)\na.withdraw(50)",
+        "check": "a.balance",
+        "expect": 0
+      }
+    ],
+    "solution": "if amount > self.balance:\n    return False\nself.balance = self.balance - amount\nreturn True",
+    "hint": "Deal with the refusal first: if amount > self.balance, return False straight away. Whatever comes after that line only runs for a withdrawal that is allowed.",
+    "feedback": "This is encapsulation doing its job: the balance changes only inside a method that checks the rule first, so no caller can overdraw the account by accident. Taking out exactly the balance is allowed, which is why the test is > and not >=."
+  },
+  {
+    "type": "code_write",
+    "question": "Write __str__ so that printing a hero shows the name, then the hp in parentheses followed by \" hp\" — for example Ayla (9 hp).",
+    "scaffold": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp",
+    "signature": "def __str__(self):",
+    "tests": [
+      {
+        "run": "h = Hero(\"Ayla\", 9)",
+        "check": "str(h)",
+        "expect": "Ayla (9 hp)"
+      },
+      {
+        "run": "h = Hero(\"Bo\", 12)",
+        "check": "str(h)",
+        "expect": "Bo (12 hp)"
+      },
+      {
+        "run": "h = Hero(\"Ayla\", 9)\nh.hp = 4",
+        "check": "str(h)",
+        "expect": "Ayla (4 hp)"
+      }
+    ],
+    "solution": "return f\"{self.name} ({self.hp} hp)\"",
+    "hint": "An f-string builds the text in one go: f\"{self.name} (...)\". __str__ must RETURN the text, not print it.",
+    "feedback": "print(h) and str(h) both ask the object for its text by calling __str__, so it has to return a string. Reading self.name and self.hp at that moment is why the third test shows the hp after it changed."
+  },
+  {
+    "type": "code_write",
+    "question": "A Squad keeps Guard objects in self.members. Write total_rank so that it returns the ranks of all its members added together — 0 for an empty squad.",
+    "scaffold": "class Guard:\n    def __init__(self, name, rank):\n        self.name = name\n        self.rank = rank\n\nclass Squad:\n    def __init__(self):\n        self.members = []\n    def recruit(self, guard):\n        self.members.append(guard)",
+    "signature": "def total_rank(self):",
+    "tests": [
+      {
+        "run": "s = Squad()",
+        "check": "s.total_rank()",
+        "expect": 0
+      },
+      {
+        "run": "s = Squad()\ns.recruit(Guard(\"Lia\", 4))",
+        "check": "s.total_rank()",
+        "expect": 4
+      },
+      {
+        "run": "s = Squad()\ns.recruit(Guard(\"Lia\", 4))\ns.recruit(Guard(\"Oz\", 7))",
+        "check": "s.total_rank()",
+        "expect": 11
+      }
+    ],
+    "solution": "total = 0\nfor guard in self.members:\n    total = total + guard.rank\nreturn total",
+    "hint": "The accumulator pattern, over objects: start total at 0, loop over self.members, and add each guard.rank.",
+    "feedback": "A squad HAS guards — composition — so the method walks the list the squad holds and reads each guard's own attribute. It is the same accumulator loop as in chapter 4; only what gets added has changed."
+  },
+  {
+    "type": "code_write",
+    "question": "Write the whole class. A Stack starts empty. push(x) adds x on top; pop() removes the top item and returns it; size() returns how many items it holds. Every Stack must have its own items.",
+    "signature": "class Stack:",
+    "tests": [
+      {
+        "run": "s = Stack()",
+        "check": "s.size()",
+        "expect": 0
+      },
+      {
+        "run": "s = Stack()\ns.push(1)\ns.push(2)",
+        "check": "s.size()",
+        "expect": 2
+      },
+      {
+        "run": "s = Stack()\ns.push(1)\ns.push(2)",
+        "check": "s.pop()",
+        "expect": 2
+      },
+      {
+        "run": "s = Stack()\ns.push(1)\ns.push(2)\ns.pop()\ns.push(3)",
+        "check": "s.pop()",
+        "expect": 3
+      },
+      {
+        "run": "a = Stack()\nb = Stack()\na.push(9)",
+        "check": "b.size()",
+        "expect": 0
+      }
+    ],
+    "solution": "def __init__(self):\n    self.items = []\ndef push(self, x):\n    self.items.append(x)\ndef pop(self):\n    return self.items.pop()\ndef size(self):\n    return len(self.items)",
+    "hint": "Four methods, each beginning def ...(self...). Make the list in __init__ as self.items = [] so every stack gets its own; a list has append() and pop() already.",
+    "feedback": "This is an abstract data type: callers see push, pop and size, and the list behind them is your business. The last test is the shared-list bug in disguise — write items = [] in the class body instead of self.items = [] in __init__ and every stack shares one list, so b would not be empty."
   }
 ]

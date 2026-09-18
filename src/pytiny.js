@@ -398,7 +398,9 @@ class Parser {
             this.next();
             this.parseExpression();
         }
-        const body = this.parseBlock('def');
+        this.funcDepth = (this.funcDepth || 0) + 1;
+        let body;
+        try { body = this.parseBlock('def'); } finally { this.funcDepth--; }
         return { type: 'FuncDef', name: nameTok.value, params, body, line };
     }
 
@@ -420,7 +422,11 @@ class Parser {
             }
             this.next();
         }
-        const body = this.parseBlock('class');
+        // A class body is not inside any function, even when the class is.
+        const outer = this.funcDepth || 0;
+        this.funcDepth = 0;
+        let body;
+        try { body = this.parseBlock('class'); } finally { this.funcDepth = outer; }
         return { type: 'ClassDef', name: nameTok.value, body, line };
     }
 
@@ -493,6 +499,12 @@ class Parser {
         const line = this.line;
 
         if (this.atKeyword('return')) {
+            if (!(this.funcDepth > 0)) {
+                // Python rejects this before running anything, and so must we: left
+                // to run, it would escape as an internal signal rather than an error.
+                throw syntaxError('"return" only works inside a function.', line,
+                    'A return hands a value back from a def. Indent it under the def line it belongs to.');
+            }
             this.next();
             let value = null;
             if (!this.at('newline') && !this.at('eof')) value = this.parseExpression();
@@ -2629,6 +2641,167 @@ export function runTestCases({ signature, body, tests, limits = {}, now = () => 
         // of returning it. Worth naming, because every row looks wrong otherwise.
         printedOnly: anyPrinted && !anyReturned && results.length > 0,
     };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Class problems
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// A function problem can be graded by calling the function: arguments in, value
+// out. An object cannot. What a method DOES is only visible afterwards — in an
+// attribute, in what a later call returns — so a class problem's test is a short
+// script followed by an expression to look at:
+//
+//     { "run": "p = Purse()\np.add(5)\np.add(2)", "check": "p.coins", "expect": 7 }
+//
+// Two shapes of problem use this:
+//   • write ONE METHOD: the question supplies `scaffold` (the class so far, read
+//     only) and `signature` is the method's def line; the student writes its body;
+//   • write A WHOLE CLASS: no scaffold, and `signature` is the `class Name:` line.
+
+/** True for a problem graded by scripts rather than by calling one function. */
+export function isScriptProblem(question) {
+    return Array.isArray(question?.tests) && question.tests.some(t => t && typeof t.check === 'string');
+}
+
+const indentBy = (lines, base, by) =>
+    lines.map(l => (l.trim().length === 0 ? '' : ' '.repeat(by) + l.slice(base)));
+
+/**
+ * Put the student's text where it belongs. As with function problems, both
+ * natural things to type are accepted: just the body, or the whole thing pasted
+ * in with its header line.
+ */
+export function assembleProblem({ scaffold, signature, body }) {
+    const raw = String(body ?? '').replace(/\r\n?/g, '\n');
+    const lines = raw.split('\n').map(l => l.replace(/\t/g, TAB_AS_SPACES));
+    const codeLines = lines.filter(l => l.trim().length > 0);
+    if (codeLines.length === 0) {
+        throw syntaxError('You have not written any code yet.', 1,
+            scaffold ? 'Write the lines that make the method do its job.'
+                     : 'Write the methods the class needs, starting with def __init__(self, ...):');
+    }
+    const base = Math.min(...codeLines.map(l => l.length - l.trimStart().length));
+    const first = codeLines[0].trimStart();
+    const header = String(signature ?? '').trim();
+
+    // A whole class pasted in: run it as written.
+    if (/^class\s/.test(first)) return { source: lines.join('\n') + '\n', lineOffset: 0, pasted: true };
+
+    if (scaffold) {
+        const top = String(scaffold).replace(/\r\n?/g, '\n').replace(/\n+$/, '');
+        const above = top.split('\n').length;
+        if (/^def\s/.test(first)) {
+            // The method pasted with its def line: it goes inside the class as it is.
+            return { source: `${top}\n${indentBy(lines, base, 4).join('\n')}\n`, lineOffset: above, pasted: true };
+        }
+        return { source: `${top}\n    ${header}\n${indentBy(lines, base, 8).join('\n')}\n`, lineOffset: above + 1, pasted: false };
+    }
+    return { source: `${header}\n${indentBy(lines, base, 4).join('\n')}\n`, lineOffset: 1, pasted: false };
+}
+
+/** What the student is shown above the box: the class so far, and the line they are completing. */
+export function problemHeader(question) {
+    const header = String(question?.signature ?? '').trim();
+    if (!question?.scaffold) return header;
+    return `${String(question.scaffold).replace(/\r\n?/g, '\n').replace(/\n+$/, '')}\n    ${header}`;
+}
+
+// Lines of a test script are numbered from here, so an error can be told apart
+// from one in the student's own code — whose line numbers they need to see.
+const SCRIPT_LINE_BASE = 100000;
+
+function shiftLines(node, by) {
+    if (Array.isArray(node)) { node.forEach(n => shiftLines(n, by)); return; }
+    if (!node || typeof node !== 'object') return;
+    if (typeof node.line === 'number') node.line += by;
+    for (const value of Object.values(node)) if (value && typeof value === 'object') shiftLines(value, by);
+}
+
+function parseScript(text) {
+    const ast = parse(String(text ?? '').replace(/\r\n?/g, '\n') + '\n');
+    shiftLines(ast, SCRIPT_LINE_BASE);
+    return ast;
+}
+
+/** `p = Purse(); p.add(5)  →  p.coins` — how a script test is written out in the results table. */
+export function describeScript(testCase) {
+    const steps = String(testCase.run ?? '').split('\n').map(l => l.trim()).filter(Boolean);
+    return [...steps, testCase.check].join('; ');
+}
+
+/**
+ * Run a class problem's tests. Returns the same shape as runTestCases, so the
+ * results table and the grading treat the two kinds of problem alike.
+ */
+export function runScriptCases({ scaffold = null, signature, body, tests, limits = {}, now = () => Date.now() }) {
+    const cases = Array.isArray(tests) ? tests : [];
+    let assembled;
+    try {
+        assembled = assembleProblem({ scaffold, signature, body });
+    } catch (err) {
+        if (err instanceof PyError) return failed(reportError(err, 0), cases);
+        throw err;
+    }
+    const { source, lineOffset } = assembled;
+
+    let ast;
+    try {
+        ast = parse(source);
+    } catch (err) {
+        if (err instanceof PyError) return failed(reportError(err, lineOffset), cases);
+        throw err;
+    }
+
+    const results = [];
+    const startedAt = now();
+    for (const testCase of cases) {
+        const expected = fromJson(testCase.expect);
+        const row = { call: describeScript(testCase), expectedRepr: pyRepr(expected), actualRepr: null, passed: false, output: [], error: null };
+        if (now() - startedAt > TOTAL_RUN_MS) {
+            row.error = { message: 'This run was stopped — the earlier tests took too long.', hint: null, line: null, kind: 'limit' };
+            results.push(row);
+            continue;
+        }
+        const interp = new Interpreter({ ...limits, lineOffset, now });
+        try {
+            interp.run(ast);
+            if (testCase.run) interp.execBlock(parseScript(testCase.run).body, interp.globals);
+            const check = parseScript(testCase.check).body[0];
+            const value = interp.evaluate(check.expr, interp.globals);
+            row.actualRepr = pyRepr(value);
+            row.passed = pyEquals(value, expected);
+        } catch (err) {
+            if (!(err instanceof PyError)) throw err;
+            if (typeof err.line === 'number' && err.line >= SCRIPT_LINE_BASE) {
+                // It went wrong in the TEST's line, not in a line the student wrote:
+                // usually a method that is missing or misnamed. Say what the test
+                // was doing; a line number here would point at nothing they can see.
+                row.error = { message: err.message, hint: err.hint ?? null, line: null, kind: err.kind ?? 'runtime' };
+            } else {
+                row.error = reportError(err, lineOffset);
+            }
+        }
+        row.output = interp.outputLines();
+        results.push(row);
+    }
+
+    return {
+        ok: true,
+        error: null,
+        results,
+        passed: results.filter(r => r.passed).length,
+        total: results.length,
+        printedOnly: false,
+    };
+}
+
+/** Run whichever kind of problem this is. Everything that grades a code_write goes through here. */
+export function runProblem(question, body, options = {}) {
+    if (isScriptProblem(question)) {
+        return runScriptCases({ scaffold: question.scaffold ?? null, signature: question.signature, body, tests: question.tests, ...options });
+    }
+    return runTestCases({ signature: question.signature, body, tests: question.tests, ...options });
 }
 
 function failed(error, cases) {

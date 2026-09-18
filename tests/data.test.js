@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
-import { runTestCases, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
+import { runProblem, isScriptProblem, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
 
 const ROOT = join(import.meta.dirname, '..');
 const MAX_TYPED_ANSWER_CHARS = 12;
@@ -585,6 +585,36 @@ describe('Question set file validation', () => {
               assert.ok(refs.includes(bi),
                 `${label}: blanks[${bi - 1}] has no {{${bi}}} placeholder in the question`);
             }
+          } else if (type === 'code_write' && isScriptProblem(q)) {
+            // A class problem: graded by short scripts, because what a method does
+            // shows only in what the object has become. Either one method inside a
+            // supplied class (scaffold + def line) or a whole class (class line).
+            const sig = String(q.signature ?? '').trim();
+            if (q.scaffold !== undefined) {
+              assert.ok(typeof q.scaffold === 'string' && /^class\s+\w+\s*(\(\s*\))?\s*:/.test(q.scaffold.trim()),
+                `${label}: scaffold must be the class so far, beginning "class Name:"`);
+              assert.ok(/^def\s+\w+\s*\(\s*self\b.*\)\s*:$/.test(sig),
+                `${label}: with a scaffold, signature is the method's def line and its first parameter is self`);
+            } else {
+              assert.ok(/^class\s+\w+\s*(\(\s*\))?\s*:$/.test(sig),
+                `${label}: a class problem with no scaffold needs a signature like "class Stack:"`);
+            }
+            assert.ok(q.tests.length >= 3, `${label}: code_write needs at least 3 test cases`);
+            for (const [ti, t] of q.tests.entries()) {
+              assert.ok(typeof t.check === 'string' && t.check.trim() && !t.check.includes('\n'),
+                `${label}: test ${ti + 1} needs a one-line "check" expression`);
+              assert.ok(t.run === undefined || typeof t.run === 'string', `${label}: test ${ti + 1} "run" must be text`);
+              assert.ok('expect' in t, `${label}: test ${ti + 1} needs an expect value`);
+              assert.ok(!('args' in t), `${label}: test ${ti + 1} mixes "args" with "check"; a problem is one kind or the other`);
+              // The whole row is shown to the student, on a phone as well.
+              assert.ok(`${t.run ?? ''}${t.check}`.length <= 120, `${label}: test ${ti + 1} is too long to read in the results table`);
+            }
+            assert.ok(typeof q.solution === 'string' && q.solution.trim().length > 0,
+              `${label}: code_write needs a reference solution`);
+            if ('hint' in q) {
+              assert.ok(typeof q.hint === 'string' && q.hint.trim().length > 0 && q.hint.length <= 240,
+                `${label}: hint must be one line of at most 240 characters`);
+            }
           } else if (type === 'code_write') {
             assert.ok(typeof q.signature === 'string' && /^def\s+\w+\s*\(.*\)\s*:$/.test(q.signature.trim()),
               `${label}: code_write needs a signature line like "def add(a, b):"`);
@@ -1123,10 +1153,12 @@ describe('code_write problems are solvable', () => {
 
     describe(setId, () => {
       for (const { q, i } of problems) {
-        const { name } = parseSignature(q.signature);
+        const name = isScriptProblem(q)
+          ? String(q.signature).trim().replace(/^(def|class)\s+/, '').replace(/[(:].*$/, '')
+          : parseSignature(q.signature).name;
 
         it(`${name}() — the reference solution passes every test`, () => {
-          const outcome = runTestCases({ signature: q.signature, body: q.solution, tests: q.tests });
+          const outcome = runProblem(q, q.solution);
           assert.ok(outcome.ok,
             `${setId}[${i}] ${name}(): the reference solution does not run — ` +
             `${outcome.error?.message} (line ${outcome.error?.line})`);
@@ -1144,8 +1176,11 @@ describe('code_write problems are solvable', () => {
           // A table every body passes grades nothing. Returning a constant is the
           // laziest possible answer, so at least one case must reject each of the
           // constants a student could stumble into.
-          for (const lazy of ['return None', 'return True', 'return False', 'return 0', 'return ""']) {
-            const outcome = runTestCases({ signature: q.signature, body: lazy, tests: q.tests });
+          const lazyBodies = isScriptProblem(q)
+            ? (q.scaffold ? ['pass', 'return None', 'return 0', 'return True'] : ['pass', 'def __init__(self):\n    pass'])
+            : ['return None', 'return True', 'return False', 'return 0', 'return ""'];
+          for (const lazy of lazyBodies) {
+            const outcome = runProblem(q, lazy);
             assert.ok(!outcome.ok || outcome.passed < outcome.total,
               `${setId}[${i}] ${name}(): "${lazy}" passes every test — the table needs a ` +
               `case that rules it out`);
@@ -1157,7 +1192,7 @@ describe('code_write problems are solvable', () => {
           // unless authored, so an authored set has to be checked by hand-eye;
           // what can be checked here is that a starter body is a legal shape.
           if (typeof q.starter === 'string' && q.starter.trim()) {
-            const outcome = runTestCases({ signature: q.signature, body: q.starter, tests: q.tests });
+            const outcome = runProblem(q, q.starter);
             assert.ok(outcome.passed < outcome.total,
               `${setId}[${i}] ${name}(): the starter code already passes every test`);
           }

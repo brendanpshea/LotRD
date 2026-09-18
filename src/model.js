@@ -17,7 +17,10 @@ export async function loadJSON(url) {
 }
 
 import { shuffle } from "./util.js";
-import { runTestCases, describeCall, fromJson, pyRepr, parseSignature } from "./pytiny.js";
+import {
+    runProblem, isScriptProblem, problemHeader, describeScript,
+    describeCall, fromJson, pyRepr, parseSignature,
+} from "./pytiny.js";
 
 /**
  * How many attack dice a write-the-code question is worth in total, split
@@ -29,12 +32,15 @@ export const CODE_WRITE_HIT_BUDGET = 4;
 export function codeWriteSolutionText(question) {
     const body = String(question?.solution ?? "").replace(/\r\n?/g, "\n");
     const lines = body.split("\n").filter(l => l.trim().length > 0);
-    if (lines.length === 0) return String(question?.signature ?? "");
+    // A method problem shows the class it belongs to, so the body sits one level deeper.
+    const header = problemHeader(question);
+    if (lines.length === 0) return header;
     const base = Math.min(...lines.map(l => l.length - l.trimStart().length));
+    const pad = question?.scaffold ? "        " : "    ";
     const indented = body.split("\n")
-        .map(l => (l.trim().length === 0 ? "" : "    " + l.slice(base)))
+        .map(l => (l.trim().length === 0 ? "" : pad + l.slice(base)))
         .join("\n");
-    return `${String(question?.signature ?? "").trim()}\n${indented}`;
+    return `${header}\n${indented}`;
 }
 
 /**
@@ -45,6 +51,11 @@ export function codeWriteSolutionText(question) {
 export function codeWriteExamples(question, limit = 3) {
     if (Array.isArray(question?.examples) && question.examples.length > 0) {
         return question.examples.slice(0, limit);
+    }
+    if (isScriptProblem(question)) {
+        // A class problem's example is the steps taken and what they should leave behind.
+        return (question.tests || []).slice(0, limit).map(testCase =>
+            `${describeScript(testCase)} → ${pyRepr(fromJson(testCase.expect))}`);
     }
     const { name } = parseSignature(question.signature);
     return (question.tests || []).slice(0, limit).map(testCase =>
@@ -2340,11 +2351,7 @@ export class GameModel {
     runCodeWrite(bodyText) {
         const q = this.current_question;
         if (!q) return null;
-        return runTestCases({
-            signature: q.signature,
-            body: bodyText,
-            tests: q.tests || [],
-        });
+        return runProblem(q, bodyText);
     }
 
     /**
@@ -2360,11 +2367,7 @@ export class GameModel {
     evaluateCodeWrite(bodyText) {
         if (!this.current_question) return null;
         const q = this.current_question;
-        const outcome = runTestCases({
-            signature: q.signature,
-            body: bodyText,
-            tests: q.tests || [],
-        });
+        const outcome = runProblem(q, bodyText);
 
         const correctSelections   = [];
         const incorrectSelections = [];
