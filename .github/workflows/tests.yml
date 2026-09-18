@@ -1,0 +1,25 @@
+name: tests
+
+# Every push and pull request runs the whole suite, including the data-loss
+# scenarios (tests/dataloss.test.js) and the real-browser check
+# (tests/browser.test.js). These exist because "students never lose work they
+# have done" has regressed before, each time without anyone noticing until a
+# student wrote in. A red X here is that email, arriving early.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run the test suite
+        env:
+          # The runner ships with Chrome. If it ever does not, fail rather than
+          # quietly skipping the browser checks.
+          LOTRD_REQUIRE_BROWSER: "1"
+        run: node --test "tests/*.test.js"

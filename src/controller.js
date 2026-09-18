@@ -83,6 +83,14 @@ export class GameController {
 
     this._applySaveDataVersion();
 
+    // The SCORM shim normally restores before this constructor runs. When the LMS
+    // was not ready at launch it restores later instead — after the menu has been
+    // drawn from whatever this browser had, which on a new device is nothing.
+    this._menuShowing = false;
+    window.addEventListener("lotrd-progress-restored", () => {
+      if (this._menuShowing) this.showMainMenu();
+    });
+
     const params = new URLSearchParams(window.location.search);
     const specifiedSet = params.get("set");
     if (specifiedSet) {
@@ -226,6 +234,16 @@ export class GameController {
       }
     } catch (err) { this._noteStorageFailure(err); }
     this._saveGlobalLevel();
+    this._syncLms();
+  }
+
+  /**
+   * Ask the SCORM shim, if there is one, to sync now rather than on its next
+   * tick. Sessions get cut off without warning; the seconds between a save and
+   * the shim noticing it are seconds in which the LMS copy is behind.
+   */
+  _syncLms() {
+    try { window.LotrdScorm?.forceReport?.(); } catch (_) {}
   }
 
   _loadSave(setName) {
@@ -551,46 +569,59 @@ export class GameController {
       const levelData = this._loadGlobalLevel();
 
       catalog.forEach(topic => {
-        (topic.sets || []).forEach(entry => {
-          if (entry.review) { entry.status = { type: "review" }; return; }
-          const done = this._loadCompletion(entry.id);
-          const save = this._loadSave(entry.id);
-          let attempted = false;
-          try { attempted = !!localStorage.getItem(this._attemptKey(entry.id)); } catch (_) {}
-          if (done) {
-            entry.status = { type: "complete", ...done };
-            const tierRec = this._loadTier(entry.id);
-            entry.tier = tierRec?.tier ?? TIER_APPRENTICE;
-            entry.tierNext = nextTierInfo(tierRec);
-            entry.reviewDue = entry.tier >= TIER_MASTER
-              && !!this._reviewDueInfo(entry.id, done, tierRec)?.due;
-          } else if (this._positionIsNewer(this._loadPosition(entry.id), save)) {
-            // Begun, or carried further, on another device. The count is taken on
-            // trust until the set is loaded and the record can be checked against it.
-            const pos = this._loadPosition(entry.id);
-            const count = text => decodeIndexList(text ?? "", Number.MAX_SAFE_INTEGER)?.length ?? 0;
-            // Nothing queued but something missed: only the retrieval boss is left.
-            const left = count(pos.r) || count(pos.m);
-            entry.status = left > 0
-              ? { type: "in_progress", remaining: left }
-              : { type: "attempted" };
-          } else if (this._saveRemaining(save) > 0) {
-            entry.status = { type: "in_progress", remaining: this._saveRemaining(save) };
-          } else if (attempted) {
-            entry.status = { type: "attempted" };
-          } else {
-            entry.status = { type: "not_started" };
-          }
-        });
+        (topic.sets || []).forEach(entry => this._describeEntry(entry));
       });
 
       this.ui.showMainMenu(catalog, globalStats, levelData, (setId, mode) => {
+        this._menuShowing = false;
         if (mode === "trial") return this._launchTierTrial(setId);
         return this._launchSet(setId, mode);
       });
+      this._menuShowing = true;
     } catch (err) {
       this.root.innerHTML = `<div class='bbs-container'><div class='section red bold'>Error loading catalog: ${escapeHtml(err.message)}</div></div>`;
     }
+  }
+
+  /**
+   * Work out what the menu should say about one set, from what is stored. This
+   * is what the student SEES of their saved work, so it is kept free of the DOM
+   * and tested directly (tests/dataloss.test.js): a cleared set reported here as
+   * anything but "complete" is, to the student, a lost set.
+   */
+  _describeEntry(entry) {
+    if (entry.review) { entry.status = { type: "review" }; return entry; }
+    const done = this._loadCompletion(entry.id);
+    const save = this._loadSave(entry.id);
+    let attempted = false;
+    try { attempted = !!localStorage.getItem(this._attemptKey(entry.id)); } catch (_) {}
+    if (done) {
+      // Checked first, and unconditionally: a leftover save or position from a
+      // replay, or from a device that fell behind, must never mask a clear.
+      entry.status = { type: "complete", ...done };
+      const tierRec = this._loadTier(entry.id);
+      entry.tier = tierRec?.tier ?? TIER_APPRENTICE;
+      entry.tierNext = nextTierInfo(tierRec);
+      entry.reviewDue = entry.tier >= TIER_MASTER
+        && !!this._reviewDueInfo(entry.id, done, tierRec)?.due;
+    } else if (this._positionIsNewer(this._loadPosition(entry.id), save)) {
+      // Begun, or carried further, on another device. The count is taken on
+      // trust until the set is loaded and the record can be checked against it.
+      const pos = this._loadPosition(entry.id);
+      const count = text => decodeIndexList(text ?? "", Number.MAX_SAFE_INTEGER)?.length ?? 0;
+      // Nothing queued but something missed: only the retrieval boss is left.
+      const left = count(pos.r) || count(pos.m);
+      entry.status = left > 0
+        ? { type: "in_progress", remaining: left }
+        : { type: "attempted" };
+    } else if (this._saveRemaining(save) > 0) {
+      entry.status = { type: "in_progress", remaining: this._saveRemaining(save) };
+    } else if (attempted) {
+      entry.status = { type: "attempted" };
+    } else {
+      entry.status = { type: "not_started" };
+    }
+    return entry;
   }
 
   /** Locate a set in the catalog and set the breadcrumb title/topic. */
@@ -825,6 +856,7 @@ export class GameController {
       this._recordReviewIfReviewing();
       this._updateGlobalStats(!this._isReview);
       this._saveGlobalLevel();
+      this._syncLms();
       this.sounds.victory();
       this._setInGame(false);
       this._showWithDragon(line => this.ui.showVictory(() => this.startReview("victory"), line));
@@ -836,6 +868,7 @@ export class GameController {
       this._recordReviewIfReviewing();
       this._updateGlobalStats(!this._isReview);
       this._saveGlobalLevel();
+      this._syncLms();
       this._setInGame(false);
       this._showWithDragon(line => this.ui.showNoQuestions(() => this.startReview("no_questions"), line));
     } else if (status === "boss_start") {
@@ -1107,6 +1140,8 @@ export class GameController {
       }
     }
 
+    this._saveAfterAnswer(battleData);
+
     const hasErrors = battleData.incorrectSelections.length > 0 || battleData.missedCorrect.length > 0;
     if (battleData.defeated_monster) this.sounds.monsterDefeated();
     else if (hasErrors) this.sounds.incorrect();
@@ -1123,6 +1158,7 @@ export class GameController {
         this._recordMisses();
         this._updateGlobalStats();
         this._saveGlobalLevel();
+        this._syncLms();
         this.sounds.gameOver();
         this._setInGame(false);
         this.ui.showGameOver(
@@ -1141,6 +1177,23 @@ export class GameController {
     };
 
     this.ui.showResults(battleData, itemDrop, afterResults);
+  }
+
+  /**
+   * Save the moment an answer is resolved. The save used to wait for the student
+   * to click Continue on the results screen, so a session cut off while reading
+   * feedback — the longest pause in the loop — lost the answer just given.
+   *
+   * Not when that answer emptied the queue: the run's ending (victory, or the
+   * retrieval boss) is only decided on Continue, and a save with nothing queued
+   * reads as nothing to resume. There the previous save, with this question
+   * still in flight, is the safer thing to leave behind.
+   */
+  _saveAfterAnswer(battleData) {
+    if (battleData.defeated_player || !this.model) return;
+    const m = this.model;
+    const queued = m.boss_phase ? m.boss_queue.length : m.questions_to_ask.length;
+    if (queued > 0) this.saveGame();
   }
 
   continueAdventure() {

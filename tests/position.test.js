@@ -353,3 +353,82 @@ describe('choosing what to resume from', () => {
     assert.equal(resumed.player.max_hit_points, 26);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────────
+describe('a session cut off without warning', () => {
+  const SET = 'set_01.json';
+  let store;
+  beforeEach(() => { store = fakeStorage(); useStorage(store); });
+
+  /** Answer the question in play through the controller, as a click would. */
+  function submit(c, right) {
+    c.ui = { showResults() {}, showFeedbackInline() {}, refreshHUD() {} };   // results screen never dismissed
+    c.sounds = { correct() {}, incorrect() {}, monsterDefeated() {}, streakHit() {} };
+    c.model.current_monster.hit_points = 999;
+    c.model.current_monster.defense = 0;
+    c.model.player.hit_points = 999;
+    c.submitAnswer([right ? 'A' : 'B']);
+  }
+
+  function startedRun() {
+    const gm = new GameModel(questionSet(), MONSTERS, null, null, { sequential: true });
+    const c = stubController(SET, questionSet(), gm);
+    gm.nextEncounter();                       // the NPC scene
+    gm.current_question = null;
+    gm.nextEncounter();                       // Question 1
+    c.saveGame();
+    return c;
+  }
+
+  it('keeps an answer even if the student never gets past the results screen', () => {
+    // The longest pause in the loop is reading feedback. The save used to wait
+    // for the Continue click after it.
+    const c = startedRun();
+    submit(c, true);
+    const resumed = stubController(SET, questionSet())._buildResumedModel(SET, questionSet(), MONSTERS);
+    assert.equal(resumed.questions_to_ask[0].question, 'Question 2?');
+    assert.equal(resumed.player.total_correct, 1);
+  });
+
+  it('keeps a miss, and its requeue, the same way', () => {
+    const c = startedRun();
+    submit(c, false);
+    const resumed = stubController(SET, questionSet())._buildResumedModel(SET, questionSet(), MONSTERS);
+    assert.equal(resumed.questions_to_ask[0].question, 'Question 2?');
+    assert.ok(resumed.questions_to_ask.some(q => q.question === 'Question 1?'));
+    assert.equal(JSON.parse(store.getItem(`lotrd_pos_${SET}`)).m, '1');
+  });
+
+  it('does not strand the run when the cut-off comes after the very last answer', () => {
+    // Nothing is queued once the last question is answered, and a save with
+    // nothing queued reads as nothing to resume — the set would show as merely
+    // "attempted" and all fifty questions would be owed again.
+    const gm = new GameModel(questionSet(), MONSTERS, null, null, { sequential: true });
+    play(gm, Array(9).fill(true));
+    const c = stubController(SET, questionSet(), gm);
+    gm.nextEncounter();                       // Question 10, the last
+    c.saveGame();
+    submit(c, true);
+
+    const resumed = stubController(SET, questionSet())._buildResumedModel(SET, questionSet(), MONSTERS);
+    assert.ok(resumed, 'the run could not be resumed at all');
+    assert.equal(resumed.questions_to_ask[0].question, 'Question 10?');
+  });
+
+  it('pushes to the LMS at every save point rather than waiting for the next poll', () => {
+    let pokes = 0;
+    globalThis.window = { LotrdScorm: { forceReport: () => { pokes++; } } };
+    try {
+      const c = startedRun();
+      assert.ok(pokes >= 1, 'saving did not poke the shim');
+      const before = pokes;
+      submit(c, true);
+      assert.ok(pokes > before, 'answering did not poke the shim');
+    } finally { delete globalThis.window; }
+  });
+
+  it('is unbothered by a shim that throws', () => {
+    globalThis.window = { LotrdScorm: { forceReport: () => { throw new Error('LMS exploded'); } } };
+    try { assert.doesNotThrow(() => startedRun()); } finally { delete globalThis.window; }
+  });
+});

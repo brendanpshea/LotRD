@@ -3,7 +3,12 @@
 
 Usage:
     python build.py editions/java.json
-    python build.py editions/network.json
+    python build.py editions/a.json editions/b.json    # several; tests run once
+
+The test suite runs first, and nothing is packaged if it fails. A package is
+what reaches students, and the suite is what stands between them and losing
+work they have done (tests/dataloss.test.js). `--skip-tests` exists for working
+on the build itself; do not upload a package built with it.
 
 Produces dist/<output>.zip ready to upload to D2L (Manage Files -> upload,
 then add as SCORM/xAPI activity).
@@ -26,6 +31,7 @@ import os
 import re
 import shutil
 import stat
+import subprocess
 import sys
 import time
 import uuid
@@ -38,6 +44,10 @@ ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 TEMPLATES = ROOT / "templates"
 DIST = ROOT / "dist"
+
+# Kept in step with index.html by tests/html.test.js.
+MAIN_SCRIPT_TAG = '<script type="module" src="src/main.js"></script>'
+SHIM_SCRIPT_TAG = '<script src="scorm-shim.js"></script>'
 
 GAME_DIRS = ["src", "assets", "images"]
 GAME_FILES = ["index.html", "styles.css"]
@@ -221,12 +231,20 @@ def patch_index_html(build_dir: Path, config: dict) -> None:
             html, count=1, flags=re.DOTALL,
         )
 
-    # Inject the SCORM shim before the main module script.
-    html = html.replace(
-        '<script type="module" src="src/main.js"></script>',
-        '<script src="scorm-shim.js"></script>\n'
-        '  <script type="module" src="src/main.js"></script>',
-    )
+    # Inject the SCORM shim before the main module script. BEFORE matters: the
+    # shim restores the student's progress from the LMS while it is evaluated,
+    # and the game reads that progress as soon as it starts.
+    html = html.replace(MAIN_SCRIPT_TAG, SHIM_SCRIPT_TAG + "\n  " + MAIN_SCRIPT_TAG)
+
+    # str.replace says nothing when it finds nothing. If index.html's script tag
+    # is ever reworded, that silence would ship a package with no shim in it: the
+    # game would run perfectly and never tell the LMS a thing.
+    shim_at, main_at = html.find(SHIM_SCRIPT_TAG), html.find(MAIN_SCRIPT_TAG)
+    if shim_at == -1 or main_at == -1 or shim_at > main_at or html.count(SHIM_SCRIPT_TAG) != 1:
+        raise SystemExit(
+            "The SCORM shim was not injected into index.html." + "\n"
+            + "build.py looks for exactly:  " + MAIN_SCRIPT_TAG + "\n"
+            + "and puts the shim in front of it. Make index.html and MAIN_SCRIPT_TAG agree.")
 
     path.write_text(html, encoding="utf-8")
 
@@ -314,11 +332,46 @@ def build(config_path: Path) -> Path:
     return out_zip
 
 
+def run_tests() -> None:
+    """Run the whole suite; refuse to package anything if it is not green."""
+    node = shutil.which("node")
+    if not node:
+        raise SystemExit(
+            "Node.js was not found, so the test suite could not run, so nothing was "
+            "packaged. Install Node, or pass --skip-tests if you are only working on "
+            "the build script (and do not upload the result).")
+    tests = sorted(p.relative_to(REPO).as_posix() for p in (REPO / "tests").glob("*.test.js"))
+    print(f"Running {len(tests)} test files before packaging...")
+    result = subprocess.run([node, "--test", *tests], cwd=REPO,
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if result.returncode != 0:
+        # The runner marks failures with a cross that a Windows console cannot print.
+        failures = [line.replace("✖", "FAILED:") for line in result.stdout.splitlines()
+                    if line.lstrip().startswith("✖")]
+        print("\n".join(failures[-40:]))
+        raise SystemExit(
+            "Tests failed, so nothing was packaged. If a test in dataloss.test.js or "
+            "browser.test.js is among them, a student would have lost work.")
+    if "NO BROWSER FOUND" in result.stdout:
+        print("  WARN: the real-browser checks were skipped (no Chrome or Edge found).")
+    print("  Tests passed.")
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 2:
+    # Test names and edition titles carry characters a cp1252 console rejects.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
+    configs = [a for a in argv[1:] if a != "--skip-tests"]
+    if not configs:
         print(__doc__)
         return 2
-    build(Path(argv[1]).resolve())
+    if "--skip-tests" in argv:
+        print("WARNING: --skip-tests given. Do not upload packages from this run.")
+    else:
+        run_tests()
+    for config in configs:
+        build(Path(config).resolve())
     return 0
 
 

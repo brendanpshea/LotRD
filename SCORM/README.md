@@ -7,8 +7,14 @@ filtered to a single topic (Java, Network+, etc.) for embedding in D2L.
 
 ```sh
 python SCORM/build.py SCORM/editions/java.json
-python SCORM/build.py SCORM/editions/network.json
+python SCORM/build.py SCORM/editions/*.json        # all editions; tests run once
 ```
+
+The build runs the whole test suite first and **packages nothing if any test
+fails** — including the data-loss scenarios and the real-browser check (see
+"Running Tests" in the main README). It also refuses to package if the shim was
+not injected into `index.html`. `--skip-tests` is for working on the build
+script itself; never upload a package built with it.
 
 Output: `SCORM/dist/<edition>-scorm.zip`
 
@@ -112,9 +118,61 @@ real credit looks like on a fresh attempt with empty storage.
 weight trial sampling; keyed by question text and too large), the Sharpen
 review schedule, lifetime stats, the sound setting.
 
-**Cannot be fixed here:** SCORM 1.2 reads the LMS only at launch, so two
-devices open at once are last-writer-wins. The grade is protected by the
-score floor; ranks and positions can briefly regress until the next launch.
+## Interrupted sessions
+
+Assume every session ends badly: D2L logs the student out mid-set, the
+connection drops, a phone freezes the tab. Two copies of progress exist — this
+browser's localStorage and the LMS — and the next launch may be on a device
+where only the LMS copy exists. So the rule is that **the shim never believes
+the LMS has something until the LMS says so.**
+
+- **Writes are confirmed.** Every `LMSSetValue`/`LMSCommit` result is checked.
+  The shim tracks what the LMS has *confirmed*, not what was last sent, so a
+  refused or dropped write is simply still owed and goes out again on the next
+  tick (3 s), when the tab is hidden or shown, and when the browser comes back
+  online. It used to record what it sent — and so stopped retrying at exactly
+  the moment a write failed.
+- **The connection is re-established.** API discovery and `LMSInitialize` are
+  retried until they succeed (some players install the API late); after
+  repeated refusals the shim tries to initialise again, and keeps the existing
+  session if the LMS says it is already initialised. A failed catalog fetch at
+  launch is retried too, where it used to switch syncing off for the session.
+- **Reconnecting is a merge.** Restore takes the higher rank, further level and
+  newer position, so coming back after a stretch of offline play cannot lower
+  anything. If the restore happens after the menu was drawn, the shim fires
+  `lotrd-progress-restored` and the game redraws it.
+- **The student is told, while it can still be fixed.** The banner reads
+  "✓ saved to D2L" only when the LMS has confirmed everything. Otherwise it
+  turns red (`role="alert"`) and says progress has not been saved since a given
+  time, that it *is* safe in this browser, to keep the tab open, and — if the
+  message stays — to reopen the activity **in this same browser**, where the
+  next launch pushes everything the LMS is missing. Leaving with unsaved
+  progress raises the browser's "Leave site?" prompt.
+- **Page lifecycle.** `beforeunload` no longer finishes the LMS session (it can
+  be cancelled, and a finished session turns every later save into a silent
+  no-op); `pagehide` finishes only when the page is not headed for the
+  back/forward cache; `pageshow` from that cache reconnects.
+- **The game saves sooner, and says so.** It saves the moment an answer is
+  resolved rather than on the Continue click after the results screen, and
+  pokes the shim at every save point instead of waiting for the next tick.
+
+**What none of this can save:** progress made while the LMS was unreachable,
+in a browser whose storage is then lost (Safari closing, a classroom machine
+wiping its profile) before the student reopens the activity there. At that
+point the data exists nowhere. The red banner is the mitigation: it says so at
+the only moment the student can act on it.
+
+**Two devices open at once.** SCORM 1.2 has no way to tell a tab that another
+device has written. Left alone that is last-writer-wins, and a tab that has sat
+open since before the phone cleared a set would erase that set from the LMS on
+its next write. So before every write the shim re-reads the LMS and folds in any
+cleared set, higher rank or higher score it finds. **Whether that helps depends
+on the LMS:** one that answers `LMSGetValue` from the server gets a true merge;
+one that answers from a copy made at launch (many do, and D2L's behaviour here is
+not verified) makes it a no-op. In that case the set is repaired the next time
+the device that earned it launches — which works only if that browser still has
+its storage. Both kinds of LMS are tested (`cachedReads` in the sandbox). The
+student guide asks students to close the game when they are done.
 
 To preserve existing browser save data across package refreshes, do not
 change the local save keys or `SAVE_DATA_VERSION` in

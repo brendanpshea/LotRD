@@ -1,0 +1,21 @@
+#!/bin/sh
+# Refuse to push if the test suite is red. Takes a few seconds.
+# Enable once per clone:   git config core.hooksPath .githooks
+# Bypass in an emergency:  git push --no-verify   (CI will still run)
+echo "pre-push: running the test suite..."
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-push: Node.js not found, so the tests could not run. Push refused." >&2
+  exit 1
+fi
+out=$(node --test "tests/*.test.js" 2>&1)
+status=$?
+if [ $status -ne 0 ]; then
+  echo "$out" | grep -E "✖" | tail -40
+  echo "" >&2
+  echo "pre-push: tests failed; nothing was pushed." >&2
+  echo "pre-push: if dataloss.test.js or browser.test.js is in that list, students would have lost work." >&2
+  exit 1
+fi
+echo "$out" | grep -E "^ℹ (tests|pass|skipped)"
+echo "$out" | grep -q "NO BROWSER FOUND" && echo "pre-push: WARNING — real-browser checks were skipped (no Chrome or Edge found)."
+exit 0

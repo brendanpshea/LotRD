@@ -232,3 +232,40 @@ describe('SCORM manifest', () => {
       'imsmanifest.xml must not declare a mastery score');
   });
 });
+
+describe('SCORM package wiring', () => {
+  // The shim reaches a package by build.py finding one exact <script> tag in
+  // index.html and putting the shim in front of it. If the two ever disagree the
+  // package still builds and the game still runs — it just never speaks to the
+  // LMS, and every student's work stays in whatever browser they happened to use.
+  const build = readFileSync(join(ROOT, 'SCORM/build.py'), 'utf-8');
+  const tag = /MAIN_SCRIPT_TAG = '([^']+)'/.exec(build)?.[1];
+
+  it('build.py names the tag it injects the shim in front of', () => {
+    assert.ok(tag, 'MAIN_SCRIPT_TAG not found in build.py');
+  });
+
+  it('index.html contains that tag, exactly once', () => {
+    assert.equal(html.split(tag).length - 1, 1,
+      `build.py injects the shim before ${tag}, which must appear exactly once in index.html`);
+  });
+
+  it('the real-browser tests inject the shim the same way the build does', async () => {
+    const { MAIN_SCRIPT_TAG, SHIM_SCRIPT_TAG } = await import('./helpers/browser-lms.js');
+    assert.equal(MAIN_SCRIPT_TAG, tag);
+    assert.ok(build.includes(`SHIM_SCRIPT_TAG = '${SHIM_SCRIPT_TAG}'`));
+  });
+
+  it('build.py refuses to package when the shim was not injected, or the tests fail', () => {
+    assert.match(build, /The SCORM shim was not injected/);
+    assert.match(build, /def run_tests\(\)/);
+    assert.match(build, /Tests failed, so nothing was packaged/);
+  });
+
+  it('the shim loads as a classic script, so it finishes before the game module starts', () => {
+    // A `defer`, `async` or type="module" here would reintroduce the race in which
+    // the menu is drawn before the student's progress has been restored.
+    const shimTag = /SHIM_SCRIPT_TAG = '([^']+)'/.exec(build)?.[1] ?? '';
+    assert.ok(shimTag && !/\b(defer|async|module)\b/.test(shimTag), `shim tag is ${shimTag}`);
+  });
+});

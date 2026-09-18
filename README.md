@@ -408,16 +408,59 @@ matches the number of questions actually in each file.
 
 ## Running Tests
 
-Requires **Node.js 18+** (uses the built-in `node:test` runner — zero npm dependencies).
+Requires **Node.js 22+** (uses the built-in `node:test` runner — zero npm dependencies).
+The whole suite takes about ten seconds.
 
 ```bash
-node --test tests/*.test.js
+node --test "tests/*.test.js"
 ```
+
+### The rule the suite exists to keep
+
+> **Students never lose work they have done** — above all, a problem set they
+> have completed.
+
+This has regressed more than once, each time because it depends on several
+parts agreeing (the game's saves, the SCORM shim, the LMS, the browser's
+storage) and nothing tested them together. It is now enforced at three layers:
+
+| Layer | File | What it does |
+|-------|------|--------------|
+| Scenarios | `dataloss.test.js` | The real game and the real shim against one fake LMS, as things that happen to students: switching browsers, D2L logging them out mid-set, the tab dying, Safari emptying its storage, a stale laptop catching up, two devices open at once, a republished package. Plus a seeded random walk over all of those at once. |
+| Real browser | `browser.test.js` | The actual page in headless Chrome/Edge, framed by a stand-in for D2L whose record outlives the browser — so two profiles are two devices. Skipped (loudly) if no browser is installed; CI requires one. |
+| Parts | `scorm.test.js`, `position.test.js` | The shim alone; the portable-position encoding and resume rules. |
+
+It cannot be bypassed by forgetting to run it:
+
+- **`SCORM/build.py` runs the suite first and packages nothing if it is red.**
+  A package is what reaches students.
+- **GitHub Actions** runs it on every push (`.github/workflows/tests.yml`).
+- **A pre-push hook** runs it before anything leaves this machine. Enable it once
+  per clone: `git config core.hooksPath .githooks`
+
+**If you change anything about saving, syncing or restoring, add the scenario to
+`dataloss.test.js` first.** Then prove the test can fail:
+
+```bash
+python tests/tools/prove_dataloss_tests.py
+```
+
+That re-introduces each bug that has actually cost students work, one at a time,
+and reports whether the suite CAUGHT or MISSED it. A new data-loss fix should
+come with a new entry there.
+
+The one loss that cannot be prevented — work done while the LMS was unreachable,
+in a browser whose storage is then destroyed before the student reopens the
+activity there — is written down as a test as well, so that it stays the only one.
 
 | File | What it checks |
 |------|----------------|
 | `model.test.js` | Model and combat logic — player state, streaks, fill-blank, dynamic numeric, code-line, matching, level-up, revive, items, retrieval boss, save round-trips |
 | `controller.test.js` | Controller logic without the DOM — Mulligan rollback, item activation |
+| `dataloss.test.js` | **Students never lose work they have done** — see above |
+| `browser.test.js` | The same guarantee in a real browser |
+| `scorm.test.js` | The SCORM shim alone — grade preservation, confirmed writes, reconnection, page lifecycle |
+| `position.test.js` | Carrying a half-finished set between devices — encoding, rebuilding a run, which save wins |
 | `data.test.js` | All JSON files — required fields, type constraints, dynamic-question schema, image files exist, catalog/index consistency, question-count and duplicate-text checks |
 | `html.test.js` | HTML/template cross-checks — template IDs, data-ref/data-action usage, stale code checks, accessibility, CSS classes |
 | `util.test.js` | Shuffle and the spaced-review interval schedule |

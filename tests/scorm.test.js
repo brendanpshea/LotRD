@@ -7,69 +7,8 @@
 // browser — and each one has bitten somebody's SCORM package before.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import vm from 'node:vm';
 
-const src = await readFile(
-  new URL('../SCORM/templates/scorm-shim.js', import.meta.url), 'utf8');
-
-const SET_COUNT = 12;
-const setId = i => `set_${String(i).padStart(2, '0')}.json`;
-const doneRec = ms => JSON.stringify({ completedAt: new Date(ms).toISOString(), score_pct: 100 });
-const tierRec = (tier, ms) => JSON.stringify({
-  tier,
-  apprenticeAt: new Date(ms).toISOString(),
-  journeymanAt: new Date(ms).toISOString(),
-  masterAt: new Date(ms).toISOString(),
-});
-
-/** Boot the shim in a sandbox. Returns handles on the fake LMS and browser. */
-function boot({ lmsStore = {}, local = {}, catalogFails = false, readyState = 'complete' } = {}) {
-  const storage = {
-    _d: { ...local },
-    getItem(k) { return k in this._d ? this._d[k] : null; },
-    setItem(k, v) { this._d[k] = String(v); },
-    removeItem(k) { delete this._d[k]; },
-  };
-  const api = {
-    LMSInitialize: () => 'true',
-    LMSFinish: () => 'true',
-    LMSGetValue: k => (k in lmsStore ? lmsStore[k] : ''),
-    LMSSetValue: (k, v) => { lmsStore[k] = String(v); return 'true'; },
-    LMSCommit: () => 'true',
-    LMSGetLastError: () => '0',
-  };
-  const win = { API: api, localStorage: storage, addEventListener: () => {}, setInterval: () => 0 };
-  win.parent = win;
-  win.self = win;
-  const quiet = { warn: () => {}, log: () => {}, error: () => {} };
-  const ctx = vm.createContext({
-    window: win, localStorage: storage, console: quiet, setInterval: () => 0,
-    Date, JSON, Math, Number, Array, Object, String, Boolean, isNaN, parseInt, parseFloat,
-    document: {
-      readyState,
-      addEventListener: () => {},
-      createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }),
-      body: { appendChild() {}, style: {} },
-      hidden: false,
-    },
-    getComputedStyle: () => ({ paddingTop: '0px' }),
-    fetch: async () => {
-      if (catalogFails) throw new Error('network down');
-      return {
-        json: async () => [{
-          topic: 'T',
-          sets: Array.from({ length: SET_COUNT }, (_, i) => ({ id: setId(i + 1) })),
-        }],
-      };
-    },
-  });
-  vm.runInContext(src, ctx);
-  return { ctx, lmsStore, storage, shim: () => ctx.window.LotrdScorm };
-}
-
-/** The shim's start() is async; let its microtasks drain. */
-const settle = () => new Promise(r => setTimeout(r, 20));
+import { boot, settle, SET_COUNT, setId, doneRec, tierRec } from './helpers/scorm-sandbox.js';
 
 describe('SCORM shim never loses a grade', () => {
   it('does not zero the gradebook when the catalog fetch fails', async () => {
@@ -412,5 +351,191 @@ describe('SCORM shim never loses a grade', () => {
     await settle();
     // Pre-tier completions are grandfathered at Master so nobody's score drops.
     assert.equal(JSON.parse(b.storage.getItem(`lotrd_tier_${setId(1)}`)).tier, 3);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// A session does not end cleanly. The LMS logs the student out mid-set, the wifi
+// drops, the phone freezes the tab. Through all of it the game keeps saving to
+// localStorage — so the danger is the shim BELIEVING the LMS has something it
+// does not, because the next launch may be on a device where localStorage is
+// empty and the LMS copy is all there is.
+describe('SCORM shim survives an interrupted session', () => {
+  const t0 = Date.parse('2026-09-10T00:00:00Z');
+  const clearSet = (storage, i, tier = 1) => {
+    storage.setItem(`lotrd_done_${setId(i)}`, doneRec(t0));
+    storage.setItem(`lotrd_tier_${setId(i)}`, tierRec(tier, t0));
+  };
+
+  it('retries a write the LMS refused, until it lands', async () => {
+    // The D2L session expired during a long set; the clear that follows is
+    // refused. Nothing changes locally after that, so a shim that only writes on
+    // change never tries again — and the credit exists in one browser only.
+    const lms = {};
+    const b = boot({ lmsStore: lms });
+    await settle();
+    b.control.down = true;
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    assert.ok(!('cmi.core.score.raw' in lms), 'precondition: the LMS refused it');
+
+    b.control.down = false;                  // connection back; nothing new happened locally
+    b.shim().forceReport();
+    assert.equal(lms['cmi.core.score.raw'], '7');
+    assert.match(lms['cmi.suspend_data'], /set_01\.json/);
+  });
+
+  it('treats an API that throws the same as one that refuses', async () => {
+    const lms = {};
+    const b = boot({ lmsStore: lms });
+    await settle();
+    b.control.throws = true;
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    b.control.throws = false;
+    b.shim().forceReport();
+    assert.equal(lms['cmi.core.score.raw'], '7');
+  });
+
+  it('tells the student, in the moment, when progress is not reaching the LMS', async () => {
+    // The only time anything can be done about it is while the tab is still open.
+    const b = boot({});
+    await settle();
+    assert.match(b.banner().textContent, /saved to D2L/i);
+
+    b.control.down = true;
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    assert.match(b.banner().textContent, /not (been )?saved to D2L/i);
+    assert.match(b.banner().textContent, /this browser/i, 'must say where the data IS safe');
+    assert.equal(b.banner().attrs.role, 'alert');
+    assert.equal(b.shim().syncState(), 'failing');
+
+    b.control.down = false;
+    b.shim().forceReport();
+    assert.match(b.banner().textContent, /saved to D2L/i);
+    assert.doesNotMatch(b.banner().textContent, /not (been )?saved/i);
+    assert.equal(b.shim().syncState(), 'synced');
+  });
+
+  it('does not raise the score floor on a write that never landed', async () => {
+    const lms = {};
+    const b = boot({ lmsStore: lms });
+    await settle();
+    b.control.down = true;
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    b.control.down = false;
+    // The credit turns out not to exist locally after all (storage cleared mid-session).
+    b.storage.removeItem(`lotrd_done_${setId(1)}`);
+    b.storage.removeItem(`lotrd_tier_${setId(1)}`);
+    b.shim().forceReport();
+    assert.ok(!('cmi.core.score.raw' in lms), 'a floor was invented from an unconfirmed write');
+  });
+
+  it('keeps trying when the catalog fetch fails at launch', async () => {
+    // One dropped request at startup used to disable syncing for the whole session.
+    const lms = {};
+    const b = boot({ lmsStore: lms, catalogFails: true, local: {
+      [`lotrd_done_${setId(1)}`]: doneRec(t0), [`lotrd_tier_${setId(1)}`]: tierRec(1, t0),
+    } });
+    await settle();
+    b.shim().forceReport();                  // a tick while still offline: retries, fails again
+    await settle();
+    assert.ok(!('cmi.core.score.raw' in lms));
+
+    b.control.catalogFails = false;
+    b.shim().forceReport();                  // the next tick retries, and this time it loads…
+    await settle();
+    assert.equal(lms['cmi.core.score.raw'], '7', '…and reports without waiting for another tick');
+  });
+
+  it('connects late when the LMS was not ready at launch, and restores then', async () => {
+    const lms = { 'cmi.suspend_data': JSON.stringify({ v: 2, sets: [[setId(1), 2, t0 / 1000, t0 / 1000]] }) };
+    const b = boot({ lmsStore: lms, control: { initFails: true } });
+    await settle();
+    assert.equal(b.storage.getItem(`lotrd_done_${setId(1)}`), null, 'precondition: not connected yet');
+    assert.match(b.banner().textContent, /not (been )?saved to D2L|not connected/i);
+
+    b.control.initFails = false;
+    b.shim().forceReport();
+    assert.ok(b.storage.getItem(`lotrd_done_${setId(1)}`), 'late connection must still restore');
+    assert.ok(b.dispatched.includes('lotrd-progress-restored'),
+      'the game has already drawn its menu and has to be told to redraw it');
+  });
+
+  it('finds an LMS API that appears after the page has loaded', async () => {
+    const lms = {};
+    const b = boot({ lmsStore: lms, control: { noApi: true }, local: {
+      [`lotrd_done_${setId(1)}`]: doneRec(t0), [`lotrd_tier_${setId(1)}`]: tierRec(1, t0),
+    } });
+    await settle();
+    b.control.noApi = false;
+    b.shim().forceReport();
+    assert.equal(lms['cmi.core.score.raw'], '7');
+  });
+
+  it('never lets a late restore lower what the student earned while disconnected', async () => {
+    // Played offline for a while, then the LMS came back holding older data.
+    const lms = { 'cmi.core.score.raw': '7',
+      'cmi.suspend_data': JSON.stringify({ v: 2, sets: [[setId(1), 1, t0 / 1000]] }) };
+    const b = boot({ lmsStore: lms, control: { initFails: true } });
+    await settle();
+    clearSet(b.storage, 1, 2);               // Journeyman earned while disconnected
+    clearSet(b.storage, 2, 1);
+    b.control.initFails = false;
+    b.shim().forceReport();
+    assert.equal(JSON.parse(b.storage.getItem(`lotrd_tier_${setId(1)}`)).tier, 2);
+    assert.equal(lms['cmi.core.score.raw'], '14');   // (0.9 + 0.8) / 12
+  });
+
+  it('does not end the LMS session on beforeunload, which can be cancelled', async () => {
+    // "Leave site?" → Stay. The page lives on; a finished session would make
+    // every later write a silent no-op.
+    const lms = {};
+    const b = boot({ lmsStore: lms });
+    await settle();
+    b.fire('beforeunload', { preventDefault() {} });
+    assert.ok(!b.calls.includes('finish'));
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    assert.equal(lms['cmi.core.score.raw'], '7');
+  });
+
+  it('reconnects when the page comes back from the back/forward cache', async () => {
+    const lms = {};
+    const b = boot({ lmsStore: lms });
+    await settle();
+    b.fire('pagehide', { persisted: false });
+    assert.ok(b.calls.includes('finish'));
+    b.fire('pageshow', { persisted: true });
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    assert.equal(lms['cmi.core.score.raw'], '7', 'writes after a bfcache restore were dropped');
+  });
+
+  it('flushes when the tab is hidden, which on a phone is often the last event there is', async () => {
+    const lms = {};
+    const b = boot({ lmsStore: lms });
+    await settle();
+    clearSet(b.storage, 1);
+    b.ctx.document.hidden = true;
+    b.fire('doc:visibilitychange', {});
+    assert.equal(lms['cmi.core.score.raw'], '7');
+  });
+
+  it('asks before leaving only while something is unsaved', async () => {
+    const b = boot({});
+    await settle();
+    const clean = { preventDefault() { this.prevented = true; } };
+    b.fire('beforeunload', clean);
+    assert.ok(!clean.prevented, 'must not nag when everything is saved');
+
+    b.control.down = true;
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    const dirty = { preventDefault() { this.prevented = true; } };
+    b.fire('beforeunload', dirty);
+    assert.ok(dirty.prevented, 'leaving now would strand the credit in this browser');
   });
 });
