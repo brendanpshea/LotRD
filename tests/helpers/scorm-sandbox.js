@@ -36,6 +36,7 @@ export function boot({ lmsStore = {}, local = {}, catalogFails = false, readySta
   storage = storage || makeStorage(local);
   const calls = [];
   let snapshot = {};
+  let pending = {};
   const guard = () => { if (control.throws) throw new Error('LMS unreachable'); };
   const api = {
     LMSInitialize: () => {
@@ -47,16 +48,24 @@ export function boot({ lmsStore = {}, local = {}, catalogFails = false, readySta
       snapshot = { ...lmsStore };
       return 'true';
     },
-    LMSFinish: () => { calls.push('finish'); guard(); return 'true'; },
+    // `persistOnFinish` models an LMS player that answers "true" to every SetValue
+    // and Commit but only sends the data to its server when the content calls
+    // LMSFinish. Against one of those, a session that never finishes saves NOTHING,
+    // whatever Commit said — which is what the live D2L course appeared to be doing.
+    LMSFinish: () => {
+      calls.push('finish'); guard();
+      if (control.persistOnFinish) { Object.assign(lmsStore, pending); pending = {}; }
+      return 'true';
+    },
     LMSGetValue: k => {
       guard();
-      const from = control.cachedReads ? snapshot : lmsStore;
+      const from = control.cachedReads || control.persistOnFinish ? snapshot : lmsStore;
       return k in from ? from[k] : '';
     },
     LMSSetValue: (k, v) => {
       guard();
       if (control.down) return 'false';
-      lmsStore[k] = String(v);
+      if (control.persistOnFinish) pending[k] = String(v); else lmsStore[k] = String(v);
       snapshot[k] = String(v);
       return 'true';
     },

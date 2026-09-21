@@ -104,3 +104,30 @@ describe('in a real browser: a write-the-method problem', { skip }, () => {
     assert.match(seen.correct, /4 (of|\/) 4|all 4|4 passed/i);
   });
 });
+
+// Reported from the live course: a set cleared in Chrome was nowhere to be seen in
+// Firefox, and no score had reached the gradebook for days — while the banner said
+// "saved". This is that afternoon, against an LMS player that keeps every write in
+// the page and sends it to the server only when the content calls LMSFinish.
+describe('in a real browser: an LMS that saves only when the session is finished', { skip }, () => {
+  let server, departure, firefox;
+  before(async () => {
+    server = await startServer();
+    const params = { clear: cleared.id, leave: left.id, clearTitle: cleared.title, leaveTitle: left.title, buffered: '1' };
+    departure = await visit(browser, server.origin, 'workAndLeave', params);     // "Chrome": clear a set, go elsewhere in the LMS
+    firefox = await visit(browser, server.origin, 'look', params);          // a browser that has never seen the game
+  });
+  after(async () => { await server?.close(); });
+
+  it('the student really did leave the page', () => assert.equal(departure.left, true));
+
+  it('told the LMS the session had ended, on the way out', () => {
+    assert.ok((server.lms.finishes || 0) >= 1, 'LMSFinish never reached the server');
+    assert.ok(Number(server.lms.store['cmi.core.score.raw']) > 0, 'the score never reached the server');
+  });
+
+  it('the set cleared in one browser is cleared in the other', () => {
+    assert.equal(firefox.storedDone, true);
+    assert.match(firefox.clearedRow, /Apprentice/, `the menu row reads: ${JSON.stringify(firefox.clearedRow)}`);
+  });
+});

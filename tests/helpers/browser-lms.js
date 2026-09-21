@@ -36,12 +36,25 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
 <pre id="out">pending</pre>
 <script>
   const post = (path, body) => { const x = new XMLHttpRequest(); x.open('POST', path, false); x.send(JSON.stringify(body || {})); return x.responseText; };
-  window.API = {
+  const live = {
     LMSInitialize: () => post('/__lms/init'), LMSFinish: () => 'true',
     LMSGetValue: k => post('/__lms/get', { k }), LMSSetValue: (k, v) => post('/__lms/set', { k, v: String(v) }),
     LMSCommit: () => post('/__lms/commit'), LMSGetLastError: () => '0',
     LMSGetErrorString: () => '', LMSGetDiagnostic: () => '',
   };
+  // A BUFFERING player, as some LMSs are: it answers "true" to every SetValue and
+  // Commit, keeps the values in the page, and sends them to its server only when
+  // the content calls LMSFinish — by beacon, since the page is on its way out.
+  let cache = {}, pending = {};
+  const buffered = {
+    LMSInitialize: () => { cache = JSON.parse(post('/__lms/dump')); pending = {}; return 'true'; },
+    LMSGetValue: k => cache[k] ?? '',
+    LMSSetValue: (k, v) => { cache[k] = pending[k] = String(v); return 'true'; },
+    LMSCommit: () => 'true',
+    LMSFinish: () => { navigator.sendBeacon('/__lms/finish', JSON.stringify(pending)); pending = {}; return 'true'; },
+    LMSGetLastError: () => '0', LMSGetErrorString: () => '', LMSGetDiagnostic: () => '',
+  };
+  window.API = new URLSearchParams(location.search).get('buffered') ? buffered : live;
   const lms = { down: () => post('/__lms/control', { down: true }), up: () => post('/__lms/control', { down: false }),
     record: () => JSON.parse(post('/__lms/dump')) };
 
@@ -79,6 +92,14 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
       await sleep(500);
       report.lmsHasPosition = (lms.record()['cmi.suspend_data'] || '').includes(leave);
       return report;
+    },
+    // Clear a set, then LEAVE the way students do: by going somewhere else in the
+    // LMS. Whatever reaches the server has to get there on the way out.
+    async workAndLeave({ clear }) {
+      await clearSet(clear);
+      await sleep(1500);
+      location.href = '/__left.html';
+      await sleep(60000);
     },
     // A write-the-method problem: the class so far is shown read-only above the box,
     // Run grades what the object has BECOME, and the classic bug fails without crashing.
@@ -131,7 +152,10 @@ export async function startServer() {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     const send = (code, body, type = 'text/plain; charset=utf-8') => {
-      res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' });
+      // "no-cache" (always revalidate), NOT "no-store": a page served no-store is barred
+      // from the browser's back/forward cache, and whether a page is headed for that
+      // cache changes which exit events it gets — which is exactly what is under test.
+      res.writeHead(code, { 'Content-Type': type, 'Cache-Control': url.pathname.startsWith('/__lms/') ? 'no-store' : 'no-cache' });
       res.end(body);
     };
     try {
@@ -147,10 +171,14 @@ export async function startServer() {
           case 'set':     if (refuse) return send(200, refuse); lms.store[body.k] = body.v; return send(200, 'true');
           case 'control': lms.down = !!body.down; return send(200, 'ok');
           case 'dump':    return send(200, JSON.stringify(lms.store), TYPES['.json']);
+          case 'finish':  Object.assign(lms.store, body); lms.finishes = (lms.finishes || 0) + 1; return send(200, 'true');
         }
         return send(404, 'no such LMS call');
       }
       if (url.pathname === '/__d2l.html') return send(200, WRAPPER, TYPES['.html']);
+      if (url.pathname === '/__left.html') {
+        return send(200, '<!doctype html><title>elsewhere in the LMS</title><pre id="out">{"left":true}</pre>', TYPES['.html']);
+      }
       if (url.pathname === '/scorm-shim.js') {
         return send(200, await readFile(join(ROOT, 'SCORM/templates/scorm-shim.js')), TYPES['.js']);
       }

@@ -489,17 +489,74 @@ describe('SCORM shim survives an interrupted session', () => {
     assert.equal(lms['cmi.core.score.raw'], '14');   // (0.9 + 0.8) / 12
   });
 
-  it('does not end the LMS session on beforeunload, which can be cancelled', async () => {
-    // "Leave site?" → Stay. The page lives on; a finished session would make
-    // every later write a silent no-op.
+  it('finishes the session when the page is left, by whichever event arrives', async () => {
+    // Found in the live course: after an update that stopped calling LMSFinish on
+    // beforeunload, and skipped it on pagehide whenever the browser said the page
+    // might be cached, no student's score reached the gradebook for days and
+    // nothing crossed from one browser to another. Some LMS players send the data
+    // to their server only on LMSFinish, whatever LMSCommit answered.
+    for (const leave of [b => b.fire('beforeunload', { preventDefault() {} }),
+                         b => b.fire('pagehide', { persisted: true }),
+                         b => b.fire('pagehide', { persisted: false })]) {
+      const b = boot({});
+      await settle();
+      leave(b);
+      assert.ok(b.calls.includes('finish'), 'the LMS was never told the session ended');
+    }
+  });
+
+  it('saves to an LMS that keeps nothing until LMSFinish', async () => {
+    const lms = {};
+    const chrome = boot({ lmsStore: lms, control: { persistOnFinish: true } });
+    await settle();
+    clearSet(chrome.storage, 1);
+    chrome.shim().forceReport();
+    assert.ok(!('cmi.core.score.raw' in lms), 'precondition: this LMS has kept nothing yet');
+    chrome.fire('pagehide', { persisted: true });      // navigating away inside the LMS
+
+    const firefox = boot({ lmsStore: lms, control: { persistOnFinish: true }, local: {} });
+    assert.ok(firefox.storage.getItem(`lotrd_done_${setId(1)}`), 'the set cleared in one browser did not reach the other');
+    await settle();
+    assert.match(firefox.banner().textContent, /Course score: 7%/);
+  });
+
+  it('carries on if the student stays after all: a finished session is reopened', async () => {
+    // "Leave site?" → Stay. The session was finished a moment ago; the next save
+    // has to reconnect rather than silently go nowhere.
     const lms = {};
     const b = boot({ lmsStore: lms });
     await settle();
     b.fire('beforeunload', { preventDefault() {} });
-    assert.ok(!b.calls.includes('finish'));
     clearSet(b.storage, 1);
     b.shim().forceReport();
     assert.equal(lms['cmi.core.score.raw'], '7');
+  });
+
+  it('does not finish the session while it is asking the student not to leave', async () => {
+    // Unsaved progress raises "Leave site?". If they stay, the connection that is
+    // about to be needed for the retry should still be there.
+    const b = boot({});
+    await settle();
+    b.control.down = true;
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    b.calls.length = 0;
+    b.fire('beforeunload', { preventDefault() {} });
+    assert.ok(!b.calls.includes('finish'));
+  });
+
+  it('can say what the LMS told it, for a bug report', async () => {
+    const lms = { 'cmi.core.entry': 'resume', 'cmi.core.score.raw': '27' };
+    const b = boot({ lmsStore: lms });
+    await settle();
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    const d = b.shim().diagnose();
+    assert.equal(d.atLaunch.entry, 'resume');
+    assert.equal(d.atLaunch.score, '27');
+    assert.equal(d.lastWrite.commit, 'true');
+    assert.equal(d.connected, true);
+    assert.ok('build' in d && 'finishes' in d && 'previousExit' in d);
   });
 
   it('reconnects when the page comes back from the back/forward cache', async () => {

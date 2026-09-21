@@ -148,10 +148,24 @@ the LMS has something until the LMS says so.**
   message stays — to reopen the activity **in this same browser**, where the
   next launch pushes everything the LMS is missing. Leaving with unsaved
   progress raises the browser's "Leave site?" prompt.
-- **Page lifecycle.** `beforeunload` no longer finishes the LMS session (it can
-  be cancelled, and a finished session turns every later save into a silent
-  no-op); `pagehide` finishes only when the page is not headed for the
-  back/forward cache; `pageshow` from that cache reconnects.
+- **Every exit calls `LMSFinish`.** On `pagehide` always, and on `beforeunload`
+  unless the shim is itself asking the student not to leave. If the page comes
+  back (from the back/forward cache, or because they stayed), the next save
+  finds the session closed and reconnects. **Do not make this conditional.** A
+  build that skipped `LMSFinish` on `beforeunload`, and on `pagehide` whenever
+  the browser reported `persisted` (which Chrome does for any cacheable page),
+  sent nothing to the live D2L gradebook for days and carried nothing between
+  browsers — while its banner read "✓ saved", because `LMSCommit` had answered
+  "true". Some LMS players keep every write in the page and send it to the
+  server only on `LMSFinish`. `tests/browser.test.js` reproduces this against
+  such a player in real Chrome; note that the test server must NOT send
+  `Cache-Control: no-store`, which bars the page from that cache and hides the
+  bug.
+- **`ⓘ sync details`.** A button at the bottom right shows `LotrdScorm.diagnose()`
+  as text to copy into an email: which build this is, what the LMS returned at
+  launch (`cmi.core.entry`, score, how much suspend_data), what it answered to
+  the last write, and how the PREVIOUS session in this browser ended. Every test
+  here runs against a stand-in LMS; this is how the real one gets a voice.
 - **The game saves sooner, and says so.** It saves the moment an answer is
   resolved rather than on the Continue click after the results screen, and
   pokes the shim at every save point instead of waiting for the next tick.

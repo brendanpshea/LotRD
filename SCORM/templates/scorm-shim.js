@@ -36,6 +36,9 @@
   const TIER_CREDIT = [0, 0.8, 0.9, 1.0];
   const TIER_MASTER = 3;
   const POLL_MS = 3000;
+  const EXIT_KEY = "lotrd_scorm_last_exit";
+  // Stamped by SCORM/build.py, so a bug report can say which package it came from.
+  const BUILD = "{{BUILD}}";
 
   // ---------- LMS discovery ----------
   function findApi(win) {
@@ -87,12 +90,29 @@
     lmsCall("LMSSetValue", "cmi.core.exit", "suspend");
   }
 
-  function lmsFinish() {
+  // Every exit calls LMSFinish. This is not politeness: some LMS players answer
+  // "true" to every SetValue and Commit and only send the data to their server on
+  // LMSFinish. A build of this shim that skipped it — on beforeunload, because
+  // leaving can be cancelled, and on pagehide whenever the browser said the page
+  // might be cached — sent nothing to the live course's gradebook for days, while
+  // its banner said "saved". A session finished too early costs a reconnect (see
+  // connect()); a session never finished can cost everything.
+  let finishes = 0;
+
+  function lmsFinish(because) {
     if (!api || !initialized) return;
     markSuspended();
-    try { api.LMSCommit(""); } catch (_) {}
-    try { api.LMSFinish(""); } catch (_) {}
+    let commit = "", finish = "";
+    try { commit = String(api.LMSCommit("")); } catch (e) { commit = "threw: " + e; }
+    try { finish = String(api.LMSFinish("")); } catch (e) { finish = "threw: " + e; }
     initialized = false;
+    finishes++;
+    try {
+      localStorage.setItem(EXIT_KEY, JSON.stringify({
+        at: new Date().toISOString(), because: because || "?", commit: commit, finish: finish,
+        error: lastLmsError(),
+      }));
+    } catch (_) {}
   }
 
   // ---------- catalog & progress ----------
@@ -466,7 +486,9 @@
     // Same reasoning for the state: an empty one says nothing, and would
     // overwrite a payload the restore could not parse but a person still could.
     if (stateOwed && !isEmptyState(state)) sent = writeState(state) && sent;
-    sent = ok(lmsCall("LMSCommit", "")) && sent;
+    const commit = lmsCall("LMSCommit", "");
+    sent = ok(commit) && sent;
+    lastWrite = { at: new Date().toISOString(), percent: pct, commit: String(commit), allAccepted: sent, error: lastLmsError() };
     if (!sent) return false;
 
     confirmedPct = pct;
@@ -549,7 +571,39 @@
     ].join(";");
     basePadding = parseInt(getComputedStyle(document.body).paddingTop) || 0;
     document.body.appendChild(bannerEl);
+    addDetailsButton();
     return bannerEl;
+  }
+
+  // A small button that shows diagnose() as text that can be copied into an email.
+  // "My progress isn't saving" cannot be acted on; this can.
+  function addDetailsButton() {
+    const button = document.createElement("button");
+    const panel = document.createElement("pre");
+    button.type = "button";
+    button.textContent = "ⓘ sync details";
+    button.setAttribute("aria-expanded", "false");
+    button.setAttribute("aria-controls", "scorm-sync-details");
+    button.style.cssText = "position:fixed;bottom:6px;right:6px;z-index:9999;font:12px monospace;" +
+      "background:#1a1a1a;color:#ffd86b;border:1px solid #666;border-radius:4px;padding:4px 8px;cursor:pointer";
+    panel.id = "scorm-sync-details";
+    panel.hidden = true;
+    panel.setAttribute("tabindex", "0");
+    panel.setAttribute("aria-label", "Sync details, for a bug report");
+    panel.style.cssText = "position:fixed;bottom:40px;right:6px;left:6px;max-height:60vh;overflow:auto;z-index:9999;" +
+      "margin:0;font:12px monospace;white-space:pre-wrap;word-break:break-word;background:#111;color:#eee;" +
+      "border:1px solid #666;border-radius:4px;padding:10px";
+    button.onclick = function () {
+      panel.hidden = !panel.hidden;
+      button.setAttribute("aria-expanded", String(!panel.hidden));
+      if (!panel.hidden) {
+        report();
+        panel.textContent = "Copy everything in this box into your message.\n\n" + JSON.stringify(diagnose(), null, 1);
+        if (panel.focus) panel.focus();
+      }
+    };
+    document.body.appendChild(button);
+    document.body.appendChild(panel);
   }
 
   function clockTime(ms) {
@@ -611,9 +665,59 @@
   // merge (higher rank, further level, newer position wins), so reconnecting
   // after a stretch of offline play cannot lower anything earned meanwhile.
   let connectedOnce = false;
+  let atLaunch = null;
+  let lastWrite = null;
+
+  function lastLmsError() {
+    if (!api) return "";
+    try { return String(api.LMSGetLastError()) + " " + String(api.LMSGetErrorString ? api.LMSGetErrorString(api.LMSGetLastError()) : ""); }
+    catch (_) { return "?"; }
+  }
+
+  /**
+   * What the LMS has said to this shim, in its own words. It exists because every
+   * test of this file runs against a stand-in LMS, and the real one is where it
+   * has gone wrong: when a student or instructor reports lost progress, this is
+   * what turns "it isn't saving" into something that can be diagnosed.
+   */
+  function diagnose() {
+    let previousExit = null;
+    try { previousExit = JSON.parse(localStorage.getItem(EXIT_KEY) || "null"); } catch (_) {}
+    return {
+      build: BUILD,
+      apiFound: !!api,
+      connected: initialized,
+      syncState: syncState,
+      atLaunch: atLaunch,
+      lastWrite: lastWrite,
+      localPercent: totalSets ? progressPercent() : null,
+      scoreFloor: scoreFloor,
+      setsInCatalog: totalSets,
+      finishes: finishes,
+      previousExit: previousExit,
+      browser: (typeof navigator !== "undefined" && navigator.userAgent) || "",
+    };
+  }
 
   function connect() {
     if (!lmsInit()) return false;
+    if (!atLaunch) {
+      const suspend = String(lmsCall("LMSGetValue", "cmi.suspend_data") || "");
+      atLaunch = {
+        entry: String(lmsCall("LMSGetValue", "cmi.core.entry")),
+        status: String(lmsCall("LMSGetValue", "cmi.core.lesson_status")),
+        score: String(lmsCall("LMSGetValue", "cmi.core.score.raw")),
+        suspendChars: suspend.length,
+        suspendSets: (suspend.match(/\.json/g) || []).length,
+        // Whether the LMS is tracking this session at all. D2L does not log SCORM
+        // attempts properly for an instructor, or under "View as Learner": every
+        // launch then comes back ab-initio and empty, which looks exactly like
+        // lost progress. Only WHETHER a learner was identified is kept, never who.
+        mode: String(lmsCall("LMSGetValue", "cmi.core.lesson_mode")),
+        credit: String(lmsCall("LMSGetValue", "cmi.core.credit")),
+        learnerIdentified: String(lmsCall("LMSGetValue", "cmi.core.student_id") || "").length > 0,
+      };
+    }
     // Read the standing grade BEFORE anything local is consulted, so it can act as
     // a floor even if the catalog fetch or the suspend_data restore fails.
     scoreFloor = Math.max(scoreFloor, readLmsScore());
@@ -644,19 +748,23 @@
     window.addEventListener("online", report);
     window.addEventListener("pagehide", (ev) => {
       report();
-      // A page headed for the back/forward cache may be resumed; leave it connected.
-      if (!ev || !ev.persisted) lmsFinish();
+      // Finished even when the browser says the page may be kept in its back/forward
+      // cache: if it does come back, pageshow reconnects. See lmsFinish().
+      lmsFinish("pagehide" + (ev && ev.persisted ? " (cached)" : ""));
     });
     window.addEventListener("pageshow", (ev) => { if (ev && ev.persisted) report(); });
-    // beforeunload can be cancelled ("Leave site?" → Stay), so the session is NOT
-    // finished here — a finished session turns every later save into a silent
-    // no-op. While something is unsaved, it is also the last chance to say so.
     window.addEventListener("beforeunload", (ev) => {
       report();
       if (hasUnsavedProgress() && ev && ev.preventDefault) {
+        // The last chance to say so. If they stay, the retry needs the connection,
+        // so this is the one exit that does not finish the session.
         ev.preventDefault();
         ev.returnValue = "";
+        return;
       }
+      // beforeunload can be cancelled by the page around us; if the student does
+      // stay, the next save finds the session closed and reconnects.
+      lmsFinish("beforeunload");
     });
   }
 
@@ -667,6 +775,7 @@
     totalSets: () => totalSets,
     hasLms: () => hasLms(),
     syncState: () => syncState,
+    diagnose,
     forceReport: report,
     finishSession: lmsFinish,
   };

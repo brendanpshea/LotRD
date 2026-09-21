@@ -249,8 +249,26 @@ def patch_index_html(build_dir: Path, config: dict) -> None:
     path.write_text(html, encoding="utf-8")
 
 
+def build_stamp() -> str:
+    """When this package was built and from which commit, for the shim's diagnostics."""
+    commit = "unknown"
+    try:
+        commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=REPO,
+                                capture_output=True, text=True).stdout.strip() or commit
+        dirty = subprocess.run(["git", "status", "--porcelain", "--", "src", "SCORM/templates", "question_sets"],
+                               cwd=REPO, capture_output=True, text=True).stdout.strip()
+        if dirty:
+            commit += "+uncommitted"
+    except OSError:
+        pass
+    return f"{time.strftime('%Y-%m-%d %H:%M')} {commit}"
+
+
 def write_shim(build_dir: Path) -> None:
-    shutil.copy2(TEMPLATES / "scorm-shim.js", build_dir / "scorm-shim.js")
+    # "Which build is this student actually running?" has been the first question
+    # in every bug report, and until now there was no way to answer it.
+    text = (TEMPLATES / "scorm-shim.js").read_text(encoding="utf-8")
+    (build_dir / "scorm-shim.js").write_text(text.replace("{{BUILD}}", build_stamp()), encoding="utf-8")
 
 
 def collect_files(build_dir: Path) -> list[str]:
