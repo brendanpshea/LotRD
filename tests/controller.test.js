@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { GameController } from '../src/controller.js';
 import { GameModel } from '../src/model.js';
 import { ITEMS } from '../src/items.js';
+import { sampleTrialQuestions } from '../src/util.js';
 
 const MONSTERS = [
   { monster_name: 'Test Slime', hit_dice: 1, attack_die: 4, defense: 0, image: 'slime.png' },
@@ -203,5 +204,44 @@ describe('Rapid submits', () => {
     assert.equal(gm.answer_history.length, 0);
     assert.ok(gm.current_question, 'the question is still on screen');
     assert.equal(c.resolved.length, 0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Miss history → rank trials
+// ────────────────────────────────────────────────────────────────────────────────
+describe('miss history', () => {
+  it('steers the next rank trial toward a missed question whose numbers change each time', () => {
+    // A dynamic question is shown with fresh numbers on every encounter. Its miss
+    // used to be recorded under the text as shown, which the trial — looking
+    // questions up as authored — never matched, so it was sampled by chance only.
+    const dynamic = {
+      type: 'dynamic_numeric',
+      question: 'What decimal value does binary {{bits}} represent?',
+      variables: { n: { values: [13] } },
+      derived: { bits: 'toBin(n)' },
+      answer: { expr: 'n', tolerance_abs: 0 },
+    };
+    const plain = Array.from({ length: 20 }, (_, i) => mcQuestion({ question: `Plain ${i}?` }));
+    const gm = encounterModel([dynamic]);
+    for (let i = 0; i < 3; i++) gm.submitFillBlankGuess('999');
+
+    const store = {};
+    globalThis.localStorage = {
+      getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); },
+      removeItem: k => { delete store[k]; },
+    };
+    try {
+      const c = stubController(gm);
+      c._missRecordId = 'set.json';
+      c._recordMisses();
+      const misses = c._loadMisses('set.json');
+      for (let run = 0; run < 20; run++) {
+        const sample = sampleTrialQuestions([dynamic, ...plain], misses);
+        assert.ok(sample.includes(dynamic), `trial ${run} left out the missed question; misses: ${JSON.stringify(misses)}`);
+      }
+    } finally {
+      delete globalThis.localStorage;
+    }
   });
 });

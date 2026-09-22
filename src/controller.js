@@ -425,8 +425,12 @@ export class GameController {
     const counts = this._loadMisses(this._missRecordId);
     let changed = false;
     for (const h of this.model.answer_history) {
-      if (h && h.was_perfect === false && h.question) {
-        counts[h.question] = (counts[h.question] || 0) + 1;
+      // Keyed by the question as authored, which is how trials look it up. A
+      // dynamic question's shown text has fresh numbers every time, so keying by
+      // that never matched — and added a new key per encounter.
+      const key = h && (h.template || h.question);
+      if (key && h.was_perfect === false) {
+        counts[key] = (counts[key] || 0) + 1;
         changed = true;
       }
     }

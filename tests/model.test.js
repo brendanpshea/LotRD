@@ -695,6 +695,45 @@ describe('submitCodeLineGuess', () => {
     assert.notEqual(r.status, 'typo');
   });
 
+  // The gate shows the right answer and costs nothing, so it may only fire on a
+  // slip of the fingers. It used to fire on anything within two characters —
+  // `>=` for `>`, `range(6)` for `range(5)` — handing over the answer for free,
+  // after which retyping it counted as perfect.
+  for (const [answer, guess] of [
+    ['if x > 0:', 'if x >= 0:'],
+    ['if x > 0:', 'if x < 0:'],
+    ['for i in range(5):', 'for i in range(6):'],
+    ['name = s.lower()', 'name = s.upper()'],
+    ['big = max(a, b)', 'big = min(a, b)'],
+    ['def f(n):', 'def f(n=1):'],
+    ['print("%d" % n)', 'print("%s" % n)'],
+  ]) {
+    it(`does not reveal "${answer}" for the different line "${guess}"`, () => {
+      const gm2 = freshModel([codeLineQuestion({ language: 'python', correct: [answer] })]);
+      gm2.nextEncounter();
+      gm2.current_monster.hit_points = 999;
+      const r = gm2.submitCodeLineGuess(guess);
+      assert.equal(r.status, 'wrong');
+      assert.equal(r.attemptsUsed, 1);
+    });
+  }
+
+  for (const [answer, guess] of [
+    ['print(total)', 'pritn(total)'],
+    ['return total', 'retrun total'],
+    ['names.append(x)', 'names.apend(x)'],
+    ['System.out.println(x);', 'System.out.printn(x);'],
+  ]) {
+    it(`asks "did you mean" for the misspelling "${guess}"`, () => {
+      const gm2 = freshModel([codeLineQuestion({ correct: [answer] })]);
+      gm2.nextEncounter();
+      gm2.current_monster.hit_points = 999;
+      const r = gm2.submitCodeLineGuess(guess);
+      assert.equal(r.status, 'typo');
+      assert.equal(r.attemptsUsed, 0);
+    });
+  }
+
   it('genuinely wrong answer does NOT fire typo gate', () => {
     const r = gm.submitCodeLineGuess('var x = 1;');
     assert.equal(r.status, 'wrong');
@@ -848,6 +887,15 @@ describe('submitFillBlankGuess', () => {
     const r = gm.submitFillBlankGuess('extens'); // dist 1 to "extends"
     assert.equal(r.status, 'won');
     assert.equal(r.attemptsUsed, 1);
+  });
+
+  it('does not fuzzy-accept a code_trace output: one character is the whole question', () => {
+    // "Ayla (8)" for "Ayla (9)" is not a typo; the digit is what was being traced.
+    const gm2 = freshModel([fillBlankQuestion({ type: 'code_trace', correct: ['Ayla (9)'] })]);
+    gm2.nextEncounter();
+    gm2.current_monster.hit_points = 999;
+    assert.equal(gm2.submitFillBlankGuess('Ayla (8)').status, 'wrong');
+    assert.equal(gm2.submitFillBlankGuess('Ayla (9)').status, 'won');
   });
 
   it('does not fuzzy-accept on short answers', () => {
@@ -2025,6 +2073,21 @@ describe('dynamic_numeric expression input', () => {
     })], SAMPLE_MONSTERS, null, null);
     gm.nextEncounter();
     assert.equal(gm.submitDynamicNumericGuess('100').status, 'won');
+  });
+
+  it('reads thousands separators only in something shaped like a number', () => {
+    // Separators used to be stripped from every guess before anything else, so
+    // commas between arguments vanished: max(1,5) was read as max(15).
+    const q = lockQuestion({ variables: { dials: { values: [3] }, positions: { values: [10] } } });
+    assert.equal(started(q).submitDynamicNumericGuess('1,000').status, 'won');
+    assert.equal(started(q).submitDynamicNumericGuess('1 000').status, 'won');
+    assert.equal(started(q).submitDynamicNumericGuess('1_000').status, 'won');
+    assert.equal(started(q).submitDynamicNumericGuess('pow(10, 3)').status, 'won');
+    assert.equal(started(q).submitDynamicNumericGuess('max(1, 1000)').status, 'won');
+    const fifteen = lockQuestion({ answer: { expr: '15', tolerance_abs: 0 } });
+    assert.notEqual(started(fifteen).submitDynamicNumericGuess('max(1,5)').status, 'won');
+    assert.notEqual(started(fifteen).submitDynamicNumericGuess('1 5').status, 'won');
+    assert.notEqual(started(fifteen).submitDynamicNumericGuess('1,5').status, 'won');
   });
 
   it('rejects expressions when the author opted out', () => {

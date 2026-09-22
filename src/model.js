@@ -250,9 +250,41 @@ export function pickClozeBlank(canonical, rng = Math.random) {
     const pick = longest[Math.floor(rng() * longest.length)];
     return { words, blankIndex: pick.i };
 }
-// Char-level edit distance under which a near-miss triggers the "did you mean?"
-// typo gate — small enough to catch real typos without rescuing wrong answers.
-export const CL_TYPO_THRESHOLD = 2;
+/** One keystroke apart: a letter missing, extra or wrong, or two adjacent letters swapped. */
+function oneKeystrokeApart(a, b) {
+    if (a === b) return false;
+    if (a.length === b.length) {
+        const diff = [];
+        for (let i = 0; i < a.length && diff.length <= 2; i++) if (a[i] !== b[i]) diff.push(i);
+        return diff.length === 1
+            || (diff.length === 2 && diff[1] === diff[0] + 1
+                && a[diff[0]] === b[diff[1]] && a[diff[1]] === b[diff[0]]);
+    }
+    return Math.abs(a.length - b.length) === 1 && levenshtein(a, b) === 1;
+}
+
+/**
+ * Is this code-line guess a slip of the fingers for that answer, rather than a
+ * different line? The "did you mean?" gate shows the answer and costs nothing,
+ * so it once handed out `>` for `>=`, `range(5)` for `range(6)`, `max` for
+ * `min` — anything within two characters. Now a slip is: the same tokens except
+ * for at most one misspelled word (4+ letters, one keystroke off), and at most
+ * a missing or extra `;` at the end. Operators, numbers, strings and short
+ * names are exactly what questions ask about, so a difference there is an answer.
+ */
+export function isSlip(guessTokens, answerTokens) {
+    const trim = t => (t.length && t[t.length - 1] === ';' ? t.slice(0, -1) : t);
+    const g = trim(guessTokens), a = trim(answerTokens);
+    if (g.length !== a.length) return false;
+    let misspelt = 0;
+    for (let i = 0; i < g.length; i++) {
+        if (g[i] === a[i]) continue;
+        const word = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+        if (!word.test(g[i]) || !word.test(a[i]) || a[i].length < 4) return false;
+        if (!oneKeystrokeApart(g[i], a[i]) || ++misspelt > 1) return false;
+    }
+    return misspelt === 1 || guessTokens.length !== answerTokens.length;
+}
 
 const MAX_DYNAMIC_RANGE_STEPS = 10000;
 const MAX_DYNAMIC_LOOP_ITERS = 100000;
@@ -1004,7 +1036,9 @@ export class GameModel {
         const queued = new Set(position.remaining);
         const history = [];
         const entry = (q, perfect) => ({
-            question: q.question, correct_answers: [], selected: [],
+            question: q.question,
+            ...(q.question_template ? { template: q.question_template } : {}),
+            correct_answers: [], selected: [],
             correct_selections: [], incorrect_selections: [], missed_correct: [],
             was_perfect: perfect, carried: true,
         });
@@ -1361,8 +1395,11 @@ export class GameModel {
     }
 
     _buildHistoryEntry({ correctAnswers, selected, correctSelections, incorrectSelections, missedCorrect, isPerfect }) {
+        const q = this.current_question;
         return {
-            question: this.current_question.question,
+            question: q.question,
+            // The question as authored: a dynamic question's text differs each time.
+            ...(q.question_template ? { template: q.question_template } : {}),
             correct_answers: correctAnswers,
             selected,
             correct_selections: correctSelections,
@@ -1571,9 +1608,12 @@ export class GameModel {
     _parseDynamicNumericGuess(inputText) {
         const raw = String(inputText ?? '').trim();
         if (!raw) return null;
-        const normalized = raw.replace(/[,_\s]/g, '');
-        if (!normalized) return null;
-        const value = Number(normalized);
+        // Separators are read as digit grouping only in something shaped like a
+        // grouped number (1,000 · 1 000 · 1_000). They used to be stripped from
+        // every guess first, which read max(1,5) as max(15), "1 5" as 15 and the
+        // decimal comma in "1,5" as 15.
+        const grouped = /^[+-]?\d{1,3}(?:[,_ ]\d{3})+(?:\.\d+)?$/.test(raw);
+        const value = Number(grouped ? raw.replace(/[,_ ]/g, '') : raw);
         if (Number.isFinite(value)) return value;
 
         // Not a bare number. Hand it to the same parser that computes the
@@ -1582,7 +1622,7 @@ export class GameModel {
         // resolving to a variable of the question.
         if (!this._expressionsAllowed()) return null;
         try {
-            const computed = evaluateDynamicExpression(normalized, {});
+            const computed = evaluateDynamicExpression(raw, {});
             return Number.isFinite(computed) ? computed : null;
         } catch (_) {
             return null;
@@ -1809,9 +1849,11 @@ export class GameModel {
         // Fuzzy accept: a single-character typo on a reasonably long answer
         // counts as correct. Avoids losing a turn to "extens" vs "extends"
         // while keeping short answers (TCP, true) strict. Skipped when the
-        // question is case-sensitive — the author is asking for exactness.
+        // question is case-sensitive — the author is asking for exactness —
+        // and for code_trace, where one character ("Ayla (8)" for "Ayla (9)")
+        // is usually the very thing being traced.
         const isCorrect = input === bestAnswer
-            || (!caseSens && bestDist <= 1 && bestAnswer.length >= 5);
+            || (q.type !== 'code_trace' && !caseSens && bestDist <= 1 && bestAnswer.length >= 5);
         const feedback  = wordleFeedback(input, bestAnswer);
         this._fbAttempts++;
 
@@ -1982,7 +2024,7 @@ export class GameModel {
         let bestAnswer       = norm(acceptable[0] || '');
         let bestAnswerTokens = tokenize(bestAnswer, lang);
         let bestTokenSim     = -1;
-        let bestCharDist     = Infinity;
+        let slipOf           = null;   // the variant this guess is a mere slip of
         for (const ans of acceptable) {
             const ansNorm   = norm(ans);
             const ansTokens = tokenize(ansNorm, lang);
@@ -1990,21 +2032,21 @@ export class GameModel {
             if (sim > bestTokenSim) {
                 bestTokenSim = sim; bestAnswer = ansNorm; bestAnswerTokens = ansTokens;
             }
-            const cd = levenshtein(inputNorm, ansNorm);
-            if (cd < bestCharDist) bestCharDist = cd;
-            if (sim === 1) { bestCharDist = 0; break; }
+            if (sim === 1) break;
+            if (!slipOf && isSlip(inputTokens, ansTokens)) slipOf = ansNorm;
         }
 
         const isCorrect = bestTokenSim === 1;
 
-        // Typo gate — fire on a near-miss before counting the attempt.
-        if (!isCorrect && !confirmed && inputNorm.length > 0
-            && bestCharDist > 0 && bestCharDist <= CL_TYPO_THRESHOLD) {
+        // Typo gate — fire on a slip of the fingers before counting the attempt.
+        // It shows the right answer and costs nothing, so it must never fire on
+        // a guess that differs in substance (see isSlip).
+        if (!isCorrect && !confirmed && slipOf) {
             return {
                 status:        'typo',
-                suggestion:    bestAnswer,
+                suggestion:    slipOf,
                 guessText:     inputText,
-                charDistance:  bestCharDist,
+                charDistance:  levenshtein(inputNorm, slipOf),
                 attemptsUsed:  this._clAttempts,
                 attemptsLeft:  CL_MAX_ATTEMPTS - this._clAttempts,
             };

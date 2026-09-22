@@ -82,7 +82,7 @@ The original type. Select all correct answers; partial credit is not given for i
 - `case_sensitive: true` should be used for Java keywords and code; omit or set `false` for prose answers.
 - The UI shows a per-word character-count hint (e.g. `_ _ _ _ _ _ _  (7 chars)`).
 - Players get up to **3 attempts**. Wrong attempts show Wordle-style feedback; long answers may auto-cloze so only one word needs to be typed.
-- A one-character typo on a long non-case-sensitive answer is accepted automatically.
+- A one-character typo on a long non-case-sensitive answer is accepted automatically. Not for `code_trace`, where one character is usually the thing being traced.
 - Missed questions re-queue, and final failure keeps partial credit based on similarity.
 
 ### Dynamic Numeric
@@ -149,7 +149,7 @@ The original type. Select all correct answers; partial credit is not given for i
 
 - Best for one-line code or command authoring.
 - Grading is token-based, so whitespace-only differences do not matter.
-- Players get 3 attempts, token-Wordle feedback, and a typo confirmation prompt for near-misses.
+- Players get 3 attempts and token-Wordle feedback. A "did you mean?" prompt, which shows the answer without using an attempt, appears only for a slip: the same tokens except one misspelled word of 4+ letters (one keystroke off) and/or a missing trailing `;`. A different operator, number, string or short name is graded as an answer.
 
 ### Matching
 

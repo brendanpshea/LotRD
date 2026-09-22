@@ -219,14 +219,14 @@ export function nextTierInfo(tierRec, now = Date.now()) {
  * NPC teaching scenes never appear in a trial — they are first-exposure
  * scaffolding, and trials are pure retrieval.
  * @param {object[]} questions   – the set's full question array
- * @param {Object<string,number>} missCounts – question text → historical miss count
+ * @param {Object<string,number>} missCounts – question as authored (question_template for a dynamic one) → historical miss count
  */
 export function sampleTrialQuestions(questions, missCounts = {}) {
     const pool = (questions || []).filter(q => q && q.type !== "npc_demo");
     const size = Math.min(Math.ceil(pool.length / 2), TRIAL_MAX_QUESTIONS);
-    const missed = shuffle(pool.filter(q => (missCounts[q.question] || 0) > 0))
-        .sort((a, b) => (missCounts[b.question] || 0) - (missCounts[a.question] || 0));
-    const rest = shuffle(pool.filter(q => !(missCounts[q.question] > 0)));
+    const misses = q => missCounts[q.question_template || q.question] || 0;
+    const missed = shuffle(pool.filter(q => misses(q) > 0)).sort((a, b) => misses(b) - misses(a));
+    const rest = shuffle(pool.filter(q => !(misses(q) > 0)));
     return shuffle([...missed, ...rest].slice(0, size));
 }
 
