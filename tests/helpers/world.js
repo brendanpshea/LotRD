@@ -42,18 +42,26 @@ const silent = new Proxy({}, { get: () => noop });
 // every timeout up to ~15 ms, which the random walk would pay a thousand times.)
 const drain = async () => { for (let i = 0; i < 4; i++) await new Promise(r => setImmediate(r)); };
 
-/** The LMS: one record per student, shared by every device, and fallible. */
+/** The LMS: one student's record, shared by every device they use, and fallible. */
 export class Lms {
-  /** @param {{single?: string}} options – `single`: this activity is a single-set package for that set. */
-  constructor({ single = null } = {}) {
+  /**
+   * @param {{single?: string, student?: string}} options – `single`: this activity
+   *   is a single-set package for that set. `student`: who is logged in to D2L.
+   */
+  constructor({ single = null, student = 'student-1' } = {}) {
     this.store = {};
     this.control = {};
     this.single = single;
+    this.student = student;
+    this.store['cmi.core.student_id'] = student;
   }
   goDown() { this.control.down = true; }
   comeBack() { this.control.down = false; }
-  /** A republished package: the LMS hands the student a clean attempt. */
-  startFreshAttempt() { for (const k of Object.keys(this.store)) delete this.store[k]; }
+  /** A republished package: the LMS hands the student a clean attempt. Still them. */
+  startFreshAttempt() {
+    for (const k of Object.keys(this.store)) delete this.store[k];
+    this.store['cmi.core.student_id'] = this.student;
+  }
 
   get score() {
     const n = parseInt(this.store['cmi.core.score.raw'], 10);
@@ -81,6 +89,13 @@ export class Device {
 
   /** Safari closing, a classroom machine resetting its profile, "clear site data". */
   wipeStorage() { this.storage.clear(); }
+
+  /** The same browser, with a different student logged in to D2L: a lab or library PC. */
+  usedBy(lms, name = this.name) {
+    const other = new Device(lms, name);
+    other.storage = this.storage;
+    return other;
+  }
 
   /** Open the activity from D2L. */
   async launch() {
@@ -147,7 +162,7 @@ export class Session {
       _isReview: !!trial, _trialSetId: trial ? id : null, _trialTier: trial,
       _sharpenReviewId: null, _missRecordId: id, _storageState: 'ok',
       _renderStorageWarning: noop, _setInGame: noop, _renderEncounter: noop,
-      _showWithDragon: render => render(null),
+      _showWithDragon: render => render(null), showMainMenu: noop,
       sounds: silent,
     });
     c.ui = new Proxy({
@@ -206,13 +221,21 @@ export class Session {
     return this;
   }
 
-  /** Click Continue on the results screen. */
-  next() {
+  /** Click Continue on the results screen — `clicks: 2` for a double-click or a held Enter. */
+  next({ clicks = 1 } = {}) {
     this.use();
     const go = this._continue;
     this._continue = null;
-    if (go) go();
+    if (go) for (let i = 0; i < clicks; i++) go();
     if (!this.finished) this._skipScenes();
+    return this;
+  }
+
+  /** The in-game Back button: save and return to the menu, from wherever the student is. */
+  back() {
+    this.use();
+    this.controller.leaveToMenu();
+    this._continue = null;
     return this;
   }
 
@@ -231,6 +254,13 @@ export class Session {
 
   /** Let the character die, which ends the run. */
   die() {
+    this.takeFatalHit();
+    this.next();
+    return this;
+  }
+
+  /** Answer wrongly until the character dies. The results screen is left up. */
+  takeFatalHit() {
     this.use();
     const m = this.controller.model;
     m.player.revive_charges = 0;
@@ -242,7 +272,6 @@ export class Session {
       this.controller.submitAnswer(['B']);
       if (m.player.hit_points > 0) this.next();
     }
-    this.next();
     return this;
   }
 

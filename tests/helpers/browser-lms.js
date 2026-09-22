@@ -170,7 +170,8 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
 
 /** Start the server. `lms` is the student's record; it lives as long as the server. */
 export async function startServer() {
-  const lms = { store: {}, down: false };
+  // D2L always names the learner; the shim tags the browser's progress with it.
+  const lms = { store: { 'cmi.core.student_id': 'student-1' }, down: false };
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     const send = (code, body, type = 'text/plain; charset=utf-8') => {

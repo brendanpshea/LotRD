@@ -69,6 +69,20 @@ MUTATIONS = [
     ('misses not carried in a position', MODEL,
      "        for (const i of position.missed) if (at(i)) history.push(entry(at(i), false));\n", '', None),
     ('player level not synced', SHIM, '    if (state.level) out.lvl = state.level;\n', '', None),
+    ('a shared computer: progress is not told apart by student', SHIM,
+     '    foreignProgress = !adoptLearner(String(lmsCall("LMSGetValue", "cmi.core.student_id") || ""));\n',
+     '', None),
+    ("another student's progress is deleted rather than set aside", SHIM,
+     '          if (!writeStash(owner, JSON.stringify(stash))) return false;\n', '', None),
+    ("storage full: another student's progress is reported anyway", SHIM,
+     '    if (initialized && foreignProgress) {', '    if (false) {', None),
+    ('Back on the last results screen saves a run with nothing left in it', CTRL,
+     'else this._saveAfterAnswer(results.battleData);', 'else this.saveGame();', None),
+    ('Back on the death screen skips the game over', CTRL,
+     'if (results.battleData.defeated_player) this._endRunByDefeat();\n      else ', '', None),
+    ('Continue on a results screen runs again on a double-click', CTRL,
+     '      if (results.clicked) return;\n', '',
+     ('    if (results.done) return;\n    this._closeResults(results);', '    this._closeResults(results);')),
 ]
 
 

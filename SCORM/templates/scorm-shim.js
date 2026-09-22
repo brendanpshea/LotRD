@@ -122,6 +122,102 @@
     } catch (_) {}
   }
 
+  // ---------- whose progress is in this browser? ----------
+  // D2L serves every student's copy of the activity from the same address, so on
+  // a lab or library PC they all share one localStorage. Nothing in it said whose
+  // it was: the next student to open the activity there had the last one's
+  // cleared sets merged into their own D2L record, and — since a grade is never
+  // lowered — kept that credit for good. So the browser's progress is tagged with
+  // the student it belongs to, and set aside (never deleted: it may be the only
+  // copy of work D2L did not receive) when someone else connects.
+  const OWNER_KEY = "lotrd_learner";
+  const STASH_PREFIX = "lotrd_stash_";
+  // Settings and diagnostics belong to the browser, not the student. The save-data
+  // version must stay put: without it the game's start-up housekeeping would
+  // purge the saves of whichever student's progress is being put back.
+  const BROWSER_KEYS = [OWNER_KEY, EXIT_KEY, "lotrd_sound", "lotrd_save_data_version"];
+  // Set when another student's progress could not be set aside: this session then
+  // neither restores into nor reports from a browser holding someone else's work.
+  let foreignProgress = false;
+
+  /** A digest of the LMS's learner id. Only this is stored, never the id itself. */
+  function learnerTag(id) {
+    let a = 0x811c9dc5, b = 0x01000193 ^ 0x9e3779b9;
+    for (let i = 0; i < id.length; i++) {
+      const c = id.charCodeAt(i);
+      a = Math.imul(a ^ c, 0x01000193) >>> 0;
+      b = Math.imul(b ^ c, 0x85ebca6b) >>> 0;
+    }
+    return ("0000000" + a.toString(16)).slice(-8) + ("0000000" + b.toString(16)).slice(-8);
+  }
+
+  function isLearnerKey(key) {
+    return key.indexOf("lotrd_") === 0 && key.indexOf(STASH_PREFIX) !== 0 && BROWSER_KEYS.indexOf(key) < 0;
+  }
+
+  /**
+   * Store a student's set-aside progress. If the browser's storage is full, the
+   * oldest copy set aside for some OTHER student is dropped to make room: it is a
+   * spare, of progress normally already in that student's D2L record, whereas
+   * failing here would leave this one's in the way of the student now connecting.
+   */
+  function writeStash(tag, payload) {
+    for (;;) {
+      try { localStorage.setItem(STASH_PREFIX + tag, payload); return true; } catch (_) {}
+      let oldestKey = null, oldestAt = Infinity;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || key.indexOf(STASH_PREFIX) !== 0 || key === STASH_PREFIX + tag) continue;
+        const at = (readJson(key) || {}).t || 0;
+        if (at < oldestAt) { oldestAt = at; oldestKey = key; }
+      }
+      if (!oldestKey) return false;
+      console.warn("[scorm-shim] storage full; dropping the oldest set-aside progress");
+      localStorage.removeItem(oldestKey);
+    }
+  }
+
+  /**
+   * Make this browser's progress the connecting student's own. Returns false when
+   * another student's progress is here and could not be moved out of the way.
+   */
+  function adoptLearner(studentId) {
+    if (!studentId) return true;      // an LMS that does not say: nothing to tell apart
+    const tag = learnerTag(studentId);
+    try {
+      const owner = localStorage.getItem(OWNER_KEY);
+      if (owner === tag) return true;
+      if (owner) {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && isLearnerKey(key)) keys.push(key);
+        }
+        if (keys.length > 0) {
+          const stash = { t: Date.now(), d: {} };
+          for (const key of keys) stash.d[key] = localStorage.getItem(key);
+          if (!writeStash(owner, JSON.stringify(stash))) return false;
+          for (const key of keys) localStorage.removeItem(key);
+        }
+      }
+      // No owner recorded: progress saved before browsers were told apart. It is
+      // claimed by the first student to connect — almost always the one whose
+      // browser it is.
+      const mine = readJson(STASH_PREFIX + tag);
+      if (mine && mine.d && typeof mine.d === "object") {
+        for (const key of Object.keys(mine.d)) {
+          if (isLearnerKey(key) && typeof mine.d[key] === "string") localStorage.setItem(key, mine.d[key]);
+        }
+        localStorage.removeItem(STASH_PREFIX + tag);
+      }
+      localStorage.setItem(OWNER_KEY, tag);
+      return true;
+    } catch (_) {
+      // Storage unusable (blocked, private mode): then it holds no one's progress.
+      return true;
+    }
+  }
+
   // ---------- catalog & progress ----------
   let totalSets = 0;
   let playableIds = [];
@@ -439,6 +535,8 @@
   // "synced"  – the LMS has confirmed everything there is to say.
   // "failing" – the LMS is there but something has not got through.
   // "local"   – no LMS connection at all (yet); this browser is the only copy.
+  // "foreign" – connected, but this browser holds another student's progress
+  //             that could not be set aside; nothing is read or reported.
   let syncState = "local";
   let failingSince = 0;
   let failures = 0;
@@ -541,7 +639,9 @@
         scoreFloor + "%; keeping the higher score");
     }
 
-    if (initialized) {
+    if (initialized && foreignProgress) {
+      setSyncState("foreign");
+    } else if (initialized) {
       if (pushToLms(pct)) {
         setSyncState("synced");
       } else {
@@ -563,7 +663,7 @@
 
   /** True while something earned here exists nowhere but this browser. */
   function hasUnsavedProgress() {
-    if (syncState === "synced" || totalSets === 0) return false;
+    if (syncState === "synced" || syncState === "foreign" || totalSets === 0) return false;
     const state = buildState();
     return !isEmptyState(state) && encodeState(state) !== confirmedPayload;
   }
@@ -645,6 +745,10 @@
       text = SINGLE
         ? `${progress}${pct >= 100 ? "  ·  sent to D2L" : ""}`
         : `${progress}  ·  ✓ saved to D2L — rank up cleared sets for full credit`;
+    } else if (syncState === "foreign") {
+      alarm = true;
+      text = `⚠ This browser's storage is full of another student's progress, so yours is NOT being ` +
+        `saved to D2L here. Please open this activity in a different browser or on another device.`;
     } else if (syncState === "failing") {
       alarm = true;
       text = `⚠ Your progress has NOT been saved to D2L since ${clockTime(failingSince)}. ` +
@@ -741,10 +845,12 @@
         learnerIdentified: String(lmsCall("LMSGetValue", "cmi.core.student_id") || "").length > 0,
       };
     }
+    // Before anything local is read or merged: make sure it is this student's.
+    foreignProgress = !adoptLearner(String(lmsCall("LMSGetValue", "cmi.core.student_id") || ""));
     // Read the standing grade BEFORE anything local is consulted, so it can act as
     // a floor even if the catalog fetch or the suspend_data restore fails.
     scoreFloor = Math.max(scoreFloor, readLmsScore());
-    restoreFromSuspendData();
+    if (!foreignProgress) restoreFromSuspendData();
     // Said now rather than only at unload: a frame being torn down by its parent
     // cannot count on a last network call getting out.
     markSuspended();

@@ -74,11 +74,7 @@ export class GameController {
 
     const backBtn = document.getElementById("back-btn");
     if (backBtn) {
-      backBtn.addEventListener("click", () => {
-        this._updateGlobalStats();
-        this.saveGame();
-        this.showMainMenu();
-      });
+      backBtn.addEventListener("click", () => this.leaveToMenu());
     }
 
     this._applySaveDataVersion();
@@ -884,6 +880,7 @@ export class GameController {
   }
 
   startAdventure() {
+    this._openResults = null;       // belongs to whatever run came before
     if (!this._isReview) {
       try { localStorage.setItem(this._attemptKey(this._setName), "1"); } catch (_) {}
     }
@@ -1197,13 +1194,19 @@ export class GameController {
       }
     }
 
+    // What happens next is decided by Continue, exactly once. A double-click, or
+    // Enter held down, used to run it twice: the second run advanced past the
+    // encounter the first had just set up — skipping the retrieval boss straight
+    // to victory, and counting that victory twice. The screen stays "open" through
+    // a level-up, which is still before the run has moved on.
+    const results = { battleData, clicked: false, done: false };
+    this._openResults = results;
     const afterResults = () => {
+      if (results.clicked) return;
+      results.clicked = true;
       if (battleData.defeated_player) {
-        this._clearSave();
-        this._recordMisses();
-        this._updateGlobalStats();
-        this._saveGlobalLevel();
-        this._syncLms();
+        this._closeResults(results);
+        this._endRunByDefeat();
         this.sounds.gameOver();
         this._setInGame(false);
         this.ui.showGameOver(
@@ -1215,13 +1218,33 @@ export class GameController {
       if (battleData.levelsGained > 0) {
         this._saveGlobalLevel();
         this.sounds.levelUp();
-        this.ui.showLevelUp(battleData.levelsGained, battleData.levelUpRewards, () => this.continueAdventure());
+        this.ui.showLevelUp(battleData.levelsGained, battleData.levelUpRewards, () => this._continueFrom(results));
       } else {
-        this.continueAdventure();
+        this._continueFrom(results);
       }
     };
 
     this.ui.showResults(battleData, itemDrop, afterResults);
+  }
+
+  _closeResults(results) {
+    results.done = true;
+    if (this._openResults === results) this._openResults = null;
+  }
+
+  _continueFrom(results) {
+    if (results.done) return;
+    this._closeResults(results);
+    this.continueAdventure();
+  }
+
+  /** The character died: the run is over, and nothing of it is left to resume. */
+  _endRunByDefeat() {
+    this._clearSave();
+    this._recordMisses();
+    this._updateGlobalStats();
+    this._saveGlobalLevel();
+    this._syncLms();
   }
 
   /**
@@ -1239,6 +1262,26 @@ export class GameController {
     const m = this.model;
     const queued = m.boss_phase ? m.boss_queue.length : m.questions_to_ask.length;
     if (queued > 0) this.saveGame();
+  }
+
+  /**
+   * The in-game Back button. From a results screen, leaving must not decide the
+   * answer's outcome any differently than Continue would. A plain save there was
+   * wrong twice over: after the last answer it wrote a run with nothing queued,
+   * which reads as nothing to resume (the student replayed the whole set); after
+   * a fatal answer it saved a dead character, skipping the game over.
+   */
+  leaveToMenu() {
+    this._updateGlobalStats();
+    const results = this._openResults;
+    if (results) {
+      this._closeResults(results);
+      if (results.battleData.defeated_player) this._endRunByDefeat();
+      else this._saveAfterAnswer(results.battleData);
+    } else {
+      this.saveGame();
+    }
+    this.showMainMenu();
   }
 
   continueAdventure() {

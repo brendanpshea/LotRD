@@ -392,6 +392,29 @@ describe('progress inside a set is never lost', () => {
     assert.ok((await laptop.launch()).open(C).controller.model.player.level >= level);
   });
 
+  it('survives the Back button on the results screen of the last question', async () => {
+    // The run's ending is decided by Continue. A student who instead clicked
+    // Back from that screen used to leave a save with nothing queued — which the
+    // menu reads as nothing to resume — and had to play the whole set again.
+    const lms = new Lms();
+    const phone = await new Device(lms, 'phone').launch();
+    phone.open(A).play(QUESTIONS_PER_SET - 1).answer(true).back();
+    assert.equal(phone.menu(A).status.type, 'in_progress', 'the whole set would be owed again');
+    phone.open(A).finish();
+    assertCleared(phone, A);
+  });
+
+  it('survives the Back button there when a missed question still owes the retrieval boss', async () => {
+    const lms = new Lms();
+    const phone = await new Device(lms, 'phone').launch();
+    phone.open(A).play(1, { right: false }).play(QUESTIONS_PER_SET - 1).answer(true).back();
+    assert.equal(phone.menu(A).status.type, 'in_progress', 'the whole set would be owed again');
+    phone.kill();
+    const laptop = await new Device(lms, 'laptop').launch();
+    laptop.open(A).finish();
+    assertCleared(laptop, A);
+  });
+
   it('starts the set over rather than resuming at the wrong question after the set is edited', async () => {
     // Guarded by a fingerprint of the question file. Not a loss: resuming a
     // position against different questions would be worse than restarting.
@@ -487,6 +510,170 @@ describe('any sequence of switches, outages and wiped browsers', () => {
 
   it('never loses a cleared set or lowers the grade (60 random histories)', async () => {
     for (let seed = 1; seed <= 60; seed++) await walk(seed);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Lab machines, library PCs, a sibling's laptop: several students, one browser.
+// D2L serves every student's copy of the activity from the same address, so they
+// share one localStorage. Progress found there belongs to whoever earned it —
+// never to whoever happens to open the activity next.
+describe('a computer that several students take turns at', () => {
+  const alice = () => new Lms({ student: 'alice' });
+  const bob = () => new Lms({ student: 'bob' });
+
+  it('does not hand one student\'s cleared set to the next', async () => {
+    const a = alice(), b = bob();
+    const lab = new Device(a, 'lab');
+    (await lab.launch()).open(A).finish().close();
+
+    const bobAtLab = await lab.usedBy(b).launch();
+    assert.equal(bobAtLab.menuAtStartup(A).status.type, 'not_started', 'Bob was shown Alice\'s set as his own');
+    assert.equal(bobAtLab.menu(A).status.type, 'not_started');
+    bobAtLab.tick();
+    bobAtLab.close();
+    assert.deepEqual(b.ranks, {}, 'Alice\'s set was written into Bob\'s D2L record');
+    assert.ok(!('cmi.core.score.raw' in b.store), `Bob was given a grade of ${b.store['cmi.core.score.raw']}`);
+  });
+
+  it('does not hand over a half-finished set, or a level, either', async () => {
+    const a = alice(), b = bob();
+    const lab = new Device(a, 'lab');
+    const visit = await lab.launch();
+    visit.open(A).play(3);
+    visit.controller.model.player.xp += 500;
+    visit.controller.model.checkLevelUp();
+    visit.play(1).close();
+
+    const bobAtLab = await lab.usedBy(b).launch();
+    assert.equal(bobAtLab.menu(A).status.type, 'not_started');
+    assert.equal(bobAtLab.open(B).controller.model.player.level, 1);
+    bobAtLab.close();
+    assert.equal(b.positionOf(A), null);
+    assert.equal(b.data.lvl?.[0] ?? 1, 1);
+  });
+
+  it('does not grade the next student for a single-set package the last one cleared', async () => {
+    const a = new Lms({ single: A, student: 'alice' }), b = new Lms({ single: A, student: 'bob' });
+    const lab = new Device(a, 'lab');
+    (await lab.launch()).open(A).finish().close();
+    assert.equal(a.score, 100);
+
+    const bobAtLab = await lab.usedBy(b).launch();
+    bobAtLab.tick();
+    bobAtLab.close();
+    assert.ok(!('cmi.core.score.raw' in b.store), `Bob was given ${b.store['cmi.core.score.raw']} for Alice's work`);
+    assert.notEqual(b.store['cmi.core.lesson_status'], 'completed');
+  });
+
+  it('gives each student their own progress back as they take turns', async () => {
+    const a = alice(), b = bob();
+    const aliceAtLab = new Device(a, 'lab');
+    const bobAtLab = aliceAtLab.usedBy(b);
+    (await aliceAtLab.launch()).open(A).finish().close();
+    (await bobAtLab.launch()).open(B).finish().close();
+
+    const aliceBack = await aliceAtLab.launch();
+    assertCleared(aliceBack, A);
+    assert.equal(aliceBack.menu(B).status.type, 'not_started');
+    aliceBack.close();
+    const bobBack = await bobAtLab.launch();
+    assertCleared(bobBack, B);
+    assert.equal(bobBack.menu(A).status.type, 'not_started');
+    bobBack.close();
+    assert.deepEqual(Object.keys(a.ranks), [A]);
+    assert.deepEqual(Object.keys(b.ranks), [B]);
+  });
+
+  it('keeps work the first student could not get to D2L, for when they return to that computer', async () => {
+    // Set aside, not thrown away: in this browser it may be the only copy.
+    const a = alice(), b = bob();
+    const aliceAtLab = new Device(a, 'lab');
+    const visit = await aliceAtLab.launch();
+    a.goDown();
+    visit.open(A).finish();
+    visit.kill();
+
+    const bobVisit = await aliceAtLab.usedBy(b).launch();
+    bobVisit.open(B).play(2).close();
+
+    a.comeBack();
+    const aliceBack = await aliceAtLab.launch();
+    assertCleared(aliceBack, A);
+    assert.equal(a.ranks[A], APPRENTICE, 'the launch must push what Alice\'s record is missing');
+    assert.deepEqual(b.ranks, {});
+  });
+
+  it('neither leaks nor deletes the last student\'s progress when storage is too full to set it aside', async () => {
+    const a = alice(), b = bob();
+    const lab = new Device(a, 'lab');
+    const visit = await lab.launch();
+    a.goDown();
+    visit.open(A).finish();                     // only this browser has it
+    visit.kill();
+    const setItem = lab.storage.setItem.bind(lab.storage);
+    lab.storage.setItem = (k, v) => {
+      if (k.startsWith('lotrd_stash_')) throw new Error('QuotaExceededError');
+      return setItem(k, v);
+    };
+
+    const bobAtLab = await lab.usedBy(b).launch();
+    bobAtLab.tick();
+    assert.match(bobAtLab.banner, /another student/);
+    bobAtLab.close();
+    assert.deepEqual(b.ranks, {}, 'Alice\'s set was written into Bob\'s record');
+    assert.ok(!('cmi.core.score.raw' in b.store));
+
+    lab.storage.setItem = setItem;
+    a.comeBack();
+    assertCleared(await lab.launch(), A);
+    assert.equal(a.ranks[A], APPRENTICE);
+  });
+
+  it('still belongs to its student when it was saved before browsers were told apart', async () => {
+    // Every browser in use today holds progress with no owner recorded. The first
+    // student to open the activity there claims it: almost always the student
+    // whose browser it is. (On a shared machine this is the one-time exception.)
+    const a = alice();
+    const laptop = new Device(a, 'laptop');
+    (await laptop.launch()).open(A).finish().close();
+    laptop.storage.removeItem('lotrd_learner');
+    a.startFreshAttempt();                      // so only the browser knows about A
+
+    const back = await laptop.launch();
+    assertCleared(back, A);
+    assert.equal(a.ranks[A], APPRENTICE);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════
+// The other half of "the grade is right": credit only for what was actually done.
+describe('the results screen is not a way around the run', () => {
+  it('does not skip the retrieval boss on a double-click of Continue', async () => {
+    const lms = new Lms();
+    const phone = await new Device(lms, 'phone').launch();
+    phone.open(A).play(1, { right: false }).play(QUESTIONS_PER_SET - 1).answer(true).next({ clicks: 2 });
+    assert.equal(phone.lastStatus, 'boss_start', 'the second click answered for the boss');
+    assert.notEqual(phone.menu(A).status.type, 'complete', 'cleared without facing the boss');
+    assert.deepEqual(lms.ranks, {});
+    phone.finish();
+    assertCleared(phone, A);
+  });
+
+  it('counts a cleared set once, however Continue was clicked', async () => {
+    const lms = new Lms();
+    const phone = await new Device(lms, 'phone').launch();
+    phone.open(A).play(QUESTIONS_PER_SET - 1).answer(true).next({ clicks: 2 });
+    assertCleared(phone, A);
+    const global = JSON.parse(phone.device.storage.getItem('lotrd_global'));
+    assert.equal(global.sets_completed, 1);
+  });
+
+  it('does not let Back undo a game over', async () => {
+    const lms = new Lms();
+    const phone = await new Device(lms, 'phone').launch();
+    phone.open(A).play(2).takeFatalHit().back();
+    assert.notEqual(phone.menu(A).status.type, 'in_progress', 'Back from the death screen resumed the run');
   });
 });
 

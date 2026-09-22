@@ -151,6 +151,19 @@ first, then the lowest-ranked sets — never the reverse.
 browser and this attempt know nothing", which is also what a student with
 real credit looks like on a fresh attempt with empty storage.
 
+**Shared computers.** D2L serves every student's copy of an activity from
+the same address, so on a lab or library PC they share one localStorage. The
+shim tags the browser's progress with a hash of `cmi.core.student_id`
+(`lotrd_learner`; the id itself is never stored). When a different student
+connects, the previous student's `lotrd_*` keys are moved into
+`lotrd_stash_<hash>` and the new student's own stash, if any, is put back —
+before anything is restored or reported. Set aside, not deleted: it may be the
+only copy of work D2L never received. If storage is too full even after
+dropping the oldest other stash, the session reports nothing and the banner
+tells the student to use another browser. Browsers from before tagging carry
+no owner; the first student to connect claims what is there, which on a shared
+machine is a one-time exception.
+
 **Still per-device:** HP/inventory mid-run, historical miss counts (they
 weight trial sampling; keyed by question text and too large), the Sharpen
 review schedule, lifetime stats, the sound setting.
