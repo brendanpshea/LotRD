@@ -43,7 +43,6 @@ import stat
 import subprocess
 import sys
 import time
-import uuid
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -300,7 +299,10 @@ def write_manifest(build_dir: Path, config: dict) -> None:
     template = (TEMPLATES / "imsmanifest.xml").read_text(encoding="utf-8")
     files = collect_files(build_dir)
     file_list = "\n".join(f'      <file href="{xml_escape(f)}"/>' for f in files)
-    identifier = f'{config["id"]}-{uuid.uuid4().hex[:8]}'
+    # Stable across builds: a rebuilt package re-uploaded to D2L is the same
+    # package. (It used to carry a fresh suffix per build, making each look new to
+    # an LMS that keys attempts on the identifier.)
+    identifier = f'LOTRD-{config["id"]}'
     manifest = (template
                 .replace("{{IDENTIFIER}}", identifier)
                 .replace("{{TITLE}}", xml_escape(config["title"]))

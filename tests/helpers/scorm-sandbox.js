@@ -30,7 +30,7 @@ export const tierRec = (tier, ms) => JSON.stringify({
  * An LMS that is down keeps NOTHING: writes made while `down` do not reach
  * lmsStore, exactly as a real one would lose them.
  */
-export function boot({ lmsStore = {}, local = {}, catalogFails = false, readyState = 'complete', control = {}, storage = null, single = null } = {}) {
+export function boot({ lmsStore = {}, local = {}, catalogFails = false, readyState = 'complete', control = {}, storage = null, single = null, crossOriginParent = false } = {}) {
   if (catalogFails) control.catalogFails = true;
   // Pass `storage` to launch again in the SAME browser: what it held survives.
   storage = storage || makeStorage(local);
@@ -81,6 +81,14 @@ export function boot({ lmsStore = {}, local = {}, catalogFails = false, readySta
     dispatchEvent: ev => { dispatched.push(ev.type); return true; },
   };
   win.parent = win;
+  // A frame above this one on another domain (D2L's own pages around its player,
+  // D2L inside Teams): reachable as window.parent, but reading anything on it throws.
+  if (crossOriginParent) {
+    const foreign = {};
+    Object.defineProperty(foreign, 'API', { get() { throw new Error('SecurityError: Blocked a frame from accessing a cross-origin frame.'); } });
+    foreign.parent = foreign;
+    win.parent = foreign;
+  }
   win.self = win;
   // A single-set package: the build writes the set's id into the page, and the
   // package is worth full credit the moment that one set is cleared.

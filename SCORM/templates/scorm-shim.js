@@ -48,17 +48,29 @@
   const BUILD = "{{BUILD}}";
 
   // ---------- LMS discovery ----------
+  // Reading anything on a window from another domain throws, and the walk up the
+  // frames can reach one (D2L's own pages around its player; D2L inside Teams).
+  // An unguarded read here, as the script loaded, used to kill the whole shim —
+  // no banner, no retries, no finish — so each read is guarded and the walk goes on.
+  function apiOf(win) {
+    try { return win.API || null; } catch (_) { return null; }
+  }
+
   function findApi(win) {
     let depth = 0;
     let cur = win;
     while (cur && depth < 20) {
-      if (cur.API) return cur.API;
-      if (cur === cur.parent) break;
-      cur = cur.parent;
+      const found = apiOf(cur);
+      if (found) return found;
+      let parent = null;
+      try { parent = cur.parent; } catch (_) {}
+      if (!parent || parent === cur) break;
+      cur = parent;
       depth++;
     }
-    if (win.opener && win.opener.API) return win.opener.API;
-    return null;
+    let opener = null;
+    try { opener = win.opener; } catch (_) {}
+    return opener ? apiOf(opener) : null;
   }
 
   // Not const: some LMS players put their API in place after the content frame
@@ -67,7 +79,7 @@
   let initialized = false;
 
   function hasLms() {
-    if (!api) { try { api = findApi(window); } catch (_) {} }
+    if (!api) api = findApi(window);
     return !!api;
   }
 
@@ -105,6 +117,8 @@
   // its banner said "saved". A session finished too early costs a reconnect (see
   // connect()); a session never finished can cost everything.
   let finishes = 0;
+  // True from a beforeunload that finished the session until anything reconnects.
+  let finishedByBeforeunload = false;
 
   function lmsFinish(because) {
     if (!api || !initialized) return;
@@ -828,6 +842,7 @@
 
   function connect() {
     if (!lmsInit()) return false;
+    finishedByBeforeunload = false;      // a live session again: the next exit must finish it
     if (!atLaunch) {
       const suspend = String(lmsCall("LMSGetValue", "cmi.suspend_data") || "");
       atLaunch = {
@@ -876,6 +891,10 @@
     document.addEventListener("visibilitychange", report);
     window.addEventListener("online", report);
     window.addEventListener("pagehide", (ev) => {
+      // Browsers send beforeunload first. If that already finished the session and
+      // nothing has reconnected since, there is nothing new to send — and report()
+      // would open a second session only to write the same values and finish again.
+      if (finishedByBeforeunload) return;
       report();
       // Finished even when the browser says the page may be kept in its back/forward
       // cache: if it does come back, pageshow reconnects. See lmsFinish().
@@ -893,7 +912,10 @@
       }
       // beforeunload can be cancelled by the page around us; if the student does
       // stay, the next save finds the session closed and reconnects.
-      lmsFinish("beforeunload");
+      if (initialized) {
+        lmsFinish("beforeunload");
+        finishedByBeforeunload = true;
+      }
     });
   }
 

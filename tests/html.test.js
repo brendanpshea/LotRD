@@ -262,6 +262,15 @@ describe('SCORM package wiring', () => {
     assert.match(build, /Tests failed, so nothing was packaged/);
   });
 
+  it('gives each package the same manifest identifier on every build', () => {
+    // A package re-uploaded to D2L after a rebuild should be the same package.
+    // A random identifier made every build look new, and where an LMS keys
+    // attempts on it, a new identifier is a fresh attempt with no saved data.
+    const fn = /def write_manifest[\s\S]*?\n\n\n/.exec(build)?.[0] ?? '';
+    assert.ok(fn.includes('{{IDENTIFIER}}'), 'write_manifest not found');
+    assert.ok(!/uuid|random|time\(/.test(fn), 'the manifest identifier changes from build to build');
+  });
+
   it('the shim loads as a classic script, so it finishes before the game module starts', () => {
     // A `defer`, `async` or type="module" here would reintroduce the race in which
     // the menu is drawn before the student's progress has been restored.

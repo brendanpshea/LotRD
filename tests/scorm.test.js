@@ -475,6 +475,22 @@ describe('SCORM shim survives an interrupted session', () => {
     assert.equal(lms['cmi.core.score.raw'], '7');
   });
 
+  it('survives looking for the LMS past a frame on another domain', async () => {
+    // Reading anything on a cross-origin window throws. The first search ran with
+    // no guard as the script loaded, so if the API was not there yet and the walk
+    // reached such a frame, the whole shim died: no banner saying progress was not
+    // reaching D2L, no retries, no finish — the silent failure it exists to prevent.
+    const lms = {};
+    const b = boot({ lmsStore: lms, control: { noApi: true }, crossOriginParent: true });
+    await settle();
+    assert.ok(b.shim(), 'the shim did not load');
+    assert.match(b.banner().textContent, /Not connected to D2L/);
+    b.control.noApi = false;
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    assert.equal(lms['cmi.core.score.raw'], '7');
+  });
+
   it('never lets a late restore lower what the student earned while disconnected', async () => {
     // Played offline for a while, then the LMS came back holding older data.
     const lms = { 'cmi.core.score.raw': '7',
@@ -503,6 +519,35 @@ describe('SCORM shim survives an interrupted session', () => {
       leave(b);
       assert.ok(b.calls.includes('finish'), 'the LMS was never told the session ended');
     }
+  });
+
+  it('finishes once when the page is left, in the order browsers send the events', async () => {
+    // beforeunload, then pagehide. pagehide used to find the session beforeunload
+    // had just finished, open a new one, write everything again and finish that:
+    // a second session per exit, possibly a new attempt, and the record of how
+    // the first one ended overwritten.
+    const b = boot({});
+    await settle();
+    clearSet(b.storage, 1);
+    b.shim().forceReport();
+    b.calls.length = 0;
+    b.fire('beforeunload', { preventDefault() {} });
+    b.fire('pagehide', { persisted: false });
+    assert.deepEqual(b.calls.filter(c => c !== 'commit'), ['finish']);
+    assert.match(b.storage.getItem('lotrd_scorm_last_exit'), /"because":"beforeunload"/);
+  });
+
+  it('still finishes on the way out after staying past a "Leave site?"', async () => {
+    const lms = {};
+    const b = boot({ lmsStore: lms });
+    await settle();
+    b.fire('beforeunload', { preventDefault() {} });   // finished; the page around us cancelled it
+    clearSet(b.storage, 1);
+    b.shim().forceReport();                             // they stayed, and cleared a set
+    b.calls.length = 0;
+    b.fire('pagehide', { persisted: false });
+    assert.ok(b.calls.includes('finish'), 'the session opened after staying was never finished');
+    assert.equal(lms['cmi.core.score.raw'], '7');
   });
 
   it('saves to an LMS that keeps nothing until LMSFinish', async () => {
