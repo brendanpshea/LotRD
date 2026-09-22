@@ -982,8 +982,110 @@ export class PyBoundMethod {
     constructor(self, func) { this.self = self; this.func = func; this.name = func.name; }
 }
 
+// ── Special methods ──
+//
+// A class may say what ==, truthiness, len() and repr() mean for its objects.
+// Those questions are answered all over this file by plain functions (pyEquals,
+// truthy, pyRepr), so the interpreter that is running registers itself here for
+// them to call back into. Any OTHER special method is refused when the class is
+// defined: a __ne__ or __add__ that was accepted and then never called would
+// print something Python does not — which is exactly what used to happen with
+// __eq__, __bool__ and __len__.
+export const SPECIAL_METHODS = new Set(['__init__', '__str__', '__repr__', '__eq__', '__bool__', '__len__']);
+let ACTIVE = null;
+
+function specialMethod(value, name) {
+    if (!(value instanceof PyInstance) || !ACTIVE) return null;
+    const found = value.cls.attrs.get(name);
+    return found instanceof PyFunction ? found : null;
+}
+
+function callSpecial(value, method, args) {
+    return ACTIVE.callValue(new PyBoundMethod(value, method), args, ACTIVE.line);
+}
+
+/** a == b between objects: the left one's __eq__, else the right one's, else "the same object". */
+function instanceEquals(a, b) {
+    for (const [self, other] of [[a, b], [b, a]]) {
+        const eq = specialMethod(self, '__eq__');
+        if (eq) return callSpecial(self, eq, [other]);
+    }
+    return a === b;
+}
+
+function instanceLength(value, method) {
+    const n = callSpecial(value, method, []);
+    if (typeof n !== 'bigint' || n < 0n) {
+        throw runtimeError(`__len__ has to return a whole number of 0 or more, but this one returned ${pyRepr(n)}.`,
+            ACTIVE.line, 'Return how many items the object holds, for example len(self.items).');
+    }
+    return n;
+}
+
+function instanceTruth(value) {
+    const b = specialMethod(value, '__bool__');
+    if (b) {
+        const result = callSpecial(value, b, []);
+        if (typeof result !== 'boolean') {
+            throw runtimeError(`__bool__ has to return True or False, but this one returned ${pyRepr(result)}.`, ACTIVE.line);
+        }
+        return result;
+    }
+    const len = specialMethod(value, '__len__');
+    return len ? instanceLength(value, len) !== 0n : true;
+}
+
 // Any int wider than this is a runaway loop, not a student's intent.
 const BIG_LIMIT = 10n ** 400n;
+
+// ── Work done inside built-ins ──
+//
+// The step budget counts statements and expressions, so a loop that never ends is
+// caught. But sum(range(10**12)), "x".join(...) or a string that doubles on every
+// pass does its work inside ONE step — and used to freeze the page, or crash the
+// tab outright when the browser ran out of memory. So built-ins pay for the items
+// they touch (one step per 16), and no list or text may grow past a size no
+// beginner's program needs.
+const ITEM_LIMIT = 1_000_000;
+const TEXT_LIMIT = 10_000_000;
+
+function charge(items, line) {
+    if (ACTIVE && items >= 16) {
+        ACTIVE.steps += Math.floor(items / 16);
+        ACTIVE.tick(line);
+    }
+}
+
+/**
+ * A JavaScript engine limit that got past the checks above (a structure nested
+ * too deeply to walk, say) must still reach the student as a sentence, not as
+ * "RangeError: Maximum call stack size exceeded".
+ */
+function asLimit(e) {
+    if (!(e instanceof RangeError)) return e;
+    return limitError('Your program built something too large or too deeply nested to handle here.',
+        'Check for a list that contains itself, or something that grows on every pass through a loop.',
+        ACTIVE?.line ?? null);
+}
+
+function tooBig(line) {
+    return limitError('That would build a list or text of millions of items, far more than this problem needs.',
+        'Check for something that grows on every pass through a loop, or a range() that is much larger than intended.',
+        line);
+}
+
+/** Refuse, BEFORE building it, a list of `items` items or text of `chars` characters that is too large. */
+function allowSize(items, chars, line) {
+    if (items > ITEM_LIMIT || chars > TEXT_LIMIT) throw tooBig(line);
+}
+
+/** Append without spreading: push(...big) overflows the call stack at around 100,000 items. */
+function pushAll(target, items, line) {
+    const n = items.length;          // fixed first: a.extend(a) adds a's items once
+    allowSize(target.length + n, 0, line);
+    charge(n, line);
+    for (let i = 0; i < n; i++) target.push(items[i]);
+}
 
 const isInt   = v => typeof v === 'bigint';
 const isFloat = v => typeof v === 'number';
@@ -1035,8 +1137,30 @@ function floatRepr(n) {
     return s.includes('e') ? s.replace('e', 'e+').replace('e+-', 'e-').replace('e++', 'e+') : s;
 }
 
-/** repr(): what you would type to get this value back. Strings keep their quotes. */
+/**
+ * repr(): what you would type to get this value back. Strings keep their quotes.
+ * `inside` holds the containers being printed, so a list that holds itself prints
+ * as [[...]] the way Python's does, rather than recursing until the stack breaks.
+ */
 export function pyRepr(v) {
+    return reprIn(v, new Set());
+}
+
+function reprIn(v, inside) {
+    if (isList(v) || isDict(v)) {
+        if (inside.has(v)) return isList(v) ? '[...]' : '{...}';
+        inside.add(v);
+        try { return reprContainer(v, inside); } finally { inside.delete(v); }
+    }
+    return reprValue(v, inside);
+}
+
+function reprContainer(v, inside) {
+    if (isList(v)) return '[' + v.map(x => reprIn(x, inside)).join(', ') + ']';
+    return '{' + [...v.entries()].map(([k, val]) => `${reprIn(k, inside)}: ${reprIn(val, inside)}`).join(', ') + '}';
+}
+
+function reprValue(v, inside) {
     if (v === null) return 'None';
     if (isBool(v)) return v ? 'True' : 'False';
     if (isInt(v)) return String(v);
@@ -1050,20 +1174,27 @@ export function pyRepr(v) {
             .replace(new RegExp(quote, 'g'), '\\' + quote);
         return quote + body + quote;
     }
-    if (isList(v)) return '[' + v.map(pyRepr).join(', ') + ']';
     if (isTuple(v)) {
-        if (v.items.length === 1) return '(' + pyRepr(v.items[0]) + ',)';
-        return '(' + v.items.map(pyRepr).join(', ') + ')';
-    }
-    if (isDict(v)) {
-        return '{' + [...v.entries()].map(([k, val]) => `${pyRepr(k)}: ${pyRepr(val)}`).join(', ') + '}';
+        if (v.items.length === 1) return '(' + reprIn(v.items[0], inside) + ',)';
+        return '(' + v.items.map(x => reprIn(x, inside)).join(', ') + ')';
     }
     if (isRange(v)) {
         return v.step === 1n ? `range(${v.start}, ${v.stop})` : `range(${v.start}, ${v.stop}, ${v.step})`;
     }
-    // Python shows a memory address here. The class name is the useful part, and
-    // leaving the address out keeps output the same from one run to the next.
-    if (isInstance(v)) return `<${v.cls.name} object>`;
+    if (isInstance(v)) {
+        const own = specialMethod(v, '__repr__');
+        if (own) {
+            const text = callSpecial(v, own, []);
+            if (!isStr(text)) {
+                throw runtimeError(`__repr__ has to return text, but this one returned ${typeName(text)}.`, ACTIVE.line,
+                    'Build the text with an f-string and return it.');
+            }
+            return text;
+        }
+        // Python shows a memory address here. The class name is the useful part, and
+        // leaving the address out keeps output the same from one run to the next.
+        return `<${v.cls.name} object>`;
+    }
     if (isClass(v)) return `<class '${v.name}'>`;
     if (v instanceof PyBoundMethod) return `<method ${v.name} of ${pyRepr(v.self)}>`;
     if (isCallable(v)) return `<function ${v.name}>`;
@@ -1086,6 +1217,7 @@ export function truthy(v) {
     if (isTuple(v)) return v.items.length > 0;
     if (isDict(v)) return v.size > 0;
     if (isRange(v)) return v.length > 0n;
+    if (isInstance(v)) return instanceTruth(v);
     return true;
 }
 
@@ -1094,6 +1226,7 @@ const toJsNumber = v => (isBool(v) ? (v ? 1 : 0) : Number(v));
 
 /** Python ==, which is happy to compare an int with a float but not with text. */
 export function pyEquals(a, b) {
+    if (isInstance(a) || isInstance(b)) return truthy(instanceEquals(a, b));
     if (isNumeric(a) && isNumeric(b)) {
         const x = numValue(a);
         const y = numValue(b);
@@ -1176,9 +1309,12 @@ const modFloat = (a, b) => {
 export function binaryOp(op, a, b, line) {
     if (op === '+') {
         if (isNumeric(a) && isNumeric(b)) return arith('+', a, b, line);
-        if (isStr(a) && isStr(b)) return a + b;
-        if (isList(a) && isList(b)) return [...a, ...b];
-        if (isTuple(a) && isTuple(b)) return new PyTuple([...a.items, ...b.items]);
+        if (isStr(a) && isStr(b)) { allowSize(0, a.length + b.length, line); return a + b; }
+        if (isList(a) && isList(b)) { allowSize(a.length + b.length, 0, line); return a.concat(b); }
+        if (isTuple(a) && isTuple(b)) {
+            allowSize(a.items.length + b.items.length, 0, line);
+            return new PyTuple(a.items.concat(b.items));
+        }
         if ((isStr(a) && isNumeric(b)) || (isNumeric(a) && isStr(b))) {
             throw runtimeError('You tried to add text and a number together.', line,
                 'Python will not guess which you meant. Use str(n) to make the number into text, ' +
@@ -1200,9 +1336,10 @@ export function binaryOp(op, a, b, line) {
                 throw limitError('That would repeat something millions of times.',
                     'Check the number you are multiplying by.');
             }
-            if (isStr(seq)) return seq.repeat(n);
+            if (isStr(seq)) { allowSize(0, seq.length * n, line); return seq.repeat(n); }
+            allowSize(seq.length * n, 0, line);
             const out = [];
-            for (let k = 0; k < n; k++) out.push(...seq);
+            for (let k = 0; k < n; k++) for (let i = 0; i < seq.length; i++) out.push(seq[i]);
             return out;
         };
         if (isStr(a) && isInt(b)) return repeat(a, b);
@@ -1270,7 +1407,8 @@ function arith(op, aRaw, bRaw, line) {
 
 export function compareOp(op, a, b, line) {
     switch (op) {
-        case '==': return pyEquals(a, b);
+        // Between objects, == gives back whatever __eq__ returned, as in Python.
+        case '==': return isInstance(a) || isInstance(b) ? instanceEquals(a, b) : pyEquals(a, b);
         case '!=': return !pyEquals(a, b);
         case '<':  return pyLess(a, b, line);
         case '>':  return pyLess(b, a, line);
@@ -1291,26 +1429,54 @@ function containsValue(container, item, line) {
         }
         return container.includes(item);
     }
-    if (isList(container)) return container.some(x => pyEquals(x, item));
-    if (isTuple(container)) return container.items.some(x => pyEquals(x, item));
+    if (isList(container)) { charge(container.length, line); return container.some(x => pyEquals(x, item)); }
+    if (isTuple(container)) { charge(container.items.length, line); return container.items.some(x => pyEquals(x, item)); }
     if (isDict(container)) {
+        charge(container.size, line);
         for (const k of container.keys()) if (pyEquals(k, item)) return true;
         return false;
     }
     if (isRange(container)) {
-        for (const k of container) if (pyEquals(k, item)) return true;
-        return false;
+        // Worked out, not searched, as Python does: 10**10 in range(10**12) used
+        // to walk ten billion numbers and freeze the page.
+        if (!isNumeric(item)) return false;
+        let n = numValue(item);
+        if (isFloat(n)) {
+            if (!Number.isInteger(n)) return false;
+            n = BigInt(n);
+        }
+        const { start, stop, step } = container;
+        const inside = step > 0n ? n >= start && n < stop : n <= start && n > stop;
+        return inside && (n - start) % step === 0n;
     }
     throw runtimeError(`You cannot look inside ${typeName(container)} with "in".`, line);
 }
 
-/** What a for-loop walks over, as a JavaScript iterable. */
+/**
+ * What a for-loop walks over, as a JavaScript iterable. A list is walked the way
+ * Python walks it — by position, reading the list as it is NOW — so removing from
+ * a list inside a loop over it skips the next item, just as it does in Python.
+ * (Walking a copy used to hide that classic bug: the loop printed the answer the
+ * student expected, and Python does not.) A dictionary may not change size while
+ * it is being looped over.
+ */
 export function iterate(value, line) {
     if (isStr(value)) return [...value];
-    if (isList(value)) return [...value];
+    if (isList(value)) return (function* () { for (let i = 0; i < value.length; i++) yield value[i]; })();
     if (isTuple(value)) return [...value.items];
     if (isRange(value)) return value;
-    if (isDict(value)) return [...value.keys()];
+    if (isDict(value)) {
+        return (function* () {
+            const size = value.size;
+            const changed = () => runtimeError('The dictionary changed size while the loop was going through it.', line,
+                'Loop over a copy of its keys instead: for k in list(d.keys()):');
+            for (const k of [...value.keys()]) {
+                if (value.size !== size) throw changed();
+                if (value.has(k)) yield k;
+            }
+            if (value.size !== size) throw changed();
+        })();
+    }
     throw runtimeError(`You cannot loop over ${typeName(value)}.`, line,
         'A for loop needs a list, a string, a range, or a dictionary.');
 }
@@ -1392,11 +1558,15 @@ function pyRound(x, digits) {
 }
 
 function sequenceOf(v, line, what) {
-    if (isStr(v)) return [...v];
-    if (isList(v)) return v;
-    if (isTuple(v)) return v.items;
-    if (isRange(v)) return [...v];
-    if (isDict(v)) return [...v.keys()];
+    if (isStr(v)) { charge(v.length, line); return [...v]; }
+    if (isList(v)) { charge(v.length, line); return v; }
+    if (isTuple(v)) { charge(v.items.length, line); return v.items; }
+    if (isRange(v)) {
+        if (v.length > BigInt(ITEM_LIMIT)) throw tooBig(line);
+        charge(Number(v.length), line);
+        return [...v];
+    }
+    if (isDict(v)) { charge(v.size, line); return [...v.keys()]; }
     throw runtimeError(`${what} needs a list, text, a range, or a dictionary, not ${typeName(v)}.`, line);
 }
 
@@ -1416,6 +1586,8 @@ const BUILTINS = {
         if (isTuple(v)) return BigInt(v.items.length);
         if (isDict(v)) return BigInt(v.size);
         if (isRange(v)) return v.length;
+        const own = specialMethod(v, '__len__');
+        if (own) return instanceLength(v, own);
         throw runtimeError(`len() does not work on ${typeName(v)}.`, line,
             isNumeric(v) ? 'A number has no length. Did you mean to turn it into text with str() first?' : null);
     },
@@ -1643,12 +1815,23 @@ const STRING_METHODS = {
                     'Turn each item into text with str() first.');
             }
         }
+        let chars = s.length * Math.max(items.length - 1, 0);
+        for (const item of items) chars += item.length;
+        allowSize(0, chars, line);
         return items.join(s);
     },
     replace: (s, a, line) => {
         arity('replace', a, 2, 2, line);
         if (!isStr(a[0]) || !isStr(a[1])) throw runtimeError('replace() needs two pieces of text.', line);
-        return a[0] === '' ? s : s.split(a[0]).join(a[1]);
+        if (a[0] === '') {
+            // Python puts the new text between every character, and at both ends.
+            allowSize(0, s.length + a[1].length * (s.length + 1), line);
+            return a[1] + [...s].join(a[1]) + (s.length ? a[1] : '');
+        }
+        const parts = s.split(a[0]);
+        allowSize(0, s.length + (parts.length - 1) * (a[1].length - a[0].length), line);
+        charge(s.length / 16, line);
+        return parts.join(a[1]);
     },
     find:  (s, a, line) => { arity('find',  a, 1, 1, line); requireText(a[0], 'find', line);  return BigInt(s.indexOf(a[0])); },
     rfind: (s, a, line) => { arity('rfind', a, 1, 1, line); requireText(a[0], 'rfind', line); return BigInt(s.lastIndexOf(a[0])); },
@@ -1696,7 +1879,7 @@ function trimWith(s, a, line, side) {
 
 const LIST_METHODS = {
     append: (l, a, line) => { arity('append', a, 1, 1, line); l.push(a[0]); return null; },
-    extend: (l, a, line) => { arity('extend', a, 1, 1, line); l.push(...sequenceOf(a[0], line, 'extend()')); return null; },
+    extend: (l, a, line) => { arity('extend', a, 1, 1, line); pushAll(l, sequenceOf(a[0], line, 'extend()'), line); return null; },
     insert: (l, a, line) => {
         arity('insert', a, 2, 2, line);
         let at = asIndex(a[0], line, 'The position for insert()');
@@ -1741,7 +1924,7 @@ const LIST_METHODS = {
         const out = decorated.map(d => d.item);
         if (truthy(options.reverse ?? false)) out.reverse();
         l.length = 0;
-        l.push(...out);
+        pushAll(l, out, line);
         return null;
     },
 };
@@ -1818,11 +2001,41 @@ const BREAK    = { signal: 'break' };
 const CONTINUE = { signal: 'continue' };
 class ReturnSignal { constructor(value) { this.value = value; } }
 
-/** One set of variables. Functions look outward through `parent` to find names. */
+/** Every name a function body assigns — at any depth, but not inside a nested def or class. */
+function assignedNames(body, out = new Set()) {
+    const target = t => {
+        if (t.type === 'Name') out.add(t.id);
+        else if (t.type === 'TupleLit' || t.type === 'ListLit') t.elts.forEach(target);
+    };
+    for (const s of body) {
+        if (s.type === 'Assign') s.targets.forEach(target);
+        else if (s.type === 'AugAssign') target(s.target);
+        else if (s.type === 'For') { s.targets.forEach(n => out.add(n)); assignedNames(s.body, out); }
+        else if (s.type === 'While') assignedNames(s.body, out);
+        else if (s.type === 'If') { assignedNames(s.body, out); assignedNames(s.orelse, out); }
+        else if (s.type === 'FuncDef' || s.type === 'ClassDef') out.add(s.name);
+    }
+    return out;
+}
+
+// A name a function assigns somewhere, looked up before it has been.
+const UNBOUND = Symbol('unbound');
+
+/**
+ * One set of variables. Functions look outward through `parent` to find names.
+ * A function's scope also knows every name the function assigns ANYWHERE in its
+ * body (`locals`): in Python those names belong to the function from its first
+ * line, so reading one before it is set is an error rather than a quiet fall
+ * back to the variable outside. Falling back is what this used to do, which hid
+ * the classic `total += n` bug: the function ran, and the outer total never moved.
+ */
 class Scope {
-    constructor(parent = null) { this.vars = new Map(); this.parent = parent; }
+    constructor(parent = null, locals = null) { this.vars = new Map(); this.parent = parent; this.locals = locals; }
     lookup(name) {
-        for (let s = this; s; s = s.parent) if (s.vars.has(name)) return s.vars.get(name);
+        for (let s = this; s; s = s.parent) {
+            if (s.vars.has(name)) return s.vars.get(name);
+            if (s.locals && s.locals.has(name)) return UNBOUND;
+        }
         return undefined;
     }
     has(name) {
@@ -1863,6 +2076,7 @@ export class Interpreter {
     // ── Budgets ──
 
     tick(line) {
+        this.line = line;
         if (++this.steps > this.stepLimit) {
             throw limitError('Your code is still running after hundreds of thousands of steps.',
                 'That almost always means a loop that never ends — check that the value in the ' +
@@ -1896,7 +2110,11 @@ export class Interpreter {
 
     run(ast) {
         this.startedAt = this.now();
-        this.execBlock(ast.body, this.globals);
+        const previous = ACTIVE;
+        ACTIVE = this;
+        try { this.execBlock(ast.body, this.globals); }
+        catch (e) { throw asLimit(e); }
+        finally { ACTIVE = previous; }
     }
 
     execBlock(stmts, scope) {
@@ -1930,15 +2148,15 @@ export class Interpreter {
                 // other name for it sees the change. (a = a + [x] builds a new list
                 // instead — the pair is a classic aliasing question.)
                 if (isList(current) && node.op === '+') {
-                    const extra = [...iterate(value, node.line)];
-                    current.push(...extra);
+                    pushAll(current, [...iterate(value, node.line)], node.line);
                     this.assign(node.target, current, scope, node.line);
                     return;
                 }
                 if (isList(current) && node.op === '*' && isInt(value) && !isBool(value)) {
                     const once = current.slice();
+                    if (value > 0n) allowSize(once.length * Number(value), 0, node.line);
                     current.length = 0;
-                    for (let k = 0n; k < value; k++) { this.tick(node.line); current.push(...once); }
+                    for (let k = 0n; k < value; k++) { this.tick(node.line); pushAll(current, once, node.line); }
                     this.assign(node.target, current, scope, node.line);
                     return;
                 }
@@ -1995,7 +2213,9 @@ export class Interpreter {
                 // is why a default of [] keeps growing in real Python, and here.
                 const params = node.params.map(p => (p.default === null ? p
                     : { name: p.name, default: p.default, value: this.evaluate(p.default, scope), ready: true }));
-                scope.set(node.name, new PyFunction(node.name, params, node.body, scope));
+                const fn = new PyFunction(node.name, params, node.body, scope);
+                fn.locals = node.locals ??= assignedNames(node.body);
+                scope.set(node.name, fn);
                 return;
             }
 
@@ -2004,6 +2224,13 @@ export class Interpreter {
                 // becomes the class's attributes.
                 const bodyScope = new Scope(scope);
                 this.execBlock(node.body, bodyScope);
+                for (const [name, value] of bodyScope.vars) {
+                    if (/^__\w+__$/.test(name) && value instanceof PyFunction && !SPECIAL_METHODS.has(name)) {
+                        throw runtimeError(`${name} is not supported in this practice interpreter yet.`, node.line,
+                            `A class here may define ${[...SPECIAL_METHODS].join(', ')}. Any other special method ` +
+                            'would be ignored rather than used as Python uses it, so it is refused instead.');
+                    }
+                }
                 const cls = new PyClass(node.name, new Map(bodyScope.vars));
                 for (const value of cls.attrs.values()) {
                     if (value instanceof PyFunction) {
@@ -2087,6 +2314,12 @@ export class Interpreter {
 
             case 'Name': {
                 const value = scope.lookup(node.id);
+                if (value === UNBOUND) {
+                    throw runtimeError(`"${node.id}" is used here before this function has given it a value.`, node.line,
+                        `This function assigns to ${node.id} somewhere, and that makes ${node.id} the function's own ` +
+                        `variable on every line of it — not the ${node.id} outside. To change an outside value, pass it ` +
+                        `in and return the new one: ${node.id} = f(${node.id}, ...).`);
+                }
                 if (value !== undefined) return value;
                 if (node.id in BUILTINS) return new Builtin(node.id, BUILTINS[node.id]);
                 throw this.nameError(node.id, scope, node.line);
@@ -2137,14 +2370,18 @@ export class Interpreter {
             }
 
             case 'Compare': {
-                // Chained comparisons: 0 <= x < 10 tests each link in turn.
+                // Chained comparisons: 0 <= x < 10 tests each link in turn. The value
+                // is the last link's, or the first false one's (an __eq__ may return
+                // something other than True or False, and == hands that back).
                 let left = this.evaluate(node.left, scope);
+                let result = true;
                 for (let i = 0; i < node.ops.length; i++) {
                     const right = this.evaluate(node.comparators[i], scope);
-                    if (!compareOp(node.ops[i], left, right, node.line)) return false;
+                    result = compareOp(node.ops[i], left, right, node.line);
+                    if (!truthy(result)) return result;
                     left = right;
                 }
-                return true;
+                return result;
             }
 
             case 'Index': {
@@ -2400,8 +2637,11 @@ export class Interpreter {
             throw limitError(`"${target.name}" called itself more than ${this.depthLimit} times without stopping.`,
                 'A function that calls itself needs a base case that returns without calling again.');
         }
+        // Test harnesses call functions directly, outside run().
+        const previous = ACTIVE;
+        ACTIVE = this;
         try {
-            const scope = new Scope(target.scope);
+            const scope = new Scope(target.scope, target.locals);
             const params = target.params;
             if (args.length > params.length) {
                 const takes = params.length - hidden;
@@ -2430,11 +2670,12 @@ export class Interpreter {
                 if (e === BREAK || e === CONTINUE) {
                     throw runtimeError('"break" and "continue" only work inside a loop.', line);
                 }
-                throw e;
+                throw previous === this ? e : asLimit(e);
             }
             return null;      // fell off the end: Python returns None
         } finally {
             this.depth--;
+            ACTIVE = previous;
         }
     }
 }
@@ -2448,7 +2689,7 @@ function formatValue(value, spec, line) {
         if (!isNumeric(value)) {
             throw runtimeError(`The format ":${spec}" only works on numbers, not ${typeName(value)}.`, line);
         }
-        const fixed = toJsNumber(numValue(value)).toFixed(Number(places[1]));
+        const fixed = fixedPoint(toJsNumber(numValue(value)), Number(places[1]));
         return spec.startsWith(',') ? groupThousands(fixed) : fixed;
     }
     if (spec === ',') {
@@ -2458,6 +2699,41 @@ function formatValue(value, spec, line) {
         return groupThousands(pyStr(numValue(value)));
     }
     return pyStr(value);
+}
+
+/**
+ * Python's f"{x:.Nf}". JavaScript's toFixed agrees except on an exact tie, which
+ * it rounds up where Python rounds to the even digit: f"{82.5:.0f}" is "82", and
+ * an average of two whole marks lands on .5 all the time. So this works from the
+ * float's exact binary value — a finite fraction m / 2^k — in whole numbers.
+ * The sign is kept even when the digits round to zero, as Python keeps it.
+ */
+function fixedPoint(x, digits) {
+    if (Number.isNaN(x)) return 'nan';
+    if (!Number.isFinite(x)) return x > 0 ? 'inf' : '-inf';
+    const negative = x < 0 || Object.is(x, -0);
+    const view = new DataView(new ArrayBuffer(8));
+    view.setFloat64(0, Math.abs(x));
+    const bits = view.getBigUint64(0);
+    const exponent = Number((bits >> 52n) & 0x7ffn);
+    const fraction = bits & ((1n << 52n) - 1n);
+    // |x| = mantissa * 2^power exactly.
+    const mantissa = exponent === 0 ? fraction : fraction | (1n << 52n);
+    const power = (exponent === 0 ? -1074 : exponent - 1075);
+    const scale = 10n ** BigInt(digits);
+    let units;
+    if (power >= 0) {
+        units = (mantissa << BigInt(power)) * scale;
+    } else {
+        const numerator = mantissa * scale;
+        const denominator = 1n << BigInt(-power);
+        units = numerator / denominator;
+        const twice = (numerator % denominator) * 2n;
+        if (twice > denominator || (twice === denominator && units % 2n === 1n)) units += 1n;
+    }
+    let text = units.toString().padStart(digits + 1, '0');
+    if (digits > 0) text = `${text.slice(0, -digits)}.${text.slice(-digits)}`;
+    return (negative ? '-' : '') + text;
 }
 
 function groupThousands(text) {

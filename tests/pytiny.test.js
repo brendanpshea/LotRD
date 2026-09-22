@@ -229,6 +229,39 @@ describe('runaway code is stopped', () => {
         assert.equal(err.kind, 'limit');
     });
 
+    // Each of these did all its work inside a single step, where the step budget
+    // cannot see it: some froze the page for minutes, some ran the browser out of
+    // memory and took the tab down with them. Refusing is fine; freezing is not.
+    for (const source of [
+        'print(sum(range(10 ** 12)))\n',
+        'print(max(range(10 ** 9)))\n',
+        'x = list(range(10 ** 9))\n',
+        'print(sorted(range(3 * 10 ** 6)))\n',
+        'print(len("x".join(["ab" * 10000] * 10000)))\n',
+        's = "a" * 100000\nwhile True:\n    s = s.replace("a", "aa")\n',
+        's = "ab"\nwhile True:\n    s = s + s\n',
+        'a = [0]\nwhile True:\n    a = a + a\n',
+        'a = [0] * 100000\nwhile True:\n    a = a * 2\n',
+        'a = [1]\nwhile True:\n    a.extend(a)\n',
+        'a = [1]\nwhile True:\n    a += a\n',
+        'a = []\nfor i in range(100000):\n    a = [a]\nprint(a)\n',
+        'big = list(range(100000))\nn = 0\nfor i in range(100000):\n    if i in big:\n        n += 1\n',
+    ]) {
+        it(`stops quickly, in words: ${source.split('\n').join(' ⏎ ')}`, () => {
+            const started = Date.now();
+            const err = failure(source);
+            assert.equal(err.kind, 'limit', `${err.message}`);
+            assert.ok(Date.now() - started < 3000, `took ${Date.now() - started} ms`);
+        });
+    }
+
+    it('refuses a special method it would otherwise ignore', () => {
+        const err = failure('class P:\n    def __add__(self, other):\n        return 1\n');
+        assert.match(err.message, /__add__ is not supported/);
+        const ne = failure('class P:\n    def __ne__(self, other):\n        return False\n');
+        assert.match(ne.message, /__ne__/);
+    });
+
     it('caps how much a program can print', () => {
         const interpreter = new Interpreter();
         interpreter.run(parse('for i in range(500):\n    print(i)\n'));
