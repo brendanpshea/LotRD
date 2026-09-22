@@ -766,6 +766,58 @@ export class GameUI {
     btn.focus();
   }
 
+  /**
+   * The landing page of a single-set package. Credit there is all or nothing, so
+   * the page says exactly three things: what this set is, whether the student
+   * has the credit yet, and what the one sensible next action is.
+   */
+  showSetHome(meta, actions) {
+    this._clearKeyboard();
+    renderTemplate(this.root, "tpl-set-home");
+    $(this.root, "[data-ref=homeTitle]").textContent = meta.title || "Problem set";
+
+    const story = $(this.root, "[data-ref=homeStory]");
+    if (meta.intro?.story) { story.textContent = meta.intro.story; story.hidden = false; }
+    const objectives = meta.intro?.objectives || [];
+    if (objectives.length) {
+      const list = $(this.root, "[data-ref=homeObjectives]");
+      objectives.forEach(text => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        list.appendChild(li);
+      });
+      $(this.root, "[data-ref=homeObjectivesWrap]").hidden = false;
+    }
+
+    const status = $(this.root, "[data-ref=homeStatus]");
+    const note = $(this.root, "[data-ref=homeNote]");
+    const primary = $(this.root, "[data-action=home-primary]");
+    const secondary = $(this.root, "[data-action=home-secondary]");
+    const count = meta.questionCount ? `${meta.questionCount} questions. ` : "";
+
+    if (meta.status === "complete") {
+      status.textContent = "✓ Complete — you have full credit for this set.";
+      note.textContent = "You can play it again for practice. Playing again never changes your grade.";
+      primary.textContent = "Play again for practice";
+      primary.addEventListener("click", () => actions.restart());
+    } else if (meta.status === "in_progress") {
+      status.textContent = `In progress — ${meta.remaining} question${meta.remaining === 1 ? "" : "s"} left.`;
+      note.textContent = "Credit is all or nothing: finish the set to earn it. Missed questions return until you master them.";
+      primary.textContent = "Resume";
+      primary.addEventListener("click", () => actions.resume());
+      secondary.textContent = "Start over";
+      secondary.hidden = false;
+      secondary.addEventListener("click", () => actions.restart());
+    } else {
+      status.textContent = "Not yet complete.";
+      note.textContent = `${count}Credit is all or nothing: finish the set to earn it. ` +
+        "Missed questions return until you master them. If you have to stop, come back in this same browser to pick up where you left off.";
+      primary.textContent = "Start";
+      primary.addEventListener("click", () => actions.restart());
+    }
+    primary.focus();
+  }
+
   showResumePrompt(saveData, resumeCallback, newGameCallback) {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-resume");

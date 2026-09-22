@@ -30,7 +30,7 @@ export const tierRec = (tier, ms) => JSON.stringify({
  * An LMS that is down keeps NOTHING: writes made while `down` do not reach
  * lmsStore, exactly as a real one would lose them.
  */
-export function boot({ lmsStore = {}, local = {}, catalogFails = false, readyState = 'complete', control = {}, storage = null } = {}) {
+export function boot({ lmsStore = {}, local = {}, catalogFails = false, readyState = 'complete', control = {}, storage = null, single = null } = {}) {
   if (catalogFails) control.catalogFails = true;
   // Pass `storage` to launch again in the SAME browser: what it held survives.
   storage = storage || makeStorage(local);
@@ -82,6 +82,9 @@ export function boot({ lmsStore = {}, local = {}, catalogFails = false, readySta
   };
   win.parent = win;
   win.self = win;
+  // A single-set package: the build writes the set's id into the page, and the
+  // package is worth full credit the moment that one set is cleared.
+  if (single) win.LOTRD_SINGLE_SET = single;
   const elements = [];
   const quiet = { warn: () => {}, log: () => {}, error: () => {} };
   const ctx = vm.createContext({

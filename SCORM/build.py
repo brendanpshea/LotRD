@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 """Build a SCORM 1.2 package for an edition of Loop of the Recursive Dragon.
 
+Two kinds of edition:
+  * a MULTI-SET edition (a topic, or a slice of one): a menu of sets, graded by
+    mastery ranks that build up over weeks;
+  * SINGLE-SET packages ("single_sets": true): one package per set listed, each
+    opening straight on its set and worth full credit when that set is cleared.
+    No ranks, trials or spacing. These ask almost nothing of the LMS's memory,
+    which is the point: credit is one fact, written once.
+
 Usage:
     python build.py editions/java.json
+    python build.py editions/computing_singles.json    # one zip per chapter
     python build.py editions/a.json editions/b.json    # several; tests run once
 
 The test suite runs first, and nothing is packaged if it fails. A package is
@@ -234,7 +243,14 @@ def patch_index_html(build_dir: Path, config: dict) -> None:
     # Inject the SCORM shim before the main module script. BEFORE matters: the
     # shim restores the student's progress from the LMS while it is evaluated,
     # and the game reads that progress as soon as it starts.
-    html = html.replace(MAIN_SCRIPT_TAG, SHIM_SCRIPT_TAG + "\n  " + MAIN_SCRIPT_TAG)
+    # A single-set package tells both the shim and the game which set it is. It has
+    # to be in the page BEFORE the shim runs, since the shim reads it at once.
+    single = ""
+    if config.get("single"):
+        single = f'<script>window.LOTRD_SINGLE_SET = {json.dumps(config["single"])};</script>\n  '
+    html = html.replace(MAIN_SCRIPT_TAG, single + SHIM_SCRIPT_TAG + "\n  " + MAIN_SCRIPT_TAG)
+    if config.get("single") and not 0 <= html.find("LOTRD_SINGLE_SET") < html.find(SHIM_SCRIPT_TAG):
+        raise SystemExit("The single-set marker must come before the shim in index.html.")
 
     # str.replace says nothing when it finds nothing. If index.html's script tag
     # is ever reworded, that silence would ship a package with no shim in it: the
@@ -303,8 +319,36 @@ def zip_package(build_dir: Path, out_zip: Path) -> None:
                 zf.write(p, p.relative_to(build_dir).as_posix())
 
 
-def build(config_path: Path) -> Path:
-    config = load_config(config_path)
+def expand(config: dict, full_catalog: list) -> list[dict]:
+    """A config is one edition, or — with "single_sets" — one edition per set listed."""
+    if not config.get("single_sets"):
+        return [config]
+    titles = {e["id"]: e.get("title", e["id"]) for t in full_catalog for e in t.get("sets", []) or []}
+    out = []
+    for set_id in config["sets"]:
+        if set_id not in titles:
+            raise SystemExit(f"single_sets lists {set_id!r}, which is not in the catalog.")
+        # computing_concepts_04_control_functions.json -> 04-control-functions
+        match = re.search(r"_(\d+)_(.+)\.json$", set_id)
+        slug = f"{match.group(1)}-{match.group(2).replace('_', '-')}" if match else Path(set_id).stem
+        number = f"{int(match.group(1))}: " if match else ""
+        out.append({
+            "id": f'{config["id_prefix"]}-{slug}',
+            "title": f'{config.get("title_prefix", "LotRD")} {number}{titles[set_id]}',
+            "topics": config["topics"],
+            "sets": [set_id],
+            "single": set_id,
+            "output": f'{config["id_prefix"]}-{slug}-scorm.zip',
+        })
+    return out
+
+
+def build(config_path: Path) -> list[Path]:
+    full_catalog = json.loads((REPO / "question_sets" / "catalog.json").read_text(encoding="utf-8"))
+    return [build_one(c, full_catalog) for c in expand(load_config(config_path), full_catalog)]
+
+
+def build_one(config: dict, full_catalog: list) -> Path:
     edition_id = config["id"]
     print(f"Building edition: {edition_id}")
 
@@ -320,8 +364,6 @@ def build(config_path: Path) -> Path:
 
     copy_game(work_dir)
 
-    full_catalog = json.loads(
-        (REPO / "question_sets" / "catalog.json").read_text(encoding="utf-8"))
     filtered = filter_catalog(full_catalog, config["topics"])
     if not filtered:
         raise SystemExit(

@@ -59,7 +59,8 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
     record: () => JSON.parse(post('/__lms/dump')) };
 
   const frame = document.createElement('iframe');
-  frame.src = '/index.html'; frame.width = 420; frame.height = 900;
+  const singleSet = new URLSearchParams(location.search).get('single');
+  frame.src = '/index.html' + (singleSet ? '?single=' + encodeURIComponent(singleSet) : ''); frame.width = 420; frame.height = 900;
   document.body.appendChild(frame);
   const win = () => frame.contentWindow, doc = () => frame.contentDocument;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -100,6 +101,27 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
       await sleep(1500);
       location.href = '/__left.html';
       await sleep(60000);
+    },
+    // A SINGLE-SET package: it opens on its set, not on a menu; clearing the set is
+    // worth full credit; and the landing page says so afterwards.
+    async singleSet({ single }) {
+      const home = () => doc().getElementById('game-root').innerText;
+      const report = { landing: home(), bannerBefore: banner().text, menuButtons: doc().querySelectorAll('details').length };
+      doc().querySelector('[data-action=home-primary]').click();
+      const gc = win().gameController;
+      await until(() => gc.model && gc.model.current_question, 'the set to start');
+      report.wentStraightIn = !doc().querySelector('[data-action=start]');
+      gc.model.questions_to_ask = []; gc.model.current_question = null; gc.continueAdventure();
+      await sleep(1500);
+      report.bannerAfter = banner().text;
+      report.lms = lms.record();
+      await gc.showMainMenu();
+      await until(() => doc().querySelector('[data-action=home-primary]'), 'the landing page again');
+      report.landingAfter = home();
+      return report;
+    },
+    async singleLook() {
+      return { landing: doc().getElementById('game-root').innerText, banner: banner().text };
     },
     // A write-the-method problem: the class so far is shown read-only above the box,
     // Run grades what the object has BECOME, and the classic bug fails without crashing.
@@ -185,7 +207,9 @@ export async function startServer() {
       if (url.pathname === '/index.html') {
         const html = await readFile(join(ROOT, 'index.html'), 'utf8');
         if (!html.includes(MAIN_SCRIPT_TAG)) return send(500, 'index.html has no main script tag to inject the shim before');
-        return send(200, html.replace(MAIN_SCRIPT_TAG, `${SHIM_SCRIPT_TAG}\n  ${MAIN_SCRIPT_TAG}`), TYPES['.html']);
+        const single = url.searchParams.get('single');
+        const marker = single ? `<script>window.LOTRD_SINGLE_SET = ${JSON.stringify(single)};</script>\n  ` : '';
+        return send(200, html.replace(MAIN_SCRIPT_TAG, `${marker}${SHIM_SCRIPT_TAG}\n  ${MAIN_SCRIPT_TAG}`), TYPES['.html']);
       }
       const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
       if (!path.startsWith(ROOT.endsWith(sep) ? ROOT : ROOT + sep) || !existsSync(path)) return send(404, 'not found');

@@ -44,9 +44,11 @@ const drain = async () => { for (let i = 0; i < 4; i++) await new Promise(r => s
 
 /** The LMS: one record per student, shared by every device, and fallible. */
 export class Lms {
-  constructor() {
+  /** @param {{single?: string}} options – `single`: this activity is a single-set package for that set. */
+  constructor({ single = null } = {}) {
     this.store = {};
     this.control = {};
+    this.single = single;
   }
   goDown() { this.control.down = true; }
   comeBack() { this.control.down = false; }
@@ -82,7 +84,7 @@ export class Device {
 
   /** Open the activity from D2L. */
   async launch() {
-    const sandbox = boot({ lmsStore: this.lms.store, control: this.lms.control, storage: this.storage, readyState: 'loading' });
+    const sandbox = boot({ lmsStore: this.lms.store, control: this.lms.control, storage: this.storage, readyState: 'loading', single: this.lms.single });
     const session = new Session(this, sandbox);
     // Same order as the page: the shim script is evaluated, THEN the game starts
     // (its constructor runs the save-version housekeeping), THEN DOMContentLoaded.

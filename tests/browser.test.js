@@ -131,3 +131,42 @@ describe('in a real browser: an LMS that saves only when the session is finished
     assert.match(firefox.clearedRow, /Apprentice/, `the menu row reads: ${JSON.stringify(firefox.clearedRow)}`);
   });
 });
+
+// A package that is ONE problem set: no menu, no ranks, full credit on clearing it.
+describe('in a real browser: a single-set package', { skip }, () => {
+  const SINGLE = 'computing_concepts_04_control_functions.json';
+  let server, first, second;
+  before(async () => {
+    server = await startServer();
+    first = await visit(browser, server.origin, 'singleSet', { single: SINGLE });
+    second = await visit(browser, server.origin, 'singleLook', { single: SINGLE });   // a browser that has never seen it
+  });
+  after(async () => { await server?.close(); });
+
+  it('opens on its own set, not on the menu of every topic', () => {
+    assert.match(first.landing, /Control Flow & Functions/);
+    assert.match(first.landing, /Not yet complete/);
+    assert.match(first.landing, /all or nothing/i);
+    assert.equal(first.menuButtons, 0, 'the topic list of the main menu was drawn');
+    assert.doesNotMatch(first.landing, /Apprentice|Journeyman|Trial|Course score/);
+  });
+
+  it('writes no score before the set is cleared', () => {
+    assert.match(first.bannerBefore, /Not yet complete/);
+  });
+
+  it('goes straight into the questions from the landing page', () => assert.equal(first.wentStraightIn, true));
+
+  it('is worth 100 when cleared, and says so', () => {
+    assert.equal(first.lms['cmi.core.score.raw'], '100');
+    assert.equal(first.lms['cmi.core.lesson_status'], 'completed');
+    assert.match(first.bannerAfter, /Complete — full credit/);
+    assert.match(first.landingAfter, /you have full credit/i);
+    assert.match(first.landingAfter, /never changes your grade/i);
+  });
+
+  it('shows as complete in a browser that has never seen it', () => {
+    assert.match(second.landing, /you have full credit/i);
+    assert.match(second.banner, /Complete — full credit/);
+  });
+});

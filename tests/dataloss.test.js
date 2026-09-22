@@ -526,3 +526,81 @@ describe('fixtures', () => {
     assert.equal(qs.filter(q => q.type !== 'npc_demo').length, QUESTIONS_PER_SET);
   });
 });
+
+// ════════════════════════════════════════════════════════════════════════════════
+// A single-set package is worth full credit when its one set is cleared, and that
+// is all it has to remember. Same real game, same real shim — a simpler promise.
+describe('single-set package: full credit, once earned, stays earned', () => {
+  const single = () => new Lms({ single: A });
+
+  it('is 100 in the LMS the moment the set is cleared, and complete on any other device', async () => {
+    const lms = single();
+    (await new Device(lms, 'laptop').launch()).open(A).finish().close();
+    assert.equal(lms.score, 100);
+    assert.equal(lms.store['cmi.core.lesson_status'], 'completed');
+    assertCleared(await new Device(lms, 'phone').launch(), A);
+  });
+
+  it('writes nothing at all until then, however much of the set has been done', async () => {
+    const lms = single();
+    const visit = await new Device(lms, 'laptop').launch();
+    visit.open(A).play(QUESTIONS_PER_SET - 1);
+    visit.close();
+    assert.ok(!('cmi.core.score.raw' in lms.store), `wrote ${lms.store['cmi.core.score.raw']}`);
+  });
+
+  it('survives D2L being unreachable at the moment of victory', async () => {
+    const lms = single();
+    const laptop = await new Device(lms, 'laptop').launch();
+    laptop.open(A).play(2);
+    lms.goDown();
+    laptop.finish();
+    assert.ok(!('cmi.core.score.raw' in lms.store), 'precondition: the LMS refused it');
+    lms.comeBack();
+    laptop.tick();
+    assert.equal(lms.score, 100);
+  });
+
+  it('is never lowered by a republished package opened first in a blank browser', async () => {
+    // The gradebook still holds the 100. The new attempt and the blank browser
+    // know nothing — and must therefore SAY nothing.
+    const lms = single();
+    (await new Device(lms, 'laptop').launch()).open(A).finish().close();
+    lms.startFreshAttempt();
+    const library = await new Device(lms, 'library').launch();
+    library.tick();
+    library.open(A).play(2);
+    library.close();
+    assert.ok(!('cmi.core.score.raw' in lms.store), `a fresh attempt wrote ${lms.store['cmi.core.score.raw']}`);
+  });
+
+  it('is put back by the browser that earned it, after a republish', async () => {
+    const lms = single();
+    const laptop = new Device(lms, 'laptop');
+    (await laptop.launch()).open(A).finish().close();
+    lms.startFreshAttempt();
+    (await laptop.launch()).close();
+    assert.equal(lms.score, 100);
+  });
+
+  it('is not undone by replaying for practice and dying', async () => {
+    const lms = single();
+    const laptop = new Device(lms, 'laptop');
+    const visit = await laptop.launch();
+    visit.open(A).finish();
+    visit.open(A, { mode: 'new' }).play(1).die();
+    visit.close();
+    assert.equal(lms.score, 100);
+    assert.equal(lms.store['cmi.core.lesson_status'], 'completed');
+    assertCleared(await laptop.launch(), A);
+  });
+
+  it('still carries a half-finished set to another device, where the LMS allows it', async () => {
+    const lms = single();
+    const phone = await new Device(lms, 'phone').launch();
+    phone.open(A).play(3);
+    const at = phone.currentQuestion;
+    phone.close();
+    assert.equal((await new Device(lms, 'laptop').launch()).open(A).currentQuestion, at);
+  });
+});

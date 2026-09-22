@@ -37,6 +37,13 @@
   const TIER_MASTER = 3;
   const POLL_MS = 3000;
   const EXIT_KEY = "lotrd_scorm_last_exit";
+
+  // A SINGLE-SET package: one problem set, worth full credit when it is cleared.
+  // SCORM/build.py writes the set's id into the page. There are no ranks, trials or
+  // spacing in this mode — credit is one fact, written once as 100, and the rules
+  // that already protect a grade (never write a zero, never go below what the LMS
+  // holds) are all it needs. See tests/scorm-single.test.js.
+  const SINGLE = (typeof window.LOTRD_SINGLE_SET === "string" && window.LOTRD_SINGLE_SET) || null;
   // Stamped by SCORM/build.py, so a bug report can say which package it came from.
   const BUILD = "{{BUILD}}";
 
@@ -120,6 +127,13 @@
   let playableIds = [];
 
   async function loadCatalog() {
+    if (SINGLE) {
+      // The package knows its one set without asking: one less request that can
+      // fail, and no way for another set in the catalog to dilute the grade.
+      playableIds = [SINGLE];
+      totalSets = 1;
+      return;
+    }
     try {
       const res = await fetch("question_sets/catalog.json", { cache: "no-store" });
       const catalog = await res.json();
@@ -155,6 +169,10 @@
 
   /** 0 = not cleared, 1..3 = Apprentice/Journeyman/Master. */
   function tierForSet(id) {
+    if (SINGLE) {
+      // All or nothing: cleared is full credit, whatever rank the game recorded.
+      try { return localStorage.getItem(COMPLETION_PREFIX + id) ? TIER_MASTER : 0; } catch (_) { return 0; }
+    }
     const rec = readJson(TIER_PREFIX + id);
     const t = rec && typeof rec.tier === "number" ? Math.floor(rec.tier) : 0;
     if (t >= 1) return Math.min(t, TIER_MASTER);
@@ -614,7 +632,9 @@
   function updateBanner(pct) {
     const el = ensureBanner();
     const done = completedCount();
-    const progress = `Course score: ${pct}%  ·  ${done} of ${totalSets} sets cleared`;
+    const progress = SINGLE
+      ? (pct >= 100 ? "✓ Complete — full credit" : "Not yet complete — clear this set for full credit")
+      : `Course score: ${pct}%  ·  ${done} of ${totalSets} sets cleared`;
 
     // The warning has to be actionable: say where the progress IS safe, and what
     // to do. A student who closes this tab and opens the activity on another
@@ -622,7 +642,9 @@
     // nothing, because the next launch pushes everything the LMS is missing.
     let text, alarm = false;
     if (syncState === "synced") {
-      text = `${progress}  ·  ✓ saved to D2L — rank up cleared sets for full credit`;
+      text = SINGLE
+        ? `${progress}${pct >= 100 ? "  ·  sent to D2L" : ""}`
+        : `${progress}  ·  ✓ saved to D2L — rank up cleared sets for full credit`;
     } else if (syncState === "failing") {
       alarm = true;
       text = `⚠ Your progress has NOT been saved to D2L since ${clockTime(failingSince)}. ` +
@@ -685,6 +707,7 @@
     try { previousExit = JSON.parse(localStorage.getItem(EXIT_KEY) || "null"); } catch (_) {}
     return {
       build: BUILD,
+      singleSet: SINGLE,
       apiFound: !!api,
       connected: initialized,
       syncState: syncState,

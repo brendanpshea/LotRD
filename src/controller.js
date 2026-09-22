@@ -91,9 +91,17 @@ export class GameController {
       if (this._menuShowing) this.showMainMenu();
     });
 
+    // A SCORM package that holds ONE problem set names it here (SCORM/build.py
+    // writes it into the page). Such a package has no menu, no ranks and no
+    // trials: it opens on the set, and clearing the set is the whole grade.
+    this._singleSet = typeof window.LOTRD_SINGLE_SET === "string" && window.LOTRD_SINGLE_SET
+      ? window.LOTRD_SINGLE_SET : null;
+
     const params = new URLSearchParams(window.location.search);
     const specifiedSet = params.get("set");
-    if (specifiedSet) {
+    if (this._singleSet) {
+      this.showSetHome();
+    } else if (specifiedSet) {
       this.loadSpecifiedSet(specifiedSet);
     } else {
       this.showMainMenu();
@@ -555,7 +563,39 @@ export class GameController {
     if (button) button.addEventListener("click", () => this.showMainMenu());
   }
 
+  /**
+   * Where a single-set package lives instead of the main menu. Every route that
+   * would lead to the menu leads here.
+   */
+  async showSetHome() {
+    this._setInGame(false);
+    this._menuShowing = false;
+    const setId = this._singleSet;
+    try {
+      const catalog = await loadJSON("question_sets/catalog.json");
+      this._catalog = catalog;
+      let entry = null;
+      for (const topic of catalog) entry = entry || (topic.sets || []).find(s => s.id === setId) || null;
+      if (!entry) throw new Error(`This package's problem set ("${setId}") is missing from its catalog.`);
+      this._describeEntry(entry);
+      this.ui.showSetHome({
+        title: entry.title,
+        intro: entry.intro || null,
+        questionCount: entry.question_count ?? null,
+        status: entry.status.type,
+        remaining: entry.status.remaining ?? 0,
+      }, {
+        resume: () => this._launchSet(setId, "resume"),
+        restart: () => this._launchSet(setId, "new"),
+      });
+      this._menuShowing = true;      // so a late restore from the LMS redraws this page too
+    } catch (err) {
+      this._renderLoadError(err.message);
+    }
+  }
+
   async showMainMenu() {
+    if (this._singleSet) return this.showSetHome();
     this._setInGame(false);
     const clean = new URL(window.location);
     clean.searchParams.delete("set");
@@ -811,6 +851,11 @@ export class GameController {
       // questions still requeue, and reviews/trials shuffle their samples.
       this.model = new GameModel(questions_data, monsters_data, null, levelData, { sequential: true });
       this._createUi(this.model);
+      if (this._singleSet) {
+        // The landing page already showed the story and objectives; go straight in.
+        this.startAdventure();
+        return;
+      }
       this.ui.showInitialScreen({
         title: this._setTitle,
         intro: catalogEntry?.intro || null,

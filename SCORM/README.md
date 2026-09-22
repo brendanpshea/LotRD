@@ -37,7 +37,44 @@ Output: `SCORM/dist/<edition>-scorm.zip`
 
 2. Run `python SCORM/build.py SCORM/editions/<name>.json`.
 
+## Single-set packages
+
+```sh
+python SCORM/build.py SCORM/editions/computing_singles.json    # one zip per chapter, 4-12
+```
+
+A config with `"single_sets": true` builds one package per set it lists
+(`lotrd-cc-04-control-functions-scorm.zip`, ...). Each one:
+
+- **opens on its set**, not on the menu: a landing page with the story, the
+  objectives, where the student stands, and one button;
+- is worth **full credit, all or nothing**: nothing is written to the gradebook
+  until the set is cleared, and then it is 100 and `completed`;
+- has **no ranks, no rank trials and no spaced review**. The website keeps all of
+  that; these packages deliberately do not. (Dated review packages, released by
+  the LMS's calendar, are the intended way to get spacing back.)
+
+Why they exist: the multi-set editions build a grade over weeks, which depends on
+the LMS remembering a student between visits, across devices, and across every
+re-upload of the package. In the live course each of those has failed at some
+point. A single-set package asks for almost none of it. Credit is one fact,
+written once — and because nothing is written before the clear and nothing may
+go below what the LMS holds, a fresh attempt (a re-upload, a new device, an
+emptied browser) can never lower a grade. A re-upload costs at most a
+half-finished run. Give each package its own grade item, out of 100.
+
+The build writes `window.LOTRD_SINGLE_SET = "<set id>"` into the page ahead of
+the shim; the shim and the game both key off it. Mid-set progress and player
+level still sync through `suspend_data` exactly as below, where the LMS allows.
+Rules and their tests: `tests/scorm-single.test.js`, the single-set block of
+`tests/dataloss.test.js`, and `tests/browser.test.js`.
+
+Computing Concepts chapters 1-3 stay as a multi-set, rank-graded edition
+(students are part-way through it); chapters 4-12 are single-set packages.
+
 ## How scoring works
+
+*(Multi-set editions. For single-set packages see above: cleared = 100.)*
 
 Score reported to the LMS is a percentage built from per-set mastery
 tiers:
