@@ -1,15 +1,90 @@
 [
   {
-    "question": "What is the Big-O running time of a linear search over a list of n items?",
+    "question": "What does a linear search do?",
     "correct": [
-      "O(n)"
+      "Checks the items one at a time from the front until it finds the target"
     ],
     "incorrect": [
-      "O(log n)",
-      "O(1)",
-      "O(n²)"
+      "Jumps to the middle item and throws away the half without the target",
+      "Sorts the list first and then reads off the item in the first position",
+      "Checks the first item and the last item, then works in toward the middle"
     ],
-    "feedback": "In the worst case a linear search checks every item, so the work grows in proportion to n: O(n)."
+    "feedback": "Linear search is the plain one: start at the front and look at each item in turn. It needs nothing from the list — no ordering, no preparation — which is why it is the only choice when the data is unsorted."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange these lines into a working linear search that returns the position of the target, or None when it is not there.",
+    "language": "python",
+    "items": [
+      "def find(items, target):",
+      "    for i in range(len(items)):",
+      "        if items[i] == target:",
+      "            return i",
+      "    return None"
+    ],
+    "feedback": "The final return sits OUTSIDE the loop, at the same indentation as the for. Pull it inside and the function gives up after checking only the first item — the single most common bug in a hand-written search."
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace this linear search. What does the program print?",
+    "code": "def find(items, target):\n    for i in range(len(items)):\n        if items[i] == target:\n            return i\n    return None\n\nprint(find([4, 9, 2, 9], 9))",
+    "language": "python",
+    "correct": [
+      "1"
+    ],
+    "case_sensitive": true,
+    "feedback": "The search returns the moment it meets a match, so it reports index 1 and never looks at the second 9. A linear search finds the FIRST match."
+  },
+  {
+    "question": "In our search functions, what value signals 'not found'?",
+    "correct": [
+      "None, Python's built-in 'nothing here' value"
+    ],
+    "incorrect": [
+      "-1, the way many other programming languages do it",
+      "0, since it is the first list index",
+      "An empty list with no items in it"
+    ],
+    "feedback": "We return None as the sentinel for 'not found'. Avoid -1 in Python, because -1 is a valid index meaning the last item."
+  },
+  {
+    "type": "code_trace",
+    "question": "This search has a bug: its final return has slipped inside the loop. What does the program print?",
+    "code": "def find(items, target):\n    for i in range(len(items)):\n        if items[i] == target:\n            return i\n        else:\n            return None\n\nprint(find([4, 9, 2], 9))",
+    "language": "python",
+    "correct": [
+      "None"
+    ],
+    "case_sensitive": true,
+    "feedback": "On the very first pass items[0] is 4, which is not the target, so the else runs and the function returns None — having looked at one item. \"Not found\" can only be decided AFTER the loop has checked everything, which is why that return belongs outside the loop."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A special return value meaning \"not found\", such as the None these search functions return, is called a ___ value.",
+    "correct": [
+      "sentinel"
+    ],
+    "case_sensitive": false,
+    "feedback": "A sentinel is a value chosen to signal a condition rather than to be real data. Choosing a safe one matters: -1 is a poor sentinel in Python because it is also a valid index."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A linear search checks items from the front, one at a time. The target sits at index {{p}} of a list of {{n}} items. How many items has the search checked when it returns?",
+    "variables": {
+      "p": {
+        "min": 2,
+        "max": 9
+      },
+      "n": {
+        "min": 12,
+        "max": 40
+      }
+    },
+    "answer": {
+      "expr": "p + 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Indexes start at 0, so index {{p}} is item number {{expected}}: the search checks {{expected}} items and stops. The rest of the {{n}} are never looked at."
   },
   {
     "type": "npc_demo",
@@ -18,10 +93,10 @@
     "intro": "The library runs deeper than the torchlight reaches. Nia rests a hand on a shelf of numbered ledgers. “Fifteen ledgers, already in order. A slow apprentice starts at the left. Watch what a fast one does.”",
     "steps": [
       {
-        "say": "I want ledger 23. I don't touch the first ledger — I go straight to the MIDDLE one. It reads 20. Since 23 is bigger than 20, and the shelf is sorted, every ledger from the middle leftwards is out. Eight ledgers eliminated by looking at one.",
+        "say": "I want ledger 23 — call it the target. I don't touch the first ledger — I go straight to the MIDDLE one. It reads 20. Since 23 is bigger than 20, and the shelf is sorted, every ledger from the middle leftwards is out. Eight ledgers eliminated by looking at one.",
         "beats": [
           {
-            "say": "I want ledger 23. I don't touch the first ledger — I go straight to the MIDDLE one. It reads 20."
+            "say": "I want ledger 23 — call it the target. I don't touch the first ledger — I go straight to the MIDDLE one. It reads 20."
           },
           {
             "say": "Since 23 is bigger than 20, and the shelf is sorted, every ledger from the middle leftwards is out. Eight ledgers eliminated by looking at one."
@@ -41,18 +116,33 @@
         }
       },
       {
-        "say": "The counts go 15, then 7, then 3, then 1. Four looks at worst. Double the shelf to 31 and it costs just ONE more look — that is what O(log n) means. All of it depends on the shelf being sorted; on an unsorted shelf this trick is worthless.",
+        "say": "The counts go 15, then 7, then 3, then 1. Four looks at worst. Double the shelf to 31 and it costs just ONE more look — that is what O(log n) means. This halving search is called binary search, and all of it depends on the shelf being sorted; on an unsorted shelf the trick is worthless.",
         "beats": [
           {
             "say": "The counts go 15, then 7, then 3, then 1. Four looks at worst. Double the shelf to 31 and it costs just ONE more look — that is what O(log n) means."
           },
           {
-            "say": "All of it depends on the shelf being sorted; on an unsorted shelf this trick is worthless."
+            "say": "This halving search is called binary search. All of it depends on the shelf being sorted; on an unsorted shelf the trick is worthless."
           }
         ]
       }
     ],
-    "outro": "“Now put the moves in order yourself.”"
+    "outro": "“Now a shelf of your own. Count the looks.”"
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A sorted list has {{n}} items. At most how many items does a binary search have to look at before it has either found the target or run out of list?",
+    "variables": {
+      "n": {
+        "min": 8,
+        "max": 250
+      }
+    },
+    "answer": {
+      "expr": "bitLength(n)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each look halves what is left, so the count is how many times {{n}} can be halved down to nothing: floor(log2 {{n}}) + 1 = {{expected}} looks."
   },
   {
     "type": "ordering",
@@ -78,75 +168,6 @@
     "feedback": "Binary search decides which half to keep by assuming everything left of the middle is smaller. With no ordering, that assumption is simply false, and the half holding the target can be discarded on the very first comparison. Nothing in the code detects the problem, so the wrong answer comes back quietly."
   },
   {
-    "type": "ordering",
-    "question": "Arrange these lines into a working binary search over a sorted list.",
-    "language": "python",
-    "items": [
-      "def bsearch(items, target):",
-      "    low, high = 0, len(items) - 1",
-      "    while low <= high:",
-      "        mid = (low + high) // 2",
-      "        if items[mid] == target:",
-      "            return mid",
-      "        elif items[mid] < target:",
-      "            low = mid + 1",
-      "        else:",
-      "            high = mid - 1",
-      "    return -1"
-    ],
-    "feedback": "Each pass computes a fresh midpoint, then throws away the half that cannot contain the target by moving one end past mid. Moving an end to mid instead of mid plus or minus one is what makes a binary search loop forever on a missing value."
-  },
-  {
-    "type": "code_line",
-    "question": "In binary search, lo and hi hold the ends of the range still in play. Write the Python expression that gives the index of the middle item, using integer division.",
-    "language": "python",
-    "correct": [
-      "(lo + hi) // 2",
-      "(lo+hi)//2",
-      "(hi + lo) // 2",
-      "(lo + hi)//2"
-    ],
-    "case_sensitive": false,
-    "feedback": "Integer division keeps the result a whole number, which matters because list indexes cannot be fractions. A single slash would produce a float and make the index unusable."
-  },
-  {
-    "question": "What does binary search do on each pass?",
-    "correct": [
-      "Compares the middle item and discards the half that cannot contain it"
-    ],
-    "incorrect": [
-      "Compares the first two items and swaps them if they are out of order",
-      "Removes the middle item and searches the rest from the start",
-      "Splits the list into single items and merges them back in order"
-    ],
-    "feedback": "This is how you look a word up in a dictionary: open to the middle, decide whether the word is earlier or later, and ignore the half it cannot be in. Each look halves what remains."
-  },
-  {
-    "question": "In our search functions, what value signals 'not found'?",
-    "correct": [
-      "None, Python's built-in 'nothing here' value"
-    ],
-    "incorrect": [
-      "-1, the way many other programming languages do it",
-      "0, since it is the first list index",
-      "An empty list with no items in it"
-    ],
-    "feedback": "We return None as the sentinel for 'not found'. Avoid -1 in Python, because -1 is a valid index meaning the last item."
-  },
-  {
-    "type": "ordering",
-    "question": "Arrange these lines into a working linear search that returns the position of the target, or -1 when it is not there.",
-    "language": "python",
-    "items": [
-      "def find(items, target):",
-      "    for i in range(len(items)):",
-      "        if items[i] == target:",
-      "            return i",
-      "    return -1"
-    ],
-    "feedback": "The final return sits OUTSIDE the loop, at the same indentation as the for. Pull it inside and the function gives up after checking only the first item — the single most common bug in a hand-written search."
-  },
-  {
     "type": "fill_blank",
     "question": "A search that repeatedly halves a sorted list to find a target is called a ___ search.",
     "correct": [
@@ -154,6 +175,98 @@
     ],
     "case_sensitive": false,
     "feedback": "Binary search halves the remaining items each step, giving O(log n) running time on sorted data."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Keeping track of low, mid and high",
+    "npc": "nia",
+    "intro": "Nia writes seven sorted numbers on the slate. “The shelf trick works on any sorted list. In code, the range still in play is held by two numbers.”",
+    "steps": [
+      {
+        "say": "low and high are the positions of the two ends of the range still in play. mid is the position halfway between them. I am searching for the target 40, and items[3] is 20.",
+        "beats": [
+          {
+            "say": "low and high are the positions of the two ends of the range still in play. mid is the position halfway between them."
+          },
+          {
+            "code": "items = [3, 8, 12, 20, 31, 40, 47]\n# low = 0   high = 6   mid = (0 + 6) // 2 = 3",
+            "language": "python"
+          },
+          {
+            "say": "I am searching for the target 40, and items[3] is 20."
+          }
+        ]
+      },
+      {
+        "say": "20 is smaller than the target, so the target cannot be at mid or anywhere to its left. I move low to mid + 1.",
+        "check": {
+          "prompt": "low becomes 4 and high stays 6. Which position is the new mid?",
+          "answer": "5, because (4 + 6) // 2 is 5",
+          "wrong": [
+            "4, the first position still in play",
+            "6, the last position still in play"
+          ],
+          "why": "mid is worked out fresh from the current low and high on every pass."
+        }
+      },
+      {
+        "say": "items[5] is 40 — the target, after two looks: 20, then 40. If low ever passes high, the range is empty and the function returns None: not found."
+      }
+    ],
+    "outro": "“Trace the next one yourself. Write down every item the search looks at.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "This binary search records every item it looks at. What does the program print?",
+    "code": "items = [4, 7, 10, 15, 22, 28, 35]\ntarget = 22\nlow, high = 0, len(items) - 1\nseen = []\nwhile low <= high:\n    mid = (low + high) // 2\n    seen.append(items[mid])\n    if items[mid] == target:\n        break\n    elif items[mid] < target:\n        low = mid + 1\n    else:\n        high = mid - 1\nprint(seen)",
+    "language": "python",
+    "correct": [
+      "[15, 28, 22]"
+    ],
+    "case_sensitive": true,
+    "feedback": "low and high start at 0 and 6, so the first look is index 3 (15). 22 is bigger, so low becomes 4 and the next look is index 5 (28). 22 is smaller, so high becomes 4, and the last look is index 4 — the target."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the blanks to finish this binary search over a sorted list.",
+    "question": "def bsearch(items, target):\n    low, high = 0, len(items) - 1\n    while low <= high:\n        mid = (low + high) {{1}} 2\n        if items[mid] == target:\n            return mid\n        elif items[mid] < target:\n            low = {{2}}\n        else:\n            high = {{3}}\n    return None",
+    "language": "python",
+    "blanks": [
+      {
+        "accept": [
+          "//"
+        ],
+        "hint": "operator"
+      },
+      {
+        "accept": [
+          "mid + 1",
+          "mid+1"
+        ],
+        "hint": "new low",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "mid - 1",
+          "mid-1"
+        ],
+        "hint": "new high",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "Integer division keeps mid a whole number, which a list index has to be. Each end then moves PAST mid — to mid + 1 or mid - 1 — because mid itself has just been checked. Moving an end only to mid is what makes a binary search loop forever on a missing value."
+  },
+  {
+    "type": "code_trace",
+    "question": "The target is not in the list. What does the program print?",
+    "code": "items = [4, 7, 10, 15, 22, 28, 35]\ntarget = 8\nlow, high = 0, len(items) - 1\nlooks = 0\nwhile low <= high:\n    mid = (low + high) // 2\n    looks = looks + 1\n    if items[mid] == target:\n        break\n    elif items[mid] < target:\n        low = mid + 1\n    else:\n        high = mid - 1\nprint(looks, low > high)",
+    "language": "python",
+    "correct": [
+      "3 True"
+    ],
+    "case_sensitive": true,
+    "feedback": "The search looks at 15, then 7, then 10, and each time moves an end past mid. After the third look low has passed high: the range is empty, the loop ends, and a search function would return None."
   },
   {
     "question": "Which Big-O describes linear search, and which describes binary search?",
@@ -195,28 +308,16 @@
     "feedback": "O(n) work scales in step with the list, while O(log n) work grows by one step per doubling. Halving only works when order tells you which half to throw away, so binary search buys its speed with a precondition linear search does not need."
   },
   {
-    "question": "Which of these growth rates grows the fastest for large n?",
+    "question": "You need to search a large collection many times, and you are free to prepare it first. Which approach is best?",
     "correct": [
-      "O(n²)"
+      "Sort it once, then use binary search for every lookup"
     ],
     "incorrect": [
-      "O(n log n)",
-      "O(n)",
-      "O(log n)"
+      "Use linear search each time and skip the sorting cost",
+      "Sort it once, then use linear search for every lookup",
+      "Use binary search straight away, since sorting is optional"
     ],
-    "feedback": "For large n, O(n²) grows fastest, then O(n log n), then O(n), then O(log n). Slower growth means a more scalable algorithm."
-  },
-  {
-    "question": "Which Big-O describes work that stays the same no matter how big the input is?",
-    "correct": [
-      "O(1)"
-    ],
-    "incorrect": [
-      "O(log n)",
-      "O(n)",
-      "O(n²)"
-    ],
-    "feedback": "O(1) is constant time: the work does not change as n grows, like reading one item by its index."
+    "feedback": "Sorting is a one-time cost that makes every later search logarithmic. When you search a lot, that trade pays for itself quickly; for a single lookup on unsorted data, plain linear search is simpler."
   },
   {
     "type": "matching",
@@ -254,39 +355,29 @@
     "feedback": "Constant work never grows; logarithmic barely does; linear keeps pace with the input; n log n is a little worse, which is why merge sort beats selection sort; and quadratic climbs sharply, doubling the input roughly quadrupling the work."
   },
   {
-    "question": "How does selection sort work?",
-    "correct": [
-      "Find the smallest remaining item, swap it into place, and repeat"
-    ],
-    "incorrect": [
-      "Split the list in half repeatedly, then merge the sorted halves",
-      "Compare neighboring pairs and swap them until no swaps remain",
-      "Insert each item into a second list at the right position"
-    ],
-    "feedback": "The outer loop walks the slot being filled and the inner loop scans the unsorted tail for the smallest item. After each pass, the sorted front of the list grows by one."
-  },
-  {
-    "type": "matching",
-    "question": "Match each algorithm to its typical Big-O running time.",
-    "pairs": [
-      {
-        "term": "Linear search",
-        "definition": "O(n)"
+    "type": "dynamic_numeric",
+    "question": "An O(n squared) algorithm takes {{t}} milliseconds on a list of {{n}} items. About how many milliseconds should it take on {{k}} times as many items?",
+    "variables": {
+      "t": {
+        "min": 4,
+        "max": 40
       },
-      {
-        "term": "Binary search",
-        "definition": "O(log n)"
+      "n": {
+        "min": 100,
+        "max": 500,
+        "step": 100
       },
-      {
-        "term": "Selection sort",
-        "definition": "O(n²)"
-      },
-      {
-        "term": "Merge sort",
-        "definition": "O(n log n)"
+      "k": {
+        "min": 2,
+        "max": 5
       }
-    ],
-    "feedback": "Knowing an algorithm's Big-O lets you predict how it will scale before you ever run it on large data."
+    },
+    "answer": {
+      "expr": "t * k * k",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Squared growth means multiplying the input by {{k}} multiplies the work by {{k}} x {{k}}, so {{t}} ms becomes about {{expected}} ms. The input grew {{k}} times, but the cost grew far more.",
+    "language": "python"
   },
   {
     "type": "npc_demo",
@@ -318,7 +409,7 @@
         }
       },
       {
-        "say": "So 1 and 5 trade places and the row reads 1, 3, 9, 5, 6. Note that 5 landed where 1 used to be, and 3, 9, 6 never moved. Position 0 is finished forever; pass two scans only what is left."
+        "say": "So 1 and 5 trade places and the row reads 1, 3, 9, 5, 6. Note that 5 landed where 1 used to be, and 3, 9, 6 never moved. Position 0 is finished forever; pass two scans only the unsorted tail — everything after it."
       }
     ],
     "outro": "“Same move, different tiles, next question. Scan for the smallest, then swap it to the front.”"
@@ -329,11 +420,46 @@
       "[1, 2, 10, 4, 7]"
     ],
     "incorrect": [
+      "[1, 7, 2, 10, 4]",
       "[2, 7, 10, 4, 1]",
-      "[1, 2, 4, 7, 10]",
-      "[7, 2, 10, 4, 1]"
+      "[1, 2, 4, 7, 10]"
     ],
-    "feedback": "The first pass finds the smallest item (1, at the end) and swaps it with whatever was in slot 0. The 7 that was displaced moves to where the 1 had been."
+    "feedback": "The first pass finds the smallest item (1, at the end) and swaps it with whatever was in slot 0. The 7 that was displaced lands where the 1 had been; nothing shifts along, and only one slot is finished after one pass."
+  },
+  {
+    "question": "How does selection sort work?",
+    "correct": [
+      "Find the smallest remaining item, swap it into place, and repeat"
+    ],
+    "incorrect": [
+      "Split the list in half repeatedly, then merge the sorted halves",
+      "Compare neighboring pairs and swap them until no swaps remain",
+      "Insert each item into a second list at the right position"
+    ],
+    "feedback": "The outer loop walks the slot being filled and the inner loop scans the unsorted tail for the smallest item. After each pass, the sorted front of the list grows by one."
+  },
+  {
+    "type": "code_trace",
+    "question": "This is one pass of selection sort, written out. What does the program print?",
+    "code": "nums = [6, 9, 2, 7]\nsmallest = 0\nfor i in range(1, len(nums)):\n    if nums[i] < nums[smallest]:\n        smallest = i\nnums[0], nums[smallest] = nums[smallest], nums[0]\nprint(nums[0], nums[2])",
+    "language": "python",
+    "correct": [
+      "2 6"
+    ],
+    "case_sensitive": true,
+    "feedback": "The loop leaves smallest holding index 2, where the 2 is. The swap then trades slot 0 with slot 2, so the 2 comes to the front and the 6 it displaced lands where the 2 was."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the one-line Python statement that swaps the values of two variables a and b.",
+    "language": "python",
+    "correct": [
+      "a, b = b, a",
+      "b, a = a, b",
+      "(a, b) = (b, a)"
+    ],
+    "case_sensitive": true,
+    "feedback": "a, b = b, a swaps the two values in a single statement using tuple unpacking."
   },
   {
     "question": "Selection sort scans the whole unsorted tail on every pass, and there is one pass per item. Which Big-O class does that give it?",
@@ -346,43 +472,6 @@
       "O(log n), because only the smallest item is examined each time"
     ],
     "feedback": "Roughly n passes, each scanning up to n items, multiplies out to n². Doubling the list therefore roughly quadruples the work."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "An O(n squared) algorithm takes {{t}} milliseconds on a list of {{n}} items. About how many milliseconds should it take on {{k}} times as many items?",
-    "variables": {
-      "t": {
-        "min": 4,
-        "max": 40
-      },
-      "n": {
-        "min": 100,
-        "max": 500,
-        "step": 100
-      },
-      "k": {
-        "min": 2,
-        "max": 5
-      }
-    },
-    "answer": {
-      "expr": "t * k * k",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Squared growth means multiplying the input by {{k}} multiplies the work by {{k}} x {{k}}, so {{t}} ms becomes about {{expected}} ms. The input grew {{k}} times, but the cost grew far more.",
-    "language": "python"
-  },
-  {
-    "question": "What is the Big-O running time of selection sort?",
-    "correct": [
-      "O(n²)"
-    ],
-    "incorrect": [
-      "O(n)",
-      "O(log n)",
-      "O(n log n)"
-    ],
-    "feedback": "Selection sort scans the remaining items on every pass, so its work grows with the square of n: O(n²)."
   },
   {
     "type": "dynamic_numeric",
@@ -433,16 +522,39 @@
     "feedback_template": "Each round halves the pile size, so the number of rounds is log2({{n}}) = {{expected}}. Those {{expected}} levels, each costing about n work to merge, are where the n log n in merge sort comes from."
   },
   {
-    "question": "Why is merge sort (O(n log n)) usually preferred over selection sort (O(n²)) for large lists?",
+    "question": "Why is merge sort usually preferred over selection sort for large lists?",
     "correct": [
-      "Its work grows much more slowly as the list gets large"
+      "Its work grows far more slowly as the list gets longer"
     ],
     "incorrect": [
-      "O(n²) grows more slowly than O(n log n) for large lists",
-      "They grow alike, but merge sort has a smaller constant",
-      "Merge sort's work stays constant as the list gets large"
+      "It sorts in place, while selection sort needs a second list",
+      "It makes a single pass, while selection sort makes about n",
+      "It copes with unsorted input, which selection sort cannot"
     ],
-    "feedback": "For large n, O(n log n) grows far slower than O(n²), so merge sort scales to big inputs that would make selection sort painfully slow."
+    "feedback": "Merge sort is O(n log n) and selection sort is O(n²). On ten items nobody could tell them apart; on a million, one finishes in a blink and the other is still running. (It is selection sort that works in place — merge sort pays for its speed with extra memory.)"
+  },
+  {
+    "type": "matching",
+    "question": "Match each algorithm to its typical Big-O running time.",
+    "pairs": [
+      {
+        "term": "Linear search",
+        "definition": "O(n)"
+      },
+      {
+        "term": "Binary search",
+        "definition": "O(log n)"
+      },
+      {
+        "term": "Selection sort",
+        "definition": "O(n²)"
+      },
+      {
+        "term": "Merge sort",
+        "definition": "O(n log n)"
+      }
+    ],
+    "feedback": "Knowing an algorithm's Big-O lets you predict how it will scale before you ever run it on large data."
   },
   {
     "question": "Which of these are true about  sorted(items)  and  items.sort()? (Select all that apply)",
@@ -458,6 +570,122 @@
     "feedback": "Writing x = mylist.sort() and getting None back is a classic beginner bug. Use sorted() when you want a new list, and .sort() when you mean to rearrange the original in place."
   },
   {
+    "type": "code_trace",
+    "question": "A list is sorted with its .sort() method. What does this program print?",
+    "code": "a = [3, 1, 2]\nb = a.sort()\nprint(b)",
+    "language": "python",
+    "correct": [
+      "None"
+    ],
+    "case_sensitive": true,
+    "feedback": ".sort() rearranges a itself and hands nothing back, so b is None. The sorted data is in a — writing b = a.sort() is how a correct sort appears to \"lose\" a list."
+  },
+  {
+    "type": "code_trace",
+    "question": "A list is sorted with the sorted() function. What does this program print?",
+    "code": "a = [3, 1, 2]\nb = sorted(a)\nprint(a[0], b[0])",
+    "language": "python",
+    "correct": [
+      "3 1"
+    ],
+    "case_sensitive": true,
+    "feedback": "sorted() builds a NEW list and leaves a exactly as it was, so a still starts with 3 while b starts with 1."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the blanks so this sorts the list in place and then prints the smallest score.",
+    "question": "scores = [5, 2, 9]\nscores.{{1}}()\nprint(scores[{{2}}])",
+    "language": "python",
+    "blanks": [
+      {
+        "accept": [
+          "sort"
+        ],
+        "hint": "in place"
+      },
+      {
+        "accept": [
+          "0",
+          "-3"
+        ],
+        "hint": "index"
+      }
+    ],
+    "feedback": "The in-place method is called on the list and changes it directly, so scores itself is now in order and the smallest value sits at index 0. Writing scores = scores.sort() would replace the list with None."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Rearranging a list without making a new copy is described as sorting ___ (two words joined by a hyphen).",
+    "correct": [
+      "in-place",
+      "in place"
+    ],
+    "case_sensitive": false,
+    "feedback": "An in-place sort like nums.sort() rearranges the existing list rather than building a new one."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Telling sorted() what to compare",
+    "npc": "nia",
+    "intro": "Nia sets down three name-cards, each with a score chalked on the back. “sorted() can order numbers and words by itself. Hand it dictionaries and it has no idea which part you care about — so you tell it.”",
+    "steps": [
+      {
+        "say": "A key function takes ONE item and returns the value to sort by. Here each item is a student dictionary, and the function returns that student's score.",
+        "beats": [
+          {
+            "say": "A key function takes ONE item and returns the value to sort by."
+          },
+          {
+            "code": "def by_score(student):\n    return student[\"score\"]",
+            "language": "python"
+          },
+          {
+            "say": "Here each item is a student dictionary, and the function returns that student's score."
+          }
+        ]
+      },
+      {
+        "say": "I pass the function itself to sorted() — its name, with no parentheses. sorted() calls it once for every item and orders the items by what comes back.",
+        "beats": [
+          {
+            "say": "I pass the function itself to sorted() — its name, with no parentheses."
+          },
+          {
+            "code": "ranked = sorted(students, key=by_score)",
+            "language": "python"
+          },
+          {
+            "say": "sorted() calls it once for every item and orders the items by what comes back."
+          }
+        ],
+        "check": {
+          "prompt": "Why is it key=by_score and not key=by_score()?",
+          "answer": "sorted() needs the function itself, to call on each item",
+          "wrong": [
+            "The parentheses are optional, so either spelling works",
+            "With parentheses it would sort the list in place instead"
+          ],
+          "why": "by_score() would call it right now, with no student to look at. key= wants the function, to call later."
+        }
+      },
+      {
+        "say": "The smallest key comes first. Add reverse=True for largest first. Items whose keys are equal keep the order they started in."
+      }
+    ],
+    "outro": "“Your turn. Work out each item's key before you decide the order.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "This sorts three words with a key function. What does the program print?",
+    "code": "def last(word):\n    return word[-1]\n\nwords = [\"cab\", \"bee\", \"ada\"]\nprint(sorted(words, key=last)[0])",
+    "language": "python",
+    "correct": [
+      "ada"
+    ],
+    "case_sensitive": true,
+    "feedback": "The keys are the last letters: b for cab, e for bee, a for ada. Ordered by those keys the list is ada, cab, bee — so index 0 is ada. The words themselves are never compared."
+  },
+  {
     "question": "A list of student dictionaries, each holding a 'score' key, must be listed from the highest score down to the lowest. Which approach does that?",
     "correct": [
       "Call sorted() with a key that returns the score and reverse set to True"
@@ -468,6 +696,27 @@
       "Call .sort() with reverse set to True and assign the list it returns to a name"
     ],
     "feedback": "A key function tells sorted() what to compare, but the default direction is still ascending, so descending order needs reverse=True as well. sorted() cannot guess which field of a dictionary matters, and .sort() rearranges the list in place and returns None, so assigning its result throws the data away."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the blanks so this prints the words ordered shortest to longest, leaving the original list untouched.",
+    "question": "words = [\"pear\", \"fig\", \"banana\"]\nordered = {{1}}(words, key={{2}})\nprint(ordered)",
+    "language": "python",
+    "blanks": [
+      {
+        "accept": [
+          "sorted"
+        ],
+        "hint": "builtin"
+      },
+      {
+        "accept": [
+          "len"
+        ],
+        "hint": "key function"
+      }
+    ],
+    "feedback": "sorted() returns a new list, which is what lets the original survive; words.sort() would rearrange it in place and return None. The key is passed as a function, without parentheses — Python calls it once per item to decide what to compare."
   },
   {
     "type": "matching",
@@ -497,122 +746,49 @@
     "feedback": "The sorted() family always hands back a new list and leaves the original alone, while .sort() does the opposite and returns None. A key function changes what gets compared, and reverse changes the direction — they are independent settings you can use together."
   },
   {
-    "question": "You need to search a large collection many times, and you are free to prepare it first. Which approach is best?",
-    "correct": [
-      "Sort it once, then use binary search for every lookup"
-    ],
-    "incorrect": [
-      "Use linear search each time and skip the sorting cost",
-      "Sort it again before every single lookup",
-      "Use selection sort during each lookup to find the item"
-    ],
-    "feedback": "Sorting is a one-time cost that makes every later search logarithmic. When you search a lot, that trade pays for itself quickly; for a single lookup on unsorted data, plain linear search is simpler."
-  },
-  {
-    "question": "What does the  key  function do in  sorted(words, key=len)?",
-    "correct": [
-      "It sorts by each item's length instead of its value"
-    ],
-    "incorrect": [
-      "It removes any items whose length is much too long",
-      "It reverses the final ordering of the sorted list",
-      "It limits the result to just the first len items"
-    ],
-    "feedback": "A key function returns the value to sort by. key=len sorts the words by length rather than alphabetically."
-  },
-  {
-    "type": "cloze",
-    "prompt": "Fill in the blanks so this prints the words ordered shortest to longest, leaving the original list untouched.",
-    "question": "words = [\"pear\", \"fig\", \"banana\"]\nordered = {{1}}(words, key={{2}})\nprint(ordered)",
-    "language": "python",
-    "blanks": [
-      {
-        "accept": [
-          "sorted"
-        ],
-        "hint": "builtin"
-      },
-      {
-        "accept": [
-          "len"
-        ],
-        "hint": "key function"
-      }
-    ],
-    "feedback": "sorted() returns a new list, which is what lets the original survive; words.sort() would rearrange it in place and return None. The key is passed as a function, without parentheses — Python calls it once per item to decide what to compare."
-  },
-  {
-    "type": "fill_blank",
-    "question": "A special return value meaning \"not found\", such as the None these search functions return, is called a ___ value.",
-    "correct": [
-      "sentinel"
-    ],
-    "case_sensitive": false,
-    "feedback": "A sentinel is a value chosen to signal a condition rather than to be real data. Choosing a safe one matters: -1 is a poor sentinel in Python because it is also a valid index."
-  },
-  {
     "type": "code_line",
-    "question": "Given a list named nums, write the statement that sorts it in place (modifying nums itself).",
+    "question": "This line must sort the list in place from the largest value down to the smallest:  scores.sort(___)  Write just what goes inside the parentheses.",
     "language": "python",
     "correct": [
-      "nums.sort()"
+      "reverse=True"
     ],
     "case_sensitive": true,
-    "feedback": "nums.sort() rearranges nums in place and returns None."
+    "feedback": "In place means the .sort() method, called on the list itself; reverse=True turns the usual smallest-first order round. sorted(scores, reverse=True) would give the same order, but as a new list."
   },
   {
-    "type": "cloze",
-    "prompt": "Fill in the blanks so this sorts the list in place and then prints the smallest score, 2.",
-    "question": "scores = [5, 2, 9]\nscores.{{1}}()\nprint(scores[{{2}}])",
-    "language": "python",
-    "blanks": [
+    "type": "matching",
+    "question": "Match each technique to when you would reach for it.",
+    "pairs": [
       {
-        "accept": [
-          "sort"
-        ],
-        "hint": "in place"
+        "term": "Linear search",
+        "definition": "The data is unsorted or the list is tiny"
       },
       {
-        "accept": [
-          "0"
-        ],
-        "hint": "index"
+        "term": "Binary search",
+        "definition": "The data is sorted and you search it often"
+      },
+      {
+        "term": "Selection sort",
+        "definition": "Learning how sorting works, or a very small list"
+      },
+      {
+        "term": "Python's sorted()",
+        "definition": "Real code, where a fast built-in sort is wanted"
       }
     ],
-    "feedback": "The in-place method is called on the list and changes it directly, so scores itself is now in order and the smallest value sits at index 0. Writing scores = scores.sort() would replace the list with None."
+    "feedback": "In practice you almost never hand-write a sort. Knowing how they work is what lets you judge which tool fits and what it will cost."
   },
   {
-    "type": "code_line",
-    "question": "Write the one-line Python statement that swaps the values of two variables a and b.",
-    "language": "python",
+    "question": "What is a Turing machine?",
     "correct": [
-      "a, b = b, a",
-      "b, a = a, b"
-    ],
-    "case_sensitive": true,
-    "feedback": "a, b = b, a swaps the two values in a single statement using tuple unpacking."
-  },
-  {
-    "type": "fill_blank",
-    "question": "Rearranging a list without making a new copy is described as sorting ___ (two words joined by a hyphen).",
-    "correct": [
-      "in-place",
-      "in place"
-    ],
-    "case_sensitive": false,
-    "feedback": "An in-place sort like nums.sort() rearranges the existing list rather than building a new one."
-  },
-  {
-    "question": "What does it mean for a problem to be computable?",
-    "correct": [
-      "There is some algorithm that can solve it"
+      "A thought experiment: a tape, a head that reads and writes, and a table of rules"
     ],
     "incorrect": [
-      "It can be solved instantly with no work at all",
-      "It can be checked but never actually solved",
-      "It can be solved only by a quantum computer"
+      "The first electronic computer, built to break codes during the Second World War",
+      "A test of whether a machine's written answers can pass for those of a person",
+      "A program that decides whether any other program will finish or run forever"
     ],
-    "feedback": "A problem is computable if some algorithm exists that solves it. Computability is about whether a method exists, not how fast it is."
+    "feedback": "Turing imagined the simplest machine that could still carry out any step-by-step procedure: a tape of symbols, a head that reads and writes one at a time, and a rulebook. Nobody builds one. Its use is as a definition — a precise way to say what \"can be computed\" means."
   },
   {
     "question": "What does the Church-Turing thesis claim?",
@@ -627,6 +803,18 @@
     "feedback": "This is why we can speak of computation as one universal idea rather than a different idea per machine. Your phone can compute no class of things that the tape-and-rulebook gadget could not."
   },
   {
+    "question": "What does the halting problem ask?",
+    "correct": [
+      "Given any program and its input, will it finish or run forever?"
+    ],
+    "incorrect": [
+      "Given any program and its input, how many steps will it take?",
+      "Given any two programs, which of them will finish sooner?",
+      "Given any program that stopped, which line made it stop?"
+    ],
+    "feedback": "The halting problem asks for one program that can look at ANY other program, with its input, and say correctly whether it will ever stop. Turing proved that no such program can exist."
+  },
+  {
     "question": "What does it mean to say the halting problem is undecidable?",
     "correct": [
       "No algorithm can answer correctly in every case, whatever its resources"
@@ -634,18 +822,9 @@
     "incorrect": [
       "The problem takes so long to solve that no computer has finished a run yet",
       "The answer depends on which programming language is used",
-      "The problem can be solved but only by a quantum computer"
+      "A correct algorithm exists, but nobody has managed to find it yet"
     ],
     "feedback": "Undecidable is not the same as hard. A hard problem can be solved slowly; an undecidable one has no correct general algorithm at all — faster hardware changes nothing."
-  },
-  {
-    "type": "fill_blank",
-    "question": "A problem that no algorithm can solve in every case, like the halting problem, is called ___.",
-    "correct": [
-      "undecidable"
-    ],
-    "case_sensitive": false,
-    "feedback": "Undecidable problems are beyond any algorithm in principle, not just slow or unsolved."
   },
   {
     "question": "Real tools such as antivirus scanners and infinite-loop detectors exist even though the underlying questions are undecidable. How is that possible?",
@@ -660,16 +839,31 @@
     "feedback": "Undecidability rules out a perfect general answer, not a useful partial one. Practical tools trade completeness for usefulness — which is why an antivirus can miss things and a type checker rejects some safe programs."
   },
   {
-    "question": "In complexity theory, what is the class P?",
-    "correct": [
-      "Problems that can be solved quickly by an algorithm"
+    "type": "matching",
+    "question": "Match each term about the limits of computation to what it says.",
+    "pairs": [
+      {
+        "term": "Computable",
+        "definition": "Some algorithm solves it, however slowly"
+      },
+      {
+        "term": "Undecidable",
+        "definition": "No algorithm can be right in every case"
+      },
+      {
+        "term": "Intractable",
+        "definition": "An algorithm exists, but needs impractical time"
+      },
+      {
+        "term": "P",
+        "definition": "Problems an algorithm can solve quickly"
+      },
+      {
+        "term": "NP",
+        "definition": "Problems whose proposed answers can be checked quickly"
+      }
     ],
-    "incorrect": [
-      "Problems easy to check but not known to be easy to solve",
-      "Problems that no algorithm can ever solve",
-      "Problems that require a Turing machine to state"
-    ],
-    "feedback": "P is the class of problems an algorithm can solve quickly (in polynomial time). It is about solving, not just checking."
+    "feedback": "Three different questions are in play. Computable or undecidable asks whether an algorithm exists at all. Tractable or intractable asks whether it finishes in a useful time. P and NP sort the solvable problems by whether answers are quick to find or only quick to check."
   },
   {
     "question": "Which pair of statements correctly describes the classes P and NP?",
@@ -696,28 +890,28 @@
     "feedback": "Almost everyone believes finding is genuinely harder than checking, but belief is not proof. It is one of the seven Millennium Prize Problems, and much of modern encryption quietly depends on the answer being no."
   },
   {
-    "question": "The P vs. NP question is often summarized as which cultural idea?",
-    "correct": [
-      "Is every problem that is easy to check also easy to solve?"
-    ],
-    "incorrect": [
-      "Is every problem eventually solvable given enough time?",
-      "Are computers faster than the people who program them?",
-      "Can a Turing machine compute anything a person can?"
-    ],
-    "feedback": "P vs. NP asks whether 'easy to check' (NP) implies 'easy to solve' (P). It is a famous open question with no proven answer."
+    "type": "dynamic_numeric",
+    "question": "A brute-force packing program tries every way of choosing which of {{n}} boxes to load. Each box is either in or out. How many combinations must it try?",
+    "variables": {
+      "n": {
+        "min": 5,
+        "max": 12
+      }
+    },
+    "answer": {
+      "expr": "pow(2, n)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Every box doubles the count, so {{n}} boxes give 2 to the power {{n}} = {{expected}} combinations. Ten more boxes would make it about a thousand times larger. That doubling is what makes a problem intractable: solvable in principle, hopeless at size."
   },
   {
-    "question": "What does it mean to call a problem intractable?",
+    "type": "fill_blank",
+    "question": "A problem that can be solved in principle, but needs an impractical amount of work to solve, is called ___.",
     "correct": [
-      "It is solvable in principle but needs impractical work"
+      "intractable"
     ],
-    "incorrect": [
-      "It cannot ever be solved by any algorithm at all",
-      "It can be solved instantly on almost any computer",
-      "It has never been written down at all clearly enough"
-    ],
-    "feedback": "Intractable problems have algorithms, but those algorithms need so much time on large inputs that they are useless in practice. This differs from undecidable, which means no algorithm exists."
+    "case_sensitive": false,
+    "feedback": "Intractable sits between easy and impossible: the algorithm exists, but running it on a real input would take longer than anyone can wait."
   },
   {
     "question": "Which of the following statements about the limits of computation are correct? (Select all that apply)",
@@ -742,7 +936,7 @@
       "Writing one program that decides whether any given program halts",
       "Writing one checker that decides whether any two programs always agree"
     ],
-    "feedback": "The first two are NP-style problems: solutions exist and can be checked quickly, but finding a guaranteed-best one may take impractically long. The last two are undecidable — no correct general algorithm exists at all."
+    "feedback": "Packing and scheduling have answers that an algorithm can find; the trouble is that guaranteeing the best one may take impractically long, which makes them intractable. Deciding whether a program halts, or whether two programs always agree, is undecidable: no correct general algorithm exists at all."
   },
   {
     "question": "Why can't a more powerful AI or LLM solve an undecidable problem like the halting problem?",
@@ -752,80 +946,448 @@
     "incorrect": [
       "AI simply has not been trained on enough examples yet",
       "AI runs on hardware that is currently too slow",
-      "AI can solve it, but only one case at a time"
+      "AI learns from data, so proofs about algorithms miss it"
     ],
     "feedback": "Undecidability is a proven mathematical limit on algorithms themselves. An AI is still a program, so it is bound by the same wall, no matter how capable it becomes."
   },
   {
-    "type": "fill_blank",
-    "question": "A problem that can be solved in principle, but needs an impractical amount of work to solve, is called ___.",
-    "correct": [
-      "intractable"
-    ],
-    "case_sensitive": false,
-    "feedback": "Intractable sits between easy and impossible: the algorithm exists, but running it on a real input would take longer than anyone can wait."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "In the worst case, how many comparisons does a linear search make on a list of {{n}} items?",
-    "variables": {
-      "n": {
-        "min": 6,
-        "max": 40
-      }
-    },
-    "answer": {
-      "expr": "n",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "A linear search may have to check every item, so the worst case on {{n}} items is {{expected}} comparisons."
-  },
-  {
-    "type": "matching",
-    "question": "Match each technique to when you would reach for it.",
-    "pairs": [
+    "type": "code_write",
+    "question": "Return the index of the first item equal to target. If the target is not in the list, return None.",
+    "signature": "def find(items, target):",
+    "tests": [
       {
-        "term": "Linear search",
-        "definition": "The data is unsorted or the list is tiny"
+        "args": [
+          [
+            4,
+            9,
+            2,
+            9
+          ],
+          9
+        ],
+        "expect": 1
       },
       {
-        "term": "Binary search",
-        "definition": "The data is sorted and you search it often"
+        "args": [
+          [
+            4,
+            9,
+            2
+          ],
+          4
+        ],
+        "expect": 0
       },
       {
-        "term": "Selection sort",
-        "definition": "Learning how sorting works, or a very small list"
+        "args": [
+          [
+            4,
+            9,
+            2
+          ],
+          7
+        ],
+        "expect": null
       },
       {
-        "term": "Python's sorted()",
-        "definition": "Real code, where a fast built-in sort is wanted"
+        "args": [
+          [],
+          1
+        ],
+        "expect": null
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b"
+          ],
+          "b"
+        ],
+        "expect": 1
       }
     ],
-    "feedback": "In practice you almost never hand-write a sort. Knowing how they work is what lets you judge which tool fits and what it will cost."
+    "solution": "for i in range(len(items)):\n    if items[i] == target:\n        return i\nreturn None",
+    "hint": "Loop over the positions with `range(len(items))`. The `return None` belongs after the loop, not inside it.",
+    "feedback": "Linear search: return as soon as a match appears, and only decide \"not found\" once the loop has checked every item. None is the sentinel — -1 would also be a valid index."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "A sorted list has {{n}} items. At most how many comparisons does a binary search make? (This is floor(log2 n) + 1.)",
-    "variables": {
-      "n": {
-        "min": 8,
-        "max": 250
+    "type": "code_write",
+    "question": "Return a new list holding the same words, ordered from shortest to longest. Words of equal length stay in their original order.",
+    "signature": "def shortest_first(words):",
+    "tests": [
+      {
+        "args": [
+          [
+            "pear",
+            "fig",
+            "banana"
+          ]
+        ],
+        "expect": [
+          "fig",
+          "pear",
+          "banana"
+        ]
+      },
+      {
+        "args": [
+          [
+            "bb",
+            "a",
+            "cc",
+            "d"
+          ]
+        ],
+        "expect": [
+          "a",
+          "d",
+          "bb",
+          "cc"
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [
+            "one"
+          ]
+        ],
+        "expect": [
+          "one"
+        ]
       }
-    },
-    "answer": {
-      "expr": "bitLength(n)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Binary search halves the list each step, so at most floor(log2 {{n}}) + 1 = {{expected}} comparisons are needed."
+    ],
+    "solution": "return sorted(words, key=len)",
+    "hint": "`sorted()` takes a `key=` function that says what to compare. One built-in already measures a word.",
+    "feedback": "key=len hands sorted() each word's length to compare instead of the word. Ties keep their original order, which is why bb still comes before cc."
   },
   {
-    "type": "code_line",
-    "question": "Write the Python expression that returns a new list holding the items of  nums  in ascending order, without changing nums.",
-    "language": "python",
-    "correct": [
-      "sorted(nums)"
+    "type": "code_write",
+    "question": "Each student is a dictionary with a 'name' and a 'score'. Return a list of the names, ordered from the highest score to the lowest. Students with equal scores stay in their original order.",
+    "signature": "def by_rank(students):",
+    "tests": [
+      {
+        "args": [
+          [
+            {
+              "name": "Ada",
+              "score": 70
+            },
+            {
+              "name": "Bo",
+              "score": 90
+            },
+            {
+              "name": "Cy",
+              "score": 80
+            }
+          ]
+        ],
+        "expect": [
+          "Bo",
+          "Cy",
+          "Ada"
+        ]
+      },
+      {
+        "args": [
+          [
+            {
+              "name": "Ada",
+              "score": 80
+            },
+            {
+              "name": "Bo",
+              "score": 90
+            },
+            {
+              "name": "Cy",
+              "score": 80
+            }
+          ]
+        ],
+        "expect": [
+          "Bo",
+          "Ada",
+          "Cy"
+        ]
+      },
+      {
+        "args": [
+          [
+            {
+              "name": "Di",
+              "score": 5
+            }
+          ]
+        ],
+        "expect": [
+          "Di"
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": []
+      }
     ],
-    "case_sensitive": true,
-    "feedback": "sorted(nums) hands back a new sorted list. nums.sort() would rearrange the original instead and return None."
+    "solution": "def score(student):\n    return student['score']\nnames = []\nfor student in sorted(students, key=score, reverse=True):\n    names.append(student['name'])\nreturn names",
+    "hint": "Write a small `def` inside your answer that returns one student's score, and pass its name as `key=`. `reverse=True` puts the highest first.",
+    "feedback": "A key function turns each dictionary into the one value worth comparing. sorted() hands back the whole dictionaries in the new order, so a loop then collects the names."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the INDEX of the smallest item found at position start or later. If the smallest value appears more than once, return the first of those positions.",
+    "signature": "def smallest_from(items, start):",
+    "tests": [
+      {
+        "args": [
+          [
+            6,
+            9,
+            2,
+            7
+          ],
+          0
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [
+            6,
+            9,
+            2,
+            7
+          ],
+          3
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [
+            1,
+            5,
+            3,
+            4
+          ],
+          1
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [
+            4,
+            4,
+            1,
+            1
+          ],
+          0
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [
+            8
+          ],
+          0
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "smallest = start\nfor i in range(start + 1, len(items)):\n    if items[i] < items[smallest]:\n        smallest = i\nreturn smallest",
+    "hint": "Keep the index of the best item so far, starting at `start`, and compare each later item against it.",
+    "feedback": "This is the scan at the heart of selection sort: remember WHERE the smallest item is, not what it is, because the swap that follows needs a position. Using < rather than <= keeps the first of any ties."
+  },
+  {
+    "type": "code_write",
+    "question": "Carry out exactly k passes of selection sort on the list and return it. One pass finds the smallest item in the unsorted tail and swaps it into the next slot from the front.",
+    "signature": "def after_passes(items, k):",
+    "tests": [
+      {
+        "args": [
+          [
+            6,
+            9,
+            2,
+            7
+          ],
+          1
+        ],
+        "expect": [
+          2,
+          9,
+          6,
+          7
+        ]
+      },
+      {
+        "args": [
+          [
+            6,
+            9,
+            2,
+            7
+          ],
+          2
+        ],
+        "expect": [
+          2,
+          6,
+          9,
+          7
+        ]
+      },
+      {
+        "args": [
+          [
+            6,
+            9,
+            2,
+            7
+          ],
+          0
+        ],
+        "expect": [
+          6,
+          9,
+          2,
+          7
+        ]
+      },
+      {
+        "args": [
+          [
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          1
+        ],
+        "expect": [
+          1,
+          4,
+          3,
+          2,
+          5
+        ]
+      },
+      {
+        "args": [
+          [
+            3,
+            1,
+            2
+          ],
+          2
+        ],
+        "expect": [
+          1,
+          2,
+          3
+        ]
+      }
+    ],
+    "solution": "for slot in range(k):\n    smallest = slot\n    for i in range(slot + 1, len(items)):\n        if items[i] < items[smallest]:\n            smallest = i\n    items[slot], items[smallest] = items[smallest], items[slot]\nreturn items",
+    "hint": "An outer loop over the slot being filled, `for slot in range(k):`, with the smallest-item scan inside it and one swap after the scan.",
+    "feedback": "Selection sort is two loops: the outer one walks the slot being filled, the inner one scans the unsorted tail for the smallest item, and a single swap finishes the pass. After k passes the first k slots are final and the rest are not sorted yet — which is why sorted() cannot answer this one."
+  },
+  {
+    "type": "code_write",
+    "question": "A binary search keeps two positions, low and high, starting at the two ends of a sorted list. Each pass looks at the item at (low + high) // 2, and stops if it is the target; otherwise it moves low or high just past that position. Return how many items the search looks at, whether or not it finds the target.",
+    "signature": "def looks(items, target):",
+    "tests": [
+      {
+        "args": [
+          [
+            3,
+            8,
+            12,
+            20,
+            31,
+            40,
+            47
+          ],
+          20
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          [
+            3,
+            8,
+            12,
+            20,
+            31,
+            40,
+            47
+          ],
+          40
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [
+            3,
+            8,
+            12,
+            20,
+            31,
+            40,
+            47
+          ],
+          3
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [
+            3,
+            8,
+            12,
+            20,
+            31,
+            40,
+            47
+          ],
+          5
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [],
+          1
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            9
+          ],
+          9
+        ],
+        "expect": 1
+      }
+    ],
+    "solution": "low, high = 0, len(items) - 1\ncount = 0\nwhile low <= high:\n    mid = (low + high) // 2\n    count += 1\n    if items[mid] == target:\n        return count\n    elif items[mid] < target:\n        low = mid + 1\n    else:\n        high = mid - 1\nreturn count",
+    "hint": "Write the binary search loop, add one to a counter each time you work out `mid`, and return the counter in both places the search can end.",
+    "feedback": "Seven items never take more than three looks, found or not: that is O(log n) made visible. A linear search for 47 in the same list would look at all seven."
   }
 ]
