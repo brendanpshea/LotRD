@@ -1362,7 +1362,7 @@ describe('Arithmetic shown in questions is actually correct', () => {
 // that list when it has been brought up to the standard — never remove one.
 describe('Audit checks', () => {
   const index = loadJSON('question_sets/index.json');
-  const MEETS_AUDIT_STANDARD = setId => /^java_|^computing_concepts_0[45678]_/.test(setId);
+  const MEETS_AUDIT_STANDARD = setId => /^java_|^computing_concepts_0[456789]_/.test(setId);
   const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write']);
   const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
 
