@@ -679,6 +679,8 @@ Ordinary JSON, converted to Python values: whole numbers become ints, fractions 
 
 `def`, `return`, `if`/`elif`/`else`, `while`, `for ... in`, `break`, `continue`, `pass`, ints, floats, strings, bools, `None`, lists, tuples, dicts, indexing, slicing, f-strings, keyword arguments and defaults, conditional expressions, recursion, and the usual built-ins and string/list/dict methods.
 
+`assert` works: a claim that is false stops the program on that line, so a body can check its own work. A body may also begin with a helper `def` — a key function for `sorted(items, key=by_score)`, say — and go on to use it. `sorted()` and `.sort()` take `key=` (a named function or a built-in such as `len`; there is no `lambda`) and `reverse=True`.
+
 **Classes are supported** — `class`, `__init__`, `self.` attributes, methods, class attributes and `__str__` — and checked against real Python in `tests/pytiny-classes.test.js`. Inheritance is refused by name. See *Class problems* below for how to ask a student to write one.
 
 **Not supported, on purpose:** inheritance, imports, exceptions, comprehensions, generators, sets, lambdas, `global`. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.

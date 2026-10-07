@@ -86,6 +86,11 @@ const PROGRAMS = {
   'a list extended by itself doubles once': 'a = [1, 2]\na.extend(a)\nprint(a)\na += a\nprint(a)\n',
   'replace with empty text puts the new text between every character':
     'print("aaa".replace("", "-"), "".replace("", "-"), "ab".replace("", ""))\n',
+  'reverse=True keeps tied items in their original order':
+    'words = ["aa", "b", "cc", "d"]\nprint(sorted(words, key=len, reverse=True), sorted([3, 1, 2], reverse=True))\nwords.sort(key=len, reverse=True)\nprint(words)\n' +
+    'def score(s):\n    return s["s"]\n\nrows = [{"n": "a", "s": 2}, {"n": "b", "s": 5}, {"n": "c", "s": 2}]\nprint(sorted(rows, key=score, reverse=True))\n',
+  'an assert that holds does nothing':
+    'def add(a, b):\n    return a + b\n\nassert add(2, 3) == 5\nassert add(0, 0) == 0, "zero plus zero"\nassert [1]\nprint("all passed")\n',
   'in on a huge range is answered at once': 'print(10 ** 10 in range(10 ** 12), 10 ** 12 in range(10 ** 12), 7 in range(1, 100, 3), 5.0 in range(10), 5.5 in range(10), "a" in range(3), -3 in range(0, -10, -3))\n',
 };
 
@@ -100,6 +105,10 @@ const STOPS = {
     'x = 10\ndef f():\n    if False:\n        x = 1\n    return x\n\nprint(f())\n',
   'a loop variable is local too':
     'i = 5\ndef f():\n    print(i)\n    for i in range(2):\n        pass\n\nf()\n',
+  'a failing assert stops the program at that line':
+    'def is_even(n):\n    return n % 2 == 1\n\nprint("A")\nassert is_even(3)\nprint("B")\nassert is_even(4)\nprint("C")\n',
+  'a failing assert with a message':
+    'x = 3\nprint("start")\nassert x == 4, "x should be 4"\nprint("never")\n',
   'adding to a dictionary while looping over it':
     'd = {"a": 1}\nfor k in d:\n    d[k + "!"] = 0\nprint(d)\n',
 };

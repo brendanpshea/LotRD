@@ -313,6 +313,29 @@ describe('assembleFunction', () => {
     it('says so when nothing has been written', () => {
         assert.throws(() => assembleFunction('def f(a):', '   \n\n'), /have not written any code/);
     });
+
+    // A body that opens with a helper def is still a body. It used to be taken for
+    // a pasted whole function, and failed with '"return" only works inside a
+    // function' — which ruled out every "write a key function" problem.
+    const students = [{ n: 'a', s: 2 }, { n: 'b', s: 1 }];
+    const sortProblem = body => runTestCases({
+        signature: 'def by_score(students):', body,
+        tests: [{ args: [students], expect: ['b', 'a'] }],
+    });
+
+    it('accepts a body that begins with a helper def', () => {
+        const { pasted } = assembleFunction('def by_score(students):', 'def score(s):\n    return s["s"]\nreturn 1');
+        assert.equal(pasted, false);
+        const result = sortProblem('def score(s):\n    return s["s"]\nout = []\nfor s in sorted(students, key=score):\n    out.append(s["n"])\nreturn out');
+        assert.equal(result.error, null);
+        assert.equal(result.passed, 1);
+    });
+
+    it('accepts a pasted function with its helper defined above it', () => {
+        const result = sortProblem('def score(s):\n    return s["s"]\n\ndef by_score(students):\n    out = []\n    for s in sorted(students, key=score):\n        out.append(s["n"])\n    return out');
+        assert.equal(result.error, null);
+        assert.equal(result.passed, 1);
+    });
 });
 
 describe('parseSignature', () => {

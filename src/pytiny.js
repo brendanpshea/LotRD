@@ -50,6 +50,7 @@ const limitError   = (msg, hint, line = null) => new PyError(msg, { line, hint, 
 const KEYWORDS = new Set([
     'def', 'return', 'if', 'elif', 'else', 'while', 'for', 'in', 'not', 'and',
     'or', 'True', 'False', 'None', 'break', 'continue', 'pass', 'is', 'class',
+    'assert',
 ]);
 
 // Refused by name, so the student is told what is missing rather than shown a
@@ -66,7 +67,6 @@ const NOT_YET = new Map([
     ['global',   'global is not supported here yet — these problems only need local variables.'],
     ['nonlocal', 'nonlocal is not supported here yet.'],
     ['yield',    'Generators are not supported here yet. Build a list and return it.'],
-    ['assert',   'assert is not supported here yet.'],
     ['del',      'del is not supported here yet.'],
     ['async',    'async / await is not supported here.'],
     ['await',    'async / await is not supported here.'],
@@ -510,6 +510,14 @@ class Parser {
             if (!this.at('newline') && !this.at('eof')) value = this.parseExpression();
             this.endStatement();
             return { type: 'Return', value, line };
+        }
+        if (this.atKeyword('assert')) {
+            this.next();
+            const test = this.parseExpression();
+            let message = null;
+            if (this.atOp(',')) { this.next(); message = this.parseExpression(); }
+            this.endStatement();
+            return { type: 'Assert', test, message, line };
         }
         if (this.atKeyword('pass'))     { this.next(); this.endStatement(); return { type: 'Pass', line }; }
         if (this.atKeyword('break'))    { this.next(); this.endStatement(); return { type: 'Break', line }; }
@@ -1692,10 +1700,7 @@ const BUILTINS = {
             item,
             key: keyFn ? interp.callValue(keyFn, [item], line) : item,
         }));
-        decorated.sort((a, b) => (pyEquals(a.key, b.key) ? 0 : (pyLess(a.key, b.key, line) ? -1 : 1)));
-        const out = decorated.map(d => d.item);
-        if (truthy(kw.reverse ?? false)) out.reverse();
-        return out;
+        return sortDecorated(decorated, truthy(kw.reverse ?? false), line);
     },
 
     list: (args, kw, line) => {
@@ -1746,6 +1751,17 @@ const BUILTINS = {
         return String.fromCodePoint(n);
     },
 };
+
+/**
+ * Sort {item, key} pairs and hand back the items. reverse=True is a sort with
+ * every comparison turned round — NOT an ascending sort flipped afterwards, which
+ * would also flip items that tie, and Python keeps those in their original order.
+ */
+function sortDecorated(decorated, reverse, line) {
+    const sign = reverse ? -1 : 1;
+    decorated.sort((a, b) => (pyEquals(a.key, b.key) ? 0 : sign * (pyLess(a.key, b.key, line) ? -1 : 1)));
+    return decorated.map(d => d.item);
+}
 
 function pickExtreme(name, args, kw, line, interp) {
     let items;
@@ -1920,9 +1936,7 @@ const LIST_METHODS = {
         const options = kw || {};
         const keyFn = options.key ?? null;
         const decorated = l.map(item => ({ item, key: keyFn ? interp.callValue(keyFn, [item], line) : item }));
-        decorated.sort((x, y) => (pyEquals(x.key, y.key) ? 0 : (pyLess(x.key, y.key, line) ? -1 : 1)));
-        const out = decorated.map(d => d.item);
-        if (truthy(options.reverse ?? false)) out.reverse();
+        const out = sortDecorated(decorated, truthy(options.reverse ?? false), line);
         l.length = 0;
         pushAll(l, out, line);
         return null;
@@ -2247,6 +2261,15 @@ export class Interpreter {
 
             case 'Return':
                 throw new ReturnSignal(node.value ? this.evaluate(node.value, scope) : null);
+
+            case 'Assert': {
+                // A claim that must be true. When it is not, the program stops here:
+                // that is the whole of what a test written with assert does.
+                if (truthy(this.evaluate(node.test, scope))) return;
+                const said = node.message ? this.toText(this.evaluate(node.message, scope), node.line) : null;
+                throw runtimeError(said ? `This assert failed: ${said}` : 'This assert failed.', node.line,
+                    'An assert claims that something is True. Here it was not, so the program stopped on this line.');
+            }
 
             case 'Break':    throw BREAK;
             case 'Continue': throw CONTINUE;
@@ -2804,13 +2827,22 @@ export function assembleFunction(signature, body) {
             'Write the lines that work out the answer, and end with a return.');
     }
 
-    if (/^\s*def\s/.test(codeLines[0])) {
-        // A whole function was pasted — run it as its own program.
+    const indents = codeLines.map(l => l.length - l.trimStart().length);
+    const base = Math.min(...indents);
+
+    // A whole function was pasted — run it as its own program. That is so when
+    // the function the problem asks for is defined at the outer level of what was
+    // typed, or when there is nothing at the outer level BUT defs (a paste under
+    // the wrong name, which then gets told which name was wanted). A body that
+    // merely opens with a def and goes on to other statements has a helper in it
+    // (a key function for sorted, say), and is assembled like any other body.
+    const name = /^\s*def\s+([A-Za-z_]\w*)/.exec(String(signature))?.[1];
+    const definesIt = new RegExp(`^def\\s+${name}\\s*\\(`);
+    const outer = codeLines.filter((l, i) => indents[i] === base && !l.trimStart().startsWith('#')).map(l => l.trimStart());
+    if (outer.length > 0 && (outer.every(l => /^def\s/.test(l)) || (name && outer.some(l => definesIt.test(l))))) {
         return { source: lines.join('\n'), lineOffset: 0, pasted: true };
     }
 
-    const indents = codeLines.map(l => l.length - l.trimStart().length);
-    const base = Math.min(...indents);
     const shifted = lines.map(l => (l.trim().length === 0 ? '' : TAB_AS_SPACES + l.slice(base)));
     return { source: `${String(signature).trim()}\n${shifted.join('\n')}\n`, lineOffset: 1, pasted: false };
 }
