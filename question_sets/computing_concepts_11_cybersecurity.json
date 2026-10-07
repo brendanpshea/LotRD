@@ -1,17 +1,5 @@
 [
   {
-    "question": "Which security goal in the CIA triad ensures that data is accessible only to authorized people?",
-    "correct": [
-      "Confidentiality"
-    ],
-    "incorrect": [
-      "Integrity",
-      "Availability",
-      "Authenticity"
-    ],
-    "feedback": "Confidentiality guarantees that private information is protected from unauthorized access or disclosure."
-  },
-  {
     "question": "A clinic's patient records are read by outsiders who typed something clever into a login box. Which property failed?",
     "correct": [
       "Confidentiality"
@@ -19,39 +7,106 @@
     "incorrect": [
       "Integrity",
       "Availability",
-      "Compatibility"
+      "Authentication"
     ],
     "feedback": "Nobody changed the records and the portal stayed up — outsiders simply read data they should not have. Altering a prescription would break integrity; knocking the portal offline would break availability."
   },
   {
-    "question": "Which goal in the CIA triad ensures that data cannot be unauthorizedly modified or corrupted?",
-    "correct": [
-      "Integrity"
+    "type": "matching",
+    "question": "Match each goal of the CIA triad to what it protects.",
+    "pairs": [
+      {
+        "term": "Confidentiality",
+        "definition": "Only authorized people can read the data"
+      },
+      {
+        "term": "Integrity",
+        "definition": "Data cannot be changed by unauthorized people"
+      },
+      {
+        "term": "Availability",
+        "definition": "The system stays usable when it is needed"
+      }
     ],
-    "incorrect": [
-      "Confidentiality",
-      "Availability",
-      "Anonymity"
-    ],
-    "feedback": "Integrity guarantees that data remains accurate and trustworthy, protected against unauthorized modification."
+    "feedback": "Three different things can go wrong with data: the wrong person reads it, the wrong person changes it, or the right person cannot reach it. Naming which one is at stake is the first step in deciding what to defend."
   },
   {
-    "question": "Which goal in the CIA triad ensures that systems and services remain operational when needed?",
+    "type": "fill_blank",
+    "question": "The three components of the CIA security triad are confidentiality, availability, and ___.",
     "correct": [
-      "Availability"
+      "integrity"
+    ],
+    "case_sensitive": false,
+    "feedback": "The CIA triad stands for Confidentiality, Integrity, and Availability."
+  },
+  {
+    "type": "cloze",
+    "question": "Naming what a breach broke: quietly altering a lab result in a patient record breaks {{1}}, while flooding the hospital's server with junk traffic in a {{2}} attack breaks {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "integrity"
+        ],
+        "hint": "CIA goal"
+      },
+      {
+        "accept": [
+          "DDoS",
+          "DoS"
+        ],
+        "hint": "abbreviation"
+      },
+      {
+        "accept": [
+          "availability"
+        ],
+        "hint": "CIA goal"
+      }
+    ],
+    "feedback": "The flood attack never reads or changes a single record, and the altered lab result is perfectly readable to everyone entitled to see it, so neither one is a confidentiality problem. Naming the goal that actually failed is what decides the right response."
+  },
+  {
+    "question": "Which of the following scenarios represent a breach of Availability? (Select all that apply)",
+    "correct": [
+      "A distributed denial-of-service (DDoS) attack taking a hospital website offline",
+      "A server power outage crashing the database engine during operating hours"
     ],
     "incorrect": [
-      "Confidentiality",
-      "Integrity",
-      "Non-repudiation"
+      "An unauthorized attacker reading private patient medical records in cleartext",
+      "A malicious intruder altering a patient's stored allergy record in the database"
     ],
-    "feedback": "Availability ensures that authorized users have timely, reliable access to computing systems and data."
+    "feedback": "Availability breaches prevent legitimate users from accessing operating services (e.g. outages or DDoS attacks)."
+  },
+  {
+    "question": "Which of the following scenarios represent a breach of Integrity? (Select all that apply)",
+    "correct": [
+      "An unauthorized user modifying grade records stored in a university database",
+      "A malicious script altering financial account balance figures during transit"
+    ],
+    "incorrect": [
+      "An attacker taking down a web server by flooding it with millions of requests",
+      "A stranger reading grade records that they were never meant to be able to see",
+      "A disk failing, so that a week of grade records cannot be opened at all"
+    ],
+    "feedback": "Integrity is about data being changed by someone who should not change it. Flooding a server and losing a disk both stop people reaching data — availability. Reading records you should not see is confidentiality: nothing was altered."
+  },
+  {
+    "question": "What is a threat model in software engineering?",
+    "correct": [
+      "A document listing a system's assets, threat vectors, and risk mitigations"
+    ],
+    "incorrect": [
+      "A record of the security incidents that have already happened to a live system",
+      "A ranked list of software defects found by scanning source code for mistakes",
+      "A signed promise to customers that their stored data will be kept private"
+    ],
+    "feedback": "Threat modeling identifies valuable assets, potential threat actors, vulnerabilities, and countermeasure plans."
   },
   {
     "type": "npc_demo",
     "question": "NPC: The quote that opened the gate",
     "npc": "val",
-    "intro": "Val stops at a gatehouse where a clerk copies every visitor's name into a ledger query. “This gate has stood for years. I am going to walk through it without a key, and then show you the only fix that actually works.”",
+    "intro": "Val stops at a gatehouse where a clerk — think of the clerk as a login program — copies every visitor's name into a database query. “This gate has stood for years. I am going to walk through it, and then show you the only fix that actually works.”",
     "steps": [
       {
         "say": "The clerk builds the lookup by pasting text together:\nquery = f\"SELECT * FROM users WHERE name = '{username}'\"\nI give the name mina, and the database receives WHERE name = 'mina'. Perfectly fine — which is exactly why nobody notices the flaw.",
@@ -93,10 +148,10 @@
         ]
       },
       {
-        "say": "The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all. A parameterized query sends the two separately: the query text travels with a ? standing where the value belongs, and the value travels on its own behind it:\ncursor.execute(\"SELECT * FROM users WHERE name = ?\", (username,))\nThe database works out what the query means before the value ever arrives, so whatever is in the value slot can only be looked up as a name. That same input now matches nobody and returns nothing.",
+        "say": "That attack has a name: SQL injection. The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all. A parameterized query sends the two separately: the query text travels with a ? standing where the value belongs, and the value travels on its own behind it:\ncursor.execute(\"SELECT * FROM users WHERE name = ?\", (username,))\nThe database works out what the query means before the value ever arrives, so whatever is in the value slot can only be looked up as a name. That same input now matches nobody and returns nothing.",
         "beats": [
           {
-            "say": "The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all."
+            "say": "That attack has a name: SQL injection. The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all."
           },
           {
             "say": "A parameterized query sends the two separately: the query text travels with a ? standing where the value belongs, and the value travels on its own behind it."
@@ -111,31 +166,30 @@
         ]
       }
     ],
-    "outro": "“Name the fix, and remember why the clever character-filter is not it.”"
+    "outro": "“A different gate with the same flaw. See what the program really hands the database.”"
   },
   {
-    "question": "A login function builds its query as  f\"SELECT * FROM users WHERE name = '{username}'\"  and someone types  ' OR '1'='1  as the username. What does the database receive?",
+    "type": "code_trace",
+    "question": "A program builds a query from what a visitor typed into a \"record number\" box. The visitor typed more than a number. What does the program print?",
+    "code": "typed = \"0 OR 1=1\"\nquery = f\"SELECT * FROM visits WHERE id={typed}\"\nprint(query.split(\"WHERE \")[1])",
+    "language": "python",
     "correct": [
-      "A condition that is always true, so every user row is returned"
+      "id=0 OR 1=1"
     ],
-    "incorrect": [
-      "A request for the single user whose name is literally ' OR '1'='1",
-      "A syntax error, because the quotes do not balance",
-      "An empty result, because no such name exists"
-    ],
-    "feedback": "The attacker's quote closed the string early and their OR clause bolted on a condition that is always true. Scale three rows to forty thousand patient records and you have the morning that started the notebook."
+    "case_sensitive": true,
+    "feedback": "The f-string pastes the visitor's text straight into the SQL, so the condition the database receives is id=0 OR 1=1 — and 1=1 is true for every row. No quote was needed this time: any input that is pasted into a query as code can change what the query means. That is SQL injection."
   },
   {
-    "question": "How does a SQL injection attack work?",
+    "question": "Why is concatenating user input directly into a SQL query string dangerous?",
     "correct": [
-      "Smuggling malicious SQL commands into a database query through unsanitized user input"
+      "The input can alter the query structure and execute unintended SQL commands"
     ],
     "incorrect": [
-      "Injecting script tags into stored comments so they run inside another user's browser",
-      "Tricking a logged-in user's browser into sending an unwanted request to a trusted site",
-      "Guessing account passwords repeatedly using an automated dictionary of likely choices"
+      "The extra characters make the query take far longer for the database to run",
+      "The database returns results as text instead of the typed values code expects",
+      "The input reaches the database before the user's session has been authenticated"
     ],
-    "feedback": "SQL injection occurs when unsanitized user input is concatenated directly into SQL query strings, allowing attackers to run arbitrary SQL commands."
+    "feedback": "Direct string concatenation allows user input containing SQL metacharacters (like `' OR '1'='1`) to alter query logic."
   },
   {
     "question": "What is the primary method used to prevent SQL injection vulnerabilities in application code?",
@@ -150,13 +204,26 @@
     "feedback": "Parameterized queries separate the SQL code structure from user parameters (using placeholders like `?`), rendering injected SQL harmless."
   },
   {
-    "type": "fill_blank",
-    "question": "The three components of the CIA security triad are confidentiality, availability, and ___.",
-    "correct": [
-      "integrity"
+    "type": "cloze",
+    "prompt": "Fill in the blanks so that whatever is in the variable  username  reaches the database as a value, never as SQL.",
+    "question": "cursor.execute(\n    \"SELECT * FROM users WHERE name = {{1}}\",\n    ({{2}},)\n)",
+    "language": "python",
+    "blanks": [
+      {
+        "accept": [
+          "?"
+        ],
+        "hint": "placeholder"
+      },
+      {
+        "accept": [
+          "username"
+        ],
+        "hint": "the value",
+        "case_sensitive": true
+      }
     ],
-    "case_sensitive": false,
-    "feedback": "The CIA triad stands for Confidentiality, Integrity, and Availability."
+    "feedback": "The query text carries a ? where the value belongs, and the value travels separately behind it. The database works out what the query means before the value arrives, so nothing in the value can be read as SQL. There is no f-string and no + anywhere near the query."
   },
   {
     "question": "With a parameterized query in place, what happens when someone submits  ' OR '1'='1  as a username?",
@@ -171,6 +238,29 @@
     "feedback": "The whole string is treated as data. Since no user is actually called that, the attack simply fails — and ordinary logins keep working exactly as before."
   },
   {
+    "type": "code_trace",
+    "question": "A parameterized query treats everything a visitor typed as ONE value to look up. This program does the same with a list. What does it print?",
+    "code": "users = [\"mina\", \"omar\"]\ntyped = \"' OR '1'='1\"\nprint(typed in users)",
+    "language": "python",
+    "correct": [
+      "False"
+    ],
+    "case_sensitive": true,
+    "feedback": "Nobody is called ' OR '1'='1, so the lookup finds nothing. The input that returned every row when it was pasted into the query is harmless when it is treated as a name — which is all a parameterized query does."
+  },
+  {
+    "question": "A patient portal shows staff the comments patients leave. An attacker submits a comment containing a script tag. What is the danger?",
+    "correct": [
+      "Dropped onto the page, the script runs in the staff member's browser"
+    ],
+    "incorrect": [
+      "The script runs on the server, where it can read the stored records",
+      "The script runs only in the attacker's own browser, harming nobody",
+      "The script is stored, but browsers always show it as plain text"
+    ],
+    "feedback": "This is cross-site scripting. The victim's browser cannot tell the attacker's script from the site's own code, so it obeys it — in someone else's session."
+  },
+  {
     "type": "fill_blank",
     "question": "An attack where malicious JavaScript input is executed inside another user's web browser is known as ___.",
     "correct": [
@@ -182,34 +272,209 @@
     "feedback": "XSS (Cross-Site Scripting) occurs when untrusted user input is rendered in a browser as executable script code."
   },
   {
+    "type": "code_trace",
+    "question": "This is escaping: turning the characters HTML treats as code into ones it only displays. What does the program print?",
+    "code": "tag = \"<b>\"\nprint(tag.replace(\"<\", \"&lt;\").replace(\">\", \"&gt;\"))",
+    "language": "python",
+    "correct": [
+      "&lt;b&gt;"
+    ],
+    "case_sensitive": true,
+    "feedback": "Each < becomes &lt; and each > becomes &gt;. A browser shows those as the characters < and > but never reads them as the start of a tag — so a comment containing a script is displayed as text instead of run."
+  },
+  {
+    "type": "code_trace",
+    "question": "This escapes two characters, in the wrong order. What does the program print?",
+    "code": "text = \"<\"\nprint(text.replace(\"<\", \"&lt;\").replace(\"&\", \"&amp;\"))",
+    "language": "python",
+    "correct": [
+      "&amp;lt;"
+    ],
+    "case_sensitive": true,
+    "feedback": "The first replace turns < into &lt;. The second then finds the & it just wrote and escapes that too, giving &amp;lt; — which a browser shows as the five characters &lt; rather than as <. The & has to be escaped FIRST, before any replace has added new ones."
+  },
+  {
+    "question": "A page displays a comment that a user wrote. Which measure reliably stops that comment from running as a script in other people's browsers?",
+    "correct": [
+      "Escaping it, so < and > are shown as characters, not read as tags"
+    ],
+    "incorrect": [
+      "Checking its length, and rejecting any comment that is too long",
+      "Storing it with a parameterized query in place of an f-string",
+      "Serving the page over HTTPS, so the comment cannot be altered"
+    ],
+    "feedback": "XSS happens at the moment user text is dropped into a page, and escaping is the defence at that moment. Validation is still worth doing, but a short comment can hold a script. A parameterized query protects the database, not the browser, and HTTPS protects data on the way — it delivers an attacker's script as faithfully as anything else."
+  },
+  {
+    "question": "An attacker's page silently makes a logged-in user's browser submit a transfer form to their bank, and the bank accepts it because the browser attached the session cookie. What is this attack called?",
+    "correct": [
+      "Cross-Site Request Forgery (CSRF)"
+    ],
+    "incorrect": [
+      "A brute-force password attack on the bank",
+      "Cross-Site Scripting (XSS)",
+      "SQL injection"
+    ],
+    "feedback": "CSRF rides on the browser's own session: the request really does come from the logged-in user, so it looks legitimate. XSS runs attacker script inside another user's page, injection smuggles SQL into a query, and brute force just guesses."
+  },
+  {
+    "question": "What fundamental rule should web developers follow regarding user-supplied input?",
+    "correct": [
+      "Treat all of it as untrusted: validate it, and escape or parameterize it where it is used"
+    ],
+    "incorrect": [
+      "Trust it once the page's own JavaScript has checked it, since the server then need not",
+      "Trust it once it has been saved in the database, since storing data makes it safe",
+      "Trust it when it comes from a logged-in user, since that user's identity is known"
+    ],
+    "feedback": "Never trust user input. A check in the browser can be skipped by anyone who sends the request themselves; text in the database is exactly as dangerous as when it arrived; and a logged-in user can be an attacker, or a victim whose browser was tricked."
+  },
+  {
+    "type": "code_trace",
+    "question": "This function validates a PIN before the program uses it. What does the program print?",
+    "code": "def ok(pin):\n    return len(pin) == 4 and pin.isdigit()\n\nprint(ok(\"0042\"), ok(\"42;x\"))",
+    "language": "python",
+    "correct": [
+      "True False"
+    ],
+    "case_sensitive": true,
+    "feedback": "\"0042\" is four characters and all digits, so it passes. \"42;x\" is four characters but not all digits, so it fails. Input validation checks that data has the expected type, length and format BEFORE anything uses it."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the Python expression that is True when the string  pin  is made up of digits only.",
+    "language": "python",
+    "correct": [
+      "pin.isdigit()"
+    ],
+    "case_sensitive": true,
+    "feedback": "isdigit() is True only when every character is a digit and there is at least one. It is one half of validating a PIN; the other half is checking its length."
+  },
+  {
+    "question": "A logged-in student edits the address bar from /records/1042 to /records/1043 and sees a classmate's record. Which control failed here?",
+    "correct": [
+      "Authorization: the server knew who was asking but never checked their permission"
+    ],
+    "incorrect": [
+      "Authentication: the server never established which user was making the request",
+      "Input validation: the record number in the URL was never checked to be a number",
+      "Encryption: the record travelled over the network without any TLS protection"
+    ],
+    "feedback": "Log-in worked exactly as designed, so identity was established; what was missing was the per-record check that this identity may see this record. Note that 1043 is a perfectly valid number, so tighter type checking would have let the same request straight through."
+  },
+  {
+    "question": "Why is storing user passwords in clear, unhashed plaintext dangerous?",
+    "correct": [
+      "If the database is leaked, every user's password is stolen immediately"
+    ],
+    "incorrect": [
+      "Anyone watching the network can read the password while it is in transit",
+      "Users can no longer reset a forgotten password without asking an administrator",
+      "The site cannot offer multi-factor authentication while passwords stay unhashed"
+    ],
+    "feedback": "Plaintext passwords expose all user accounts if data is compromised; salted hashing ensures passwords cannot be read directly."
+  },
+  {
     "type": "fill_blank",
     "question": "A one-way mathematical function that converts input text into a fixed-length fingerprint for password storage is a ___.",
     "correct": [
       "hash",
       "hash function",
-      "hashing function"
+      "hashing function",
+      "hashing",
+      "digest"
     ],
     "case_sensitive": false,
     "feedback": "Hashing is a one-way transformation used to verify passwords without storing plaintext credentials."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "A hash function produces a digest of {{bits}} bits. Written out in hexadecimal, where each character stands for 4 bits, how many characters long is the digest?",
-    "variables": {
-      "bits": {
-        "values": [
-          128,
-          160,
-          256,
-          512
+    "question": "You click \"forgot password\" and the site emails you your existing password in readable text. What does that tell you about how it stores passwords?",
+    "correct": [
+      "The site can recover the original text, so it is not storing one-way hashes"
+    ],
+    "incorrect": [
+      "The site salted its hashes, and the salt is what makes the original recoverable again",
+      "The site hashed the password and simply ran the same hash algorithm backwards",
+      "The site stores only hashes, and what arrived in the email was the stored hash"
+    ],
+    "feedback": "A correctly hashed password cannot be turned back into text by anyone, including the site, which is why safe sites reset a password instead of sending it. Salting strengthens hashes rather than undoing them, and a hash you could reverse would not be a hash."
+  },
+  {
+    "question": "Which of the following statements correctly distinguish hashing from encryption? (Select all that apply)",
+    "correct": [
+      "Hashing is a one-way transformation that cannot be mathematically reversed",
+      "Encryption is a two-way process that can be decrypted using a secret key"
+    ],
+    "incorrect": [
+      "Hashing lets a site turn a stored password back into its original text",
+      "Encryption scrambles data so that not even the key holder can read it"
+    ],
+    "feedback": "Hashing is a one-way fingerprint (irreversible), whereas encryption is a two-way process (reversible with a key)."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Same password, same fingerprint",
+    "npc": "val",
+    "intro": "Val writes three names on the wall, each with a number beside it. “A hash hides a password. It does not hide the fact that two people chose the same one.”",
+    "steps": [
+      {
+        "say": "Here is a toy hash — far too weak for real use, but it behaves the way real ones do. It is deterministic: the same text always gives the same number.",
+        "beats": [
+          {
+            "code": "def toy_hash(text):\n    total = 0\n    for ch in text:\n        total = total + ord(ch)\n    return total % 100",
+            "language": "python"
+          },
+          {
+            "say": "Here is a toy hash — far too weak for real use, but it behaves the way real ones do. It is deterministic: the same text always gives the same number."
+          }
+        ]
+      },
+      {
+        "say": "So if two users pick the same password, their stored hashes match.",
+        "beats": [
+          {
+            "code": "ada   toy_hash(\"cat\")  ->  12\nbo    toy_hash(\"sun\")  ->  42\ncy    toy_hash(\"cat\")  ->  12",
+            "language": "the stored table"
+          },
+          {
+            "say": "So if two users pick the same password, their stored hashes match."
+          }
+        ],
+        "check": {
+          "prompt": "A thief steals this table. What do they learn without cracking anything?",
+          "answer": "That ada and cy chose the same password",
+          "wrong": [
+            "That the shared password is \"cat\"",
+            "Nothing, because hashes cannot be reversed"
+          ],
+          "why": "The hash still hides WHAT the password is, but matching hashes give away that it is shared — and cracking one cracks both."
+        }
+      },
+      {
+        "say": "A salt fixes that. Each user gets their own random text, mixed into the password before hashing and stored beside the result. Same password, different salts, different hashes.",
+        "beats": [
+          {
+            "code": "ada   toy_hash(\"k9\" + \"cat\")  ->  76\ncy    toy_hash(\"x2\" + \"cat\")  ->  82",
+            "language": "with a salt each"
+          },
+          {
+            "say": "A salt fixes that. Each user gets their own random text, mixed into the password before hashing and stored beside the result. Same password, different salts, different hashes."
+          }
         ]
       }
-    },
-    "answer": {
-      "expr": "bits / 4",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Each hex character encodes 4 bits, so {{bits}} bits print as {{expected}} characters. The length is fixed by the algorithm, not by the password, which is why a hash never reveals how long the original input was."
+    ],
+    "outro": "“Two more users, one password between them. Work out what the table would hold.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Two users both chose the password dog. Each has a salt of their own. What does the program print?",
+    "code": "def toy_hash(text):\n    total = 0\n    for ch in text:\n        total = total + ord(ch)\n    return total % 100\n\nprint(toy_hash(\"q7\" + \"dog\"), toy_hash(\"m3\" + \"dog\"))",
+    "language": "python",
+    "correct": [
+      "82 74"
+    ],
+    "case_sensitive": true,
+    "feedback": "The password is the same, but the text being hashed is not: q7dog for one user and m3dog for the other. Different text gives different hashes, so the stored table no longer shows that the two passwords match — and a table of hashes worked out in advance for common passwords is useless, because it was not worked out with these salts."
   },
   {
     "question": "Two users of a properly salted password database happen to choose the very same password. What do their two stored hash values look like?",
@@ -230,7 +495,30 @@
       "salt"
     ],
     "case_sensitive": false,
-    "feedback": "A salt is a unique, random string appended to a password before hashing to prevent rainbow table dictionary attacks."
+    "feedback": "A salt is random text, different for every user, combined with the password before hashing and stored beside the hash. It does not make any one password slower to guess; it stops an attacker using one precomputed table, or one lucky guess, against every user at once."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange what a secure system does, in order, when a user sets a new password.",
+    "items": [
+      "Receive the password the user typed",
+      "Generate a fresh random salt for this user",
+      "Combine that salt with the password and hash the result",
+      "Store the resulting hash together with its salt"
+    ],
+    "feedback": "Each step needs the one before it: there is nothing to salt until the password arrives, nothing to hash until the salt exists, and nothing to store until the hash is computed. The plain password is never written down at all."
+  },
+  {
+    "question": "A site stores only a salt and a salted hash for each user. How does it check a password at login?",
+    "correct": [
+      "Hash what was typed with that user's salt, and compare with the stored hash"
+    ],
+    "incorrect": [
+      "Reverse the stored hash using the salt, and compare with what was typed",
+      "Encrypt what was typed with the site's key, and compare with the salt",
+      "Compare what was typed with the stored salt, which is the password disguised"
+    ],
+    "feedback": "A hash cannot be run backwards, so the site never recovers the password. It does the same thing again — same salt, same hash function, on what was just typed — and sees whether the result matches what it stored. The salt is not secret and is not the password; it only has to be different for each user."
   },
   {
     "type": "cloze",
@@ -240,7 +528,8 @@
         "accept": [
           "hashing",
           "a hash",
-          "hash"
+          "hash",
+          "hashes"
         ],
         "hint": "one-way"
       },
@@ -260,122 +549,6 @@
       }
     ],
     "feedback": "Hashing is one-way, so a site that can email you your password is not hashing it. Salting makes two identical passwords hash differently, defeating precomputed rainbow tables. Encryption is the only one of the three meant to be undone — by whoever holds the key."
-  },
-  {
-    "type": "ordering",
-    "question": "Arrange what a secure system does, in order, when a user sets a new password.",
-    "items": [
-      "Receive the password the user typed",
-      "Generate a fresh random salt for this user",
-      "Combine that salt with the password and hash the result",
-      "Store the resulting hash together with its salt"
-    ],
-    "feedback": "Each step needs the one before it: there is nothing to salt until the password arrives, nothing to hash until the salt exists, and nothing to store until the hash is computed. The plain password is never written down at all."
-  },
-  {
-    "question": "A patient portal shows staff the comments patients leave. An attacker submits a comment containing a script tag. What is the danger?",
-    "correct": [
-      "Dropped onto the page, the script runs in the staff member's browser"
-    ],
-    "incorrect": [
-      "The comment crashes the server at the moment it is written to storage",
-      "The comment overwrites the other comments already held in the database",
-      "The comment makes the page load more slowly for every visitor"
-    ],
-    "feedback": "This is cross-site scripting. The victim's browser cannot tell the attacker's script from the site's own code, so it obeys it — in someone else's session."
-  },
-  {
-    "question": "Which of the following statements correctly distinguish hashing from encryption? (Select all that apply)",
-    "correct": [
-      "Hashing is a one-way transformation that cannot be mathematically reversed",
-      "Encryption is a two-way process that can be decrypted using a secret key"
-    ],
-    "incorrect": [
-      "Hashing allows developers to decrypt passwords back into original plaintext",
-      "Encryption is used exclusively for password storage and never for data transit"
-    ],
-    "feedback": "Hashing is a one-way fingerprint (irreversible), whereas encryption is a two-way process (reversible with a key)."
-  },
-  {
-    "question": "Which of the following are effective practices for keeping API keys and secrets safe? (Select all that apply)",
-    "correct": [
-      "Storing secrets in environment variables outside the application source code",
-      "Adding secret files and configuration paths to the project's .gitignore file"
-    ],
-    "incorrect": [
-      "Hardcoding secret credentials directly into public GitHub repository files",
-      "Embedding private API keys directly in public HTML and JavaScript web templates"
-    ],
-    "feedback": "Secrets must never be hardcoded or committed to git; store them in environment variables and exclude secret files via `.gitignore`."
-  },
-  {
-    "type": "code_line",
-    "question": "Using the already-imported os module, write the Python expression that reads the environment variable named KEY and returns None if it has not been set.",
-    "language": "python",
-    "correct": [
-      "os.getenv('KEY')",
-      "os.getenv(\"KEY\")"
-    ],
-    "case_sensitive": true,
-    "feedback": "Reading the secret from the environment at run time means the value never appears in the source file, so the code can be shared or committed safely. Returning None instead of raising lets the program report a clear \"secret not configured\" message."
-  },
-  {
-    "question": "Which of the following measures help protect web applications against Cross-Site Scripting (XSS)? (Select all that apply)",
-    "correct": [
-      "Validating user input for expected format, length, and content before processing",
-      "Escaping dangerous HTML characters (<, >, &, \") before rendering input in templates"
-    ],
-    "incorrect": [
-      "Using SQL string concatenation when inserting user text into database tables",
-      "Storing user passwords in clear plaintext inside local browser storage cookies"
-    ],
-    "feedback": "XSS defense relies on strict input validation and escaping special HTML characters before rendering untrusted user data."
-  },
-  {
-    "type": "matching",
-    "question": "Match each security concept to its description.",
-    "pairs": [
-      {
-        "term": "CIA Triad",
-        "definition": "The core model covering confidentiality, integrity, and availability"
-      },
-      {
-        "term": "Threat Model",
-        "definition": "A structured list of system assets, potential threats, and risks"
-      },
-      {
-        "term": "Defense in Depth",
-        "definition": "Stacking multiple independent security layers for protection"
-      },
-      {
-        "term": "Brute-Force Attack",
-        "definition": "Systematically testing every possible password key until one works"
-      }
-    ],
-    "feedback": "The CIA triad defines core security goals, threat models identify risks, defense in depth stacks security layers, and brute-force tests every key."
-  },
-  {
-    "type": "matching",
-    "question": "Match each security tool or technique to the vulnerability it mitigates.",
-    "pairs": [
-      {
-        "term": "Parameterized Query",
-        "definition": "Prevents SQL injection by isolating user parameters from SQL commands"
-      },
-      {
-        "term": "HTML Escaping",
-        "definition": "Prevents Cross-Site Scripting (XSS) by neutralizing script tags"
-      },
-      {
-        "term": "Password Salting",
-        "definition": "Defeats precomputed rainbow table attacks against stored hashes"
-      },
-      {
-        "term": ".gitignore File",
-        "definition": "Prevents sensitive secret keys from being pushed to source repositories"
-      }
-    ],
-    "feedback": "Parameterized queries block SQLi, HTML escaping blocks XSS, salting blocks rainbow tables, and `.gitignore` protects repository secrets."
   },
   {
     "type": "npc_demo",
@@ -425,55 +598,16 @@
             "say": "This is the whole argument for length over cleverness. Adding one character multiplies the search; swapping an o for a zero does not."
           },
           {
-            "say": "And it cuts both ways: it is also why a stolen database of unsalted hashes falls so fast, because the attacker gets to search offline as quickly as their hardware allows."
+            "say": "Trying every possibility in turn is called a brute-force attack, and the keyspace is how long it takes. A short PIN falls to it in moments unless something else — a lockout after a few wrong guesses — gets in the way."
           }
         ]
       }
     ],
-    "outro": "“So when someone asks whether a secret is strong enough, ask them how big the haystack is. Then do the arithmetic.”"
+    "outro": "“So when someone asks whether a secret is strong enough, ask how big its keyspace is. Then do the arithmetic.”"
   },
   {
     "type": "dynamic_numeric",
-    "question": "A PIN code has {{digits}} decimal digits. How many total possible PIN combinations exist for a brute-force attack to test?",
-    "variables": {
-      "digits": {
-        "min": 3,
-        "max": 6
-      }
-    },
-    "answer": {
-      "expr": "pow(10, digits)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "A {{digits}}-digit decimal PIN code has 10^{{digits}} = {{expected}} total possible combinations."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "An attacker attempts {{attempts_per_sec}} password guesses per second. How many total attempts occur in {{minutes}} minutes?",
-    "variables": {
-      "attempts_per_sec": {
-        "min": 100,
-        "max": 500,
-        "step": 100
-      },
-      "minutes": {
-        "min": 2,
-        "max": 10,
-        "step": 2
-      }
-    },
-    "answer": {
-      "expr": "attempts_per_sec * minutes * 60",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "At {{attempts_per_sec}} guesses a second, {{minutes}} minutes is {{seconds}} seconds, which allows {{expected}} attempts in total.",
-    "derived": {
-      "seconds": "minutes * 60"
-    }
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A password is exactly {{chars}} characters long, and each character is chosen from an alphabet of {{alpha}} possible symbols. How many different passwords are possible?",
+    "question": "A password is exactly {{chars}} characters long, and each character is chosen from an alphabet of {{alpha}} possible symbols. How big is the keyspace — how many different passwords are possible?",
     "variables": {
       "chars": {
         "min": 2,
@@ -495,28 +629,54 @@
     "feedback_template": "Each of the {{chars}} positions is chosen independently from {{alpha}} symbols, so the count is {{alpha}}^{{chars}} = {{expected}}. Adding one character multiplies the work for an attacker; adding one symbol to the alphabet barely helps."
   },
   {
-    "question": "What is the principle of Defense in Depth in cybersecurity?",
-    "correct": [
-      "Layering multiple independent security controls so no single failure exposes the system"
-    ],
-    "incorrect": [
-      "Concentrating the whole security budget on the strongest perimeter firewall available",
-      "Adding a second security control after the first control has already been breached",
-      "Choosing security controls that share one component so they can be audited together"
-    ],
-    "feedback": "Defense in depth uses overlapping, redundant security measures so that if one defensive layer fails, others continue to protect."
+    "type": "dynamic_numeric",
+    "question": "Both PINs use the ten digits. How many times larger is the keyspace of a {{long}}-digit PIN than that of a {{short}}-digit PIN?",
+    "variables": {
+      "long": {
+        "values": [
+          6,
+          7,
+          8
+        ]
+      },
+      "short": {
+        "values": [
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    "answer": {
+      "expr": "pow(10, long - short)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Every extra digit multiplies the keyspace by ten, so going from {{short}} digits to {{long}} multiplies it by 10 once for each of the extra digits: {{expected}} times larger. Length is what makes a secret strong."
   },
   {
-    "question": "What primary threat does a `.gitignore` file protect against when properly configured?",
-    "correct": [
-      "Accidentally committing secret API keys and private credentials into version control"
-    ],
-    "incorrect": [
-      "Accidentally overwriting a teammate's committed changes when two branches are merged",
-      "Accidentally publishing a repository publicly before a security review has finished",
-      "Accidentally leaving a secret readable in an earlier commit after the line is deleted"
-    ],
-    "feedback": "A `.gitignore` file ensures local files containing secrets (like `.env`) are ignored by git and not published."
+    "type": "dynamic_numeric",
+    "question": "An attacker can try {{rate}} PINs every second with no lockout. How many seconds does it take to try every possible {{digits}}-digit PIN?",
+    "variables": {
+      "rate": {
+        "values": [
+          10,
+          100,
+          1000
+        ]
+      },
+      "digits": {
+        "values": [
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    "answer": {
+      "expr": "pow(10, digits) / rate",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "A {{digits}}-digit PIN has 10 to the power {{digits}} possibilities, and at {{rate}} a second that is {{expected}} seconds to try them all — at most minutes or hours. This is why a login that allows unlimited guesses cannot be protected by a short PIN."
   },
   {
     "question": "What is a brute-force attack, and which simple measure blunts it?",
@@ -528,31 +688,7 @@
       "Guessing a database's table names; renaming the tables",
       "Reading packets on a network; switching to a different Wi-Fi"
     ],
-    "feedback": "Slow hashing makes each guess costly, and a lockout rule turns millions of guesses a second into a handful per hour — without ever storing a readable password."
-  },
-  {
-    "question": "Why is storing user passwords in clear, unhashed plaintext dangerous?",
-    "correct": [
-      "If the database is leaked, every user's password is stolen immediately"
-    ],
-    "incorrect": [
-      "Anyone watching the network can read the password while it is in transit",
-      "Users can no longer reset a forgotten password without asking an administrator",
-      "The site cannot offer multi-factor authentication while passwords stay unhashed"
-    ],
-    "feedback": "Plaintext passwords expose all user accounts if data is compromised; salted hashing ensures passwords cannot be read directly."
-  },
-  {
-    "question": "You click \"forgot password\" and the site emails you your existing password in readable text. What does that tell you about how it stores passwords?",
-    "correct": [
-      "The site can recover the original text, so it is not storing one-way hashes"
-    ],
-    "incorrect": [
-      "The site salted its hashes, and the salt is what makes the original recoverable again",
-      "The site hashed the password and simply ran the same hash algorithm backwards",
-      "The site stores only hashes, and what arrived in the email was the stored hash"
-    ],
-    "feedback": "A correctly hashed password cannot be turned back into text by anyone, including the site, which is why safe sites reset a password instead of sending it. Salting strengthens hashes rather than undoing them, and a hash you could reverse would not be a hash."
+    "feedback": "A brute-force attack is nothing cleverer than trying guess after guess. Locking the account after a few failures turns millions of guesses into a handful — against an attacker guessing at the login page. It does nothing against one who has stolen the password table and can guess in private, which is why what is stored must be salted hashes."
   },
   {
     "type": "fill_blank",
@@ -577,157 +713,16 @@
     "feedback": "Data is most exposed on the journey. The café router, the provider, and anyone snooping on the same Wi-Fi all sit on that path, and plain HTTP sends everything as readable text."
   },
   {
-    "question": "A logged-in student edits the address bar from /records/1042 to /records/1043 and sees a classmate's record. Which control failed here?",
-    "correct": [
-      "Authorization: the server knew who was asking but never checked their permission"
-    ],
-    "incorrect": [
-      "Authentication: the server never established which user was making the request",
-      "Input validation: the record number in the URL was never checked to be a number",
-      "Encryption: the record travelled over the network without any TLS protection"
-    ],
-    "feedback": "Log-in worked exactly as designed, so identity was established; what was missing was the per-record check that this identity may see this record. Note that 1043 is a perfectly valid number, so tighter type checking would have let the same request straight through."
-  },
-  {
     "question": "What is HTTPS?",
     "correct": [
-      "HTTP communication encrypted using Transport Layer Security (TLS) certificates"
+      "Ordinary HTTP, sent through a connection that TLS has encrypted"
     ],
     "incorrect": [
       "A separate protocol that replaces HTTP with its own new set of request methods",
       "A rule that hides a site's IP address from the routers carrying its traffic",
       "A hashing scheme converting page content into a fixed-length digest in transit"
     ],
-    "feedback": "HTTPS encrypts HTTP traffic using TLS/SSL certificates, protecting data confidentiality and integrity in transit."
-  },
-  {
-    "question": "An attacker's page silently makes a logged-in user's browser submit a transfer form to their bank, and the bank accepts it because the browser attached the session cookie. What is this attack called?",
-    "correct": [
-      "Cross-Site Request Forgery (CSRF)"
-    ],
-    "incorrect": [
-      "A brute-force password attack on the bank",
-      "Cross-Site Scripting (XSS)",
-      "SQL injection"
-    ],
-    "feedback": "CSRF rides on the browser's own session: the request really does come from the logged-in user, so it looks legitimate. XSS runs attacker script inside another user's page, injection smuggles SQL into a query, and brute force just guesses."
-  },
-  {
-    "question": "A padlock icon appears in the address bar of a scam website. What does the padlock actually promise?",
-    "correct": [
-      "That the connection is encrypted, not that the site is honest"
-    ],
-    "incorrect": [
-      "That the site has been checked and approved as a legitimate business",
-      "That the site does not collect any personal information",
-      "That the site's owner has been identified by name"
-    ],
-    "feedback": "Certificates are easy to obtain, so a scammer can have a padlock too. 'This connection is private' and 'this site is trustworthy' are two very different claims."
-  },
-  {
-    "question": "What fundamental rule should web developers follow regarding user-supplied input?",
-    "correct": [
-      "Never trust user input — validate and sanitize all incoming data before using it"
-    ],
-    "incorrect": [
-      "Trust input coming from desktop users while validating input coming from mobile users",
-      "Assume all input entered into text fields is already free of malicious code scripts",
-      "Convert all user input directly into executable SQL queries to speed up server performance"
-    ],
-    "feedback": "The cardinal rule of web security is 'Never trust user input.' Validate, sanitize, escape, or parameterize all external data."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The file used to prevent secret credentials from being tracked by git is ___.",
-    "correct": [
-      ".gitignore"
-    ],
-    "case_sensitive": true,
-    "feedback": "The `.gitignore` file specifies untracked files that git should intentionally ignore."
-  },
-  {
-    "type": "fill_blank",
-    "question": "Values stored in the operating system environment to keep secrets out of code are called environment ___.",
-    "correct": [
-      "variables"
-    ],
-    "case_sensitive": false,
-    "feedback": "Environment variables store configuration values and secrets outside source code files."
-  },
-  {
-    "question": "Which of the following scenarios represent a breach of Availability? (Select all that apply)",
-    "correct": [
-      "A distributed denial-of-service (DDoS) attack taking a hospital website offline",
-      "A server power outage crashing the database engine during operating hours"
-    ],
-    "incorrect": [
-      "An unauthorized attacker reading private patient medical records in cleartext",
-      "A malicious intruder altering a patient's stored allergy record in the database"
-    ],
-    "feedback": "Availability breaches prevent legitimate users from accessing operating services (e.g. outages or DDoS attacks)."
-  },
-  {
-    "type": "cloze",
-    "question": "Naming what a breach broke: quietly altering a lab result in a patient record breaks {{1}}, while flooding the hospital's server with junk traffic in a {{2}} attack breaks {{3}}.",
-    "blanks": [
-      {
-        "accept": [
-          "integrity"
-        ],
-        "hint": "CIA goal"
-      },
-      {
-        "accept": [
-          "DDoS",
-          "DoS",
-          "denial"
-        ],
-        "hint": "attack type"
-      },
-      {
-        "accept": [
-          "availability"
-        ],
-        "hint": "CIA goal"
-      }
-    ],
-    "feedback": "The flood attack never reads or changes a single record, and the altered lab result is perfectly readable to everyone entitled to see it, so neither one is a confidentiality problem. Naming the goal that actually failed is what decides the right response."
-  },
-  {
-    "question": "A developer commits a file containing an API key, then deletes the key in the very next commit. Why is the key still exposed?",
-    "correct": [
-      "Version control keeps every snapshot, so the old commit has the key"
-    ],
-    "incorrect": [
-      "Deleting a line does not remove it until the branch is merged into main",
-      "The key stays in the file until the repository is rebuilt",
-      "The key is cached by the hosting site for exactly thirty days"
-    ],
-    "feedback": "The history is the point of git and it never forgets. The only safe response is to treat the key as compromised and revoke it, then issue a new one."
-  },
-  {
-    "question": "Which of the following scenarios represent a breach of Integrity? (Select all that apply)",
-    "correct": [
-      "An unauthorized user modifying grade records stored in a university database",
-      "A malicious script altering financial account balance figures during transit"
-    ],
-    "incorrect": [
-      "An attacker taking down a web server by flooding it with millions of ping requests",
-      "A user viewing their own account settings page after logging in successfully"
-    ],
-    "feedback": "Integrity breaches involve unauthorized modification, tampering, or corruption of data."
-  },
-  {
-    "question": "Why is concatenating user input directly into a SQL query string dangerous?",
-    "correct": [
-      "The input can alter the query structure and execute unintended SQL commands"
-    ],
-    "incorrect": [
-      "The extra characters make the query take far longer for the database to run",
-      "The database returns results as text instead of the typed values code expects",
-      "The input reaches the database before the user's session has been authenticated"
-    ],
-    "feedback": "Direct string concatenation allows user input containing SQL metacharacters (like `' OR '1'='1`) to alter query logic."
+    "feedback": "HTTPS is the same requests and responses, carried inside an encrypted connection so that nobody on the path can read or alter them. TLS does the encrypting; the site's certificate is what lets your browser check it has connected to the real server before it starts."
   },
   {
     "question": "What role does a digital certificate play in HTTPS connections?",
@@ -742,71 +737,440 @@
     "feedback": "Certificates issued by trusted Certificate Authorities authenticate a server's domain identity and enable secure TLS encryption."
   },
   {
+    "question": "A padlock icon appears in the address bar of a scam website. What does the padlock actually promise?",
+    "correct": [
+      "That the connection is encrypted, not that the site is honest"
+    ],
+    "incorrect": [
+      "That the site has been checked and approved as a legitimate business",
+      "That the site does not collect any personal information",
+      "That the site's owner is a registered and reputable company"
+    ],
+    "feedback": "Certificates are easy to obtain, so a scammer can have a padlock too. 'This connection is private' and 'this site is trustworthy' are two very different claims."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The commit that remembers",
+    "npc": "val",
+    "intro": "Val opens a bound history to its last two pages. “Someone left a key in here last week. They noticed, and took it out again. They think that is the end of the story.”",
+    "steps": [
+      {
+        "say": "A secret is anything that grants access: a password, an API key. Here is the history, newest first. One commit added the key by mistake; the next one removed it.",
+        "beats": [
+          {
+            "code": "b72e1c0  Remove API key from config.py\n4a9f3d8  Add payment settings",
+            "language": "git log, newest first"
+          },
+          {
+            "say": "A secret is anything that grants access: a password, an API key. Here is the history, newest first. One commit added the key by mistake; the next one removed it."
+          }
+        ]
+      },
+      {
+        "say": "The file as it stands today is clean. But a commit is a snapshot, and git keeps every snapshot.",
+        "check": {
+          "prompt": "Can someone with a copy of the repository still read the key?",
+          "answer": "Yes: the older commit still contains it",
+          "wrong": [
+            "No: the newer commit removed it",
+            "Only until the next commit replaces it"
+          ],
+          "why": "Removing a line makes a NEW snapshot without it. The old snapshot, key and all, is still in the history for anyone to open."
+        }
+      },
+      {
+        "say": "So the key is burned. The first move is to revoke it where it was issued and get a new one. The new one lives in an environment variable — a value the operating system holds, outside the code — and any file of secrets is listed in .gitignore before it is ever committed. .gitignore only stops git picking a file up; it does nothing for one already in the history."
+      }
+    ],
+    "outro": "“The same mistake, a different secret. What has to happen first?”"
+  },
+  {
+    "question": "A team finds that config.py, holding the database password, was committed to their public repository last month. The password was deleted from the file today. What must they do first?",
+    "correct": [
+      "Change the database password, since the old one is still in the history"
+    ],
+    "incorrect": [
+      "Add config.py to .gitignore, which removes it from the earlier commits",
+      "Delete today's commit, since that is the one that mentions the password",
+      "Nothing more: the newest version of the file no longer contains it"
+    ],
+    "feedback": "Every earlier snapshot still holds the password, and the repository is public, so it has to be treated as known. Changing it is the only thing that makes the leaked copy worthless. .gitignore matters for next time — it stops a file being added — but it never reaches back into history."
+  },
+  {
+    "question": "Which of the following are effective practices for keeping API keys and secrets safe? (Select all that apply)",
+    "correct": [
+      "Storing secrets in environment variables outside the application source code",
+      "Adding secret files and configuration paths to the project's .gitignore file",
+      "Revoking and replacing a key as soon as it is known to have been exposed"
+    ],
+    "incorrect": [
+      "Deleting the key in a later commit, which clears it out of the history",
+      "Keeping the key in the code of a private repository, where only teammates see it"
+    ],
+    "feedback": "Secrets belong outside the code, files that hold them belong in .gitignore, and a key that has leaked has to be replaced. A later commit removes nothing from history, and a private repository is one invitation, one fork or one leaked laptop away from being a public one."
+  },
+  {
+    "type": "code_line",
+    "question": "The os module is already imported. Using  os.getenv,  write the Python expression that reads the environment variable named KEY, giving None if it has not been set.",
+    "language": "python",
+    "correct": [
+      "os.getenv('KEY')",
+      "os.getenv(\"KEY\")"
+    ],
+    "case_sensitive": true,
+    "feedback": "Reading the secret from the environment at run time means the value never appears in the source file, so the code can be shared or committed safely. Returning None instead of raising lets the program report a clear \"secret not configured\" message."
+  },
+  {
+    "type": "code_trace",
+    "question": "This program looks for a secret in the environment, but nobody has set it on this machine. What does it print?",
+    "code": "import os\n\nkey = os.environ.get(\"CLINIC_API_KEY_NOT_SET\")\nprint(key)",
+    "language": "python",
+    "correct": [
+      "None"
+    ],
+    "case_sensitive": true,
+    "feedback": "os.environ behaves like a dictionary of everything the operating system has been told, and .get returns None for a name that is not there. The program can then say \"no key configured\" instead of crashing — and at no point did the key itself have to appear in the code."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A value held by the operating system, outside the code, where a program can read a secret without containing it, is called an ___ variable.",
+    "correct": [
+      "environment",
+      "env"
+    ],
+    "case_sensitive": false,
+    "feedback": "Environment variables store configuration values and secrets outside source code files."
+  },
+  {
+    "question": "What primary threat does a `.gitignore` file protect against when properly configured?",
+    "correct": [
+      "Accidentally committing secret API keys and private credentials into version control"
+    ],
+    "incorrect": [
+      "Accidentally overwriting a teammate's committed changes when two branches are merged",
+      "Accidentally publishing a repository publicly before a security review has finished",
+      "Accidentally leaving a secret readable in an earlier commit after the line is deleted"
+    ],
+    "feedback": "A `.gitignore` file ensures local files containing secrets (like `.env`) are ignored by git and not published."
+  },
+  {
     "type": "matching",
-    "question": "Match each security threat to its primary defense.",
+    "question": "Match each security tool or technique to the vulnerability it mitigates.",
     "pairs": [
       {
-        "term": "SQL Injection",
-        "definition": "Parameterized SQL queries with placeholder parameters"
+        "term": "Parameterized Query",
+        "definition": "Prevents SQL injection by isolating user parameters from SQL commands"
       },
       {
-        "term": "Cross-Site Scripting (XSS)",
-        "definition": "HTML character escaping and strict input validation"
+        "term": "HTML Escaping",
+        "definition": "Prevents Cross-Site Scripting (XSS) by neutralizing script tags"
       },
       {
-        "term": "Hardcoded Secrets",
-        "definition": "Environment variables excluded via .gitignore"
+        "term": "Password Salting",
+        "definition": "Defeats precomputed rainbow table attacks against stored hashes"
       },
       {
-        "term": "Eavesdropping in Transit",
-        "definition": "HTTPS encryption using TLS digital certificates"
+        "term": ".gitignore File",
+        "definition": "Keeps a file of secrets from being added to a repository at all"
       }
     ],
-    "feedback": "Parameterized queries stop SQLi, escaping stops XSS, environment variables protect secrets, and HTTPS stops eavesdropping."
+    "feedback": "Parameterized queries block SQL injection, escaping blocks XSS, salting defeats precomputed tables, and .gitignore keeps a secrets file out of the repository — provided it is listed before the file is ever committed."
   },
   {
-    "question": "What is a threat model in software engineering?",
+    "question": "What is the principle of Defense in Depth in cybersecurity?",
     "correct": [
-      "A document listing a system's assets, threat vectors, and risk mitigations"
+      "Layering multiple independent security controls so no single failure exposes the system"
     ],
     "incorrect": [
-      "A record of the security incidents that have already happened to a live system",
-      "A ranked list of software defects found by scanning source code for mistakes",
-      "A signed promise to customers that their stored data will be kept private"
+      "Concentrating the whole security budget on the strongest perimeter firewall available",
+      "Adding a second security control after the first control has already been breached",
+      "Choosing security controls that share one component so they can be audited together"
     ],
-    "feedback": "Threat modeling identifies valuable assets, potential threat actors, vulnerabilities, and countermeasure plans."
+    "feedback": "Defense in depth uses overlapping, redundant security measures so that if one defensive layer fails, others continue to protect."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "A system uses a salt of {{salt_bytes}} bytes and a hash of {{hash_bytes}} bytes for each password. How many total bytes are stored per user record?",
-    "variables": {
-      "salt_bytes": {
-        "min": 16,
-        "max": 32,
-        "step": 8
+    "type": "code_write",
+    "question": "Return True when pin is a valid PIN: exactly four characters, every one of them a digit. Otherwise return False.",
+    "signature": "def is_valid_pin(pin):",
+    "tests": [
+      {
+        "args": [
+          "0042"
+        ],
+        "expect": true
       },
-      "hash_bytes": {
-        "min": 32,
-        "max": 64,
-        "step": 16
+      {
+        "args": [
+          "9999"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "12a4"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "12345"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "123"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": false
       }
-    },
-    "answer": {
-      "expr": "salt_bytes + hash_bytes",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Adding {{salt_bytes}} salt bytes and {{hash_bytes}} hash bytes equals {{expected}} total stored bytes per user."
+    ],
+    "solution": "return len(pin) == 4 and pin.isdigit()",
+    "hint": "Two checks joined by `and`: the length, and whether every character is a digit.",
+    "feedback": "Input validation: decide what a correct value looks like — its length and its format — and refuse everything else before the program uses it. The table has a value that fails each check on its own, and one that is empty."
   },
   {
-    "question": "What is the purpose of input validation in a secure application?",
-    "correct": [
-      "Checking that incoming data matches expected types, lengths, and formats before use"
+    "type": "code_write",
+    "question": "An incident report says what happened to the data. Return the security goal that was broken: 'confidentiality' when the data was 'read' by an outsider, 'integrity' when it was 'changed', 'availability' when the system went 'offline', and 'none' for anything else.",
+    "signature": "def broken_goal(event):",
+    "tests": [
+      {
+        "args": [
+          "read"
+        ],
+        "expect": "confidentiality"
+      },
+      {
+        "args": [
+          "changed"
+        ],
+        "expect": "integrity"
+      },
+      {
+        "args": [
+          "offline"
+        ],
+        "expect": "availability"
+      },
+      {
+        "args": [
+          "login"
+        ],
+        "expect": "none"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": "none"
+      }
     ],
-    "incorrect": [
-      "Checking that a user's supplied credentials match the account they claim to own at login",
-      "Checking that a logged-in user holds the permissions needed for a given action",
-      "Checking that data stored earlier has not been altered since it was written down"
+    "solution": "if event == 'read':\n    return 'confidentiality'\nif event == 'changed':\n    return 'integrity'\nif event == 'offline':\n    return 'availability'\nreturn 'none'",
+    "hint": "Three `if` tests that each return, and a final `return` for everything else.",
+    "feedback": "The CIA triad as a decision: read by the wrong person is confidentiality, changed by the wrong person is integrity, unreachable by the right person is availability."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the text made safe to show on a web page: every & becomes &amp;, every < becomes &lt;, and every > becomes &gt;.",
+    "signature": "def escape_html(text):",
+    "tests": [
+      {
+        "args": [
+          "<b>"
+        ],
+        "expect": "&lt;b&gt;"
+      },
+      {
+        "args": [
+          "a & b"
+        ],
+        "expect": "a &amp; b"
+      },
+      {
+        "args": [
+          "a<b & c"
+        ],
+        "expect": "a&lt;b &amp; c"
+      },
+      {
+        "args": [
+          "safe"
+        ],
+        "expect": "safe"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": ""
+      }
     ],
-    "feedback": "Input validation verifies that data entering a system strictly conforms to expected specifications before processing."
+    "solution": "text = text.replace(\"&\", \"&amp;\")\ntext = text.replace(\"<\", \"&lt;\")\ntext = text.replace(\">\", \"&gt;\")\nreturn text",
+    "hint": "Three `.replace` calls. The order matters: one of the replacements adds a character that another one looks for.",
+    "feedback": "Escaping turns the characters a browser would read as code into ones it only displays. The & must go first: escape < first and the & in the &lt; you just wrote gets escaped again. The row with both < and & is the one that catches the wrong order."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the size of a keyspace: how many different secrets there are when each of length positions holds one of alphabet_size symbols. A length of 0 gives 1.",
+    "signature": "def keyspace(alphabet_size, length):",
+    "tests": [
+      {
+        "args": [
+          10,
+          4
+        ],
+        "expect": 10000
+      },
+      {
+        "args": [
+          26,
+          2
+        ],
+        "expect": 676
+      },
+      {
+        "args": [
+          2,
+          8
+        ],
+        "expect": 256
+      },
+      {
+        "args": [
+          36,
+          1
+        ],
+        "expect": 36
+      },
+      {
+        "args": [
+          10,
+          0
+        ],
+        "expect": 1
+      }
+    ],
+    "solution": "total = 1\nfor position in range(length):\n    total = total * alphabet_size\nreturn total",
+    "hint": "Start a total at 1 and multiply it by the alphabet size once for every position.",
+    "feedback": "Independent choices multiply, so each extra position multiplies the whole keyspace by the size of the alphabet. That is why one more character does more for a password than one more kind of symbol."
+  },
+  {
+    "type": "code_write",
+    "question": "Write a toy hash for a salted password. Join the salt and the password, salt first; add up the character code of every character, using ord(); and return that total modulo 1000.",
+    "signature": "def toy_hash(password, salt):",
+    "tests": [
+      {
+        "args": [
+          "cat",
+          ""
+        ],
+        "expect": 312
+      },
+      {
+        "args": [
+          "cat",
+          "k9"
+        ],
+        "expect": 476
+      },
+      {
+        "args": [
+          "cat",
+          "x2"
+        ],
+        "expect": 482
+      },
+      {
+        "args": [
+          "",
+          ""
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          "a",
+          ""
+        ],
+        "expect": 97
+      }
+    ],
+    "solution": "total = 0\nfor ch in salt + password:\n    total = total + ord(ch)\nreturn total % 1000",
+    "hint": "Loop over the characters of `salt + password`, adding `ord(ch)` each time; apply `% 1000` at the end.",
+    "feedback": "The same password with two different salts gives two different hashes, and with no salt it gives the same hash every time — which is exactly what a salt is for. (A real hash is far harder to reverse than a sum, but it is deterministic in just this way.)"
+  },
+  {
+    "type": "code_write",
+    "question": "A stolen table maps each user's name to their password hash. No salts were used. Return a list of the users whose hash is the same as some other user's, in alphabetical order — the accounts an attacker now knows share a password.",
+    "signature": "def shared_passwords(table):",
+    "tests": [
+      {
+        "args": [
+          {
+            "ada": 12,
+            "bo": 42,
+            "cy": 12
+          }
+        ],
+        "expect": [
+          "ada",
+          "cy"
+        ]
+      },
+      {
+        "args": [
+          {
+            "ada": 1,
+            "bo": 2
+          }
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          {
+            "zed": 7,
+            "amy": 7,
+            "kai": 7
+          }
+        ],
+        "expect": [
+          "amy",
+          "kai",
+          "zed"
+        ]
+      },
+      {
+        "args": [
+          {}
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          {
+            "a": 5,
+            "b": 6,
+            "c": 5,
+            "d": 6,
+            "e": 9
+          }
+        ],
+        "expect": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      }
+    ],
+    "solution": "shared = []\nfor user in table:\n    for other in table:\n        if other != user and table[other] == table[user]:\n            if user not in shared:\n                shared.append(user)\nreturn sorted(shared)",
+    "hint": "For each user, look through the table for a DIFFERENT user with the same hash. `sorted()` puts the result in order.",
+    "feedback": "This is everything an unsalted table gives away before a single password has been cracked. With a salt for each user, identical passwords would have different hashes and this function would return an empty list."
   }
 ]
