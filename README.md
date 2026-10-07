@@ -28,7 +28,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Features
 
-- **Nine question formats** plus NPC teaching scenes (described below)
+- **Ten question formats** plus NPC teaching scenes (described below)
 - **Main menu** with topic groupings, per-set progress badges, and a global stats bar
 - **Lesson intros** — sets can declare an `intro` (story + learning objectives) in `catalog.json`, shown before the run starts
 - **Sequential first pass** — full runs present questions in authored order (the set is written as a progression, and NPC scenes precede their paired questions); missed questions still requeue, and reviews/trials shuffle their samples
@@ -239,6 +239,26 @@ A CodingBat-style problem: the signature is fixed and shown above the box, the s
 
 The code runs on `src/pytiny.js`, a small Python interpreter written for this purpose (see [Runtime Architecture](#runtime-architecture)).
 
+### Write the Query (`sql_write`)
+
+The SQL counterpart of write-the-code. The student writes a whole `SELECT`, and it is run — by SQLite itself, compiled to WebAssembly — against tables shown on the screen.
+
+```json
+{
+  "type": "sql_write",
+  "question": "List the name of every candy made by Gumley.",
+  "database": "candy_factory",
+  "tables": ["candies"],
+  "solution": "SELECT name FROM candies WHERE maker = 'Gumley';"
+}
+```
+
+- **Graded by result, on rows the student cannot see.** A database file (`question_sets/databases/`) holds the tables and several datasets. The first is shown; the query must return the same rows as the reference query on all of them, so a query that just spells out the visible answer fails.
+- **Real SQLite, not an imitation.** The engine is [sql.js](https://github.com/sql-js/sql.js) (MIT), vendored in `vendor/sqljs/`. What a query returns here is what it returns in the course's own notebooks.
+- **It runs in a background worker, on a clock.** A query that would never finish — tables joined with no condition — is stopped after a few seconds by terminating the worker, and the page stays responsive throughout.
+- **Errors are put into sentences.** SQLite's `near "candies": syntax error` becomes "FORM looks like a misspelling of FROM"; a wrong column name is answered with the columns that exist.
+- The engine (about 340 KB zipped) is loaded only when a set has one of these problems, and shipped only in SCORM packages that do.
+
 ### NPC Teaching Scene (`npc_demo`)
 
 Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a worked example step by step, with optional low-stakes `check` prompts ("what comes next?") that get a gentle correction when wrong. Scenes deal no damage, award no XP, never requeue, are skippable, don't count toward `question_count`, and are excluded from reviews and rank trials. Author each scene **immediately before a paired question** that uses the same technique with different surface features. See the [WRITING_GUIDE](question_sets/WRITING_GUIDE.md) for the schema.
@@ -276,6 +296,8 @@ src/
   items.js          — ITEM_DROPS table for post-battle loot
   model.js          — Player, Monster, GameModel; game logic, battle math, save/load state
   pytiny.js         — A small Python interpreter; runs student code for code_write questions
+  sqlgrade.js       — Grades a student's query against a reference query, on every dataset
+  sqlengine.js      — Runs SQLite (vendor/sqljs) in a background worker, with a time limit
   highlight.js      — Minimal Java and Python syntax highlighters
   util.js           — Shared helpers such as shuffle()
 assets/

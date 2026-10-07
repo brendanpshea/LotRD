@@ -1910,6 +1910,223 @@ export class GameUI {
     }, { signal });
   }
 
+  // ─── Write the query (SQL) ────────────────────────────────────────────────
+
+  showEncounterSqlWrite() {
+    this._clearKeyboard();
+    const q = this.model.current_question;
+    renderTemplate(this.root, "tpl-encounter-sql-write");
+    this._populateEncounterHeader(this.root);
+    $(this.root, "[data-ref=qText]").textContent = q.question;
+
+    const input = $(this.root, "[data-ref=queryInput]");
+    // Everything below answers later (the tables are fetched, a query runs in a
+    // worker), so each answer first checks the student is still on this question.
+    const stillHere = () => this.model.current_question === q && this.root.contains(input);
+
+    const tablesEl = $(this.root, "[data-ref=tables]");
+    this.controller.sqlTables(q).then(tables => {
+      if (!stillHere()) return;
+      tablesEl.innerHTML = "";
+      tables.forEach(t => tablesEl.appendChild(this._sqlGrid(t.name, t.columns, t.rows)));
+    }).catch(err => {
+      if (!stillHere()) return;
+      tablesEl.innerHTML = "";
+      const box = document.createElement("div");
+      box.className = "code-write-error";
+      box.textContent = `The tables could not be loaded (${err.message}). Check your connection and reload the page.`;
+      tablesEl.appendChild(box);
+    });
+
+    const hint = $(this.root, "[data-ref=hint]");
+    if (hint && q.hint) {
+      $(this.root, "[data-ref=hintText]").textContent = q.hint;
+      hint.hidden = false;
+    }
+
+    input.value = q.starter ? String(q.starter) : "";
+    const resultsEl = $(this.root, "[data-ref=runResults]");
+    const runBtn = $(this.root, "[data-action=run]");
+    const submitBtn = $(this.root, "[data-action=submit]");
+    const runLabel = runBtn.textContent;
+
+    // One query at a time: a second press while the first is still out would
+    // only queue behind it, and a second Submit must never grade twice.
+    let busy = false;
+    const setBusy = (on, label) => {
+      busy = on;
+      runBtn.disabled = on;
+      submitBtn.disabled = on;
+      runBtn.textContent = on && label ? label : runLabel;
+    };
+
+    const run = async () => {
+      if (busy) return;
+      if (!input.value.trim()) {
+        this._renderCodeWriteNotice(resultsEl, "Write a query first, then run it.");
+        return;
+      }
+      setBusy(true, "Running…");
+      try {
+        const outcome = await this.controller.runSql(input.value);
+        if (!stillHere()) return;
+        this._renderSqlRun(resultsEl, outcome);
+      } catch (err) {
+        if (stillHere()) this._renderCodeWriteNotice(resultsEl, `Your query could not be run: ${err.message}`);
+      } finally {
+        setBusy(false);
+      }
+      resultsEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    };
+
+    runBtn.addEventListener("click", run);
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(); }
+    });
+    submitBtn.addEventListener("click", async () => {
+      if (busy) return;
+      if (!input.value.trim()) {
+        this.showFeedbackInline("Write your query before submitting.");
+        return;
+      }
+      setBusy(true, "Checking…");
+      await this.controller.submitSqlWrite(input.value);
+      // Still on this screen means it was not graded (a Mulligan, or the engine failed).
+      if (stillHere()) setBusy(false);
+    });
+  }
+
+  /** One table of rows — a table the problem gives, or a result a query returned. */
+  _sqlGrid(caption, columns, rows, { limit = 30 } = {}) {
+    const box = document.createElement("div");
+    box.className = "sql-grid-box";
+    const title = document.createElement("div");
+    title.className = "sql-grid-title";
+    title.textContent = caption;
+    box.appendChild(title);
+
+    if (!rows.length && !columns.length) {
+      const none = document.createElement("div");
+      none.className = "sql-grid-empty dim";
+      none.textContent = "(no rows)";
+      box.appendChild(none);
+      return box;
+    }
+
+    const scroller = document.createElement("div");
+    scroller.className = "sql-grid-scroll";
+    const table = document.createElement("table");
+    table.className = "sql-grid";
+    const head = document.createElement("tr");
+    columns.forEach(name => {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = name;
+      head.appendChild(th);
+    });
+    table.appendChild(head);
+    rows.slice(0, limit).forEach(row => {
+      const tr = document.createElement("tr");
+      row.forEach(value => {
+        const td = document.createElement("td");
+        if (value === null) { td.textContent = "NULL"; td.className = "dim"; }
+        else td.textContent = String(value);
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+    scroller.appendChild(table);
+    box.appendChild(scroller);
+
+    const count = document.createElement("div");
+    count.className = "sql-grid-count dim";
+    count.textContent = rows.length > limit
+      ? `${limit} of ${rows.length} rows shown`
+      : `${rows.length} row${rows.length === 1 ? "" : "s"}`;
+    box.appendChild(count);
+    return box;
+  }
+
+  /** What Run shows: the student's rows beside the rows expected, then the hidden datasets. */
+  _renderSqlRun(container, outcome) {
+    container.innerHTML = "";
+    if (!outcome) return;
+
+    if (!outcome.ok) {
+      const box = document.createElement("div");
+      box.className = "code-write-error";
+      const head = document.createElement("div");
+      head.className = "bold";
+      head.textContent = "Your query did not run";
+      box.appendChild(head);
+      const msg = document.createElement("div");
+      msg.textContent = outcome.error.message;
+      box.appendChild(msg);
+      if (outcome.error.hint) {
+        const hint = document.createElement("div");
+        hint.className = "code-write-hint";
+        hint.textContent = outcome.error.hint;
+        box.appendChild(hint);
+      }
+      container.appendChild(box);
+      return;
+    }
+
+    const allPassed = outcome.passed === outcome.total;
+    const summary = document.createElement("div");
+    summary.className = `code-write-summary ${allPassed ? "correct" : "incorrect"}`;
+    summary.textContent = allPassed
+      ? `✔ Right on the rows shown and on ${outcome.total - 1} other sets of rows — ready to submit.`
+      : `Right on ${outcome.passed} of the ${outcome.total} sets of rows it was checked against.`;
+    container.appendChild(summary);
+
+    const [shown, ...hidden] = outcome.results;
+    if (shown && shown.actual) {
+      const compare = document.createElement("div");
+      compare.className = "sql-compare";
+      compare.appendChild(this._sqlGrid(shown.passed ? "✔ Your result" : "✖ Your result",
+        shown.actual.columns, shown.actual.values));
+      // The expected rows are shown only when they differ. For the tables on
+      // screen they are something the student could work out by hand.
+      if (!shown.passed) {
+        compare.appendChild(this._sqlGrid("Expected", shown.expected.columns, shown.expected.values));
+      }
+      container.appendChild(compare);
+      if (!shown.passed) {
+        const why = document.createElement("div");
+        why.className = "code-write-hint";
+        why.textContent = shown.detail;
+        container.appendChild(why);
+      }
+    }
+
+    if (hidden.length) {
+      const list = document.createElement("ul");
+      list.className = "sql-hidden-list";
+      hidden.forEach(row => {
+        const li = document.createElement("li");
+        li.className = row.passed ? "code-write-row--pass" : "code-write-row--fail";
+        const mark = document.createElement("span");
+        mark.className = "code-write-mark";
+        mark.textContent = row.passed ? "✔ " : "✖ ";
+        mark.setAttribute("aria-label", row.passed ? "passed: " : "failed: ");
+        li.appendChild(mark);
+        li.appendChild(document.createTextNode(row.passed
+          ? `${row.call} (not shown): correct`
+          : `${row.call} (not shown): ${row.detail}`));
+        list.appendChild(li);
+      });
+      container.appendChild(list);
+      if (shown && shown.passed && !allPassed) {
+        const note = document.createElement("div");
+        note.className = "code-write-hint";
+        note.textContent = "Right for the rows you can see, but not for others. Check that the query answers " +
+          "the question for ANY rows: a value exactly on a boundary, a row with nothing matching it, a tie.";
+        container.appendChild(note);
+      }
+    }
+  }
+
   _renderCodeWriteNotice(container, message) {
     container.innerHTML = "";
     const note = document.createElement("div");
@@ -2251,7 +2468,9 @@ export class GameUI {
       wrap.appendChild(label);
       const pre = document.createElement("pre");
       pre.className = "code-snippet";
-      pre.innerHTML = highlightPython(battleData.referenceSolution);
+      // Only Python is highlighted; a reference query is shown as it was written.
+      if (battleData.referenceLanguage === "sql") pre.textContent = battleData.referenceSolution;
+      else pre.innerHTML = highlightPython(battleData.referenceSolution);
       wrap.appendChild(pre);
       body.appendChild(wrap);
     }

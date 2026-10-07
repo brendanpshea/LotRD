@@ -133,6 +133,63 @@ describe('in a real browser: an LMS that saves only when the session is finished
 });
 
 // A package that is ONE problem set: no menu, no ranks, full credit on clearing it.
+describe('in a real browser: writing a query', { skip }, () => {
+  // The one screen whose answer comes back later: the query goes to SQLite in a
+  // background worker, so that one which never ends can be stopped. None of that
+  // exists in Node — no worker, no .wasm fetched over HTTP, no page to freeze.
+  let server, seen;
+
+  before(async () => {
+    server = await startServer();
+    seen = await visit(browser, server.origin, 'sqlProblem', { set: 'computing_concepts_09_databases.json' }, { realTime: true });
+  });
+
+  after(async () => { await server?.close(); });
+
+  it('shows the task and the table it is about, with its rows', () => {
+    assert.match(seen.task, /sugar/);
+    assert.match(seen.tables, /candies/);
+    assert.match(seen.tables, /sugar_grams/);
+    assert.match(seen.tables, /Gumdrop/);
+  });
+
+  it('runs a query and shows the rows it returned beside the rows expected', () => {
+    assert.match(seen.wholeTable, /Your result/);
+    assert.match(seen.wholeTable, /Expected/);
+    assert.match(seen.wholeTable, /Fizzer/, 'the whole table came back, Fizzer included');
+    assert.doesNotMatch(seen.wholeTable, /ready to submit/);
+  });
+
+  it('puts a misspelled keyword into a sentence, with what to check', () => {
+    assert.match(seen.misspelled, /did not run/);
+    assert.match(seen.misspelled, /FORM/);
+    assert.match(seen.misspelled, /SELECT … FROM … WHERE/);
+  });
+
+  it('will not run a statement that changes the table', () => {
+    assert.match(seen.changesData, /SELECT queries only/);
+  });
+
+  it('stops a query that would never finish, and says why', () => {
+    assert.match(seen.runaway, /too long and was stopped/);
+    assert.ok(seen.runawayMs < 15000, `it took ${seen.runawayMs} ms to give up`);
+  });
+
+  it('runs the next query normally after stopping one', () => {
+    assert.match(seen.afterRunaway, /Your result/);
+  });
+
+  it('passes the reference query on the rows shown and on the hidden ones', () => {
+    assert.match(seen.correct, /ready to submit/);
+    assert.match(seen.correct, /not shown\): correct/);
+  });
+
+  it('grades it on Submit and moves on', () => {
+    assert.match(seen.afterSubmit, /One way to write it/);
+    assert.equal(seen.remaining, 0, 'a correct query must not be asked again');
+  });
+});
+
 describe('in a real browser: a single-set package', { skip }, () => {
   const SINGLE = 'computing_concepts_04_control_functions.json';
   let server, first, second;

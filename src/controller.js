@@ -9,6 +9,8 @@ import {
   encodeIndexList, decodeIndexList, questionSetFingerprint, levelAhead,
 } from "./util.js";
 import { pickDragonLine } from "./dragon.js";
+import { gradeSql, describeTables } from "./sqlgrade.js";
+import { createSqlRunner } from "./sqlengine.js";
 
 const SAVE_DATA_VERSION = "2026-04-26";
 const SAVE_DATA_VERSION_KEY = "lotrd_save_data_version";
@@ -954,6 +956,8 @@ export class GameController {
       this.ui.showEncounterCloze();
     } else if (qtype === "code_write") {
       this.ui.showEncounterCodeWrite();
+    } else if (qtype === "sql_write") {
+      this.ui.showEncounterSqlWrite();
     } else if (qtype === "npc_demo") {
       this.ui.showNpcScene(() => this.completeNpcScene());
     } else {
@@ -1101,6 +1105,54 @@ export class GameController {
   submitCodeWrite(bodyText) {
     if (!this.model.current_question) return;
     this._evaluateWithMulligan(() => this.model.evaluateCodeWrite(bodyText));
+  }
+
+  // ─── Write-the-query problems ─────────────────────────────────────────────
+  // A query runs in SQLite, in a background worker, and so answers LATER — the
+  // one question type that is not graded on the spot. The engine and the
+  // database file are both fetched the first time a problem needs them, so sets
+  // with no SQL in them never load either.
+
+  /** The database file a problem names: its tables, and the datasets a query is checked against. */
+  _sqlDatabase(name) {
+    this._sqlDatabases ??= new Map();
+    if (!this._sqlDatabases.has(name)) {
+      const loading = loadJSON(`question_sets/databases/${name}.json`);
+      // A dropped request must not be remembered as the answer.
+      loading.catch(() => this._sqlDatabases.delete(name));
+      this._sqlDatabases.set(name, loading);
+    }
+    return this._sqlDatabases.get(name);
+  }
+
+  /** The tables a problem shows, with the rows the student is allowed to see. */
+  async sqlTables(question) {
+    return describeTables(await this._sqlDatabase(question.database), question.tables);
+  }
+
+  /** Run a query against every dataset without grading anything: the free Run button. */
+  async runSql(queryText) {
+    const question = this.model.current_question;
+    if (!question) return null;
+    const database = await this._sqlDatabase(question.database);
+    this._sqlRunner ??= createSqlRunner();
+    return gradeSql(this._sqlRunner.run, question, database, queryText);
+  }
+
+  async submitSqlWrite(queryText) {
+    const question = this.model.current_question;
+    if (!question || this._sqlSubmitting) return;
+    this._sqlSubmitting = true;
+    try {
+      const outcome = await this.runSql(queryText);
+      // The answer arrives later; the student may have left the question meanwhile.
+      if (!outcome || this.model.current_question !== question) return;
+      this._evaluateWithMulligan(() => this.model.evaluateSqlWrite(queryText, outcome));
+    } catch (err) {
+      this.ui.showFeedbackInline(`Your query could not be checked: ${err.message}. Nothing was lost — press Submit again.`);
+    } finally {
+      this._sqlSubmitting = false;
+    }
   }
 
   submitAnswer(selected) {

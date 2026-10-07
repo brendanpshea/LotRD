@@ -160,6 +160,54 @@ def write_filtered_question_sets(build_dir: Path, filtered_catalog: list) -> lis
     return copied
 
 
+# What a package needs in order to run a query a student writes: SQLite itself,
+# compiled for the browser (vendor/sqljs), and the database files its problems
+# name. The worker script and the .wasm it loads are all the page uses; the plain
+# sql-wasm.js beside them is only for the tests.
+SQL_ENGINE_FILES = ["worker.sql-wasm.js", "sql-wasm.wasm", "LICENSE"]
+
+
+def ship_sql_engine(build_dir: Path) -> None:
+    """Add SQLite and the databases it needs — but only to a package that asks questions in SQL.
+
+    The engine is about 700 KB (340 KB zipped). Every other edition would carry it
+    for nothing, so it goes in only when some set in this edition has a
+    write-the-query problem. A package that has one and lacks the engine would
+    show its students "the SQL engine could not be started" on every such
+    question, so a missing file here stops the build.
+    """
+    wanted: set[str] = set()
+    for path in (build_dir / "question_sets").glob("*.json"):
+        if path.name in ("catalog.json", "index.json"):
+            continue
+        try:
+            entries = json.loads(path.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        for entry in entries if isinstance(entries, list) else []:
+            if isinstance(entry, dict) and entry.get("type") == "sql_write":
+                wanted.add(str(entry.get("database", "")))
+    if not wanted:
+        return
+
+    engine_dst = build_dir / "vendor" / "sqljs"
+    engine_dst.mkdir(parents=True, exist_ok=True)
+    for name in SQL_ENGINE_FILES:
+        src = REPO / "vendor" / "sqljs" / name
+        if not src.exists():
+            raise SystemExit(f"This edition has write-the-query problems, but {src} is missing.")
+        shutil.copy2(src, engine_dst / name)
+
+    db_dst = build_dir / "question_sets" / "databases"
+    db_dst.mkdir(parents=True, exist_ok=True)
+    for name in sorted(wanted):
+        src = REPO / "question_sets" / "databases" / f"{name}.json"
+        if not src.exists():
+            raise SystemExit(f"A write-the-query problem names the database {name!r}, but {src} is missing.")
+        shutil.copy2(src, db_dst / src.name)
+    print(f"  SQL engine: shipped, with databases {sorted(wanted)}")
+
+
 def prune_npc_portraits(build_dir: Path) -> None:
     """Ship only the mentor portraits this edition's scenes actually use.
 
@@ -384,6 +432,7 @@ def build_one(config: dict, full_catalog: list) -> Path:
     print(f"  Question set files: {len(copied)}")
 
     prune_npc_portraits(work_dir)
+    ship_sql_engine(work_dir)
     patch_index_html(work_dir, config)
     write_shim(work_dir)
     write_manifest(work_dir, config)

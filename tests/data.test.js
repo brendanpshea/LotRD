@@ -653,6 +653,22 @@ describe('Question set file validation', () => {
               assert.ok(typeof q.starter === 'string',
                 `${label}: starter must be a string when present`);
             }
+          } else if (type === 'sql_write') {
+            // Whether the query is RIGHT is proved in tests/sql-problems.test.js,
+            // which runs it in SQLite; this is the shape of the entry.
+            assert.ok(typeof q.database === 'string' && existsSync(join(ROOT, 'question_sets', 'databases', `${q.database}.json`)),
+              `${label}: sql_write needs a database naming a file in question_sets/databases/`);
+            assert.ok(typeof q.solution === 'string' && /^\s*(select|with)\b/i.test(q.solution),
+              `${label}: sql_write needs a reference solution that is a SELECT`);
+            if ('tables' in q) {
+              assert.ok(Array.isArray(q.tables) && q.tables.length > 0 && q.tables.every(t => typeof t === 'string'),
+                `${label}: tables must be a non-empty list of table names when present`);
+            }
+            if ('ordered' in q) assert.equal(typeof q.ordered, 'boolean', `${label}: ordered must be true or false`);
+            if ('hint' in q) {
+              assert.ok(typeof q.hint === 'string' && q.hint.trim().length > 0 && q.hint.length <= 240 && !q.hint.includes('\n'),
+                `${label}: hint must be one line of at most 240 characters`);
+            }
           } else if (type === 'npc_demo') {
             // `question` doubles as the scene title and its identity key.
             assert.ok(Array.isArray(q.steps) && q.steps.length > 0,
@@ -1363,7 +1379,7 @@ describe('Arithmetic shown in questions is actually correct', () => {
 describe('Audit checks', () => {
   const index = loadJSON('question_sets/index.json');
   const MEETS_AUDIT_STANDARD = setId => /^java_|^computing_concepts_0[456789]_/.test(setId);
-  const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write']);
+  const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write', 'sql_write']);
   const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
 
   it('no question points at code it does not show', () => {
@@ -1372,7 +1388,7 @@ describe('Audit checks', () => {
     const bad = [];
     for (const setId of index) {
       questionsOf(setId).forEach((q, i) => {
-        if (q.type === 'code_trace' || q.type === 'code_write' || q.code) return;
+        if (q.type === 'code_trace' || q.type === 'code_write' || q.type === 'sql_write' || q.code) return;
         const stem = q.question || '';
         const refers = /\b(this|the following) (code|loop|method|snippet|program|class|statement)\b|what (does|will) (this|it) print/i.test(stem);
         if (refers && !/[;{}]|\n/.test(stem)) bad.push(`${setId}[${i}]: ${stem.slice(0, 70)}`);
@@ -1425,7 +1441,7 @@ describe('Audit checks', () => {
         for (const q of questionsOf(setId)) {
           // A closing block of write-the-code problems is a capstone, ordered by
           // what each one teaches; it is not "sorted by type".
-          if (q.type === 'code_write') { run = 0; prev = null; continue; }
+          if (q.type === 'code_write' || q.type === 'sql_write') { run = 0; prev = null; continue; }
           const kind = q.type || `mc${Math.min((q.correct || []).length, 2)}`;
           run = kind === prev ? run + 1 : 1;
           prev = kind;

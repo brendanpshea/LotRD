@@ -41,6 +41,13 @@ function answer(gm, correct) {
       // The reference solution passes every test; a body that returns a value no
       // problem asks for fails every one of them.
       return gm.evaluateCodeWrite(correct ? q.solution : 'return "not the answer"');
+    case 'sql_write': {
+      // A query is graded in SQLite before the model sees it (and that the
+      // reference query really passes is proved in sql-problems.test.js). What
+      // matters here is what the run does with a pass and with a fail.
+      const row = { call: 'The rows shown', passed: correct, detail: correct ? '1 row, as expected' : 'not the rows expected' };
+      return gm.evaluateSqlWrite(correct ? q.solution : 'SELECT 0', { ok: true, error: null, results: [row], passed: correct ? 1 : 0, total: 1 });
+    }
     case 'matching': {
       const pairs = q.pairs.map(p => ({ term: p.term, definition: p.definition }));
       if (correct) return gm.evaluateMatching(pairs);

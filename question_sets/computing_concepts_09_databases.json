@@ -928,5 +928,114 @@
       "Microsoft SQL Server"
     ],
     "feedback": "SQLite is serverless: the whole database is one ordinary file, and your program reads it directly. The others run as a separate server process that clients connect to over the network, which is why they need setup and SQLite does not."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Asking the archive yourself",
+    "npc": "kaelen",
+    "intro": "Kaelen pushes the ledgers across the desk and sits back. “You have read enough of my queries. The archive will answer yours now.”",
+    "steps": [
+      {
+        "say": "I show you the tables and ask a question in plain words. You write the query — the whole SELECT — and press Run. The archive runs it for real and shows you the rows that come back.",
+        "beats": [
+          {
+            "say": "I show you the tables and ask a question in plain words. You write the query — the whole SELECT — and press Run."
+          },
+          {
+            "code": "SELECT name\nFROM candies\nWHERE maker = 'Minto';",
+            "language": "sql"
+          },
+          {
+            "say": "The archive runs it for real and shows you the rows that come back. Running is free; run as often as you like."
+          }
+        ]
+      },
+      {
+        "say": "One thing to know. Your query is checked on the rows you can see, and then on other rows you cannot: the same tables, holding different candies.",
+        "check": {
+          "prompt": "The answer on screen is Gumdrop and Toffee, so a student writes a query that just lists those two names. What happens?",
+          "answer": "It fails on the hidden rows, which hold other candies",
+          "wrong": [
+            "It passes, because the answer on screen is right",
+            "It is refused, because names cannot be typed in a query"
+          ],
+          "why": "A query has to answer the question, not repeat this answer. On different rows the right names are different ones."
+        }
+      },
+      {
+        "say": "So write what the question asks for — which column, which condition — and let the rows fall where they may. If SQLite cannot read your query, it says where it stopped. Read that; it is nearly always a misspelled word or a clause out of order."
+      }
+    ],
+    "outro": "“The tables are yours. Start with one condition.”"
+  },
+  {
+    "type": "sql_write",
+    "question": "List the name of every candy made by Gumley.",
+    "database": "candy_factory",
+    "tables": [
+      "candies"
+    ],
+    "solution": "SELECT name\nFROM candies\nWHERE maker = 'Gumley';",
+    "hint": "SELECT the one column asked for, FROM the table, WHERE the maker column equals the text in single quotes.",
+    "feedback": "WHERE keeps the rows that pass its test and SELECT picks which column of them to show. Text is compared with a single = and written in single quotes: 'Gumley'."
+  },
+  {
+    "type": "sql_write",
+    "question": "Show the name and sugar_grams of every candy with less than 20 grams of sugar, with the least sugary first.",
+    "database": "candy_factory",
+    "tables": [
+      "candies"
+    ],
+    "solution": "SELECT name, sugar_grams\nFROM candies\nWHERE sugar_grams < 20\nORDER BY sugar_grams;",
+    "hint": "Two columns after SELECT, separated by a comma. WHERE comes before ORDER BY.",
+    "feedback": "WHERE decides which rows survive and ORDER BY arranges the survivors, smallest first unless you add DESC. Less than 20 does not include 20 itself — one of the hidden tables has a candy with exactly 20 grams to check that.",
+    "ordered": true
+  },
+  {
+    "type": "sql_write",
+    "question": "How many candies have 20 grams of sugar or more? Return that one number.",
+    "database": "candy_factory",
+    "tables": [
+      "candies"
+    ],
+    "solution": "SELECT COUNT(*)\nFROM candies\nWHERE sugar_grams >= 20;",
+    "hint": "COUNT(*) counts rows. Put the condition in WHERE so that only the rows you want are counted.",
+    "feedback": "An aggregate function boils the rows WHERE kept down to one value, so this query returns a single row holding a single number. \"20 or more\" is >=, and the candy with exactly 20 grams in a hidden table has to be counted."
+  },
+  {
+    "type": "sql_write",
+    "question": "For each maker, show the maker and how many candies it makes.",
+    "database": "candy_factory",
+    "tables": [
+      "candies"
+    ],
+    "solution": "SELECT maker, COUNT(*)\nFROM candies\nGROUP BY maker;",
+    "hint": "GROUP BY the column that names the group, and SELECT that column beside the count.",
+    "feedback": "GROUP BY deals the rows into one pile per maker, and COUNT(*) is worked out once for each pile — so the result has one row per maker, not one per candy."
+  },
+  {
+    "type": "sql_write",
+    "question": "Show the batch_id of every batch together with the name of the candy it holds.",
+    "database": "candy_factory",
+    "tables": [
+      "candies",
+      "batches"
+    ],
+    "solution": "SELECT batches.batch_id, candies.name\nFROM batches\nJOIN candies\n  ON batches.candy_id = candies.candy_id;",
+    "hint": "JOIN the two tables, and say in ON which column of one matches which column of the other.",
+    "feedback": "A batch stores only a candy_id; the name lives in candies. JOIN follows that key from each batch to its candy, giving one row per batch. Both tables have a candy_id column, so each one is written with its table: batches.candy_id, candies.candy_id."
+  },
+  {
+    "type": "sql_write",
+    "question": "For each candy that has at least one batch, show its name and how many batches were made of it. Put the candy with the most batches first; where two candies have the same number, list them in alphabetical order of name.",
+    "database": "candy_factory",
+    "tables": [
+      "candies",
+      "batches"
+    ],
+    "solution": "SELECT candies.name, COUNT(*)\nFROM batches\nJOIN candies\n  ON batches.candy_id = candies.candy_id\nGROUP BY candies.name\nORDER BY COUNT(*) DESC, candies.name;",
+    "hint": "Join first, then GROUP BY the name. ORDER BY can take two things, separated by a comma: the count, then the name.",
+    "feedback": "Every clause from the chapter in one query, in the order they must be written: FROM and JOIN gather the rows, GROUP BY piles them by candy, COUNT(*) measures each pile, and ORDER BY arranges the piles. A candy with no batches never appears, because the join found nothing to pair it with.",
+    "ordered": true
   }
 ]

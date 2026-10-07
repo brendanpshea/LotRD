@@ -2434,6 +2434,55 @@ export class GameModel {
             });
         }
 
+        return this._scoreRun(outcome, {
+            typed: bodyText,
+            solution: codeWriteSolutionText(q),
+            correctSelections,
+            incorrectSelections,
+        });
+    }
+
+    /**
+     * Evaluate a write-the-query answer. Unlike a Python body, a query cannot be
+     * run here: it goes to SQLite in a background worker, which answers later. So
+     * the controller grades it first (src/sqlgrade.js) and hands the finished
+     * outcome in, and this stays the plain, synchronous scoring every other
+     * question type has. One "test" is one dataset the query was checked against.
+     */
+    evaluateSqlWrite(queryText, outcome) {
+        if (!this.current_question || !outcome) return null;
+        const q = this.current_question;
+        const correctSelections   = [];
+        const incorrectSelections = [];
+
+        if (!outcome.ok) {
+            incorrectSelections.push(
+                `Your query did not run: ${outcome.error.message}` +
+                (outcome.error.hint ? ` — ${outcome.error.hint}` : ""));
+        } else {
+            outcome.results.forEach(row => {
+                (row.passed ? correctSelections : incorrectSelections).push(`${row.call} → ${row.detail}`);
+            });
+        }
+
+        return {
+            ...this._scoreRun(outcome, {
+                typed: queryText,
+                solution: String(q.solution ?? "").trim(),
+                correctSelections,
+                incorrectSelections,
+            }),
+            referenceLanguage: "sql",
+        };
+    }
+
+    /**
+     * The scoring shared by the two kinds of question whose answer is RUN — a
+     * Python body against a test table, a query against several datasets. Each
+     * passing test is a hit, scaled to a fixed budget.
+     */
+    _scoreRun(outcome, { typed, solution, correctSelections, incorrectSelections }) {
+        const q = this.current_question;
         const total = Math.max(outcome.total, 1);
         const correctCount = outcome.passed;
         const isPerfect = outcome.ok && outcome.total > 0 && correctCount === outcome.total;
@@ -2453,8 +2502,8 @@ export class GameModel {
             xpGained: 15,
             requeue: !isPerfect,
             historyEntry: this._buildHistoryEntry({
-                correctAnswers: [codeWriteSolutionText(q)],
-                selected: [String(bodyText ?? "").trim()],
+                correctAnswers: [solution],
+                selected: [String(typed ?? "").trim()],
                 correctSelections,
                 incorrectSelections,
                 missedCorrect: [],
@@ -2473,7 +2522,7 @@ export class GameModel {
             printedOnly: outcome.printedOnly,
             // Shown on the results screen whatever the outcome: a worked answer
             // is the point of the question, not a punishment for missing it.
-            referenceSolution: codeWriteSolutionText(q),
+            referenceSolution: solution,
             feedback: q.feedback || null,
         };
     }

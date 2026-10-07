@@ -271,6 +271,21 @@ describe('SCORM package wiring', () => {
     assert.ok(!/uuid|random|time\(/.test(fn), 'the manifest identifier changes from build to build');
   });
 
+  it('ships SQLite with a package that has write-the-query problems, and the page asks for it where it is put', async () => {
+    // The page starts the engine from one fixed path. The build copies the engine
+    // to that path. If they disagree the package still builds, and every SQL
+    // question in it tells the student the engine could not be started.
+    const { SQL_WORKER_URL } = await import('../src/sqlengine.js');
+    assert.equal(SQL_WORKER_URL, 'vendor/sqljs/worker.sql-wasm.js');
+    assert.match(build, /build_dir \/ "vendor" \/ "sqljs"/);
+    for (const file of ['worker.sql-wasm.js', 'sql-wasm.wasm']) {
+      assert.ok(build.includes(`"${file}"`), `build.py does not ship ${file}`);
+      assert.ok(existsSync(join(ROOT, 'vendor/sqljs', file)), `vendor/sqljs/${file} is missing`);
+    }
+    assert.match(build, /ship_sql_engine\(work_dir\)/);
+    assert.match(build, /build_dir \/ "question_sets" \/ "databases"/);
+  });
+
   it('the shim loads as a classic script, so it finishes before the game module starts', () => {
     // A `defer`, `async` or type="module" here would reintroduce the race in which
     // the menu is drawn before the student's progress has been restored.

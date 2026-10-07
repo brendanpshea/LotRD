@@ -824,6 +824,84 @@ Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase descr
 
 ---
 
+## Type 11: Write the Query (`sql_write`)
+
+The student writes a whole `SELECT`, and it is **run** — by SQLite itself, in the browser — against tables they can see. Their query is right when it returns the same rows as your reference query.
+
+### Schema
+
+```json
+{
+  "type": "sql_write",
+  "question": "Show the name and sugar_grams of every candy with less than 20 grams of sugar, with the least sugary first.",
+  "database": "candy_factory",
+  "tables": ["candies"],
+  "solution": "SELECT name, sugar_grams\nFROM candies\nWHERE sugar_grams < 20\nORDER BY sugar_grams;",
+  "ordered": true,
+  "hint": "Two columns after SELECT, separated by a comma. WHERE comes before ORDER BY.",
+  "feedback": "WHERE decides which rows survive and ORDER BY arranges the survivors…"
+}
+```
+
+### Rules
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `type` | yes | `"sql_write"` | Must be exactly this string |
+| `question` | yes | string | The task, in plain words. Name the columns you want back, in order |
+| `database` | yes | string | A file in [`question_sets/databases/`](databases/), without `.json` |
+| `tables` | no | string[] | Which of the database's tables to show above the box, in this order. Omit to show them all |
+| `solution` | yes | string | The reference query: one `SELECT`. It is what the student is shown afterwards, and what their rows are compared with |
+| `ordered` | no | boolean | `true` when the task asks for an order. Otherwise rows may come back in any order |
+| `hint` | no | string | One line, ≤ 240 chars, behind a *Stuck?* fold |
+| `feedback` | yes-ish | string | As everywhere: the idea, not just the answer |
+
+### How it is graded
+
+A database file holds its tables and **several datasets**: different rows for the same tables. The first dataset is the one the student sees. Their query is run on every dataset and compared with your reference query on each, and it has to match on all of them.
+
+That is what makes the problem a problem. A student who reads the visible answer — Gumdrop, Mint, Sherbet — and writes `WHERE name IN ('Gumdrop', 'Mint', 'Sherbet')` is right on the rows shown and wrong on the others. The hidden datasets are also where the edge cases live: a value exactly on the boundary the task draws, a candy with no batches, a maker with one candy.
+
+- **Column names are not compared**, only values: `COUNT(*)` and `COUNT(*) AS how_many` are the same answer. The *number* of columns is, so say which columns you want.
+- **Row order counts only when `ordered` is true.**
+- **2 and 2.0 are equal**; the number 5 and the text `'5'` are not.
+- Only a single `SELECT` is run. `INSERT`, `DELETE` and the rest are refused with a sentence saying so.
+- A query that runs for more than a few seconds is stopped and reported as one that ran too long.
+
+### Writing Good Write-the-Query Problems
+
+1. **Say exactly which columns come back, and in what order.** "Show the name and sugar_grams" — not "show the low-sugar candies". A student who returns the right rows with an extra column fails, and should have been told.
+2. **If you ask for an order, the data must settle it.** Two rows tying on the sort key can come back either way round, and a correct query would then fail at random. Either give the tie-break in the task ("where two candies tie, alphabetically by name") and in the reference query, or do not set `ordered`. The suite re-inserts every dataset's rows in reverse and fails a problem whose answer changes.
+3. **If you do not ask for an order, do not mention one.** The suite rejects a task that says "first" or "alphabetical" without `ordered`, because any order would be accepted.
+4. **Make sure the boundary is in a hidden dataset.** "Less than 20" needs a row with exactly 20 somewhere the student cannot see it; otherwise `<=` passes.
+5. **The visible answer must have rows.** A problem whose answer on the shown tables is empty gives the student nothing to check a query against by eye.
+6. **Order the block by what it teaches** — one condition, then ordering, an aggregate, GROUP BY, JOIN, and a problem that combines them — and let the first be easy.
+7. **Keep shown tables small**: at most 8 rows and 5 columns, so a table reads on a phone without scrolling down.
+
+Every problem's reference query is run through the real engine and the real grader in [`tests/sql-problems.test.js`](../tests/sql-problems.test.js), which also proves it cannot be passed by typing the visible answer back or by returning the whole table.
+
+### Database files
+
+One file per database, shared by every problem that uses it — so the schema cannot drift from one question to the next:
+
+```json
+{
+  "name": "candy_factory",
+  "tables": [
+    { "name": "candies", "columns": [["candy_id", "INTEGER PRIMARY KEY"], ["name", "TEXT"]] }
+  ],
+  "datasets": [
+    { "label": "The rows shown",       "rows": { "candies": [[1, "Fizzer"], [2, "Gumdrop"]] } },
+    { "label": "A second set of rows", "rows": { "candies": [[1, "Pebble"], [2, "Zinger"]] } },
+    { "label": "A third set of rows",  "rows": { "candies": [[1, "Apex"]] } }
+  ]
+}
+```
+
+At least three datasets; the first is the one shown. Each must satisfy its own foreign keys. Make the hidden ones different in *kind*, not just in names: fewer rows, a tie, a value on a boundary, a row with nothing matching it in the other table.
+
+---
+
 ## General Quality Guidelines
 
 ### Feedback

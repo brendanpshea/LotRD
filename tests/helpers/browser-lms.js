@@ -30,6 +30,7 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg',
+  '.wasm': 'application/wasm',
 };
 
 const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
@@ -144,6 +145,43 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
         correct: await run('self.coins = self.coins + n'),
       };
     },
+    // A write-the-query problem: the tables are shown, Run sends the query to SQLite
+    // in a background worker, and the result comes back as rows on the screen. This
+    // scenario needs REAL time (see visit): a worker gets no turns on a virtual clock.
+    async sqlProblem({ set }) {
+      const gc = win().gameController;
+      await gc._launchSet(set, 'new');
+      await until(() => gc.model, 'the set to load');
+      const problem = gc.model.questions.find(x => x.type === 'sql_write' && x.ordered);
+      gc.model.questions_to_ask = [problem];
+      gc.model.current_question = null;
+      gc.continueAdventure();
+      await until(() => doc().querySelector('[data-ref=queryInput]'), 'the query box');
+      await until(() => doc().querySelector('[data-ref=tables] table'), 'the tables');
+      const box = doc().querySelector('[data-ref=queryInput]');
+      const results = () => doc().querySelector('[data-ref=runResults]');
+      const run = async sql => {
+        box.value = sql;
+        results().innerHTML = '';
+        doc().querySelector('[data-action=run]').click();
+        await until(() => results().innerText.trim().length > 0, 'the result of: ' + sql.slice(0, 40));
+        return results().innerText;
+      };
+      const report = { task: doc().querySelector('[data-ref=qText]').textContent, tables: doc().querySelector('[data-ref=tables]').innerText };
+      report.wholeTable = await run('SELECT * FROM candies');
+      report.misspelled = await run('SELECT name FORM candies');
+      report.changesData = await run('DELETE FROM candies');
+      const started = Date.now();
+      report.runaway = await run('SELECT COUNT(*) FROM candies a, candies b, candies c, candies d, candies e, candies f, candies g, candies h, candies i, candies j, candies k, candies l, candies m');
+      report.runawayMs = Date.now() - started;
+      report.afterRunaway = await run('SELECT COUNT(*) FROM candies');
+      report.correct = await run(problem.solution);
+      doc().querySelector('[data-action=submit]').click();
+      await until(() => !doc().querySelector('[data-ref=queryInput]'), 'the results screen');
+      report.afterSubmit = doc().getElementById('game-root').innerText;
+      report.remaining = gc.model.questions_to_ask.length;
+      return report;
+    },
     // Device two: a browser that has never seen the game. Just look at the menu.
     async look({ clear, leave, clearTitle, leaveTitle }) {
       for (const d of doc().querySelectorAll('details')) d.open = true;
@@ -165,8 +203,43 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
     } catch (err) { result = { error: String(err && err.stack || err) }; }
     document.getElementById('out').textContent = JSON.stringify(result);
     document.title = 'done';
+    if (params.post) post('/__report', result);
   })();
 </script>`;
+
+/**
+ * Open the page and wait, by the wall clock, for it to post its report back.
+ *
+ * The other visits run on Chrome's virtual clock, which lets a scenario "wait"
+ * ten seconds in a few milliseconds. A Web Worker gets no turns on that clock:
+ * every message to it goes unanswered, and working code looks broken. Anything
+ * that runs SQLite needs this instead. It costs real seconds, so it is used for
+ * exactly that.
+ */
+async function visitInRealTime(browser, profile, url, origin) {
+  const chrome = execFile(browser, [
+    '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    '--mute-audio', ...(process.env.CI ? ['--no-sandbox'] : []),
+    `--user-data-dir=${profile}`, '--remote-debugging-port=0', url,
+  ]);
+  chrome.on('error', () => {});
+  try {
+    const deadline = Date.now() + 90000;
+    while (Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      const res = await fetch(`${origin}/__report`).catch(() => null);
+      if (res && res.ok) {
+        const report = await res.json();
+        if (report.error) throw new Error(`in the browser: ${report.error}`);
+        return report;
+      }
+    }
+    throw new Error('the page posted no report within 90 seconds');
+  } finally {
+    chrome.kill();
+    await new Promise(resolve => setTimeout(resolve, 300));   // let it release the profile before it is removed
+  }
+}
 
 /** Start the server. `lms` is the student's record; it lives as long as the server. */
 export async function startServer() {
@@ -197,6 +270,10 @@ export async function startServer() {
           case 'finish':  Object.assign(lms.store, body); lms.finishes = (lms.finishes || 0) + 1; return send(200, 'true');
         }
         return send(404, 'no such LMS call');
+      }
+      if (url.pathname === '/__report') {
+        if (req.method === 'POST') { let raw = ''; for await (const chunk of req) raw += chunk; lms.report = raw; return send(200, 'ok'); }
+        return lms.report ? send(200, lms.report, TYPES['.json']) : send(404, 'no report yet');
       }
       if (url.pathname === '/__d2l.html') return send(200, WRAPPER, TYPES['.html']);
       if (url.pathname === '/__left.html') {
@@ -245,10 +322,11 @@ export function findBrowser() {
  * One visit from one device. A fresh profile directory IS a fresh device: empty
  * localStorage, nothing cached. Returns the scenario's report.
  */
-export async function visit(browser, origin, scenario, params = {}) {
+export async function visit(browser, origin, scenario, params = {}, { realTime = false } = {}) {
   const profile = mkdtempSync(join(tmpdir(), 'lotrd-device-'));
-  const query = new URLSearchParams({ scenario, ...params }).toString();
+  const query = new URLSearchParams({ scenario, ...params, ...(realTime ? { post: '1' } : {}) }).toString();
   try {
+    if (realTime) return await visitInRealTime(browser, profile, `${origin}/__d2l.html?${query}`, origin);
     // Asynchronously: this process is also the web server the browser is talking to.
     const { stdout: dom } = await promisify(execFile)(browser, [
       '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
