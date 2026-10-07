@@ -12,6 +12,18 @@
     "feedback": "The operating system acts as the software manager between applications and hardware, overseeing processes, files, and memory."
   },
   {
+    "question": "In operating systems, what is a process?",
+    "correct": [
+      "An instance of a running program managed and scheduled by the OS"
+    ],
+    "incorrect": [
+      "A program sitting on disk waiting to be launched by the user",
+      "A region of memory the OS reserves for a program's variables",
+      "A file in which a program keeps its settings between runs"
+    ],
+    "feedback": "A process is an active, executing program instance managed (started, scheduled, and isolated) by the operating system."
+  },
+  {
     "question": "A laptop with a single CPU core appears to run a browser, a music player, and a text editor at the same moment. What is the operating system actually doing?",
     "correct": [
       "Switching the core rapidly among the processes so each gets short turns"
@@ -32,16 +44,40 @@
     "feedback": "Deciding who runs next is a policy decision the OS must make thousands of times a second, and it is separate from deciding where a process's memory lives or which files it may open."
   },
   {
-    "question": "In operating systems, what is a process?",
+    "question": "Why does one crashing app usually not take down the whole machine?",
     "correct": [
-      "An instance of a running program managed and scheduled by the OS"
+      "The OS gives each process protected memory and mediates hardware"
     ],
     "incorrect": [
-      "A program sitting on disk waiting to be launched by the user",
-      "A region of memory the OS reserves for a program's variables",
-      "A unit of scheduled work sharing memory inside a running program"
+      "Modern apps are written so carefully that their crashes stay contained",
+      "Each app runs on a separate processor core of its own",
+      "The hardware detects the crash and restarts that app"
     ],
-    "feedback": "A process is an active, executing program instance managed (started, scheduled, and isolated) by the operating system."
+    "feedback": "Programs ask the OS for what they need rather than commanding the hardware, and the OS decides. That mediation is the protection."
+  },
+  {
+    "question": "A site runs three server processes that take turns answering requests. One of them crashed days ago and nothing restarted it. What do visitors see?",
+    "correct": [
+      "About one request in three fails, so the site seems to break at random"
+    ],
+    "incorrect": [
+      "Every request fails, since the three processes depend on one another",
+      "Nothing at all, since DNS stops sending visitors to a dead process",
+      "Every page loads, but each one takes about three times as long"
+    ],
+    "feedback": "The two survivors keep answering, so most requests work and the failures look random — to one visitor and not the next. The fault is not in the network at all: listing the machine's processes would show two where there should be three. A process that has crashed is simply gone, and unless something is watching for that, it stays gone."
+  },
+  {
+    "question": "What does the operating system's file system provide?",
+    "correct": [
+      "Named files and folders, on top of storage that is really numbered blocks"
+    ],
+    "incorrect": [
+      "A protected region of memory for each program that is running",
+      "A schedule that decides which program uses the processor next",
+      "A directory that turns the names of websites into addresses"
+    ],
+    "feedback": "A disk stores numbered blocks of bytes and knows nothing of names. The file system is the layer that lets a program ask for \"notes/todo.txt\" and get the right blocks back — the third of the three things an OS manages, beside processes and memory."
   },
   {
     "question": "What is the primary role of the Domain Name System (DNS) on the internet?",
@@ -56,28 +92,44 @@
     "feedback": "DNS functions as the internet's phonebook, mapping domain names (like example.com) to numeric IP addresses."
   },
   {
-    "question": "Why does one crashing app usually not take down the whole machine?",
+    "question": "Looking up the same big website twice can return different IP addresses. Why?",
     "correct": [
-      "The OS gives each process protected memory and mediates hardware"
+      "Large sites run many machines behind one name, and DNS shares them"
     ],
     "incorrect": [
-      "Modern apps are written so carefully that their crashes stay contained",
-      "Each app runs on a separate processor core of its own",
-      "The hardware detects the crash and restarts that app"
+      "Each visitor is permanently assigned their own private copy of the site",
+      "The address changes each time a page on the site is edited",
+      "DNS invents an address when the real one is unavailable"
     ],
-    "feedback": "Programs ask the OS for what they need rather than commanding the hardware, and the OS decides. That mediation is the protection."
+    "feedback": "A busy site is not one machine: one name stands in front of many, and DNS hands out different addresses to spread visitors across them. It is also why a wrong DNS entry can make a site vanish for some visitors while everyone else sees nothing wrong."
   },
   {
-    "question": "What is an IP address?",
+    "type": "dynamic_numeric",
+    "question": "A message of {{n}} bytes is sent in packets that each carry at most 1,000 bytes. How many packets does it take?",
+    "variables": {
+      "n": {
+        "min": 2300,
+        "max": 9800,
+        "step": 100
+      }
+    },
+    "answer": {
+      "expr": "ceil(n / 1000)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{n}} bytes at 1,000 per packet rounds UP to {{expected}} packets: the last one is partly full, but the bytes in it still have to travel. Each packet is addressed and sent on its own, and they may arrive in any order."
+  },
+  {
+    "question": "What is the primary role of DNS caching in web networking?",
     "correct": [
-      "A numeric identifier assigned to a device connected to a network"
+      "Storing recently looked-up domain IP mappings locally to reduce network query delays"
     ],
     "incorrect": [
-      "A human-readable name that a lookup service converts before a message is sent",
-      "A hardware address permanently burned into a network card at the factory",
-      "A number identifying which program on a machine should receive the data"
+      "Storing copies of recently downloaded pages and images so they need not be fetched again",
+      "Storing each visitor's password so that a returning visitor is already logged in",
+      "Storing the results of recent database queries in server memory so repeats run faster"
     ],
-    "feedback": "An IP (Internet Protocol) address is a unique numeric address identifying a device on a network."
+    "feedback": "DNS caching saves recent domain-to-IP lookup results in local memory so subsequent requests avoid repeated DNS server lookups."
   },
   {
     "question": "How does Transmission Control Protocol (TCP) ensure reliable data delivery across the internet?",
@@ -92,38 +144,6 @@
     "feedback": "TCP provides reliable, ordered data stream delivery by breaking data into numbered packets and retransmitting missing ones."
   },
   {
-    "question": "Looking up the same big website twice can return different IP addresses. Why?",
-    "correct": [
-      "Large sites run many machines behind one name, and DNS shares them"
-    ],
-    "incorrect": [
-      "Each visitor is permanently assigned their own private copy of the site",
-      "The address changes each time a page on the site is edited",
-      "DNS invents an address when the real one is unavailable"
-    ],
-    "feedback": "DNS acts like a receptionist directing a queue. It is also why a stale or wrong DNS entry can make a site vanish for one region while everyone else sees nothing wrong."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The network protocol that addresses packets and routes them between networks is ___.",
-    "correct": [
-      "IP",
-      "Internet Protocol"
-    ],
-    "case_sensitive": false,
-    "feedback": "IP (Internet Protocol) specifies how data packets are formatted and routed across network boundaries."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The standard protocol spoken between web browsers and web servers to request pages is ___.",
-    "correct": [
-      "HTTP",
-      "HTTPS"
-    ],
-    "case_sensitive": false,
-    "feedback": "HTTP (Hypertext Transfer Protocol) is the application-layer foundation of web request/response communication."
-  },
-  {
     "question": "A router along the path drops one packet in the middle of a TCP transfer. What happens next?",
     "correct": [
       "The sender notices the missing acknowledgement and resends that packet"
@@ -136,23 +156,311 @@
     "feedback": "TCP numbers packets and waits for acknowledgements, so a loss is detected and just that packet is resent. IP alone would simply have lost it."
   },
   {
-    "type": "fill_blank",
-    "question": "The three-digit HTTP response status code that indicates a requested resource was successfully found is ___.",
-    "correct": [
-      "200"
-    ],
-    "case_sensitive": false,
-    "feedback": "Status code 200 OK signifies that an HTTP request succeeded and the response payload is returned."
-  },
-  {
-    "type": "code_line",
-    "question": "A response from the requests library is stored in the variable r. Write the Python expression that gives the numeric HTTP status code of that response.",
+    "type": "code_trace",
+    "question": "These packets arrived out of order. Each carries its number and a piece of text. What does the program print?",
+    "code": "packets = [(3, \"lo\"), (1, \"he\"), (2, \"l\")]\npackets.sort()\nmessage = \"\"\nfor number, text in packets:\n    message = message + text\nprint(message)",
     "language": "python",
     "correct": [
-      "r.status_code"
+      "hello"
+    ],
+    "case_sensitive": true,
+    "feedback": "Sorting the pairs puts them in order of their numbers — 1, 2, 3 — and joining the texts in that order rebuilds the message. This is the job TCP does for you: packets are numbered when they are sent precisely so that they can be put back in order however they arrive."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A file is sent as {{n}} numbered packets. The receiver has acknowledged {{k}} of them. For how many packets is the sender still waiting on an acknowledgement?",
+    "variables": {
+      "n": {
+        "min": 20,
+        "max": 60
+      },
+      "k": {
+        "min": 5,
+        "max": 18
+      }
+    },
+    "answer": {
+      "expr": "n - k",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{n}} sent and {{k}} acknowledged leaves {{expected}} unconfirmed. TCP treats a packet as delivered only when its acknowledgement comes back; any of those {{expected}} that never gets one is sent again."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the four layers of the TCP/IP model, starting closest to the physical hardware.",
+    "items": [
+      "Link layer",
+      "Internet layer",
+      "Transport layer",
+      "Application layer"
+    ],
+    "feedback": "The link layer moves bits between neighbouring machines; the internet layer routes packets between addresses; TCP, at the transport layer, makes the delivery reliable end to end; and the application layer is where HTTP and your program live."
+  },
+  {
+    "question": "Which of the following are layers in the four-layer TCP/IP network model? (Select all that apply)",
+    "correct": [
+      "Application layer",
+      "Transport layer",
+      "Internet layer",
+      "Link layer"
+    ],
+    "incorrect": [
+      "Session layer",
+      "Packet layer"
+    ],
+    "feedback": "The four TCP/IP layers are link, internet, transport and application."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The layer of the TCP/IP model that routes each packet across the world, hop by hop, toward its destination address is the ___ layer.",
+    "correct": [
+      "Internet",
+      "IP",
+      "network"
     ],
     "case_sensitive": false,
-    "feedback": "The status code is an attribute already parsed from the response's status line, not a method you call, so no parentheses are needed. It is an int, which is why comparisons like == 200 work directly."
+    "feedback": "The Internet (IP) layer handles addressing and routing packets from network to network. Making that delivery reliable end to end is the transport layer's job."
+  },
+  {
+    "type": "cloze",
+    "question": "Fetching a page takes three separate jobs in turn. First {{1}} turns the domain name into a numeric address. Then {{2}} routes the packets to that address, and the browser and server talk to each other in {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "DNS"
+        ],
+        "hint": "name lookup"
+      },
+      {
+        "accept": [
+          "IP",
+          "Internet Protocol"
+        ],
+        "hint": "protocol"
+      },
+      {
+        "accept": [
+          "HTTP",
+          "HTTPS"
+        ],
+        "hint": "protocol"
+      }
+    ],
+    "feedback": "Three different jobs, three different protocols: DNS resolves the name, IP routes the packets to the address it returned, and HTTP is the language the browser and server actually converse in once connected."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The standard protocol spoken between web browsers and web servers to request pages is ___.",
+    "correct": [
+      "HTTP",
+      "HTTPS"
+    ],
+    "case_sensitive": false,
+    "feedback": "HTTP (Hypertext Transfer Protocol) is the application-layer foundation of web request/response communication."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: What one click actually costs",
+    "npc": "tariq",
+    "intro": "Tariq climbs to the ramparts. “You type a name and a page appears. Between those two moments is a short chain of separate errands. Most people cannot name even two.”",
+    "steps": [
+      {
+        "say": "You type example.com. Your machine has no idea where that is — names mean nothing to the network, which only routes to numbers. So errand one is DNS: ask the directory to turn the name into an IP address.",
+        "beats": [
+          {
+            "say": "You type example.com. Your machine has no idea where that is — names mean nothing to the network, which only routes to numbers."
+          },
+          {
+            "say": "So errand one is DNS: ask the directory to turn the name into an IP address."
+          }
+        ]
+      },
+      {
+        "say": "DNS answers with an address.",
+        "check": {
+          "prompt": "The browser now has the IP address. What is the next errand?",
+          "answer": "Open a connection to that address and send an HTTP request",
+          "wrong": [
+            "Ask DNS again, this time for the page contents",
+            "Copy the server's files straight onto your disk"
+          ],
+          "why": "DNS only translates names into addresses. Fetching the page itself is a separate conversation, in HTTP, with the machine at that address."
+        }
+      },
+      {
+        "say": "The server takes the request, runs its code, and sends back an HTTP response: a status code — 200 when all is well, 404 when there is nothing there — plus the HTML body. Your browser renders that. Each errand can fail on its own, and each fails in its own way.",
+        "beats": [
+          {
+            "say": "The server takes the request, runs its code, and sends back an HTTP response: a status code — 200 when all is well, 404 when there is nothing there — plus the HTML body."
+          },
+          {
+            "say": "Your browser renders that. Each errand can fail on its own, and each fails in its own way."
+          }
+        ]
+      }
+    ],
+    "outro": "“So when a page does not appear, the first question is: which errand broke?”"
+  },
+  {
+    "question": "A browser reports \"server not found\" before any page loads. Typing the site's numeric IP address into the address bar instead works perfectly. Which errand failed?",
+    "correct": [
+      "The DNS lookup: the name was never turned into an address"
+    ],
+    "incorrect": [
+      "The HTTP request: the server answered it with a 404 code",
+      "The rendering: the browser could not draw the HTML it got",
+      "The connection: the machine at that address is switched off"
+    ],
+    "feedback": "The machine is up and answering — the numeric address proves that. What failed is the errand before it: turning the name into that address. No connection was ever opened and no HTTP was ever spoken, so there is no status code to read."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the steps of fetching a web page, from typing the address to seeing the page.",
+    "items": [
+      "Look up the domain name through DNS to get an IP address",
+      "Open a connection to that IP address",
+      "Send an HTTP request for the page",
+      "The server runs its code and returns an HTTP response",
+      "The browser renders the returned HTML"
+    ],
+    "feedback": "Names must become addresses before a connection can be opened, the request must go out before a response can come back, and only then is there any HTML to draw."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Reading the letter and its reply",
+    "npc": "tariq",
+    "intro": "Tariq unfolds two slips of paper. “HTTP is plain text. If you can read these two slips, you can read any conversation on the web.”",
+    "steps": [
+      {
+        "say": "The request. Its first line says what is wanted: a method — GET means \"give me\" — then the path. Under it are headers: labelled notes about the request, one per line.",
+        "beats": [
+          {
+            "code": "GET /tip/3 HTTP/1.1\nHost: tips.example\nAccept: text/html",
+            "language": "the request"
+          },
+          {
+            "say": "The request. Its first line says what is wanted: a method — GET means \"give me\" — then the path."
+          },
+          {
+            "say": "Under it are headers: labelled notes about the request, one per line."
+          }
+        ]
+      },
+      {
+        "say": "The response comes back in three parts.",
+        "beats": [
+          {
+            "code": "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<h1>No such tip</h1>",
+            "language": "the response"
+          },
+          {
+            "say": "The response comes back in three parts."
+          }
+        ],
+        "check": {
+          "prompt": "Which line tells you how the request turned out?",
+          "answer": "The first: the status line, with its code 404",
+          "wrong": [
+            "The Content-Type header",
+            "The last line, with the heading in it"
+          ],
+          "why": "The status line carries the three-digit verdict. Headers describe the content, and the body IS the content."
+        }
+      },
+      {
+        "say": "So: status line, then headers, a blank line, then the body. The first digit of the code is the gist — 2 worked, 3 look elsewhere, 4 your request was the problem, 5 the server was."
+      }
+    ],
+    "outro": "“Another pair of slips. Read the first line of each before anything else.”"
+  },
+  {
+    "question": "Here is an HTTP exchange:\n\nPOST /orders HTTP/1.1\nHost: shop.example\n\nHTTP/1.1 500 Internal Server Error\nContent-Type: text/html\n\nWhat went wrong?",
+    "correct": [
+      "The server's own code failed while handling the request"
+    ],
+    "incorrect": [
+      "The request used POST, a method the server does not accept",
+      "The name shop.example could not be turned into an address",
+      "The browser was sent a page type that it could not display"
+    ],
+    "feedback": "The status line says 500, and a code starting with 5 means the server failed: the request arrived and was understood, and then something broke on the far side. A bad method would have been a 4xx — the client's mistake — and a DNS failure would have produced no response at all."
+  },
+  {
+    "type": "cloze",
+    "question": "An HTTP response arrives in three parts. The {{1}} line carries the three-digit code such as 404, the {{2}} carry metadata such as Content-Type and Content-Length, and the {{3}} holds the HTML the browser actually renders.",
+    "blanks": [
+      {
+        "accept": [
+          "status",
+          "first"
+        ],
+        "hint": "which line"
+      },
+      {
+        "accept": [
+          "headers",
+          "header"
+        ],
+        "hint": "metadata"
+      },
+      {
+        "accept": [
+          "body",
+          "payload"
+        ],
+        "hint": "content"
+      }
+    ],
+    "feedback": "Students often call the whole response \"the page\", but the parts have separate jobs: the code reports how the request went, the headers describe the content without being part of it, and only the body is the content itself."
+  },
+  {
+    "question": "Which of the following components are part of an HTTP request message? (Select all that apply)",
+    "correct": [
+      "Request method (GET or POST)",
+      "Target path URL",
+      "Header key-value pairs"
+    ],
+    "incorrect": [
+      "Status code, such as 200",
+      "Reason phrase, such as Not Found"
+    ],
+    "feedback": "A request carries a method, the path wanted, headers, and sometimes a body. The status code and its reason phrase belong to the response: they are the server's verdict on a request, so a request cannot contain them."
+  },
+  {
+    "question": "Which of the following are examples of HTTP request methods? (Select all that apply)",
+    "correct": [
+      "GET",
+      "POST",
+      "DELETE"
+    ],
+    "incorrect": [
+      "SELECT",
+      "FETCH"
+    ],
+    "feedback": "GET, POST, PUT and DELETE are HTTP methods: the verb on the first line of a request. SELECT is SQL, and fetch is a name some libraries use for making a request — neither is an HTTP method."
+  },
+  {
+    "type": "matching",
+    "question": "Match each HTTP status code range to its general category.",
+    "pairs": [
+      {
+        "term": "2xx",
+        "definition": "Success — the request was successfully received and processed"
+      },
+      {
+        "term": "3xx",
+        "definition": "Redirection — further action must be taken to complete the request"
+      },
+      {
+        "term": "4xx",
+        "definition": "Client Error — the request contains bad syntax or cannot be found"
+      },
+      {
+        "term": "5xx",
+        "definition": "Server Error — the server failed to fulfill an apparently valid request"
+      }
+    ],
+    "feedback": "2xx indicates success, 3xx redirection, 4xx client errors (like 404), and 5xx server failures (like 500)."
   },
   {
     "type": "fill_blank",
@@ -176,149 +484,71 @@
     "feedback": "5xx status codes (like 500 and 503) indicate that the server encountered an error while attempting to fulfill a request."
   },
   {
-    "question": "Which of the following are layers in the four-layer TCP/IP network model? (Select all that apply)",
-    "correct": [
-      "Application layer",
-      "Transport layer",
-      "Internet layer",
-      "Link layer"
-    ],
-    "incorrect": [
-      "Session layer",
-      "Presentation layer"
-    ],
-    "feedback": "The four TCP/IP layers are link, internet, transport and application. Session and presentation belong to the seven-layer OSI model, which splits the application layer further."
-  },
-  {
-    "type": "ordering",
-    "question": "Arrange the four layers of the TCP/IP model, starting closest to the physical hardware.",
-    "items": [
-      "Link layer",
-      "Internet layer",
-      "Transport layer",
-      "Application layer"
-    ],
-    "feedback": "The link layer moves bits between neighbouring machines, the internet layer routes packets between addresses, the transport layer makes the delivery reliable end to end, and the application layer is where HTTP and your program live."
-  },
-  {
-    "question": "Which of the following components are part of an HTTP request message? (Select all that apply)",
-    "correct": [
-      "Request method (GET or POST)",
-      "Target path URL",
-      "Header key-value pairs"
-    ],
-    "incorrect": [
-      "SQL database table index",
-      "CPU register memory address"
-    ],
-    "feedback": "An HTTP request consists of an HTTP method, path, headers (like Host and Content-Type), and an optional body."
-  },
-  {
-    "type": "matching",
-    "question": "Match each computing deployment model to its description.",
-    "pairs": [
-      {
-        "term": "IaaS",
-        "definition": "Renting raw virtual servers, storage, and networking hardware"
-      },
-      {
-        "term": "PaaS",
-        "definition": "Renting a managed platform to deploy code without managing servers"
-      },
-      {
-        "term": "SaaS",
-        "definition": "Using completed software applications hosted and managed by a vendor"
-      },
-      {
-        "term": "On-Premises",
-        "definition": "Owning and maintaining physical server hardware in your own building"
-      }
-    ],
-    "feedback": "IaaS provides raw infrastructure, PaaS offers application deployment platforms, SaaS delivers end-user software, and on-premises uses self-owned hardware."
-  },
-  {
     "question": "A request is sent for a page that does not exist, and the program receives a 404 without crashing. What does this show?",
     "correct": [
       "The server answered normally; the code reports it missing"
     ],
     "incorrect": [
-      "The client library failed to parse the response body into JSON",
+      "The server could not be reached, and 404 is how that is shown",
       "The request completely failed to reach the server",
       "The network dropped all the packets on the way back"
     ],
-    "feedback": "No crash and no silence — just a calm verdict meaning that is not a thing. Status codes are how HTTP reports failure as data rather than as an accident."
+    "feedback": "A 404 is an answer. The request arrived, the server looked, and it replied — in an orderly response with a status line — that nothing lives at that path. Status codes are how HTTP reports failure as data rather than as silence or a crash."
   },
   {
-    "type": "matching",
-    "question": "Match each web component to its primary role.",
-    "pairs": [
-      {
-        "term": "DNS",
-        "definition": "Translates domain names to IP addresses"
-      },
-      {
-        "term": "HTTP Header",
-        "definition": "Carries metadata envelopes like Content-Type"
-      },
-      {
-        "term": "API",
-        "definition": "Answers client program requests with JSON data"
-      },
-      {
-        "term": "Flask Route",
-        "definition": "Maps a URL path to a Python handler function"
-      }
+    "question": "A team moves its price list from /old-prices to /pricing and wants existing bookmarks to keep working. What should the server send when someone requests /old-prices?",
+    "correct": [
+      "A 3xx redirect response naming the new location of the resource"
     ],
-    "feedback": "DNS maps names to IPs, headers carry request metadata, APIs exchange structured data, and Flask routes match paths to code."
+    "incorrect": [
+      "A 404, because the requested path no longer names a real page on the server",
+      "A 500, because the server can no longer complete a request for that path",
+      "A 200 with an empty body, letting the browser search for the moved page"
+    ],
+    "feedback": "The 3xx range exists exactly for resources that have moved: the browser is told where to go and follows automatically. A 404 would be honest but would break every bookmark, and a 500 would wrongly blame a server fault for a deliberate reorganisation."
+  },
+  {
+    "question": "What is the function of HTTP headers in a web conversation?",
+    "correct": [
+      "Labelled notes about the message, such as its type and length"
+    ],
+    "incorrect": [
+      "The HTML or JSON content that the message exists to deliver",
+      "The three-digit code saying how the request turned out",
+      "The path naming which page or resource is being asked for"
+    ],
+    "feedback": "HTTP headers pass additional metadata (like content type, length, authorization credentials, and cookies) between client and server."
+  },
+  {
+    "type": "code_trace",
+    "question": "This program pulls apart one header line. What does it print?",
+    "code": "line = \"Content-Type: text/html\"\nname, value = line.split(\": \")\nprint(value.split(\"/\")[1])",
+    "language": "python",
+    "correct": [
+      "html"
+    ],
+    "case_sensitive": true,
+    "feedback": "Splitting on \": \" separates the header's name from its value, text/html. Splitting that value on \"/\" gives text and html, and index 1 is html. A header is just a labelled line of text, which is why two splits are enough to read one."
   },
   {
     "type": "dynamic_numeric",
-    "question": "A web server processes {{req_per_sec}} requests per second. How many requests does it process in {{seconds}} seconds?",
+    "question": "Loading a page takes one request for the HTML document itself, plus one request for each of its {{css}} stylesheets and each of its {{img}} images. How many HTTP requests does the browser send in total?",
     "variables": {
-      "req_per_sec": {
-        "min": 50,
-        "max": 300,
-        "step": 50
+      "css": {
+        "min": 1,
+        "max": 4
       },
-      "seconds": {
-        "min": 10,
-        "max": 60,
-        "step": 10
+      "img": {
+        "min": 3,
+        "max": 12,
+        "step": 3
       }
     },
     "answer": {
-      "expr": "req_per_sec * seconds",
+      "expr": "1 + css + img",
       "tolerance_abs": 0
     },
-    "feedback_template": "Processing {{req_per_sec}} requests/sec for {{seconds}} seconds yields {{expected}} total requests."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A file of {{size_mb}} MB is sent in packets of {{packet_kb}} KB. Assuming 1 MB = 1000 KB, how many packets are sent?",
-    "variables": {
-      "size_mb": {
-        "min": 2,
-        "max": 10,
-        "step": 2
-      },
-      "packet_kb": {
-        "values": [
-          10,
-          20,
-          25,
-          40,
-          50
-        ]
-      }
-    },
-    "answer": {
-      "expr": "(size_mb * 1000) / packet_kb",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "{{size_mb}} MB is {{size_kb}} KB, and dividing that by {{packet_kb}} KB per packet gives {{expected}} packets.",
-    "derived": {
-      "size_kb": "size_mb * 1000"
-    }
+    "feedback_template": "The HTML page is only the first request; every stylesheet and image referenced inside it costs another round trip, so 1 + {{css}} + {{img}} = {{expected}} requests."
   },
   {
     "type": "dynamic_numeric",
@@ -345,6 +575,17 @@
     "feedback_template": "Each round moves at most {{parallel}} files, so {{files}} files need ceil({{files}} / {{parallel}}) = {{expected}} rounds; a partly full final round still counts as a round."
   },
   {
+    "type": "code_trace",
+    "question": "This function is meant to call 2xx codes \"ok\" and 4xx codes \"error\". What does the program print?",
+    "code": "def verdict(code):\n    if code >= 200:\n        return \"ok\"\n    elif code >= 400:\n        return \"error\"\n\nprint(verdict(404))",
+    "language": "python",
+    "correct": [
+      "ok"
+    ],
+    "case_sensitive": true,
+    "feedback": "404 is at least 200, so the first test passes and the function returns \"ok\" before the second test is ever tried. Ranges have to be checked from the top down — or with both ends, 200 <= code < 300 — or every error is reported as a success."
+  },
+  {
     "question": "What is an Application Programming Interface (API) in the context of web applications?",
     "correct": [
       "A web service designed to return structured data like JSON to code"
@@ -362,11 +603,21 @@
       "requests"
     ],
     "incorrect": [
-      "math",
-      "random",
-      "sys"
+      "flask",
+      "json",
+      "sqlite3"
     ],
-    "feedback": "Python's `requests` library allows programs to send HTTP GET, POST, and other requests easily."
+    "feedback": "requests sends HTTP requests from a program. flask is for the other end — writing the server that answers them — and json and sqlite3 work with data you already have."
+  },
+  {
+    "type": "code_line",
+    "question": "A response from the requests library is stored in the variable r. Write the Python expression that gives the numeric HTTP status code of that response.",
+    "language": "python",
+    "correct": [
+      "r.status_code"
+    ],
+    "case_sensitive": true,
+    "feedback": "The status code is an attribute already parsed from the response's status line, not a method you call, so no parentheses are needed. It is an int, which is why comparisons like == 200 work directly."
   },
   {
     "question": "What method on a Python `requests` response object turns the body it received into a Python dictionary or list?",
@@ -374,59 +625,299 @@
       ".json()"
     ],
     "incorrect": [
-      ".parse()",
-      ".dict()",
-      ".to_python()"
+      ".text",
+      ".content",
+      ".status_code"
     ],
-    "feedback": "The `.json()` method on a `requests.Response` object decodes the JSON payload into corresponding Python data structures."
+    "feedback": ".json() reads the body as JSON and hands back the matching Python dictionary or list. .text is the same body as one long string, and .status_code is the three-digit verdict."
   },
   {
-    "question": "Which of these are true of Google Colab, in cloud terms? (Select all that apply)",
-    "correct": [
-      "It is finished software used through a browser, which is SaaS",
-      "It hands you a managed Linux machine to run code on"
+    "type": "npc_demo",
+    "question": "NPC: Walking into a JSON reply",
+    "npc": "tariq",
+    "intro": "Tariq hands you a parcel within a parcel. “An API does not answer with a page. It answers with data — and data from an API is nearly always nested.”",
+    "steps": [
+      {
+        "say": "This is what .json() hands you: an ordinary Python dictionary. Some of its values are plain, one is another dictionary, and one is a list.",
+        "beats": [
+          {
+            "code": "reply = {\n    \"city\": \"Oslo\",\n    \"now\": {\"temp\": 4, \"sky\": \"snow\"},\n    \"next\": [5, 7, 3]\n}",
+            "language": "python"
+          },
+          {
+            "say": "This is what .json() hands you: an ordinary Python dictionary. Some of its values are plain, one is another dictionary, and one is a list."
+          }
+        ]
+      },
+      {
+        "say": "You walk in one step at a time. reply[\"now\"] is the inner dictionary. To get the temperature out of THAT, you index again.",
+        "check": {
+          "prompt": "Which expression gives the temperature, 4?",
+          "answer": "reply[\"now\"][\"temp\"]",
+          "wrong": [
+            "reply[\"temp\"]",
+            "reply[\"now\"][\"sky\"]"
+          ],
+          "why": "\"temp\" is not a key of the outer dictionary. It lives inside the dictionary stored under \"now\", so it takes two steps."
+        }
+      },
+      {
+        "say": "A list is the same idea with a number: reply[\"next\"][0] is 5. Read the brackets left to right, each one a step further in."
+      }
     ],
-    "incorrect": [
-      "It gives you bare virtual machines needing an OS installed",
-      "It runs wholly on your own computer, with no server involved"
-    ],
-    "feedback": "You have been a cloud customer all semester. The Linux box whose processes you can list is a slice of someone else's computer."
+    "outro": "“A different parcel. Count the steps before you write the brackets.”"
   },
   {
-    "question": "What is Flask in the Python ecosystem?",
+    "type": "code_trace",
+    "question": "This is the kind of dictionary an API reply becomes. What does the program print?",
+    "code": "reply = {\n    \"user\": \"ada\",\n    \"plan\": {\"name\": \"pro\", \"seats\": 3},\n    \"tags\": [\"new\", \"paid\", \"eu\"]\n}\nprint(reply[\"plan\"][\"name\"], reply[\"tags\"][1])",
+    "language": "python",
     "correct": [
-      "A micro web framework for writing web servers and defining HTTP routes"
+      "pro paid"
     ],
-    "incorrect": [
-      "A browser engine that renders HTML and CSS into the page a user sees",
-      "A template language used to fill placeholders inside HTML page files",
-      "A package manager that installs Python libraries from an online index"
-    ],
-    "feedback": "Flask is a lightweight Python web framework used to handle HTTP requests, define routes, and render web pages."
+    "case_sensitive": true,
+    "feedback": "reply[\"plan\"] is the inner dictionary, and [\"name\"] takes \"pro\" out of it. reply[\"tags\"] is a list, and index 1 is its second item, \"paid\". Each pair of brackets is one step further into the reply."
   },
   {
-    "question": "In a web server like Flask, what is a route?",
+    "type": "code_line",
+    "question": "An API reply has been stored as  data = {\"city\": \"Oslo\", \"now\": {\"temp\": 4, \"sky\": \"snow\"}}.  Write the expression that gives the temperature.",
+    "language": "python",
     "correct": [
-      "A mapping between a specific URL path and the Python function that handles it"
+      "data[\"now\"][\"temp\"]",
+      "data['now']['temp']"
     ],
-    "incorrect": [
-      "The path through network routers that a request follows to reach the server",
-      "The HTML template file a handler function renders and returns to a browser",
-      "The address of the server a browser must look up before sending a request"
-    ],
-    "feedback": "A route pairs a URL path (like `/api/users`) with a handler function that executes when a request arrives at that path."
+    "case_sensitive": true,
+    "feedback": "Two steps: data[\"now\"] is the inner dictionary, and [\"temp\"] takes the temperature out of it. data[\"temp\"] would fail with a KeyError, because the outer dictionary has no such key."
   },
   {
-    "question": "What is the purpose of dynamic URL parameters in Flask routes (such as `/user/<int:user_id>`)?",
+    "type": "code_trace",
+    "question": "JSON arrives as text. This program turns it into Python data. What does it print?",
+    "code": "import json\n\ntext = '{\"items\": [{\"id\": 3}, {\"id\": 9}]}'\ndata = json.loads(text)\nprint(len(data[\"items\"]), data[\"items\"][1][\"id\"])",
+    "language": "python",
     "correct": [
-      "Extracting variable values from the request URL into function arguments"
+      "2 9"
+    ],
+    "case_sensitive": true,
+    "feedback": "json.loads turns the text into a dictionary whose \"items\" key holds a list of two dictionaries. len counts the two, and data[\"items\"][1][\"id\"] walks to the second one and takes its id. The braces and brackets in JSON become Python dictionaries and lists, one for one."
+  },
+  {
+    "type": "code_trace",
+    "question": "A program builds the address of an API endpoint. What does it print?",
+    "code": "base = \"https://api.example\"\ncity = \"oslo\"\nurl = f\"{base}/weather/{city}\"\nprint(url.split(\"/\")[-2])",
+    "language": "python",
+    "correct": [
+      "weather"
+    ],
+    "case_sensitive": true,
+    "feedback": "The f-string drops both values into place, giving https://api.example/weather/oslo. Split on \"/\", its last piece is oslo and the one before that is weather. Building a URL is string work you already know."
+  },
+  {
+    "type": "code_trace",
+    "question": "An API reply may or may not contain an \"error\" key. What does the program print?",
+    "code": "reply = {\"status\": \"ok\", \"count\": 2}\nprint(reply.get(\"error\"), reply.get(\"count\"))",
+    "language": "python",
+    "correct": [
+      "None 2"
+    ],
+    "case_sensitive": true,
+    "feedback": ".get() returns None for a key that is not there instead of stopping the program, which makes it the safe way to read a field an API only sometimes sends. reply[\"error\"] would have raised a KeyError."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An API replies with  {\"scores\": [{{a}}, {{b}}, {{c}}], \"max\": {{m}}}  and the program stores it in  reply.  What number is  reply[\"scores\"][0] + reply[\"scores\"][-1] ?",
+    "variables": {
+      "a": {
+        "min": 11,
+        "max": 40
+      },
+      "b": {
+        "min": 41,
+        "max": 70
+      },
+      "c": {
+        "min": 71,
+        "max": 99
+      },
+      "m": {
+        "values": [
+          100,
+          120,
+          150
+        ]
+      }
+    },
+    "answer": {
+      "expr": "a + c",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "reply[\"scores\"] is the list. Index 0 is its first item, {{a}}, and index -1 is its last, {{c}}, so the sum is {{expected}}. The {{b}} in the middle and the \"max\" value are never touched."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the blanks so this program asks a web API for Oslo's weather and prints the temperature from its JSON reply.",
+    "question": "import requests\n\nr = requests.{{1}}(\"https://api.example/weather/oslo\")\ndata = r.{{2}}()\nprint(data[\"temp\"])",
+    "language": "python",
+    "blanks": [
+      {
+        "accept": [
+          "get"
+        ],
+        "hint": "HTTP method",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "json"
+        ],
+        "hint": "parse the body",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "requests.get sends a GET request and hands back a response object. Its .json() method reads the body as JSON and returns ordinary Python data — here a dictionary, which is then indexed like any other."
+  },
+  {
+    "type": "matching",
+    "question": "Match each computing deployment model to its description.",
+    "pairs": [
+      {
+        "term": "IaaS",
+        "definition": "Renting raw virtual servers, storage, and networking hardware"
+      },
+      {
+        "term": "PaaS",
+        "definition": "Renting a managed platform to deploy code without managing servers"
+      },
+      {
+        "term": "SaaS",
+        "definition": "Using completed software applications hosted and managed by a vendor"
+      },
+      {
+        "term": "On-Premises",
+        "definition": "Owning and maintaining physical server hardware in your own building"
+      }
+    ],
+    "feedback": "IaaS provides raw infrastructure, PaaS offers application deployment platforms, SaaS delivers end-user software, and on-premises uses self-owned hardware."
+  },
+  {
+    "question": "A student opens Google Colab in a browser and starts typing Python, with nothing installed. In cloud terms, what kind of service is that?",
+    "correct": [
+      "SaaS: finished software, used through a browser"
     ],
     "incorrect": [
-      "Restricting which HTTP methods, such as GET or POST, a handler will accept",
-      "Declaring the return type a handler must produce before sending a response",
-      "Naming the HTML template file rendered for requests at that path"
+      "IaaS: bare machines you put an operating system on",
+      "PaaS: a platform you upload your own web app to",
+      "On-premises: software running on your own computer"
     ],
-    "feedback": "URL parameters capture dynamic values from the requested URL path and pass them as arguments to the handler function."
+    "feedback": "Colab is a finished application you simply use: that is software as a service. Underneath, it runs your code on a machine in someone else's data centre, which is why you have been a cloud customer all semester — but you never see or manage that machine."
+  },
+  {
+    "type": "matching",
+    "question": "Match each situation to the model it is an example of.",
+    "pairs": [
+      {
+        "term": "You rent a virtual server and install Linux on it yourself",
+        "definition": "IaaS"
+      },
+      {
+        "term": "You upload your Flask app and the service runs it for you",
+        "definition": "PaaS"
+      },
+      {
+        "term": "You log in to a web-based email program and use it",
+        "definition": "SaaS"
+      },
+      {
+        "term": "You keep a server in a closet at your own office",
+        "definition": "On-premises"
+      }
+    ],
+    "feedback": "The question to ask is how much of the stack is yours to manage. On-premises: all of it, hardware included. IaaS: the machine is rented, the operating system up is yours. PaaS: only your code is yours. SaaS: nothing is — you are a user."
+  },
+  {
+    "question": "Which of these are reasons a company might choose SaaS over IaaS? (Select all that apply)",
+    "correct": [
+      "Nobody on the team has to manage an operating system or servers",
+      "The software is ready to use immediately through a browser"
+    ],
+    "incorrect": [
+      "It gives the most control over exactly how the machines are configured",
+      "It is the model that keeps data on the company's own hardware",
+      "It lets the team install whichever operating system it prefers"
+    ],
+    "feedback": "SaaS trades control for convenience: you are a user, and nothing underneath is your problem. IaaS is the opposite trade — total control and total responsibility."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: A route with a slot in it",
+    "npc": "tariq",
+    "intro": "Tariq chalks three lines on the gatehouse wall. “You have been the one sending requests. Here is the other end: the code that answers them.”",
+    "steps": [
+      {
+        "say": "A route pairs a path with a function. The line starting with @ names the path; the function under it runs when a request for that path arrives, and whatever it returns is the response body.",
+        "beats": [
+          {
+            "code": "@app.route(\"/status\")\ndef status():\n    return \"all well\"",
+            "language": "python"
+          },
+          {
+            "say": "A route pairs a path with a function. The line starting with @ names the path."
+          },
+          {
+            "say": "The function under it runs when a request for that path arrives, and whatever it returns is the response body."
+          }
+        ]
+      },
+      {
+        "say": "A path can have a slot in it, written in angle brackets. Whatever the visitor puts in that part of the address is handed to the function as an argument: a URL parameter.",
+        "beats": [
+          {
+            "code": "@app.route(\"/tip/<int:tip_id>\")\ndef show_tip(tip_id):\n    return TIPS[tip_id]",
+            "language": "python"
+          },
+          {
+            "say": "A path can have a slot in it, written in angle brackets. Whatever the visitor puts in that part of the address is handed to the function as an argument: a URL parameter."
+          }
+        ],
+        "check": {
+          "prompt": "A request arrives for /tip/7. What happens?",
+          "answer": "show_tip runs with tip_id equal to 7",
+          "wrong": [
+            "status runs, because it is defined first",
+            "Nothing matches, since no path is exactly /tip/7"
+          ],
+          "why": "The slot matches the 7, and Flask passes it in as the argument named in the angle brackets."
+        }
+      },
+      {
+        "say": "One function now answers for every tip there will ever be. That is the whole request/response cycle from the server's side: a request comes in, the matching function runs, its return value goes back."
+      }
+    ],
+    "outro": "“A different route. Work out what the function is handed, then what it returns.”"
+  },
+  {
+    "question": "A Flask app contains this route:\n\n@app.route(\"/hello/<name>\")\ndef hello(name):\n    return \"Hi, \" + name + \"!\"\n\nWhat does a request for /hello/Ada get back?",
+    "correct": [
+      "Hi, Ada!"
+    ],
+    "incorrect": [
+      "Hi, name!",
+      "Hi, <name>!",
+      "A 404 Not Found"
+    ],
+    "feedback": "The slot <name> matches Ada, so hello is called with name equal to \"Ada\" and returns \"Hi, Ada!\". The angle brackets are part of the pattern, never of the answer, and a slot matches any value — which is why this is not a 404."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange these lines into a complete Flask app with one route.",
+    "language": "python",
+    "items": [
+      "from flask import Flask",
+      "app = Flask(__name__)",
+      "@app.route(\"/status\")",
+      "def status():",
+      "    return \"all well\""
+    ],
+    "feedback": "Flask has to be imported before an app can be made from it, and the app has to exist before @app.route can attach anything to it. The decorator sits directly above the function it applies to, and the return belongs inside that function."
   },
   {
     "type": "fill_blank",
@@ -436,28 +927,6 @@
     ],
     "case_sensitive": false,
     "feedback": "Templates are HTML files with placeholder tags where web servers insert dynamic data before serving the page."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The protocol layer responsible for routing packets between IP addresses across networks is the ___ layer.",
-    "correct": [
-      "Internet",
-      "IP"
-    ],
-    "case_sensitive": false,
-    "feedback": "The Internet (IP) layer handles addressing and routing packets from network to network. Making that delivery reliable end to end is the transport layer's job."
-  },
-  {
-    "question": "Which of the following statements accurately describe cloud computing? (Select all that apply)",
-    "correct": [
-      "Cloud resources are rented on demand over a network connection",
-      "Cloud providers manage physical server hardware and facilities"
-    ],
-    "incorrect": [
-      "Cloud computing eliminates the need for software code testing",
-      "Cloud services run without using physical computers or disk storage"
-    ],
-    "feedback": "Cloud computing lets teams rent computing resources on demand over the internet without owning physical hardware facilities."
   },
   {
     "question": "The notebook says most web pages do not exist until you ask for them. What does that mean?",
@@ -472,274 +941,320 @@
     "feedback": "There is no file anywhere holding your social feed or your bank statement page. A page is just a string a server computed — and you already know how to compute strings."
   },
   {
-    "question": "Which of the following are examples of HTTP request methods? (Select all that apply)",
-    "correct": [
-      "GET",
-      "POST",
-      "DELETE"
+    "type": "code_write",
+    "question": "Return True when an HTTP status code means success — any code from 200 to 299 — and False otherwise.",
+    "signature": "def is_ok(code):",
+    "tests": [
+      {
+        "args": [
+          200
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          299
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          300
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          199
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          404
+        ],
+        "expect": false
+      }
     ],
-    "incorrect": [
-      "FETCH_ALL",
-      "SELECT_WHERE"
-    ],
-    "feedback": "GET, POST, PUT, and DELETE are standard HTTP methods (verbs) defining the desired action on a resource."
+    "solution": "return 200 <= code <= 299",
+    "hint": "A range has two ends. Python lets you write both in one comparison: `low <= x <= high`.",
+    "feedback": "Checking only code >= 200 would call 404 a success. A range needs both ends, and the test table has a code just outside each one."
   },
   {
-    "type": "npc_demo",
-    "question": "NPC: What one click actually costs",
-    "npc": "tariq",
-    "intro": "Tariq climbs to the ramparts, where a messenger waits with an empty satchel. “You type a name and a page appears. Between those two moments is a short chain of separate errands. Most people cannot name even two.”",
-    "steps": [
+    "type": "code_write",
+    "question": "Return the kind of response a status code stands for: 'success' for 200 to 299, 'redirect' for 300 to 399, 'client error' for 400 to 499, and 'server error' for 500 to 599.",
+    "signature": "def status_class(code):",
+    "tests": [
       {
-        "say": "You type example.com. Your machine has no idea where that is — names mean nothing to the network, which only routes to numbers. So errand one is DNS: ask the directory to turn the name into an IP address.",
-        "beats": [
+        "args": [
+          200
+        ],
+        "expect": "success"
+      },
+      {
+        "args": [
+          299
+        ],
+        "expect": "success"
+      },
+      {
+        "args": [
+          301
+        ],
+        "expect": "redirect"
+      },
+      {
+        "args": [
+          399
+        ],
+        "expect": "redirect"
+      },
+      {
+        "args": [
+          404
+        ],
+        "expect": "client error"
+      },
+      {
+        "args": [
+          499
+        ],
+        "expect": "client error"
+      },
+      {
+        "args": [
+          500
+        ],
+        "expect": "server error"
+      },
+      {
+        "args": [
+          503
+        ],
+        "expect": "server error"
+      }
+    ],
+    "solution": "if code >= 500:\n    return 'server error'\nif code >= 400:\n    return 'client error'\nif code >= 300:\n    return 'redirect'\nreturn 'success'",
+    "hint": "Test the highest range first. Once a branch has returned, the next test only ever sees smaller codes.",
+    "feedback": "The first digit is the gist of every HTTP response. Checking from the top down means each test needs only one end; checking from the bottom up, as the buggy trace earlier did, catches everything in the first branch."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the host name from a web address: the part after the two slashes and before the next slash, if there is one.",
+    "signature": "def get_host(url):",
+    "tests": [
+      {
+        "args": [
+          "https://python.org/about"
+        ],
+        "expect": "python.org"
+      },
+      {
+        "args": [
+          "http://example.com"
+        ],
+        "expect": "example.com"
+      },
+      {
+        "args": [
+          "https://api.site.io/v1/users/7"
+        ],
+        "expect": "api.site.io"
+      },
+      {
+        "args": [
+          "https://localhost:5000/status"
+        ],
+        "expect": "localhost:5000"
+      }
+    ],
+    "solution": "return url.split(\"/\")[2]",
+    "hint": "Split the address on \"/\" and look at the pieces. The two slashes side by side leave an empty piece between them.",
+    "feedback": "A URL is a string with a fixed shape: scheme, two slashes, host, then the path. Splitting on \"/\" gives the scheme, an empty string, and then the host at index 2 — the name DNS will be asked to look up."
+  },
+  {
+    "type": "code_write",
+    "question": "An API reply is a dictionary with a 'days' list; each day is a dictionary with a 'high' and a 'low' temperature. Return the highest high in the forecast, or None when the list of days is empty.",
+    "signature": "def forecast_high(reply):",
+    "tests": [
+      {
+        "args": [
           {
-            "say": "You type example.com. Your machine has no idea where that is — names mean nothing to the network, which only routes to numbers."
-          },
-          {
-            "say": "So errand one is DNS: ask the directory to turn the name into an IP address."
+            "city": "Oslo",
+            "days": [
+              {
+                "high": 5,
+                "low": 1
+              },
+              {
+                "high": 9,
+                "low": 2
+              },
+              {
+                "high": 7,
+                "low": 0
+              }
+            ]
           }
+        ],
+        "expect": 9
+      },
+      {
+        "args": [
+          {
+            "city": "Cairo",
+            "days": [
+              {
+                "high": 31,
+                "low": 20
+              }
+            ]
+          }
+        ],
+        "expect": 31
+      },
+      {
+        "args": [
+          {
+            "city": "Nuuk",
+            "days": [
+              {
+                "high": -8,
+                "low": -15
+              },
+              {
+                "high": -3,
+                "low": -9
+              }
+            ]
+          }
+        ],
+        "expect": -3
+      },
+      {
+        "args": [
+          {
+            "city": "Nowhere",
+            "days": []
+          }
+        ],
+        "expect": null
+      }
+    ],
+    "solution": "best = None\nfor day in reply['days']:\n    if best is None or day['high'] > best:\n        best = day['high']\nreturn best",
+    "hint": "Loop over `reply['days']`; each item is itself a dictionary. Start `best` at None rather than at 0.",
+    "feedback": "Real API replies are dictionaries holding lists holding dictionaries, and reading one is a loop plus two steps of indexing. Starting best at None instead of 0 is what gets the all-below-zero forecast right."
+  },
+  {
+    "type": "code_write",
+    "question": "A file was sent as packets numbered 1 to total. Given the list of packet numbers that arrived (in any order), return a list of the numbers that are missing, smallest first.",
+    "signature": "def missing_packets(received, total):",
+    "tests": [
+      {
+        "args": [
+          [
+            1,
+            2,
+            4
+          ],
+          5
+        ],
+        "expect": [
+          3,
+          5
         ]
       },
       {
-        "say": "DNS answers with an address.",
-        "check": {
-          "prompt": "The browser now has the IP address. What is the next errand?",
-          "answer": "Open a connection to that address and send an HTTP request",
-          "wrong": [
-            "Ask DNS again, this time for the page contents",
-            "Copy the server's files straight onto your disk"
+        "args": [
+          [
+            3,
+            1,
+            2
           ],
-          "why": "DNS only translates names into addresses. Fetching the page itself is a separate conversation, in HTTP, with the machine at that address."
+          3
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [],
+          3
+        ],
+        "expect": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "args": [
+          [
+            5,
+            2
+          ],
+          5
+        ],
+        "expect": [
+          1,
+          3,
+          4
+        ]
+      },
+      {
+        "args": [
+          [
+            1
+          ],
+          1
+        ],
+        "expect": []
+      }
+    ],
+    "solution": "missing = []\nfor number in range(1, total + 1):\n    if number not in received:\n        missing.append(number)\nreturn missing",
+    "hint": "Walk the numbers from 1 to total with `range(1, total + 1)` and keep the ones that are `not in` the list.",
+    "feedback": "This is the bookkeeping TCP does: because every packet is numbered, the receiver can say exactly which ones never arrived, and only those are sent again. range(1, total + 1) is needed because range stops one short of its end."
+  },
+  {
+    "type": "code_write",
+    "question": "The part of a web address after the ? is a query string such as  city=oslo&units=c  — pairs joined by &, each a name and a value joined by =. Return it as a dictionary. An empty string gives an empty dictionary.",
+    "signature": "def parse_query(query):",
+    "tests": [
+      {
+        "args": [
+          "city=oslo&units=c"
+        ],
+        "expect": {
+          "city": "oslo",
+          "units": "c"
         }
       },
       {
-        "say": "The server takes the request, runs its code, and sends back an HTTP response: a status code — 200 when all is well, 404 when there is nothing there — plus the HTML body. Your browser renders that. Name to address, connect, request, response, render.",
-        "beats": [
-          {
-            "say": "The server takes the request, runs its code, and sends back an HTTP response: a status code — 200 when all is well, 404 when there is nothing there — plus the HTML body."
-          },
-          {
-            "say": "Your browser renders that. Name to address, connect, request, response, render."
-          }
-        ]
+        "args": [
+          "page=2"
+        ],
+        "expect": {
+          "page": "2"
+        }
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": {}
+      },
+      {
+        "args": [
+          "a=1&b=2&c=3"
+        ],
+        "expect": {
+          "a": "1",
+          "b": "2",
+          "c": "3"
+        }
       }
     ],
-    "outro": "“The next question asks what that click really did. You just watched every errand it took.”"
-  },
-  {
-    "type": "ordering",
-    "question": "Arrange the steps of fetching a web page, from typing the address to seeing the page.",
-    "items": [
-      "Look up the domain name through DNS to get an IP address",
-      "Open a connection to that IP address",
-      "Send an HTTP request for the page",
-      "The server runs its code and returns an HTTP response",
-      "The browser renders the returned HTML"
-    ],
-    "feedback": "Names must become addresses before a connection can be opened, the request must go out before a response can come back, and only then is there any HTML to draw."
-  },
-  {
-    "question": "A team moves its price list from /old-prices to /pricing and wants existing bookmarks to keep working. What should the server send when someone requests /old-prices?",
-    "correct": [
-      "A 3xx redirect response naming the new location of the resource"
-    ],
-    "incorrect": [
-      "A 404, because the requested path no longer names a real page on the server",
-      "A 500, because the server can no longer complete a request for that path",
-      "A 200 with an empty body, letting the browser search for the moved page"
-    ],
-    "feedback": "The 3xx range exists exactly for resources that have moved: the browser is told where to go and follows automatically. A 404 would be honest but would break every bookmark, and a 500 would wrongly blame a server fault for a deliberate reorganisation."
-  },
-  {
-    "type": "cloze",
-    "question": "Fetching a page takes three separate jobs in turn. First {{1}} turns the domain name into an IP address. Then the {{2}} layer carries the packets to that address, and the browser and server talk to each other in {{3}}.",
-    "blanks": [
-      {
-        "accept": [
-          "DNS"
-        ],
-        "hint": "name lookup"
-      },
-      {
-        "accept": [
-          "Internet",
-          "IP",
-          "network"
-        ],
-        "hint": "layer"
-      },
-      {
-        "accept": [
-          "HTTP",
-          "HTTPS"
-        ],
-        "hint": "protocol"
-      }
-    ],
-    "feedback": "Three different jobs, three different protocols: DNS resolves the name, IP routes the packets to the address it returned, and HTTP is the language the browser and server actually converse in once connected."
-  },
-  {
-    "question": "What happens during the web request/response cycle when a user clicks a link in a browser?",
-    "correct": [
-      "The browser sends an HTTP request to the server, which runs code and sends back an HTTP response"
-    ],
-    "incorrect": [
-      "The server pushes a response first and the browser answers with a request confirming it",
-      "The browser finds the page among its own local files and shows it without contacting a server",
-      "The server runs the page's code inside the browser and saves the resulting HTML to the user's disk"
-    ],
-    "feedback": "In the request/response cycle, the client sends an HTTP request, the server processes it, and returns an HTTP response."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "Loading a page takes one request for the HTML document itself, plus one request for each of its {{css}} stylesheets and each of its {{img}} images. How many HTTP requests does the browser send in total?",
-    "variables": {
-      "css": {
-        "min": 1,
-        "max": 4
-      },
-      "img": {
-        "min": 3,
-        "max": 12,
-        "step": 3
-      }
-    },
-    "answer": {
-      "expr": "1 + css + img",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The HTML page is only the first request; every stylesheet and image referenced inside it costs another round trip, so 1 + {{css}} + {{img}} = {{expected}} requests."
-  },
-  {
-    "question": "A streaming site is down in one city but fine in another, and down at busy times but fine at quiet ones. Investigation found one of three server processes had crashed days earlier with nothing restarting it. Why does that explain the pattern?",
-    "correct": [
-      "Requests routed to the dead process vanished, more often when busy"
-    ],
-    "incorrect": [
-      "A crashed process makes DNS return the wrong address in nearby regions",
-      "The remaining processes ran more slowly because one was missing",
-      "TCP stopped confirming packets once a server process ended"
-    ],
-    "feedback": "Two survivors coped most of the time, so the failure looked random and regional. Listing the machine's processes — the very first tool in the notebook — would have shown a corpse in the table."
-  },
-  {
-    "question": "Why do modern web servers use HTML templates instead of serving static files for every request?",
-    "correct": [
-      "Templates let servers inject real-time data into HTML structures before returning them"
-    ],
-    "incorrect": [
-      "Templates let browsers request pages without the server running any code",
-      "Templates compress the HTML so each page transfers using far fewer bytes of network data",
-      "Templates store finished copies of every possible page so the server can look them up later"
-    ],
-    "feedback": "Templates allow web applications to combine reusable HTML structures with dynamic, real-time database content."
-  },
-  {
-    "type": "matching",
-    "question": "Match each HTTP status code range to its general category.",
-    "pairs": [
-      {
-        "term": "2xx",
-        "definition": "Success — the request was successfully received and processed"
-      },
-      {
-        "term": "3xx",
-        "definition": "Redirection — further action must be taken to complete the request"
-      },
-      {
-        "term": "4xx",
-        "definition": "Client Error — the request contains bad syntax or cannot be found"
-      },
-      {
-        "term": "5xx",
-        "definition": "Server Error — the server failed to fulfill an apparently valid request"
-      }
-    ],
-    "feedback": "2xx indicates success, 3xx redirection, 4xx client errors (like 404), and 5xx server failures (like 500)."
-  },
-  {
-    "question": "What is the function of HTTP headers in a web conversation?",
-    "correct": [
-      "Carrying metadata about the request or response, like Content-Type or User-Agent"
-    ],
-    "incorrect": [
-      "Carrying the actual HTML or JSON payload the browser will display to a user",
-      "Carrying the numeric status code that reports whether the request succeeded",
-      "Carrying the routing information that decides which physical links each packet takes"
-    ],
-    "feedback": "HTTP headers pass additional metadata (like content type, length, authorization credentials, and cookies) between client and server."
-  },
-  {
-    "type": "cloze",
-    "question": "An HTTP response arrives in three parts. The {{1}} line carries the three-digit code such as 404, the {{2}} carry metadata such as Content-Type and Content-Length, and the {{3}} holds the HTML the browser actually renders.",
-    "blanks": [
-      {
-        "accept": [
-          "status"
-        ],
-        "hint": "which line"
-      },
-      {
-        "accept": [
-          "headers",
-          "header"
-        ],
-        "hint": "metadata"
-      },
-      {
-        "accept": [
-          "body",
-          "payload"
-        ],
-        "hint": "content"
-      }
-    ],
-    "feedback": "Students often call the whole response \"the page\", but the parts have separate jobs: the code reports how the request went, the headers describe the content without being part of it, and only the body is the content itself."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A server returns a JSON array of {{count}} items. If each item contains {{fields}} fields, how many total field values are returned?",
-    "variables": {
-      "count": {
-        "min": 5,
-        "max": 25,
-        "step": 5
-      },
-      "fields": {
-        "min": 4,
-        "max": 8
-      }
-    },
-    "answer": {
-      "expr": "count * fields",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Multiplying {{count}} items by {{fields}} fields per item yields {{expected}} total field values."
-  },
-  {
-    "question": "Which of these are reasons a company might choose SaaS over IaaS? (Select all that apply)",
-    "correct": [
-      "Nobody on the team has to manage an operating system or servers",
-      "The software is ready to use immediately through a browser"
-    ],
-    "incorrect": [
-      "It gives the most control over exactly how the machines are configured",
-      "It is the model that keeps data on the company's own hardware",
-      "It removes the need for any network connection"
-    ],
-    "feedback": "SaaS trades control for convenience: you are a user, and nothing underneath is your problem. IaaS is the opposite trade — total control and total responsibility."
-  },
-  {
-    "question": "What is the primary role of DNS caching in web networking?",
-    "correct": [
-      "Storing recently looked-up domain IP mappings locally to reduce network query delays"
-    ],
-    "incorrect": [
-      "Storing copies of recently downloaded pages and images so they need not be fetched again",
-      "Storing the keys from a completed TLS session so a later connection can resume quickly",
-      "Storing the results of recent database queries in server memory so repeats run faster"
-    ],
-    "feedback": "DNS caching saves recent domain-to-IP lookup results in local memory so subsequent requests avoid repeated DNS server lookups."
+    "solution": "result = {}\nif query == \"\":\n    return result\nfor pair in query.split(\"&\"):\n    parts = pair.split(\"=\")\n    result[parts[0]] = parts[1]\nreturn result",
+    "hint": "Split on \"&\" to get the pairs, then split each pair on \"=\". Deal with the empty string before the loop.",
+    "feedback": "Two splits and a dictionary: the same moves that read a header line. The values stay strings — \"2\", not 2 — because everything in a URL is text until a program decides otherwise."
   }
 ]
