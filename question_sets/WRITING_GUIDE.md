@@ -730,6 +730,47 @@ Writing good ones:
 4. **Say exactly what is stored and what is returned**, including attribute names: the tests look for `lamp.fuel`, so the question has to say "an attribute called fuel".
 5. **End a block on a whole class**, once the single-method problems have built up to it.
 
+### Java problems
+
+Add `"language": "java"` and the same question type runs a Java method instead. The signature is the method's first line; the student writes what goes between the braces.
+
+```json
+{
+  "type": "code_write",
+  "language": "java",
+  "question": "Return the sum of the two numbers — unless they are equal, in which case return double their sum.",
+  "signature": "public int sumDouble(int a, int b)",
+  "tests": [
+    { "args": [1, 2], "expect": 3 },
+    { "args": [3, 3], "expect": 12 },
+    { "args": [0, 0], "expect": 0 },
+    { "args": [-2, 5], "expect": 3 }
+  ],
+  "solution": "int sum = a + b;\nif (a == b) {\n    sum = sum * 2;\n}\nreturn sum;",
+  "feedback": "Work out the sum first, then decide whether to double it — one return at the end."
+}
+```
+
+| Field | Notes |
+|-------|-------|
+| `signature` | The method line, without its `{`. Modifiers are optional (`public int f(int a)` and `int f(int a)` are the same problem). The return type cannot be `void` |
+| `tests[].args`, `expect` | JSON, read by the types the signature declares: a number is an `int`, `long` or `double` as the parameter says; a one-character string is a `char` where a `char` is wanted; arrays are JSON arrays; `null` is allowed for a `String` or an array. A value that does not fit its type fails the suite |
+| `solution` | The body only. It is shown afterwards as the whole method, braces and all |
+
+A `double` result is compared with a small tolerance (one part in a billion), because `(a + b + c) / 3` and `a / 3 + b / 3 + c / 3` differ in their last bits and both are right. Everything else, arrays included, must match exactly.
+
+The student may type the body, paste the whole method, add helper methods beside it, or paste a whole class around it. Line numbers in errors count the lines of their box.
+
+**What the practice Java runs** (`src/jtiny.js`): `int`, `long`, `double`, `boolean`, `char`, `String`, `StringBuilder` and arrays of them (including arrays of arrays); every operator, with Java's integer division, overflow, `char` arithmetic and implicit conversions; `if`/`else`, `while`, `do`, `for`, for-each, `switch` in both forms and as a value, `break`, `continue`, `return`, `throw`; `var` and `final`; helper methods and recursion; the common methods of `String`, `StringBuilder`, `Math`, `Integer`, `Double`, `Character`, `Boolean` and `Arrays`; `System.out.println` (shown beside the test, never graded).
+
+It also applies Java's compile-time rules, by Java's own definitions: a type error, a missing `return`, an unreachable line and a variable that "might not have been initialized" are all refused, as `javac` would refuse them.
+
+**What it declines, by name:** collections and generics (`ArrayList`, `HashMap`), wrapper objects (`Integer n`), `try`/`catch`, `String.format` and `printf`, regular expressions (`split` takes plain text only), lambdas and streams, `float`/`byte`/`short`, classes and fields of the student's own, `Math.random`, and `Math.pow` unless the answer is an exact whole number. Do not write a problem whose natural answer needs one of these.
+
+**`==` between two Strings is declined on purpose.** In Java it compares identity, and whether two equal Strings are the same object depends on how each was made — the classic bug that works in a test and fails in production. The student is told to use `.equals()`.
+
+**It is checked against the real JDK.** `tests/jtiny-differential.test.js` runs several thousand programs on `javac` + the JVM and on jtiny and requires the same result, the same exception, and the same decision about what compiles. Every Java problem in a question set gets the same treatment: its reference solution has to pass its own tests here, and when you add problems, add the kind of code they need to `tests/helpers/java-corpus.js` if it is not already there.
+
 ### Writing Good Write-the-Code Problems
 
 1. **One idea per problem, and say the rule exactly.** "Return True if the two numbers are equal, or if their sum is 10" leaves nothing to guess. Vagueness in the stem becomes an unfair test failure.

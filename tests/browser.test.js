@@ -105,6 +105,53 @@ describe('in a real browser: a write-the-method problem', { skip }, () => {
   });
 });
 
+describe('in a real browser: a write-the-method problem in Java', { skip }, () => {
+  let server, seen;
+  before(async () => {
+    server = await startServer();
+    seen = await visit(browser, server.origin, 'javaProblem', { set: 'java_04_functions.json' });
+  });
+  after(async () => { await server?.close(); });
+
+  it('shows the method line above the box and its closing brace below', () => {
+    assert.equal(seen.label, 'Write the method:');
+    assert.equal(seen.shown.trim(), 'public int countVowels(String word) {');
+    assert.equal(seen.closing.trim(), '}');
+    assert.match(seen.placeholder, /\/\/ your code here/);
+  });
+
+  it('gives examples written as Java', () => {
+    assert.match(seen.examples, /countVowels\("banana"\) → 3/);
+  });
+
+  it('colours what is typed as Java', () => assert.equal(seen.highlighted, true));
+
+  it('fails only the test a half-right answer gets wrong, and shows what it returned', () => {
+    assert.match(seen.lowercaseOnly, /3 of 4 tests passed/);
+    assert.match(seen.lowercaseOnly, /countVowels\("AEIOU"\)/);
+  });
+
+  it('a missing return is explained, with its line marked in the gutter', () => {
+    assert.match(seen.noReturn, /did not run/i);
+    assert.match(seen.noReturn, /has to return an int/);
+    assert.equal(seen.blamedLine, '4');
+  });
+
+  it('running off the end of a String is the exception Java throws', () => {
+    assert.match(seen.offTheEnd, /StringIndexOutOfBoundsException/);
+  });
+
+  it('an endless loop is stopped and the page is still alive', () => {
+    assert.match(seen.endless, /ran for too long/);
+  });
+
+  it('passes every test for the right method, and shows the worked answer as a whole method', () => {
+    assert.match(seen.correct, /All 4 tests passed/);
+    assert.match(seen.worked, /^public int countVowels\(String word\) \{/);
+    assert.match(seen.worked.trimEnd(), /\}$/);
+  });
+});
+
 // Reported from the live course: a set cleared in Chrome was nowhere to be seen in
 // Firefox, and no score had reached the gradebook for days — while the banner said
 // "saved". This is that afternoon, against an LMS player that keeps every write in

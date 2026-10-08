@@ -5,7 +5,8 @@ import { rollDice, Player, Monster, GameModel,
          levenshtein, levenshteinSimilarity, wordleFeedback,
          tokenize, tokenSimilarity, tokenWordleFeedback,
          CL_MAX_ATTEMPTS, pickClozeBlank, parseClozeSegments,
-         evaluateDynamicExpression } from '../src/model.js';
+         evaluateDynamicExpression, codeWriteSolutionText, codeWriteExamples, codeWriteHeader,
+         runCodeProblem, isJavaProblem } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -1842,6 +1843,63 @@ describe('GameModel.evaluateCodeWrite', () => {
     assert.equal(gm.current_monster.hit_points, monsterBefore);
     assert.equal(gm.answer_history.length, 0);
     assert.ok(gm.current_question, 'the question is still on screen');
+  });
+});
+
+// A code_write marked "language": "java" is run by the practice Java instead, and
+// everything downstream — scoring, the results screen, the boss queue — is unchanged.
+describe('GameModel.evaluateCodeWrite, for a Java method', () => {
+  const JAVA = {
+    type: 'code_write',
+    language: 'java',
+    question: 'Return the larger of two numbers.',
+    signature: 'public int larger(int a, int b)',
+    tests: [{ args: [1, 2], expect: 2 }, { args: [5, 3], expect: 5 }, { args: [-4, -4], expect: -4 }, { args: [0, -1], expect: 0 }],
+    solution: 'if (a > b) {\n    return a;\n}\nreturn b;',
+  };
+  const started = () => {
+    const gm = new GameModel([{ ...JAVA }], SAMPLE_MONSTERS, null, null, { sequential: true });
+    gm.nextEncounter();
+    return gm;
+  };
+
+  it('a body that passes every test is perfect', () => {
+    const res = started().evaluateCodeWrite('return a > b ? a : b;');
+    assert.equal(res.question_repeated, false);
+    assert.equal(res.testsPassed, 4);
+    assert.equal(res.referenceLanguage, 'java');
+  });
+
+  it('a partly right body scores its share and comes back', () => {
+    const res = started().evaluateCodeWrite('return a;');
+    assert.equal(res.testsPassed, 3);
+    assert.equal(res.question_repeated, true);
+    assert.match(res.incorrectSelections[0], /larger\(1, 2\) → got 1, expected 2/);
+  });
+
+  it('Python typed into a Java box does not run, and says so once', () => {
+    const res = started().evaluateCodeWrite('return a if a > b else b');
+    assert.equal(res.testsPassed, 0);
+    assert.equal(res.incorrectSelections.length, 1);
+    assert.match(res.incorrectSelections[0], /did not run \(line 1\)/);
+  });
+
+  it('the worked answer is the whole method, braces and all', () => {
+    assert.equal(codeWriteSolutionText(JAVA), 'public int larger(int a, int b) {\n    if (a > b) {\n        return a;\n    }\n    return b;\n}');
+    assert.equal(codeWriteHeader(JAVA), 'public int larger(int a, int b) {');
+  });
+
+  it('examples are the first calls, written as Java', () => {
+    assert.deepEqual(codeWriteExamples(JAVA, 2), ['larger(1, 2) → 2', 'larger(5, 3) → 5']);
+    const text = { ...JAVA, signature: 'public String initial(String name, char mark)', tests: [{ args: ['ada', '!'], expect: 'A!' }] };
+    assert.deepEqual(codeWriteExamples(text), ['initial("ada", \'!\') → "A!"']);
+  });
+
+  it('a Python problem is still run as Python', () => {
+    const python = { type: 'code_write', signature: 'def larger(a, b):', tests: JAVA.tests, solution: 'return max(a, b)' };
+    assert.equal(runCodeProblem(python, 'return max(a, b)').passed, 4);
+    assert.equal(runCodeProblem(JAVA, 'return Math.max(a, b);').passed, 4);
+    assert.equal(isJavaProblem(python), false);
   });
 });
 

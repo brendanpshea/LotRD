@@ -239,6 +239,8 @@ A CodingBat-style problem: the signature is fixed and shown above the box, the s
 
 The code runs on `src/pytiny.js`, a small Python interpreter written for this purpose (see [Runtime Architecture](#runtime-architecture)).
 
+A question marked `"language": "java"` is a Java method instead, run by `src/jtiny.js`: the signature is the method line, the student writes the body, and the same test table grades it. See *Java problems* in the writing guide for what it runs and what it declines. The standalone *Java Lab* set (`java_lab_01_methods.json`) is thirty of them, from true-and-false tests through Strings and loops to arrays.
+
 ### Write the Query (`sql_write`)
 
 The SQL counterpart of write-the-code. The student writes a whole `SELECT`, and it is run — by SQLite itself, compiled to WebAssembly — against tables shown on the screen.
@@ -296,6 +298,7 @@ src/
   items.js          — ITEM_DROPS table for post-battle loot
   model.js          — Player, Monster, GameModel; game logic, battle math, save/load state
   pytiny.js         — A small Python interpreter; runs student code for code_write questions
+  jtiny.js          — A small Java, type-checked the way javac does; runs Java code_write questions
   sqlgrade.js       — Grades a student's query against a reference query, on every dataset
   sqlengine.js      — Runs SQLite (vendor/sqljs) in a background worker, with a time limit
   highlight.js      — Minimal Java and Python syntax highlighters
@@ -313,6 +316,8 @@ tests/
   data.test.js      — Validates all JSON data files (monsters, question sets, catalog)
   html.test.js      — Cross-reference checks (templates, data-refs, stale code)
   pytiny.test.js    — The Python interpreter, checked against real CPython output
+  jtiny.test.js     — The practice Java: what a student sees (results, error wording, line numbers)
+  jtiny-differential.test.js — The practice Java against the real JDK (needs JDK 25)
   finishable.test.js— Every shipped set can be played to a terminal screen
 ```
 
@@ -488,6 +493,8 @@ activity there — is written down as a test as well, so that it stays the only 
 | `html.test.js` | HTML/template cross-checks — template IDs, data-ref/data-action usage, stale code checks, accessibility, CSS classes |
 | `util.test.js` | Shuffle and the spaced-review interval schedule |
 | `pytiny.test.js` | The Python subset used by write-the-code questions — parsing, evaluation, the runaway-program limits, and the wording of every student-facing error |
+| `jtiny.test.js` | The Java subset used by Java write-the-code questions — the results table, error wording and line numbers, pasted methods and classes, and the runaway-program limits |
+| `jtiny-differential.test.js` | The same Java against `javac` and the JVM: hand-written cases, programs that must not compile, and generated arithmetic, method bodies and type puzzles. Skipped, loudly, without a JDK 25 (`LOTRD_JAVA` names one); CI requires it |
 | `ui.test.js` | UI logic reachable without a DOM — code-editor indentation (the only route on a phone) and the editor's markup |
 | `finishable.test.js` | Every set can be finished — no question can lock a run |
 | `scorm.test.js` | The SCORM wrapper — completion, scoring and suspend data |

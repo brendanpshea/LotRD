@@ -40,6 +40,7 @@ function answer(gm, correct) {
     case 'code_write':
       // The reference solution passes every test; a body that returns a value no
       // problem asks for fails every one of them.
+      // (For a Java problem the same text does not compile, which fails them all too.)
       return gm.evaluateCodeWrite(correct ? q.solution : 'return "not the answer"');
     case 'sql_write': {
       // A query is graded in SQLite before the model sees it (and that the

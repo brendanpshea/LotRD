@@ -21,6 +21,26 @@ import {
     runProblem, isScriptProblem, problemHeader, describeScript,
     describeCall, fromJson, pyRepr, parseSignature,
 } from "./pytiny.js";
+import {
+    runJavaProblem, javaProblemHeader, parseJavaSignature, javaFromJson, javaRepr, describeJavaCall,
+} from "./jtiny.js";
+
+/**
+ * A write-the-code question is Python unless it says `"language": "java"`. The
+ * two are run by different interpreters (pytiny.js, jtiny.js) that report in the
+ * same shape, so everything after this point treats them alike.
+ */
+export const isJavaProblem = question => question?.language === "java";
+
+/** Run a write-the-code question's tests against what the student typed. */
+export function runCodeProblem(question, body, options = {}) {
+    return isJavaProblem(question) ? runJavaProblem(question, body, options) : runProblem(question, body, options);
+}
+
+/** What is shown above the editor: the line (or the class so far) the student is completing. */
+export function codeWriteHeader(question) {
+    return isJavaProblem(question) ? javaProblemHeader(question) : problemHeader(question);
+}
 
 /**
  * How many attack dice a write-the-code question is worth in total, split
@@ -32,6 +52,12 @@ export const CODE_WRITE_HIT_BUDGET = 4;
 export function codeWriteSolutionText(question) {
     const body = String(question?.solution ?? "").replace(/\r\n?/g, "\n");
     const lines = body.split("\n").filter(l => l.trim().length > 0);
+    if (isJavaProblem(question)) {
+        const open = javaProblemHeader(question);
+        if (lines.length === 0) return `${open}\n}`;
+        const least = Math.min(...lines.map(l => l.length - l.trimStart().length));
+        return `${open}\n${lines.map(l => "    " + l.slice(least)).join("\n")}\n}`;
+    }
     // A method problem shows the class it belongs to, so the body sits one level deeper.
     const header = problemHeader(question);
     if (lines.length === 0) return header;
@@ -51,6 +77,13 @@ export function codeWriteSolutionText(question) {
 export function codeWriteExamples(question, limit = 3) {
     if (Array.isArray(question?.examples) && question.examples.length > 0) {
         return question.examples.slice(0, limit);
+    }
+    if (isJavaProblem(question)) {
+        const { name, ret, params } = parseJavaSignature(question.signature);
+        const types = params.map(p => p.type);
+        return (question.tests || []).slice(0, limit).map(testCase =>
+            `${describeJavaCall(name, (testCase.args || []).map((a, i) => javaFromJson(a, types[i])), types)} → ` +
+            javaRepr(javaFromJson(testCase.expect, ret), ret));
     }
     if (isScriptProblem(question)) {
         // A class problem's example is the steps taken and what they should leave behind.
@@ -2393,7 +2426,7 @@ export class GameModel {
     runCodeWrite(bodyText) {
         const q = this.current_question;
         if (!q) return null;
-        return runProblem(q, bodyText);
+        return runCodeProblem(q, bodyText);
     }
 
     /**
@@ -2409,7 +2442,7 @@ export class GameModel {
     evaluateCodeWrite(bodyText) {
         if (!this.current_question) return null;
         const q = this.current_question;
-        const outcome = runProblem(q, bodyText);
+        const outcome = runCodeProblem(q, bodyText);
 
         const correctSelections   = [];
         const incorrectSelections = [];
@@ -2434,12 +2467,15 @@ export class GameModel {
             });
         }
 
-        return this._scoreRun(outcome, {
-            typed: bodyText,
-            solution: codeWriteSolutionText(q),
-            correctSelections,
-            incorrectSelections,
-        });
+        return {
+            ...this._scoreRun(outcome, {
+                typed: bodyText,
+                solution: codeWriteSolutionText(q),
+                correctSelections,
+                incorrectSelections,
+            }),
+            referenceLanguage: isJavaProblem(q) ? "java" : "python",
+        };
     }
 
     /**

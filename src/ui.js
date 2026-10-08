@@ -3,8 +3,7 @@ import {
   fillBlankLengthHint,
 } from "./util.js";
 import { highlightJava, highlightPython } from "./highlight.js";
-import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples } from "./model.js";
-import { problemHeader } from "./pytiny.js";
+import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, isJavaProblem } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
 
 const LEVEL_TITLES = [
@@ -1639,9 +1638,11 @@ export class GameUI {
     $(this.root, "[data-ref=qText]").textContent = q.question;
     // A method problem shows the class so far, read-only, ending in the def line
     // the student is completing; a whole-class problem shows just its class line.
-    const writingClass = /^\s*class\s/.test(q.signature || "");
-    const kind = q.scaffold ? "method" : writingClass ? "class" : "function";
-    $(this.root, "[data-ref=signature]").innerHTML = highlightPython(problemHeader(q));
+    const java = isJavaProblem(q);
+    const highlight = java ? highlightJava : highlightPython;
+    const writingClass = !java && /^\s*class\s/.test(q.signature || "");
+    const kind = q.scaffold || java ? "method" : writingClass ? "class" : "function";
+    $(this.root, "[data-ref=signature]").innerHTML = highlight(codeWriteHeader(q));
     $(this.root, "[data-ref=signature]").setAttribute("aria-label",
       q.scaffold ? "The class so far, ending in the method you are writing" : `${kind} definition`);
     const taskLabel = $(this.root, "[data-ref=taskLabel]");
@@ -1677,7 +1678,10 @@ export class GameUI {
 
     const input = $(this.root, "[data-ref=bodyInput]");
     input.value = q.starter ? String(q.starter) : "";
-    const paintEditor = this._bindCodeEditorChrome(input);
+    if (java) input.placeholder = "    // your code here";
+    const closing = $(this.root, "[data-ref=signatureClose]");
+    if (closing) closing.hidden = !java;
+    const paintEditor = this._bindCodeEditorChrome(input, highlight);
 
     const resultsEl = $(this.root, "[data-ref=runResults]");
     const runBtn = $(this.root, "[data-action=run]");
@@ -1758,7 +1762,7 @@ export class GameUI {
       trackKeyboard();
     }
 
-    this._bindCodeEditorKeys(input, this._kbAbort.signal);
+    this._bindCodeEditorKeys(input, this._kbAbort.signal, { opensBlock: java ? /\{\s*$/ : /:\s*$/ });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
@@ -1797,7 +1801,7 @@ export class GameUI {
    * "line 3", counting the body the student typed — so the gutter is what turns
    * that message into a place to look.
    */
-  _bindCodeEditorChrome(textarea) {
+  _bindCodeEditorChrome(textarea, highlight = highlightPython) {
     const root = textarea.closest(".code-write-editor");
     const gutter = root?.querySelector("[data-ref=gutter]");
     const layer = root?.querySelector("[data-ref=highlight]");
@@ -1811,7 +1815,7 @@ export class GameUI {
       const value = textarea.value;
       // The trailing newline keeps a final empty line from collapsing, so the
       // last row of the gutter always has a line of text beside it.
-      layer.innerHTML = highlightPython(value) + "\n";
+      layer.innerHTML = highlight(value) + "\n";
 
       const count = value.split("\n").length;
       const rows = [];
@@ -1868,7 +1872,7 @@ export class GameUI {
     }
   }
 
-  _bindCodeEditorKeys(textarea, signal) {
+  _bindCodeEditorKeys(textarea, signal, { opensBlock = /:\s*$/ } = {}) {
     const UNIT = "    ";
 
     // Setting .value from script fires no input event, so the highlight layer
@@ -1899,7 +1903,7 @@ export class GameUI {
         const lineStart = value.lastIndexOf("\n", start - 1) + 1;
         const currentLine = value.slice(lineStart, start);
         const indent = (/^[ \t]*/.exec(currentLine) || [""])[0].replace(/\t/g, UNIT);
-        const deeper = /:\s*$/.test(currentLine) ? UNIT : "";
+        const deeper = opensBlock.test(currentLine) ? UNIT : "";
         const insert = "\n" + indent + deeper;
         replaceRange(start, end, insert, start + insert.length);
         edited();
@@ -2468,8 +2472,9 @@ export class GameUI {
       wrap.appendChild(label);
       const pre = document.createElement("pre");
       pre.className = "code-snippet";
-      // Only Python is highlighted; a reference query is shown as it was written.
+      // A reference query is shown as it was written; code is highlighted in its own language.
       if (battleData.referenceLanguage === "sql") pre.textContent = battleData.referenceSolution;
+      else if (battleData.referenceLanguage === "java") pre.innerHTML = highlightJava(battleData.referenceSolution);
       else pre.innerHTML = highlightPython(battleData.referenceSolution);
       wrap.appendChild(pre);
       body.appendChild(wrap);

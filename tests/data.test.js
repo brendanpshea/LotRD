@@ -5,6 +5,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
 import { runProblem, isScriptProblem, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
+import { runJavaProblem, parseJavaSignature, javaFromJson } from '../src/jtiny.js';
 
 const ROOT = join(import.meta.dirname, '..');
 const MAX_TYPED_ANSWER_CHARS = 12;
@@ -585,6 +586,30 @@ describe('Question set file validation', () => {
               assert.ok(refs.includes(bi),
                 `${label}: blanks[${bi - 1}] has no {{${bi}}} placeholder in the question`);
             }
+          } else if (type === 'code_write' && q.language === 'java') {
+            // A Java method: the signature is its first line, and every value in the
+            // test table has to be a legal value of the type that line declares.
+            let sig;
+            assert.doesNotThrow(() => { sig = parseJavaSignature(q.signature); },
+              `${label}: a Java code_write needs a signature like "public int add(int a, int b)"`);
+            assert.notEqual(sig.ret, 'void', `${label}: the method has to return something for a test to look at`);
+            assert.ok(Array.isArray(q.tests) && q.tests.length >= 3, `${label}: code_write needs at least 3 test cases`);
+            for (const [ti, t] of q.tests.entries()) {
+              assert.ok(t && Array.isArray(t.args) && 'expect' in t, `${label}: test ${ti + 1} needs an args array and an expect value`);
+              assert.equal(t.args.length, sig.params.length,
+                `${label}: test ${ti + 1} passes ${t.args.length} arguments but ${sig.header} takes ${sig.params.length}`);
+              t.args.forEach((a, ai) => assert.doesNotThrow(() => javaFromJson(a, sig.params[ai].type),
+                `${label}: test ${ti + 1}, argument ${ai + 1} is not a ${sig.params[ai].type}`));
+              assert.doesNotThrow(() => javaFromJson(t.expect, sig.ret), `${label}: test ${ti + 1} expects something that is not a ${sig.ret}`);
+            }
+            assert.ok(typeof q.solution === 'string' && /\breturn\b/.test(q.solution),
+              `${label}: code_write needs a reference solution that returns`);
+            assert.ok(!('scaffold' in q), `${label}: Java problems are one method; scaffold is for Python class problems`);
+            if ('hint' in q) {
+              assert.ok(typeof q.hint === 'string' && q.hint.trim().length > 0 && q.hint.length <= 240 && !q.hint.includes('\n'),
+                `${label}: hint must be one line of at most 240 characters`);
+            }
+            if ('starter' in q) assert.ok(typeof q.starter === 'string', `${label}: starter must be a string when present`);
           } else if (type === 'code_write' && isScriptProblem(q)) {
             // A class problem: graded by short scripts, because what a method does
             // shows only in what the object has become. Either one method inside a
@@ -1169,12 +1194,15 @@ describe('code_write problems are solvable', () => {
 
     describe(setId, () => {
       for (const { q, i } of problems) {
-        const name = isScriptProblem(q)
-          ? String(q.signature).trim().replace(/^(def|class)\s+/, '').replace(/[(:].*$/, '')
-          : parseSignature(q.signature).name;
+        const java = q.language === 'java';
+        const run = (question, body) => (java ? runJavaProblem(question, body) : runProblem(question, body));
+        const name = java ? parseJavaSignature(q.signature).name
+          : isScriptProblem(q)
+            ? String(q.signature).trim().replace(/^(def|class)\s+/, '').replace(/[(:].*$/, '')
+            : parseSignature(q.signature).name;
 
         it(`${name}() — the reference solution passes every test`, () => {
-          const outcome = runProblem(q, q.solution);
+          const outcome = run(q, q.solution);
           assert.ok(outcome.ok,
             `${setId}[${i}] ${name}(): the reference solution does not run — ` +
             `${outcome.error?.message} (line ${outcome.error?.line})`);
@@ -1192,11 +1220,15 @@ describe('code_write problems are solvable', () => {
           // A table every body passes grades nothing. Returning a constant is the
           // laziest possible answer, so at least one case must reject each of the
           // constants a student could stumble into.
-          const lazyBodies = isScriptProblem(q)
-            ? (q.scaffold ? ['pass', 'return None', 'return 0', 'return True'] : ['pass', 'def __init__(self):\n    pass'])
-            : ['return None', 'return True', 'return False', 'return 0', 'return ""'];
+          // (In Java most of these do not even compile for a given return type, which rules them out as well.)
+          const lazyBodies = java
+            ? ['return 0;', 'return 1;', 'return true;', 'return false;', 'return "";', 'return null;', 'return 0.0;', "return 'a';",
+              'return new int[0];', 'return new String[0];']
+            : isScriptProblem(q)
+              ? (q.scaffold ? ['pass', 'return None', 'return 0', 'return True'] : ['pass', 'def __init__(self):\n    pass'])
+              : ['return None', 'return True', 'return False', 'return 0', 'return ""'];
           for (const lazy of lazyBodies) {
-            const outcome = runProblem(q, lazy);
+            const outcome = run(q, lazy);
             assert.ok(!outcome.ok || outcome.passed < outcome.total,
               `${setId}[${i}] ${name}(): "${lazy}" passes every test — the table needs a ` +
               `case that rules it out`);
@@ -1208,7 +1240,7 @@ describe('code_write problems are solvable', () => {
           // unless authored, so an authored set has to be checked by hand-eye;
           // what can be checked here is that a starter body is a legal shape.
           if (typeof q.starter === 'string' && q.starter.trim()) {
-            const outcome = runProblem(q, q.starter);
+            const outcome = run(q, q.starter);
             assert.ok(outcome.passed < outcome.total,
               `${setId}[${i}] ${name}(): the starter code already passes every test`);
           }

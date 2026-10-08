@@ -145,6 +145,42 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
         correct: await run('self.coins = self.coins + n'),
       };
     },
+    // A write-the-method problem in JAVA. No set carries one yet, so the question is
+    // handed to the running game; everything from there on is the real screen.
+    async javaProblem({ set }) {
+      const gc = win().gameController;
+      await gc._launchSet(set, 'new');
+      await until(() => gc.model, 'the set to load');
+      gc.model.questions_to_ask = [{
+        type: 'code_write', language: 'java', question: 'Return the number of vowels in the word.',
+        signature: 'public int countVowels(String word)',
+        tests: [{ args: ['banana'], expect: 3 }, { args: ['sky'], expect: 0 }, { args: ['AEIOU'], expect: 5 }, { args: [''], expect: 0 }],
+        solution: 'int count = 0;\\nfor (char c : word.toLowerCase().toCharArray()) {\\n    if ("aeiou".indexOf(c) >= 0) {\\n        count++;\\n    }\\n}\\nreturn count;',
+      }];
+      gc.model.current_question = null;
+      gc.continueAdventure();
+      await until(() => doc().querySelector('[data-ref=bodyInput]'), 'the editor');
+      const box = doc().querySelector('[data-ref=bodyInput]');
+      const run = async body => { box.value = body; box.dispatchEvent(new (win().Event)('input')); doc().querySelector('[data-action=run]').click(); await sleep(200); return doc().querySelector('[data-ref=runResults]').innerText; };
+      const report = {
+        label: doc().querySelector('[data-ref=taskLabel]').textContent,
+        shown: doc().querySelector('[data-ref=signature]').innerText,
+        closing: doc().querySelector('[data-ref=signatureClose]').hidden ? null : doc().querySelector('[data-ref=signatureClose]').innerText,
+        placeholder: box.placeholder,
+        examples: doc().querySelector('[data-ref=examples]').innerText,
+        lowercaseOnly: await run('int count = 0;\\nfor (int i = 0; i < word.length(); i++) {\\n    if ("aeiou".indexOf(word.charAt(i)) >= 0) count++;\\n}\\nreturn count;'),
+        noReturn: await run('int count = 0;\\nfor (char c : word.toCharArray()) {\\n    count++;\\n}'),
+        blamedLine: doc().querySelector('.code-gutter-line--blamed')?.textContent ?? null,
+        offTheEnd: await run('return word.charAt(word.length()) == \\'a\\' ? 1 : 0;'),
+        endless: await run('int n = 0;\\nwhile (n < 1) { }\\nreturn n;'),
+        highlighted: doc().querySelector('[data-ref=highlight]').innerHTML.includes('hl-kw'),
+      };
+      report.correct = await run(gc.model.current_question.solution);
+      doc().querySelector('[data-action=submit]').click();
+      await until(() => doc().querySelector('.reference-solution'), 'the results screen');
+      report.worked = doc().querySelector('.reference-solution pre').innerText;
+      return report;
+    },
     // A write-the-query problem: the tables are shown, Run sends the query to SQLite
     // in a background worker, and the result comes back as rows on the screen. This
     // scenario needs REAL time (see visit): a worker gets no turns on a virtual clock.
