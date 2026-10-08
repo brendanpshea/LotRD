@@ -26,6 +26,29 @@
     "feedback": "Definite, finite, effective, with inputs and an output: those four make something an algorithm. Efficiency is what makes one algorithm better than another, not what makes it an algorithm; a slow linear search is still an algorithm. And an algorithm exists before any code does: it can be written in pseudocode, drawn as a flowchart, or spoken aloud."
   },
   {
+    "question": "“Give the goldfish some food whenever it looks hungry.” Why does this fail as an algorithm?",
+    "correct": [
+      "Its steps are vague: “some food” and “looks hungry” are not precise"
+    ],
+    "incorrect": [
+      "It has no input: nothing is handed to it before it begins",
+      "It never ends: a goldfish has to be fed again every day",
+      "It is not written in Java or any other programming language"
+    ],
+    "feedback": "An algorithm's steps have to be precise enough that nobody has to guess. How much is “some”? What does hungry look like? Compare: “At 9:00 and 18:00, drop exactly 3 pellets into the tank.” An algorithm may take no input at all, and it does not have to be written in a programming language."
+  },
+  {
+    "type": "code_trace",
+    "question": "A loop and an if together make an algorithm. What does this one print?",
+    "code": "String[] c = {\"owl\", \"bat\", \"owl\"};\nint owls = 0;\nfor (int i = 0; i < c.length; i++) {\n    if (c[i].equals(\"owl\")) {\n        owls++;\n    }\n}\nSystem.out.println(owls);",
+    "language": "java",
+    "correct": [
+      "2"
+    ],
+    "case_sensitive": true,
+    "feedback": "The loop visits every element, and the if lets only the matching ones add to the count: index 0 and index 2. Text is compared with .equals(). Starting at 0 and adding 1 for each match is the counting pattern you will meet again below."
+  },
+  {
     "type": "matching",
     "question": "Match each flowchart symbol to what it stands for.",
     "pairs": [
@@ -60,9 +83,9 @@
     "incorrect": [
       "An if statement",
       "An if-else statement",
-      "A do-while loop"
+      "A switch statement"
     ],
-    "feedback": "An arrow that travels back to an earlier diamond is what makes a loop; an if or if-else only ever flows forward. The question is asked before the rectangle runs, so the body might run zero times: that is a while loop. A do-while would be drawn with the rectangle first and the diamond underneath it."
+    "feedback": "An arrow that travels back to an earlier diamond is what makes a loop; an if, an if-else or a switch only ever flows forward. The question is asked before the rectangle runs, so the body might run zero times — exactly how a while loop behaves."
   },
   {
     "type": "dynamic_numeric",
@@ -98,8 +121,144 @@
     "feedback": "Each step needs the one before it: total must exist before anything is added to it, the division is only meaningful once every score is in, and there is nothing to display until average has been computed. Pseudocode lets you settle that order before worrying about Java's syntax."
   },
   {
+    "type": "ordering",
+    "question": "Arrange the steps of a linear search for a target value, first to last.",
+    "items": [
+      "Start at the first element, index 0",
+      "Compare the current element with the target",
+      "If they match, report the index and stop",
+      "Otherwise, move on to the next element",
+      "If the elements run out, report “not found”"
+    ],
+    "feedback": "Linear search checks the elements one by one from the front. A match ends it at once; otherwise it moves along and compares again. Only when every element has been checked can it say the target is not there — so an algorithm for searching has to handle both endings."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The Java keyword that ends a loop immediately, abandoning any passes that were still to come, is ___.",
+    "correct": [
+      "break",
+      "break;"
+    ],
+    "case_sensitive": false,
+    "feedback": "break jumps straight out of the nearest enclosing loop, and execution carries on with the first statement after it. It is the same keyword that ends a case in a switch. Compare continue, which gives up only the current pass and keeps looping."
+  },
+  {
     "type": "dynamic_numeric",
-    "question": "What does this print?\nint[] loot = { {{x}}, {{y}}, {{z}} };\nint total = {{s}};\nfor (int g : loot) {\n    total += g;\n}\nSystem.out.println(total);",
+    "question": "int sum = 0;\nfor (int i = 1; i <= 10; i++) {\n    if (i == {{k}}) break;\n    sum += i;\n}\n\nWhat is the value of sum after the loop?",
+    "variables": {
+      "k": {
+        "min": 3,
+        "max": 7
+      }
+    },
+    "answer": {
+      "expr": "sumRange(1, k - 1)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The break is tested before sum += i on each pass, so when i reaches {{k}} the loop ends without adding {{k}}. Only the values below {{k}} were added, giving {{expected}}. The header says i <= 10, but break overrides it."
+  },
+  {
+    "question": "The search code written in this course reports the index where the target was found. Why does it report -1, rather than 0, when the target is absent?",
+    "correct": [
+      "0 is a real index, so it would look like a match at the front"
+    ],
+    "incorrect": [
+      "-1 is what Java stores in an int that was never assigned",
+      "0 would stop the loop before the last element is checked",
+      "-1 is the index just past the end of any array"
+    ],
+    "feedback": "The answer is an index, and every index from 0 to length - 1 means “found here”, so “not found” needs a value that can never be an index. -1 is the usual choice. It is a convention, not something Java supplies: the code has to set it, usually by starting the variable at -1 before the loop."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A linear search checks an array of {{n}} elements from index 0 upward and stops as soon as it meets the target, which is sitting at index {{k}}. How many elements did it compare with the target?",
+    "variables": {
+      "n": {
+        "min": 20,
+        "max": 40
+      },
+      "k": {
+        "min": 3,
+        "max": 15
+      }
+    },
+    "answer": {
+      "expr": "k + 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Indexes start at 0, so reaching index {{k}} means indexes 0 through {{k}} were all compared: {{expected}} elements. The rest of the {{n}} are never looked at, which is what stopping early buys. Had the target been absent, all {{n}} would have been compared."
+  },
+  {
+    "type": "code_trace",
+    "question": "The target appears more than once in this array. What does the search print?",
+    "code": "int[] ids = {3, 8, 3, 5, 3};\nint target = 3;\nint idx = -1;\nfor (int i = 0; i < ids.length; i++) {\n    if (ids[i] == target) idx = i;\n}\nSystem.out.println(idx);",
+    "language": "java",
+    "correct": [
+      "4"
+    ],
+    "case_sensitive": true,
+    "feedback": "Nothing stops this loop once it has a match, so it keeps going and idx is overwritten at index 0, again at index 2, and finally at index 4. It reports the LAST match. Adding break; after idx = i; would leave the loop at the first match and print 0, and would save the wasted comparisons as well."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Complete this search so that found ends up true only if the target is in the array, and the loop stops as soon as it is seen.",
+    "question": "boolean found = {{1}};\nfor (int i = 0; i < arr.length; i++) {\n    if (arr[i] == target) {\n        found = {{2}};\n        {{3}};\n    }\n}",
+    "language": "java",
+    "blanks": [
+      {
+        "accept": [
+          "false"
+        ],
+        "hint": "start",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "true"
+        ],
+        "hint": "value",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "break"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "A boolean flag starts at false — nothing has been found yet — and is switched to true at the moment of a match. break then leaves the loop, because there is no point checking the rest. After the loop, found tells you which way it went."
+  },
+  {
+    "type": "matching",
+    "question": "An accumulator is a variable that builds up a result as a loop runs. Match each kind to how it starts and what it does on each pass.",
+    "pairs": [
+      {
+        "term": "Sum",
+        "definition": "Starts at 0 and adds each value on"
+      },
+      {
+        "term": "Count",
+        "definition": "Starts at 0 and adds 1 when a test passes"
+      },
+      {
+        "term": "Product",
+        "definition": "Starts at 1 and multiplies by each value"
+      },
+      {
+        "term": "Maximum",
+        "definition": "Starts at the first element and keeps the larger"
+      },
+      {
+        "term": "Text building",
+        "definition": "Starts at \"\" and joins each piece on"
+      }
+    ],
+    "feedback": "Every accumulator is set up before the loop, updated inside it and used after it. The starting value is the one that changes nothing: 0 for adding, 1 for multiplying, \"\" for joining. A maximum is the exception — it has to start from a real element, because any number you make up might be larger than everything in the array."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does this print?\nint[] loot = { {{x}}, {{y}}, {{z}} };\nint total = {{s}};\nfor (int i = 0; i < loot.length; i++) {\n    total += loot[i];\n}\nSystem.out.println(total);",
     "variables": {
       "x": {
         "min": 2,
@@ -131,7 +290,7 @@
   {
     "type": "cloze",
     "prompt": "Fill in the starting values and the counter's update so that all three results come out right.",
-    "question": "int product = {{1}};     // every element multiplied together\nint evens = {{2}};       // how many elements are even\nboolean found = {{3}};   // true once target turns up\nfor (int v : a) {\n    product *= v;\n    if (v % 2 == 0) evens{{4}};\n    if (v == target) found = true;\n}",
+    "question": "int product = {{1}};     // every element multiplied together\nint evens = {{2}};       // how many elements are even\nboolean found = {{3}};   // true once target turns up\nfor (int i = 0; i < a.length; i++) {\n    product *= a[i];\n    if (a[i] % 2 == 0) {\n        evens{{4}};\n    }\n    if (a[i] == target) {\n        found = true;\n    }\n}",
     "language": "java",
     "blanks": [
       {
@@ -164,29 +323,6 @@
     "feedback": "Start every accumulator at the value that changes nothing: 1 for a product (starting at 0 would make every product 0), 0 for a counter, false for a flag that flips to true when the target is seen. A counter goes up by exactly one for each element that passes the test, whatever that element's value is."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "How many times does  count++  run?\nint count = 0;\nfor (int i = 1; i <= {{n}}; i++) {\n    if (i % {{k}} == 0) continue;\n    count++;\n}",
-    "variables": {
-      "n": {
-        "min": 8,
-        "max": 20
-      },
-      "k": {
-        "values": [
-          2,
-          3,
-          4,
-          5
-        ]
-      }
-    },
-    "answer": {
-      "expr": "n - floorDiv(n, k)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "continue abandons the rest of the body for that one pass only: i++ still runs and the loop carries on. So the multiples of {{k}} between 1 and {{n}} are skipped, and the other {{expected}} values of i reach count++. This is a counter with a filter in front of it."
-  },
-  {
     "question": "Which statements about accumulator loops are correct?",
     "correct": [
       "Writing  total = 0;  inside the loop body wipes the running total on every pass",
@@ -198,6 +334,17 @@
       "The update  total = v;  does the same job as  total += v;"
     ],
     "feedback": "The accumulator has to be declared and given its starting value before the loop. Reset it inside and only the last element survives; declare it inside and it no longer exists after the closing brace (the compiler reports it cannot find the symbol). Java also refuses to read a local variable that was never assigned, rather than quietly using 0. And  total = v  replaces the total where  total += v  adds to it. One pass over the data can feed as many accumulators as you like, which is how an average gets its sum and its count."
+  },
+  {
+    "type": "code_trace",
+    "question": "An accumulator can build text as well as a number. What does this program print?",
+    "code": "String[] n = {\"Al\", \"Bo\", \"Cy\"};\nString all = \"\";\nfor (int i = 0; i < n.length; i++) {\n    all += n[i];\n}\nSystem.out.println(all);",
+    "language": "java",
+    "correct": [
+      "AlBoCy"
+    ],
+    "case_sensitive": true,
+    "feedback": "all starts as the empty String, and each pass joins the next name onto the end of it: \"Al\", then \"AlBo\", then \"AlBoCy\". Nothing is put between the names, because nothing in the code asks for a space."
   },
   {
     "type": "npc_demo",
@@ -212,7 +359,7 @@
             "say": "Here is the first attempt:"
           },
           {
-            "code": "int[] depths = {-4, -9, -2};\nint max = 0;\nfor (int d : depths) {\n    if (d > max) max = d;\n}\nSystem.out.println(max);",
+            "code": "int[] depths = {-4, -9, -2};\nint max = 0;\nfor (int i = 0; i < depths.length; i++) {\n    if (depths[i] > max) {\n        max = depths[i];\n    }\n}\nSystem.out.println(max);",
             "language": "java"
           },
           {
@@ -253,7 +400,7 @@
   {
     "type": "code_trace",
     "question": "This code is meant to find the lowest temperature. Trace it: what does it actually print?",
-    "code": "int[] temps = {12, 7, 9};\nint min = 0;\nfor (int t : temps) {\n    if (t < min) min = t;\n}\nSystem.out.println(min);",
+    "code": "int[] temps = {12, 7, 9};\nint min = 0;\nfor (int i = 0; i < temps.length; i++) {\n    if (temps[i] < min) {\n        min = temps[i];\n    }\n}\nSystem.out.println(min);",
     "language": "java",
     "correct": [
       "0"
@@ -272,70 +419,16 @@
     "feedback": "When the current element beats the best so far, it becomes the new best: max = a[i];  The assignment copies right to left, so writing a[i] = max; would overwrite the array with the old maximum instead of remembering the new one."
   },
   {
-    "type": "code_trace",
-    "question": "This loop remembers a position rather than a value. What does it print?",
-    "code": "int[] w = {14, 6, 11, 2, 8};\nint minIdx = 0;\nfor (int i = 1; i < w.length; i++) {\n    if (w[i] < w[minIdx]) minIdx = i;\n}\nSystem.out.println(minIdx + \" \" + w[minIdx]);",
-    "language": "java",
+    "question": "int sum = 41;\nint count = 5;\n\nThe average is 8.2. Which expression produces it?",
     "correct": [
-      "3 2"
+      "(double) sum / count"
     ],
-    "case_sensitive": true,
-    "feedback": "minIdx starts at 0 (value 14). Index 1 holds 6, which is smaller, so minIdx becomes 1. 11 is not smaller than 6. Index 3 holds 2, which is smaller, so minIdx becomes 3. 8 is not smaller than 2. It prints the position and then the value: 3 2. Tracking the index is what a sort needs, because it must know where the smallest element is in order to move it."
-  },
-  {
-    "type": "code_trace",
-    "question": "An apprentice tries to swap two variables. What does this print?",
-    "code": "int a = 4, b = 9;\na = b;\nb = a;\nSystem.out.println(a + \" \" + b);",
-    "language": "java",
-    "correct": [
-      "9 9"
+    "incorrect": [
+      "sum / count",
+      "(double) (sum / count)",
+      "sum / count + 0.0"
     ],
-    "case_sensitive": true,
-    "feedback": "a = b; overwrites the 4 with 9, and from that moment the 4 is gone. b = a; then copies 9 back into b. Both variables end up holding 9. A swap needs a third variable to keep the first value safe while it is being overwritten."
-  },
-  {
-    "type": "cloze",
-    "prompt": "Complete the swap of a[i] and a[j] so that neither value is lost.",
-    "question": "int tmp = a[i];\na[i] = {{1}};\na[j] = {{2}};",
-    "language": "java",
-    "blanks": [
-      {
-        "accept": [
-          "a[j]",
-          "a[ j ]"
-        ],
-        "case_sensitive": true
-      },
-      {
-        "accept": [
-          "tmp"
-        ],
-        "case_sensitive": true
-      }
-    ],
-    "feedback": "tmp keeps a copy of a[i], so a[i] can safely be overwritten with a[j]. The old a[i] now survives only in tmp, so that is what goes into a[j]. Writing a[j] = a[i]; on the last line would copy the new value back and leave both slots the same."
-  },
-  {
-    "type": "code_trace",
-    "question": "A switch jumps to the case that matches. What does this program print?",
-    "code": "int floor = 2;\nswitch (floor) {\n    case 1:\n        System.out.println(\"Parks\");\n        break;\n    case 2:\n        System.out.println(\"Plans\");\n        break;\n    default:\n        System.out.println(\"Ask\");\n}",
-    "language": "java",
-    "correct": [
-      "Plans"
-    ],
-    "case_sensitive": true,
-    "feedback": "floor is 2, so Java jumps to case 2 and prints Plans. The break then leaves the switch, so the default is not reached. default is where Java goes when no case matches at all, like the final else of a chain."
-  },
-  {
-    "type": "code_trace",
-    "question": "This switch is missing some of its break statements. What is printed?",
-    "code": "int level = 2;\nswitch (level) {\n    case 1:\n        System.out.print(\"A\");\n    case 2:\n        System.out.print(\"B\");\n    case 3:\n        System.out.print(\"C\");\n        break;\n    default:\n        System.out.print(\"D\");\n}",
-    "language": "java",
-    "correct": [
-      "BC"
-    ],
-    "case_sensitive": true,
-    "feedback": "In a switch, case labels are only entry points. Java jumps to case 2, prints B, and then falls through into case 3 because nothing stopped it, printing C. The break after C finally leaves the switch, so D is not printed. A is skipped because execution entered below it. Fall-through is the classic bug of a switch: every case that should stop needs a break of its own."
+    "feedback": "sum / count divides one int by another, which throws away the fraction and gives 8. The cast (double) sum turns sum into 41.0 before the division, so the fraction is kept. Casting the finished result, or adding 0.0 to it, is too late: the .2 has already gone."
   },
   {
     "question": "Inside a loop body, what does the statement continue; do?",
@@ -350,14 +443,38 @@
     "feedback": "continue abandons the current pass only. In a for loop the update (such as i++) still runs, the condition is tested again, and the loop carries on if it is true. Leaving the loop altogether is a different statement. Nothing in Java resets a loop counter for you."
   },
   {
-    "type": "fill_blank",
-    "question": "The Java keyword that ends a loop immediately, abandoning any passes that were still to come, is ___.",
+    "type": "dynamic_numeric",
+    "question": "How many times does  count++  run?\nint count = 0;\nfor (int i = 1; i <= {{n}}; i++) {\n    if (i % {{k}} == 0) {\n        continue;\n    }\n    count++;\n}",
+    "variables": {
+      "n": {
+        "min": 8,
+        "max": 20
+      },
+      "k": {
+        "values": [
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    "answer": {
+      "expr": "n - floorDiv(n, k)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "continue abandons the rest of the body for that one pass only: i++ still runs and the loop carries on. So the multiples of {{k}} between 1 and {{n}} are skipped, and the other {{expected}} values of i reach count++. This is a counter with a filter in front of it."
+  },
+  {
+    "type": "code_trace",
+    "question": "This loop skips some of its passes. What does the program print?",
+    "code": "int[] e = {5, -2, 7};\nint total = 0;\nfor (int i = 0; i < e.length; i++) {\n    if (e[i] < 0) {\n        continue;\n    }\n    total += e[i];\n}\nSystem.out.println(total);",
+    "language": "java",
     "correct": [
-      "break",
-      "break;"
+      "12"
     ],
-    "case_sensitive": false,
-    "feedback": "break jumps straight out of the nearest enclosing loop, and execution carries on with the first statement after it. It is the same keyword that ends a case in a colon-form switch. Compare continue, which gives up only the current pass and keeps looping."
+    "case_sensitive": true,
+    "feedback": "continue abandons the rest of the current pass and moves on to the next one. For -2 the if is true, so total += e[i] is skipped for that element only. 5 and 7 are added as usual, giving 12. Unlike break, continue does not end the loop."
   },
   {
     "type": "matching",
@@ -387,91 +504,212 @@
     "feedback": "break ends the whole loop, so everything from that pass onward is lost: breaking at 3 leaves 12, and breaking on the very first pass (1 < 3) leaves nothing. continue skips only the print of the current pass: skipping 3 alone gives 1245, skipping everything above 3 gives 123, and skipping everything below 3 gives 345."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "int sum = 0;\nfor (int i = 1; i <= 10; i++) {\n    if (i == {{k}}) break;\n    sum += i;\n}\n\nWhat is the value of sum after the loop?",
-    "variables": {
-      "k": {
-        "min": 3,
-        "max": 7
+    "type": "npc_demo",
+    "question": "NPC: One value, many doors",
+    "npc": "nia",
+    "intro": "Nia stands where the corridor splits into a row of numbered doors. “When ONE value decides which of many doors you take, a long chain of else-ifs gets tiresome. Java has a tool made for the job.”",
+    "steps": [
+      {
+        "say": "Java works out the value in the round brackets once, then jumps to the case that matches it. default is the door for “none of the above”, like a final else.",
+        "beats": [
+          {
+            "code": "int coins = 2;\nswitch (coins) {\n    case 1:\n        System.out.println(\"bread\");\n        break;\n    case 2:\n        System.out.println(\"cheese\");\n        break;\n    default:\n        System.out.println(\"nothing\");\n}",
+            "language": "java"
+          },
+          {
+            "say": "This is a switch. Java works out the value in the round brackets once, then jumps to the case that matches it."
+          },
+          {
+            "say": "default is the door for “none of the above”, like the final else of a chain."
+          }
+        ],
+        "check": {
+          "prompt": "coins is 2. What is printed?",
+          "answer": "cheese",
+          "wrong": [
+            "bread",
+            "nothing"
+          ],
+          "why": "Java jumps straight to case 2, prints cheese, and the break then takes it out of the switch."
+        }
+      },
+      {
+        "say": "A case label only says where to START. Without a break, Java keeps going straight into the next case. That is called fall-through.",
+        "beats": [
+          {
+            "say": "Each case ends with break, which leaves the switch. That matters more than it looks, because a case label only says where to START."
+          },
+          {
+            "code": "switch (coins) {\n    case 1:\n        System.out.println(\"bread\");\n    case 2:\n        System.out.println(\"cheese\");\n        break;\n}",
+            "language": "java"
+          },
+          {
+            "say": "Here the first break is missing. Without it, Java keeps going straight into the next case. That is called fall-through, and forgetting a break is the classic switch bug."
+          }
+        ],
+        "check": {
+          "prompt": "coins is 1, and the first break is missing. What is printed?",
+          "answer": "bread, then cheese",
+          "wrong": [
+            "bread and nothing else",
+            "cheese and nothing else"
+          ],
+          "why": "Java enters at case 1 and prints bread. Nothing stops it there, so it carries on into case 2 and prints cheese before the break ends the switch."
+        }
+      },
+      {
+        "say": "Now and then fall-through is what you want: two labels stacked together share the same code.",
+        "beats": [
+          {
+            "say": "Now and then fall-through is exactly what you want. Two labels stacked together share the same code."
+          },
+          {
+            "code": "case 6:\ncase 7:\n    System.out.println(\"weekend\");\n    break;",
+            "language": "java"
+          }
+        ]
       }
-    },
-    "answer": {
-      "expr": "sumRange(1, k - 1)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The break is tested before sum += i on each pass, so when i reaches {{k}} the loop ends without adding {{k}}. Only the values below {{k}} were added, giving {{expected}}. The header says i <= 10, but break overrides it."
+    ],
+    "outro": "“Find the matching case, then run until a break. The next monsters leave some breaks out on purpose.”"
   },
   {
-    "question": "The search code written in this course reports the index where the target was found. Why does it report -1, rather than 0, when the target is absent?",
+    "type": "code_trace",
+    "question": "A switch can choose on a String as well as on a number. What does this program print?",
+    "code": "String dept = \"HEALTH\";\nswitch (dept) {\n    case \"PARKS\":\n        System.out.println(\"Floor 3\");\n        break;\n    case \"HEALTH\":\n        System.out.println(\"Floor 4\");\n        break;\n    default:\n        System.out.println(\"Ask\");\n}",
+    "language": "java",
     "correct": [
-      "0 is a real index, so it would be mistaken for a match at the front"
+      "Floor 4"
     ],
-    "incorrect": [
-      "-1 is what Java stores in an int that was never assigned",
-      "0 would stop the loop before the last element is checked",
-      "-1 is the index just past the end of any array"
+    "case_sensitive": true,
+    "feedback": "dept holds \"HEALTH\", so Java jumps to that case and prints Floor 4. The break then leaves the switch, so default is never reached. default runs only when no case matches at all."
+  },
+  {
+    "type": "code_trace",
+    "question": "Two case labels are stacked together here. What does this program print?",
+    "code": "int day = 7;\nswitch (day) {\n    case 6:\n    case 7:\n        System.out.println(\"Rest\");\n        break;\n    default:\n        System.out.println(\"Work\");\n}",
+    "language": "java",
+    "correct": [
+      "Rest"
     ],
-    "feedback": "The answer is an index, and every index from 0 to length - 1 means 'found here', so 'not found' needs a value that can never be an index. -1 is the usual choice, and String's indexOf makes the same one. It is a convention, not something Java supplies: the code has to set it. (The library's own Arrays.binarySearch reports a miss with other negative numbers, so test for < 0 rather than == -1 there.)"
+    "case_sensitive": true,
+    "feedback": "case 6 has no code of its own, so entering there would fall straight through to case 7. That is how two values share one block: 6 and 7 both print Rest. The break stops the fall-through before it reaches default."
+  },
+  {
+    "type": "code_trace",
+    "question": "This switch is missing some of its break statements. What is printed?",
+    "code": "int level = 2;\nswitch (level) {\n    case 1:\n        System.out.print(\"A\");\n    case 2:\n        System.out.print(\"B\");\n    case 3:\n        System.out.print(\"C\");\n        break;\n    default:\n        System.out.print(\"D\");\n}",
+    "language": "java",
+    "correct": [
+      "BC"
+    ],
+    "case_sensitive": true,
+    "feedback": "In a switch, case labels are only entry points. Java jumps to case 2, prints B, and then falls through into case 3 because nothing stopped it, printing C. The break after C finally leaves the switch, so D is not printed. A is skipped because execution entered below it. Fall-through is the classic bug of a switch: every case that should stop needs a break of its own."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the three keywords this switch is missing.",
+    "question": "switch (stars) {\n    {{1}} 5:\n        System.out.println(\"Outstanding\");\n        {{2}};\n    case 4:\n        System.out.println(\"Good\");\n        break;\n    {{3}}:\n        System.out.println(\"Invalid rating\");\n}",
+    "language": "java",
+    "blanks": [
+      {
+        "accept": [
+          "case"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "break"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "default"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "case introduces each value to match. break leaves the switch at the end of a case; without it, 5 stars would print Outstanding and then Good as well. default catches every value that no case names, the way a final else does."
+  },
+  {
+    "type": "matching",
+    "question": "A linear search looks for a target in an array of n elements. Match each case to what it costs.",
+    "pairs": [
+      {
+        "term": "Best case",
+        "definition": "1 comparison: the target is the first element"
+      },
+      {
+        "term": "Worst case",
+        "definition": "n comparisons: the target is last, or missing"
+      },
+      {
+        "term": "Average case",
+        "definition": "About n / 2 comparisons: it is somewhere in the middle"
+      }
+    ],
+    "feedback": "How long a search takes depends on where the target is. If it is first, one comparison is enough. If it is last, or not there at all, every element has to be compared. On average the search gets about halfway before it finds what it wants."
   },
   {
     "type": "dynamic_numeric",
-    "question": "A linear search checks an array of {{n}} elements from index 0 upward and stops as soon as it meets the target, which is sitting at index {{k}}. How many elements did it compare with the target?",
+    "question": "An array holds {{n}} elements, and the target is not among them. How many elements does a linear search compare with the target before it can report “not found”?",
     "variables": {
       "n": {
-        "min": 20,
-        "max": 40
-      },
-      "k": {
-        "min": 3,
-        "max": 15
+        "min": 12,
+        "max": 60
       }
     },
     "answer": {
-      "expr": "k + 1",
+      "expr": "n",
       "tolerance_abs": 0
     },
-    "feedback_template": "Indexes start at 0, so reaching index {{k}} means indexes 0 through {{k}} were all compared: {{expected}} elements. The rest of the {{n}} are never looked at, which is what stopping early buys. Had the target been absent, all {{n}} would have been compared."
+    "allow_expression": false,
+    "feedback_template": "A linear search can only say “not found” after it has looked at everything, so all {{expected}} elements are compared. This is its worst case — the same cost as finding the target in the very last position."
   },
   {
-    "type": "code_trace",
-    "question": "The target appears more than once in this array. What does the search print?",
-    "code": "int[] ids = {3, 8, 3, 5, 3};\nint target = 3;\nint idx = -1;\nfor (int i = 0; i < ids.length; i++) {\n    if (ids[i] == target) idx = i;\n}\nSystem.out.println(idx);",
-    "language": "java",
+    "type": "fill_blank",
+    "question": "In the worst case a linear search compares the target with every element, so doubling the size of the array doubles the work. In Big-O notation, linear search is described as O(___).",
     "correct": [
-      "4"
+      "n",
+      "(n)"
     ],
-    "case_sensitive": true,
-    "feedback": "Nothing stops this loop once it has a match, so it keeps going and idx is overwritten at index 0, again at index 2, and finally at index 4. It reports the LAST match. Adding break; after idx = i; would leave the loop at the first match and print 0, and would save the wasted comparisons as well."
+    "case_sensitive": false,
+    "feedback": "O(n), read “order n”: the work grows in step with n, the number of elements. Ten elements, up to ten comparisons; a million elements, up to a million. Big-O describes how the worst case scales as the input grows, not how long any one run takes."
   },
   {
-    "type": "code_trace",
-    "question": "This binary search is run on an array that is NOT in sorted order. The target 9 is in the array. What does it print?",
-    "code": "int[] nums = {9, 2, 7, 4, 1};\nint target = 9;\nint lo = 0, hi = nums.length - 1, idx = -1;\nwhile (lo <= hi) {\n    int mid = (lo + hi) / 2;\n    if (nums[mid] == target) { idx = mid; break; }\n    else if (nums[mid] < target) lo = mid + 1;\n    else hi = mid - 1;\n}\nSystem.out.println(idx);",
-    "language": "java",
+    "question": "Why do programmers usually judge an algorithm by its worst case?",
     "correct": [
-      "-1"
+      "It is a guarantee: the algorithm will never do worse than that"
     ],
-    "case_sensitive": true,
-    "feedback": "The first probe is index 2, which holds 7. Since 7 < 9 the code throws away indexes 0 to 2, and the 9 at index 0 goes with them. The later probes (4, then 1) fail too, and idx stays -1. Binary search never looks at most of the array; it trusts the ordering to tell it where the target cannot be. On unsorted data that trust is misplaced, and it gives wrong answers without any error message."
+    "incorrect": [
+      "It is the case that turns up most often with real-world data",
+      "It is the only one of the three cases that can be measured",
+      "It is always about twice the cost of the average case"
+    ],
+    "feedback": "The worst case is a promise about every input: however unlucky the data, the algorithm will not take longer than this. The best case tells you only what happens when you are lucky, and the average case depends on what “typical” input looks like, which is harder to pin down."
   },
   {
     "type": "npc_demo",
     "question": "NPC: Three markers on a sorted shelf",
     "npc": "nia",
-    "intro": "Seven numbered scrolls sit in order on a shelf. Nia sets three brass markers beside them, labelled lo, mid and hi. “Binary search is nothing more than moving these three,” she says.",
+    "intro": "Seven numbered scrolls sit in order on a shelf. Nia sets three brass markers beside them, labelled low, mid and high. “Binary search is nothing more than moving these three,” she says.",
     "steps": [
       {
-        "say": "lo and hi fence in the part of the array where the target could still be. mid is the index halfway between them, and it is the only element I examine: one probe.",
+        "say": "low and high fence in the part of the array where the target could still be. mid is the index halfway between them, and it is the only element I examine: one probe.",
         "beats": [
           {
             "say": "I am hunting for 23 in a sorted array:"
           },
           {
-            "code": "int[] nums = {2, 5, 8, 12, 16, 23, 38};\nint lo = 0, hi = 6;\nint mid = (lo + hi) / 2;   // 3",
+            "code": "int[] nums = {2, 5, 8, 12, 16, 23, 38};\nint low = 0, high = 6;\nint mid = (low + high) / 2;   // 3",
             "language": "java"
           },
           {
-            "say": "lo and hi fence in the indexes where the target could still be. mid is the index halfway between them, and nums[mid] is the only element I examine. That is one probe: nums[3] is 12."
+            "say": "low and high fence in the indexes where the target could still be. mid is the index halfway between them, and nums[mid] is the only element I examine. That is one probe: nums[3] is 12."
           }
         ]
       },
@@ -479,19 +717,19 @@
         "say": "12 is smaller than 23, and the array is sorted.",
         "check": {
           "prompt": "12 is smaller than 23, and the array is sorted. Which indexes can still hold 23?",
-          "answer": "4 to 6, so lo = mid + 1",
+          "answer": "4 to 6, so low = mid + 1",
           "wrong": [
-            "0 to 2, so hi = mid - 1",
-            "3 to 6, so lo = mid"
+            "0 to 2, so high = mid - 1",
+            "3 to 6, so low = mid"
           ],
-          "why": "Everything left of index 3 is even smaller than 12, and index 3 itself has just been examined, so lo jumps to mid + 1 = 4."
+          "why": "Everything left of index 3 is even smaller than 12, and index 3 itself has just been examined, so low jumps to mid + 1 = 4."
         }
       },
       {
         "say": "Second probe: mid = (4 + 6) / 2 = 5, and nums[5] is 23. Found in two probes. Each probe halves what is left, so the worst case is: halve the size until 1 element remains, then add one probe for that last element. 7, 3, 1 is two halvings, so 3 probes at most.",
         "beats": [
           {
-            "say": "Second probe: lo is 4 and hi is 6, so mid is 5, and nums[5] is 23. Found, in two probes."
+            "say": "Second probe: low is 4 and high is 6, so mid is 5, and nums[5] is 23. Found, in two probes."
           },
           {
             "say": "Each probe throws away half of what is left. To get the worst case, halve the size (dropping fractions) until 1 element remains, then add one probe for that last element. For 7 elements: 7, 3, 1 is two halvings, so 3 probes at most."
@@ -504,17 +742,17 @@
   {
     "type": "code_trace",
     "question": "This binary search prints mid on every pass. What is its complete output?",
-    "code": "int[] nums = {3, 6, 10, 15, 21, 27, 34, 40, 52};\nint target = 10;\nint lo = 0, hi = nums.length - 1;\nwhile (lo <= hi) {\n    int mid = (lo + hi) / 2;\n    System.out.print(mid + \" \");\n    if (nums[mid] == target) break;\n    else if (nums[mid] < target) lo = mid + 1;\n    else hi = mid - 1;\n}",
+    "code": "int[] nums = {3, 6, 10, 15, 21, 27, 34, 40, 52};\nint target = 10;\nint low = 0, high = nums.length - 1;\nwhile (low <= high) {\n    int mid = (low + high) / 2;\n    System.out.print(mid + \" \");\n    if (nums[mid] == target) break;\n    else if (nums[mid] < target) low = mid + 1;\n    else high = mid - 1;\n}",
     "language": "java",
     "correct": [
       "4 1 2"
     ],
     "case_sensitive": true,
-    "feedback": "Pass 1: lo 0, hi 8, mid 4; nums[4] is 21, too big, so hi becomes 3. Pass 2: mid is (0 + 3) / 2 = 1 by int division; nums[1] is 6, too small, so lo becomes 2. Pass 3: mid is (2 + 3) / 2 = 2; nums[2] is 10, found. Three probes for nine elements, where a linear search would also have needed three here but could need nine."
+    "feedback": "Pass 1: low 0, high 8, mid 4; nums[4] is 21, too big, so high becomes 3. Pass 2: mid is (0 + 3) / 2 = 1 by int division; nums[1] is 6, too small, so low becomes 2. Pass 3: mid is (2 + 3) / 2 = 2; nums[2] is 10, found. Three probes for nine elements, where a linear search would also have needed three here but could need nine."
   },
   {
     "type": "dynamic_numeric",
-    "question": "Partway through a binary search, lo is {{lo}} and hi is {{hi}}. What value does this statement store?\nint mid = (lo + hi) / 2;",
+    "question": "Partway through a binary search, low is {{lo}} and high is {{hi}}. What value does this statement store?\nint mid = (low + high) / 2;",
     "variables": {
       "lo": {
         "min": 2,
@@ -534,19 +772,41 @@
       "tolerance_abs": 0
     },
     "allow_expression": false,
-    "feedback_template": "lo + hi is {{total}}, and dividing one int by another drops any fraction, so mid is {{expected}}. When the sum is odd there is no exact middle, and the search simply probes the lower of the two middle indexes."
+    "feedback_template": "low + high is {{total}}, and dividing one int by another drops any fraction, so mid is {{expected}}. When the sum is odd there is no exact middle, and the search simply probes the lower of the two middle indexes."
   },
   {
-    "question": "In a binary search loop that runs  while (lo <= hi), an apprentice writes  lo = mid;  where the standard code has  lo = mid + 1;  What is the risk?",
+    "question": "In a binary search loop that runs  while (low <= high), an apprentice writes  low = mid;  where the standard code has  low = mid + 1;  What is the risk?",
     "correct": [
       "The range can stop shrinking, so the loop may never end"
     ],
     "incorrect": [
       "The element at mid is skipped and can never be found",
       "The search still works but needs about twice the probes",
-      "mid can pass hi and index beyond the end of the array"
+      "mid can pass high and index beyond the end of the array"
     ],
-    "feedback": "Suppose lo is 4 and hi is 5. mid is (4 + 5) / 2 = 4, and if nums[4] is too small, lo = mid sets lo to 4 again: nothing changed, so the next pass is identical, forever. The + 1 is safe because index mid has just been examined and ruled out, and it guarantees the range shrinks on every pass. mid always lies between lo and hi, so it cannot run off the array."
+    "feedback": "Suppose low is 4 and high is 5. mid is (4 + 5) / 2 = 4, and if nums[4] is too small, low = mid sets low to 4 again: nothing changed, so the next pass is identical, forever. The + 1 is safe because index mid has just been examined and ruled out, and it guarantees the range shrinks on every pass. mid always lies between low and high, so it cannot run off the array."
+  },
+  {
+    "type": "code_trace",
+    "question": "This binary search is run on an array that is NOT in sorted order. The target 9 is in the array. What does it print?",
+    "code": "int[] nums = {9, 2, 7, 4, 1};\nint target = 9;\nint low = 0, high = nums.length - 1, idx = -1;\nwhile (low <= high) {\n    int mid = (low + high) / 2;\n    if (nums[mid] == target) { idx = mid; break; }\n    else if (nums[mid] < target) low = mid + 1;\n    else high = mid - 1;\n}\nSystem.out.println(idx);",
+    "language": "java",
+    "correct": [
+      "-1"
+    ],
+    "case_sensitive": true,
+    "feedback": "The first probe is index 2, which holds 7. Since 7 < 9 the code throws away indexes 0 to 2, and the 9 at index 0 goes with them. The later probes (4, then 1) fail too, and idx stays -1. Binary search never looks at most of the array; it trusts the ordering to tell it where the target cannot be. On unsorted data that trust is misplaced, and it gives wrong answers without any error message."
+  },
+  {
+    "type": "code_trace",
+    "question": "The target is not in this sorted array. What does the search print?",
+    "code": "int[] nums = {4, 9, 13, 20, 26, 31, 45, 50};\nint target = 27;\nint low = 0, high = nums.length - 1, idx = -1, passes = 0;\nwhile (low <= high) {\n    passes++;\n    int mid = (low + high) / 2;\n    if (nums[mid] == target) { idx = mid; break; }\n    else if (nums[mid] < target) low = mid + 1;\n    else high = mid - 1;\n}\nSystem.out.println(idx + \" \" + passes);",
+    "language": "java",
+    "correct": [
+      "-1 3"
+    ],
+    "case_sensitive": true,
+    "feedback": "Pass 1: mid is (0 + 7) / 2 = 3; 20 is too small, so low becomes 4. Pass 2: mid is (4 + 7) / 2 = 5; 31 is too big, so high becomes 4. Pass 3: mid is 4; 26 is too small, so low becomes 5. Now low (5) is greater than high (4): the fenced-in range is empty, the loop ends, and idx still holds -1. A miss is detected when low and high cross, after only 3 of the 8 elements were examined."
   },
   {
     "type": "dynamic_numeric",
@@ -604,6 +864,18 @@
     "feedback": "The number of times n can be halved before reaching 1 is its base-2 logarithm, so binary search is O(log n). Big-O ignores the base and any small constant, which is why log n, log₂ n and lg n all name the same growth rate. Compare linear search's O(n): at a million elements that is about 20 probes against a possible 1,000,000."
   },
   {
+    "question": "A binary search over a sorted String[] named a cannot use < to compare two Strings. Which test is true exactly when target comes before a[mid] in dictionary order?",
+    "correct": [
+      "target.compareTo(a[mid]) < 0"
+    ],
+    "incorrect": [
+      "target.compareTo(a[mid]) == -1",
+      "target.equals(a[mid]) < 0",
+      "target.compareTo(a[mid]) == true"
+    ],
+    "feedback": "compareTo answers with an int: negative when the first String comes earlier in dictionary order, zero when they match, positive when it comes later. The negative number is not promised to be -1 (\"pear\".compareTo(\"plum\") is -7), so always test < 0. equals gives back a boolean, which can only say same-or-different, never which comes first. The order is by character code, so every capital letter sorts ahead of every lowercase one: \"Zebra\" comes before \"apple\"."
+  },
+  {
     "question": "Which statements about linear search and binary search are correct?",
     "correct": [
       "Linear search gives the right answer on an array in any order",
@@ -615,179 +887,6 @@
       "Sorting the array first lowers linear search's worst-case number of comparisons"
     ],
     "feedback": "Linear search assumes nothing about order, and it can stop the moment it finds the target. Its worst case is a target that is absent, which costs n comparisons whether or not the data is sorted. Binary search is far faster on big sorted arrays (1,000 halves down to 1 in 9 steps, plus one last probe), but sorting just to do a single lookup costs more than the linear search it replaces."
-  },
-  {
-    "type": "npc_demo",
-    "question": "NPC: Selection sort, one pass at a time",
-    "npc": "nia",
-    "intro": "Nia lays four numbered tiles in a row: 5, 2, 8, 1. “Sorting by hand,” she says. “One rule, repeated. Watch what a single pass does.”",
-    "steps": [
-      {
-        "say": "A pass of selection sort finds the smallest value in the unsorted part and swaps it into the first unsorted index.",
-        "beats": [
-          {
-            "code": "index:  0  1  2  3\nvalue:  5  2  8  1",
-            "language": "the array before pass 1"
-          },
-          {
-            "say": "One pass of selection sort does two things: it finds the smallest value in the unsorted part, then swaps it into the first unsorted index."
-          },
-          {
-            "say": "Pass 1: the unsorted part is everything. The smallest value is 1, at index 3, so I swap index 3 with index 0. The array is now 1 2 8 5, and index 0 is finished for good."
-          }
-        ]
-      },
-      {
-        "say": "Pass 2 looks only at indexes 1 to 3, which hold 2, 8 and 5.",
-        "check": {
-          "prompt": "Pass 2 looks only at indexes 1 to 3, which hold 2, 8 and 5. What does it do?",
-          "answer": "Finds 2 already at index 1, so nothing moves",
-          "wrong": [
-            "Swaps the 8 and the 5",
-            "Swaps the 2 and the 8"
-          ],
-          "why": "The smallest of 2, 8, 5 is the 2, and it is already sitting at index 1, the first unsorted index. It swaps with itself and the array still reads 1 2 8 5."
-        }
-      },
-      {
-        "say": "Pass 3 looks at indexes 2 to 3: the smallest is 5, so it swaps with the 8, giving 1 2 5 8. Four elements needed three passes, because the last element has nowhere else to go.",
-        "beats": [
-          {
-            "say": "Pass 3 looks at indexes 2 to 3, holding 8 and 5. The smallest is the 5, so it swaps with the 8: 1 2 5 8."
-          },
-          {
-            "say": "Four elements needed only three passes, because once all the others are placed the last one has nowhere else to go. After pass number k, the first k indexes hold their final values."
-          }
-        ]
-      }
-    ],
-    "outro": "“Now the code version. A monster ahead runs exactly one pass on a different array. Find the smallest, then swap.”"
-  },
-  {
-    "type": "code_trace",
-    "question": "This is the first pass of selection sort. What does it print?",
-    "code": "int[] a = {7, 4, 9, 2, 6};\nint minIdx = 0;\nfor (int j = 1; j < a.length; j++) {\n    if (a[j] < a[minIdx]) minIdx = j;\n}\nint tmp = a[0];\na[0] = a[minIdx];\na[minIdx] = tmp;\nfor (int v : a) System.out.print(v + \" \");",
-    "language": "java",
-    "correct": [
-      "2 4 9 7 6"
-    ],
-    "case_sensitive": true,
-    "feedback": "The loop finds the smallest value, 2, at index 3. The three-line swap then exchanges a[0] and a[3], so the 7 goes to where the 2 was: 2 4 9 7 6. Only two elements move in a pass; the 4, 9 and 6 stay exactly where they were, even though they are not yet in order."
-  },
-  {
-    "type": "ordering",
-    "question": "Selection sort (smallest first) runs on the array 6 9 2 8 1. Put the states of the array in order, from the starting array to the array after pass 3.",
-    "items": [
-      "6 9 2 8 1",
-      "1 9 2 8 6",
-      "1 2 9 8 6",
-      "1 2 6 8 9"
-    ],
-    "feedback": "Pass 1 swaps the smallest value, 1, with whatever is at index 0 (the 6). Pass 2 searches indexes 1 to 4, finds 2, and swaps it with the 9. Pass 3 searches indexes 2 to 4, finds 6, and swaps it with the 9. Each pass fixes exactly one more index at the front, and each swap can send a large value a long way back."
-  },
-  {
-    "type": "ordering",
-    "question": "Arrange these lines, top to bottom, into the body of one selection-sort pass: it must move the smallest value found from index i onward into index i.",
-    "language": "java",
-    "items": [
-      "int minIdx = i;",
-      "for (int j = i + 1; j < a.length; j++)",
-      "    if (a[j] < a[minIdx]) minIdx = j;",
-      "int tmp = a[minIdx];",
-      "a[minIdx] = a[i];",
-      "a[i] = tmp;"
-    ],
-    "feedback": "minIdx has to exist before the inner loop can update it, and the if is the body of that for. The swap can only begin once the loop has finished, because until then minIdx is not yet the position of the smallest value. Inside the swap, tmp saves a[minIdx] first, so that slot can be overwritten with a[i], and the saved value goes into a[i] last."
-  },
-  {
-    "question": "Selection sort (smallest first) has completed 3 passes over an array of 10 different values. What is certain about the array at that moment?",
-    "correct": [
-      "Indexes 0 to 2 hold the three smallest values, already in their final order"
-    ],
-    "incorrect": [
-      "Indexes 7 to 9 hold the three largest values, in their final order",
-      "Indexes 0 to 2 are in order, but smaller values may lie further right",
-      "Every value has been moved at least once toward its final index"
-    ],
-    "feedback": "Each pass selects the smallest value remaining and swaps it into the next index at the front, so after 3 passes indexes 0 to 2 are finished and will never be touched again. A sort that fixes the largest values at the back first is bubble sort; one whose front part is in order but not yet final is insertion sort. And selection sort moves at most two values per pass, so most values may not have moved at all."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "The array a holds {{n}} elements. How many times in total does the comparison  a[j] < a[m]  run?\nfor (int i = 0; i < a.length - 1; i++) {\n    int m = i;\n    for (int j = i + 1; j < a.length; j++) {\n        if (a[j] < a[m]) m = j;\n    }\n    // swap a[i] and a[m] here\n}",
-    "variables": {
-      "n": {
-        "min": 4,
-        "max": 9
-      }
-    },
-    "derived": {
-      "first": "n - 1"
-    },
-    "answer": {
-      "expr": "n * (n - 1) / 2",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "On the first pass j runs from 1 to the last index, which is {{first}} comparisons. Every later pass starts j one place further along, so it makes one fewer, down to a single comparison on the last pass. Adding {{first}} and every whole number below it gives {{expected}}. The count is the same whatever order the values are in: selection sort cannot finish early."
-  },
-  {
-    "question": "Selection sort is being adapted for a String[] named a. The test  a[j] < a[m]  does not compile, because < does not work on Strings. Which replacement is correct?",
-    "correct": [
-      "a[j].compareTo(a[m]) < 0"
-    ],
-    "incorrect": [
-      "a[j].compareTo(a[m]) == -1",
-      "a[j].equals(a[m]) < 0",
-      "a[j].compareTo(a[m]) == true"
-    ],
-    "feedback": "compareTo answers with an int: negative when the first String comes earlier in dictionary order, zero when they match, positive when it comes later. The negative number is not promised to be -1 (\"pear\".compareTo(\"plum\") is -7), so always test < 0. equals gives back a boolean, which can only say same-or-different, never which comes first. The order is by character code, so every capital letter sorts ahead of every lowercase one: \"Zebra\" comes before \"apple\"."
-  },
-  {
-    "type": "code_trace",
-    "question": "Real programs rarely sort by hand. With java.util.Arrays imported, what does this print?",
-    "code": "int[] a = {40, 5, 17, 23, 8};\nArrays.sort(a);\nSystem.out.println(a[0] + \" \" + a[a.length - 1]);",
-    "language": "java",
-    "correct": [
-      "5 40"
-    ],
-    "case_sensitive": true,
-    "feedback": "Arrays.sort rearranges the array itself into ascending order, giving 5 8 17 23 40, so the first element is the smallest and the last is the largest. It hands nothing back; the original order is gone. The library's sort is far faster than selection sort on large arrays, so you trace selection sort to understand sorting and call Arrays.sort to get work done."
-  },
-  {
-    "type": "matching",
-    "question": "Each fragment works on an int array a of length n. Match it to how its running time grows.",
-    "pairs": [
-      {
-        "term": "int x = a[n - 1];",
-        "definition": "Constant: the same work however large n is"
-      },
-      {
-        "term": "for (int i = 0; i < n; i++) sum += a[i];",
-        "definition": "Linear: doubling n doubles the work"
-      },
-      {
-        "term": "for (int i = n; i > 1; i = i / 2) steps++;",
-        "definition": "Logarithmic: doubling n adds a single step"
-      },
-      {
-        "term": "for (int i = 0; i < n; i++)\n    for (int j = 0; j < n; j++)\n        if (a[i] == a[j]) same++;",
-        "definition": "Quadratic: doubling n makes four times the work"
-      }
-    ],
-    "feedback": "Count how often the innermost statement runs. One array access is one step whatever n is. A single loop over the array runs n times. A loop that halves i reaches 1 after about log₂ n passes, so even a huge n costs only a handful of steps. A full loop nested in another runs n × n times, the pattern behind selection sort and the reason it struggles on big arrays."
-  },
-  {
-    "question": "For an unsorted int array of n elements, which of these jobs take time that grows in proportion to n (linear time)?",
-    "correct": [
-      "Adding up every element",
-      "Finding the largest value",
-      "Linear search for a value that turns out to be absent"
-    ],
-    "incorrect": [
-      "Sorting the array with selection sort",
-      "Reading the last element, a[n - 1]",
-      "Swapping the first element with the last"
-    ],
-    "feedback": "Summing, finding the maximum and an unsuccessful linear search each visit every element once: n steps, so linear. Selection sort runs a loop inside a loop and needs roughly n × n / 2 comparisons, which is quadratic. Reading a[n - 1] and the three-line swap each take the same few steps whether the array has ten elements or ten million: constant time."
   },
   {
     "question": "A shop's array of 100,000 item codes is unsorted, never changes, and will be searched thousands of times a day. Which plan does the least total work?",
@@ -802,14 +901,526 @@
     "feedback": "Binary search on unsorted data gives wrong answers, so it cannot simply be used straight away. Sorting is expensive, but here the cost is paid once and then shared by thousands of lookups of about 17 probes each, instead of up to 100,000 comparisons each. Sorting again before every lookup throws that saving away. If the array were only going to be searched once, plain linear search would win."
   },
   {
-    "type": "code_trace",
-    "question": "The target is not in this sorted array. What does the search print?",
-    "code": "int[] nums = {4, 9, 13, 20, 26, 31, 45, 50};\nint target = 27;\nint lo = 0, hi = nums.length - 1, idx = -1, passes = 0;\nwhile (lo <= hi) {\n    passes++;\n    int mid = (lo + hi) / 2;\n    if (nums[mid] == target) { idx = mid; break; }\n    else if (nums[mid] < target) lo = mid + 1;\n    else hi = mid - 1;\n}\nSystem.out.println(idx + \" \" + passes);",
-    "language": "java",
+    "question": "For an unsorted int array of n elements, which of these jobs take time that grows in proportion to n (linear time)?",
     "correct": [
-      "-1 3"
+      "Adding up every element",
+      "Finding the largest value",
+      "Linear search for a value that turns out to be absent"
     ],
-    "case_sensitive": true,
-    "feedback": "Pass 1: mid is (0 + 7) / 2 = 3; 20 is too small, so lo becomes 4. Pass 2: mid is (4 + 7) / 2 = 5; 31 is too big, so hi becomes 4. Pass 3: mid is 4; 26 is too small, so lo becomes 5. Now lo (5) is greater than hi (4): the fenced-in range is empty, the loop ends, and idx still holds -1. A miss is detected when lo and hi cross, after only 3 of the 8 elements were examined."
+    "incorrect": [
+      "Binary search, once the array has been sorted",
+      "Reading the last element, a[n - 1]",
+      "Reading the first element, a[0]"
+    ],
+    "feedback": "Summing, finding the maximum and an unsuccessful linear search each visit every element once: n steps, so linear. Binary search needs only about log₂ n probes, far fewer than n. And reading one element by its index takes the same single step whether the array has ten elements or ten million."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: return, in the middle of a loop",
+    "npc": "nia",
+    "intro": "Nia chalks a search on the wall, this time wrapped in a method. “You know how to stop a loop early with break. Inside a method there is something stronger.”",
+    "steps": [
+      {
+        "say": "return ends the method on the spot, loop and all. So inside a method it does the job that break does elsewhere — and hands back the answer at the same time.",
+        "beats": [
+          {
+            "code": "public int indexOf(int[] nums, int target) {\n    for (int i = 0; i < nums.length; i++) {\n        if (nums[i] == target) {\n            return i;\n        }\n    }\n    return -1;\n}",
+            "language": "java"
+          },
+          {
+            "say": "These rounds work as before: I give the first line of a method, you write what goes between the braces, and Run costs nothing."
+          },
+          {
+            "say": "Look at return i. A return ends the method on the spot, loop and all. So inside a method it does the job that break does elsewhere, and hands back the answer at the same time."
+          }
+        ],
+        "check": {
+          "prompt": "nums is {4, 9, 4} and target is 4. What does the method hand back?",
+          "answer": "0",
+          "wrong": [
+            "2",
+            "-1"
+          ],
+          "why": "The first pass finds a match at index 0 and returns at once. The later 4, at index 2, is never looked at."
+        }
+      },
+      {
+        "say": "The return after the loop is reached only when the loop has finished without finding anything. Put it inside the loop, in an else, and the method gives up after one element.",
+        "beats": [
+          {
+            "say": "The last line, return -1, is reached only when the loop has finished without finding anything."
+          },
+          {
+            "say": "Put it inside the loop instead — in an else — and the method gives up after looking at one element. “Not found” can only be said once everything has been checked."
+          }
+        ],
+        "check": {
+          "prompt": "Where does  return -1;  belong?",
+          "answer": "After the loop has finished",
+          "wrong": [
+            "In an else inside the loop",
+            "Before the loop has started"
+          ],
+          "why": "Only when every element has been compared can the method know the target is absent, so the “not found” answer comes after the loop's closing brace."
+        }
+      }
+    ],
+    "outro": "“Search, count, total, smallest, average, a switch, and the fast search to finish. Each is a pattern from this hall, written as a method.”"
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the index of the first place target appears in the array, or -1 if it is not there.",
+    "signature": "public int indexOf(int[] nums, int target)",
+    "tests": [
+      {
+        "args": [
+          [
+            10,
+            25,
+            3,
+            47,
+            8
+          ],
+          47
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [
+            4,
+            9,
+            4
+          ],
+          4
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            1,
+            2,
+            3
+          ],
+          5
+        ],
+        "expect": -1
+      },
+      {
+        "args": [
+          [],
+          1
+        ],
+        "expect": -1
+      },
+      {
+        "args": [
+          [
+            7
+          ],
+          7
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            5,
+            6,
+            6
+          ],
+          6
+        ],
+        "expect": 1
+      }
+    ],
+    "solution": "for (int i = 0; i < nums.length; i++) {\n    if (nums[i] == target) {\n        return i;\n    }\n}\nreturn -1;",
+    "hint": "Return i from inside the loop the moment nums[i] matches. Return -1 after the loop.",
+    "feedback": "Linear search as a method. Returning from inside the loop stops at the FIRST match, which is what makes the answer 0 for {4, 9, 4}. The -1 comes after the loop, because “not found” can only be said once every element has been checked."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return how many times the target name appears in the array. Names match only when they are exactly the same, capital letters included.",
+    "signature": "public int countName(String[] names, String target)",
+    "tests": [
+      {
+        "args": [
+          [
+            "Jerry",
+            "Tom",
+            "Jerry",
+            "Ann",
+            "Jerry"
+          ],
+          "Jerry"
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [
+            "Tom"
+          ],
+          "Jerry"
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [],
+          "a"
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            "jerry",
+            "Jerry"
+          ],
+          "Jerry"
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          [
+            "a",
+            "a"
+          ],
+          "a"
+        ],
+        "expect": 2
+      }
+    ],
+    "solution": "int count = 0;\nfor (int i = 0; i < names.length; i++) {\n    if (names[i].equals(target)) {\n        count++;\n    }\n}\nreturn count;",
+    "hint": "Start a counter at 0 and add 1 each time names[i].equals(target). Do not stop at the first match.",
+    "feedback": "A count accumulator: start at 0 before the loop, add 1 for each match, return after the loop. There is no break here — the job is to count every match, not to stop at the first. Strings are compared with .equals()."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "A list of expenses contains some negative numbers, which are errors. Return the total of the entries, ignoring any that are negative.",
+    "signature": "public int sumValid(int[] entries)",
+    "tests": [
+      {
+        "args": [
+          [
+            250,
+            -15,
+            450
+          ]
+        ],
+        "expect": 700
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            -1,
+            -2
+          ]
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            5
+          ]
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          [
+            3,
+            -3,
+            3,
+            0
+          ]
+        ],
+        "expect": 6
+      }
+    ],
+    "solution": "int total = 0;\nfor (int i = 0; i < entries.length; i++) {\n    if (entries[i] < 0) {\n        continue;\n    }\n    total += entries[i];\n}\nreturn total;",
+    "hint": "Keep a total that starts at 0. Skip a negative entry with continue, or only add when the entry is 0 or more.",
+    "feedback": "A sum accumulator with a filter in front of it. continue skips the rest of the pass for a negative entry and moves on to the next one. Writing if (entries[i] >= 0) around the addition does exactly the same job."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the smallest number in an array. The array will have at least one number, and the numbers may all be negative.",
+    "signature": "public int smallest(int[] nums)",
+    "tests": [
+      {
+        "args": [
+          [
+            12,
+            7,
+            9
+          ]
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          [
+            -3,
+            -9,
+            -2
+          ]
+        ],
+        "expect": -9
+      },
+      {
+        "args": [
+          [
+            5
+          ]
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          [
+            4,
+            4
+          ]
+        ],
+        "expect": 4
+      },
+      {
+        "args": [
+          [
+            8,
+            6,
+            7,
+            1
+          ]
+        ],
+        "expect": 1
+      }
+    ],
+    "solution": "int min = nums[0];\nfor (int i = 1; i < nums.length; i++) {\n    if (nums[i] < min) {\n        min = nums[i];\n    }\n}\nreturn min;",
+    "hint": "Start min at nums[0], not at 0, and replace it whenever nums[i] is smaller.",
+    "feedback": "A minimum starts from a real element — the first — and is replaced whenever something smaller turns up. Starting at 0 instead gives 0 for {12, 7, 9}, a number that is not even in the array. The loop can begin at index 1, since index 0 is already the starting value."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the average of the ratings in an array, keeping the decimal part: the average of 9, 7, 10, 8 and 7 is 8.2. The array will have at least one rating.",
+    "signature": "public double average(int[] ratings)",
+    "tests": [
+      {
+        "args": [
+          [
+            9,
+            7,
+            10,
+            8,
+            7
+          ]
+        ],
+        "expect": 8.2
+      },
+      {
+        "args": [
+          [
+            1,
+            2
+          ]
+        ],
+        "expect": 1.5
+      },
+      {
+        "args": [
+          [
+            5
+          ]
+        ],
+        "expect": 5.0
+      },
+      {
+        "args": [
+          [
+            10,
+            10,
+            10
+          ]
+        ],
+        "expect": 10.0
+      },
+      {
+        "args": [
+          [
+            0,
+            1
+          ]
+        ],
+        "expect": 0.5
+      }
+    ],
+    "solution": "int sum = 0;\nfor (int i = 0; i < ratings.length; i++) {\n    sum += ratings[i];\n}\nreturn (double) sum / ratings.length;",
+    "hint": "Total the ratings in a loop, then divide — but cast the sum to double first, or the fraction is lost.",
+    "feedback": "An average is a sum accumulator and one division. sum / ratings.length divides an int by an int and drops the fraction: 41 / 5 is 8. Casting one side first — (double) sum — makes it a double division and keeps the .2."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the description for a star rating: 5 is \"Outstanding\", 4 is \"Good\", 3 is \"Satisfactory\", 2 is \"Poor\" and 1 is \"Terrible\". Any other number is \"Invalid\".",
+    "signature": "public String describe(int stars)",
+    "tests": [
+      {
+        "args": [
+          5
+        ],
+        "expect": "Outstanding"
+      },
+      {
+        "args": [
+          4
+        ],
+        "expect": "Good"
+      },
+      {
+        "args": [
+          3
+        ],
+        "expect": "Satisfactory"
+      },
+      {
+        "args": [
+          2
+        ],
+        "expect": "Poor"
+      },
+      {
+        "args": [
+          1
+        ],
+        "expect": "Terrible"
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": "Invalid"
+      },
+      {
+        "args": [
+          6
+        ],
+        "expect": "Invalid"
+      }
+    ],
+    "solution": "switch (stars) {\n    case 5:\n        return \"Outstanding\";\n    case 4:\n        return \"Good\";\n    case 3:\n        return \"Satisfactory\";\n    case 2:\n        return \"Poor\";\n    case 1:\n        return \"Terrible\";\n    default:\n        return \"Invalid\";\n}",
+    "hint": "A switch on stars, with a return in each case and a default for everything else.",
+    "feedback": "One value choosing between fixed answers is what a switch is for. Each case returns, and a return leaves the whole method, so no break is needed after it. default covers every other number — and it is what satisfies Java that the method always returns something."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "The array is sorted from smallest to largest. Return the index where target is found, or -1 if it is not in the array.",
+    "signature": "public int binarySearch(int[] sorted, int target)",
+    "tests": [
+      {
+        "args": [
+          [
+            3,
+            6,
+            10,
+            15,
+            21,
+            27,
+            34
+          ],
+          10
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [
+            3,
+            6,
+            10,
+            15,
+            21,
+            27,
+            34
+          ],
+          3
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            3,
+            6,
+            10,
+            15,
+            21,
+            27,
+            34
+          ],
+          34
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          [
+            3,
+            6,
+            10,
+            15,
+            21,
+            27,
+            34
+          ],
+          11
+        ],
+        "expect": -1
+      },
+      {
+        "args": [
+          [],
+          5
+        ],
+        "expect": -1
+      },
+      {
+        "args": [
+          [
+            8
+          ],
+          8
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            2,
+            4
+          ],
+          4
+        ],
+        "expect": 1
+      }
+    ],
+    "solution": "int low = 0;\nint high = sorted.length - 1;\nwhile (low <= high) {\n    int mid = (low + high) / 2;\n    if (sorted[mid] == target) {\n        return mid;\n    } else if (target < sorted[mid]) {\n        high = mid - 1;\n    } else {\n        low = mid + 1;\n    }\n}\nreturn -1;",
+    "hint": "Keep low and high. While low <= high, look at the middle: return it on a match, otherwise move high to mid - 1 or low to mid + 1.",
+    "feedback": "low and high fence in where the target could still be, and each pass looks only at the middle. Too big, and high moves to mid - 1; too small, and low moves to mid + 1. The - 1 and + 1 matter: without them the range can stop shrinking and the loop never ends. When low passes high the range is empty, and the answer is -1."
   }
 ]
