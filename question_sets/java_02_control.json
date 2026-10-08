@@ -1,5 +1,107 @@
 [
   {
+    "type": "npc_demo",
+    "question": "NPC: A question with a yes-or-no answer",
+    "npc": "nia",
+    "intro": "Nia stands at a tavern door with a slate in her hand. “A program that treats everyone the same is a vending machine. To do better it has to ask a question — and the question has to have a yes-or-no answer.”",
+    "steps": [
+      {
+        "say": "This is an if statement. The part in round brackets is the condition. When it is true, the code inside the braces runs; when it is false, that code is skipped.",
+        "beats": [
+          {
+            "code": "boolean isRegular = true;\nif (isRegular) {\n    System.out.println(\"The usual?\");\n}",
+            "language": "java"
+          },
+          {
+            "say": "This is an if statement. The part in round brackets is the condition."
+          },
+          {
+            "say": "When the condition is true, the code inside the braces runs. When it is false, that code is skipped and the program carries on below the closing brace."
+          }
+        ],
+        "check": {
+          "prompt": "isRegular is changed to false. What does this code print now?",
+          "answer": "Nothing at all",
+          "wrong": [
+            "The usual?",
+            "The word false"
+          ],
+          "why": "A false condition means the braces are skipped entirely. An if on its own does nothing in that case."
+        }
+      },
+      {
+        "say": "The condition has to be something that is true or false: a boolean variable, or a comparison such as age >= 21. A number or a piece of text on its own will not do.",
+        "beats": [
+          {
+            "say": "The condition has to be something that is true or false: a boolean variable, or a comparison."
+          },
+          {
+            "code": "if (age >= 21) { ... }     // fine: a comparison\nif (isRegular) { ... }     // fine: a boolean variable\nif (25) { ... }            // refused: 25 is not true or false",
+            "language": "java"
+          }
+        ],
+        "check": {
+          "prompt": "coins is an int. Which of these can be the condition of an if?",
+          "answer": "coins > 10",
+          "wrong": [
+            "coins + 10",
+            "coins"
+          ],
+          "why": "coins > 10 is a comparison, so its answer is true or false. coins + 10 and coins are just numbers, and Java will not treat a number as yes or no."
+        }
+      },
+      {
+        "say": "Two pieces of punctuation are not optional here: the round brackets around the condition, and the braces around the code it controls.",
+        "beats": [
+          {
+            "say": "Two pieces of punctuation are not optional here: the round brackets around the condition, and the braces around the code it controls."
+          },
+          {
+            "code": "if (hasID) {\n    System.out.println(\"Come in\");\n}",
+            "language": "java"
+          }
+        ]
+      }
+    ],
+    "outro": "“Condition in brackets, code in braces. The next monsters want to know when the braces are entered and when they are skipped.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "The condition of this if is a boolean variable. What does the program print?",
+    "code": "boolean isRegular = false;\nif (isRegular) {\n    System.out.println(\"The usual?\");\n}\nSystem.out.println(\"Next!\");",
+    "language": "java",
+    "correct": [
+      "Next!"
+    ],
+    "case_sensitive": true,
+    "feedback": "isRegular is false, so the code inside the braces is skipped. The last line is outside the braces, so it runs whatever the condition was. An if never stops the program; it only decides whether its own block runs."
+  },
+  {
+    "question": "age is an int, hasID is a boolean and name is a String. Which of these can be used as the condition of an if?",
+    "correct": [
+      "age >= 21",
+      "hasID"
+    ],
+    "incorrect": [
+      "age + 21",
+      "name",
+      "21"
+    ],
+    "feedback": "A condition has to be true or false. A comparison such as age >= 21 gives a boolean, and hasID already is one. age + 21 and 21 are numbers, and name is text: Java will not treat any of those as a yes or a no, and the compiler rejects them."
+  },
+  {
+    "question": "The compiler rejects this line. What is wrong with it?\nif hasID {",
+    "correct": [
+      "The condition is not inside round brackets"
+    ],
+    "incorrect": [
+      "The condition is not a comparison with ==",
+      "The line does not end with a semicolon",
+      "The brace should come on the line below"
+    ],
+    "feedback": "In Java the condition of an if always goes in round brackets: if (hasID) { . A boolean variable is a perfectly good condition without any ==. A line that opens a block with { takes no semicolon, and the brace may sit on the same line."
+  },
+  {
     "question": "int age = 20;\nboolean adult = age >= 18;\n\nWhat is stored in adult?",
     "correct": [
       "true"
@@ -10,6 +112,211 @@
       "20"
     ],
     "feedback": "A comparison such as age >= 18 is an expression in its own right, and its value is a boolean: true or false. It can be stored, printed or combined like any other value, not just placed inside an if. adult does not hold the age that was tested, only the verdict. Java does not use 1 and 0 for true and false, and \"true\" in quotes would be a String, which is a different type."
+  },
+  {
+    "type": "code_trace",
+    "question": "Work out the condition first, then choose the block. What does this program print?",
+    "code": "int age = 19;\nif (age >= 21) {\n    System.out.println(\"Welcome\");\n} else {\n    System.out.println(\"Not yet\");\n}",
+    "language": "java",
+    "correct": [
+      "Not yet"
+    ],
+    "case_sensitive": true,
+    "feedback": "19 >= 21 is false, so the first block is skipped and the else block runs. With an if-else exactly one of the two blocks runs: the first when the condition is true, the else when it is false."
+  },
+  {
+    "type": "code_trace",
+    "question": "A chain of conditions is checked from the top. What does this program print?",
+    "code": "int hour = 18;\nString price;\nif (hour < 17) {\n    price = \"Regular\";\n} else if (hour < 19) {\n    price = \"Happy hour\";\n} else {\n    price = \"Evening\";\n}\nSystem.out.println(price);",
+    "language": "java",
+    "correct": [
+      "Happy hour"
+    ],
+    "case_sensitive": true,
+    "feedback": "18 < 17 is false, so Java moves on to the next condition. 18 < 19 is true, so that block runs and the rest of the chain is skipped. The second test did not need to say “17 or later”: it is only ever reached when the first test has already failed."
+  },
+  {
+    "type": "code_trace",
+    "question": "A score of 85 is supposed to earn \"good\". What does this chain actually print?",
+    "code": "int score = 85;\nif (score >= 60) {\n    System.out.println(\"pass\");\n} else if (score >= 80) {\n    System.out.println(\"good\");\n} else if (score >= 90) {\n    System.out.println(\"great\");\n} else {\n    System.out.println(\"fail\");\n}",
+    "language": "java",
+    "correct": [
+      "pass"
+    ],
+    "case_sensitive": true,
+    "feedback": "An if / else if chain is checked from the top, and the first true condition wins: its branch runs and the rest of the chain is skipped without being tested. 85 >= 60 is true, so pass is printed and \"good\" is never reached. The fix is to test the most demanding condition first: >= 90, then >= 80, then >= 60."
+  },
+  {
+    "question": "An if / else if / else if chain ends with a final else, so it has four blocks. How many of them run each time the chain is reached?",
+    "correct": [
+      "Exactly one of the four"
+    ],
+    "incorrect": [
+      "At least one of the four",
+      "Every one whose test is true",
+      "None, one or several of them"
+    ],
+    "feedback": "Java checks the conditions from the top and runs the block of the FIRST one that is true; the rest of the chain is skipped without being tested. If none is true, the final else runs. Either way exactly one block runs. (Without the final else, it could be none.)"
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the keywords that join this chain together.",
+    "question": "if (age < 18) {\n    System.out.println(\"No entry\");\n} {{1}} (age < 21) {\n    System.out.println(\"Soft drinks only\");\n} {{2}} {\n    System.out.println(\"Full menu\");\n}",
+    "language": "java",
+    "blanks": [
+      {
+        "accept": [
+          "else if"
+        ],
+        "hint": "keywords",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "else"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "else if adds another condition to the chain, tested only when everything above it was false. A plain else has no condition at all: it catches whatever is left. That is why the last block needs no test for “21 or over”."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "int score = {{s}};\nint stars = 0;\nif (score >= 60) { stars++; }\nif (score >= 70) { stars++; }\nif (score >= 80) { stars++; }\nif (score >= 90) { stars++; }\n\nWhat is the value of stars after this code runs?",
+    "variables": {
+      "s": {
+        "min": 52,
+        "max": 99
+      }
+    },
+    "answer": {
+      "expr": "min(4, max(0, floor((s - 50) / 10)))",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "There is no else here, so these are four separate if statements, and every one of them is tested. Each condition that {{s}} satisfies adds a star, giving {{expected}}. In an else-if chain only the first true branch would run, and stars could never pass 1."
+  },
+  {
+    "type": "matching",
+    "question": "age is an int. Match each condition to what it asks.",
+    "pairs": [
+      {
+        "term": "age == 21",
+        "definition": "Is age exactly 21?"
+      },
+      {
+        "term": "age != 21",
+        "definition": "Is age anything except 21?"
+      },
+      {
+        "term": "age > 21",
+        "definition": "Is age 22 or more?"
+      },
+      {
+        "term": "age < 21",
+        "definition": "Is age 20 or less?"
+      },
+      {
+        "term": "age >= 21",
+        "definition": "Is age 21 or more?"
+      },
+      {
+        "term": "age <= 21",
+        "definition": "Is age 21 or less?"
+      }
+    ],
+    "feedback": "== asks “equal to” and != asks “not equal to”. > and < leave the number itself out, so age > 21 starts at 22. >= and <= include it. Whether the boundary value counts is the most common mistake in a condition, so check it every time."
+  },
+  {
+    "question": "What happens when this line is compiled?\nif (age = 21) {",
+    "correct": [
+      "It is refused: = stores a value and does not compare"
+    ],
+    "incorrect": [
+      "It compiles, and is true whenever age equals 21",
+      "It compiles, and is true for any value of age",
+      "It is refused: 21 has to be written in quotes"
+    ],
+    "feedback": "A single = is assignment: it would put 21 into age, and the result is a number, not true or false — so the compiler rejects it as a condition. To compare, use two: if (age == 21). Remember it as “= stores, == asks”."
+  },
+  {
+    "type": "code_line",
+    "question": "age is an int. Write the condition (just the condition: no if, no brackets, no semicolon) that is true when age is 21 or more.",
+    "language": "java",
+    "correct": [
+      "age >= 21",
+      "age > 20",
+      "21 <= age",
+      "20 < age"
+    ],
+    "case_sensitive": true,
+    "feedback": "age >= 21 — “greater than or equal to”, so 21 itself counts. age > 21 would turn away someone who is exactly 21. (age > 20 says the same thing for whole numbers, but >= 21 says what you mean.)"
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Both, or either",
+    "npc": "nia",
+    "intro": "Nia chalks two words on the door: AND, OR. “One test is often not enough. The door wants an ID and the right age. The late hours want a weekend or a holiday. Java has one operator for each of those words.”",
+    "steps": [
+      {
+        "say": "&& means AND: the whole condition is true only when BOTH sides are true. One false side is enough to make it false.",
+        "beats": [
+          {
+            "code": "if (hasID && age >= 21) {\n    System.out.println(\"Welcome\");\n}",
+            "language": "java"
+          },
+          {
+            "say": "&& means AND. The whole condition is true only when BOTH sides are true. One false side is enough to make it false."
+          }
+        ],
+        "check": {
+          "prompt": "hasID is true and age is 19. What is  hasID && age >= 21 ?",
+          "answer": "false",
+          "wrong": [
+            "true",
+            "It will not compile"
+          ],
+          "why": "The left side is true, but 19 >= 21 is false, and && needs both. So the whole condition is false."
+        }
+      },
+      {
+        "say": "|| means OR: true when AT LEAST ONE side is true, including when both are. It is false only when both sides are false.",
+        "beats": [
+          {
+            "code": "if (isWeekend || isHoliday) {\n    System.out.println(\"Open late\");\n}",
+            "language": "java"
+          },
+          {
+            "say": "|| means OR. The condition is true when AT LEAST ONE side is true — including when both are. It is false only when both sides are false."
+          }
+        ],
+        "check": {
+          "prompt": "isWeekend is false and isHoliday is true. What is  isWeekend || isHoliday ?",
+          "answer": "true",
+          "wrong": [
+            "false",
+            "It will not compile"
+          ],
+          "why": "One true side is all || needs. It does not matter which side it is."
+        }
+      },
+      {
+        "say": "When you mix the two, use parentheses to say which tests belong together.",
+        "beats": [
+          {
+            "say": "When you mix the two, use parentheses to say which tests belong together."
+          },
+          {
+            "code": "if ((isRegular && spent >= 10) || spent >= 25) {\n    System.out.println(\"Free snack\");\n}",
+            "language": "java"
+          },
+          {
+            "say": "Read the parentheses first: a regular who has spent 10 — or anyone at all who has spent 25."
+          }
+        ]
+      }
+    ],
+    "outro": "“Both for &&, either for ||. The next monsters give you the values; you give the verdict.”"
   },
   {
     "type": "matching",
@@ -39,6 +346,71 @@
     "feedback": "\"Between\" needs both tests to hold, so it is && (AND). \"Outside\" is satisfied by either side, so it is || (OR). \"Neither 1 nor 10\" means not 1 AND not 10: writing x != 1 || x != 10 would be true for every number, because no number equals both. Including the ends means >= and <=; strictly between means > and <."
   },
   {
+    "type": "code_trace",
+    "question": "&& needs both of its sides to be true. What does this program print?",
+    "code": "boolean hasID = true;\nint age = 19;\nif (hasID && age >= 21) {\n    System.out.println(\"Welcome\");\n} else {\n    System.out.println(\"Sorry\");\n}",
+    "language": "java",
+    "correct": [
+      "Sorry"
+    ],
+    "case_sensitive": true,
+    "feedback": "hasID is true, but 19 >= 21 is false. && is true only when BOTH sides are, so the whole condition is false and the else block runs. Having an ID is not enough by itself."
+  },
+  {
+    "question": "int a = 5;\nint b = 10;\n\nWhich of these conditions are true?",
+    "correct": [
+      "a < b && b > 7",
+      "a > b || b == 10",
+      "a < b || b < 7"
+    ],
+    "incorrect": [
+      "a > b && b == 10",
+      "a == b || b < 7"
+    ],
+    "feedback": "Work out each side, then join them. && needs both sides true: 5 < 10 and 10 > 7 are both true, but a > b is false, which sinks a > b && b == 10. || needs only one side true: b == 10 rescues the second, a < b rescues the third, and a == b || b < 7 has nothing true on either side."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the operator each rule needs.",
+    "question": "if (hasID {{1}} age >= 21) {          // needs an ID and the right age\n\nif (isWeekend {{2}} isHoliday) {      // either one is enough",
+    "language": "java",
+    "blanks": [
+      {
+        "accept": [
+          "&&"
+        ],
+        "hint": "operator"
+      },
+      {
+        "accept": [
+          "||"
+        ],
+        "hint": "operator"
+      }
+    ],
+    "feedback": "“And” in the rule means &&: both conditions have to hold. “Either” means ||: one is enough. Both operators are written with the symbol doubled."
+  },
+  {
+    "type": "code_line",
+    "question": "hour is an int. Happy hour runs from 17 up to, but not including, 19. Write the condition (no if, no semicolon) that is true during happy hour.",
+    "language": "java",
+    "correct": [
+      "hour >= 17 && hour < 19",
+      "hour < 19 && hour >= 17",
+      "17 <= hour && hour < 19",
+      "hour < 19 && 17 <= hour",
+      "hour >= 17 && hour <= 18",
+      "hour <= 18 && hour >= 17",
+      "hour > 16 && hour < 19",
+      "hour < 19 && hour > 16",
+      "hour > 16 && hour <= 18",
+      "hour == 17 || hour == 18",
+      "hour == 18 || hour == 17"
+    ],
+    "case_sensitive": true,
+    "feedback": "hour >= 17 && hour < 19. A range needs two comparisons, one for each end, joined with && because both have to hold. Each comparison names hour again: Java has no way to write 17 <= hour < 19 in one piece."
+  },
+  {
     "question": "int x = 5;\nif (0 < x < 10) {\n    System.out.println(\"in range\");\n}\n\nWhat happens?",
     "correct": [
       "It does not compile: 0 < x is a boolean, and a boolean cannot be compared with 10"
@@ -52,264 +424,206 @@
   },
   {
     "type": "code_trace",
-    "question": "Three boolean variables, two mixed conditions. What are the two lines of output?",
-    "code": "boolean a = true, b = false, c = true;\nSystem.out.println(!a || b && c);\nSystem.out.println(a || b && !c);",
+    "question": "Read the parentheses first. What does this program print?",
+    "code": "boolean isRegular = true;\ndouble spent = 15.0;\nif ((isRegular && spent >= 10) || spent >= 25) {\n    System.out.println(\"Free\");\n} else {\n    System.out.println(\"None\");\n}",
     "language": "java",
     "correct": [
-      "false\ntrue"
+      "Free"
     ],
     "case_sensitive": true,
-    "feedback": "Precedence among the logical operators is ! first, then &&, then ||. Line one: !a is false, b && c is false, and false || false is false. Line two: b && !c is grouped first (false), then a || false is true. Reading line two strictly left to right, as (a || b) && !c, gives false, which is the usual slip. When in doubt, add parentheses."
-  },
-  {
-    "type": "cloze",
-    "question": "Java evaluates && and || from left to right and stops as soon as the answer is certain. With &&, the right-hand side is skipped when the left-hand side is {{1}}. With ||, the right-hand side is skipped when the left-hand side is {{2}}.",
-    "blanks": [
-      {
-        "accept": [
-          "false"
-        ],
-        "hint": "true / false"
-      },
-      {
-        "accept": [
-          "true"
-        ],
-        "hint": "true / false"
-      }
-    ],
-    "feedback": "This is short-circuit evaluation. false && anything is false whatever the right side is, so Java does not look at it. true || anything is true, so again the right side is skipped. The skipped side is not evaluated at all, so any method call or division written there simply does not happen."
-  },
-  {
-    "type": "code_trace",
-    "question": "The second half of this condition would divide by zero. What does the program print?",
-    "code": "int n = 0;\nif (n != 0 && 10 / n > 1) {\n    System.out.println(\"big\");\n} else {\n    System.out.println(\"safe\");\n}",
-    "language": "java",
-    "correct": [
-      "safe"
-    ],
-    "case_sensitive": true,
-    "feedback": "n != 0 is false, so && short-circuits: 10 / n is never evaluated and no ArithmeticException occurs. The whole condition is false and the else branch prints safe. Swap the two halves (10 / n > 1 && n != 0) and the division runs first and crashes. Put the guard on the left."
-  },
-  {
-    "question": "boolean done = false;\n\nWhich of these conditions evaluate to true at this point?",
-    "correct": [
-      "!done",
-      "done == false",
-      "done != true"
-    ],
-    "incorrect": [
-      "done = false",
-      "not done"
-    ],
-    "feedback": "!done flips false to true, and the two comparisons say the same thing the long way round; !done is the idiomatic form. done = false has a single =, so it is an assignment: it compiles, stores false again, and the value of the whole expression is false, so a loop written while (done = false) never runs. not is Python; in Java it does not compile."
-  },
-  {
-    "type": "code_trace",
-    "question": "A score of 85 is supposed to earn \"good\". What does this chain actually print?",
-    "code": "int score = 85;\nif (score >= 60) {\n    System.out.println(\"pass\");\n} else if (score >= 80) {\n    System.out.println(\"good\");\n} else if (score >= 90) {\n    System.out.println(\"great\");\n} else {\n    System.out.println(\"fail\");\n}",
-    "language": "java",
-    "correct": [
-      "pass"
-    ],
-    "case_sensitive": true,
-    "feedback": "An if / else if chain is checked from the top, and the first true condition wins: its branch runs and the rest of the chain is skipped without being tested. 85 >= 60 is true, so pass is printed and \"good\" is never reached. The fix is to test the most demanding condition first: >= 90, then >= 80, then >= 60."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "int score = {{s}};\nint stars = 0;\nif (score >= 60) stars++;\nif (score >= 70) stars++;\nif (score >= 80) stars++;\nif (score >= 90) stars++;\n\nWhat is the value of stars after this code runs?",
-    "variables": {
-      "s": {
-        "min": 52,
-        "max": 99
-      }
-    },
-    "answer": {
-      "expr": "min(4, max(0, floor((s - 50) / 10)))",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "There is no else here, so these are four separate if statements, and every one of them is tested. Each condition that {{s}} satisfies adds a star, giving {{expected}}. In an else-if chain only the first true branch would run, and stars could never pass 1."
-  },
-  {
-    "question": "int hp = 0;\nif (hp > 0)\n    System.out.println(\"alive\");\n    System.out.println(\"fight\");\n\nThis if has no braces. What is printed?",
-    "correct": [
-      "Only fight is printed"
-    ],
-    "incorrect": [
-      "Nothing is printed",
-      "alive, then fight",
-      "Compile error: braces are required"
-    ],
-    "feedback": "Without braces an if controls exactly one statement: the next one. Java ignores indentation completely, so the second println is not part of the if, however it is lined up, and it runs every time. hp > 0 is false, so alive is skipped and fight is printed. This is why the habit of always writing the braces is worth having."
-  },
-  {
-    "type": "code_trace",
-    "question": "Java ignores indentation, and none of these ifs has braces. Work out which if the else belongs to, then give the output.",
-    "code": "int x = 5, y = 20;\nif (x > 10)\n    if (y > 10)\n        System.out.println(\"A\");\nelse\n    System.out.println(\"B\");\nSystem.out.println(\"C\");",
-    "language": "java",
-    "correct": [
-      "C"
-    ],
-    "case_sensitive": true,
-    "feedback": "An else always pairs with the nearest if before it that does not yet have one. Here that is if (y > 10), whatever the indentation suggests. So the inner if-else is, as a whole, the single statement controlled by if (x > 10). Since 5 > 10 is false, all of it is skipped and only C is printed. Anyone who pairs the else with the outer if expects B and then C. Braces remove the doubt."
-  },
-  {
-    "type": "code_trace",
-    "question": "The ?: operator picks one of two values. What does this print?",
-    "code": "int a = 7, b = 12;\nint max = a > b ? a : b;\nString kind = max % 2 == 0 ? \"even\" : \"odd\";\nSystem.out.println(max + \" \" + kind);",
-    "language": "java",
-    "correct": [
-      "12 even"
-    ],
-    "case_sensitive": true,
-    "feedback": "condition ? valueIfTrue : valueIfFalse is an expression: it produces a value. a > b is false, so max takes the value after the colon, 12. Then 12 % 2 == 0 is true, so kind takes the value before the colon, \"even\". The ternary is a compact if-else for choosing between two values; it is not a replacement for if-else blocks that do several things."
-  },
-  {
-    "type": "code_line",
-    "question": "The int variables a, b and big already exist. Using the conditional operator ( ? : ), write one statement that stores the larger of a and b in big.",
-    "language": "java",
-    "correct": [
-      "big = a > b ? a : b;",
-      "big = (a > b) ? a : b;",
-      "big = a >= b ? a : b;",
-      "big = (a >= b) ? a : b;",
-      "big = b > a ? b : a;",
-      "big = (b > a) ? b : a;",
-      "big = b >= a ? b : a;",
-      "big = (b >= a) ? b : a;",
-      "big = a < b ? b : a;",
-      "big = (a < b) ? b : a;",
-      "big = a <= b ? b : a;",
-      "big = (a <= b) ? b : a;",
-      "big = b < a ? a : b;",
-      "big = (b < a) ? a : b;",
-      "big = b <= a ? a : b;",
-      "big = (b <= a) ? a : b;"
-    ],
-    "case_sensitive": true,
-    "feedback": "The shape is condition ? valueIfTrue : valueIfFalse, and the whole expression is what gets assigned: big = a > b ? a : b; Any comparison that picks the larger one is accepted. The common slip is putting the two values the wrong way round, which silently stores the smaller one."
+    "feedback": "Inside the parentheses: isRegular is true and 15.0 >= 10 is true, so that part is true. || needs only one true side, so the whole condition is true without spent >= 25 mattering at all."
   },
   {
     "type": "npc_demo",
-    "question": "NPC: One value, many doors",
-    "npc": "nia",
-    "intro": "Nia stands where the corridor splits into a row of doors, each with a number chalked on it. “When ONE value decides which of many doors you take, Java has a tool made for the job.”",
+    "question": "NPC: One name, many boxes",
+    "npc": "zoya",
+    "intro": "Zoya slides a long rack of numbered pigeonholes onto the bench. “Five drinks, five variables. Then the landlord adds twenty more. An array is one name for a whole row of boxes.”",
     "steps": [
       {
-        "say": "A long if / else if chain would work here, but switch says it more plainly. This is the modern arrow form:\nint coins = 2;\nswitch (coins) {\n    case 1 -> System.out.println(\"bread\");\n    case 2 -> System.out.println(\"cheese\");\n    default -> System.out.println(\"nothing\");\n}\nJava takes the value of coins, finds the case that matches it, and runs only what follows that arrow. default is the door for “none of the above”.",
+        "say": "The square brackets after the type say: this is an array of Strings. The braces list what goes in the boxes, in order. Every box holds the same type.",
         "beats": [
           {
-            "say": "A long if / else if chain would work here, but switch says it more plainly. This is the modern arrow form:"
-          },
-          {
-            "code": "int coins = 2;\nswitch (coins) {\n    case 1 -> System.out.println(\"bread\");\n    case 2 -> System.out.println(\"cheese\");\n    default -> System.out.println(\"nothing\");\n}",
+            "code": "String[] drinks = {\"Ale\", \"Cider\", \"Tea\"};",
             "language": "java"
           },
           {
-            "say": "Java takes the value of coins, finds the case that matches it, and runs only what follows that arrow. default is the door for “none of the above”."
+            "say": "The square brackets after the type say: this is an array of Strings. The braces list what goes in the boxes, in order. Every box holds the same type."
           }
         ],
         "check": {
-          "prompt": "coins is 2. What is printed?",
-          "answer": "cheese",
+          "prompt": "How many boxes does this array have?",
+          "answer": "3",
           "wrong": [
-            "cheese, then nothing",
-            "bread"
+            "2",
+            "4"
           ],
-          "why": "Only the matching arrow runs. With arrows, Java never carries on into the next case."
+          "why": "One box for each value listed in the braces: Ale, Cider and Tea."
         }
       },
       {
-        "say": "A switch can also BE a value. This is a switch expression: each arrow hands back a value, and the whole switch is stored in a variable.\nString food = switch (coins) {\n    case 1 -> \"bread\";\n    case 2, 3 -> \"cheese\";\n    default -> \"nothing\";\n};\ncase 2, 3 means “2 or 3”. And see the semicolon after the closing brace? The whole thing is one assignment statement.",
+        "say": "Each box has a position, called its index — and the first index is 0, not 1.",
         "beats": [
           {
-            "say": "A switch can also BE a value. This is a switch expression: each arrow hands back a value, and the whole switch is stored in a variable."
+            "say": "Each box has a position, called its index. And the first index is 0, not 1."
           },
           {
-            "code": "String food = switch (coins) {\n    case 1 -> \"bread\";\n    case 2, 3 -> \"cheese\";\n    default -> \"nothing\";\n};",
+            "code": "System.out.println(drinks[0]);    // Ale\nSystem.out.println(drinks[1]);    // Cider\nSystem.out.println(drinks[2]);    // Tea",
             "language": "java"
-          },
-          {
-            "say": "case 2, 3 means “2 or 3”. And see the semicolon after the closing brace? The whole thing is one assignment statement."
           }
         ],
         "check": {
-          "prompt": "If coins were 3, what would food hold?",
-          "answer": "\"cheese\"",
+          "prompt": "What is drinks[1]?",
+          "answer": "Cider",
           "wrong": [
-            "\"nothing\"",
-            "\"bread\""
+            "Ale",
+            "Tea"
           ],
-          "why": "3 is listed in case 2, 3, so that arrow supplies the value."
+          "why": "Counting starts at 0, so index 1 is the SECOND box."
         }
       },
       {
-        "say": "A switch expression must always produce a value, so Java will not compile it unless every possible value has a door. For an int, that means you need default.",
+        "say": "drinks.length says how many boxes there are. So the last box is always at length - 1. Ask for a box past the end and the program crashes.",
         "beats": [
           {
-            "say": "A switch expression must always produce a value, so Java will not compile it unless every possible value has a door. For an int, that means you need default."
-          }
-        ]
-      },
-      {
-        "say": "In older code you will meet the colon form. Read it; do not copy it.\nswitch (coins) {\n    case 1:\n        System.out.println(\"bread\");\n        break;\n    case 2:\n        System.out.println(\"cheese\");\n        break;\n}\nWith colons, Java does not stop at the end of a case. It keeps running down into the next case (this is called fall-through) until it meets break. Forget one break and two cases run. Arrows have no fall-through, which is why we prefer them.",
-        "beats": [
-          {
-            "say": "In older code you will meet the colon form. Read it; do not copy it."
+            "say": "drinks.length says how many boxes there are: 3. So the last box is always at index length - 1."
           },
           {
-            "code": "switch (coins) {\n    case 1:\n        System.out.println(\"bread\");\n        break;\n    case 2:\n        System.out.println(\"cheese\");\n        break;\n}",
+            "code": "int last = drinks.length - 1;         // 2\nSystem.out.println(drinks[last]);     // Tea",
             "language": "java"
           },
           {
-            "say": "With colons, Java does not stop at the end of a case. It keeps running down into the next case (this is called fall-through) until it meets break. Forget one break and two cases run. Arrows have no fall-through, which is why we prefer them."
+            "say": "Ask for drinks[3] and the program crashes while it is running: there is no such box."
+          }
+        ],
+        "check": {
+          "prompt": "An array has 10 boxes. What is the index of the last one?",
+          "answer": "9",
+          "wrong": [
+            "10",
+            "11"
+          ],
+          "why": "The indexes run from 0 to 9. That is ten boxes, and the last index is one less than the length."
+        }
+      },
+      {
+        "say": "A box can be given a new value, just like any other variable.",
+        "beats": [
+          {
+            "say": "And a box can be given a new value, just like any other variable."
+          },
+          {
+            "code": "int[] stock = {50, 25, 30};\nstock[0] = stock[0] - 5;      // the first box now holds 45",
+            "language": "java"
           }
         ]
       }
     ],
-    "outro": "“The next monster hides a value behind a switch expression. Find the matching case, take what is after the arrow, ignore every other door.”"
+    "outro": "“Index from 0, last at length - 1. The next monsters will try to make you count from 1.”"
   },
   {
-    "type": "code_trace",
-    "question": "A switch expression chooses the value stored in kind. What is printed?",
-    "code": "int day = 6;\nString kind = switch (day) {\n    case 1, 7 -> \"rest\";\n    case 6 -> \"market\";\n    default -> \"work\";\n};\nSystem.out.println(kind);",
-    "language": "java",
-    "correct": [
-      "market"
-    ],
-    "case_sensitive": true,
-    "feedback": "day is 6, which matches case 6, so the switch expression produces \"market\" and that is what kind holds. With the arrow form only the matching case is used; nothing falls through to default. case 1, 7 shows how one case can list several values."
-  },
-  {
-    "type": "code_trace",
-    "question": "This is the older colon form, and some of the break statements are missing. What is printed?",
-    "code": "int level = 2;\nswitch (level) {\n    case 1:\n        System.out.print(\"A\");\n    case 2:\n        System.out.print(\"B\");\n    case 3:\n        System.out.print(\"C\");\n        break;\n    default:\n        System.out.print(\"D\");\n}",
-    "language": "java",
-    "correct": [
-      "BC"
-    ],
-    "case_sensitive": true,
-    "feedback": "In the colon form, case labels are only entry points. Java jumps to case 2, prints B, and then falls through into case 3 because nothing stopped it, printing C. The break after C finally leaves the switch, so D is not printed. A is skipped because execution entered below it. Fall-through is the classic bug of colon-form switches; arrow-form cases cannot do this."
-  },
-  {
-    "type": "cloze",
-    "question": "Complete this switch expression so that 1 gives \"S\", 2 gives \"M\", and every other number gives \"L\".\n\nString size = switch (n) {\n    case 1 {{1}} \"S\";\n    case 2 -> \"M\";\n    {{2}} -> \"L\";\n};",
-    "blanks": [
+    "type": "matching",
+    "question": "int[] a = {5, 8, 15, 16};\n\nMatch each expression to its value.",
+    "pairs": [
       {
-        "accept": [
-          "->"
-        ],
-        "hint": "symbol"
+        "term": "a[0]",
+        "definition": "5"
       },
       {
-        "accept": [
-          "default"
-        ],
-        "hint": "keyword",
-        "case_sensitive": true
+        "term": "a.length",
+        "definition": "4"
+      },
+      {
+        "term": "a[a.length - 1]",
+        "definition": "16"
+      },
+      {
+        "term": "a[1] + a[2]",
+        "definition": "23"
+      },
+      {
+        "term": "a[a[0] - 3]",
+        "definition": "15"
       }
     ],
-    "feedback": "Each case uses the arrow -> to give its value, and default catches every value that no case names. Here default is not optional: a switch expression has to produce a value for every possible int, and without default the compiler reports that the switch \"does not cover all possible input values\"."
+    "feedback": "Indices start at 0, so a[0] is the first element, 5. a.length is the number of elements, 4, which makes a[a.length - 1] the last element, a[3] = 16. a[1] + a[2] adds two elements: 8 + 15 = 23. An index can be any int expression: a[0] - 3 is 2, so a[a[0] - 3] is a[2] = 15."
+  },
+  {
+    "question": "Every box of an array has to hold the same type. Which of these lines compiles?",
+    "correct": [
+      "double[] prices = {3.5, 4.0};"
+    ],
+    "incorrect": [
+      "String[] mixed = {\"Ale\", 25, true};",
+      "int[] stock = {\"50\", \"25\"};",
+      "double[] prices = (3.5, 4.0);"
+    ],
+    "feedback": "An array's type is fixed when it is declared, and every value in the braces has to fit it. A String array cannot hold a number or a boolean, and \"50\" in quotes is text, not an int. The list of values goes in braces, not round brackets."
+  },
+  {
+    "question": "Which of these lines compile and create an array of three ints?",
+    "correct": [
+      "int[] scores = {10, 20, 30};",
+      "int[] scores = new int[3];",
+      "int[] scores = new int[]{10, 20, 30};"
+    ],
+    "incorrect": [
+      "int[] scores = (10, 20, 30);",
+      "int[] scores = [10, 20, 30];",
+      "int[3] scores = {10, 20, 30};"
+    ],
+    "feedback": "Braces list the starting values; new int[3] makes three slots that each start at 0; new int[]{...} combines the two. Parentheses and square brackets are not array syntax in Java (square-bracket lists are Python and JavaScript). The size never goes on the left: the type is just int[], and the length belongs to the array object that new or the braces create."
+  },
+  {
+    "question": "int[] a = new int[3];\na[3] = 7;\n\nWhat happens?",
+    "correct": [
+      "It compiles, then throws ArrayIndexOutOfBoundsException when the second line runs"
+    ],
+    "incorrect": [
+      "It does not compile: the compiler can see that index 3 is out of range",
+      "It compiles and runs: the array grows to make room for a fourth element",
+      "It compiles and runs: a write outside the array is silently ignored"
+    ],
+    "feedback": "new int[3] makes exactly three slots, numbered 0, 1 and 2, so index 3 does not exist. The compiler does not check index values, even literal ones, so the mistake surfaces only at run time, as an ArrayIndexOutOfBoundsException: \"Index 3 out of bounds for length 3\". A Java array never grows (that is what ArrayList is for), and Java never quietly ignores a bad index."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Complete the loop header so that it works for an int[] named scores of any size:\n\nfor (int i = 0; i < scores.___; i++)",
+    "correct": [
+      "length"
+    ],
+    "case_sensitive": true,
+    "feedback": "Every array carries its size in a field called length, written with no parentheses: scores.length. A String, in contrast, has a method, text.length(), with parentheses, and the lists you will meet later use size(). Writing scores.length() or scores.size() for an array does not compile."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "int[] nums = new int[{{n}}];\n\nWhich index does the expression  nums[nums.length - {{k}}]  refer to? (Give the index, not the value stored there.)",
+    "variables": {
+      "n": {
+        "min": 6,
+        "max": 12
+      },
+      "k": {
+        "min": 1,
+        "max": 4
+      }
+    },
+    "answer": {
+      "expr": "n - k",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "nums.length is {{n}}, so the index is {{n}} - {{k}} = {{expected}}. Since the last valid index is always length - 1, counting back from length is the standard way to reach elements at the end of an array. nums[nums.length] itself is one past the end and throws an exception."
+  },
+  {
+    "type": "code_trace",
+    "question": "One box of the array is given a new value. What does this program print?",
+    "code": "int[] stock = {50, 25, 30};\nstock[0] = stock[0] - 5;\nSystem.out.println(stock[0]);",
+    "language": "java",
+    "correct": [
+      "45"
+    ],
+    "case_sensitive": true,
+    "feedback": "stock[0] is the first box, holding 50. The right-hand side is worked out first — 50 - 5 is 45 — and the result is stored back in the same box. The other two boxes are untouched."
   },
   {
     "type": "ordering",
@@ -408,6 +722,87 @@
   },
   {
     "type": "dynamic_numeric",
+    "question": "for (int i = 0; i < {{n}}; i += 2) {\n    System.out.println(i);\n}\n\nHow many numbers does this loop print?",
+    "variables": {
+      "k": {
+        "min": 3,
+        "max": 7
+      }
+    },
+    "derived": {
+      "n": "k * 2",
+      "last": "k * 2 - 2"
+    },
+    "answer": {
+      "expr": "k",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "i += 2 adds 2 after every pass, so i takes 0, 2, 4 and so on. The condition is i < {{n}}, so the last value printed is {{last}}; {{n}} itself is not. Listing the values gives {{expected}} of them."
+  },
+  {
+    "type": "code_trace",
+    "question": "A for loop visits every box of an array. What does this program print? (Keep the line breaks.)",
+    "code": "String[] d = {\"Ale\", \"Tea\"};\nfor (int i = 0; i < d.length; i++) {\n    System.out.println(i + \" \" + d[i]);\n}",
+    "language": "java",
+    "correct": [
+      "0 Ale\n1 Tea"
+    ],
+    "case_sensitive": true,
+    "feedback": "d.length is 2, so i takes 0 and then 1. On each pass, i is the index and d[i] is what is in that box. When i reaches 2 the condition 2 < 2 is false, so the loop stops without ever asking for d[2], which does not exist."
+  },
+  {
+    "question": "int[] a holds four values, and each loop below uses a[i] in its body. Which header visits every element exactly once without crashing?",
+    "correct": [
+      "for (int i = 0; i < a.length; i++)"
+    ],
+    "incorrect": [
+      "for (int i = 0; i <= a.length; i++)",
+      "for (int i = 1; i < a.length; i++)",
+      "for (int i = 0; i < a.length - 1; i++)",
+      "for (int i = a.length; i > 0; i--)"
+    ],
+    "feedback": "Valid indices run from 0 to a.length - 1. Starting at 0 with i < a.length covers exactly those. Using <= reaches a[4], which throws. Starting at 1 misses the first element, and stopping at a.length - 1 with < misses the last. The backwards loop starts at a[4], which throws at once; a correct one runs from a.length - 1 down to i >= 0."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange these lines into a program that adds up the array and prints 27.",
+    "language": "java",
+    "items": [
+      "int[] nums = {4, 8, 15};",
+      "int sum = nums[0];",
+      "for (int i = 1; i < nums.length; i++) {",
+      "    sum += nums[i];",
+      "}",
+      "System.out.println(sum);"
+    ],
+    "feedback": "The array has to exist before sum can be started from nums[0]; the loop then adds the remaining elements, from index 1 up to the last valid index (i < nums.length); and the total is printed only after the closing brace, once the loop has finished. Printing inside the loop would show a running total three times over."
+  },
+  {
+    "type": "code_trace",
+    "question": "This loop adds up everything in an array. What does the program print?",
+    "code": "int[] stock = {45, 8, 25};\nint total = 0;\nfor (int i = 0; i < stock.length; i++) {\n    total = total + stock[i];\n}\nSystem.out.println(total);",
+    "language": "java",
+    "correct": [
+      "78"
+    ],
+    "case_sensitive": true,
+    "feedback": "total starts at 0 and each pass adds the next box to it: 45, then 53, then 78. The println is after the closing brace, so it runs once, when the loop has finished. Starting the total before the loop is what lets it survive from one pass to the next."
+  },
+  {
+    "question": "A block should repeat while count is less than 10, and the block itself increases count. Which header does that?",
+    "correct": [
+      "while (count < 10) {"
+    ],
+    "incorrect": [
+      "while (count < 10); {",
+      "while (count =< 10) {",
+      "while count < 10 {"
+    ],
+    "feedback": "The condition goes in parentheses and the block follows directly. The version with a semicolon compiles, which is what makes it dangerous: the ; is an empty statement and becomes the entire loop body, so count never changes and the program hangs forever without reaching the block. =< is not an operator (it is <=, and that would run one extra pass). Leaving out the parentheses is legal in Python and Swift but not in Java."
+  },
+  {
+    "type": "dynamic_numeric",
     "question": "int count = {{start}};\nint passes = 0;\nwhile (count < {{limit}}) {\n    count += {{step}};\n    passes++;\n}\n\nWhat is the value of passes when the loop ends?",
     "variables": {
       "start": {
@@ -442,427 +837,27 @@
     "feedback_template": "Trace count: it starts at {{start}} and grows by {{step}} each pass, and the loop goes on while count is still below {{limit}}. The condition is tested before every pass, so the loop ends at the first value that is {{limit}} or more, after {{expected}} passes. count does not have to land exactly on the limit; it only has to stop being less than it."
   },
   {
-    "type": "code_trace",
-    "question": "This loop updates with ++i instead of the usual i++. What is printed?",
-    "code": "for (int i = 0; i < 3; ++i) {\n    System.out.print(i);\n}",
-    "language": "java",
+    "question": "int count = 0;\nwhile (count < 5) {\n    System.out.println(count);\n}\n\nWhat does this loop do?",
     "correct": [
-      "012"
-    ],
-    "case_sensitive": true,
-    "feedback": "The update part of a for loop runs after the body on every pass, whichever way it is written. ++i and i++ both add 1 to i, and nothing here uses the value of the update expression itself, so the loop behaves exactly like the i++ version: the first pass still sees i as 0. Expecting 123 comes from thinking ++i happens before the first pass."
-  },
-  {
-    "question": "A block should repeat while count is less than 10, and the block itself increases count. Which header does that?",
-    "correct": [
-      "while (count < 10) {"
+      "Prints 0 forever, since count never changes"
     ],
     "incorrect": [
-      "while (count < 10); {",
-      "while (count =< 10) {",
-      "while count < 10 {"
+      "Prints 0 to 4 and then stops as intended",
+      "Prints nothing, since the test is false",
+      "Prints 0 one time and then stops by itself"
     ],
-    "feedback": "The condition goes in parentheses and the block follows directly. The version with a semicolon compiles, which is what makes it dangerous: the ; is an empty statement and becomes the entire loop body, so count never changes and the program hangs forever without reaching the block. =< is not an operator (it is <=, and that would run one extra pass). Leaving out the parentheses is legal in Python and Swift but not in Java."
+    "feedback": "Nothing inside the loop changes count, so 0 < 5 is true on every check and the loop never ends: an infinite loop. A while loop has no built-in counter. Something in its body — here, count++ — has to move it toward the point where the condition becomes false."
   },
   {
     "type": "code_trace",
-    "question": "Both loops use the same condition, and n starts at 10. What is printed?",
-    "code": "int n = 10;\nwhile (n < 5) {\n    System.out.print(\"W\");\n    n++;\n}\ndo {\n    System.out.print(\"D\");\n    n++;\n} while (n < 5);\nSystem.out.println(n);",
-    "language": "java",
-    "correct": [
-      "D11"
-    ],
-    "case_sensitive": true,
-    "feedback": "A while loop tests its condition before each pass, so with 10 < 5 false from the start its body runs zero times and no W appears. A do-while runs its body first and tests afterwards, so its body always runs at least once: D is printed, n becomes 11, and only then is 11 < 5 found false. Use do-while when the first pass must happen whatever the data, such as asking for input before checking it."
-  },
-  {
-    "question": "Inside a loop body, what does the statement continue; do?",
-    "correct": [
-      "It skips the rest of this pass and moves on to the next pass of the loop"
-    ],
-    "incorrect": [
-      "It leaves the loop at once and carries on with the code after the loop",
-      "It does nothing on its own: it marks where the loop resumes after a pause",
-      "It restarts the whole loop from the beginning, with the counter reset too"
-    ],
-    "feedback": "continue abandons the current pass only. In a for loop the update (such as i++) still runs, the condition is tested again, and the loop carries on if it is true. Leaving the loop altogether is a different statement. Nothing in Java resets a loop counter for you."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The Java keyword that ends a loop immediately, abandoning any passes that were still to come, is ___.",
-    "correct": [
-      "break",
-      "break;"
-    ],
-    "case_sensitive": false,
-    "feedback": "break jumps straight out of the nearest enclosing loop, and execution carries on with the first statement after it. It is the same keyword that ends a case in a colon-form switch. Compare continue, which gives up only the current pass and keeps looping."
-  },
-  {
-    "type": "matching",
-    "question": "for (int i = 1; i <= 5; i++) {\n    LINE\n    System.out.print(i);\n}\n\nMatch each statement that could replace LINE to what the loop then prints.",
-    "pairs": [
-      {
-        "term": "if (i == 3) break;",
-        "definition": "12"
-      },
-      {
-        "term": "if (i == 3) continue;",
-        "definition": "1245"
-      },
-      {
-        "term": "if (i > 3) continue;",
-        "definition": "123"
-      },
-      {
-        "term": "if (i < 3) continue;",
-        "definition": "345"
-      },
-      {
-        "term": "if (i < 3) break;",
-        "definition": "(nothing at all)"
-      }
-    ],
-    "feedback": "break ends the whole loop, so everything from that pass onward is lost: breaking at 3 leaves 12, and breaking on the very first pass (1 < 3) leaves nothing. continue skips only the print of the current pass: skipping 3 alone gives 1245, skipping everything above 3 gives 123, and skipping everything below 3 gives 345."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "int sum = 0;\nfor (int i = 1; i <= 10; i++) {\n    if (i == {{k}}) break;\n    sum += i;\n}\n\nWhat is the value of sum after the loop?",
-    "variables": {
-      "k": {
-        "min": 3,
-        "max": 7
-      }
-    },
-    "answer": {
-      "expr": "sumRange(1, k - 1)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The break is tested before sum += i on each pass, so when i reaches {{k}} the loop ends without adding {{k}}. Only the values below {{k}} were added, giving {{expected}}. The header says i <= 10, but break overrides it."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "int count = 0;\nfor (int i = 0; i < {{r}}; i++) {\n    for (int j = 1; j <= {{c}}; j++) {\n        count++;\n    }\n}\n\nWhat is the value of count after both loops finish?",
-    "variables": {
-      "r": {
-        "min": 2,
-        "max": 5
-      },
-      "c": {
-        "min": 2,
-        "max": 6
-      }
-    },
-    "answer": {
-      "expr": "r * c",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The inner loop runs from start to finish on every single pass of the outer loop. The outer loop makes {{r}} passes (i from 0, with <), and each time the inner loop makes {{c}} passes (j from 1, with <=), so count++ runs {{r}} times {{c}} = {{expected}} times. Adding the two numbers instead of multiplying is the usual mistake."
-  },
-  {
-    "type": "npc_demo",
-    "question": "NPC: A table for a loop inside a loop",
-    "npc": "nia",
-    "intro": "Nia rules three columns on the wall: i, the values j takes, and what gets printed. “A nested loop looks frightening until you give it a table. One row of the table for each pass of the outer loop.”",
-    "steps": [
-      {
-        "say": "Here is a loop inside a loop. The inner loop’s limit is i, so it changes from row to row.\nfor (int i = 0; i < 2; i++) {\n    for (int j = 0; j <= i; j++) {\n        System.out.print(\"#\");\n    }\n    System.out.println();\n}\nRule one: for each single pass of the outer loop, the inner loop runs all the way from its start to its end.",
-        "beats": [
-          {
-            "say": "Here is a loop inside a loop. The inner loop’s limit is i, so it changes from row to row."
-          },
-          {
-            "code": "for (int i = 0; i < 2; i++) {\n    for (int j = 0; j <= i; j++) {\n        System.out.print(\"#\");\n    }\n    System.out.println();\n}",
-            "language": "java"
-          },
-          {
-            "say": "Rule one: for each single pass of the outer loop, the inner loop runs all the way from its start to its end."
-          }
-        ]
-      },
-      {
-        "say": "Row one of my table: i is 0. The inner loop starts j at 0, and 0 <= 0 is true, so one # is printed. Then j becomes 1, and 1 <= 0 is false, so the inner loop is over.\nprintln() with nothing in the brackets just ends the line. Table so far: i = 0, j took the value 0, printed #.",
-        "beats": [
-          {
-            "say": "Row one of my table: i is 0. The inner loop starts j at 0, and 0 <= 0 is true, so one # is printed. Then j becomes 1, and 1 <= 0 is false, so the inner loop is over."
-          },
-          {
-            "say": "println() with nothing in the brackets just ends the line. Table so far: i = 0, j took the value 0, printed #."
-          }
-        ],
-        "check": {
-          "prompt": "Now i is 1. How many times does the inner loop run?",
-          "answer": "2 times (j = 0, then j = 1)",
-          "wrong": [
-            "1 time",
-            "3 times"
-          ],
-          "why": "j starts again from 0 and keeps going while j <= 1, so it takes the values 0 and 1."
-        }
-      },
-      {
-        "say": "So the second line is ##, and then i becomes 2, 2 < 2 is false, and everything stops. Output: # on one line, ## on the next.\nThe pattern to keep: the outer loop decides WHICH row you are on, the inner loop decides WHAT goes in that row. And j starts over on every row.",
-        "beats": [
-          {
-            "say": "So the second line is ##, and then i becomes 2, 2 < 2 is false, and everything stops. Output: # on one line, ## on the next."
-          },
-          {
-            "say": "The pattern to keep: the outer loop decides WHICH row you are on, the inner loop decides WHAT goes in that row. And j starts over on every row."
-          }
-        ]
-      }
-    ],
-    "outro": "“The next monster’s inner loop starts at i instead of stopping at i. Same table, different numbers. Fill it in row by row.”"
-  },
-  {
-    "type": "code_trace",
-    "question": "Here the inner loop starts at i. Trace it row by row: what does it print?",
-    "code": "for (int i = 0; i < 3; i++) {\n    for (int j = i; j < 3; j++) {\n        System.out.print(\"*\");\n    }\n    System.out.println();\n}",
-    "language": "java",
-    "correct": [
-      "***\n**\n*"
-    ],
-    "case_sensitive": true,
-    "feedback": "When i is 0, j takes 0, 1, 2 and three stars are printed; when i is 1, j takes 1, 2 (two stars); when i is 2, j takes only 2 (one star). println() with no argument ends each row. Because the inner loop starts at i rather than 0, each row is one star shorter than the last."
-  },
-  {
-    "question": "int[] a = new int[3];\na[3] = 7;\n\nWhat happens?",
-    "correct": [
-      "It compiles, then throws ArrayIndexOutOfBoundsException when the second line runs"
-    ],
-    "incorrect": [
-      "It does not compile: the compiler can see that index 3 is out of range",
-      "It compiles and runs: the array grows to make room for a fourth element",
-      "It compiles and runs: a write outside the array is silently ignored"
-    ],
-    "feedback": "new int[3] makes exactly three slots, numbered 0, 1 and 2, so index 3 does not exist. The compiler does not check index values, even literal ones, so the mistake surfaces only at run time, as an ArrayIndexOutOfBoundsException: \"Index 3 out of bounds for length 3\". A Java array never grows (that is what ArrayList is for), and Java never quietly ignores a bad index."
-  },
-  {
-    "type": "fill_blank",
-    "question": "Complete the loop header so that it works for an int[] named scores of any size:\n\nfor (int i = 0; i < scores.___; i++)",
-    "correct": [
-      "length"
-    ],
-    "case_sensitive": true,
-    "feedback": "Every array carries its size in a field called length, written with no parentheses: scores.length. A String, in contrast, has a method, text.length(), with parentheses, and the lists you will meet later use size(). Writing scores.length() or scores.size() for an array does not compile."
-  },
-  {
-    "type": "matching",
-    "question": "int[] a = {5, 8, 15, 16};\n\nMatch each expression to its value.",
-    "pairs": [
-      {
-        "term": "a[0]",
-        "definition": "5"
-      },
-      {
-        "term": "a.length",
-        "definition": "4"
-      },
-      {
-        "term": "a[a.length - 1]",
-        "definition": "16"
-      },
-      {
-        "term": "a[1] + a[2]",
-        "definition": "23"
-      },
-      {
-        "term": "a[a[0] - 3]",
-        "definition": "15"
-      }
-    ],
-    "feedback": "Indices start at 0, so a[0] is the first element, 5. a.length is the number of elements, 4, which makes a[a.length - 1] the last element, a[3] = 16. a[1] + a[2] adds two elements: 8 + 15 = 23. An index can be any int expression: a[0] - 3 is 2, so a[a[0] - 3] is a[2] = 15."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "int[] nums = new int[{{n}}];\n\nWhich index does the expression  nums[nums.length - {{k}}]  refer to? (Give the index, not the value stored there.)",
-    "variables": {
-      "n": {
-        "min": 6,
-        "max": 12
-      },
-      "k": {
-        "min": 1,
-        "max": 4
-      }
-    },
-    "answer": {
-      "expr": "n - k",
-      "tolerance_abs": 0
-    },
-    "allow_expression": false,
-    "feedback_template": "nums.length is {{n}}, so the index is {{n}} - {{k}} = {{expected}}. Since the last valid index is always length - 1, counting back from length is the standard way to reach elements at the end of an array. nums[nums.length] itself is one past the end and throws an exception."
-  },
-  {
-    "question": "Which of these lines compile and create an array of three ints?",
-    "correct": [
-      "int[] scores = {10, 20, 30};",
-      "int[] scores = new int[3];",
-      "int[] scores = new int[]{10, 20, 30};"
-    ],
-    "incorrect": [
-      "int[] scores = (10, 20, 30);",
-      "int[] scores = [10, 20, 30];",
-      "int[3] scores = {10, 20, 30};"
-    ],
-    "feedback": "Braces list the starting values; new int[3] makes three slots that each start at 0; new int[]{...} combines the two. Parentheses and square brackets are not array syntax in Java (square-bracket lists are Python and JavaScript). The size never goes on the left: the type is just int[], and the length belongs to the array object that new or the braces create."
-  },
-  {
-    "type": "ordering",
-    "question": "Arrange these lines into a program that adds up the array and prints 27.",
-    "language": "java",
-    "items": [
-      "int[] nums = {4, 8, 15};",
-      "int sum = nums[0];",
-      "for (int i = 1; i < nums.length; i++) {",
-      "    sum += nums[i];",
-      "}",
-      "System.out.println(sum);"
-    ],
-    "feedback": "The array has to exist before sum can be started from nums[0]; the loop then adds the remaining elements, from index 1 up to the last valid index (i < nums.length); and the total is printed only after the closing brace, once the loop has finished. Printing inside the loop would show a running total three times over."
-  },
-  {
-    "type": "code_trace",
-    "question": "This is a for-each loop: read the header as \"for each int s in scores\". What is printed?",
-    "code": "int[] scores = {3, 5, 8};\nint total = 0;\nfor (int s : scores) {\n    total += s;\n}\nSystem.out.println(total);",
-    "language": "java",
-    "correct": [
-      "16"
-    ],
-    "case_sensitive": true,
-    "feedback": "On each pass the for-each loop (also called the enhanced for) copies the next element into s: first 3, then 5, then 8. There is no index, no length and no condition to get wrong, so an off-by-one error is impossible. When you need every element and do not need its position, this is the form to prefer. total ends as 3 + 5 + 8 = 16."
-  },
-  {
-    "type": "code_line",
-    "question": "Write the for-each loop header, ending with its opening brace, that visits every element of the int[] named scores, calling the current element s.",
-    "language": "java",
-    "correct": [
-      "for (int s : scores) {",
-      "for (var s : scores) {",
-      "for (final int s : scores) {",
-      "for (int s : scores)",
-      "for (var s : scores)"
-    ],
-    "case_sensitive": true,
-    "feedback": "The shape is for (elementType name : array). The type comes first, as in any declaration, then the name for the current element, a colon (read it as \"in\"), and the array. var also works, because Java can infer int from the array. There is no counter, no condition and no update."
-  },
-  {
-    "question": "int[] a holds four values. Each loop below uses a[i] in its body (or x, for the for-each). Which headers visit every element exactly once without throwing an exception?",
-    "correct": [
-      "for (int i = 0; i < a.length; i++)",
-      "for (int x : a)"
-    ],
-    "incorrect": [
-      "for (int i = 0; i <= a.length; i++)",
-      "for (int i = 1; i < a.length; i++)",
-      "for (int i = 0; i < a.length - 1; i++)",
-      "for (int i = a.length; i > 0; i--)"
-    ],
-    "feedback": "Valid indices run from 0 to a.length - 1. Starting at 0 with i < a.length covers exactly those, and the for-each covers them with no index at all. Using <= reaches a[4], which throws. Starting at 1 misses the first element, and stopping at a.length - 1 with < misses the last. The backwards loop starts at a[4], which throws at once; a correct one runs from a.length - 1 down to i >= 0."
-  },
-  {
-    "type": "npc_demo",
-    "question": "NPC: Same scroll, or same words?",
-    "npc": "nia",
-    "intro": "Nia lays two scrolls side by side. Both say dragon. “You can ask two different questions about these. Java has a different tool for each, and mixing them up is the most famous bug in the language.”",
-    "steps": [
-      {
-        "say": "Question one: is this the very same scroll? Question two: do the two scrolls say the same words?\nA String variable does not hold the text itself. It holds a reference: an arrow pointing at a String object somewhere in memory.\nOn Strings, == compares the references: do both arrows point at the same object? The method .equals() compares the content: are the characters the same?",
-        "beats": [
-          {
-            "say": "Question one: is this the very same scroll? Question two: do the two scrolls say the same words?"
-          },
-          {
-            "say": "A String variable does not hold the text itself. It holds a reference: an arrow pointing at a String object somewhere in memory."
-          },
-          {
-            "say": "On Strings, == compares the references: do both arrows point at the same object? The method .equals() compares the content: are the characters the same?"
-          }
-        ]
-      },
-      {
-        "say": "Watch both questions being asked about one String:\nString part = \"dra\";\nString word = part + \"gon\";\nSystem.out.println(word == \"dragon\");\nSystem.out.println(word.equals(\"dragon\"));\nword was glued together while the program was running, so it is a brand-new String object. Its content is dragon, but it is not the same object as the literal \"dragon\".",
-        "beats": [
-          {
-            "say": "Watch both questions being asked about one String:"
-          },
-          {
-            "code": "String part = \"dra\";\nString word = part + \"gon\";\nSystem.out.println(word == \"dragon\");\nSystem.out.println(word.equals(\"dragon\"));",
-            "language": "java"
-          },
-          {
-            "say": "word was glued together while the program was running, so it is a brand-new String object. Its content is dragon, but it is not the same object as the literal \"dragon\"."
-          }
-        ],
-        "check": {
-          "prompt": "What do the two println lines show?",
-          "answer": "false, then true",
-          "wrong": [
-            "true, then true",
-            "false, then false"
-          ],
-          "why": "Different objects, so == is false. Same characters, so .equals() is true."
-        }
-      },
-      {
-        "say": "Here is why this bug hides so well. Two identical literals written in your code ARE the same object. Java guarantees it. So == seems to work in every small test you write.\nThen the text arrives from a Scanner, or is built at run time, and == quietly says false. To compare what two Strings say, use .equals().",
-        "beats": [
-          {
-            "say": "Here is why this bug hides so well. Two identical literals written in your code ARE the same object. Java guarantees it. So == seems to work in every small test you write."
-          },
-          {
-            "say": "Then the text arrives from a Scanner, or is built at run time, and == quietly says false. To compare what two Strings say, use .equals()."
-          }
-        ]
-      }
-    ],
-    "outro": "“The next monster makes a second String object on purpose, with new. Ask both questions of it.”"
-  },
-  {
-    "type": "code_trace",
-    "question": "new String(\"hi\") makes a second String object with the same characters. What are the two lines of output?",
-    "code": "String a = \"hi\";\nString b = new String(\"hi\");\nSystem.out.println(a == b);\nSystem.out.println(a.equals(b));",
-    "language": "java",
-    "correct": [
-      "false\ntrue"
-    ],
-    "case_sensitive": true,
-    "feedback": "a and b refer to two different String objects, so == (same object?) is false. Both contain the characters h and i, so .equals() (same content?) is true. You would not normally write new String(...) at all; it is here only to make a second object on purpose. Text typed by a user behaves the same way as b does."
-  },
-  {
-    "question": "Which of these statements about comparing Strings in Java are correct?",
-    "correct": [
-      "== asks whether two String variables refer to the same object",
-      ".equals() asks whether two Strings contain the same characters",
-      "Text read with a Scanner can fail == against a literal with the same characters",
-      "Two identical literals in the source code are the same object, so == is true for them"
-    ],
-    "incorrect": [
-      "== compares the characters, as long as both Strings have the same length",
-      ".equals() gives false for two separate objects, even if their characters match"
-    ],
-    "feedback": "== on any object type, String included, compares references; .equals() compares content. Identical literals are guaranteed by the language to be one shared object, which is exactly why == appears to work in small tests. Strings that arrive at run time, from a Scanner, from concatenation or from new, are separate objects, and == on them is false even when the text matches. Length has nothing to do with it."
-  },
-  {
-    "type": "code_line",
-    "question": "name is a String variable. Write the boolean expression (no if, no semicolon) that is true exactly when name contains the same characters as the literal \"Nia\".",
-    "language": "java",
-    "correct": [
-      "name.equals(\"Nia\")",
-      "\"Nia\".equals(name)"
-    ],
-    "case_sensitive": true,
-    "feedback": "Content is compared with the equals method: name.equals(\"Nia\"). Writing it the other way round, \"Nia\".equals(name), is also correct. name == \"Nia\" compiles, but it asks whether the two are the same object, which fails as soon as name comes from user input."
-  },
-  {
-    "type": "code_trace",
-    "question": "The loop body doubles s. What does the last line print?",
-    "code": "int[] scores = {3, 5, 8};\nfor (int s : scores) {\n    s = s * 2;\n}\nSystem.out.println(scores[0]);",
+    "question": "This while loop keeps going only while both of its conditions hold. What does the program print?",
+    "code": "int served = 0;\nboolean open = true;\nwhile (open && served < 5) {\n    served++;\n    if (served == 3) {\n        open = false;\n    }\n}\nSystem.out.println(served);",
     "language": "java",
     "correct": [
       "3"
     ],
     "case_sensitive": true,
-    "feedback": "In a for-each loop, s is a copy of the current element, not the element itself. Doubling s changes the copy, which is thrown away at the end of the pass, so the array still holds 3, 5, 8. To change what is stored in an array you need the index: for (int i = 0; i < scores.length; i++) { scores[i] = scores[i] * 2; }"
+    "feedback": "served goes 1, 2, 3. On the third pass the if sets open to false. The condition is checked again before the next pass: open is false, so open && served < 5 is false and the loop ends — even though served < 5 is still true. && needs both."
   },
   {
     "type": "code_trace",
@@ -876,14 +871,490 @@
     "feedback": "Even values are halved and odd values become 3n + 1, so n goes 6, 3, 10, 5, 16, 8, 4, 2, 1. That is eight changes, and steps counts one per pass, so 8 is printed. The loop ends when n reaches 1 because 1 > 1 is false. Nobody can tell in advance how many passes this takes, which is why it is a while loop and not a counted for loop."
   },
   {
-    "type": "code_trace",
-    "question": "for-each, continue and break together. What is printed?",
-    "code": "int[] hp = {12, 0, 7, 0, 30, 5};\nint alive = 0;\nfor (int h : hp) {\n    if (h == 0) continue;\n    if (h > 20) break;\n    alive++;\n}\nSystem.out.println(alive);",
-    "language": "java",
-    "correct": [
-      "2"
+    "type": "npc_demo",
+    "question": "NPC: A method has to answer every time",
+    "npc": "nia",
+    "intro": "Nia chalks a method on the wall and then draws a line straight through it. “Now that your code can choose and repeat, Java asks one more thing of a method. Watch what it refuses.”",
+    "steps": [
+      {
+        "say": "The rounds work as before: I give the first line of a method, you write what goes between the braces, and you return the answer. Run is free; only Submit counts.",
+        "beats": [
+          {
+            "say": "The rounds work as before. I give you the first line of a method; you write what goes between the braces and return the answer."
+          },
+          {
+            "code": "public String verdict(int score) {\n    // you write this part\n}",
+            "language": "java"
+          },
+          {
+            "say": "Press Run as often as you like: I call your method with each example and show what came back. Only Submit puts you back in the fight."
+          }
+        ]
+      },
+      {
+        "say": "Here is the one Java refuses. If score is 30, the if is skipped — and the method ends with nothing to hand back. Java will not run a method that can end that way.",
+        "beats": [
+          {
+            "say": "Here is the one Java refuses."
+          },
+          {
+            "code": "public String verdict(int score) {\n    if (score >= 60) {\n        return \"pass\";\n    }\n}",
+            "language": "java"
+          },
+          {
+            "say": "If score is 30, the if is skipped, and the method reaches its closing brace with nothing to hand back. Java checks for this before running anything, and reports a missing return."
+          }
+        ],
+        "check": {
+          "prompt": "What makes Java accept this method?",
+          "answer": "A return after the if",
+          "wrong": [
+            "A println after the if",
+            "A second if below it"
+          ],
+          "why": "Every way through the method has to end at a return. A return placed after the if catches every score the if let through; printing hands nothing back, and another if could be skipped just the same."
+        }
+      },
+      {
+        "say": "A return also ends the method on the spot. So once a case has returned, the lines below it only ever see what is left — which often saves you an else.",
+        "beats": [
+          {
+            "say": "A return also ends the method on the spot. Nothing below it runs."
+          },
+          {
+            "code": "if (score >= 60) {\n    return \"pass\";\n}\nreturn \"fail\";      // reached only when the if did not return",
+            "language": "java"
+          },
+          {
+            "say": "So once a case has returned, the lines below it only ever see what is left. The same goes for a loop: return in the middle of one and the loop is over."
+          }
+        ],
+        "check": {
+          "prompt": "With that body, what does verdict(75) hand back?",
+          "answer": "\"pass\"",
+          "wrong": [
+            "\"fail\"",
+            "\"pass\" then \"fail\""
+          ],
+          "why": "75 >= 60 is true, so return \"pass\" runs — and that ends the method. The last line is never reached, so there is no second answer."
+        }
+      }
     ],
-    "case_sensitive": true,
-    "feedback": "12 is counted. 0 triggers continue, which skips the rest of that pass. 7 is counted. The next 0 is skipped as well. 30 triggers break, which ends the whole loop, so the final 5 is never looked at, even though it would have counted. alive is 2. Order matters too: the continue test comes first, so a zero can never reach the break test."
+    "outro": "“Ifs, conditions joined with && and ||, loops and arrays, one small method each. Make sure every path through each of them ends at a return.”"
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "The ferry charges by age. Return \"child\" for anyone under 12, \"senior\" for anyone 65 or over, and \"adult\" for everyone else.",
+    "signature": "public String ticket(int age)",
+    "tests": [
+      {
+        "args": [
+          5
+        ],
+        "expect": "child"
+      },
+      {
+        "args": [
+          11
+        ],
+        "expect": "child"
+      },
+      {
+        "args": [
+          12
+        ],
+        "expect": "adult"
+      },
+      {
+        "args": [
+          40
+        ],
+        "expect": "adult"
+      },
+      {
+        "args": [
+          64
+        ],
+        "expect": "adult"
+      },
+      {
+        "args": [
+          65
+        ],
+        "expect": "senior"
+      },
+      {
+        "args": [
+          90
+        ],
+        "expect": "senior"
+      }
+    ],
+    "solution": "if (age < 12) {\n    return \"child\";\n}\nif (age >= 65) {\n    return \"senior\";\n}\nreturn \"adult\";",
+    "hint": "Return from inside an if for each special case, and let the last line return the ordinary one.",
+    "feedback": "Deal with the special cases first and let the ordinary one be the return at the end: that last line is also what satisfies Java that every path returns. The boundaries are the cases worth testing — 11 and 12, 64 and 65."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "The vault opens for anyone of level 10 or higher. It also opens for anyone of level 5 or higher who carries the key. Return true if the vault opens.",
+    "signature": "public boolean canEnter(int level, boolean hasKey)",
+    "tests": [
+      {
+        "args": [
+          10,
+          false
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          12,
+          true
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          5,
+          true
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          9,
+          false
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          4,
+          true
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          5,
+          false
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          7,
+          true
+        ],
+        "expect": true
+      }
+    ],
+    "solution": "return level >= 10 || (level >= 5 && hasKey);",
+    "hint": "There are two ways in. Write each as a test, and join them with ||.",
+    "feedback": "Two ways in, joined by ||; the second way needs two things at once, joined by &&. && is applied before || anyway, but the parentheses say what you mean. A boolean variable is already true or false: hasKey, not hasKey == true."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "A health bar shows a number from 0 to 100. Return n unchanged if it is in that range, 0 if it is below it, and 100 if it is above it.",
+    "signature": "public int clamp(int n)",
+    "tests": [
+      {
+        "args": [
+          -5
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          50
+        ],
+        "expect": 50
+      },
+      {
+        "args": [
+          100
+        ],
+        "expect": 100
+      },
+      {
+        "args": [
+          101
+        ],
+        "expect": 100
+      },
+      {
+        "args": [
+          250
+        ],
+        "expect": 100
+      },
+      {
+        "args": [
+          99
+        ],
+        "expect": 99
+      }
+    ],
+    "solution": "if (n < 0) {\n    return 0;\n}\nif (n > 100) {\n    return 100;\n}\nreturn n;",
+    "hint": "Two ifs that each return at once, then a plain return n for everything in between.",
+    "feedback": "Each if returns at once, so by the last line n is known to be neither too small nor too large. The same thing can be written as one expression with two ?: operators, but three plain returns are easier to check."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "A drink costs 6 coins — except during happy hour, when it costs 3. Happy hour runs from hour 17 up to, but not including, hour 19. Return the price at the given hour.",
+    "signature": "public int drinkPrice(int hour)",
+    "tests": [
+      {
+        "args": [
+          16
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          17
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          18
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          19
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          23
+        ],
+        "expect": 6
+      }
+    ],
+    "solution": "if (hour >= 17 && hour < 19) {\n    return 3;\n}\nreturn 6;",
+    "hint": "Happy hour is two tests joined with &&. Return 3 inside the if, and 6 after it.",
+    "feedback": "A range is two comparisons joined by &&, one for each end. The boundaries are what the tests probe: 17 is in, 19 is out. The ordinary price is the plain return at the end, reached whenever the if did not return."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the sum of the odd numbers from 1 up to and including n: for 6 that is 1 + 3 + 5. If n is less than 1, return 0.",
+    "signature": "public int sumOdds(int n)",
+    "tests": [
+      {
+        "args": [
+          1
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          5
+        ],
+        "expect": 9
+      },
+      {
+        "args": [
+          6
+        ],
+        "expect": 9
+      },
+      {
+        "args": [
+          10
+        ],
+        "expect": 25
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          -4
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "int total = 0;\nfor (int i = 1; i <= n; i += 2) {\n    total += i;\n}\nreturn total;",
+    "hint": "Keep a total that starts at 0 before the loop. A loop can step by 2: i += 2.",
+    "feedback": "The total is declared before the loop so that it still exists after it. Stepping by 2 from 1 visits only the odd numbers; a loop over every number with an if (i % 2 != 0) inside does the same job. When n is below 1 the loop never runs and 0 is already right."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return how many times n has to be halved, dropping any fraction each time, before it reaches 1. 10 goes 5, 2, 1, which is 3 halvings. n is at least 1.",
+    "signature": "public int halvings(int n)",
+    "tests": [
+      {
+        "args": [
+          1
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          2
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          8
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          10
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          100
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          3
+        ],
+        "expect": 1
+      }
+    ],
+    "solution": "int steps = 0;\nwhile (n > 1) {\n    n = n / 2;\n    steps++;\n}\nreturn steps;",
+    "hint": "A while loop that goes on while n is greater than 1, halving n and counting each pass.",
+    "feedback": "Nobody can say in advance how many passes this takes, so it is a while loop, not a counted for. Integer division does the \"dropping any fraction\" for you, and the loop must change n on every pass or it never ends."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the last score in an array. The array will have at least one score in it.",
+    "signature": "public int lastScore(int[] scores)",
+    "tests": [
+      {
+        "args": [
+          [
+            3,
+            8,
+            5
+          ]
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          [
+            7
+          ]
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          [
+            1,
+            2
+          ]
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [
+            9,
+            9,
+            4,
+            0
+          ]
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "return scores[scores.length - 1];",
+    "hint": "The last index is one less than the number of boxes.",
+    "feedback": "Indexes start at 0, so the last one is length - 1, never length. For an array, length has no parentheses. Asking for scores[scores.length] would crash: that is one box past the end."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return how many of the scores in an array are greater than the limit. A score equal to the limit does not count.",
+    "signature": "public int countAbove(int[] scores, int limit)",
+    "tests": [
+      {
+        "args": [
+          [
+            3,
+            8,
+            5
+          ],
+          4
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [],
+          4
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            4,
+            4
+          ],
+          4
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            10,
+            20,
+            30
+          ],
+          0
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [
+            1
+          ],
+          5
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "int count = 0;\nfor (int i = 0; i < scores.length; i++) {\n    if (scores[i] > limit) {\n        count++;\n    }\n}\nreturn count;",
+    "hint": "Start a counter at 0, visit every index from 0 while i < scores.length, and add 1 whenever scores[i] is greater than the limit.",
+    "feedback": "The counting pattern: start at 0 before the loop, add 1 inside it when the test passes, return after it. The loop runs i from 0 while i < scores.length, so it visits every box and never steps past the last one; for an empty array it never runs at all."
   }
 ]

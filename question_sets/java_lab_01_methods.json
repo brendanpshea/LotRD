@@ -1,0 +1,1588 @@
+[
+  {
+    "type": "npc_demo",
+    "question": "NPC: Writing a method the tests can see",
+    "npc": "nia",
+    "intro": "A woman in a chalk-dusted coat is wiping down a practice board. “Good — a volunteer. You have read plenty of Java by now. Here you write it, and we find out whether it works the only honest way: by running it.”",
+    "steps": [
+      {
+        "say": "Here is how these rounds go. I give you the first line of a method and tell you what it should answer. You write what goes between the braces.",
+        "beats": [
+          {
+            "say": "Here is how these rounds go. I give you the first line of a method and tell you what it should answer."
+          },
+          {
+            "say": "You write what goes between the braces — only that. The method line sits above your box and its closing brace below, and neither changes."
+          },
+          {
+            "code": "public int add(int a, int b) {\n    // you write this part\n}",
+            "language": "java"
+          }
+        ]
+      },
+      {
+        "say": "Now the part that catches everyone. The tests cannot see what your method prints. They only see what it returns.",
+        "beats": [
+          {
+            "say": "Now the part that catches everyone. The tests cannot see what your method prints. They only see what it returns."
+          },
+          {
+            "code": "public int add(int a, int b) {\n    System.out.println(a + b);   // nothing comes back\n}\n\npublic int add(int a, int b) {\n    return a + b;                // the tests see 7\n}",
+            "language": "java"
+          },
+          {
+            "say": "Java is stricter about this than you might expect: the first version does not even run. A method that promises an int has to return one."
+          }
+        ],
+        "check": {
+          "prompt": "So which line belongs in a method the tests will grade?",
+          "answer": "return a + b;",
+          "wrong": [
+            "System.out.print(a + b);",
+            "a + b;"
+          ],
+          "why": "return hands the value back to whoever called the method. Printing only puts it on the screen, and a bare a + b is not a statement Java accepts at all."
+        }
+      },
+      {
+        "say": "When you think it is right, press Run. I call your method once for each example and show you what came back beside what it should have been.",
+        "beats": [
+          {
+            "say": "When you think it is right, press Run. I call your method once for each example and show you what came back beside what it should have been."
+          },
+          {
+            "code": "add(1, 2)    wanted 3     you gave 3     ✔\nadd(5, 5)    wanted 10    you gave 10    ✔\nadd(-1, 1)   wanted 0     you gave -2    ✖",
+            "language": "text"
+          },
+          {
+            "say": "That last row is the useful one. It does not just say you are wrong — it says which call goes wrong, so you know where to look."
+          }
+        ],
+        "check": {
+          "prompt": "Running the tests costs you nothing. How many times should you run before you submit?",
+          "answer": "As many as I like",
+          "wrong": [
+            "Once — running is the answer",
+            "Never, if I am confident"
+          ],
+          "why": "Running is free and unlimited here. Only Submit puts you back in the fight, so try, read the failing row, fix, and try again until the table is all ticks."
+        }
+      },
+      {
+        "say": "One last thing. Java reads your whole method before it runs any of it. If a line does not make sense to it, nothing runs — and you get one message that names the line.",
+        "beats": [
+          {
+            "say": "One last thing. Java reads your whole method before it runs any of it. If a line does not make sense to it, nothing runs at all."
+          },
+          {
+            "code": "line 2: A double cannot be stored in the variable half (an int)\n        without a cast — Java will not shrink it for you.",
+            "language": "text"
+          },
+          {
+            "say": "Read the message before you change anything. It names the line and says what is wrong in plain words — and a red table is not a verdict on you. It is a list of the calls to go and look at."
+          }
+        ],
+        "check": {
+          "prompt": "Your method has a missing semicolon on line 3. How many of the tests will run?",
+          "answer": "None of them",
+          "wrong": [
+            "All but one",
+            "Those before line 3"
+          ],
+          "why": "Java checks the whole method first. Until every line makes sense to it, there is nothing to run — so fix the line the message names, then run again."
+        }
+      }
+    ],
+    "feedback": "Write what goes between the braces, return the answer, run as often as you like, and read the message or the failing row before you change anything.",
+    "outro": "“Write the inside, return the answer, run it as often as you like. Nothing here bites until you press Submit.”"
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "The party rests when you are not on watch, or when the camp is safe. Return true if you may rest.",
+    "signature": "public boolean canRest(boolean onWatch, boolean campIsSafe)",
+    "tests": [
+      {
+        "args": [
+          false,
+          false
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          true,
+          false
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          false,
+          true
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          true,
+          true
+        ],
+        "expect": true
+      }
+    ],
+    "solution": "return !onWatch || campIsSafe;",
+    "feedback": "Read the rule as one expression: not on watch OR the camp is safe. The answer is already true or false, so return the expression itself — no if is needed."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the combined weight of two crates — except that when both weigh the same, the dock charges double: return twice their sum.",
+    "signature": "public int crateWeight(int a, int b)",
+    "tests": [
+      {
+        "args": [
+          1,
+          2
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          3,
+          2
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          2,
+          2
+        ],
+        "expect": 8
+      },
+      {
+        "args": [
+          0,
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          5,
+          5
+        ],
+        "expect": 20
+      },
+      {
+        "args": [
+          10,
+          3
+        ],
+        "expect": 13
+      }
+    ],
+    "solution": "int sum = a + b;\nif (a == b) {\n    sum = sum * 2;\n}\nreturn sum;",
+    "feedback": "Work out the ordinary answer first, adjust it in the special case, and return once at the end. For numbers, == is the right comparison."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return true if n is odd. Negative numbers can be odd too: -3 is odd.",
+    "signature": "public boolean isOdd(int n)",
+    "tests": [
+      {
+        "args": [
+          3
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          4
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          -3
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          7
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          -8
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "return n % 2 != 0;",
+    "feedback": "In Java the remainder takes the sign of the number being divided, so dividing -3 by 2 leaves a remainder of -1, not 1. Testing n % 2 == 1 misses every negative odd number; n % 2 != 0 does not."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the average of two whole numbers. The average of 3 and 4 is 3.5.",
+    "signature": "public double average(int a, int b)",
+    "tests": [
+      {
+        "args": [
+          2,
+          4
+        ],
+        "expect": 3.0
+      },
+      {
+        "args": [
+          3,
+          4
+        ],
+        "expect": 3.5
+      },
+      {
+        "args": [
+          0,
+          1
+        ],
+        "expect": 0.5
+      },
+      {
+        "args": [
+          -3,
+          0
+        ],
+        "expect": -1.5
+      },
+      {
+        "args": [
+          7,
+          7
+        ],
+        "expect": 7.0
+      }
+    ],
+    "solution": "return (a + b) / 2.0;",
+    "feedback": "An int divided by an int is an int: (3 + 4) / 2 is 3, and the half is gone before the result ever becomes a double. Dividing by 2.0 makes it a double division."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return true if n lies between low and high, counting both ends: 1 and 10 are both between 1 and 10.",
+    "signature": "public boolean inRange(int n, int low, int high)",
+    "tests": [
+      {
+        "args": [
+          5,
+          1,
+          10
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          1,
+          1,
+          10
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          10,
+          1,
+          10
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          0,
+          1,
+          10
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          11,
+          1,
+          10
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          -5,
+          -9,
+          -1
+        ],
+        "expect": true
+      }
+    ],
+    "solution": "return low <= n && n <= high;",
+    "feedback": "Java has no low <= n <= high. Each comparison gives a true or false of its own, and && joins the two. \"Counting both ends\" is what makes them <= rather than <."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the largest of three numbers.",
+    "signature": "public int largestOfThree(int a, int b, int c)",
+    "tests": [
+      {
+        "args": [
+          1,
+          2,
+          3
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          3,
+          2,
+          1
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          2,
+          9,
+          4
+        ],
+        "expect": 9
+      },
+      {
+        "args": [
+          5,
+          5,
+          5
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          -1,
+          -7,
+          -3
+        ],
+        "expect": -1
+      },
+      {
+        "args": [
+          4,
+          4,
+          1
+        ],
+        "expect": 4
+      }
+    ],
+    "solution": "int best = a;\nif (b > best) {\n    best = b;\n}\nif (c > best) {\n    best = c;\n}\nreturn best;",
+    "feedback": "Keep a best-so-far and let each number challenge it in turn. The same idea handles three numbers or three thousand. (Math.max(a, Math.max(b, c)) is the one-line version.)"
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the letter grade for a score: A for 90 and up, B for 80 to 89, C for 70 to 79, and F for anything lower.",
+    "signature": "public char letterGrade(int score)",
+    "tests": [
+      {
+        "args": [
+          95
+        ],
+        "expect": "A"
+      },
+      {
+        "args": [
+          90
+        ],
+        "expect": "A"
+      },
+      {
+        "args": [
+          89
+        ],
+        "expect": "B"
+      },
+      {
+        "args": [
+          80
+        ],
+        "expect": "B"
+      },
+      {
+        "args": [
+          79
+        ],
+        "expect": "C"
+      },
+      {
+        "args": [
+          70
+        ],
+        "expect": "C"
+      },
+      {
+        "args": [
+          69
+        ],
+        "expect": "F"
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": "F"
+      }
+    ],
+    "solution": "if (score >= 90) {\n    return 'A';\n} else if (score >= 80) {\n    return 'B';\n} else if (score >= 70) {\n    return 'C';\n}\nreturn 'F';",
+    "feedback": "A char goes in single quotes: 'A' is one character, \"A\" is a String and will not do for a char method. In an else-if ladder each test only has to rule out what the ones above it let through."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the number of days in a month of an ordinary (non-leap) year, where 1 is January and 12 is December. For any number that is not a month, return 0.",
+    "signature": "public int daysIn(int month)",
+    "tests": [
+      {
+        "args": [
+          1
+        ],
+        "expect": 31
+      },
+      {
+        "args": [
+          2
+        ],
+        "expect": 28
+      },
+      {
+        "args": [
+          4
+        ],
+        "expect": 30
+      },
+      {
+        "args": [
+          9
+        ],
+        "expect": 30
+      },
+      {
+        "args": [
+          12
+        ],
+        "expect": 31
+      },
+      {
+        "args": [
+          7
+        ],
+        "expect": 31
+      },
+      {
+        "args": [
+          13
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "return switch (month) {\n    case 2 -> 28;\n    case 4, 6, 9, 11 -> 30;\n    case 1, 3, 5, 7, 8, 10, 12 -> 31;\n    default -> 0;\n};",
+    "feedback": "When one value picks between many fixed answers, a switch says so directly. Several values can share an arrow, and because this switch produces the value being returned, it needs a default to cover everything else."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Given a name, return a greeting of the form \"Hello, Ada!\".",
+    "signature": "public String greet(String name)",
+    "tests": [
+      {
+        "args": [
+          "Ada"
+        ],
+        "expect": "Hello, Ada!"
+      },
+      {
+        "args": [
+          "Brom"
+        ],
+        "expect": "Hello, Brom!"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": "Hello, !"
+      },
+      {
+        "args": [
+          "Old Hask"
+        ],
+        "expect": "Hello, Old Hask!"
+      }
+    ],
+    "solution": "return \"Hello, \" + name + \"!\";",
+    "feedback": "Text is joined with +, and the comma and the space have to be inside the quotes — Java adds nothing between the pieces for you."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "The gate opens for the word dragon, in small letters exactly. Return true if the guess is that word.",
+    "signature": "public boolean isPassword(String guess)",
+    "tests": [
+      {
+        "args": [
+          "dragon"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "Dragon"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "drago"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "dragons"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "dragon "
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "return guess.equals(\"dragon\");",
+    "feedback": "Compare Strings with .equals(). On Strings, == asks whether two names refer to the very same object, which can be false for two Strings holding the same letters — so it is a bug waiting for the right input."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the first two characters of a string. If the string is shorter than two characters, return whatever is there.",
+    "signature": "public String firstTwo(String s)",
+    "tests": [
+      {
+        "args": [
+          "Hello"
+        ],
+        "expect": "He"
+      },
+      {
+        "args": [
+          "ab"
+        ],
+        "expect": "ab"
+      },
+      {
+        "args": [
+          "a"
+        ],
+        "expect": "a"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": ""
+      },
+      {
+        "args": [
+          "xyz"
+        ],
+        "expect": "xy"
+      }
+    ],
+    "solution": "if (s.length() < 2) {\n    return s;\n}\nreturn s.substring(0, 2);",
+    "feedback": "substring(0, 2) throws an exception when the string has fewer than two characters — Java does not quietly stop at the end. Check the length first whenever a string might be short."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the last character of a string. The string will have at least one character.",
+    "signature": "public char lastChar(String s)",
+    "tests": [
+      {
+        "args": [
+          "hello"
+        ],
+        "expect": "o"
+      },
+      {
+        "args": [
+          "a"
+        ],
+        "expect": "a"
+      },
+      {
+        "args": [
+          "Java!"
+        ],
+        "expect": "!"
+      },
+      {
+        "args": [
+          "ab"
+        ],
+        "expect": "b"
+      }
+    ],
+    "solution": "return s.charAt(s.length() - 1);",
+    "feedback": "Positions start at 0, so the last one is length() - 1, never length(). Note the parentheses: for a String, length() is a method."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a person's initials as a two-letter String: for \"Ada\" and \"Lovelace\", return \"AL\". Both names will have at least one letter.",
+    "signature": "public String initials(String first, String last)",
+    "tests": [
+      {
+        "args": [
+          "Ada",
+          "Lovelace"
+        ],
+        "expect": "AL"
+      },
+      {
+        "args": [
+          "brom",
+          "ironfoot"
+        ],
+        "expect": "bi"
+      },
+      {
+        "args": [
+          "X",
+          "Y"
+        ],
+        "expect": "XY"
+      },
+      {
+        "args": [
+          "Lyra",
+          "Vex"
+        ],
+        "expect": "LV"
+      }
+    ],
+    "solution": "return \"\" + first.charAt(0) + last.charAt(0);",
+    "feedback": "A char is a number underneath, so adding two chars adds their codes: 'A' + 'L' is 141, not \"AL\". Starting with \"\" makes it text from the first + onward."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the string with its first and last characters swapped: \"code\" becomes \"eodc\". A string of fewer than two characters comes back unchanged.",
+    "signature": "public String swapEnds(String s)",
+    "tests": [
+      {
+        "args": [
+          "code"
+        ],
+        "expect": "eodc"
+      },
+      {
+        "args": [
+          "a"
+        ],
+        "expect": "a"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": ""
+      },
+      {
+        "args": [
+          "ab"
+        ],
+        "expect": "ba"
+      },
+      {
+        "args": [
+          "abc"
+        ],
+        "expect": "cba"
+      }
+    ],
+    "solution": "if (s.length() < 2) {\n    return s;\n}\nint last = s.length() - 1;\nreturn s.charAt(last) + s.substring(1, last) + s.charAt(0);",
+    "feedback": "Three pieces: the last character, the middle, the first. Putting the String in the middle is what keeps the + signs joining text; and the short strings need their own return, because there is no middle to take."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return how many times the character c appears in the string s. Capital and small letters are different characters.",
+    "signature": "public int countChar(String s, char c)",
+    "tests": [
+      {
+        "args": [
+          "banana",
+          "a"
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          "banana",
+          "n"
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          "banana",
+          "z"
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          "",
+          "a"
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          "Aa",
+          "a"
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          "aaa",
+          "a"
+        ],
+        "expect": 3
+      }
+    ],
+    "solution": "int count = 0;\nfor (int i = 0; i < s.length(); i++) {\n    if (s.charAt(i) == c) {\n        count++;\n    }\n}\nreturn count;",
+    "feedback": "The counting pattern: start at 0 before the loop, add inside it, return after it. Two chars are compared with ==, because a char is a plain value, not an object. The loop stops at i < s.length() — one further and charAt would fail."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a string in which every character of the given string appears twice: \"The\" becomes \"TThhee\".",
+    "signature": "public String doubleChars(String s)",
+    "tests": [
+      {
+        "args": [
+          "The"
+        ],
+        "expect": "TThhee"
+      },
+      {
+        "args": [
+          "a"
+        ],
+        "expect": "aa"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": ""
+      },
+      {
+        "args": [
+          "Hi!"
+        ],
+        "expect": "HHii!!"
+      },
+      {
+        "args": [
+          "aa"
+        ],
+        "expect": "aaaa"
+      }
+    ],
+    "solution": "String out = \"\";\nfor (int i = 0; i < s.length(); i++) {\n    out = out + s.charAt(i) + s.charAt(i);\n}\nreturn out;",
+    "feedback": "A loop can build text as easily as it totals numbers: start with \"\", add each time round, return at the end. Write out = out + c + c rather than out += c + c — the second one adds the two chars as numbers first."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return true if the string reads the same forwards and backwards. The empty string does.",
+    "signature": "public boolean isPalindrome(String s)",
+    "tests": [
+      {
+        "args": [
+          "racecar"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "abba"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "abc"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "a"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "ab"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "abca"
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "for (int i = 0, j = s.length() - 1; i < j; i++, j--) {\n    if (s.charAt(i) != s.charAt(j)) {\n        return false;\n    }\n}\nreturn true;",
+    "feedback": "Two positions walking toward each other. One mismatch settles it, so return false at once; true can only be returned after the loop, when every pair has been checked."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the number of vowels (a, e, i, o, u) in a word, counting capital letters too.",
+    "signature": "public int countVowels(String word)",
+    "tests": [
+      {
+        "args": [
+          "banana"
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          "sky"
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          "AEIOU"
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          "Dragon"
+        ],
+        "expect": 2
+      }
+    ],
+    "solution": "int count = 0;\nfor (char c : word.toLowerCase().toCharArray()) {\n    if (\"aeiou\".indexOf(c) >= 0) {\n        count++;\n    }\n}\nreturn count;",
+    "feedback": "Lower-casing the word first halves the cases to check. indexOf answers \"is this character one of these?\" in one call: it gives -1 when the character is not there."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return 1 + 2 + 3 + … + n. If n is 0 or less, return 0.",
+    "signature": "public int sumTo(int n)",
+    "tests": [
+      {
+        "args": [
+          1
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          4
+        ],
+        "expect": 10
+      },
+      {
+        "args": [
+          10
+        ],
+        "expect": 55
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          -3
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          100
+        ],
+        "expect": 5050
+      }
+    ],
+    "solution": "int total = 0;\nfor (int i = 1; i <= n; i++) {\n    total += i;\n}\nreturn total;",
+    "feedback": "The total has to be declared before the loop, so that it is still there after it. When n is 0 or less the loop never runs, and the starting value is already the right answer."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Given a whole number that is zero or larger, return the sum of its digits. 512 gives 8.",
+    "signature": "public int sumDigits(int n)",
+    "tests": [
+      {
+        "args": [
+          512
+        ],
+        "expect": 8
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          7
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          1000
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          99999
+        ],
+        "expect": 45
+      }
+    ],
+    "solution": "int total = 0;\nwhile (n > 0) {\n    total += n % 10;\n    n = n / 10;\n}\nreturn total;",
+    "feedback": "n % 10 is the last digit and n / 10 removes it — integer division, for once, being exactly what is wanted. The number shrinks each time round until nothing is left."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return base raised to the power exp, where exp is zero or more. Anything to the power 0 is 1.",
+    "signature": "public int power(int base, int exp)",
+    "tests": [
+      {
+        "args": [
+          2,
+          10
+        ],
+        "expect": 1024
+      },
+      {
+        "args": [
+          3,
+          0
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          5,
+          1
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          -2,
+          3
+        ],
+        "expect": -8
+      },
+      {
+        "args": [
+          10,
+          4
+        ],
+        "expect": 10000
+      },
+      {
+        "args": [
+          0,
+          3
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          1,
+          50
+        ],
+        "expect": 1
+      }
+    ],
+    "solution": "int result = 1;\nfor (int i = 0; i < exp; i++) {\n    result *= base;\n}\nreturn result;",
+    "feedback": "Multiplying starts from 1 the way adding starts from 0. Java has no power operator: ^ means something else entirely, and Math.pow gives back a double, not an int."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return \"Fizz\" if n divides evenly by 3, \"Buzz\" if it divides by 5, \"FizzBuzz\" if it divides by both — and otherwise the number itself, as text.",
+    "signature": "public String fizz(int n)",
+    "tests": [
+      {
+        "args": [
+          3
+        ],
+        "expect": "Fizz"
+      },
+      {
+        "args": [
+          5
+        ],
+        "expect": "Buzz"
+      },
+      {
+        "args": [
+          15
+        ],
+        "expect": "FizzBuzz"
+      },
+      {
+        "args": [
+          7
+        ],
+        "expect": "7"
+      },
+      {
+        "args": [
+          30
+        ],
+        "expect": "FizzBuzz"
+      },
+      {
+        "args": [
+          1
+        ],
+        "expect": "1"
+      },
+      {
+        "args": [
+          9
+        ],
+        "expect": "Fizz"
+      },
+      {
+        "args": [
+          10
+        ],
+        "expect": "Buzz"
+      }
+    ],
+    "solution": "if (n % 15 == 0) {\n    return \"FizzBuzz\";\n}\nif (n % 3 == 0) {\n    return \"Fizz\";\n}\nif (n % 5 == 0) {\n    return \"Buzz\";\n}\nreturn String.valueOf(n);",
+    "feedback": "Test the narrowest case first: every number that divides by 15 also divides by 3, so asked the other way round it would never get past \"Fizz\". And an int is not a String — String.valueOf(n), or \"\" + n, makes it one."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the sum of the first and last numbers in an array. The array will have at least one number; when it has exactly one, that number is both.",
+    "signature": "public int firstPlusLast(int[] nums)",
+    "tests": [
+      {
+        "args": [
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "expect": 4
+      },
+      {
+        "args": [
+          [
+            5
+          ]
+        ],
+        "expect": 10
+      },
+      {
+        "args": [
+          [
+            7,
+            0
+          ]
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          [
+            -2,
+            9,
+            2
+          ]
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            4,
+            4,
+            4,
+            4
+          ]
+        ],
+        "expect": 8
+      }
+    ],
+    "solution": "return nums[0] + nums[nums.length - 1];",
+    "feedback": "The last position is length - 1. For an array, length has no parentheses — it is a value the array carries, not a method."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the sum of all the numbers in an array. An empty array has a sum of 0.",
+    "signature": "public int total(int[] nums)",
+    "tests": [
+      {
+        "args": [
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            -5,
+            5
+          ]
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            10
+          ]
+        ],
+        "expect": 10
+      },
+      {
+        "args": [
+          [
+            2,
+            2,
+            2,
+            2
+          ]
+        ],
+        "expect": 8
+      }
+    ],
+    "solution": "int sum = 0;\nfor (int n : nums) {\n    sum += n;\n}\nreturn sum;",
+    "feedback": "for (int n : nums) hands you each number in turn, with no position to get wrong. For an empty array the loop simply never runs."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return how many of the numbers in an array are even.",
+    "signature": "public int countEvens(int[] nums)",
+    "tests": [
+      {
+        "args": [
+          [
+            2,
+            1,
+            2,
+            3,
+            4
+          ]
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            1,
+            3,
+            5
+          ]
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            0,
+            -2,
+            -3
+          ]
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [
+            8
+          ]
+        ],
+        "expect": 1
+      }
+    ],
+    "solution": "int count = 0;\nfor (int n : nums) {\n    if (n % 2 == 0) {\n        count++;\n    }\n}\nreturn count;",
+    "feedback": "The same shape as totalling, but the counter grows by 1 instead of by n — and only when the test passes. n % 2 == 0 is safe for negative numbers; it is the == 1 test for odd that is not."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the largest number in an array. The array will have at least one number, and the numbers may all be negative.",
+    "signature": "public int largest(int[] nums)",
+    "tests": [
+      {
+        "args": [
+          [
+            3,
+            9,
+            2
+          ]
+        ],
+        "expect": 9
+      },
+      {
+        "args": [
+          [
+            -3,
+            -9,
+            -2
+          ]
+        ],
+        "expect": -2
+      },
+      {
+        "args": [
+          [
+            5
+          ]
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          [
+            4,
+            4
+          ]
+        ],
+        "expect": 4
+      },
+      {
+        "args": [
+          [
+            1,
+            2,
+            3,
+            10
+          ]
+        ],
+        "expect": 10
+      }
+    ],
+    "solution": "int best = nums[0];\nfor (int n : nums) {\n    if (n > best) {\n        best = n;\n    }\n}\nreturn best;",
+    "feedback": "Start with the first number as the best so far, then replace it whenever something bigger turns up. Starting at 0 instead gives the wrong answer for an array of negatives."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the mean (average) of the numbers in an array. The array will have at least one number. The mean of 1 and 2 is 1.5.",
+    "signature": "public double mean(int[] nums)",
+    "tests": [
+      {
+        "args": [
+          [
+            1,
+            2
+          ]
+        ],
+        "expect": 1.5
+      },
+      {
+        "args": [
+          [
+            2,
+            4,
+            6
+          ]
+        ],
+        "expect": 4.0
+      },
+      {
+        "args": [
+          [
+            5
+          ]
+        ],
+        "expect": 5.0
+      },
+      {
+        "args": [
+          [
+            1,
+            2,
+            2
+          ]
+        ],
+        "expect": 1.6666666666666667
+      },
+      {
+        "args": [
+          [
+            -1,
+            1
+          ]
+        ],
+        "expect": 0.0
+      }
+    ],
+    "solution": "int sum = 0;\nfor (int n : nums) {\n    sum += n;\n}\nreturn (double) sum / nums.length;",
+    "feedback": "sum / nums.length divides one int by another and throws the fraction away. Casting one side to double first — (double) sum — makes the whole division a double division."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return true if the target word is one of the words in the array.",
+    "signature": "public boolean hasWord(String[] words, String target)",
+    "tests": [
+      {
+        "args": [
+          [
+            "axe",
+            "bow"
+          ],
+          "bow"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          [
+            "axe",
+            "bow"
+          ],
+          "sword"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          [],
+          "a"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          [
+            "Bow"
+          ],
+          "bow"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b",
+            "c"
+          ],
+          "a"
+        ],
+        "expect": true
+      }
+    ],
+    "solution": "for (String w : words) {\n    if (w.equals(target)) {\n        return true;\n    }\n}\nreturn false;",
+    "feedback": "A search returns true the moment it finds a match, and false only after the loop, when everything has been looked at. An else that returns false inside the loop would give up after the first word. The words are Strings, so the comparison is .equals()."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a new array of the same length, holding each number of the given array doubled.",
+    "signature": "public int[] doubled(int[] nums)",
+    "tests": [
+      {
+        "args": [
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "expect": [
+          2,
+          4,
+          6
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [
+            -4
+          ]
+        ],
+        "expect": [
+          -8
+        ]
+      },
+      {
+        "args": [
+          [
+            0,
+            5
+          ]
+        ],
+        "expect": [
+          0,
+          10
+        ]
+      }
+    ],
+    "solution": "int[] out = new int[nums.length];\nfor (int i = 0; i < nums.length; i++) {\n    out[i] = nums[i] * 2;\n}\nreturn out;",
+    "feedback": "An array has to be made, at its full size, before anything can be put in it: new int[nums.length]. This loop needs the position i, because it reads from one array and writes to the same place in the other."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a new array holding the numbers of the given array in reverse order.",
+    "signature": "public int[] reversed(int[] nums)",
+    "tests": [
+      {
+        "args": [
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "expect": [
+          3,
+          2,
+          1
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [
+            7
+          ]
+        ],
+        "expect": [
+          7
+        ]
+      },
+      {
+        "args": [
+          [
+            1,
+            2
+          ]
+        ],
+        "expect": [
+          2,
+          1
+        ]
+      },
+      {
+        "args": [
+          [
+            4,
+            4,
+            9
+          ]
+        ],
+        "expect": [
+          9,
+          4,
+          4
+        ]
+      }
+    ],
+    "solution": "int[] out = new int[nums.length];\nfor (int i = 0; i < nums.length; i++) {\n    out[i] = nums[nums.length - 1 - i];\n}\nreturn out;",
+    "feedback": "Position i of the result comes from position length - 1 - i of the original: 0 pairs with the last, 1 with the one before it. Check the formula against the two ends before trusting it."
+  }
+]
