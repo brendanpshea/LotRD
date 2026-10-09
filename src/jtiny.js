@@ -1921,13 +1921,12 @@ class Checker {
             m.retType = resolveType(m.ret, { allowVoid: true });
             m.paramTypes = m.params.map(p => resolveType(p.type));
             const list = this.methods.get(m.name) || [];
+            // Two methods may share a name (overloading) as long as their parameter TYPES differ.
+            // Different parameter names, or a different return type, do not count.
             for (const other of list) {
-                if (other.params.length === m.params.length) {
-                    if (other.paramTypes.join() === m.paramTypes.join()) {
-                        throw compileError(`The method ${m.name} is written twice with the same parameters.`, m.line);
-                    }
-                    throw notYet(`${BOX} cannot tell apart two methods named ${m.name} that take the same number of values.`, m.line,
-                        'Give the second one a different name.');
+                if (other.paramTypes.join() === m.paramTypes.join()) {
+                    throw compileError(`There are two methods called ${m.name} that take the same types of values${m.paramTypes.length ? ` (${m.paramTypes.join(', ')})` : ''}.`, m.line,
+                        'Two methods may share a name only if their parameter types differ. A different return type or different parameter names is not enough.');
                 }
             }
             list.push(m);
@@ -2581,17 +2580,8 @@ class Checker {
                             : (near => (near ? `Did you mean ${near}()?` : null))(suggestName(n.name, [...this.methods.keys()]));
                 throw compileError(`There is no method called ${n.name}() here.`, n.line, hint);
             }
-            const m = list.find(x => x.params.length === n.args.length);
-            if (!m) {
-                const want = list[0].params.length;
-                throw compileError(`${n.name}() takes ${want} value${want === 1 ? '' : 's'}, but this call gives it ${n.args.length}.`, n.line);
-            }
-            n.args = n.args.map((a, i) => {
-                if (!passable(a.type, m.paramTypes[i])) {
-                    throw compileError(`${n.name}() wants ${aType(m.paramTypes[i])} for ${m.params[i].name}, and this call gives it ${aType(a.type)}.`, n.line);
-                }
-                return convert(a, m.paramTypes[i]);
-            });
+            const m = this.chooseOverload(n, list);
+            n.args = n.args.map((a, i) => convert(a, m.paramTypes[i]));
             if (this.method.isStatic && !m.isStatic) {
                 throw compileError(`${this.method.name} is static, so it cannot call ${m.name}(), which is not.`, n.line, `Make ${m.name} static too, or remove static from ${this.method.name}.`);
             }
@@ -2661,6 +2651,35 @@ class Checker {
         throw compileError(`${aType(rt)[0].toUpperCase() + aType(rt).slice(1)} is a plain value, not an object, so it has no methods to call with a dot.`, n.line,
             n.name === 'equals' ? 'Compare plain values with ==' : n.name === 'toString' ? 'To turn it into text: String.valueOf(x) or "" + x'
                 : n.name === 'length' ? 'Only Strings and arrays have a length.' : null);
+    }
+
+    /**
+     * Which of the methods with this name does a call mean? Java's rule (JLS 15.12.2): of those the
+     * arguments fit, the most specific — the one whose parameters could all be passed to each of the others.
+     */
+    chooseOverload(n, list) {
+        const types = n.args.map(a => a.type);
+        const fits = list.filter(m => m.paramTypes.length === types.length && types.every((t, i) => passable(t, m.paramTypes[i])));
+        if (fits.length === 1) return fits[0];
+        if (fits.length === 0) {
+            const sameCount = list.filter(m => m.paramTypes.length === types.length);
+            if (list.length === 1 && sameCount.length === 0) {
+                const want = list[0].params.length;
+                throw compileError(`${n.name}() takes ${want} value${want === 1 ? '' : 's'}, but this call gives it ${types.length}.`, n.line);
+            }
+            if (sameCount.length === 1) {
+                const m = sameCount[0];
+                const i = types.findIndex((t, k) => !passable(t, m.paramTypes[k]));
+                throw compileError(`${n.name}() wants ${aType(m.paramTypes[i])} for ${m.params[i].name}, and this call gives it ${aType(types[i])}.`, n.line,
+                    types.length > 1 ? 'Arguments are matched to parameters by position, so check their order.' : null);
+            }
+            throw compileError(`None of the ${n.name}() methods takes ${types.length ? `(${types.join(', ')})` : 'no values'}.`, n.line,
+                `They take: ${list.map(m => `(${m.paramTypes.join(', ')})`).join('  ')}`);
+        }
+        const best = fits.filter(m => fits.every(other => other === m || m.paramTypes.every((t, i) => passable(t, other.paramTypes[i]))));
+        if (best.length === 1) return best[0];
+        throw compileError(`This call to ${n.name}() could mean more than one of the methods with that name, and Java will not guess.`, n.line,
+            `It fits: ${fits.map(m => `(${m.paramTypes.join(', ')})`).join('  ')}`);
     }
 
     builtin(n, sigs, selfType, describe) {
@@ -3778,7 +3797,8 @@ export function runJavaTestCases({ signature, body, tests, limits = {}, now = ()
         throw err;
     }
 
-    const method = (program.methods.get(want.name) || []).find(m => m.params.length === types.length);
+    const named = program.methods.get(want.name) || [];
+    const method = named.find(m => m.paramTypes.join() === types.join()) || named[0];
     if (!method || method.retType !== want.ret || method.paramTypes.join() !== types.join()) {
         const near = !method && suggestName(want.name, [...program.methods.keys()]);
         return failed({

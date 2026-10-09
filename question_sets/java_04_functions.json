@@ -12,6 +12,43 @@
     "feedback": "A method gives a group of statements a name, so the group can be run from anywhere by calling that name. It is not the class around it (a class holds methods), and it is not the value handed in (that is an argument). println is itself a method someone wrote, and you can write your own in exactly the same way."
   },
   {
+    "question": "Which of these are sound reasons to move a block of code into its own method?",
+    "correct": [
+      "Several places can run it without copying the lines",
+      "It can be tested by itself with known inputs",
+      "A good name tells the reader what the block is for",
+      "A bug in it then has to be fixed in just one place"
+    ],
+    "incorrect": [
+      "A method call runs faster than the same lines written inline",
+      "Its local variables become visible to the rest of the class"
+    ],
+    "feedback": "Methods are about organisation: reuse without copy-and-paste, one place to fix, a name that documents intent, and a unit small enough to test alone. They do not make code faster (a call costs a tiny amount, if anything). And they hide their local variables rather than share them, which is a benefit: no other code can disturb them."
+  },
+  {
+    "type": "matching",
+    "question": "Match each problem in a program to the method-design fix that best addresses it.",
+    "pairs": [
+      {
+        "term": "The same eight lines appear in three places",
+        "definition": "Move them into one method and call it from each spot"
+      },
+      {
+        "term": "A long condition inside an if is hard to read",
+        "definition": "Wrap it in a boolean method with a telling name"
+      },
+      {
+        "term": "A method works out a total and also prints it",
+        "definition": "Have it return the result and let the caller print"
+      },
+      {
+        "term": "One 60-line method loads, sorts and reports",
+        "definition": "Split it so that each method does a single job"
+      }
+    ],
+    "feedback": "Duplicated code becomes one method. A murky condition becomes a call such as isValidMove(x, y) that reads like a sentence. A method that returns its result instead of printing it can be reused, combined and tested, because the caller decides what to do with the value. A method doing three jobs becomes three methods, each easy to name."
+  },
+  {
     "type": "matching",
     "question": "Match each piece of this method header to the job it does.\npublic static double average(int a, int b)",
     "pairs": [
@@ -53,6 +90,40 @@
     "feedback": "Every parameter needs its own type, so (int a, b) is rejected even though int a, b; is fine for ordinary variables. Every method needs a return type before its name, which is void when nothing comes back. An empty parameter list is written (), not (void) as in C. An array such as int[] is a perfectly good parameter type."
   },
   {
+    "question": "Where in a Java file may a method such as greetCustomer be defined?",
+    "correct": [
+      "Inside the class, but outside main and any other method"
+    ],
+    "incorrect": [
+      "Inside main, just above the line that first calls it",
+      "Above the class line, so that it is read before the class",
+      "Anywhere at all, as long as it comes before main"
+    ],
+    "feedback": "A method belongs to the class, so it goes between the class's braces — but never inside another method, main included. The order does not matter: Java finds every method in the class before it runs anything, so main may come first or last."
+  },
+  {
+    "type": "code_line",
+    "question": "A method is defined as  public static void greetCustomer()  and takes no values. Write the statement that calls it.",
+    "language": "java",
+    "correct": [
+      "greetCustomer();"
+    ],
+    "case_sensitive": true,
+    "feedback": "greetCustomer(); — the name, a pair of parentheses, and a semicolon. The parentheses are what make it a call, even when there is nothing to put inside them. Writing the name alone does not run the method."
+  },
+  {
+    "question": "This is an ordinary class with the traditional main. What happens when it is compiled and run?\npublic class Game {\n    void greet() { System.out.println(\"hi\"); }\n    public static void main(String[] args) {\n        greet();\n    }\n}",
+    "correct": [
+      "Compile error: static main calls non-static greet()"
+    ],
+    "incorrect": [
+      "It compiles and prints hi",
+      "It compiles but prints nothing, since greet is void",
+      "Compile error: greet must be declared public"
+    ],
+    "feedback": "A static method such as this main runs without any object, so it can directly call only other static methods. greet() has no static, so the compiler reports \"non-static method greet() cannot be referenced from a static context\". Writing static void greet() fixes it. void has nothing to do with it (a void method can print), and neither does public."
+  },
+  {
     "question": "Look at this method and the call below it.\nstatic int square(int x) { return x * x; }\nint r = square(n + 1);\nWhich part is the argument?",
     "correct": [
       "n + 1"
@@ -75,7 +146,7 @@
       "final var result = add(3, 5);"
     ],
     "case_sensitive": true,
-    "feedback": "A call is the method's name followed by its arguments in parentheses, and a call to a method that returns an int can sit anywhere an int value can. Declare the variable and assign the call to it: int result = add(3, 5); (var result works too, because the compiler can see that add returns int)."
+    "feedback": "A call is the method's name followed by its arguments in parentheses, and a call to a method that returns an int can sit anywhere an int value can. Declare the variable and assign the call to it: int result = add(3, 5);"
   },
   {
     "type": "ordering",
@@ -88,6 +159,37 @@
       "8 is stored in the variable r"
     ],
     "feedback": "Arguments are evaluated before the call starts, so the method receives finished values, never the expression 2 + 1. Those values are copied into the parameters, the body runs, return hands one value back, and only then does the assignment to r happen in the caller."
+  },
+  {
+    "question": "A method is defined as shown. What happens to the call below it?\npublic static void prepare(String burger, boolean addFries) { ... }\nprepare(true, \"Cheeseburger\");",
+    "correct": [
+      "It does not compile: the arguments are in the wrong order"
+    ],
+    "incorrect": [
+      "It compiles, and Java matches each argument by its type",
+      "It compiles, but burger and addFries end up swapped",
+      "It compiles, then stops with an error when it is run"
+    ],
+    "feedback": "Arguments are matched to parameters by POSITION: the first argument goes to the first parameter, and so on. Here a boolean arrives where a String is wanted, so the compiler refuses the call. Java does not rearrange arguments to make the types fit."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does this print?\n\nstatic int add(int a, int b) { return a + b; }\nstatic int square(int x) { return x * x; }\n\nSystem.out.println(square(add({{a}}, {{b}})));",
+    "variables": {
+      "a": {
+        "min": 1,
+        "max": 5
+      },
+      "b": {
+        "min": 1,
+        "max": 6
+      }
+    },
+    "answer": {
+      "expr": "(a + b) * (a + b)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The inner call has to finish first, because its result is the outer call's argument. add({{a}}, {{b}}) returns the sum, and square receives that one number as x and returns x * x, which is {{expected}}."
   },
   {
     "question": "What does the word void tell you in this header?\nstatic void showScore(int points)",
@@ -121,37 +223,6 @@
       "total's value is saved into the method's first parameter"
     ],
     "feedback": "return does two jobs in one step: it stops the method immediately and it hands one value back to the place that called it. Nothing after it in the body runs. Returning is not printing: nothing appears on screen unless the caller prints the value. And parameters carry values in, never out."
-  },
-  {
-    "question": "This is an ordinary class with the traditional main. What happens when it is compiled and run?\npublic class Game {\n    void greet() { System.out.println(\"hi\"); }\n    public static void main(String[] args) {\n        greet();\n    }\n}",
-    "correct": [
-      "Compile error: static main calls non-static greet()"
-    ],
-    "incorrect": [
-      "It compiles and prints hi",
-      "It compiles but prints nothing, since greet is void",
-      "Compile error: greet must be declared public"
-    ],
-    "feedback": "A static method such as this main runs without any object, so it can directly call only other static methods. greet() has no static, so the compiler reports \"non-static method greet() cannot be referenced from a static context\". Writing static void greet() fixes it. void has nothing to do with it (a void method can print), and neither does public."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "What does this print?\n\nstatic int add(int a, int b) { return a + b; }\nstatic int square(int x) { return x * x; }\n\nSystem.out.println(square(add({{a}}, {{b}})));",
-    "variables": {
-      "a": {
-        "min": 1,
-        "max": 5
-      },
-      "b": {
-        "min": 1,
-        "max": 6
-      }
-    },
-    "answer": {
-      "expr": "(a + b) * (a + b)",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The inner call has to finish first, because its result is the outer call's argument. add({{a}}, {{b}}) returns the sum, and square receives that one number as x and returns x * x, which is {{expected}}."
   },
   {
     "question": "A method is declared as static int roll(). Which claims about calling it are correct?",
@@ -203,13 +274,24 @@
   {
     "type": "code_trace",
     "question": "Trace the loop and its return. What does this program print?",
-    "code": "static boolean hasNegative(int[] a) {\n    for (int v : a) {\n        System.out.print(v + \" \");\n        if (v < 0) return true;\n    }\n    return false;\n}\n\nint[] data = {4, -2, 7, -9};\nSystem.out.println(hasNegative(data));",
+    "code": "static boolean hasNegative(int[] a) {\n    for (int i = 0; i < a.length; i++) {\n        System.out.print(a[i] + \" \");\n        if (a[i] < 0) {\n            return true;\n        }\n    }\n    return false;\n}\n\nint[] data = {4, -2, 7, -9};\nSystem.out.println(hasNegative(data));",
     "language": "java",
     "correct": [
       "4 -2 true"
     ],
     "case_sensitive": true,
     "feedback": "return ends the whole method, not just the current pass of the loop. The loop prints 4, then prints -2, sees that it is negative and returns true at once, so 7 and -9 are never visited. return false; after the loop is reached only when no element was negative."
+  },
+  {
+    "type": "code_trace",
+    "question": "A method that answers yes or no returns a boolean. What does this program print?",
+    "code": "static boolean isLunch(int hour) {\n    return hour >= 11 && hour <= 14;\n}\n\nSystem.out.println(isLunch(11) + \" \" + isLunch(15));",
+    "language": "java",
+    "correct": [
+      "true false"
+    ],
+    "case_sensitive": true,
+    "feedback": "The comparison in the return statement is worked out and its result handed back. 11 is at least 11 and at most 14, so true. 15 fails the second test, so false. Methods like this are usually named with is, has or can, and are used directly in a condition: if (isLunch(hour))."
   },
   {
     "question": "What happens when this code is compiled and run?\nstatic void heal() {\n    int bonus = 5;\n}\npublic static void main(String[] args) {\n    heal();\n    System.out.println(bonus);\n}",
@@ -330,108 +412,6 @@
     "feedback_template": "The two hp variables are different variables that happen to share a name: one is local to addBonus, the other to the caller. The method changes its own copy and returns it, so result is {{h}} plus {{b}}, while the caller's hp is still {{h}}. Their total is {{expected}}."
   },
   {
-    "type": "npc_demo",
-    "question": "NPC: When the slip holds directions to an array",
-    "npc": "nia",
-    "intro": "Nia sets three potion bottles on a shelf and writes the shelf's location on a slip. “Same rule as before: Java copies the argument. The surprise is in WHAT gets copied.”",
-    "steps": [
-      {
-        "say": "An array variable does not hold the numbers themselves. It holds a reference: directions to where the array lives.\nstatic void drain(int[] a) { a[0] = 0; }\nint[] potions = {5, 5, 5};\ndrain(potions);\nThe call copies the reference into the parameter a. Now a and potions are two slips with the same directions. There is still only one array.",
-        "beats": [
-          {
-            "say": "An array variable does not hold the numbers themselves. It holds a reference: directions to where the array lives."
-          },
-          {
-            "code": "static void drain(int[] a) {\n    a[0] = 0;\n}\n\nint[] potions = {5, 5, 5};\ndrain(potions);",
-            "language": "java"
-          },
-          {
-            "say": "The call copies the reference into the parameter a. Now a and potions are two slips with the same directions. There is still only one array."
-          }
-        ]
-      },
-      {
-        "say": "a[0] = 0 follows the directions and changes an element of that one shared array.",
-        "check": {
-          "prompt": "drain has finished. What is potions[0] back in the caller?",
-          "answer": "0",
-          "wrong": [
-            "5"
-          ],
-          "why": "The parameter a and the caller's potions refer to the same array, so a change to an element made through one is seen through the other."
-        }
-      },
-      {
-        "say": "Reassigning the parameter is different:\na = new int[]{9, 9, 9};\nThat rewrites only the method's own slip, so a now points at a brand-new array. The caller's potions still points at the old one and sees nothing. The pattern: changing an ELEMENT reaches the caller; pointing the PARAMETER somewhere else does not.",
-        "beats": [
-          {
-            "say": "Reassigning the parameter is different."
-          },
-          {
-            "code": "a = new int[]{9, 9, 9};",
-            "language": "inside the method"
-          },
-          {
-            "say": "That rewrites only the method's own slip, so a now points at a brand-new array. The caller's potions still points at the old one and sees nothing."
-          },
-          {
-            "say": "The pattern: changing an ELEMENT reaches the caller; pointing the PARAMETER somewhere else does not."
-          }
-        ]
-      }
-    ],
-    "outro": "“The next monster does both things inside one method. Take it line by line and keep asking which array each line touches.”"
-  },
-  {
-    "type": "code_trace",
-    "question": "Trace which array each line of change touches. What does the program print?",
-    "code": "static void change(int[] a) {\n    a[0] = 9;\n    a = new int[]{7, 7, 7};\n    a[1] = 5;\n}\n\nint[] nums = {1, 2, 3};\nchange(nums);\nSystem.out.println(nums[0] + \" \" + nums[1]);",
-    "language": "java",
-    "correct": [
-      "9 2"
-    ],
-    "case_sensitive": true,
-    "feedback": "a starts as a copy of the reference in nums, so a[0] = 9 changes the caller's array. The second line points a at a new array; from then on the method is working on something the caller cannot see, so a[1] = 5 lands in the new array and nums[1] is still 2. Reassigning a parameter never changes the caller's variable."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "What does this print?\n\nstatic void addAll(int[] a, int k) {\n    for (int i = 0; i < a.length; i++) {\n        a[i] += k;\n    }\n}\n\nint[] xs = {1, 2, 3};\naddAll(xs, {{k}});\nSystem.out.println(xs[0] + xs[2]);",
-    "variables": {
-      "k": {
-        "min": 2,
-        "max": 9
-      }
-    },
-    "answer": {
-      "expr": "4 + 2 * k",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "a refers to the same array as xs, so every a[i] += k changes the caller's elements: the array becomes 1 + {{k}}, 2 + {{k}}, 3 + {{k}}. The first and last of those add up to {{expected}}. A void method can do useful work this way, by changing an array it was handed."
-  },
-  {
-    "type": "cloze",
-    "question": "When a method is called, each parameter receives a {{1}} of its argument. For an int argument that is the number itself, so the caller's variable is safe from the method. For an array argument, what gets duplicated is the {{2}} to the array and not its elements, so a[0] = 0 inside the method changes the caller's array too.",
-    "blanks": [
-      {
-        "accept": [
-          "copy",
-          "duplicate"
-        ]
-      },
-      {
-        "accept": [
-          "reference",
-          "ref",
-          "address",
-          "pointer",
-          "link"
-        ],
-        "hint": "what an array variable holds"
-      }
-    ],
-    "feedback": "Java has one rule, pass by value: the parameter gets a copy of whatever the argument holds. An int variable holds a number; an array variable holds a reference. Copying a reference gives the method its own route to the SAME array, which is why element changes are shared while reassigning the parameter is not."
-  },
-  {
     "type": "code_trace",
     "question": "These two methods share a name, which Java allows because their parameter types differ (this is called overloading). The compiler picks one by looking at the argument's type. What does the program print?",
     "code": "static int half(int x) {\n    return x / 2;\n}\n\nstatic double half(double x) {\n    return x / 2;\n}\n\nSystem.out.println(half(7) + \" \" + half(7.0));",
@@ -441,6 +421,17 @@
     ],
     "case_sensitive": true,
     "feedback": "The argument 7 is an int, so the call matches half(int) exactly, and int division drops the remainder to give 3. The argument 7.0 is a double, so half(double) runs and returns 3.5. Same name, same-looking body, different method: the choice is made at compile time from the argument types alone."
+  },
+  {
+    "type": "code_trace",
+    "question": "Two methods share the name tag, with different numbers of parameters. What does this program print? (Keep the line break.)",
+    "code": "static String tag(String b) {\n    return \"1x \" + b;\n}\n\nstatic String tag(String b, int q) {\n    return q + \"x \" + b;\n}\n\nSystem.out.println(tag(\"A\"));\nSystem.out.println(tag(\"A\", 3));",
+    "language": "java",
+    "correct": [
+      "1x A\n3x A"
+    ],
+    "case_sensitive": true,
+    "feedback": "This is overloading: one name, different parameter lists. Java picks the version whose parameters match the arguments in the call. One argument runs the first version; a String and an int run the second."
   },
   {
     "question": "A class already contains the method below. Which of these can be added to the same class as an overload of it?\nstatic int area(int w, int h)",
@@ -453,65 +444,6 @@
       "public static int area(int h, int w)"
     ],
     "feedback": "Overloads must differ in their signature, which is the method name plus the parameter TYPES in order. area(double, double) is a new signature. The other three are all area(int, int) again: changing only the return type, only the parameter names, or only a modifier leaves the signature the same, and the compiler says \"method area(int,int) is already defined\"."
-  },
-  {
-    "question": "Which of these are sound reasons to move a block of code into its own method?",
-    "correct": [
-      "Several places can run it without copying the lines",
-      "It can be tested by itself with known inputs",
-      "A good name tells the reader what the block is for",
-      "A bug in it then has to be fixed in just one place"
-    ],
-    "incorrect": [
-      "A method call runs faster than the same lines written inline",
-      "Its local variables become visible to the rest of the class"
-    ],
-    "feedback": "Methods are about organisation: reuse without copy-and-paste, one place to fix, a name that documents intent, and a unit small enough to test alone. They do not make code faster (a call costs a tiny amount, if anything). And they hide their local variables rather than share them, which is a benefit: no other code can disturb them."
-  },
-  {
-    "type": "matching",
-    "question": "Match each problem in a program to the method-design fix that best addresses it.",
-    "pairs": [
-      {
-        "term": "The same eight lines appear in three places",
-        "definition": "Move them into one method and call it from each spot"
-      },
-      {
-        "term": "A long condition inside an if is hard to read",
-        "definition": "Wrap it in a boolean method with a telling name"
-      },
-      {
-        "term": "A method works out a total and also prints it",
-        "definition": "Have it return the result and let the caller print"
-      },
-      {
-        "term": "One 60-line method loads, sorts and reports",
-        "definition": "Split it so that each method does a single job"
-      }
-    ],
-    "feedback": "Duplicated code becomes one method. A murky condition becomes a call such as isValidMove(x, y) that reads like a sentence. A method that returns its result instead of printing it can be reused, combined and tested, because the caller decides what to do with the value. A method doing three jobs becomes three methods, each easy to name."
-  },
-  {
-    "type": "code_trace",
-    "question": "Trace the String method calls. What does this program print?",
-    "code": "String name = \"orc\";\nname.toUpperCase();\nString loud = name + \"!\";\nSystem.out.println(loud);",
-    "language": "java",
-    "correct": [
-      "orc!"
-    ],
-    "case_sensitive": true,
-    "feedback": "A String is immutable: no method can alter it. toUpperCase() hands its result back as a return value, and the second line throws that value away, so name is still \"orc\". To keep the change you must store it, for example name = name.toUpperCase();"
-  },
-  {
-    "type": "code_line",
-    "question": "The String variable s may have spaces at both ends. Write the statement that makes s hold the text without those spaces.",
-    "language": "java",
-    "correct": [
-      "s = s.trim();",
-      "s = s.strip();"
-    ],
-    "case_sensitive": true,
-    "feedback": "Calling s.trim(); alone achieves nothing, because a String method never alters the String it is called on; it returns its result. Assign that result back to the variable: s = s.trim(); (strip() is the newer method and also handles Unicode spaces; either is fine here.)"
   },
   {
     "type": "matching",
@@ -539,6 +471,80 @@
       }
     ],
     "feedback": "Look at the return TYPES: length and indexOf return an int, charAt a char, substring a String and contains a boolean. Positions count from 0, so 'g' is at index 3 and charAt(1) is the second letter. substring(2, 4) starts at index 2 and stops BEFORE index 4."
+  },
+  {
+    "type": "matching",
+    "question": "String b = \"Cheesy Rider\";\n\nMatch each call to what it returns.",
+    "pairs": [
+      {
+        "term": "b.toUpperCase()",
+        "definition": "\"CHEESY RIDER\""
+      },
+      {
+        "term": "b.toLowerCase()",
+        "definition": "\"cheesy rider\""
+      },
+      {
+        "term": "b.substring(7)",
+        "definition": "\"Rider\""
+      },
+      {
+        "term": "b.substring(0, 6)",
+        "definition": "\"Cheesy\""
+      },
+      {
+        "term": "b.replace(\"Cheesy\", \"Easy\")",
+        "definition": "\"Easy Rider\""
+      }
+    ],
+    "feedback": "Each of these returns a NEW String and leaves b as it was. substring(7) runs from index 7 to the end; substring(0, 6) stops before index 6. replace swaps every occurrence of the first text for the second."
+  },
+  {
+    "question": "String b = \"Cheesy Rider\";\n\nWhich of these calls return true?",
+    "correct": [
+      "b.contains(\"Rider\")",
+      "b.endsWith(\"Rider\")",
+      "b.equalsIgnoreCase(\"CHEESY RIDER\")"
+    ],
+    "incorrect": [
+      "b.startsWith(\"cheesy\")",
+      "b.contains(\"rider\")",
+      "b.equals(\"cheesy rider\")"
+    ],
+    "feedback": "contains, startsWith, endsWith and equals all care about capital letters, so \"rider\" is not found in \"Cheesy Rider\" and \"cheesy\" is not how it starts. equalsIgnoreCase is the one that treats capitals and small letters alike."
+  },
+  {
+    "type": "code_trace",
+    "question": "String methods return Strings, so they can be chained. Read left to right: what does this print?",
+    "code": "String s = \"  Big BOB  \".trim().toLowerCase();\nSystem.out.println(s);",
+    "language": "java",
+    "correct": [
+      "big bob"
+    ],
+    "case_sensitive": true,
+    "feedback": "trim() removes the spaces at both ends and returns \"Big BOB\". toLowerCase() is then called on THAT result and returns \"big bob\". Each call in a chain works on whatever the call before it returned. The space in the middle is not at an end, so trim leaves it."
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace the String method calls. What does this program print?",
+    "code": "String name = \"orc\";\nname.toUpperCase();\nString loud = name + \"!\";\nSystem.out.println(loud);",
+    "language": "java",
+    "correct": [
+      "orc!"
+    ],
+    "case_sensitive": true,
+    "feedback": "A String is immutable: no method can alter it. toUpperCase() hands its result back as a return value, and the second line throws that value away, so name is still \"orc\". To keep the change you must store it, for example name = name.toUpperCase();"
+  },
+  {
+    "type": "code_line",
+    "question": "The String variable s may have spaces at both ends. Write the statement that makes s hold the text without those spaces.",
+    "language": "java",
+    "correct": [
+      "s = s.trim();",
+      "s = s.strip();"
+    ],
+    "case_sensitive": true,
+    "feedback": "Calling s.trim(); alone achieves nothing, because a String method never alters the String it is called on; it returns its result. Assign that result back to the variable: s = s.trim(); (strip() is the newer method and also handles Unicode spaces; either is fine here.)"
   },
   {
     "question": "Given String name = \"Aria\"; which of these chained expressions compile?",
@@ -572,105 +578,6 @@
       "tolerance_abs": 0
     },
     "feedback_template": "substring({{a}}, {{b}}) keeps the characters from index {{a}} up to but not including index {{b}}, which is {{expected}} characters, and length() counts them. Because the end index is excluded, the count is simply end minus start. word itself still holds all ten letters."
-  },
-  {
-    "question": "A method has worked out both the smallest value, lo, and the largest value, hi, in an array. The caller needs both. Which approach works in Java?",
-    "correct": [
-      "Return one object, such as a record, that holds both values"
-    ],
-    "incorrect": [
-      "Declare the return type as int, int and write return lo, hi;",
-      "Write return lo; and then return hi; on the next line",
-      "Store them in two extra int parameters for the caller to read"
-    ],
-    "feedback": "A Java method returns exactly one value, so two results have to travel inside one object. There is no return lo, hi; syntax. A second return statement can never run, because the first one already ended the method (the compiler calls it unreachable). And int parameters are copies, so assigning to them tells the caller nothing."
-  },
-  {
-    "type": "npc_demo",
-    "question": "NPC: Returning two things in one bundle",
-    "npc": "nia",
-    "intro": "Nia ties two tagged pouches together with a single gold thread. “A method may hand back one thing. So when I need two, I make them one thing.”",
-    "steps": [
-      {
-        "say": "Say a method must report both the gold and the gems found in a chest. I bundle them into one object, and a record is the shortest way to describe such a bundle:\nrecord Loot(int gold, int gems) {}\nThat single line declares a new type named Loot with two parts, gold and gems.",
-        "beats": [
-          {
-            "say": "Say a method must report both the gold and the gems found in a chest. I bundle them into one object, and a record is the shortest way to describe such a bundle."
-          },
-          {
-            "code": "record Loot(int gold, int gems) {}",
-            "language": "java"
-          },
-          {
-            "say": "That single line declares a new type named Loot with two parts, gold and gems."
-          }
-        ]
-      },
-      {
-        "say": "Now Loot can be a return type:\nstatic Loot open(int level) { return new Loot(level * 10, level * 2); }\nnew Loot(...) builds one bundle from two values, in the order the record lists them, and return hands the whole bundle back.",
-        "beats": [
-          {
-            "say": "Now Loot can be a return type."
-          },
-          {
-            "code": "static Loot open(int level) {\n    return new Loot(level * 10, level * 2);\n}",
-            "language": "java"
-          },
-          {
-            "say": "new Loot(...) builds one bundle from two values, in the order the record lists them, and return hands the whole bundle back."
-          }
-        ]
-      },
-      {
-        "say": "The caller stores the bundle, then reads each part by calling an accessor named after it, parentheses included:\nLoot found = open(3);\nSystem.out.println(found.gold());\nThat prints 30.",
-        "beats": [
-          {
-            "say": "The caller stores the bundle, then reads each part by calling an accessor named after it, parentheses included."
-          },
-          {
-            "code": "Loot found = open(3);\nSystem.out.println(found.gold());",
-            "language": "java"
-          },
-          {
-            "say": "That prints 30."
-          }
-        ],
-        "check": {
-          "prompt": "What does found.gems() give?",
-          "answer": "6",
-          "wrong": [
-            "30",
-            "3"
-          ],
-          "why": "open(3) built new Loot(30, 6). gems is the second part of the record, so the accessor gems() returns 6."
-        }
-      }
-    ],
-    "outro": "“The next monster has torn two pieces out of a method that returns a record. Put them back.”"
-  },
-  {
-    "type": "cloze",
-    "prompt": "This method returns the smallest and the largest score together. Fill in the two missing pieces.",
-    "question": "record MinMax(int min, int max) {}\n\nstatic MinMax range(int[] a) {\n    int lo = a[0], hi = a[0];\n    for (int v : a) {\n        if (v < lo) lo = v;\n        if (v > hi) hi = v;\n    }\n    return {{1}} MinMax(lo, hi);\n}\n\nMinMax r = range(scores);\nSystem.out.println(r.{{2}});   // prints the largest score",
-    "language": "java",
-    "blanks": [
-      {
-        "accept": [
-          "new"
-        ],
-        "hint": "keyword",
-        "case_sensitive": true
-      },
-      {
-        "accept": [
-          "max()",
-          "max( )"
-        ],
-        "hint": "accessor call",
-        "case_sensitive": true
-      }
-    ],
-    "feedback": "new MinMax(lo, hi) creates one record object carrying both numbers, and the single return hands it back. A record gives you an accessor method for each part, named exactly like the part, so the largest value is read with r.max() and the smallest with r.min(). They are method calls, so the parentheses are required."
   },
   {
     "type": "npc_demo",
@@ -728,6 +635,28 @@
     "outro": "“The next monster adds where I multiplied, and starts from a different number. Write the waiting calls down the page, then fill them in from the bottom.”"
   },
   {
+    "type": "cloze",
+    "question": "Every recursive method needs two parts. The {{1}} case answers directly, without calling the method again. The {{2}} case calls the method again on a smaller version of the problem.",
+    "blanks": [
+      {
+        "accept": [
+          "base",
+          "stopping",
+          "simple"
+        ],
+        "hint": "kind of case"
+      },
+      {
+        "accept": [
+          "recursive",
+          "recursion"
+        ],
+        "hint": "kind of case"
+      }
+    ],
+    "feedback": "The base case is where the calling stops. The recursive case does a little of the work and hands the rest to another call of the same method, and each of those calls has to move toward the base case. Leave the base case out, or never reach it, and the calls go on until the program runs out of room: a StackOverflowError."
+  },
+  {
     "type": "dynamic_numeric",
     "question": "What does this print?\n\nstatic int sum(int n) {\n    if (n == 0) return 0;\n    return n + sum(n - 1);\n}\n\nSystem.out.println(sum({{n}}));",
     "variables": {
@@ -743,9 +672,31 @@
     "feedback_template": "sum({{n}}) waits for sum of one less, which waits in turn, all the way down to sum(0), the base case, which returns 0. On the way back each call adds its own n, so the result is every whole number from 1 to {{n}} added together: {{expected}}."
   },
   {
+    "type": "code_trace",
+    "question": "Here the print comes BEFORE the recursive call. What does this program print? (Keep the line breaks.)",
+    "code": "static void down(int n) {\n    if (n <= 0) {\n        System.out.println(\"Go\");\n    } else {\n        System.out.println(n);\n        down(n - 1);\n    }\n}\n\ndown(2);",
+    "language": "java",
+    "correct": [
+      "2\n1\nGo"
+    ],
+    "case_sensitive": true,
+    "feedback": "down(2) prints 2 and then calls down(1), which prints 1 and calls down(0). That is the base case: it prints Go and makes no further call. Because each call prints before it calls again, the numbers come out counting down."
+  },
+  {
+    "type": "code_trace",
+    "question": "The print statement comes AFTER the recursive call. What does the program print?",
+    "code": "static void count(int n) {\n    if (n == 0) return;\n    count(n - 1);\n    System.out.print(n + \" \");\n}\n\ncount(3);",
+    "language": "java",
+    "correct": [
+      "1 2 3"
+    ],
+    "case_sensitive": true,
+    "feedback": "count(3) calls count(2) before it prints anything, and count(2) calls count(1) first, and so on down to count(0), which just returns. Only then do the waiting calls resume, innermost first: count(1) prints 1, then count(2) prints 2, then count(3) prints 3. Moving the print above the recursive call would give 3 2 1 instead."
+  },
+  {
     "question": "Someone deletes the if line from a recursive method, leaving the code below. What happens when main calls total(3)?\nstatic int total(int n) {\n    return n + total(n - 1);\n}",
     "correct": [
-      "It calls itself until the program crashes with a StackOverflowError"
+      "It calls itself until it crashes with a StackOverflowError"
     ],
     "incorrect": [
       "It returns 6, because the additions still happen in order",
@@ -768,15 +719,26 @@
     "feedback": "The base case has to be tested BEFORE the recursive call; placed after it, the call would run first every time and the recursion would never end. rest must be declared before the line that multiplies by it. With the base case first, each call either answers at once or asks for a smaller factorial and finishes the job when that comes back."
   },
   {
-    "type": "code_trace",
-    "question": "The print statement comes AFTER the recursive call. What does the program print?",
-    "code": "static void count(int n) {\n    if (n == 0) return;\n    count(n - 1);\n    System.out.print(n + \" \");\n}\n\ncount(3);",
-    "language": "java",
-    "correct": [
-      "1 2 3"
-    ],
-    "case_sensitive": true,
-    "feedback": "count(3) calls count(2) before it prints anything, and count(2) calls count(1) first, and so on down to count(0), which just returns. Only then do the waiting calls resume, innermost first: count(1) prints 1, then count(2) prints 2, then count(3) prints 3. Moving the print above the recursive call would give 3 2 1 instead."
+    "type": "dynamic_numeric",
+    "question": "What does this print?\n\nstatic int discount(int burgers) {\n    if (burgers < 10) {\n        return 0;\n    } else if (burgers >= 50) {\n        return 25;\n    } else {\n        return 5 + discount(burgers - 10);\n    }\n}\n\nSystem.out.println(discount({{b}}));",
+    "variables": {
+      "b": {
+        "values": [
+          5,
+          15,
+          25,
+          35,
+          45,
+          60
+        ]
+      }
+    },
+    "answer": {
+      "expr": "min(25, 5 * floorDiv(b, 10))",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "This method has two base cases: under 10 burgers returns 0, and 50 or more returns 25. In between, each call adds 5 and asks about 10 fewer burgers, so the 5s pile up until a base case is reached. For {{b}} burgers that comes to {{expected}}."
   },
   {
     "type": "dynamic_numeric",
@@ -800,5 +762,660 @@
     },
     "allow_expression": false,
     "feedback_template": "Each call chops the last digit off with n / 10 and adds 1 for it. The base case, n < 10, is a single remaining digit and counts as 1. So depth counts the digits of {{n}}, which is {{expected}}. Trace it as a chain of waiting calls, then add the 1s on the way back."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Every word of the method line",
+    "npc": "nia",
+    "intro": "Nia chalks one line across the top of the wall. “You have been handed lines like this since your first hour. Now you can read every word of one — which means you know exactly what you owe it.”",
+    "steps": [
+      {
+        "say": "The type before the name is a promise: whatever you return has to be of that type. The parameter arrives already holding a value.",
+        "beats": [
+          {
+            "code": "public static double calculateTip(double billAmount) {\n    // you write this part\n}",
+            "language": "java"
+          },
+          {
+            "say": "The double before the name is a promise: whatever this method returns has to be a double. billAmount is a parameter, and it arrives already holding the bill."
+          },
+          {
+            "say": "So the body has one job: work out the tip from billAmount and return it."
+          }
+        ],
+        "check": {
+          "prompt": "A method line begins  public static boolean isLargeOrder(int itemCount)  What does the body have to hand back?",
+          "answer": "true or false",
+          "wrong": [
+            "A whole number",
+            "Nothing at all"
+          ],
+          "why": "The return type is boolean, so every path through the body has to end by returning true or false. The int is the type of what comes IN."
+        }
+      },
+      {
+        "say": "A comparison already IS a boolean, so a yes-or-no method can return it directly. No if is needed.",
+        "beats": [
+          {
+            "say": "A method that answers yes or no returns a boolean. And a comparison already IS a boolean, so it can be returned directly."
+          },
+          {
+            "code": "return itemCount >= 5;",
+            "language": "java"
+          },
+          {
+            "say": "No if, no “== true”. The rest is as before: Run costs nothing, and only Submit counts."
+          }
+        ],
+        "check": {
+          "prompt": "hour is an int. Which body is all that  isOpen(int hour)  needs, if the shop is open from 6 up to and including 23?",
+          "answer": "return hour >= 6 && hour <= 23;",
+          "wrong": [
+            "if (hour >= 6 && hour <= 23);",
+            "print(hour >= 6 && hour <= 23);"
+          ],
+          "why": "The two comparisons joined by && give true or false, and return hands that straight back. An if with nothing after it returns nothing, and printing is not returning."
+        }
+      }
+    ],
+    "outro": "“These come from the order system at the burger counter. One method each: read the line, keep its promise.”"
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a welcome message for a customer, of the form  Welcome to BurgerPalace, Sarah!",
+    "signature": "public static String welcomeCustomer(String customerName)",
+    "tests": [
+      {
+        "args": [
+          "Sarah"
+        ],
+        "expect": "Welcome to BurgerPalace, Sarah!"
+      },
+      {
+        "args": [
+          "Mike"
+        ],
+        "expect": "Welcome to BurgerPalace, Mike!"
+      },
+      {
+        "args": [
+          "Emma"
+        ],
+        "expect": "Welcome to BurgerPalace, Emma!"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": "Welcome to BurgerPalace, !"
+      }
+    ],
+    "solution": "return \"Welcome to BurgerPalace, \" + customerName + \"!\";",
+    "hint": "Join three pieces with +: the opening text, the customer's name, and the exclamation mark.",
+    "feedback": "Three pieces joined with +. The comma and the space after it belong inside the first pair of quotes — Java adds nothing between the pieces for you."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a 15% tip on the bill.",
+    "signature": "public static double calculateTip(double billAmount)",
+    "tests": [
+      {
+        "args": [
+          20
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          50
+        ],
+        "expect": 7.5
+      },
+      {
+        "args": [
+          8
+        ],
+        "expect": 1.2
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          100
+        ],
+        "expect": 15
+      }
+    ],
+    "solution": "return billAmount * 0.15;",
+    "hint": "15% of a number is the number multiplied by 0.15.",
+    "feedback": "A percentage is a multiplication: 15% is 0.15. The method line promises a double, and a double times a double is a double, so the result can be returned as it is."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "An order is large when it has 5 or more items. Return true if the order is large.",
+    "signature": "public static boolean isLargeOrder(int itemCount)",
+    "tests": [
+      {
+        "args": [
+          3
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          5
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          1
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          8
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          4
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "return itemCount >= 5;",
+    "hint": "Return the comparison itself. >= means “greater than or equal to”.",
+    "feedback": "The comparison already gives true or false, so return it directly: no if is needed. “5 or more” includes 5, which is why it is >= and not >."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the discount message for a customer's age. Customers aged 65 or over get  Senior discount: 10% off!  Customers aged 18 to 24 get  Student discount: 5% off!  Everyone else gets  No discount available.",
+    "signature": "public static String getDiscountMessage(int customerAge)",
+    "tests": [
+      {
+        "args": [
+          70
+        ],
+        "expect": "Senior discount: 10% off!"
+      },
+      {
+        "args": [
+          22
+        ],
+        "expect": "Student discount: 5% off!"
+      },
+      {
+        "args": [
+          35
+        ],
+        "expect": "No discount available."
+      },
+      {
+        "args": [
+          17
+        ],
+        "expect": "No discount available."
+      },
+      {
+        "args": [
+          65
+        ],
+        "expect": "Senior discount: 10% off!"
+      },
+      {
+        "args": [
+          18
+        ],
+        "expect": "Student discount: 5% off!"
+      },
+      {
+        "args": [
+          24
+        ],
+        "expect": "Student discount: 5% off!"
+      },
+      {
+        "args": [
+          25
+        ],
+        "expect": "No discount available."
+      },
+      {
+        "args": [
+          64
+        ],
+        "expect": "No discount available."
+      }
+    ],
+    "solution": "if (customerAge >= 65) {\n    return \"Senior discount: 10% off!\";\n} else if (customerAge >= 18 && customerAge <= 24) {\n    return \"Student discount: 5% off!\";\n} else {\n    return \"No discount available.\";\n}",
+    "hint": "An if / else if / else chain. The student range needs two comparisons joined with &&.",
+    "feedback": "Each branch returns, and the final else guarantees that every age gets an answer — which is what satisfies Java that the method always returns. The edges are the cases worth checking: 17 and 18, 24 and 25, 64 and 65."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "A phone number is valid when it has exactly 10 characters. Return true if the number is valid.",
+    "signature": "public static boolean isValidPhone(String phoneNumber)",
+    "tests": [
+      {
+        "args": [
+          "5551234567"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "555123456"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "15551234567"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "5551234"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "4567891230"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "return phoneNumber.length() == 10;",
+    "hint": "A String knows how long it is: .length() — with the parentheses.",
+    "feedback": "length() is a method that returns an int, so its result can be compared straight away with ==. For a String, length needs its parentheses."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Make an order number from a customer's name: the first 3 letters of the name in CAPITALS, followed by 001. If the name has fewer than 3 letters, use the whole name. Alice gives ALI001.",
+    "signature": "public static String generateOrderNumber(String customerName)",
+    "tests": [
+      {
+        "args": [
+          "Alice"
+        ],
+        "expect": "ALI001"
+      },
+      {
+        "args": [
+          "Bob"
+        ],
+        "expect": "BOB001"
+      },
+      {
+        "args": [
+          "Charlie"
+        ],
+        "expect": "CHA001"
+      },
+      {
+        "args": [
+          "Ed"
+        ],
+        "expect": "ED001"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": "001"
+      }
+    ],
+    "solution": "if (customerName.length() >= 3) {\n    return customerName.substring(0, 3).toUpperCase() + \"001\";\n} else {\n    return customerName.toUpperCase() + \"001\";\n}",
+    "hint": "substring(0, 3) takes the first three characters, but fails on a shorter name, so check the length first. toUpperCase() can be chained on the end.",
+    "feedback": "substring(0, 3) throws an exception when the name has fewer than three characters, so the length is checked first. The calls chain left to right: take the piece, then make it capitals, then join 001 onto the end."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the name of a menu item with its letters in reverse order: Burger gives regruB.",
+    "signature": "public static String reverseOrderName(String itemName)",
+    "tests": [
+      {
+        "args": [
+          "Burger"
+        ],
+        "expect": "regruB"
+      },
+      {
+        "args": [
+          "Pizza"
+        ],
+        "expect": "azziP"
+      },
+      {
+        "args": [
+          "a"
+        ],
+        "expect": "a"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": ""
+      },
+      {
+        "args": [
+          "Fries"
+        ],
+        "expect": "seirF"
+      }
+    ],
+    "solution": "String reversed = \"\";\nfor (int i = itemName.length() - 1; i >= 0; i--) {\n    reversed += itemName.charAt(i);\n}\nreturn reversed;",
+    "hint": "Start with an empty String. Loop from the last index, length() - 1, down to 0, joining on itemName.charAt(i) each time.",
+    "feedback": "A text-building accumulator, run backwards. The loop starts at length() - 1, the last valid index, and counts down to 0, joining one character on each pass. For an empty name the loop never runs and \"\" is already the answer."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "A meal deal takes $2.00 off when a burger and a drink are bought together. Return the price of the deal.",
+    "signature": "public static double calculateMealDeal(double burgerPrice, double drinkPrice)",
+    "tests": [
+      {
+        "args": [
+          8.5,
+          2.5
+        ],
+        "expect": 9
+      },
+      {
+        "args": [
+          12.5,
+          3.25
+        ],
+        "expect": 13.75
+      },
+      {
+        "args": [
+          6.75,
+          2
+        ],
+        "expect": 6.75
+      },
+      {
+        "args": [
+          15.25,
+          4
+        ],
+        "expect": 17.25
+      },
+      {
+        "args": [
+          10,
+          2.75
+        ],
+        "expect": 10.75
+      }
+    ],
+    "solution": "return burgerPrice + drinkPrice - 2.00;",
+    "hint": "Add the two prices, then take 2.00 away.",
+    "feedback": "Two parameters, each arriving with its own value, used in one expression. The order of the arguments in a call decides which price lands in which parameter — here it happens not to matter, because addition gives the same total either way."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Check a coupon. The code SAVE10 is valid only on orders of more than $20. The code STUDENT5 is valid on any order. No other code is valid. Return true if the coupon can be used.",
+    "signature": "public static boolean isValidCoupon(String couponCode, double orderAmount)",
+    "tests": [
+      {
+        "args": [
+          "SAVE10",
+          25
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "SAVE10",
+          15
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "STUDENT5",
+          8.5
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "INVALID",
+          30
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "STUDENT5",
+          50
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "SAVE10",
+          20
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "save10",
+          25
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "if (couponCode.equals(\"SAVE10\") && orderAmount > 20.0) {\n    return true;\n} else if (couponCode.equals(\"STUDENT5\")) {\n    return true;\n} else {\n    return false;\n}",
+    "hint": "Compare the code with .equals(). SAVE10 needs a second test, joined with &&.",
+    "feedback": "Text is compared with .equals(), which cares about capital letters, so save10 is not SAVE10. “More than $20” is > and not >=, so an order of exactly 20 does not qualify. The whole body can also be one return: the two valid cases joined with ||."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Apply a group discount to a bill. Groups of 10 or more get 15% off; groups of 5 to 9 get 10% off; smaller groups pay the full amount. Return what the group pays.",
+    "signature": "public static double calculateGroupDiscount(double totalAmount, int groupSize)",
+    "tests": [
+      {
+        "args": [
+          50,
+          12
+        ],
+        "expect": 42.5
+      },
+      {
+        "args": [
+          30,
+          6
+        ],
+        "expect": 27
+      },
+      {
+        "args": [
+          25,
+          3
+        ],
+        "expect": 25
+      },
+      {
+        "args": [
+          80,
+          8
+        ],
+        "expect": 72
+      },
+      {
+        "args": [
+          100,
+          15
+        ],
+        "expect": 85
+      },
+      {
+        "args": [
+          40,
+          5
+        ],
+        "expect": 36
+      },
+      {
+        "args": [
+          40,
+          10
+        ],
+        "expect": 34
+      },
+      {
+        "args": [
+          40,
+          4
+        ],
+        "expect": 40
+      },
+      {
+        "args": [
+          40,
+          9
+        ],
+        "expect": 36
+      }
+    ],
+    "solution": "if (groupSize >= 10) {\n    return totalAmount * 0.85;\n} else if (groupSize >= 5) {\n    return totalAmount * 0.90;\n} else {\n    return totalAmount;\n}",
+    "hint": "Test the largest group first. 15% off means paying 85% of the bill: multiply by 0.85.",
+    "feedback": "The most demanding test goes first: asked the other way round, a group of 12 would be caught by “5 or more” and never reach the better discount. Taking 15% off is the same as paying 85%, so one multiplication does it."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Suggest dessert when the customer has a main course and has spent more than $10 — or when they have spent more than $25, whatever they ordered. Return true if dessert should be suggested.",
+    "signature": "public static boolean shouldSuggestDessert(boolean hasMainCourse, double orderValue)",
+    "tests": [
+      {
+        "args": [
+          true,
+          15
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          false,
+          30
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          true,
+          8.5
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          false,
+          12
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          true,
+          28
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          true,
+          10
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          false,
+          25
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "return (hasMainCourse && orderValue > 10.0) || orderValue > 25.0;",
+    "hint": "Two ways to qualify, joined with ||. The first way needs two things at once: put it in parentheses and join them with &&.",
+    "feedback": "Two ways to qualify, joined with ||; the first way is itself two conditions joined with &&. The parentheses say which tests belong together. A boolean parameter is already true or false, so it is used as it is: hasMainCourse, not hasMainCourse == true."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the sum 1 + 2 + … + n, written as a method that calls itself. If n is 0 or less, return 0.",
+    "signature": "public static int sumUpTo(int n)",
+    "tests": [
+      {
+        "args": [
+          5
+        ],
+        "expect": 15
+      },
+      {
+        "args": [
+          10
+        ],
+        "expect": 55
+      },
+      {
+        "args": [
+          1
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          4
+        ],
+        "expect": 10
+      },
+      {
+        "args": [
+          -3
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "if (n <= 0) {\n    return 0;\n}\nreturn n + sumUpTo(n - 1);",
+    "hint": "Base case: if n is 0 or less, return 0. Otherwise the answer is n plus the sum up to n - 1.",
+    "feedback": "The base case answers directly: nothing to add when n is 0 or less. The recursive case does one piece of the work — adding n — and hands the rest to sumUpTo(n - 1), which is a smaller version of the same problem. Each call moves one step closer to the base case."
   }
 ]

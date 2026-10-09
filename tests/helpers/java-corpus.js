@@ -388,6 +388,37 @@ export const AGREES = {
       'callEarly(5)', 'callEarly(-5)', 'sumDigits(98765)', 'power(3, 13)', 'power(2, 31)', 'hanoi(20)', 'binarySearch(new int[] {1, 3, 5, 7, 9, 11}, 7, 0, 5)', 'binarySearch(new int[] {1, 3, 5}, 4, 0, 2)',
       'instanceCallsStatic(4)', 'modifiers(4)', 'fact(fact(3))', 'two(fact(3), fib(6))'],
   },
+  'overloading: the same name with different parameter types': {
+    methods: J`
+      String kind(int x) { return "int"; }
+      String kind(double x) { return "double"; }
+      String kind(String x) { return "String"; }
+      String kind(char x) { return "char"; }
+      String kind(long x) { return "long"; }
+      String kind(boolean x) { return "boolean"; }
+      String kind(int[] x) { return "int[]"; }
+      String kind() { return "nothing"; }
+      String kind(int a, int b) { return "int,int"; }
+      String kind(int a, double b) { return "int,double"; }
+      String kind(String a, int b) { return "String,int"; }
+      String kind(int a, String b) { return "int,String"; }
+      int half(int x) { return x / 2; }
+      double half(double x) { return x / 2; }
+      String wide(double x) { return "double"; }
+      String wide(long x) { return "long"; }
+      String only(double x) { return "double " + x; }
+      String order(String burger) { return "1x " + burger; }
+      String order(String burger, int qty) { return qty + "x " + burger; }
+      String order(String burger, int qty, String note) { return qty + "x " + burger + " (" + note + ")"; }
+      int twice(int n) { return n * 2; }
+      String twice(String s) { return s + s; }
+      String chain() { return twice(twice("ab")) + twice(twice(3)); }
+    `,
+    calls: ['kind(1)', 'kind(1.0)', 'kind("s")', "kind('c')", 'kind(1L)', 'kind(true)', 'kind(new int[1])', 'kind()', 'kind(1, 2)', 'kind(1, 2.0)', 'kind("a", 1)', 'kind(1, "a")',
+      "kind('a', 'b')", "kind('a', 2.5)", 'kind(1 + 1L)', "kind('a' + 1)", 'kind(7 / 2)', 'kind(7 / 2.0)', 'kind("" + 1)', 'kind((char) 65)', 'kind(1 < 2)', 'kind(Math.round(2.5))', 'kind(Math.sqrt(4))',
+      'half(7)', 'half(7.0)', "half('a')", 'half(7L)', 'wide(1)', "wide('a')", 'wide(1L)', 'wide(1.5)', 'only(3)', "only('a')", 'only(3L)',
+      'order("Fry")', 'order("Fry", 3)', 'order("Fry", 3, "no salt")', 'chain()', 'twice(4) + twice("4")'],
+  },
   'throwing, and which exception stops a method': {
     methods: J`
       int check(int n) { if (n < 0) throw new IllegalArgumentException("negative: " + n); return n; }
@@ -785,6 +816,14 @@ export const REJECTS = {
   'a method with the wrong capital letter': J`int helper(int a) { return a; } int f(int a) { return Helper(a); }`,
   'a variable with the wrong capital letter': J`int f(int count) { return Count; }`,
   'the same method twice': J`int f(int a) { return a; } int f(int a) { return a + 1; }`,
+  'two methods that differ only in their return type': J`int f(int a) { return a; } double f(int a) { return a; }`,
+  'two methods that differ only in their parameter names': J`int f(int a) { return a; } int f(int b) { return b; }`,
+  'two methods that differ only in static': J`int f(int a) { return a; } static int f(int a) { return a; }`,
+  'an overloaded call that fits two methods equally': J`int g(int a, double b) { return 1; } int g(double a, int b) { return 2; } int f() { return g(1, 1); }`,
+  'an overloaded call that fits none': J`int g(int a) { return 1; } int g(String a) { return 2; } int f() { return g(1.5); }`,
+  'an overloaded call with the wrong number of arguments': J`int g(int a) { return 1; } int g(int a, int b) { return 2; } int f() { return g(); }`,
+  'null passed where two overloads take objects': J`int g(String a) { return 1; } int g(int[] a) { return 2; } int f() { return g(null); }`,
+  'an overload chosen for its argument, then misused': J`int g(int a) { return 1; } String g(String a) { return a; } int f() { return g("x"); }`,
   'a String method that does not exist': J`int f(String s) { return s.size(); }`,
   'string with a small s': J`string f() { return "a"; }`,
   'a declaration as the body of an if': J`int f(int a) { if (a > 0) int b = 1; return a; }`,
@@ -892,7 +931,6 @@ export const REFUSES = {
   'instanceof': { methods: J`boolean f(String s) { return s instanceof String; }`, calls: ['f("a")'] },
   'assert': { methods: J`int f(int a) { assert a > 0; return a; }`, calls: ['f(1)'] },
   'a C-style array declaration': { methods: J`int f() { int xs[] = {1, 2}; return xs[0]; }`, calls: ['f()'] },
-  'two methods with the same name and the same number of parameters': { methods: J`int g(int a) { return 1; } int g(String a) { return 2; } int f() { return g(1); }`, calls: ['f()'] },
   'varargs': { methods: J`int f(int... xs) { return xs.length; }`, calls: ['f(1, 2)'] },
   'a text block': { methods: 'String f() { return """\n  hi\n  """; }', calls: ['f()'] },
   'a final variable given its value later': { methods: J`int f() { final int x; x = 5; return x; }`, calls: ['f()'] },
