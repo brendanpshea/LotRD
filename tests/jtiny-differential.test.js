@@ -13,7 +13,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { findJdk, runOnJdk, runOnJtiny, caseForProblem } from './helpers/jdk.js';
-import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, interestingDoubles } from './helpers/java-corpus.js';
+import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, interestingDoubles } from './helpers/java-corpus.js';
 import { javaDouble } from '../src/jtiny.js';
 
 const jdk = findJdk();
@@ -27,13 +27,17 @@ const FUZZ_SEED = 20261008;
 const FUZZ_CASES = 60;      // × 12 expressions × 3 argument sets = 2,160 evaluations
 const FLOW_CASES = 600;     // method bodies: does it compile, and then what does it return
 const TYPE_CASES = 900;     // expressions built with no regard for type: does it compile
+const BOX_CASES = 600;      // the same, with Integer, Double and the other wrappers among them
+const FORMAT_CASES = 400;   // String.format and printf with formats made at random
+const ROUNDING_CASES = 6;   // × 150 doubles × 9 ways of writing each: where %.2f rounds
 
 // Everything goes to the JDK in one process: starting a JVM costs more than all the cases together.
 const agree = Object.entries({ ...AGREES, ...PROBLEMS });
 const reject = Object.entries(REJECTS).map(([name, methods]) => [name, { methods, calls: [] }]);
 const refuse = Object.entries(REFUSES);
 const fuzz = fuzzCases(FUZZ_SEED, FUZZ_CASES);
-const generated = [...flowCases(FUZZ_SEED, FLOW_CASES), ...typeCases(FUZZ_SEED, TYPE_CASES)];
+const generated = [...flowCases(FUZZ_SEED, FLOW_CASES), ...typeCases(FUZZ_SEED, TYPE_CASES), ...boxCases(FUZZ_SEED, BOX_CASES),
+  ...formatCases(FUZZ_SEED, FORMAT_CASES), ...roundingCases(FUZZ_SEED, ROUNDING_CASES)];
 const doubles = interestingDoubles(FUZZ_SEED, 1500);
 // A Java method may hold only so much code, so the bit patterns go in several.
 const DOUBLES_PER_METHOD = 800;
@@ -160,7 +164,7 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
   // Java error on what javac accepts; and a different answer. Declining is none of them.
   const BATCH = 100;
   for (let from = 0; from < generated.length; from += BATCH) {
-    const kind = from < FLOW_CASES ? 'method bodies' : 'type puzzles';
+    const kind = from < FLOW_CASES ? 'method bodies' : from < FLOW_CASES + TYPE_CASES + BOX_CASES ? 'type puzzles' : 'formats';
     it(`seed ${FUZZ_SEED}, ${kind} ${from + 1}–${Math.min(from + BATCH, generated.length)}`, () => {
       const disagreements = [];
       let bothRan = 0;
@@ -178,10 +182,11 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
         const want = real.out.split('\n');
         const got = mine.out.split('\n');
         const k = want.findIndex((w, x) => w !== got[x] && got[x] !== '?refused');
-        if (k >= 0) disagreements.push(`${testCase.calls[k]}: Java ${want[k]}, jtiny ${got[k]}\n${testCase.methods}`);
+        // A refusal is one line where Java may have printed several, and then the lines no longer pair up.
+        if (k >= 0 && !(got.includes('?refused') && got.length !== want.length)) disagreements.push(`${testCase.calls[k]}: Java ${want[k]}, jtiny ${got[k]}\n${testCase.methods}`);
       }
       assert.deepEqual(disagreements.slice(0, 3), [], `\n${disagreements.slice(0, 3).join('\n\n')}\n`);
-      assert.ok(bothRan >= 10, `only ${bothRan} of this batch compiled on both sides; the generator has drifted`);
+      assert.ok(bothRan >= Math.min(10, generated.length - from), `only ${bothRan} of this batch compiled on both sides; the generator has drifted`);
     });
   }
 });

@@ -226,6 +226,52 @@ describe('a Java problem: the wording of the errors beginners make', () => {
   });
 });
 
+describe('a Java problem: wrapper objects, null, and formatted text', () => {
+  const HALF = withTests('public Double half(Integer n)', [{ args: [5], expect: 2.5 }, { args: [null], expect: null }]);
+
+  it('a test can hand a method null, and want null back', () => {
+    const outcome = run('if (n == null) {\n    return null;\n}\nreturn n / 2.0;', HALF);
+    assert.deepEqual(outcome.results.map(r => r.passed), [true, true]);
+    assert.equal(outcome.results[1].call, 'half(null)');
+  });
+  it('unboxing a null is a NullPointerException, on the line that did it, and says which value was null', () => {
+    const err = run('double d = 1.0;\nreturn n / 2.0;', HALF).results[1].error;
+    assert.equal(err.message, 'NullPointerException');
+    assert.equal(err.line, 2);
+    assert.match(err.hint, /The Integer being used as an int is null/);
+  });
+  it('== between two Integers is declined, with .equals() offered', () => {
+    const q = withTests('public boolean same(Integer a, Integer b)', [{ args: [5, 5], expect: true }]);
+    const outcome = run('return a == b;', q);
+    assert.match(outcome.error.message, /very same object/);
+    assert.match(outcome.error.hint, /a\.equals\(b\)/);
+  });
+  it('an int does not go into a Double', () => {
+    const outcome = run('Double d = 5;\nreturn d;', HALF);
+    assert.match(outcome.error.message, /Java boxes a double into a Double, and nothing else/);
+    assert.match(outcome.error.hint, /5\.0/);
+  });
+  it('String.format: %.2f rounds, and shows both places', () => {
+    const q = withTests('public String tag(String item, double price)', [{ args: ['Tea', 19.876], expect: 'Tea: $19.88' }, { args: ['Caf', 3], expect: 'Caf: $3.00' }]);
+    assert.deepEqual(run('return String.format("%s: $%.2f", item, price);', q).results.map(r => r.passed), [true, true]);
+  });
+  it('a value that does not fit its % place stops the method the way Java does, and says which place to use', () => {
+    const q = withTests('public String tag(double price)', [{ args: [2.5], expect: '2.50' }]);
+    const err = run('return String.format("%d", price);', q).results[0].error;
+    assert.match(err.message, /^IllegalFormatConversionException/);
+    assert.match(err.hint, /%d is for whole numbers.*%\.2f/);
+  });
+  it('a format this box does not have is declined by name', () => {
+    const q = withTests('public String hex(int n)', [{ args: [255], expect: 'ff' }]);
+    assert.match(run('return String.format("%x", n);', q).error.message, /does not have %x in a format/);
+  });
+  it('printf prints beside the test, like println', () => {
+    const outcome = run('System.out.printf("%d + %d%n", a, b);\nreturn a + b;', withTests(SUM.signature, [{ args: [1, 2], expect: 3 }]));
+    assert.equal(outcome.results[0].passed, true);
+    assert.match(JSON.stringify(outcome.results[0]), /1 \+ 2/);
+  });
+});
+
 describe('a Java problem: a run cannot hang or grow without limit', () => {
   it('an endless loop is stopped, test by test', () => {
     const outcome = run('while (a < 100) { b++; }\nreturn b;', SUM, { limits: { steps: 5000 } });

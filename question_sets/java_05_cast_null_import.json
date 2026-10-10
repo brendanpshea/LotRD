@@ -1,5 +1,83 @@
 [
   {
+    "question": "What does the line import java.util.Scanner; do for the file it appears in?",
+    "correct": [
+      "It lets the file call that class Scanner instead of java.util.Scanner"
+    ],
+    "incorrect": [
+      "It copies the source code of Scanner into the file before compiling",
+      "It downloads the library that contains Scanner if it is not installed",
+      "It loads the Scanner class and runs its setup code before main begins"
+    ],
+    "feedback": "An import is a naming shortcut and nothing more. Every class has a full name that starts with its package (java.util.Scanner); the import lets you use the short name. No code is copied, fetched or run, and importing something you never use costs nothing at run time. Whether a library is present on your machine is a separate matter that an import cannot fix."
+  },
+  {
+    "question": "Which of these import lines compile?",
+    "correct": [
+      "import java.util.Scanner;",
+      "import java.util.*;",
+      "import java.lang.String;"
+    ],
+    "incorrect": [
+      "import Scanner;",
+      "import java.util;",
+      "import java.util.scanner;"
+    ],
+    "feedback": "An import names a type by its full, case-sensitive name, or every type in one package with .* at the end. import Scanner; has no package; import java.util; names a package where a type is expected; java.util.scanner has the wrong capital letter. import java.lang.String; is legal, just pointless, because String is available without it."
+  },
+  {
+    "question": "An ordinary source file declares public class Dice and contains no import lines. Its main method uses Scanner, Random, Math and String. Which names will the compiler fail to find?",
+    "correct": [
+      "Scanner and Random"
+    ],
+    "incorrect": [
+      "Scanner, Random and Math",
+      "All four of them",
+      "None of them"
+    ],
+    "feedback": "In an ordinary class, one package is imported automatically: java.lang, the home of String, Math, System and the wrapper classes. Scanner and Random live in java.util and need import lines. The rule is different for a compact source file, the Java 25 form where you write void main() with no class around it: there the whole java.base module is imported for you, and all four names would work."
+  },
+  {
+    "type": "cloze",
+    "question": "Every class has a full name that begins with its package. Scanner's full name is java.{{1}}.Scanner, String's is java.{{2}}.String, and Random's is java.{{3}}.Random.",
+    "blanks": [
+      {
+        "accept": [
+          "util"
+        ],
+        "hint": "package",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "lang"
+        ],
+        "hint": "package",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "util"
+        ],
+        "hint": "package",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "java.util holds the general-purpose utilities: Scanner, Random, and the collection classes. java.lang holds the types the language itself leans on: String, Math, System, Integer, Object. You can always write the full name instead of importing, as in java.util.Random r = new java.util.Random();"
+  },
+  {
+    "question": "A file with no import lines contains  Scanner input = new Scanner(System.in);  and the compiler reports  error: cannot find symbol.  What is the usual fix?",
+    "correct": [
+      "Add import java.util.Scanner; above the class"
+    ],
+    "incorrect": [
+      "Add import java.lang.Scanner; above the class",
+      "Install the Scanner library next to the JDK",
+      "Declare Scanner as a variable before using it"
+    ],
+    "feedback": "“cannot find symbol” means the compiler met a name it could not place. For a class from the standard library that almost always means a missing import: Scanner lives in java.util, and only java.lang is brought in automatically. Nothing needs installing, since Scanner comes with Java, and it is a class, not a variable."
+  },
+  {
     "question": "Which of these declarations compiles as written?",
     "correct": [
       "double d = 7;"
@@ -49,53 +127,18 @@
     "feedback_template": "A cast to int truncates: it cuts off everything after the decimal point, which moves the value toward zero. It does not round to the nearest whole number, and it does not always go down, so (int) {{x}} is {{expected}}. Negative numbers show the difference: (int) -7.9 is -7, where rounding or flooring would both give -8."
   },
   {
-    "type": "code_trace",
-    "question": "A cast and Math.round treat the same number differently. What does this print?",
-    "code": "double d = 2.5;\nSystem.out.println((int) d);\nSystem.out.println(Math.round(d));\nSystem.out.println(Math.round(-2.5));",
-    "language": "java",
-    "correct": [
-      "2\n3\n-2"
-    ],
-    "case_sensitive": true,
-    "feedback": "(int) 2.5 truncates to 2. Math.round goes to the nearest whole number and breaks a tie by going UP, toward positive infinity: 2.5 becomes 3, and -2.5 becomes -2 (not -3, because -2 is the higher of the two neighbours). Math.round of a double returns a long, which prints as a plain whole number."
-  },
-  {
     "question": "Which of these statements about numeric conversions are true?",
     "correct": [
       "An int value can be assigned to a double variable with no cast",
       "A double value needs an explicit cast to go into an int variable",
-      "Assigning a very large int to a float can silently change the value"
+      "In an int plus a double, the int is widened before the addition"
     ],
     "incorrect": [
       "A long value fits an int variable with no cast if it is small enough",
-      "A char value needs an explicit cast to be assigned to an int variable",
+      "A cast from double to int rounds to the nearest whole number",
       "A float value needs an explicit cast to be assigned to a double variable"
     ],
-    "feedback": "Widening (byte → short → int → long → float → double, and char → int) is automatic because the target can hold the whole RANGE of the source. Narrowing needs a cast, and the compiler judges by type, not by the value that happens to be there: int n = someLong; is rejected even when someLong is 7. Widening is not perfectly lossless, though: a float keeps only about 7 significant digits, so a big int can come out slightly different."
-  },
-  {
-    "question": "No cast appears in this code, and it compiles. What does it print?\nint big = 16777217;\nfloat f = big;\nSystem.out.println((int) f);",
-    "correct": [
-      "16777216"
-    ],
-    "incorrect": [
-      "16777217",
-      "1.6777217E7",
-      "2147483647"
-    ],
-    "feedback": "int → float is a widening conversion, so Java does it silently, but a float has only 24 bits for the digits of a number (about 7 significant decimal digits). 16777217 needs 25 bits, so it is stored as the nearest value a float CAN hold, 16777216. The size of the number survives; its last digit does not. When whole numbers must stay exact, widen to long or double rather than float."
-  },
-  {
-    "question": "A byte holds -128 to 127. What does this print?\nint big = 300;\nbyte b = (byte) big;\nSystem.out.println(b);",
-    "correct": [
-      "44"
-    ],
-    "incorrect": [
-      "127",
-      "300",
-      "A runtime exception"
-    ],
-    "feedback": "A narrowing cast between whole-number types keeps the low-order bits and throws the rest away. 300 is 1 0010 1100 in binary; a byte keeps the last 8 bits, 0010 1100, which is 44 (the same as 300 - 256). Nothing warns you and nothing is thrown: the cast is you telling the compiler you accept the damage. It does not stop at the largest byte, 127, either."
+    "feedback": "Widening (byte → short → int → long → float → double) is automatic, in an assignment and in the middle of an expression, because the bigger type can hold the whole RANGE of the smaller one. Narrowing needs a cast, and the compiler judges by type, not by the value that happens to be there: int n = someLong; is rejected even when someLong is 7. And a cast to int does not round. It truncates: (int) 3.9 is 3."
   },
   {
     "type": "npc_demo",
@@ -224,151 +267,180 @@
     "feedback": "Cast one operand BEFORE the division: (double) sum / count. The cast applies to sum alone, and a double divided by an int is real division. Casting count instead works equally well. What does not work is (double) (sum / count), which divides as ints first and then converts the already-truncated result."
   },
   {
-    "question": "What does this code do?\nint x = 5;\nx += 2.7;\nSystem.out.println(x);",
+    "type": "code_trace",
+    "question": "A cast and Math.round treat the same number differently. What does this print?",
+    "code": "double d = 2.5;\nSystem.out.println((int) d);\nSystem.out.println(Math.round(d));\nSystem.out.println(Math.round(-2.5));",
+    "language": "java",
     "correct": [
-      "It prints 7"
+      "2\n3\n-2"
     ],
-    "incorrect": [
-      "It prints 7.7",
-      "It prints 8",
-      "It does not compile"
-    ],
-    "feedback": "A compound assignment hides a cast. x += 2.7 means x = (int) (x + 2.7): the sum 7.7 is computed as a double and then truncated to 7 on its way back into x. The long form x = x + 2.7; is rejected by the compiler as a lossy conversion, which is why the silent version surprises people. x is still an int, so 7.7 was never possible, and truncation (not rounding) rules out 8."
+    "case_sensitive": true,
+    "feedback": "(int) 2.5 truncates to 2. Math.round goes to the nearest whole number and breaks a tie by going UP, toward positive infinity: 2.5 becomes 3, and -2.5 becomes -2 (not -3, because -2 is the higher of the two neighbours). Math.round of a double returns a long, which prints as a plain whole number."
   },
   {
-    "question": "Given int x = 5; which of these statements compile?",
+    "type": "matching",
+    "question": "Match each expression to exactly what System.out.println shows for it.",
+    "pairs": [
+      {
+        "term": "Math.round(4.5)",
+        "definition": "5"
+      },
+      {
+        "term": "Math.floor(-4.5)",
+        "definition": "-5.0"
+      },
+      {
+        "term": "Math.ceil(-4.5)",
+        "definition": "-4.0"
+      },
+      {
+        "term": "(int) -4.5",
+        "definition": "-4"
+      },
+      {
+        "term": "Math.abs(-4.5)",
+        "definition": "4.5"
+      },
+      {
+        "term": "Math.sqrt(16)",
+        "definition": "4.0"
+      }
+    ],
+    "feedback": "Math.round returns a whole-number type (long), so it prints with no decimal point. floor and ceil return doubles, so theirs end in .0: floor goes down to -5.0, ceil goes up to -4.0. The cast truncates toward zero and produces an int, -4. abs only drops the sign, and sqrt returns a double even when the root is exact."
+  },
+  {
+    "question": "Math.round hands back a long. Which of these lines does NOT compile?",
     "correct": [
-      "x += 2.7;",
-      "x = (int) (x + 2.7);",
-      "double d = x;"
+      "int n = Math.round(14.6);"
     ],
     "incorrect": [
-      "x = x + 2.7;",
-      "x = (int) x + 2.7;"
+      "long n = Math.round(14.6);",
+      "int n = (int) Math.round(14.6);",
+      "double n = Math.round(14.6);"
     ],
-    "feedback": "x + 2.7 is a double, and a double may not be assigned to an int without a cast, so x = x + 2.7; fails. In x = (int) x + 2.7; the cast grabs only x, leaving int + double, which is still a double: same error. Wrapping the whole sum, (int) (x + 2.7), works, and += works because it contains that cast already. double d = x; is ordinary widening."
+    "feedback": "Math.round(14.6) is the long 15, and a long does not go into an int without a cast, however small the number is: the compiler judges by type. Storing it in a long works as it stands, casting it to int works, and storing it in a double works too, because long to double is widening. (Math.floor and Math.ceil return a double instead, which is why their results print with .0.)"
+  },
+  {
+    "type": "code_trace",
+    "question": "The pattern for rounding to two decimal places divides by 100.0. See what a missing .0 does. What does this print?",
+    "code": "double price = 19.876;\nSystem.out.println(Math.round(price * 100.0) / 100.0);\nSystem.out.println(Math.round(price * 100.0) / 100);",
+    "language": "java",
+    "correct": [
+      "19.88\n19"
+    ],
+    "case_sensitive": true,
+    "feedback": "price * 100.0 is 1987.6, and Math.round turns that into the long 1988. Dividing by 100.0 is real division: 19.88. Dividing by 100 is a long divided by an int, which is whole-number division, so the remainder is thrown away and 19 is left. The .0 on the final 100 is what keeps the cents."
+  },
+  {
+    "type": "code_trace",
+    "question": "Most Math methods hand back a double. What does this print?",
+    "code": "int side = (int) Math.sqrt(50);\ndouble p = Math.pow(2, 3);\nSystem.out.println(side);\nSystem.out.println(p);\nSystem.out.println(Math.max(3, 7.5));",
+    "language": "java",
+    "correct": [
+      "7\n8.0\n7.5"
+    ],
+    "case_sensitive": true,
+    "feedback": "Math.sqrt(50) is about 7.07, and the cast truncates it to 7; without the cast, int side = Math.sqrt(50); would not compile. Math.pow always returns a double, so 2 to the power 3 prints as 8.0, not 8. In Math.max(3, 7.5) the int 3 is widened to 3.0 so that two doubles can be compared, and the larger, 7.5, comes back."
   },
   {
     "type": "npc_demo",
-    "question": "NPC: A letter is a number in disguise",
+    "question": "NPC: The counter that rolls over",
     "npc": "ada",
-    "intro": "Ada slides a brass type-wheel across the bench. Every letter on its rim has a small number stamped beneath it.",
+    "intro": "Ada sets a brass counter on the bench, the kind with numbered wheels. Every wheel shows a 9. “Push the lever once more,” she says, “and tell me what you expect to see.”",
     "steps": [
       {
-        "say": "A char is stored as a number, its character code. 'A' is 65, 'B' is 66, and so on up the alphabet.",
+        "say": "An int has a largest value, Integer.MAX_VALUE. Add 1 to it and it wraps around to the smallest int, with no error.",
         "beats": [
           {
-            "say": "A char is stored as a number: its character code. 'A' is 65, 'B' is 66, and so on up the alphabet."
+            "say": "An int is 32 bits, so it has a largest value: 2,147,483,647. Java keeps that number in Integer.MAX_VALUE."
           },
           {
-            "code": "char c = 'A';\nSystem.out.println((int) c);   // 65",
+            "code": "int max = Integer.MAX_VALUE;\nSystem.out.println(max);       // 2147483647\nSystem.out.println(max + 1);   // -2147483648",
             "language": "java"
           },
           {
-            "say": "Casting the char to int shows the number that was there all along."
+            "say": "One more than the largest int is the SMALLEST int. The wheels rolled over. Nothing was thrown and nothing was reported: this is overflow, and it is silent."
           }
         ]
       },
       {
-        "say": "Arithmetic on a char widens it to an int, so the answer is a number, not a letter.",
+        "say": "Two ordinary-looking numbers can overflow when they are added or multiplied.",
         "beats": [
           {
-            "say": "Do arithmetic on a char and Java widens it to an int first. You get a number back, not a letter."
+            "say": "It does not take a constant with a grand name. Two populations will do."
           },
           {
-            "code": "System.out.println(c + 2);   // 67",
+            "code": "int a = 2_000_000_000;\nint b = 1_000_000_000;\nint total = a + b;",
             "language": "java"
+          },
+          {
+            "say": "(The underscores are legal. Java ignores them; they are there for your eyes.)"
           }
         ],
         "check": {
-          "prompt": "How do we turn that 67 back into a letter?",
-          "answer": "Cast the whole sum: (char) (c + 2)",
+          "prompt": "Three billion does not fit in an int. What does total hold?",
+          "answer": "A negative number, and no error is reported",
           "wrong": [
-            "Cast c alone: (char) c + 2",
-            "Do nothing; println will show C"
+            "2,147,483,647, the largest int there is",
+            "Nothing: the program stops with an exception"
           ],
-          "why": "A cast grabs only the one thing to its right, so the sum needs its own parentheses. (char) 67 is 'C'."
+          "why": "Overflow wraps around. The sum runs past the top of the range and comes back in from the bottom, here as -1294967296. Java neither stops nor caps the value."
         }
       },
       {
-        "say": "Lower-case letters work the same way but start elsewhere: 'a' is 97. Same rule as with averages: decide what the cast should wrap, and put parentheses around exactly that."
+        "say": "The cure is to do the arithmetic in long. Cast ONE operand before the operation runs, as you did for division.",
+        "beats": [
+          {
+            "say": "A long has 64 bits, with room for about nine quintillion. But the arithmetic itself has to happen in long."
+          },
+          {
+            "code": "long wrong = a + b;          // int + int overflows, THEN is widened\nlong right = (long) a + b;   // long + int: worked out in long",
+            "language": "java"
+          },
+          {
+            "say": "Same rule as the average: a cast grabs the one thing to its right. Make one operand a long before the + or the * runs, and Java widens the other to match."
+          }
+        ]
       }
     ],
-    "outro": "“The next one starts from 'a' instead of 'A'. Count up from 97.”"
+    "outro": "“The next few have this trap in them. Before you answer, ask what type the arithmetic was DONE in, not what type the answer was stored in.”"
   },
   {
-    "type": "dynamic_numeric",
-    "question": "The char 'a' has the character code 97. What does this print?\nchar c = 'a';\nint n = c + {{k}};\nSystem.out.println(n);",
-    "variables": {
-      "k": {
-        "min": 2,
-        "max": 25
-      }
-    },
-    "answer": {
-      "expr": "97 + k",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "In c + {{k}} the char is widened to its code, 97, and ordinary int addition gives {{expected}}. The result is an int, so a number is printed. To see the letter {{k}} places after 'a' you would cast the sum back: (char) (c + {{k}})."
-  },
-  {
-    "type": "code_trace",
-    "question": "The char 'a' has the code 97. What does this print?",
-    "code": "char c = 'x';\nc += 2;\nSystem.out.println(c);\nSystem.out.println('a' + 1);\nSystem.out.println((char) ('a' + 1));",
-    "language": "java",
+    "question": "What does this print?\nint max = Integer.MAX_VALUE;   // 2147483647\nSystem.out.println(max + 1);",
     "correct": [
-      "z\n98\nb"
-    ],
-    "case_sensitive": true,
-    "feedback": "c += 2 contains a hidden (char) cast, so c stays a char and moves two letters along: x, y, z. 'a' + 1 has no cast: the char is widened to 97 and the int 98 is printed. Wrapping the whole sum in (char) converts 98 back into the letter b. Whether you see a letter or a number depends on the TYPE of the expression handed to println."
-  },
-  {
-    "question": "The variable d is declared as char d = '7'; Which expression gives the int 7?",
-    "correct": [
-      "d - '0'"
+      "-2147483648"
     ],
     "incorrect": [
-      "(int) d",
-      "d + 0",
-      "Integer.parseInt(d)"
+      "2147483648",
+      "2147483647",
+      "Nothing: it throws an exception"
     ],
-    "feedback": "The digit characters '0' to '9' have consecutive codes (48 to 57), so subtracting '0' measures how far d is from zero: 55 - 48 = 7. (int) d and d + 0 both expose the character CODE, 55, not the digit it draws. Integer.parseInt wants a String, so handing it a char does not compile."
+    "feedback": "An int cannot hold 2147483648, and Java does not stop to say so. The value wraps around to the other end of the range and the smallest int, -2147483648, is printed. It does not stick at the maximum either. Overflow is silent, which is what makes it dangerous."
   },
   {
-    "question": "What happens with this code?\nString s = \"42\";\nint n = (int) s;",
+    "question": "int secondsPerYear = 31_536_000;\nA year has about 31.5 billion milliseconds, far too many for an int. Which line stores the right number?",
     "correct": [
-      "It does not compile: a cast cannot turn a String into an int"
+      "long ms = (long) secondsPerYear * 1000;"
     ],
     "incorrect": [
-      "It compiles, and n ends up holding the int value 42",
-      "It compiles, but throws ClassCastException when it runs",
-      "It compiles, and n holds the character code of the '4'"
+      "long ms = secondsPerYear * 1000;",
+      "long ms = (long) (secondsPerYear * 1000);",
+      "int ms = (long) secondsPerYear * 1000;"
     ],
-    "feedback": "A cast converts between types that are already related: number to number, or up and down one class family. A String is an object holding characters, and no cast reaches from there to int, so the compiler rejects the line (\"String cannot be converted to int\"). Reading the digits of a piece of text is a computation, called parsing, and it is done by a method."
+    "feedback": "The multiplication has to be DONE in long. (long) secondsPerYear * 1000 casts one operand first, so Java widens the other and multiplies two longs. Without the cast, int times int overflows before the result is stored in the long. Casting the finished product is too late for the same reason: it widens a number that is already wrong. And a long result does not go into an int variable at all."
   },
   {
-    "type": "code_line",
-    "question": "The String variable s holds text such as \"42\". Write the expression that converts it to an int.",
-    "language": "java",
+    "question": "a and b are ints that may be large. Which of these keep their sum from silently overflowing?",
     "correct": [
-      "Integer.parseInt(s)",
-      "Integer.parseInt(s);",
-      "Integer.valueOf(s)",
-      "Integer.valueOf(s);"
+      "Copying them into long variables and adding those",
+      "Testing b > Integer.MAX_VALUE - a before adding them",
+      "Calling Math.addExact(a, b), which throws instead"
     ],
-    "case_sensitive": true,
-    "feedback": "Integer.parseInt(s) reads the digits in the text and returns an int. It is a static method of the wrapper class Integer, so it is called on the class name. Its cousin Double.parseDouble(s) does the same for decimals. If the text is not a whole number (\"3.5\", \"12abc\", \"\"), parseInt throws NumberFormatException when the line runs."
-  },
-  {
-    "type": "code_trace",
-    "question": "What does this print?",
-    "code": "String a = \"12\";\nString b = \"30\";\nSystem.out.println(a + b);\nSystem.out.println(Integer.parseInt(a) + Integer.parseInt(b));",
-    "language": "java",
-    "correct": [
-      "1230\n42"
+    "incorrect": [
+      "Casting the finished sum to long: (long) (a + b)",
+      "Storing the sum in a long: long sum = a + b;"
     ],
-    "case_sensitive": true,
-    "feedback": "Between two Strings, + joins text: \"12\" + \"30\" is \"1230\". After parsing, a and b are the ints 12 and 30, and + adds them to give 42. This is why input read as text has to be parsed before you do arithmetic with it."
+    "feedback": "Three defences: use a bigger type, so the sum fits; check first (for a positive a, the sum overflows exactly when b is more than the room left above a); or call Math.addExact, which refuses loudly instead of wrapping quietly. The other two change only where the answer is KEPT. a + b is still int plus int, it has already wrapped, and widening a wrong number gives a wrong long."
   },
   {
     "question": "Java already has the primitive type int. Why does it also have the class Integer?",
@@ -413,6 +485,84 @@
       }
     ],
     "feedback": "Autoboxing wraps a primitive in its wrapper object; unboxing takes the primitive back out. The compiler inserts both wherever the types call for it. Most wrapper names are just the primitive capitalised (Double, Boolean, Long); the two exceptions are Integer for int and Character for char."
+  },
+  {
+    "type": "code_trace",
+    "question": "Java boxes and unboxes for you. What does this print?",
+    "code": "Integer jediCount = 42;\nint doubled = jediCount * 2;\nDouble credits = 99.5;\nSystem.out.println(doubled);\nSystem.out.println(credits + jediCount);",
+    "language": "java",
+    "correct": [
+      "84\n141.5"
+    ],
+    "case_sensitive": true,
+    "feedback": "Integer jediCount = 42; boxes the int. In jediCount * 2 Java unboxes it again to do the arithmetic: 84. In credits + jediCount both are unboxed, to the double 99.5 and the int 42, and int plus double is a double: 141.5. With a wrapper you can mostly write what you would write with the primitive."
+  },
+  {
+    "question": "What happens with this code?\nString s = \"42\";\nint n = (int) s;",
+    "correct": [
+      "It does not compile: a cast cannot turn a String into an int"
+    ],
+    "incorrect": [
+      "It compiles, and n ends up holding the int value 42",
+      "It compiles, but throws ClassCastException when it runs",
+      "It compiles, and n holds the character code of the '4'"
+    ],
+    "feedback": "A cast converts between types that are already related: number to number, or up and down one class family. A String is an object holding characters, and no cast reaches from there to int, so the compiler rejects the line (\"String cannot be converted to int\"). Reading the digits of a piece of text is a computation, called parsing, and it is done by a method."
+  },
+  {
+    "type": "code_line",
+    "question": "The String variable s holds text such as \"42\". Write the expression that converts it to an int.",
+    "language": "java",
+    "correct": [
+      "Integer.parseInt(s)",
+      "Integer.parseInt(s);",
+      "Integer.valueOf(s)",
+      "Integer.valueOf(s);"
+    ],
+    "case_sensitive": true,
+    "feedback": "Integer.parseInt(s) reads the digits in the text and returns an int. It is a static method of the wrapper class Integer, so it is called on the class name. Its cousin Double.parseDouble(s) does the same for decimals. If the text is not a whole number (\"3.5\", \"12abc\", \"\"), parseInt throws NumberFormatException when the line runs."
+  },
+  {
+    "type": "code_trace",
+    "question": "What does this print?",
+    "code": "String a = \"12\";\nString b = \"30\";\nSystem.out.println(a + b);\nSystem.out.println(Integer.parseInt(a) + Integer.parseInt(b));",
+    "language": "java",
+    "correct": [
+      "1230\n42"
+    ],
+    "case_sensitive": true,
+    "feedback": "Between two Strings, + joins text: \"12\" + \"30\" is \"1230\". After parsing, a and b are the ints 12 and 30, and + adds them to give 42. This is why input read as text has to be parsed before you do arithmetic with it."
+  },
+  {
+    "type": "matching",
+    "question": "The wrapper classes carry useful static methods and constants. Match each expression to what it gives.",
+    "pairs": [
+      {
+        "term": "Integer.parseInt(\"42\")",
+        "definition": "The int 42"
+      },
+      {
+        "term": "Integer.toString(42)",
+        "definition": "The String \"42\""
+      },
+      {
+        "term": "Double.parseDouble(\"3.5\")",
+        "definition": "The double 3.5"
+      },
+      {
+        "term": "Integer.compare(10, 20)",
+        "definition": "A negative number"
+      },
+      {
+        "term": "Integer.compare(20, 20)",
+        "definition": "The int 0"
+      },
+      {
+        "term": "Integer.MAX_VALUE",
+        "definition": "2147483647"
+      }
+    ],
+    "feedback": "parseInt and parseDouble read a number out of text; toString goes the other way and makes text from a number. Integer.compare answers “which is bigger?” with a sign: negative when the first is smaller, 0 when they are equal, positive when the first is larger. MAX_VALUE is a constant, not a method, so it has no parentheses."
   },
   {
     "question": "What does the value null mean in Java?",
@@ -536,6 +686,20 @@
     "feedback": "name != null only looks at the reference, so it is safe, and it keeps the println from running when there is no object. name != \"\" asks whether name is that particular empty-String object; null is not, so the test passes and trim() still crashes. isEmpty() and equals() are method calls ON name, so with null they throw NullPointerException themselves, one step earlier."
   },
   {
+    "question": "Which of these declarations compile?",
+    "correct": [
+      "String name = null;",
+      "Integer count = null;",
+      "int[] scores = null;"
+    ],
+    "incorrect": [
+      "int count = null;",
+      "double price = null;",
+      "boolean done = null;"
+    ],
+    "feedback": "Reference types can be null; primitives cannot. A String, a wrapper such as Integer, and any array are all references, so each may point at nothing. An int, a double and a boolean hold their value directly, and there is always a value there: the compiler rejects null for them."
+  },
+  {
     "question": "What happens with this code?\nInteger count = null;\nint n = count;",
     "correct": [
       "It compiles, then throws NullPointerException at the second line"
@@ -546,29 +710,6 @@
       "It does not compile, because an Integer is not an int"
     ],
     "feedback": "Integer is a class, so an Integer variable is a reference and may hold null. Assigning it to an int makes the compiler insert an unboxing call, count.intValue(), and calling a method on null throws NullPointerException. No method call is visible in the source, which is what makes this crash puzzling the first time. Nothing turns null into 0 for you."
-  },
-  {
-    "type": "code_trace",
-    "question": "On objects, == asks whether two references point to the SAME object. What does this print?",
-    "code": "Integer c = 1000;\nInteger d = 1000;\nSystem.out.println(c == d);\nSystem.out.println(c.equals(d));",
-    "language": "java",
-    "correct": [
-      "false\ntrue"
-    ],
-    "case_sensitive": true,
-    "feedback": "c and d are two separate Integer objects that happen to hold the same number, so == (same object?) is false, exactly as it was for two Strings. equals compares the numbers inside: true. Had one side been a primitive int, Java would have unboxed the other and compared the numbers. Compare wrapper objects with equals, or unbox them first."
-  },
-  {
-    "question": "With Integer a = 127, b = 127; the test a == b is true. Change both numbers to 128 and it becomes false. Why?",
-    "correct": [
-      "Java reuses one cached Integer object for each value from -128 to 127"
-    ],
-    "incorrect": [
-      "An Integer can hold values up to 127, so 128 wraps around to -128",
-      "Values above 127 are boxed as Long, and a Long is never == an Integer",
-      "== unboxes small values to ints but compares larger ones as objects"
-    ],
-    "feedback": "Autoboxing calls Integer.valueOf, which keeps a ready-made object for every value from -128 to 127 and hands the same one out each time. So a and b are literally one object and == is true, by luck. At 128 each boxing makes a new object, and == tells the truth: different objects. Code that compares Integers with == passes small tests and breaks on real data; use equals. (127 is also the top of a byte, but an Integer has the full int range.)"
   },
   {
     "question": "Three arrays are created and nothing is stored in them:\nString[] names = new String[3];\nInteger[] boxes = new Integer[2];\nint[] scores = new int[3];\nWhich of these expressions throw a NullPointerException?",
@@ -585,156 +726,246 @@
     "feedback": "A new array of objects starts full of null; a new int[] starts full of 0. names[0].length() calls a method on null, and boxes[0] + 1 has to unbox null to do the addition, so both throw. names.length asks the array, which exists. scores[0] + 1 is 0 + 1. names[0] == null only compares references (true). names[0] + \"!\" is concatenation, which turns null into text: \"null!\"."
   },
   {
-    "question": "What does the line import java.util.Scanner; do for the file it appears in?",
+    "question": "Two array variables are declared:\nint[] scores = null;\nint[] empty = new int[0];\nWhich statement about them is true?",
     "correct": [
-      "It lets the file call that class Scanner instead of java.util.Scanner"
+      "empty.length is 0, but scores.length throws an exception"
     ],
     "incorrect": [
-      "It copies the source code of Scanner into the file before compiling",
-      "It downloads the library that contains Scanner if it is not installed",
-      "It loads the Scanner class and runs its setup code before main begins"
+      "Both lengths are 0, because neither array holds any values",
+      "scores.length is 0, but empty.length throws an exception",
+      "Both throw, because neither array has an element to count"
     ],
-    "feedback": "An import is a naming shortcut and nothing more. Every class has a full name that starts with its package (java.util.Scanner); the import lets you use the short name. No code is copied, fetched or run, and importing something you never use costs nothing at run time. Whether a library is present on your machine is a separate matter that an import cannot fix."
-  },
-  {
-    "question": "Which of these import lines compile?",
-    "correct": [
-      "import java.util.Scanner;",
-      "import java.util.*;",
-      "import java.lang.String;"
-    ],
-    "incorrect": [
-      "import Scanner;",
-      "import java.util;",
-      "import java.util.scanner;"
-    ],
-    "feedback": "An import names a type by its full, case-sensitive name, or every type in one package with .* at the end. import Scanner; has no package; import java.util; names a package where a type is expected; java.util.scanner has the wrong capital letter. import java.lang.String; is legal, just pointless, because String is available without it."
-  },
-  {
-    "question": "An ordinary source file declares public class Dice and contains no import lines. Its main method uses Scanner, Random, Math and String. Which names will the compiler fail to find?",
-    "correct": [
-      "Scanner and Random"
-    ],
-    "incorrect": [
-      "Scanner, Random and Math",
-      "All four of them",
-      "None of them"
-    ],
-    "feedback": "In an ordinary class, one package is imported automatically: java.lang, the home of String, Math, System and the wrapper classes. Scanner and Random live in java.util and need import lines. The rule is different for a compact source file, the Java 25 form where you write void main() with no class around it: there the whole java.base module is imported for you, and all four names would work."
-  },
-  {
-    "type": "cloze",
-    "question": "Every class has a full name that begins with its package. Scanner's full name is java.{{1}}.Scanner, String's is java.{{2}}.String, and Random's is java.{{3}}.Random.",
-    "blanks": [
-      {
-        "accept": [
-          "util"
-        ],
-        "hint": "package",
-        "case_sensitive": true
-      },
-      {
-        "accept": [
-          "lang"
-        ],
-        "hint": "package",
-        "case_sensitive": true
-      },
-      {
-        "accept": [
-          "util"
-        ],
-        "hint": "package",
-        "case_sensitive": true
-      }
-    ],
-    "feedback": "java.util holds the general-purpose utilities: Scanner, Random, and the collection classes. java.lang holds the types the language itself leans on: String, Math, System, Integer, Object. You can always write the full name instead of importing, as in java.util.Random r = new java.util.Random();"
-  },
-  {
-    "question": "The interface Predicate lives in the package java.util.function. A class's only import line is import java.util.*;  Can that class refer to Predicate by its short name?",
-    "correct": [
-      "No: the * covers the types in java.util itself, not packages below it"
-    ],
-    "incorrect": [
-      "Yes: the * covers java.util and every package nested beneath it",
-      "No: a * import brings in classes but leaves interfaces out",
-      "Yes, although importing so much makes the program slower to run"
-    ],
-    "feedback": "Package names look nested, but to the compiler java.util and java.util.function are two unrelated packages that share some letters. The * means \"every type directly in this package\", classes and interfaces alike, so Predicate needs its own import (java.util.function.Predicate or java.util.function.*). A wildcard has no run-time cost: imports only tell the compiler where to look for names."
-  },
-  {
-    "type": "code_trace",
-    "question": "Most Math methods hand back a double. What does this print?",
-    "code": "int side = (int) Math.sqrt(50);\ndouble p = Math.pow(2, 3);\nSystem.out.println(side);\nSystem.out.println(p);\nSystem.out.println(Math.max(3, 7.5));",
-    "language": "java",
-    "correct": [
-      "7\n8.0\n7.5"
-    ],
-    "case_sensitive": true,
-    "feedback": "Math.sqrt(50) is about 7.07, and the cast truncates it to 7; without the cast, int side = Math.sqrt(50); would not compile. Math.pow always returns a double, so 2 to the power 3 prints as 8.0, not 8. In Math.max(3, 7.5) the int 3 is widened to 3.0 so that two doubles can be compared, and the larger, 7.5, comes back."
+    "feedback": "empty refers to a real array that happens to have no elements, so it can be asked its length: 0. scores refers to no array at all, and asking nothing for its length throws NullPointerException. It is the same difference as between \"\" and null for a String: an empty thing is still a thing."
   },
   {
     "type": "matching",
-    "question": "Match each expression to exactly what System.out.println shows for it.",
+    "question": "Three variables are declared:  String a = null;  String b = \"\";  String c = \"   \";  (c holds three spaces.) Match each expression to its result.",
     "pairs": [
       {
-        "term": "Math.round(4.5)",
-        "definition": "5"
+        "term": "b.length()",
+        "definition": "0"
       },
       {
-        "term": "Math.floor(-4.5)",
-        "definition": "-5.0"
+        "term": "c.length()",
+        "definition": "3"
       },
       {
-        "term": "Math.ceil(-4.5)",
-        "definition": "-4.0"
+        "term": "c.isEmpty()",
+        "definition": "false"
       },
       {
-        "term": "(int) -4.5",
-        "definition": "-4"
+        "term": "c.isBlank()",
+        "definition": "true"
       },
       {
-        "term": "Math.abs(-4.5)",
-        "definition": "4.5"
+        "term": "a.isBlank()",
+        "definition": "Throws NullPointerException"
       },
       {
-        "term": "Math.sqrt(16)",
-        "definition": "4.0"
+        "term": "(c + \"Yoda\").trim()",
+        "definition": "\"Yoda\""
       }
     ],
-    "feedback": "Math.round returns a whole-number type (long), so it prints with no decimal point. floor and ceil return doubles, so theirs end in .0: floor goes down to -5.0, ceil goes up to -4.0. The cast truncates toward zero and produces an int, -4. abs only drops the sign, and sqrt returns a double even when the root is exact."
+    "feedback": "Empty means zero characters; blank means nothing but whitespace. b is empty (and so also blank). c is not empty, because spaces count as characters, but it is blank. a is neither: there is no String to ask, so any method call on it throws. trim() returns a copy without the spaces at either end."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "rand is a java.util.Random object. What is the LARGEST value this expression can produce?\nrand.nextInt({{n}}) + {{k}}",
-    "variables": {
-      "n": {
-        "min": 4,
-        "max": 12
-      },
-      "k": {
-        "min": 2,
-        "max": 10
-      }
-    },
-    "answer": {
-      "expr": "n - 1 + k",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "rand.nextInt({{n}}) produces one of {{n}} values, starting at 0, so its largest is one less than {{n}}; the bound itself never comes out. Adding {{k}} slides the whole range up, making the largest possible result {{expected}} and the smallest {{k}}."
+    "question": "name is a String that may be null. Which condition is true when there is no usable name, and can never crash?",
+    "correct": [
+      "name == null || name.isBlank()"
+    ],
+    "incorrect": [
+      "name.isBlank() || name == null",
+      "name == null && name.isBlank()",
+      "name.isEmpty() || name == null"
+    ],
+    "feedback": "The null check has to come first, joined with ||. When name is null the left side is true, and || does not look at the right side at all, so isBlank() is never called on null. Put the method call first and it runs first, and crashes. With && the right side runs exactly when name IS null, which crashes too, and the condition can never be true for a real blank String."
   },
   {
-    "type": "code_line",
-    "question": "rand is a Random object. Its nextInt method also has a two-argument form that takes a low bound and a high bound. Using that form, write the call that returns a die roll: a whole number from 1 to 6, with 6 possible.",
+    "type": "code_trace",
+    "question": "trim() takes the spaces off both ends of a String. What does this print?",
+    "code": "String input = \"  Luke  \";\nString cleaned = input.trim();\nSystem.out.println(cleaned.length());\nSystem.out.println(input.length());\nSystem.out.println(\"   \".trim().isEmpty());",
     "language": "java",
     "correct": [
-      "rand.nextInt(1, 7)",
-      "rand.nextInt(1, 7);",
-      "rand.nextInt(1,7)",
-      "rand.nextInt(1,7);"
+      "4\n8\ntrue"
     ],
     "case_sensitive": true,
-    "feedback": "rand.nextInt(1, 7) includes the low bound and excludes the high one, the same half-open habit as loop bounds and substring. Writing (1, 6) would give a die that can never roll a 6. The older idiom for the same thing is rand.nextInt(6) + 1, which you will still see everywhere; the two-argument form (Java 17 and later) says what it means."
+    "feedback": "trim() returns a NEW String with the whitespace removed from both ends: \"Luke\", 4 characters. The original is untouched and still has its 8 characters, two spaces on each side. Trimming a String of nothing but spaces leaves \"\", which is empty: that is why “trim, then check isEmpty()” catches blank input."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: A loop that will not take “Wookiee” for an answer",
+    "npc": "nia",
+    "intro": "Nia has pinned a sign to the workshop door: ENTER YOUR AGE. Underneath, in three different hands, visitors have written “Wookiee”, “-5” and “9999”.",
+    "steps": [
+      {
+        "say": "hasNextInt() looks at the next thing typed and reports whether it is an int. It does not take it.",
+        "beats": [
+          {
+            "say": "scanner.nextInt() crashes if the next thing typed is not a whole number. So before we read, we look."
+          },
+          {
+            "code": "scanner.hasNextInt()   // true or false; reads nothing",
+            "language": "java"
+          },
+          {
+            "say": "hasNextInt() answers a question about the next token and leaves it exactly where it was."
+          }
+        ]
+      },
+      {
+        "say": "Loop while the next token is NOT an int, and throw each bad token away with scanner.next().",
+        "beats": [
+          {
+            "code": "System.out.print(\"Enter your age: \");\nwhile (!scanner.hasNextInt()) {\n    String bad = scanner.next();   // take the bad token away\n    System.out.print(bad + \" is not a number. Try again: \");\n}\nint age = scanner.nextInt();       // safe: we looked first",
+            "language": "java"
+          },
+          {
+            "say": "The loop runs only while the next token is not an int. Each pass removes that token and asks again."
+          }
+        ],
+        "check": {
+          "prompt": "Suppose the line with scanner.next() is deleted, and the user types Wookiee. What happens?",
+          "answer": "The loop runs forever, checking the same word",
+          "wrong": [
+            "The loop ends, and nextInt() reads the word",
+            "The program skips the word and waits for more"
+          ],
+          "why": "hasNextInt() never removes anything. Without next() to discard it, Wookiee is still the next token on every pass, so the test comes out the same every time."
+        }
+      },
+      {
+        "say": "A value of the right type can still be out of range. Check that too before you accept it.",
+        "beats": [
+          {
+            "say": "“-5” and “9999” get through that loop: both are ints. Being the right type is not the same as being sensible."
+          },
+          {
+            "code": "if (age >= 0 && age <= 120) {\n    valid = true;\n}",
+            "language": "java"
+          },
+          {
+            "say": "Type first, then range. For text, the matching check is one you already know: not null, and not blank."
+          }
+        ]
+      }
+    ],
+    "outro": "“Three checks, then: is it the right type, is it in range, is there anything there at all. Each of the next monsters leaves one out.”"
+  },
+  {
+    "question": "What does scanner.hasNextInt() do?",
+    "correct": [
+      "Reports whether the next token is an int, without reading it"
+    ],
+    "incorrect": [
+      "Reads the next token and returns it as an int value",
+      "Waits until the user types something that is an int",
+      "Reports whether any int has been typed during the run"
+    ],
+    "feedback": "hasNextInt() only looks. It returns true or false about the next token and leaves that token in place, which is what makes it safe to call before nextInt(). It does not read, and it does not keep waiting for good input: the loop around it is your job."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange these lines, top to bottom, into code that keeps asking until the user types a whole number.",
+    "items": [
+      "System.out.print(\"Enter a number: \");",
+      "while (!scanner.hasNextInt()) {",
+      "    String bad = scanner.next();",
+      "    System.out.print(bad + \" is not a number: \");",
+      "}",
+      "int number = scanner.nextInt();"
+    ],
+    "language": "java",
+    "feedback": "Ask once, then loop for as long as the next token is NOT an int. Inside the loop the bad token has to be taken away with next() before it can be mentioned in the message, and before the test runs again. nextInt() comes after the loop, where the test has just promised that an int is waiting."
+  },
+  {
+    "type": "cloze",
+    "question": "This loop accepts only a whole number from 1 to 4. Fill in the three gaps.\nboolean valid = false;\nwhile ({{1}}valid) {\n    if (scanner.hasNextInt()) {\n        choice = scanner.nextInt();\n        if (choice >= 1 {{2}} choice <= 4) {\n            valid = true;\n        }\n    } else {\n        scanner.{{3}}();   // discard the bad input\n    }\n}",
+    "blanks": [
+      {
+        "accept": [
+          "!"
+        ],
+        "hint": "while NOT valid"
+      },
+      {
+        "accept": [
+          "&&"
+        ],
+        "hint": "both must hold"
+      },
+      {
+        "accept": [
+          "next",
+          "nextLine"
+        ],
+        "hint": "method name",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "The loop goes round while the input is not yet valid: !valid. A choice is in range when it is at least 1 AND at most 4, so the two tests are joined with &&. And when the token was not an int at all, next() reads it and throws it away, or the same token would be tested again for ever."
+  },
+  {
+    "question": "What does this print?\nSystem.out.printf(\"Total: $%.2f%n\", 19.876);",
+    "correct": [
+      "Total: $19.88"
+    ],
+    "incorrect": [
+      "Total: $19.87",
+      "Total: $19.876",
+      "Total: $%.2f19.876"
+    ],
+    "feedback": "printf prints its first argument, the format, with each % place filled in by the value that follows. %.2f means “a decimal number, to 2 places”, and it rounds: 19.876 becomes 19.88, not the chopped 19.87. %n ends the line. The number itself is not changed; only how it is written."
+  },
+  {
+    "type": "cloze",
+    "question": "String[] jedis = {\"Luke\", \"Leia\", \"Rey\"};\nfor ({{1}} jedi {{2}} jedis) {\n    System.out.println(jedi);\n}\nRead the symbol in the middle as the word “{{3}}”: for each jedi ___ jedis.",
+    "blanks": [
+      {
+        "accept": [
+          "String"
+        ],
+        "hint": "element type",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          ":"
+        ],
+        "hint": "one symbol"
+      },
+      {
+        "accept": [
+          "in"
+        ],
+        "hint": "a short word"
+      }
+    ],
+    "feedback": "An enhanced for loop names the type of one element, a variable to hold it, a colon, and the array: for (String jedi : jedis). Each time round, jedi holds the next element. There is no index to manage and no .length to get wrong."
+  },
+  {
+    "type": "code_trace",
+    "question": "Both loops add 10. Only one of them changes the array. What does this print?",
+    "code": "int[] scores = {90, 80, 70};\nfor (int score : scores) {\n    score = score + 10;\n}\nSystem.out.println(scores[0]);\nfor (int i = 0; i < scores.length; i++) {\n    scores[i] = scores[i] + 10;\n}\nSystem.out.println(scores[0]);",
+    "language": "java",
+    "correct": [
+      "90\n100"
+    ],
+    "case_sensitive": true,
+    "feedback": "In an enhanced for loop the variable is a COPY of each element. score = score + 10 changes the copy, which is thrown away at the end of each pass, so the array still starts with 90. The second loop assigns to scores[i], the array's own slot, so afterwards it starts with 100. To change an array, use an index."
+  },
+  {
+    "question": "Which of these jobs need a standard for loop with an index, because an enhanced for loop cannot do them?",
+    "correct": [
+      "Adding 10 to every element of the array",
+      "Printing each element beside its position",
+      "Visiting the elements from last to first",
+      "Comparing two arrays slot by slot"
+    ],
+    "incorrect": [
+      "Adding up all the elements of the array",
+      "Finding the largest element of the array"
+    ],
+    "feedback": "An enhanced for loop hands you each element, first to last, and nothing else: no position, no way to store back into the array, no other order, and only one array at a time. That is all a total or a maximum needs, which is why it is preferred for those. Changing elements, knowing where you are, going backwards, or walking two arrays together all need the index."
   },
   {
     "type": "npc_demo",
@@ -834,16 +1065,16 @@
   {
     "question": "Which of these statements about Java 2D arrays are true?",
     "correct": [
-      "new int[3][] compiles, leaving each row null until one is assigned",
       "The rows of a single 2D array are allowed to have different lengths",
       "For int[][] g, the expression g[0] is itself an array of type int[]",
-      "g.length reports the number of rows, not the total number of cells"
+      "g.length reports the number of rows, not the total number of cells",
+      "new int[3][4] makes 12 ints, and every one of them starts out as 0"
     ],
     "incorrect": [
-      "g[1, 2] is accepted as a shorter way of writing g[1][2]",
-      "new int[][4] compiles, leaving the number of rows to be set later"
+      "g[1, 2] is accepted as a shorter way of writing the cell g[1][2]",
+      "g[0].length reports the number of rows that the array g has"
     ],
-    "feedback": "Because a 2D array is an array of row arrays, the outer array can exist before its rows do: new int[3][] makes three null row slots, and you can then give each row any length you like (a jagged array). The reverse, new int[][4], is rejected: Java must know how many rows to make. Each index needs its own brackets; g[1, 2] is not Java."
+    "feedback": "A 2D array is an array of row arrays. So g[0] is a whole row, an int[]; g.length counts the rows; and g[0].length counts the columns of row 0. Because each row is an array of its own, the rows need not be the same length (a ragged array), which is why an inner loop should ask g[row].length. new int[3][4] is 3 rows of 4, all zeros. Each index needs its own brackets; g[1, 2] is not Java."
   },
   {
     "type": "code_trace",
@@ -855,5 +1086,876 @@
     ],
     "case_sensitive": true,
     "feedback": "Each pass takes one row, and row.length - 1 is that row's LAST index: 8 from the first row, 5 from the second, so sum is 13. marks.length is the number of rows, 2. 13 / 2 with two ints is integer division, 6. In the last line the cast grabs sum alone, making it 13.0 / 2, which is real division: 6.5."
+  },
+  {
+    "type": "code_trace",
+    "question": "One loop adds up a row and the other a column. What does this print?",
+    "code": "int[][] grid = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};\nint rowSum = 0;\nfor (int val : grid[1]) {\n    rowSum += val;\n}\nint colSum = 0;\nfor (int row = 0; row < grid.length; row++) {\n    colSum += grid[row][2];\n}\nSystem.out.println(rowSum);\nSystem.out.println(colSum);",
+    "language": "java",
+    "correct": [
+      "15\n18"
+    ],
+    "case_sensitive": true,
+    "feedback": "grid[1] is the whole of row 1, an int[] holding 4, 5 and 6, so an enhanced for can walk it: 15. A column is not an array of its own. To add one up you visit every row and take the same position from each, grid[0][2], grid[1][2], grid[2][2]: 3 + 6 + 9 = 18. That needs the row index, so it is a standard for loop."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: A method that can say “no answer”",
+    "npc": "nia",
+    "intro": "Nia taps a method line on the wall. “You have written methods that take an int and return an int. Give one of those types a capital letter, and the method can be handed nothing — or hand nothing back.”",
+    "steps": [
+      {
+        "say": "A parameter of a reference type, such as String or Integer, may arrive as null. Check before you use it.",
+        "beats": [
+          {
+            "code": "public static int getShipNameLength(String shipName) {\n    if (shipName == null) {\n        return 0;\n    }\n    return shipName.length();\n}",
+            "language": "java"
+          },
+          {
+            "say": "The tests WILL call this with null. The check comes first and returns early; only after it is it safe to call a method on shipName."
+          }
+        ],
+        "check": {
+          "prompt": "The table has a row  getShipNameLength(null)  that wants 0. Without the if, what would that row show?",
+          "answer": "A NullPointerException, from length() on null",
+          "wrong": [
+            "0, because null has no characters to count",
+            "A compile error, because null is not a String"
+          ],
+          "why": "null is a legal value for a String parameter, so the call compiles. The crash comes when the body follows the reference to ask for a length, and there is no object there."
+        }
+      },
+      {
+        "say": "A return type of Integer or Double lets a method return null to mean “no answer”. An int or a double could not.",
+        "beats": [
+          {
+            "code": "public static Double half(Integer n) {\n    if (n == null) {\n        return null;\n    }\n    return n / 2.0;\n}",
+            "language": "java"
+          },
+          {
+            "say": "Double with a capital D is the wrapper class, so null is allowed. n / 2.0 unboxes n and divides, and Java boxes the result on its way out."
+          },
+          {
+            "say": "The table shows such a result as the word null. The rest is as before: Run costs nothing, and only Submit counts."
+          }
+        ]
+      }
+    ],
+    "outro": "“Read each method line for capital letters before you write a word. A capital means null may arrive, or may be wanted.”"
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the price rounded to two decimal places, using the lecture's pattern: multiply by 100, round, divide by 100.",
+    "signature": "public static double roundToCents(double price)",
+    "tests": [
+      {
+        "args": [
+          19.876
+        ],
+        "expect": 19.88
+      },
+      {
+        "args": [
+          2.5
+        ],
+        "expect": 2.5
+      },
+      {
+        "args": [
+          0.125
+        ],
+        "expect": 0.13
+      },
+      {
+        "args": [
+          7
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          -3.456
+        ],
+        "expect": -3.46
+      },
+      {
+        "args": [
+          0.004
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "return Math.round(price * 100.0) / 100.0;",
+    "hint": "Math.round(price * 100.0) gives a whole number of cents. Divide that by 100.0, with the .0.",
+    "feedback": "Multiplying by 100.0 moves the two places you want to keep in front of the decimal point, Math.round rounds off the rest, and dividing by 100.0 moves them back. The .0 matters on the division: Math.round returns a long, and a long divided by the int 100 would be whole-number division."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the average power of a group: the total divided by the count, keeping the fraction. With a total of 9 and a count of 2 the answer is 4.5.",
+    "signature": "public static double averagePower(int total, int count)",
+    "tests": [
+      {
+        "args": [
+          9,
+          2
+        ],
+        "expect": 4.5
+      },
+      {
+        "args": [
+          10,
+          4
+        ],
+        "expect": 2.5
+      },
+      {
+        "args": [
+          7,
+          7
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          0,
+          3
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          100,
+          3
+        ],
+        "expect": 33.333333333333336
+      },
+      {
+        "args": [
+          1,
+          2
+        ],
+        "expect": 0.5
+      }
+    ],
+    "solution": "return (double) total / count;",
+    "hint": "Two ints divide as whole numbers. Cast ONE of them to double before the division.",
+    "feedback": "The cast grabs total alone and makes it a double; then the division is double by int, which is real division. Casting the finished quotient, (double) (total / count), is too late: the fraction is already gone."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the number of milliseconds in the given number of seconds (1 second is 1000 milliseconds). The answer may be far too big for an int, so the multiplication must not overflow.",
+    "signature": "public static long toMilliseconds(int seconds)",
+    "tests": [
+      {
+        "args": [
+          5
+        ],
+        "expect": 5000
+      },
+      {
+        "args": [
+          31536000
+        ],
+        "expect": 31536000000
+      },
+      {
+        "args": [
+          2147483647
+        ],
+        "expect": 2147483647000
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          -1
+        ],
+        "expect": -1000
+      },
+      {
+        "args": [
+          2147484
+        ],
+        "expect": 2147484000
+      }
+    ],
+    "solution": "return (long) seconds * 1000;",
+    "hint": "seconds * 1000 is int times int, and overflows before it is returned. Make one side a long first.",
+    "feedback": "The return type being long is not enough: seconds * 1000 would be worked out in int, overflow, and only then be widened. Casting seconds to long first makes it long times int, which Java works out in long."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the Jedi's name. If the name is null, return  Unknown Jedi",
+    "signature": "public static String getJediName(String jediName)",
+    "tests": [
+      {
+        "args": [
+          "Yoda"
+        ],
+        "expect": "Yoda"
+      },
+      {
+        "args": [
+          null
+        ],
+        "expect": "Unknown Jedi"
+      },
+      {
+        "args": [
+          "Obi-Wan Kenobi"
+        ],
+        "expect": "Obi-Wan Kenobi"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": ""
+      },
+      {
+        "args": [
+          "Rey"
+        ],
+        "expect": "Rey"
+      }
+    ],
+    "solution": "if (jediName == null) {\n    return \"Unknown Jedi\";\n}\nreturn jediName;",
+    "hint": "Compare with null using ==, and return early when it matches.",
+    "feedback": "== null looks at the reference without following it, so it is always safe. An empty String is not null: it is a real name with no characters, and it is returned as it is."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "A Dalek threat level arrives as text, such as \"7\". Return it as an int. If the text is null or empty, return -1 to mean “unknown threat”.",
+    "signature": "public static int getDalekThreatLevel(String threatString)",
+    "tests": [
+      {
+        "args": [
+          "7"
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          null
+        ],
+        "expect": -1
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": -1
+      },
+      {
+        "args": [
+          "42"
+        ],
+        "expect": 42
+      },
+      {
+        "args": [
+          "-3"
+        ],
+        "expect": -3
+      },
+      {
+        "args": [
+          "0"
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "if (threatString == null || threatString.isEmpty()) {\n    return -1;\n}\nreturn Integer.parseInt(threatString);",
+    "hint": "Check for null FIRST, then for empty, joined with ||. After that, Integer.parseInt reads the number.",
+    "feedback": "The order of the two checks is the point. With null on the left of ||, isEmpty() is never called on null. Only when the text is known to be there and not empty is it handed to Integer.parseInt."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a lightsaber's colour from its code: 1 is  Blue,  2 is  Green,  3 is  Red.  For null, or any other number, return  Unknown",
+    "signature": "public static String getSaberColor(Integer colorCode)",
+    "tests": [
+      {
+        "args": [
+          1
+        ],
+        "expect": "Blue"
+      },
+      {
+        "args": [
+          2
+        ],
+        "expect": "Green"
+      },
+      {
+        "args": [
+          3
+        ],
+        "expect": "Red"
+      },
+      {
+        "args": [
+          null
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          4
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": "Unknown"
+      }
+    ],
+    "solution": "if (colorCode == null) {\n    return \"Unknown\";\n}\nif (colorCode == 1) {\n    return \"Blue\";\n} else if (colorCode == 2) {\n    return \"Green\";\n} else if (colorCode == 3) {\n    return \"Red\";\n} else {\n    return \"Unknown\";\n}",
+    "hint": "The parameter is an Integer with a capital I, so it may be null. Rule that out before comparing it with a number.",
+    "feedback": "colorCode == 1 unboxes the Integer to compare it with the int 1, and unboxing null throws NullPointerException. So the null check has to come first. After it, the Integer behaves just like an int."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the distance divided by the warp factor. Return null if either one is null, or if the warp factor is 0.",
+    "signature": "public static Double safeDivideWarp(Double distance, Double warpFactor)",
+    "tests": [
+      {
+        "args": [
+          10,
+          2
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          null,
+          2
+        ],
+        "expect": null
+      },
+      {
+        "args": [
+          10,
+          null
+        ],
+        "expect": null
+      },
+      {
+        "args": [
+          10,
+          0
+        ],
+        "expect": null
+      },
+      {
+        "args": [
+          7.5,
+          2.5
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          0,
+          4
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "if (distance == null || warpFactor == null || warpFactor == 0.0) {\n    return null;\n}\nreturn distance / warpFactor;",
+    "hint": "Three things to rule out, joined with ||. Put the two null checks before the comparison with 0.",
+    "feedback": "The return type is Double, the wrapper, so the method is allowed to return null for “no answer”. warpFactor == 0.0 unboxes warpFactor, so it has to come after warpFactor == null; || stops at the first true and never reaches it for a null."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Clean up a name that someone typed. If it is null, or blank (empty, or nothing but spaces), return  Unknown.  Otherwise return the name with the spaces removed from both ends.",
+    "signature": "public static String cleanName(String name)",
+    "tests": [
+      {
+        "args": [
+          "  Luke  "
+        ],
+        "expect": "Luke"
+      },
+      {
+        "args": [
+          null
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          "   "
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          "Rey"
+        ],
+        "expect": "Rey"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          " Obi-Wan Kenobi"
+        ],
+        "expect": "Obi-Wan Kenobi"
+      }
+    ],
+    "solution": "if (name == null || name.isBlank()) {\n    return \"Unknown\";\n}\nreturn name.trim();",
+    "hint": "null first, then isBlank(), joined with ||. trim() gives back the name without the spaces at its ends.",
+    "feedback": "Three kinds of “nothing” are handled by one condition: null by the first test, and both empty and all-spaces by isBlank(). trim() does not change name; it returns a new String, and that is what is returned."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "An age is valid when it is there at all (not null) and is from 0 to 120, including both. Return true if the age is valid.",
+    "signature": "public static boolean isValidAge(Integer age)",
+    "tests": [
+      {
+        "args": [
+          30
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          null
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          -5
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          9999
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          0
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          120
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          121
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          -1
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "return age != null && age >= 0 && age <= 120;",
+    "hint": "Three tests joined with &&, and the null test goes first.",
+    "feedback": "age != null comes first, and && stops there when it is false, so the comparisons (which unbox age) never run on null. The other two are an ordinary range check; both ends are included, so they are >= and <=."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the average of the sensor readings. A reading that is null is missing: leave it out of both the total and the count. If there are no readings to average, return 0.0.",
+    "signature": "public static double averageReading(Integer[] readings)",
+    "tests": [
+      {
+        "args": [
+          [
+            10,
+            null,
+            20
+          ]
+        ],
+        "expect": 15
+      },
+      {
+        "args": [
+          [
+            null,
+            null
+          ]
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            7
+          ]
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          [
+            1,
+            2,
+            null,
+            4
+          ]
+        ],
+        "expect": 2.3333333333333335
+      },
+      {
+        "args": [
+          [
+            null,
+            5,
+            6
+          ]
+        ],
+        "expect": 5.5
+      }
+    ],
+    "solution": "int total = 0;\nint count = 0;\nfor (Integer reading : readings) {\n    if (reading != null) {\n        total += reading;\n        count++;\n    }\n}\nif (count == 0) {\n    return 0.0;\n}\nreturn (double) total / count;",
+    "hint": "An enhanced for loop with an Integer variable. Count the readings you add, and cast before you divide.",
+    "feedback": "Three ideas from this chapter in one method: an enhanced for loop over the array, a null check before each Integer is unboxed, and a cast on one operand so the division keeps its fraction. Counting only the readings that were added also makes the “nothing to average” case easy to see: count is 0."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a price tag for a drink, of the form  Blue Milk: $4.50  — the name, a colon and a space, a dollar sign, and the price to exactly two decimal places.",
+    "signature": "public static String priceTag(String drink, double price)",
+    "tests": [
+      {
+        "args": [
+          "Blue Milk",
+          4.5
+        ],
+        "expect": "Blue Milk: $4.50"
+      },
+      {
+        "args": [
+          "Jawa Juice",
+          3
+        ],
+        "expect": "Jawa Juice: $3.00"
+      },
+      {
+        "args": [
+          "Caf",
+          2.125
+        ],
+        "expect": "Caf: $2.13"
+      },
+      {
+        "args": [
+          "Tea",
+          19.876
+        ],
+        "expect": "Tea: $19.88"
+      },
+      {
+        "args": [
+          "Water",
+          0
+        ],
+        "expect": "Water: $0.00"
+      }
+    ],
+    "solution": "return String.format(\"%s: $%.2f\", drink, price);",
+    "hint": "String.format works like printf but returns the text. %s is a place for text; %.2f is a decimal number to 2 places.",
+    "feedback": "String.format builds the text that printf would print, and hands it back instead. %s takes the name and %.2f takes the price, rounded to two places and always showing both of them, so 3.0 is written 3.00."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the sum of all the values in one row of the ship's grid.",
+    "signature": "public static int sumStarshipRow(int[][] shipGrid, int rowIndex)",
+    "tests": [
+      {
+        "args": [
+          [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          0
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          1
+        ],
+        "expect": 15
+      },
+      {
+        "args": [
+          [
+            [
+              7
+            ]
+          ],
+          0
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          [
+            [
+              1,
+              -1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              5,
+              5
+            ]
+          ],
+          2
+        ],
+        "expect": 10
+      },
+      {
+        "args": [
+          [
+            [
+              2,
+              4,
+              6,
+              8
+            ]
+          ],
+          0
+        ],
+        "expect": 20
+      }
+    ],
+    "solution": "int sum = 0;\nfor (int col = 0; col < shipGrid[rowIndex].length; col++) {\n    sum += shipGrid[rowIndex][col];\n}\nreturn sum;",
+    "hint": "shipGrid[rowIndex] is one row, an int[]. Add up its elements as you would for any array.",
+    "feedback": "A row of a 2D array is an ordinary array, so one loop is enough. The reference answer uses an index; for (int value : shipGrid[rowIndex]) would do the same job with less to get wrong."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "A Dalek shows up in the scan grid as the number 1. Return how many Daleks are in the grid.",
+    "signature": "public static int countDaleks(int[][] scanGrid)",
+    "tests": [
+      {
+        "args": [
+          [
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ]
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          [
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1
+            ]
+          ]
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          [
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              0,
+              1
+            ]
+          ]
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [
+            [
+              5
+            ]
+          ]
+        ],
+        "expect": 0
+      }
+    ],
+    "solution": "int count = 0;\nfor (int row = 0; row < scanGrid.length; row++) {\n    for (int col = 0; col < scanGrid[row].length; col++) {\n        if (scanGrid[row][col] == 1) {\n            count++;\n        }\n    }\n}\nreturn count;",
+    "hint": "Nested loops: the outer one over the rows, the inner one over the columns of that row. Count inside the inner loop.",
+    "feedback": "Every cell has to be looked at, so there are two loops: one that walks the rows, and inside it one that walks the cells of the current row. Asking each row for its own length, scanGrid[row].length, keeps the inner loop right whatever shape the grid is."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the largest energy level anywhere in the grid. The grid has at least one row, and every row has at least one value.",
+    "signature": "public static int findMaxInGrid(int[][] energyGrid)",
+    "tests": [
+      {
+        "args": [
+          [
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ]
+          ]
+        ],
+        "expect": 4
+      },
+      {
+        "args": [
+          [
+            [
+              -5,
+              -2
+            ],
+            [
+              -9,
+              -3
+            ]
+          ]
+        ],
+        "expect": -2
+      },
+      {
+        "args": [
+          [
+            [
+              7
+            ]
+          ]
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          [
+            [
+              4,
+              9,
+              2
+            ],
+            [
+              9,
+              1,
+              0
+            ]
+          ]
+        ],
+        "expect": 9
+      },
+      {
+        "args": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              100
+            ],
+            [
+              50,
+              0
+            ]
+          ]
+        ],
+        "expect": 100
+      }
+    ],
+    "solution": "int max = energyGrid[0][0];\nfor (int row = 0; row < energyGrid.length; row++) {\n    for (int col = 0; col < energyGrid[row].length; col++) {\n        if (energyGrid[row][col] > max) {\n            max = energyGrid[row][col];\n        }\n    }\n}\nreturn max;",
+    "hint": "Start max at the first cell, energyGrid[0][0], not at 0. Then compare every cell with it.",
+    "feedback": "The find-the-largest pattern from the Algorithms chapter, with a second loop. Starting max at 0 would give the wrong answer for a grid of negative numbers; starting it at the first cell is always right."
   }
 ]

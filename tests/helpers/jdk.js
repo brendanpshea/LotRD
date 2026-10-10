@@ -35,6 +35,16 @@ const SHOW = `
   static String $show(boolean v) { return String.valueOf(v); }
   static String $show(String v) { return v == null ? "null" : "\\"" + v + "\\""; }
   static String $show(StringBuilder v) { return v == null ? "null" : "\\"" + v + "\\""; }
+  static String $show(Integer v) { return String.valueOf(v); }
+  static String $show(Long v) { return String.valueOf(v); }
+  static String $show(Double v) { return String.valueOf(v); }
+  static String $show(Character v) { return String.valueOf(v); }
+  static String $show(Boolean v) { return String.valueOf(v); }
+  static String $show(Integer[] v) { return java.util.Arrays.toString(v); }
+  static String $show(Long[] v) { return java.util.Arrays.toString(v); }
+  static String $show(Double[] v) { return java.util.Arrays.toString(v); }
+  static String $show(Character[] v) { return java.util.Arrays.toString(v); }
+  static String $show(Boolean[] v) { return java.util.Arrays.toString(v); }
   static String $show(int[] v) { return java.util.Arrays.toString(v); }
   static String $show(long[] v) { return java.util.Arrays.toString(v); }
   static String $show(double[] v) { return java.util.Arrays.toString(v); }
@@ -62,6 +72,8 @@ export function javaLiteral(value, type) {
     const braces = (v, t) => (v === null ? 'null' : `{${v.map(x => (t.endsWith('[]') ? braces(x, t.slice(0, -2)) : javaLiteral(x, t))).join(', ')}}`);
     return `new ${type} ${braces(value, elem)}`;
   }
+  const WRAPPED = { Integer: 'int', Long: 'long', Double: 'double', Character: 'char', Boolean: 'boolean' };
+  if (WRAPPED[type]) return javaLiteral(value, WRAPPED[type]);
   switch (type) {
     case 'long': return `${value}L`;
     case 'double':

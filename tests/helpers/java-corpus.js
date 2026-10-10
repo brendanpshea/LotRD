@@ -527,6 +527,155 @@ export const AGREES = {
     `,
     calls: ['commented(1)', 'dense(1)', 'dense(-1)', 'parens(4)', 'parenTarget(1)', 'unaryRun(5)', 'ternaryAssign(1)', 'dollar$name(3)', 'notEquals(1)', 'tabs(2)', 'hexAndFriends()', 'longLits()', 'escapes()', 'charEscapes()', 'unicodeText()', 'unicodeText().length()'],
   },
+  // ── wrapper objects
+  'a wrapper boxes, unboxes, and may be null': {
+    methods: J`Integer box(int a) { Integer n = a; return n; }
+      int unbox(Integer n) { return n; }
+      int plus(Integer a, Integer b) { return a + b; }
+      double widen(Integer a) { double d = a; return d; }
+      long widenL(Integer a) { return a; }
+      String show(Integer n) { return "n=" + n; }
+      String val(Integer n) { return String.valueOf(n); }
+      boolean isNull(Integer n) { return n == null; }
+      boolean notNull(Double d) { return null != d; }
+      int orZero(Integer n) { return n == null ? 0 : n; }
+      Integer pick(boolean f, int a) { return f ? a : null; }
+      Integer pick2(boolean f, Integer a) { return f ? a : 0; }
+      Double half(Integer n) { if (n == null) return null; return n / 2.0; }
+      boolean same(Integer a, Integer b) { return a.equals(b); }
+      boolean eqPrim(Integer a, int b) { return a == b; }
+      boolean eqD(Integer a, double b) { return a == b; }
+      boolean less(Integer a, Double b) { return a < b; }
+      long l(Long a) { return a + 1; }
+      boolean flag(Boolean b) { if (b) return true; return !b; }
+      boolean both(Boolean a, Boolean b) { return a && b; }
+      char ch(Character c) { return c; }
+      int code(Character c) { return c + 1; }
+      String neg(Integer n) { return "" + -n + (n > 0); }
+      int big(Integer a) { return a * a; }`,
+    calls: ['box(5)', 'box(-1)', 'unbox(5)', 'unbox(null)', 'plus(2, 3)', 'plus(null, 3)', 'plus(2, null)', 'widen(7)', 'widen(null)', 'widenL(7)', 'show(5)', 'show(null)',
+      'val(5)', 'val(null)', 'isNull(null)', 'isNull(0)', 'notNull(null)', 'notNull(1.5)', 'orZero(null)', 'orZero(9)', 'pick(true, 4)', 'pick(false, 4)',
+      'pick2(true, 4)', 'pick2(false, 4)', 'pick2(true, null)', 'pick2(false, null)', 'half(5)', 'half(null)', 'same(5, 5)', 'same(1000, 1000)', 'same(5, 6)', 'same(5, null)', 'same(null, 5)',
+      'eqPrim(1000, 1000)', 'eqPrim(null, 0)', 'eqD(2, 2.0)', 'less(1, 1.5)', 'less(null, 1.5)', 'less(1, null)', 'l(5L)', 'l(null)', 'l(Long.MAX_VALUE)',
+      'flag(true)', 'flag(false)', 'flag(null)', 'both(false, null)', 'both(true, null)', 'both(null, true)', "ch('x')", 'ch(null)', "code('a')", 'code(null)',
+      'neg(5)', 'neg(null)', 'big(46341)', 'big(null)'],
+  },
+  'changing a wrapper: += and ++ unbox, work, and box again': {
+    methods: J`Integer count(Integer n) { n++; n += 5; return n; }
+      Integer pre(Integer n) { int a = ++n; return a + n--; }
+      Character next(Character c) { c++; return c; }
+      Double grow(Double d, Integer by) { d *= by; d -= 1; return d; }
+      Long big(Long a) { a += 1; a <<= 2; return a; }
+      Boolean flip(Boolean b) { b ^= true; b &= b; return b; }
+      Integer wrap(Integer n) { n += Integer.MAX_VALUE; return n; }
+      int order(Integer n) { int[] seen = new int[1]; try2(seen); n += mark(seen); return seen[0]; }
+      void try2(int[] seen) { seen[0] = 5; }
+      int mark(int[] seen) { seen[0] = 9; return 1; }
+      String text(Integer n) { String s = "v"; s += n; return s; }
+      Integer[] cells(Integer[] xs) { xs[0]++; xs[1] += 10; return xs; }
+      Integer shift(Integer n, Long by) { n <<= by; return n; }`,
+    calls: ['count(1)', 'count(null)', 'pre(4)', 'pre(null)', "next('a')", 'next(null)', "next('\\uffff')", 'grow(2.5, 4)', 'grow(null, 4)', 'grow(2.5, null)', 'big(5L)', 'big(null)',
+      'flip(true)', 'flip(false)', 'flip(null)', 'wrap(1)', 'order(1)', 'order(null)', 'text(5)', 'text(null)', 'cells(new Integer[] {1, 2})', 'cells(new Integer[] {1, null})',
+      'cells(new Integer[] {null, 2})', 'cells(new Integer[2])', 'shift(1, 3L)', 'shift(1, null)'],
+  },
+  'arrays of wrappers start as null, and a for-each may unbox each one': {
+    methods: J`int sum(Integer[] xs) { int t = 0; for (int x : xs) t += x; return t; }
+      int sumSafe(Integer[] xs) { int t = 0; for (Integer x : xs) { if (x != null) t += x; } return t; }
+      double sumD(Integer[] xs) { double t = 0; for (double x : xs) t += x; return t; }
+      String boxed(int[] xs) { String s = ""; for (Integer x : xs) s += x; return s; }
+      String sorted(Integer[] xs) { Arrays.sort(xs); return Arrays.toString(xs); }
+      String sortedD(Double[] xs) { Arrays.sort(xs); return Arrays.toString(xs); }
+      String sortedC(Character[] xs) { Arrays.sort(xs); return Arrays.toString(xs); }
+      Integer[] fresh(int n) { return new Integer[n]; }
+      Double[] made() { Double[] ds = {1.5, null, 2.0}; return ds; }
+      Integer[] filled(int n) { Integer[] xs = new Integer[n]; for (int i = 0; i < n; i++) xs[i] = i * i; return xs; }
+      int at(Integer[] xs, Integer i) { return xs[i]; }
+      boolean eq(Integer[] a, Integer[] b) { return Arrays.equals(a, b); }
+      int count(Integer[] xs) { int n = 0; for (Integer x : xs) if (x == null) n++; return n; }
+      Boolean[] flags() { return new Boolean[2]; }
+      Character[] letters() { Character[] cs = {'a', 66, null}; return cs; }`,
+    calls: ['sum(new Integer[] {1, 2, 3})', 'sum(new Integer[] {1, null})', 'sum(new Integer[0])', 'sumSafe(new Integer[] {1, null, 5})', 'sumD(new Integer[] {1, 2})', 'boxed(new int[] {1, 2})',
+      'sorted(new Integer[] {3, 1, 2})', 'sorted(new Integer[] {3, null})', 'sorted(new Integer[] {null})', 'sortedD(new Double[] {0.0, -0.0, Double.NaN, -1.5})', "sortedC(new Character[] {'b', 'A', 'a'})",
+      'fresh(3)', 'made()', 'filled(4)', 'at(new Integer[] {7, 8}, 1)', 'at(new Integer[] {7, 8}, null)', 'at(new Integer[] {null}, 0)', 'at(new Integer[] {7}, 3)',
+      'eq(new Integer[] {1, null}, new Integer[] {1, null})', 'eq(new Integer[] {1}, new Integer[] {2})', 'count(new Integer[] {null, 1, null})', 'flags()', 'letters()'],
+  },
+  'the methods of a wrapper, and making one with valueOf': {
+    methods: J`String t(Integer n) { return n.toString(); }
+      int iv(Double d) { return d.intValue(); }
+      double dv(Integer n) { return n.doubleValue(); }
+      long lv(Double d) { return d.longValue(); }
+      int cmp(Integer a, Integer b) { return a.compareTo(b); }
+      int cmpD(Double a, Double b) { return a.compareTo(b); }
+      int cmpC(Character a, Character b) { return a.compareTo(b); }
+      boolean eqD(Double a, Double b) { return a.equals(b); }
+      boolean eqI(Integer a, int b) { return a.equals(b); }
+      boolean eqC(Character a, char b) { return a.equals(b); }
+      boolean bv(Boolean b) { return b.booleanValue(); }
+      char cv(Character c) { return c.charValue(); }
+      String td(Double d) { return d.toString() + "!"; }`,
+    calls: ['t(5)', 't(null)', 'iv(3.99)', 'iv(-3.99)', 'iv(1e20)', 'iv(Double.NaN)', 'iv(null)', 'dv(7)', 'lv(1e19)', 'cmp(1, 2)', 'cmp(2, 2)', 'cmp(3, 2)', 'cmp(Integer.MIN_VALUE, 1)', 'cmp(1, null)', 'cmp(null, 1)',
+      'cmpD(0.0, -0.0)', 'cmpD(Double.NaN, 1.0)', 'cmpD(1.5, 1.5)', "cmpC('a', 'd')", 'eqD(0.0, -0.0)', 'eqD(Double.NaN, Double.NaN)', 'eqD(1.5, 1.5)', 'eqD(1.5, null)',
+      'eqI(5, 5)', 'eqI(5, 6)', "eqC('a', 'a')", 'bv(true)', 'bv(null)', "cv('z')", 'td(1.0)', 'td(1e10)',
+      'Integer.valueOf(5)', 'Integer.valueOf("12") + 1', 'Integer.valueOf("x")', "Integer.valueOf('a')", 'Double.valueOf(3)', 'Double.valueOf("2.5")', 'Double.valueOf("abc")',
+      'Long.valueOf(5)', 'Long.valueOf("99")', 'Boolean.valueOf("TRUE")', 'Boolean.valueOf("yes")', 'Boolean.valueOf(true)', "Character.valueOf('x')",
+      'Integer.valueOf(7).equals(7)', 'Integer.valueOf(7) + 1', 'Integer.valueOf(1000) == 1000', 'Double.valueOf(2) / 4', '"" + Integer.valueOf(3) + Double.valueOf(3)'],
+  },
+  'which method a call picks when one takes the primitive and one the wrapper': {
+    methods: J`int a(int x) { return 1; } int a(Integer x) { return 2; }
+      int b(long x) { return 1; } int b(Integer x) { return 2; }
+      int c(Integer x) { return 2; }
+      int d(double x) { return 1; }
+      int e(Long x) { return 2; } int e(double x) { return 1; }
+      int go(Integer n) { return a(n); }
+      int go2(Integer n) { return b(n); }
+      int go3(Integer n) { return d(n); }
+      int sw(Integer n) { switch (n) { case 1: return 10; case 2: return 20; default: return 0; } }
+      String cast(Integer n) { return "" + (int) n + (double) n + (long) n; }
+      String castUp(Character c) { return "" + (int) c + (char) c; }
+      Integer back(int n) { return (Integer) n; }`,
+    calls: ['a(5)', 'go(5)', 'go(null)', 'b(5)', 'go2(5)', 'c(5)', "d('a')", 'go3(4)', 'go3(null)', 'e(5)', 'e(5L)', 'sw(1)', 'sw(2)', 'sw(9)', 'sw(null)', 'cast(7)', 'cast(null)', "castUp('a')", 'back(3)',
+      'Math.max(Integer.valueOf(3), 4)', 'Math.abs(Integer.valueOf(-3))', 'String.valueOf(Integer.valueOf(3))', '"abc".charAt(Integer.valueOf(1))', '"abc".substring(Integer.valueOf(1))',
+      'Math.sqrt(Integer.valueOf(16))', 'Integer.parseInt("5") + Integer.valueOf(5)', 'Math.round(Double.valueOf(2.5))', 'Character.isDigit(Character.valueOf(\'5\'))'],
+  },
+  // ── formatted printing
+  'String.format: places for values, widths, and decimal places': {
+    methods: J`String money(double d) { return String.format("$%.2f", d); }
+      String row(String name, int qty, double price) { return String.format("%-10s%5d%12.2f", name, qty, price); }
+      String pct(int done, int all) { return String.format("%d of %d (%.1f%%)", done, all, 100.0 * done / all); }
+      String pad(int n) { return String.format("[%5d][%-5d][%05d][%,d][%+d]", n, n, n, n, n); }
+      String str(String t) { return String.format("[%s][%8s][%-8s][%.2s]", t, t, t, t); }
+      String any(int a, double x, char c, boolean t, long p) { return String.format("%s %s %s %s %s %b %c", a, x, c, t, p, t, c); }
+      String boxed(Integer n, Double d) { return String.format("%d %s %.1f %s", n, n, d, d); }
+      String own(String name, int n) { return "%s has %d".formatted(name, n); }
+      String lines(int a) { return String.format("a%nb%d%n", a); }
+      String six(double d) { return String.format("%f", d); }
+      String big(double d) { return String.format("%,.2f|%012.3f|%+.0f|%10.1f|%-10.1f|", d, d, d, d, d); }
+      String few(int a) { return String.format("%d %d", a); }
+      String extra(int a) { return String.format("%d", a, a, a); }
+      String wrongD(double d) { return String.format("%d", d); }
+      String wrongF(int a) { return String.format("%f", a); }
+      String wrongC(String t) { return String.format("%c", t); }
+      String wrongDs(String t) { return String.format("%d", t); }
+      String wrongFc(char c) { return String.format("%.2f", c); }
+      String plain(String f) { return String.format(f); }
+      String given(String f, int a) { return String.format(f, a); }`,
+    calls: ['money(3.14159)', 'money(2.5)', 'money(0.005)', 'money(1.005)', 'money(2.675)', 'money(-0.001)', 'money(1e10)', 'money(0)', 'row("Burger", 3, 8.5)', 'row("A very long name", 12345678, 1234567.891)',
+      'pct(1, 3)', 'pct(0, 5)', 'pad(42)', 'pad(-42)', 'pad(1234567)', 'pad(0)', 'pad(Integer.MIN_VALUE)', 'str("hello")', 'str("")', 'str(null)', 'str("a longer piece of text")',
+      "any(7, 2.5, 'k', true, 5000000000L)", "any(-1, 1e-5, ' ', false, -1L)", 'boxed(5, 2.25)', 'boxed(null, null)', 'own("Nia", 3)', 'own(null, 0)', 'lines(1)',
+      'six(1.5)', 'six(0.1)', 'six(123456789.123456789)', 'six(1e-7)', 'six(5e-7)', 'six(Double.NaN)', 'six(1.0 / 0)', 'six(-1.0 / 0)', 'six(-0.0)', 'six(Double.MAX_VALUE)', 'six(Double.MIN_VALUE)',
+      'big(1234567.891)', 'big(-1234567.891)', 'big(0.5)', 'big(-0.5)', 'big(999.9996)', 'big(0.0)', 'big(1e15)', 'few(1)', 'extra(1)', 'wrongD(1.5)', 'wrongF(1)', 'wrongC("a")', 'wrongDs("5")', "wrongFc('a')",
+      'plain("no places")', 'plain("100%%")', 'plain(null)', 'plain("%d")', 'given("%d!", 5)', 'given("%s%s", 5)', 'given("%5d|%-5d|", 5)', 'given("%.1f", 5)'],
+  },
+  'printf prints as it goes, and has already printed what came before a value that does not fit': {
+    methods: J`int a(double d) { System.out.printf("Total: %.2f%n", d); return 1; }
+      int b(int n) { System.out.printf("%d items%n", n); System.out.printf("%5s|%n", "ab"); System.out.printf("done%n"); return 2; }
+      int c(double d) { System.out.printf("before %s and %d after%n", d, d); return 3; }
+      int d(int n) { System.out.printf("one %d two %d three%n", n); return 4; }
+      int e(String f) { System.out.printf(f); return 5; }
+      int g(int n) { System.out.format("%03d%n", n); return 6; }
+      int h(String name, double avg) { for (int i = 0; i < 3; i++) { System.out.printf("%-6s%6.1f%n", name + i, avg * i); } return 7; }`,
+    calls: ['a(3.14159)', 'a(2.0)', 'b(3)', 'c(1.5)', 'd(1)', 'e("plain")', 'e(null)', 'g(7)', 'h("row", 3.333)'],
+  },
 };
 
 /**
@@ -892,6 +1041,33 @@ export const REJECTS = {
   'throwing a checked exception without declaring it': J`int f() { throw new Exception("x"); }`,
   'underscore as a number edge': J`int f() { return 1_; }`,
   'a float literal into a double is fine but an int from it is not': J`int f() { int x = 1.5f; return x; }`,
+  // ── wrappers: Java boxes a primitive into its own wrapper and no other
+  'an int into a Double': J`Double f() { Double d = 5; return d; }`,
+  'an int into a Long': J`Long f() { Long n = 5; return n; }`,
+  'a long into an Integer': J`Integer f() { Integer n = 5L; return n; }`,
+  'a char into an Integer': J`Integer f() { Integer n = 'a'; return n; }`,
+  'an int variable into a Character': J`Character f(int a) { Character c = a; return c; }`,
+  'a constant too big for a Character': J`Character f() { Character c = 70000; return c; }`,
+  'a Double into an int': J`int f(Double d) { int i = d; return i; }`,
+  'a Double cast straight to int': J`int f(Double d) { return (int) d; }`,
+  'an Integer cast to char': J`char f(Integer n) { return (char) n; }`,
+  'an Integer into a boolean': J`boolean f(Integer n) { boolean b = n; return b; }`,
+  'an Integer as a condition': J`int f(Integer n) { if (n) return 1; return 0; }`,
+  'text into an Integer': J`Integer f() { Integer n = "5"; return n; }`,
+  'null into an int': J`int f() { int n = null; return n; }`,
+  'returning null as an int': J`int f() { return null; }`,
+  'Character += 1': J`Character f(Character c) { c += 1; return c; }`,
+  'Integer += a double': J`Integer f(Integer n) { n += 1.5; return n; }`,
+  'Integer += a long': J`Integer f(Integer n) { n += 1L; return n; }`,
+  'an int argument for a Long parameter': J`long g(Long a) { return a; } long f() { return g(5); }`,
+  'an Integer argument for a Double parameter': J`double g(Double a) { return a; } double f(Integer n) { return g(n); }`,
+  'an int[] as an Integer[]': J`Integer[] f() { Integer[] xs = new int[2]; return xs; }`,
+  'an Integer[] as an int[]': J`int[] f() { int[] xs = new Integer[2]; return xs; }`,
+  'for (int x : Double[])': J`int f(Double[] ds) { int t = 0; for (int x : ds) t += x; return t; }`,
+  'for (Long x : int[])': J`long f(int[] xs) { long t = 0; for (Long x : xs) t += x; return t; }`,
+  'an Integer has no length()': J`int f(Integer n) { return n.length(); }`,
+  '++ on a Boolean': J`Boolean f(Boolean b) { b++; return b; }`,
+  'a call that fits two boxed overloads': J`int g(Integer a, long b) { return 1; } int g(long a, Integer b) { return 2; } int f() { return g(1, 2); }`,
 };
 
 /**
@@ -908,13 +1084,17 @@ export const REFUSES = {
   'float': { methods: J`float f(float a) { return a / 2; }`, calls: ['f(3) > 1'] },
   'a float literal': { methods: J`double f() { return 1.5f; }`, calls: ['f()'] },
   'byte and short': { methods: J`int f() { byte b = 5; short s = 6; return b + s; }`, calls: ['f()'] },
-  'Integer objects': { methods: J`int f() { Integer n = 5; return n + 1; }`, calls: ['f()'] },
+  '== between two Integers': { methods: J`boolean f(Integer a, Integer b) { return a == b; }`, calls: ['f(5, 5)'] },
+  '!= between two Doubles': { methods: J`boolean f(Double a, Double b) { return a != b; }`, calls: ['f(5.0, 5.0)'] },
+  'Byte, Short and Float': { methods: J`int f() { Short s = 6; return s + 1; }`, calls: ['f()'] },
   'ArrayList': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(); xs.add(1); return xs.size(); }`, calls: ['f()'] },
   'List.of': { methods: J`int f() { return List.of(1, 2).size(); }`, calls: ['f()'] },
   'HashMap': { methods: J`int f() { Map<String, Integer> m = new HashMap<>(); m.put("a", 1); return m.get("a"); }`, calls: ['f()'] },
   'try and catch': { methods: J`int f(int a) { try { return 10 / a; } catch (ArithmeticException e) { return -1; } }`, calls: ['f(0)'] },
-  'String.format': { methods: J`String f(double d) { return String.format("%.2f", d); }`, calls: ['f(3.14159)'] },
-  'printf': { methods: J`int f(double d) { System.out.printf("%.2f%n", d); return 0; }`, calls: ['f(3.14159)'] },
+  'a format in hexadecimal': { methods: J`String f(int n) { return String.format("%x", n); }`, calls: ['f(255)'] },
+  'a format in scientific notation': { methods: J`String f(double d) { return String.format("%e", d); }`, calls: ['f(3.14159)'] },
+  'a numbered format argument': { methods: J`String f(int n) { return String.format("%1$d %1$d", n); }`, calls: ['f(5)'] },
+  'an array handed to a format': { methods: J`String f(String[] xs) { return String.format("%s %s", xs); }`, calls: ['f(new String[] {"a", "b"})'] },
   'a regular expression in split': { methods: J`int f(String s) { return s.split("\\s+").length; }`, calls: ['f("a  b")'] },
   'a dot in split': { methods: J`int f(String s) { return s.split(".").length; }`, calls: ['f("a.b")'] },
   'replaceAll': { methods: J`String f(String s) { return s.replaceAll("a", "b"); }`, calls: ['f("aa")'] },
@@ -1248,16 +1428,44 @@ export const TYPE_ARGUMENTS = ["7, 5000000000L, 2.5, 'k', true, \"hello\", new i
 
 const TYPE_LEAVES = ['1', '0', '65', '70000', '(-1)', "'a'", "'7'", '2.5', '0.0', '3L', 'true', 'false', '"s"', '"12"', 'null',
   'a', 'a', 'p', 'x', 'c', 'c', 't', 's', 's', 'K', 'xs', 'xs.length', 'Integer.MAX_VALUE'];
+const PLAIN_WORDS = { leaves: TYPE_LEAVES, names: ['a', 'p', 'x', 'c', 't', 's'], casts: ['int', 'long', 'double', 'char', 'boolean'] };
+
+// The same puzzles with wrapper objects in them: where Java boxes, where it unboxes, and where it will do neither.
+export const BOX_PARAMETERS = `${TYPE_PARAMETERS}, Integer I, Integer N, Double D, Character C, Boolean B, Long L, Integer[] ws`;
+export const BOX_ARGUMENTS = [
+  `${TYPE_ARGUMENTS[0]}, 40, null, 2.5, 'k', true, 9L, new Integer[] {1, null, 3}`,
+  `${TYPE_ARGUMENTS[1]}, -3, 1000, null, null, null, null, new Integer[2]`,
+  `${TYPE_ARGUMENTS[0]}, 0, 0, -0.0, '7', false, -1L, new Integer[] {5}`,
+];
+const BOX_NAMES = ['I', 'I', 'N', 'D', 'C', 'B', 'L'];
+const BOX_WORDS = {
+  leaves: [...TYPE_LEAVES, 'I', 'I', 'I', 'N', 'D', 'D', 'C', 'B', 'L', 'ws', 'ws[0]', 'ws[1]', 'I', 'D', 'C', 'B'],
+  names: ['a', 'p', 'x', 'c', 't', 's', ...BOX_NAMES, 'ws[0]'],
+  casts: ['int', 'long', 'double', 'char', 'boolean', 'int', 'double', 'Integer', 'Double'],
+  more(rng, sub) {
+    switch (rng.int(9)) {
+      case 0: case 1: return `${rng.pick(BOX_NAMES)}.equals(${sub()})`;
+      case 2: return `${rng.pick(BOX_NAMES)}.${rng.pick(['intValue', 'doubleValue', 'toString', 'longValue', 'booleanValue', 'charValue'])}()`;
+      case 3: return `${rng.pick(BOX_NAMES)}.compareTo(${sub()})`;
+      case 4: case 5: return `${rng.pick(['Integer', 'Double', 'Long', 'Boolean', 'Character'])}.valueOf(${sub()})`;
+      case 6: return `(${rng.pick(BOX_NAMES)} ${rng.pick(['==', '!=', '<', '+', '*'])} ${sub()})`;
+      case 7: return `(${rng.pick(BOX_NAMES)} ${rng.pick(['=', '+=', '-=', '*=', '&=', '<<='])} ${sub()})`;
+      default: return `${rng.pick(['++', '--', '-', '!', '~'])}${rng.pick(BOX_NAMES)}`;
+    }
+  },
+};
+
 const TYPE_BINARY = ['+', '+', '-', '*', '/', '%', '<', '>', '<=', '==', '!=', '&&', '||', '&', '|', '^', '<<', '>>'];
 
-export function typeExpression(rng, depth) {
-  const sub = () => typeExpression(rng, depth - 1);
-  if (depth <= 0 || rng.next() < 0.3) return rng.pick(TYPE_LEAVES);
+export function typeExpression(rng, depth, words = PLAIN_WORDS) {
+  const sub = () => typeExpression(rng, depth - 1, words);
+  if (depth <= 0 || rng.next() < 0.3) return rng.pick(words.leaves);
+  if (words.more && rng.next() < 0.25) return words.more(rng, sub);
   switch (rng.int(22)) {
     case 0: case 1: case 2: case 3: case 4: return `(${sub()} ${rng.pick(TYPE_BINARY)} ${sub()})`;
     case 5: return `(${rng.pick(['-', '!', '~', '+'])}${sub()})`;
     case 6: case 7: return `(${sub()} ? ${sub()} : ${sub()})`;
-    case 8: case 9: return `((${rng.pick(['int', 'long', 'double', 'char', 'boolean'])}) ${sub()})`;
+    case 8: case 9: return `((${rng.pick(words.casts)}) ${sub()})`;
     case 10: return `s.${rng.pick(['length', 'isEmpty', 'trim', 'toUpperCase', 'toCharArray'])}()`;
     case 11: return `s.${rng.pick(['charAt', 'substring', 'indexOf', 'equals', 'contains', 'startsWith', 'compareTo', 'repeat', 'concat'])}(${sub()})`;
     case 12: return `Math.${rng.pick(['max', 'min'])}(${sub()}, ${sub()})`;
@@ -1266,8 +1474,8 @@ export function typeExpression(rng, depth) {
     case 15: return `Character.${rng.pick(['toUpperCase', 'isDigit', 'isLetter', 'getNumericValue'])}(${sub()})`;
     case 16: return `xs[${sub()}]`;
     case 17: return `Integer.parseInt(${sub()})`;
-    case 18: return `(${rng.pick(['a', 'p', 'x', 'c', 't', 's'])} ${rng.pick(['=', '=', '+=', '-=', '*=', '/=', '&=', '<<='])} ${sub()})`;
-    case 19: return `${rng.pick(['a', 'p', 'x', 'c', 't', 's'])}${rng.pick(['++', '--'])}`;
+    case 18: return `(${rng.pick(words.names)} ${rng.pick(['=', '=', '+=', '-=', '*=', '/=', '&=', '<<='])} ${sub()})`;
+    case 19: return `${rng.pick(words.names)}${rng.pick(['++', '--'])}`;
     case 20: return `s.substring(${sub()}, ${sub()})`;
     default: return `s.replace(${sub()}, ${sub()})`;
   }
@@ -1283,4 +1491,81 @@ export function typeCases(seed, count, depth = 2) {
       calls: TYPE_ARGUMENTS.map(args => `m(${args})`),
     };
   });
+}
+
+/** The wrapper version of `typeCases`: the result may also be stored in an Integer, a Double and so on. */
+export function boxCases(seed, count, depth = 2) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, () => {
+    const type = rng.pick(['int', 'long', 'double', 'char', 'boolean', 'String', 'var', 'Integer', 'Integer', 'Double', 'Character', 'Boolean', 'Long']);
+    return {
+      methods: `  String m(${BOX_PARAMETERS}) { final int K = 66; ${type} v = ${typeExpression(rng, depth, BOX_WORDS)}; return "" + v; }`,
+      calls: BOX_ARGUMENTS.map(args => `m(${args})`),
+    };
+  });
+}
+
+// ─── generated formats ───────────────────────────────────────────────────────
+//
+// String.format and printf with formats put together at random — many of them wrong in ways Java
+// only finds out when it runs — and %.Nf across doubles chosen to sit on a rounding boundary.
+
+const FORMAT_PARAMETERS = 'int a, long p, double x, char c, boolean t, String s, Integer I, Double D';
+const FORMAT_ARGUMENTS = ["1234567, -5000000000L, 2.675, 'k', true, \"hello\", 40, 0.125", "-3, 0L, -1234.5, '0', false, \"\", null, null", "0, 99L, 1e-4, 'Z', true, null, -7, 1e9"];
+
+function randomFormat(rng) {
+  const parts = [];
+  const values = [];
+  const count = 1 + rng.int(4);
+  for (let i = 0; i < count; i++) {
+    parts.push(rng.pick(['', '', ' ', 'n=', ': ', '$', '|', ' of ']));
+    const wild = rng.next() < 0.12;   // now and then, a format with no regard for what goes with what
+    const conv = rng.pick(wild ? ['d', 's', 'f', 'b', 'c', 'x', 'S', 'e'] : ['d', 'd', 'd', 's', 's', 'f', 'f', 'f', 'f', 'b', 'c', 'n', '%']);
+    const numeric = conv === 'd' || conv === 'f';
+    const width = rng.next() < 0.5 ? '' : String(rng.pick([1, 3, 6, 10, 14]));
+    const flags = wild ? rng.pick(['-', '0', ',', '+', ',0', '+,', '-0', ' ', ''])
+      : rng.next() < 0.5 ? '' : rng.pick(numeric ? (width ? ['-', '0', ',', '+', ',0', '+,', '+0', '-,', '-+'] : [',', '+', '+,']) : (width ? ['-'] : ['']));
+    const precision = (wild ? rng.next() < 0.6 : conv === 'd' || conv === 'b' || conv === 'c' || rng.next() < 0.4) ? '' : '.' + rng.pick([0, 1, 2, 3, 8]);
+    parts.push(conv === 'n' || conv === '%' ? (rng.next() < 0.9 ? `%${conv}` : `%${width}${conv}`) : `%${flags}${width}${precision}${conv}`);
+    if (conv !== 'n' && conv !== '%' && rng.next() < 0.95) {
+      // usually a value of the right kind, sometimes not
+      const right = { d: ['a', 'p', 'I', 'a + 1'], f: ['x', 'D', 'x * 3', 'x / 7'], s: ['s', 'a', 'x', 'c', 't', 'I', 'D', 'p'], b: ['t', 'a > 0'], c: ['c'] }[conv];
+      values.push(right && rng.next() < 0.85 ? rng.pick(right) : rng.pick(['a', 'p', 'x', 'c', 't', 's', 'I', 'D']));
+    }
+  }
+  return { format: parts.join(''), values };
+}
+
+/** `count` cases: half return String.format, half print with printf. */
+export function formatCases(seed, count) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, (_, i) => {
+    const { format, values } = randomFormat(rng);
+    const inside = [`"${format}"`, ...values].join(', ');
+    return {
+      methods: i % 2 ? `  int m(${FORMAT_PARAMETERS}) { System.out.printf(${inside}); System.out.println(); return 0; }`
+        : `  String m(${FORMAT_PARAMETERS}) { return String.format(${inside}); }`,
+      calls: FORMAT_ARGUMENTS.map(args => `m(${args})`),
+    };
+  });
+}
+
+/** Doubles written with a few decimal places — 1.005, 2.675, 0.125 — which is where rounding to 2 places is decided. */
+export function roundingCases(seed, count, perCase = 150) {
+  const rng = randomSource(seed);
+  const one = () => {
+    const kind = rng.int(6);
+    const whole = rng.pick([0, 0, 1, 2, 9, 10, 99, 100, 999, 1234, 99999, 1234567]);
+    const places = 1 + rng.int(kind === 0 ? 4 : 9);
+    let fraction = '';
+    for (let k = 0; k < places; k++) fraction += kind === 1 ? '9' : String(rng.int(10));
+    if (kind === 2) fraction = fraction.slice(0, -1) + '5';
+    if (kind === 3) return `${rng.int(1000)}.${rng.int(10)}e${rng.int(40) - 20}`;
+    if (kind === 4) return `${whole}.${fraction} / ${1 + rng.int(9)}.0`;
+    return `${rng.next() < 0.2 ? '-' : ''}${whole}.${fraction}`;
+  };
+  return Array.from({ length: count }, () => ({
+    methods: '  String m(double x) { return String.format("%.0f %.1f %.2f %.3f %,.2f %f %012.4f %+.1f %.10f", x, x, x, x, x, x, x, x, x); }',
+    calls: Array.from({ length: perCase }, () => `m(${one()})`),
+  }));
 }

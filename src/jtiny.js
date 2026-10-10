@@ -19,15 +19,17 @@
  *   4. compile + run         the typed tree becomes closures and is run under a
  *                            step budget, a clock, a depth cap and a size cap
  *
- * What it runs: int, long, double, boolean, char, String, StringBuilder and
- * arrays of them; every operator; if / else, while, do, for, for-each, switch
- * (both forms, and as an expression), break, continue, return, throw; helper
- * methods and recursion; and the library methods listed in the tables below.
+ * What it runs: int, long, double, boolean, char, String, StringBuilder, the
+ * wrappers Integer, Long, Double, Character and Boolean (boxing, unboxing and
+ * null), and arrays of them; every operator; if / else, while, do, for,
+ * for-each, switch (both forms, and as an expression), break, continue, return,
+ * throw; helper methods, overloading and recursion; printf and String.format
+ * with %d %s %f %b %c %n; and the library methods listed in the tables below.
  *
  * What it refuses, by name: byte / short / float, collections and generics,
- * wrapper objects, classes and fields, try / catch, lambdas, labels, regular
- * expressions, formatted printing — and == between two Strings, which Java
- * answers by object identity; .equals() is what a student means.
+ * classes and fields, try / catch, lambdas, labels, regular expressions — and
+ * == between two Strings or two wrapper objects, which Java answers by object
+ * identity; .equals() is what a student means.
  *
  * Everything here is checked against the real JDK in tests/jtiny-differential.test.js.
  *
@@ -827,6 +829,12 @@ class Parser {
                         (after.t === 'id' || after.t === 'str' || after.t === 'char' || after.t === 'int' || after.t === 'double' ||
                             this.isOp('(', after) || this.isOp('!', after) || this.isOp('~', after) ||
                             (after.t === 'kw' && ['new', 'this', 'true', 'false', 'null', 'super'].includes(after.v)))) {
+                        if (isWrapper(n.v) && k === this.p + 2) {
+                            this.next();
+                            const type = this.parseType();
+                            this.expectOp(')', 'to close the cast');
+                            return { k: 'cast', to: type, e: this.parseUnary(), line: t.line };
+                        }
                         throw notYet(`${BOX} does not have casts to object types such as (${n.v}).`, t.line,
                             n.v === 'String' ? 'To turn a value into text use String.valueOf(x) or "" + x' : null);
                     }
@@ -1005,7 +1013,13 @@ const RANK = { char: 0, int: 1, long: 2, double: 3 };
 
 const isArray = t => t.endsWith('[]');
 const elemOf = t => t.slice(0, -2);
-const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t);
+// The wrapper classes: an object holding one primitive value, or null.
+const UNBOXED = new Map([['Integer', 'int'], ['Double', 'double'], ['Boolean', 'boolean'], ['Character', 'char'], ['Long', 'long']]);
+const BOXED = new Map([...UNBOXED].map(([w, p]) => [p, w]));
+const isWrapper = t => UNBOXED.has(t);
+const unboxedOf = t => UNBOXED.get(t) ?? t;
+
+const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t);
 
 const promote = (a, b) => (a === 'double' || b === 'double' ? 'double' : a === 'long' || b === 'long' ? 'long' : 'int');
 
@@ -1013,26 +1027,24 @@ const aType = t => (t === 'null' ? 'null' : /^[aeiou]/i.test(t) ? `an ${t}` : `a
 
 const NOT_YET_TYPES = new Map([
     ['byte', 'the byte type'], ['short', 'the short type'], ['float', 'the float type'],
-    ['Integer', 'the wrapper type Integer'], ['Double', 'the wrapper type Double'], ['Boolean', 'the wrapper type Boolean'],
-    ['Character', 'the wrapper type Character'], ['Long', 'the wrapper type Long'],
+    ['Byte', 'the wrapper type Byte'], ['Short', 'the wrapper type Short'], ['Float', 'the wrapper type Float'],
     ['Object', 'the Object type'], ['List', 'lists'], ['ArrayList', 'lists'], ['LinkedList', 'lists'],
     ['Map', 'maps'], ['HashMap', 'maps'], ['TreeMap', 'maps'], ['Set', 'sets'], ['HashSet', 'sets'], ['TreeSet', 'sets'],
     ['Scanner', 'Scanner (there is no keyboard input here)'], ['Random', 'Random (a test needs the same answer every time)'],
     ['StringBuffer', 'StringBuffer'], ['BigInteger', 'BigInteger'], ['BigDecimal', 'BigDecimal'],
     ['Stack', 'Stack'], ['Queue', 'Queue'], ['Deque', 'Deque'], ['Optional', 'Optional'],
 ]);
-const TYPE_HINTS = { byte: 'Use int.', short: 'Use int.', float: 'Use double.', Integer: 'Use int.', Double: 'Use double.',
-    Boolean: 'Use boolean.', Character: 'Use char.', Long: 'Use long.', StringBuffer: 'Use StringBuilder.' };
+const TYPE_HINTS = { byte: 'Use int.', short: 'Use int.', float: 'Use double.', Byte: 'Use Integer.', Short: 'Use Integer.', Float: 'Use Double.', StringBuffer: 'Use StringBuilder.' };
 
 function resolveType(node, { allowVoid = false } = {}) {
     const { base, dims, line } = node;
     let name;
-    if (PRIMITIVES.has(base) || base === 'String' || base === 'StringBuilder') name = base;
+    if (PRIMITIVES.has(base) || base === 'String' || base === 'StringBuilder' || isWrapper(base)) name = base;
     else if (base === 'void' && allowVoid) name = 'void';
     else if (base === 'string') throw compileError('Java spells the type String, with a capital S.', line);
     else if (NOT_YET_TYPES.has(base)) throw notYet(`${BOX} does not have ${NOT_YET_TYPES.get(base)} yet.`, line, TYPE_HINTS[base] ?? null);
     else if (base === 'var') throw compileError('var can only be used for a local variable that is given a value straight away.', line);
-    else throw notYet(`${BOX} does not know the type "${base}".`, line, 'The types here are int, long, double, boolean, char, String, StringBuilder, and arrays of them.');
+    else throw notYet(`${BOX} does not know the type "${base}".`, line, 'The types here are int, long, double, boolean, char, String, StringBuilder, the wrappers Integer, Double, Boolean, Character and Long, and arrays of them.');
     return name + '[]'.repeat(dims);
 }
 
@@ -1092,6 +1104,24 @@ function converter(from, to) {
 }
 
 /**
+ * Any conversion the checker allows, wrappers included. A boxed value is held as the bare primitive
+ * (or null), so boxing changes nothing; unboxing only has to notice a null.
+ */
+function conversion(from, to) {
+    if (from === to) return null;
+    if (isWrapper(from)) {
+        const prim = unboxedOf(from);
+        const what = `The ${from} being used as ${aType(prim)}`;
+        const unbox = v => { if (v === null) throw nullPointer(what); return v; };
+        if (isWrapper(to) || to === 'null') return null;
+        const rest = converter(prim, to);
+        return rest ? v => rest(unbox(v)) : unbox;
+    }
+    if (isWrapper(to)) return converter(from, unboxedOf(to));
+    return converter(from, to);
+}
+
+/**
  * Double.toString, exactly: the shortest digits that name this double and no
  * other, laid out Java's way (always a decimal point; E-notation below 0.001
  * and from 10,000,000 up). JS produces the same shortest digits; one rule
@@ -1143,6 +1173,10 @@ function textOf(type) {
         case 'String': return v => (v === null ? 'null' : v);
         case 'StringBuilder': return v => (v === null ? 'null' : v.s);
         case 'null': return () => 'null';
+        case 'Integer': case 'Double': case 'Boolean': case 'Character': case 'Long': {
+            const inner = textOf(unboxedOf(type));
+            return v => (v === null ? 'null' : inner(v));
+        }
         default: return null;   // arrays: refused where they would be printed
     }
 }
@@ -1325,10 +1359,17 @@ function unaryFunction(op, type) {
     return type === 'int' ? a => ~a : a => ~a;   // ~ on a BigInt stays in range
 }
 
-const stepper = (type, by) => (type === 'int' ? v => (v + by) | 0
+const primitiveStepper = (type, by) => (type === 'int' ? v => (v + by) | 0
     : type === 'char' ? v => (v + by) & 0xFFFF
         : type === 'long' ? v => wrap64(v + BigInt(by))
             : v => v + by);
+
+/** x++ and x--, for a primitive or for a wrapper (which is unboxed, stepped and boxed again). */
+function stepper(type, by) {
+    const step = primitiveStepper(unboxedOf(type), by);
+    if (!isWrapper(type)) return step;
+    return v => { if (v === null) throw nullPointer(`The ${type} being changed`); return step(v); };
+}
 
 // ─── The library ─────────────────────────────────────────────────────────────
 //
@@ -1487,7 +1528,7 @@ function compareDoubles(a, b) {
     return a !== a ? (b !== b ? 0 : 1) : -1;
 }
 
-const elementEquals = type => (type === 'double' ? Object.is : (a, b) => a === b);
+const elementEquals = type => (type === 'double' || type === 'Double' ? Object.is : (a, b) => a === b);
 
 function arraysEqual(a, b) {
     if (a === b) return true;
@@ -1515,10 +1556,9 @@ function deepText(arr) {
 function sortArray(arr) {
     notNull(arr, 'The array given to Arrays.sort');
     work(arr.a.length * 16);
-    if (arr.type === 'String') {
-        if (arr.a.includes(null)) throw nullPointer('An element of the array being sorted');
-        arr.a.sort(compareStrings);
-    } else if (arr.type === 'double') arr.a.sort(compareDoubles);
+    if ((arr.type === 'String' || isWrapper(arr.type)) && arr.a.length > 1 && arr.a.includes(null)) throw nullPointer('An element of the array being sorted');
+    if (arr.type === 'String') arr.a.sort(compareStrings);
+    else if (arr.type === 'double' || arr.type === 'Double') arr.a.sort(compareDoubles);
     else arr.a.sort((x, y) => (x < y ? -1 : x > y ? 1 : 0));
 }
 
@@ -1605,7 +1645,7 @@ const STRING_METHODS = {
 
 // Real String methods this box does not run, and what to say about each.
 const STRING_NOT_YET = {
-    format: 'String.format', formatted: 'formatted()', matches: 'matches() (regular expressions)',
+    matches: 'matches() (regular expressions)',
     replaceAll: 'replaceAll() (regular expressions) — replace() does plain text', replaceFirst: 'replaceFirst() (regular expressions)',
     chars: 'chars() (streams)', lines: 'lines() (streams)', codePointAt: 'codePointAt()', intern: 'intern()', getBytes: 'getBytes()',
 };
@@ -1625,7 +1665,8 @@ const insertWith = type => {
         return sb;
     };
 };
-const APPENDABLE = ['char', 'int', 'long', 'double', 'boolean', 'String', 'StringBuilder'];
+const WRAPPER_NAMES = ['Integer', 'Double', 'Boolean', 'Character', 'Long'];
+const APPENDABLE = ['char', 'int', 'long', 'double', 'boolean', 'String', 'StringBuilder', ...WRAPPER_NAMES];
 
 const BUILDER_METHODS = {
     append: [
@@ -1667,6 +1708,29 @@ function substringOfBuilder(sb, start, end) {
     return sb.s.slice(start, end);
 }
 
+/** The methods a wrapper object has. `SELF` is the wrapper's own type, `PRIM` the primitive it holds. */
+function wrapperMethods(type) {
+    const prim = unboxedOf(type);
+    const same = prim === 'double' ? Object.is : (a, b) => a === b;
+    const show = textOf(prim);
+    const table = {
+        equals: [sig(type, 'boolean', (a, b) => b !== null && same(a, b))],
+        toString: [sig('', 'String', a => show(a))],
+        compareTo: [sig(type, 'int', (a, b) => {
+            notNull(b, `The ${type} given to compareTo`);
+            return prim === 'double' ? compareDoubles(a, b) : prim === 'char' ? a - b : prim === 'boolean' ? Number(a) - Number(b) : (a < b ? -1 : a > b ? 1 : 0);
+        })],
+    };
+    if (prim === 'int' || prim === 'double' || prim === 'long') {
+        table.intValue = [sig('', 'int', conversion(prim, 'int') || (v => v))];
+        table.longValue = [sig('', 'long', conversion(prim, 'long') || (v => v))];
+        table.doubleValue = [sig('', 'double', conversion(prim, 'double') || (v => v))];
+    }
+    if (prim === 'boolean') table.booleanValue = [sig('', 'boolean', v => v)];
+    if (prim === 'char') table.charValue = [sig('', 'char', v => v)];
+    return table;
+}
+
 const ARRAY_METHODS = {
     clone: [sig('', 'SELF', arr => { cells(arr.a.length); return new JArray(arr.type, arr.a.slice()); })],
 };
@@ -1686,7 +1750,156 @@ const printWith = (type, newline) => {
     const show = textOf(type);
     return v => M.print(show(v) + newline);
 };
-const PRINTABLE = ['char', 'int', 'long', 'double', 'boolean', 'String', 'StringBuilder'];
+// ─── printf and String.format ────────────────────────────────────────────────
+//
+// The part of Java's Formatter a first course uses: %d %s %f %b %c %n %%, a width, a precision, and
+// the flags - 0 , and +. Anything else in a format is declined rather than guessed at. Numbers are
+// written the way Java writes them in the United States: 1,234.50.
+
+const FORMAT_SPEC = /%([-+,0 #(]*)(\d+)?(?:\.(\d+))?([a-zA-Z%])/y;
+
+/** A format cut into text and specifiers, or `{ problem }` naming what this box does not do. */
+function parseFormat(format) {
+    const pieces = [];
+    let from = 0;
+    for (;;) {
+        const at = format.indexOf('%', from);
+        if (at < 0) { if (from < format.length) pieces.push(format.slice(from)); return { pieces }; }
+        if (at > from) pieces.push(format.slice(from, at));
+        FORMAT_SPEC.lastIndex = at;
+        const m = FORMAT_SPEC.exec(format);
+        if (!m) return { problem: `the format has a % that is not followed by one of the letters ${BOX} knows (to print a percent sign, write %%)` };
+        const [whole, flags, widthText, precisionText, conv] = m;
+        const spec = { conv, left: flags.includes('-'), zero: flags.includes('0'), group: flags.includes(','), plus: flags.includes('+'),
+            width: widthText === undefined ? 0 : Number(widthText), precision: precisionText === undefined ? null : Number(precisionText) };
+        const no = what => ({ problem: `${whole} in a format — ${what}` });
+        if (!'dsfbcn%'.includes(conv)) return no(`the ones here are %d, %s, %f, %b, %c, %n and %%`);
+        if (/[ #(]/.test(flags) || new Set(flags).size !== flags.length) return no('the flags here are -, 0, the comma and +');
+        if (conv === 'n' || conv === '%') {
+            if (whole.length !== 2) return no(`write just %${conv}`);
+        } else {
+            if ((spec.left || spec.zero) && widthText === undefined) return no('a - or 0 flag needs a width after it, as in %-10s or %05d');
+            if (spec.left && spec.zero) return no('- and 0 cannot be used together');
+            if (conv !== 'd' && conv !== 'f' && (spec.zero || spec.group || spec.plus)) return no(`the flags 0, comma and + are for numbers, %d and %f`);
+            if (spec.precision !== null && conv !== 'f' && conv !== 's') return no('a precision (the .2 part) goes with %f');
+            if (spec.width > 1000 || spec.precision > 1000) return no('that is wider than this box prints');
+        }
+        pieces.push(spec);
+        from = at + whole.length;
+    }
+}
+
+/** The digits of a positive, finite double to `places` decimal places, rounded half up from the digits Java prints for it. */
+function fixedDigits(a, places) {
+    const shown = javaDouble(a);
+    let digits;
+    let point;
+    if (shown.includes('E')) {
+        const [mantissa, exponent] = shown.split('E');
+        digits = mantissa.replace('.', '');
+        point = 1 + Number(exponent);
+    } else {
+        const [whole, fraction] = shown.split('.');
+        digits = whole + fraction;
+        point = whole.length;
+    }
+    if (point < 1) { digits = '0'.repeat(1 - point) + digits; point = 1; }
+    const keep = point + places;
+    let kept = digits.slice(0, keep).padEnd(keep, '0');
+    if (digits.length > keep && digits[keep] >= '5') {
+        const up = kept.split('');
+        let i = up.length - 1;
+        while (i >= 0 && up[i] === '9') up[i--] = '0';
+        if (i >= 0) up[i] = String(Number(up[i]) + 1);
+        else { up.unshift('1'); point++; }
+        kept = up.join('');
+    }
+    return [kept.slice(0, point).replace(/^0+(?=\d)/, ''), kept.slice(point)];
+}
+
+const grouped = whole => whole.replace(/\B(?=(\d{3})+$)/g, ',');
+const FORMAT_CLASS = { int: 'Integer', long: 'Long', double: 'Double', char: 'Character', boolean: 'Boolean' };
+
+/** One argument, as one specifier writes it. */
+function formatValue(spec, v, type) {
+    const prim = unboxedOf(type);
+    const mismatch = () => thrown('IllegalFormatConversionException', `${spec.conv} != java.lang.${FORMAT_CLASS[prim] || type}`,
+        spec.conv === 'd' ? '%d is for whole numbers. For a double use %f or %.2f; for anything at all, %s.'
+            : spec.conv === 'f' ? '%f is for doubles. For a whole number use %d; for anything at all, %s.' : null);
+    const pad = body => (body.length >= spec.width ? body : spec.left ? body.padEnd(spec.width) : body.padStart(spec.width));
+    const number = (negative, body) => {
+        const sign = negative ? '-' : spec.plus ? '+' : '';
+        return spec.zero ? sign + body.padStart(spec.width - sign.length, '0') : pad(sign + body);
+    };
+    // A null is written as the word, whatever the place was for — cut short by a precision, like any text.
+    if (v === null && spec.conv !== 'b') return pad(spec.precision === null ? 'null' : 'null'.slice(0, spec.precision));
+    switch (spec.conv) {
+        case 's': {
+            const show = textOf(type);
+            if (!show) throw refusal(`${BOX} does not format ${aType(type)} with %s.`);
+            const body = show(v);
+            return pad(spec.precision === null ? body : body.slice(0, spec.precision));
+        }
+        case 'd': {
+            if (prim !== 'int' && prim !== 'long') throw mismatch();
+            const digits = String(v).replace('-', '');
+            return number(v < 0, spec.group ? grouped(digits) : digits);
+        }
+        case 'f': {
+            if (prim !== 'double') throw mismatch();
+            if (!Number.isFinite(v)) {
+                if (spec.zero || spec.group || spec.plus) throw refusal(`${BOX} does not format NaN or Infinity with the flags 0, comma or +.`);
+                return pad(javaDouble(v));
+            }
+            const places = spec.precision === null ? 6 : spec.precision;
+            const [whole, fraction] = fixedDigits(Math.abs(v), places);
+            return number(v < 0 || Object.is(v, -0), (spec.group ? grouped(whole) : whole) + (places ? '.' + fraction : ''));
+        }
+        case 'b':
+            if (prim !== 'boolean') throw refusal(`${BOX} uses %b only for a boolean.`);
+            return pad(v === true ? 'true' : 'false');
+        default:
+            if (prim !== 'char') {
+                if (prim === 'int') throw refusal(`${BOX} uses %c only for a char.`);
+                throw mismatch();
+            }
+            return pad(String.fromCharCode(v));
+    }
+}
+
+/**
+ * What a format and its arguments make. Java writes as it goes, so when an argument turns out not to
+ * fit, printf has already printed what came before it: that text is handed to `partial` first.
+ */
+function formatJava(format, values, types, partial = null) {
+    notNull(format, 'The format');
+    const parsed = parseFormat(format);
+    if (parsed.problem) throw refusal(`${BOX} does not have ${parsed.problem}.`);
+    let out = '';
+    let next = 0;
+    try {
+        for (const piece of parsed.pieces) {
+            if (typeof piece === 'string') out += piece;
+            else if (piece.conv === 'n') out += '\n';
+            else if (piece.conv === '%') out += '%';
+            else {
+                if (next >= values.length) {
+                    throw thrown('MissingFormatArgumentException', `Format specifier '%${piece.conv}'`,
+                        'The format has more % places than there are values after it.');
+                }
+                out += formatValue(piece, values[next], types[next]);
+                next++;
+            }
+            if (out.length > TEXT_LIMIT) text(out);
+        }
+    } catch (err) {
+        if (partial && !err.unsupported) partial(out);
+        throw err;
+    }
+    return text(out);
+}
+
+const PRINTABLE = ['char', 'int', 'long', 'double', 'boolean', 'String', 'StringBuilder', ...WRAPPER_NAMES];
 
 const PRINT_METHODS = {
     println: [sig('', 'void', () => M.print('\n')), ...PRINTABLE.map(t => sig(t, 'void', printWith(t, '\n')))],
@@ -1700,7 +1913,7 @@ const number2 = fnFor => [
 ];
 
 const anyArray = t => !isArray(t);   // one-dimensional only
-const sortable = t => t !== 'boolean' && !isArray(t) && t !== 'StringBuilder';
+const sortable = t => t !== 'boolean' && t !== 'Boolean' && !isArray(t) && t !== 'StringBuilder';
 
 const STATICS = {
     Math: {
@@ -1748,8 +1961,9 @@ const STATICS = {
             signum: [sig('int', 'int', a => (a > 0 ? 1 : a < 0 ? -1 : 0))],
             toBinaryString: [sig('int', 'String', a => (a >>> 0).toString(2))],
             toHexString: [sig('int', 'String', a => (a >>> 0).toString(16))],
+            valueOf: [sig('int', 'Integer', a => a), sig('String', 'Integer', s => parseIntStrict(s, 32))],
         },
-        notYet: { valueOf: 'Integer.valueOf() — it makes an Integer object; Integer.parseInt gives an int' },
+        notYet: {},
     },
     Long: {
         fields: { MAX_VALUE: ['long', LONG_MAX], MIN_VALUE: ['long', LONG_MIN] },
@@ -1757,8 +1971,9 @@ const STATICS = {
             parseLong: [sig('String', 'long', s => parseIntStrict(s, 64))],
             toString: [sig('long', 'String', a => a.toString())],
             compare: [sig('long long', 'int', (a, b) => (a < b ? -1 : a > b ? 1 : 0))],
+            valueOf: [sig('long', 'Long', a => a), sig('String', 'Long', s => parseIntStrict(s, 64))],
         },
-        notYet: { valueOf: 'Long.valueOf()' },
+        notYet: {},
     },
     Double: {
         fields: {
@@ -1770,14 +1985,17 @@ const STATICS = {
             toString: [sig('double', 'String', javaDouble)],
             isNaN: [sig('double', 'boolean', a => a !== a)],
             compare: [sig('double double', 'int', compareDoubles)],
+            valueOf: [sig('double', 'Double', a => a), sig('String', 'Double', parseDoubleStrict)],
         },
-        notYet: { valueOf: 'Double.valueOf() — Double.parseDouble gives a double' },
+        notYet: {},
     },
     Boolean: {
         fields: {},
         methods: {
             parseBoolean: [sig('String', 'boolean', s => s !== null && s.length === 4 && plain(s, 'Boolean.parseBoolean').toLowerCase() === 'true')],
             toString: [sig('boolean', 'String', b => (b ? 'true' : 'false'))],
+            valueOf: [sig('boolean', 'Boolean', b => b),
+                sig('String', 'Boolean', s => s !== null && s.length === 4 && plain(s, 'Boolean.valueOf').toLowerCase() === 'true')],
         },
         notYet: {},
     },
@@ -1799,8 +2017,9 @@ const STATICS = {
                 sig('int', 'int', c => (isDigit(plainChar(c, 'Character.getNumericValue')) ? c - 48 : isLetter(c) ? (c | 32) - 87 : -1)),
             ],
             compare: [sig('char char', 'int', (a, b) => a - b)],
+            valueOf: [sig('char', 'Character', c => c)],
         },
-        notYet: { valueOf: 'Character.valueOf()' },
+        notYet: {},
     },
     String: {
         fields: {},
@@ -1810,6 +2029,7 @@ const STATICS = {
                 sig('char[]', 'String', arr => String.fromCharCode(...notNull(arr, 'The array given to String.valueOf').a)),
                 sig('String', 'String', s => (s === null ? 'null' : s)),
                 sig('StringBuilder', 'String', sb => (sb === null ? 'null' : sb.s)),
+                ...WRAPPER_NAMES.map(t => sig(t, 'String', textOf(t))),
                 sig('T[]', 'String', null, { refuse: 'String.valueOf of an array — it gives a code such as [I@1b6d3586; use Arrays.toString' }),
             ],
             join: [
@@ -1817,7 +2037,7 @@ const STATICS = {
                 sig('String String', 'String', (d, ...items) => text(items.map(s => (s === null ? 'null' : s)).join(notNull(d, 'The text to join with'))), { variadic: true }),
             ],
         },
-        notYet: { format: 'String.format — build the text with + instead' },
+        notYet: {},
     },
     Arrays: {
         fields: {},
@@ -1898,20 +2118,32 @@ function stripParens(node) {
 
 /** Wrap a typed node in a conversion to `to` (which the caller has shown to be legal). */
 function convert(node, to) {
-    if (node.type === to) return node;
-    const out = { k: 'conv', from: node.type, to, e: node, type: to, line: node.line };
-    if (node.const) {
-        const fn = converter(node.type, to);
+    const from = node.type;
+    if (from === to) return node;
+    // Java never boxes and widens in one go, so these are written as two steps: an Integer used as a
+    // double is unboxed and then widened; a constant 65 stored in a Character is narrowed and then boxed.
+    if (isWrapper(from) && !isWrapper(to) && to !== 'null' && unboxedOf(from) !== to) return convert(convert(node, unboxedOf(from)), to);
+    if (isWrapper(to) && PRIMITIVES.has(from) && unboxedOf(to) !== from) return convert(convert(node, unboxedOf(to)), to);
+    const out = { k: 'conv', from, to, e: node, type: to, line: node.line };
+    if (node.const && !isWrapper(to) && !isWrapper(from)) {
+        const fn = converter(from, to);
         out.const = { v: fn ? fn(node.const.v) : node.const.v };
     }
     return out;
 }
 
-/** May a value of type `from` be passed where `to` is wanted, with no cast? */
+/** May a value of type `from` be passed where `to` is wanted, with no cast and no boxing? */
 function passable(from, to) {
     if (from === to) return true;
     if (from === 'null') return isReference(to);
     return NUMERIC.has(from) && NUMERIC.has(to) && RANK[from] < RANK[to];
+}
+
+/** The same, also allowing a primitive to be boxed, or a wrapper to be unboxed and then widened (JLS 5.3). */
+function passableBoxing(from, to) {
+    if (passable(from, to)) return true;
+    if (isWrapper(from)) return passable(unboxedOf(from), to);
+    return BOXED.get(from) === to;
 }
 
 class Checker {
@@ -2096,13 +2328,13 @@ class Checker {
         if (s.type.base === 'var' && s.type.dims === 0) type = elem;
         else {
             type = resolveType(s.type);
-            if (!passable(elem, type)) {
+            if (!passableBoxing(elem, type)) {
                 throw compileError(`The array holds ${elem} values, which cannot go into the ${type} variable ${s.name}.`, s.nameLine,
                     `Declare the loop variable as ${elem}: for (${elem} ${s.name} : …)`);
             }
         }
         s.sym = this.declare(s.name, type, s.nameLine, s.isFinal);
-        s.conv = converter(elem, type);
+        s.conv = conversion(elem, type);
         this.inLoop(s.body);
         this.scopes.pop();
     }
@@ -2139,7 +2371,7 @@ class Checker {
     }
 
     condition(node, what) {
-        const e = this.value(node);
+        const e = this.prim(node);
         if (e.type !== 'boolean') {
             const inner = stripParens(e);
             const hint = inner.k === 'assign' && inner.op === '='
@@ -2155,8 +2387,17 @@ class Checker {
     /** Assignment conversion (JLS 5.2): what `T x = value` and `return value` allow. */
     assignable(node, to, line, where, isReturn = false) {
         const from = node.type;
-        if (passable(from, to)) return convert(node, to);
-        if (to === 'char' && fitsChar(node)) return convert(node, to);   // a constant int that fits
+        if (passableBoxing(from, to)) return convert(node, to);
+        if ((to === 'char' || to === 'Character') && fitsChar(node)) return convert(node, to);   // a constant int that fits
+        if (isWrapper(to) && PRIMITIVES.has(from)) {
+            const want = unboxedOf(to);
+            throw compileError(`${aType(from)[0].toUpperCase() + aType(from).slice(1)} cannot be stored in ${where}, which is ${aType(to)}: Java boxes ${aType(want)} into ${aType(to)}, and nothing else.`, line,
+                to === 'Double' ? 'Write the number with a decimal point: 5.0' : to === 'Long' ? 'Write the number with an L: 5L' : `Give it ${aType(want)}.`);
+        }
+        if (isWrapper(from) && PRIMITIVES.has(to)) {
+            throw compileError(`${aType(from)[0].toUpperCase() + aType(from).slice(1)} cannot be stored in ${where}, which is ${aType(to)}.`, line,
+                `It unboxes to ${aType(unboxedOf(from))}, and that does not fit ${aType(to)} without a cast.`);
+        }
         if (NUMERIC.has(from) && NUMERIC.has(to)) {
             const hint = to === 'char'
                 ? 'A whole number is not a char without a cast: (char) value'
@@ -2243,8 +2484,14 @@ class Checker {
         return n;
     }
 
+    /** An operand: a wrapper is unboxed to the primitive it holds, as Java does before any arithmetic or test. */
+    prim(node) {
+        const e = this.value(node);
+        return isWrapper(e.type) ? convert(e, unboxedOf(e.type)) : e;
+    }
+
     unary(n) {
-        const e = this.value(n.e);
+        const e = this.prim(n.e);
         const t = e.type;
         const bad = hint => compileError(`The operator ${n.op} cannot be used on ${aType(t)}.`, n.line, hint);
         if (n.op === '!') {
@@ -2264,8 +2511,20 @@ class Checker {
 
     binary(n) {
         const op = n.op;
-        const l = this.value(n.l);
-        const r = this.value(n.r);
+        let l = this.value(n.l);
+        let r = this.value(n.r);
+        const equality = op === '==' || op === '!=';
+        if (equality && isWrapper(l.type) && isWrapper(r.type)) {
+            throw notYet(`${op} between two ${l.type === r.type ? l.type : 'wrapper'} objects asks whether they are the very same object, not whether they hold the same value, so ${BOX} does not run it.`, n.line,
+                op === '==' ? 'Compare the values with .equals(): a.equals(b)' : 'Compare the values with .equals(): !a.equals(b)');
+        }
+        // Everywhere else a wrapper is unboxed first — except when it is being joined to text, or compared with null.
+        const joining = op === '+' && (l.type === 'String' || r.type === 'String');
+        const againstNull = equality && (l.type === 'null' || r.type === 'null');
+        if (!joining && !againstNull) {
+            if (isWrapper(l.type)) l = convert(l, unboxedOf(l.type));
+            if (isWrapper(r.type)) r = convert(r, unboxedOf(r.type));
+        }
         const lt = l.type;
         const rt = r.type;
         n.l = l;
@@ -2372,18 +2631,21 @@ class Checker {
     assign(n) {
         const target = this.target(n.target, 'given a new value');
         n.target = target;
-        const T = target.type;
-        n.type = T;
+        n.type = target.type;
         if (n.op === '=') {
-            n.e = this.assignable(this.value(n.e), T, n.line, target.k === 'name' ? `the variable ${target.name}` : 'this array element');
+            n.e = this.assignable(this.value(n.e), target.type, n.line, target.k === 'name' ? `the variable ${target.name}` : 'this array element');
             return n;
         }
         const op = n.op.slice(0, -1);
         n.binop = op;
-        const e = this.value(n.e);
+        const concat = target.type === 'String' && op === '+';
+        const e = concat ? this.value(n.e) : this.prim(n.e);
         const R = e.type;
-        const bad = hint => compileError(`${n.op} cannot be used with ${aType(T)} on the left and ${aType(R)} on the right.`, n.line, hint);
-        if (T === 'String' && op === '+') {
+        const bad = hint => compileError(`${n.op} cannot be used with ${aType(target.type)} on the left and ${aType(R)} on the right.`, n.line, hint);
+        // count += 1 on an Integer: unbox, add, box again. The arithmetic is done on the primitive.
+        const T = unboxedOf(target.type);
+        n.opfrom = T;
+        if (concat) {
             if (isArray(R)) throw notYet('Joining an array to a String shows a code such as [I@1b6d3586, not the values in it.', n.line, 'Use Arrays.toString(nums) to get the values as text.');
             n.mode = 'concat';
             n.e = e;
@@ -2402,12 +2664,18 @@ class Checker {
         } else {
             throw bad(T !== 'String' && R === 'String' ? `${target.k === 'name' ? target.name : 'The left side'} is ${aType(T)}, so text cannot be added to it.` : null);
         }
+        // A primitive on the left is quietly cast back (that is what makes b += 1 work on a char); a
+        // wrapper is not, because the result would have to be narrowed and boxed in one step.
+        if (isWrapper(target.type) && !concat && n.optype !== T) {
+            throw compileError(`${n.op} here works out ${aType(n.optype)}, and that cannot be stored back in ${aType(target.type)}.`, n.line,
+                `Use ${aType(T)} variable for this, or write the assignment out in full with a cast.`);
+        }
         return n;
     }
 
     incdec(n) {
         const target = this.target(n.target, 'changed');
-        if (!NUMERIC.has(target.type)) {
+        if (!NUMERIC.has(unboxedOf(target.type))) {
             throw compileError(`${n.op} works on numbers, and this is ${aType(target.type)}.`, n.line);
         }
         n.target = target;
@@ -2421,13 +2689,20 @@ class Checker {
         const b = this.value(n.b);
         const at = a.type;
         const bt = b.type;
+        // JLS 15.25. With a wrapper on one side the result is usually the primitive, which is how
+        // flag ? count : null comes to throw when count is an int and the null is chosen.
+        const ap = unboxedOf(at);
+        const bp = unboxedOf(bt);
         let type;
         if (at === bt) type = at;
-        else if (NUMERIC.has(at) && NUMERIC.has(bt)) {
+        else if (ap === bp && ap !== 'null') type = ap;                                 // int and Integer → int
+        else if (NUMERIC.has(ap) && NUMERIC.has(bp)) {
             if ((at === 'char' && fitsChar(b)) || (bt === 'char' && fitsChar(a))) type = 'char';
-            else type = promote(at, bt);
+            else type = promote(ap, bp);
         } else if (at === 'null' && isReference(bt)) type = bt;
         else if (bt === 'null' && isReference(at)) type = at;
+        else if (at === 'null' && BOXED.has(bt)) type = BOXED.get(bt);                  // null and int → Integer
+        else if (bt === 'null' && BOXED.has(at)) type = BOXED.get(at);
         else {
             throw notYet(`The two results of this ? : are different types (${at} and ${bt}), which ${BOX} does not run.`, n.line,
                 'Make both results the same type.');
@@ -2443,7 +2718,11 @@ class Checker {
         const to = resolveType(n.to);
         const e = this.value(n.e);
         const from = e.type;
-        if (from !== to && !(NUMERIC.has(from) && NUMERIC.has(to))) {
+        // A wrapper may be cast to the primitive it holds, or to a wider one — (double) count — but not narrowed.
+        const unboxing = isWrapper(from) && passable(unboxedOf(from), to);
+        // And a cast boxes only into the matching wrapper: (Integer) 5, never (Double) 5.
+        const boxing = isWrapper(to) && (from === unboxedOf(to) || from === 'null');
+        if (from !== to && !unboxing && !boxing && !(NUMERIC.has(from) && NUMERIC.has(to))) {
             const hint = from === 'String' && to === 'int' ? 'A cast cannot read a number out of text. Use Integer.parseInt(text)'
                 : from === 'String' && to === 'double' ? 'A cast cannot read a number out of text. Use Double.parseDouble(text)'
                     : from === 'String' && to === 'char' ? 'Take a character out of a String with .charAt(0)'
@@ -2464,7 +2743,7 @@ class Checker {
             throw compileError(`[ ] picks an element out of an array, and this is ${aType(t)}.`, n.line,
                 t === 'String' ? 'To get one character of a String use .charAt(i)' : null);
         }
-        const i = this.value(n.i);
+        const i = this.prim(n.i);
         if (i.type !== 'int' && i.type !== 'char') {
             throw compileError(`An array position has to be an int, and this is ${aType(i.type)}.`, n.line,
                 i.type === 'double' ? 'Cast it: nums[(int) x]' : i.type === 'long' ? 'Cast it: nums[(int) n]' : null);
@@ -2519,7 +2798,12 @@ class Checker {
         let nullMatches = 0;
         const bareNull = types.includes('null');
         let chosen = null;
-        for (const s of sigs) {
+        // Java first looks for a method the arguments fit as they are, and only then for one they fit
+        // after boxing or unboxing — which is why println(count) on a null Integer prints "null".
+        for (const fits of [passable, passableBoxing]) {
+          if (chosen) break;
+          nullMatches = 0;
+          for (const s of sigs) {
             let params = s.params;
             if (s.variadic) {
                 if (types.length < params.length - 1) continue;
@@ -2541,7 +2825,7 @@ class Checker {
                 } else if (p === 'T') {
                     p = T;
                 }
-                if (!passable(types[i], p)) ok = false;
+                if (!fits(types[i], p)) ok = false;
                 concrete.push(p);
             }
             if (!ok) continue;
@@ -2556,6 +2840,7 @@ class Checker {
             }
             if (s.refuse) throw notYet(`${BOX} does not have ${s.refuse}.`, line);
             return { fn: s.fn, ret, args: args.map((a, i) => convert(a, concrete[i])) };
+          }
         }
         if (chosen) {
             if (chosen.s.refuse) throw notYet(`${BOX} does not have ${chosen.s.refuse}.`, line);
@@ -2596,7 +2881,7 @@ class Checker {
             if (t.name !== 'out') throw notYet(`${BOX} only has System.out.`, n.line);
             const sigs = PRINT_METHODS[n.name];
             if (!sigs) {
-                if (n.name === 'printf' || n.name === 'format') throw notYet(`${BOX} does not have System.out.${n.name} yet.`, n.line, 'Build the text with + and use println.');
+                if (n.name === 'printf' || n.name === 'format') { n.target = null; return this.formatCall(n, 'void', `System.out.${n.name}()`); }
                 throw compileError(`System.out has no method called ${n.name}().`, n.line, 'The two here are System.out.println(…) and System.out.print(…).');
             }
             if (n.args.length === 1 && isArray(n.args[0].type)) {
@@ -2611,6 +2896,7 @@ class Checker {
         if (cls) {
             const group = STATICS[cls];
             if (!group) this.unknownClass(cls, n.line);
+            if (cls === 'String' && n.name === 'format') { n.target = null; return this.formatCall(n, 'String', 'String.format()'); }
             const sigs = group.methods[n.name];
             if (!sigs) {
                 if (group.notYet[n.name]) throw notYet(`${BOX} does not have ${group.notYet[n.name]}.`, n.line);
@@ -2625,6 +2911,7 @@ class Checker {
         n.target = this.value(t);
         const rt = n.target.type;
         if (rt === 'String' || rt === 'StringBuilder') {
+            if (rt === 'String' && n.name === 'formatted') return this.formatCall(n, 'String', 'The String method formatted()');
             const table = rt === 'String' ? STRING_METHODS : BUILDER_METHODS;
             const sigs = table[n.name];
             if (!sigs) {
@@ -2639,6 +2926,19 @@ class Checker {
                     n.args[0].type === 'char' ? 'To compare one character: text.charAt(0) == \'a\'' : null);
             }
             return this.builtin(n, sigs, rt, `${rt === 'String' ? 'The String method' : 'The StringBuilder method'} ${n.name}()`);
+        }
+        if (isWrapper(rt)) {
+            const table = wrapperMethods(rt);
+            const sigs = table[n.name];
+            if (!sigs) {
+                const near = suggestName(n.name, Object.keys(table));
+                throw notYet(`${BOX} does not know ${aType(rt)} method called ${n.name}().`, n.line,
+                    near ? `Did you mean .${near}()?` : `For most jobs, use the value directly: an ${rt} works wherever ${aType(unboxedOf(rt))} does.`);
+            }
+            if (n.name === 'equals' && n.args.length === 1 && !passableBoxing(n.args[0].type, rt)) {
+                throw notYet(`.equals() here compares ${aType(rt)} with ${aType(rt)}, and this gives it ${aType(n.args[0].type)} — which in Java is never equal to it.`, n.line);
+            }
+            return this.builtin(n, sigs, rt, `The ${rt} method ${n.name}()`);
         }
         if (isArray(rt)) {
             if (n.name === 'length') throw compileError('For an array, length is not a method, so it has no ( ).', n.line, 'nums.length — only a String uses .length() with the ( ).');
@@ -2659,7 +2959,9 @@ class Checker {
      */
     chooseOverload(n, list) {
         const types = n.args.map(a => a.type);
-        const fits = list.filter(m => m.paramTypes.length === types.length && types.every((t, i) => passable(t, m.paramTypes[i])));
+        const fitting = test => list.filter(m => m.paramTypes.length === types.length && types.every((t, i) => test(t, m.paramTypes[i])));
+        let fits = fitting(passable);
+        if (fits.length === 0) fits = fitting(passableBoxing);   // only if nothing fits without boxing
         if (fits.length === 1) return fits[0];
         if (fits.length === 0) {
             const sameCount = list.filter(m => m.paramTypes.length === types.length);
@@ -2669,7 +2971,7 @@ class Checker {
             }
             if (sameCount.length === 1) {
                 const m = sameCount[0];
-                const i = types.findIndex((t, k) => !passable(t, m.paramTypes[k]));
+                const i = types.findIndex((t, k) => !passableBoxing(t, m.paramTypes[k]));
                 throw compileError(`${n.name}() wants ${aType(m.paramTypes[i])} for ${m.params[i].name}, and this call gives it ${aType(types[i])}.`, n.line,
                     types.length > 1 ? 'Arguments are matched to parameters by position, so check their order.' : null);
             }
@@ -2680,6 +2982,35 @@ class Checker {
         if (best.length === 1) return best[0];
         throw compileError(`This call to ${n.name}() could mean more than one of the methods with that name, and Java will not guess.`, n.line,
             `It fits: ${fits.map(m => `(${m.paramTypes.join(', ')})`).join('  ')}`);
+    }
+
+    /** printf, String.format and "…".formatted: a format, then any number of values of any type. */
+    formatCall(n, ret, describe) {
+        const own = n.target !== null;          // "…".formatted(values): the format is what it is called on
+        const values = own ? n.args : n.args.slice(1);
+        const format = own ? n.target : n.args[0];
+        if (!format) throw compileError(`${describe} needs a format in its ( ): the text to print, with a % place for each value.`, n.line, 'For example: System.out.printf("Total: %.2f%n", total);');
+        if (format.type === 'null') throw notYet(`${BOX} does not run ${describe} with a bare null as its format.`, n.line);
+        if (format.type !== 'String') {
+            throw compileError(`The first thing ${describe} is given has to be the format, a String, and this is ${aType(format.type)}.`, n.line,
+                'For example: System.out.printf("%d items%n", count);');
+        }
+        for (const v of values) {
+            if (isArray(v.type)) throw notYet(`${BOX} does not hand an array to ${describe}.`, n.line, 'Format one element at a time, or use Arrays.toString(nums) with %s.');
+            if (v.type === 'null') throw notYet(`${BOX} does not hand a bare null to ${describe}.`, n.line);
+        }
+        if (format.const) {
+            const parsed = parseFormat(format.const.v);
+            if (parsed.problem) throw notYet(`${BOX} does not have ${parsed.problem}.`, n.line);
+        }
+        const types = values.map(v => v.type);
+        n.k = 'builtin';
+        n.type = ret;
+        n.describe = describe;
+        n.fn = ret === 'void'
+            ? (text, ...given) => { M.print(formatJava(text, given, types, done => M.print(done))); }
+            : (text, ...given) => formatJava(text, given, types);
+        return n;
     }
 
     builtin(n, sigs, selfType, describe) {
@@ -2727,7 +3058,7 @@ class Checker {
             return n;
         }
         n.sizes = n.sizes.map(s => {
-            const e = this.value(s);
+            const e = this.prim(s);
             if (e.type !== 'int' && e.type !== 'char') {
                 throw compileError(`The size of an array has to be an int, and this is ${aType(e.type)}.`, s.line, e.type === 'double' ? 'Cast it: new int[(int) x]' : null);
             }
@@ -2737,7 +3068,7 @@ class Checker {
     }
 
     switch(n, asExpr) {
-        n.sel = this.value(n.sel);
+        n.sel = this.prim(n.sel);
         const selType = n.sel.type;
         if (selType !== 'int' && selType !== 'char' && selType !== 'String') {
             throw compileError(`A switch chooses on an int, a char or a String, and this is ${aType(selType)}.`, n.line,
@@ -3156,8 +3487,8 @@ function compoundFunction(n) {
         const rt = textOf(n.e.type);
         return (a, b) => text(lt(a) + rt(b));
     }
-    const up = converter(T, n.optype) || (v => v);
-    const back = converter(n.optype, T) || (v => v);
+    const up = conversion(T, n.optype) || (v => v);
+    const back = conversion(n.optype, T) || (v => v);
     const op = n.mode === 'shift' ? shifter(n.binop, n.optype, n.e.type === 'long') : ARITHMETIC[n.optype][n.binop];
     return (a, b) => back(op(up(a), b));
 }
@@ -3199,8 +3530,13 @@ function cx(n) {
         case 'paren': return cx(n.e);
         case 'conv': {
             const inner = cx(n.e);
-            const fn = converter(n.from, n.to);
-            return fn ? f => fn(inner(f)) : inner;
+            const fn = conversion(n.from, n.to);
+            if (!fn) return inner;
+            if (!isWrapper(n.from)) return f => fn(inner(f));
+            return f => {
+                const v = inner(f);
+                try { return fn(v); } catch (err) { throw at(err, line); }   // unboxing a null
+            };
         }
         case 'name': { const slot = n.sym.slot; return f => f[slot]; }
         case 'unary': {
@@ -3238,10 +3574,14 @@ function cx(n) {
                 };
             }
             const combine = compoundFunction(n);
+            // A null wrapper on the left fails before the right side is worked out.
+            const boxed = isWrapper(n.type) && n.mode !== 'concat';
+            const unboxable = old => { if (old === null) throw at(nullPointer(`The ${n.type} being changed`), line); };
             if (t.k === 'name') {
                 const slot = t.sym.slot;
                 return f => {
                     const old = f[slot];
+                    if (boxed) unboxable(old);
                     const b = e(f);
                     try { return (f[slot] = combine(old, b)); } catch (err) { throw at(err, line); }
                 };
@@ -3253,13 +3593,15 @@ function cx(n) {
                 const i = idx(f);
                 checkIndex(a, i, line);
                 const old = a.a[i];
+                if (boxed) unboxable(old);
                 const b = e(f);
                 try { return (a.a[i] = combine(old, b)); } catch (err) { throw at(err, line); }
             };
         }
         case 'incdec': {
             const t = n.target;
-            const step = stepper(n.type, n.op === '++' ? 1 : -1);
+            const plainStep = stepper(n.type, n.op === '++' ? 1 : -1);
+            const step = isWrapper(n.type) ? v => { try { return plainStep(v); } catch (err) { throw at(err, line); } } : plainStep;
             if (t.k === 'name') {
                 const slot = t.sym.slot;
                 return n.prefix ? f => (f[slot] = step(f[slot])) : f => { const old = f[slot]; f[slot] = step(old); return old; };
@@ -3619,6 +3961,7 @@ export function javaFromJson(value, type) {
         if (!Array.isArray(value)) throw wrong();
         return new JArray(elemOf(type), value.map(v => javaFromJson(v, elemOf(type))));
     }
+    if (isWrapper(type)) return value === null ? null : javaFromJson(value, unboxedOf(type));
     switch (type) {
         case 'int':
             if (!Number.isInteger(value) || value < INT_MIN || value > INT_MAX) throw wrong();
@@ -3665,7 +4008,7 @@ export function javaRepr(value, type) {
     if (value === null || value === undefined) return 'null';
     if (isArray(type)) return '[' + value.a.map(v => javaRepr(v, elemOf(type))).join(', ') + ']';
     switch (type) {
-        case 'char': return quote(String.fromCharCode(value), "'");
+        case 'char': case 'Character': return quote(String.fromCharCode(value), "'");
         case 'String': return quote(value, '"');
         case 'StringBuilder': return quote(value.s, '"');
         default: return textOf(type)(value);
@@ -3686,7 +4029,7 @@ export function javaEquals(actual, expected, type) {
     if (isArray(type)) {
         return actual.a.length === expected.a.length && actual.a.every((v, i) => javaEquals(v, expected.a[i], elemOf(type)));
     }
-    if (type === 'double') {
+    if (type === 'double' || type === 'Double') {
         if (actual === expected || (actual !== actual && expected !== expected)) return true;
         if (!Number.isFinite(actual) || !Number.isFinite(expected)) return false;   // infinity is not close to anything
         return Math.abs(actual - expected) <= DOUBLE_TOLERANCE * Math.max(1, Math.abs(actual), Math.abs(expected));
