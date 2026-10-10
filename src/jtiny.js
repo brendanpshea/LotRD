@@ -21,12 +21,17 @@
  *
  * What it runs: int, long, double, boolean, char, String, StringBuilder, the
  * wrappers Integer, Long, Double, Character and Boolean (boxing, unboxing and
- * null), and arrays of them; every operator; if / else, while, do, for,
- * for-each, switch (both forms, and as an expression), break, continue, return,
- * throw; helper methods, overloading and recursion; printf and String.format
- * with %d %s %f %b %c %n; and the library methods listed in the tables below.
+ * null), and arrays of them; ArrayList, LinkedList, HashSet and HashMap of
+ * Strings and wrappers, held as themselves or as a List, Set, Map or
+ * Collection, with the Collections class; every operator; if / else, while,
+ * do, for, for-each, switch (both forms, and as an expression), break,
+ * continue, return, throw; helper methods, overloading and recursion; printf
+ * and String.format with %d %s %f %b %c %n; and the library methods listed in
+ * the tables below.
  *
- * What it refuses, by name: byte / short / float, collections and generics,
+ * What it refuses, by name: byte / short / float, a collection inside a
+ * collection, the other collection classes, changing a collection inside a
+ * for-each over it (Java throws, or skips an element), random shuffling,
  * classes and fields, try / catch, lambdas, labels, regular expressions — and
  * == between two Strings or two wrapper objects, which Java answers by object
  * identity; .equals() is what a student means.
@@ -356,22 +361,39 @@ class Parser {
     parseType({ allowVoid = false } = {}) {
         const t = this.tok;
         let base;
+        let targs = null;
         if (t.t === 'kw' && (PRIMITIVE_WORDS.has(t.v) || (allowVoid && t.v === 'void'))) {
             base = this.next().v;
         } else if (t.t === 'id') {
             base = this.next().v;
             while (this.isOp('.') && this.peek().t === 'id') { this.next(); base = this.next().v; }   // java.util.List → List
-            if (this.isOp('<')) {
-                throw notYet(`${BOX} does not have ${base}<…> or any other generic type yet.`, t.line,
-                    'Arrays work: int[], String[], double[].');
-            }
+            if (this.isOp('<')) targs = this.parseTypeArgs(base, t.line);
         } else {
             this.fail(`Java expected a type here (int, String, boolean …), but found ${describeToken(t)}.`);
         }
         let dims = 0;
         while (this.isOp('[') && this.isOp(']', this.peek())) { this.p += 2; dims++; }
         if (base === 'void' && dims) this.fail('void cannot be an array.');
-        return { base, dims, line: t.line };
+        return { base, dims, line: t.line, targs };
+    }
+
+    /** The <String> or <String, Integer> after a collection's name. After new it may be empty: <>. */
+    parseTypeArgs(base, line, afterNew = false) {
+        this.next();
+        if (this.isOp('>')) {
+            if (!afterNew) throw compileError(`${base}<> with nothing in the angle brackets can only be written after new.`, line, `Say what it holds: ${base}<String>`);
+            this.next();
+            return 'diamond';
+        }
+        const args = [];
+        for (;;) {
+            if (this.isOp('?')) throw notYet(`${BOX} does not have wildcard types (the ? in angle brackets).`, line);
+            args.push(this.parseType());
+            if (this.isOp(',')) { this.next(); continue; }
+            if (this.isOp('>')) { this.next(); return args; }
+            if (this.isOp('>>') || this.isOp('>>>')) throw notYet(`${BOX} does not have a collection inside a collection.`, line);
+            this.fail(`Java expected > to close the angle brackets after ${base}<, but found ${describeToken(this.tok)}.`);
+        }
     }
 
     // ── a pasted class, or a run of methods
@@ -820,6 +842,14 @@ class Parser {
                     this.expectOp(')', 'to close the cast');
                     return { k: 'cast', to: type, e: this.parseUnary(), line: t.line };
                 }
+                if (n.t === 'id' && Object.hasOwn(GENERIC_ARITY, n.v) && this.isOp('<', this.tokens[this.p + 2])) {
+                    // (ArrayList<String>) x
+                    let k = this.p + 3;
+                    while (this.tokens[k].t === 'id' || this.isOp(',', this.tokens[k])) k++;
+                    if (this.isOp('>', this.tokens[k]) && this.isOp(')', this.tokens[k + 1])) {
+                        throw notYet(`${BOX} does not have casts to collection types such as (${n.v}<…>).`, t.line);
+                    }
+                }
                 if (n.t === 'id' && /^[A-Z]/.test(n.v)) {
                     // (String) x, (Integer) x, (String[]) x: a cast to an object type, if what follows could be its operand
                     let k = this.p + 2;
@@ -965,17 +995,19 @@ class Parser {
     parseNew(line) {
         const t = this.tok;
         let base;
+        let targs = null;
         if (t.t === 'kw' && PRIMITIVE_WORDS.has(t.v)) base = this.next().v;
         else {
             base = this.expectIdent('a type after new').v;
             while (this.isOp('.') && this.peek().t === 'id') { this.next(); base = this.next().v; }
-            if (this.isOp('<')) throw notYet(`${BOX} does not have ${base}<…> or any other generic type yet.`, line, 'Arrays work: new int[5], new String[3].');
+            if (this.isOp('<')) targs = this.parseTypeArgs(base, line, true);
         }
         if (this.isOp('(')) {
             const args = this.parseArgs();
             if (this.isOp('{')) throw notYet(`${BOX} does not have anonymous classes.`, line);
-            return { k: 'new', base, args, line };
+            return { k: 'new', base, targs, args, line };
         }
+        if (targs) throw notYet(`${BOX} does not have arrays of collections.`, line);
         if (!this.isOp('[')) this.fail(`After "new ${base}" Java expected [ for an array or ( for an object.`);
         const sizes = [];
         let empty = 0;
@@ -1019,7 +1051,22 @@ const BOXED = new Map([...UNBOXED].map(([w, p]) => [p, w]));
 const isWrapper = t => UNBOXED.has(t);
 const unboxedOf = t => UNBOXED.get(t) ?? t;
 
-const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t);
+// The collection types (see “Collections”, further down).
+const GENERIC_ARITY = { ArrayList: 1, LinkedList: 1, List: 1, HashSet: 1, Set: 1, Collection: 1, HashMap: 2, Map: 2 };
+const SUPERTYPES = {
+    ArrayList: ['List', 'Collection'], LinkedList: ['List', 'Collection'], List: ['Collection'],
+    HashSet: ['Set', 'Collection'], Set: ['Collection'], Collection: [], HashMap: ['Map'], Map: [],
+};
+const INTERFACES = new Set(['List', 'Set', 'Collection', 'Map']);
+const isCollection = t => t.endsWith('>');
+/** new ArrayList<>() before anything has said what it holds. */
+const isPending = t => t.endsWith('<>');
+const baseOf = t => t.slice(0, t.indexOf('<'));
+const typeArgs = t => t.slice(t.indexOf('<') + 1, -1).split(',');
+const isMapType = t => isCollection(t) && GENERIC_ARITY[baseOf(t)] === 2;
+const isListType = t => isCollection(t) && SUPERTYPES[baseOf(t)].concat(baseOf(t)).includes('List');
+
+const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t) || isCollection(t);
 
 const promote = (a, b) => (a === 'double' || b === 'double' ? 'double' : a === 'long' || b === 'long' ? 'long' : 'int');
 
@@ -1028,8 +1075,9 @@ const aType = t => (t === 'null' ? 'null' : /^[aeiou]/i.test(t) ? `an ${t}` : `a
 const NOT_YET_TYPES = new Map([
     ['byte', 'the byte type'], ['short', 'the short type'], ['float', 'the float type'],
     ['Byte', 'the wrapper type Byte'], ['Short', 'the wrapper type Short'], ['Float', 'the wrapper type Float'],
-    ['Object', 'the Object type'], ['List', 'lists'], ['ArrayList', 'lists'], ['LinkedList', 'lists'],
-    ['Map', 'maps'], ['HashMap', 'maps'], ['TreeMap', 'maps'], ['Set', 'sets'], ['HashSet', 'sets'], ['TreeSet', 'sets'],
+    ['Object', 'the Object type'], ['TreeMap', 'TreeMap (HashMap is here)'], ['TreeSet', 'TreeSet (HashSet is here)'],
+    ['LinkedHashMap', 'LinkedHashMap (HashMap is here)'], ['LinkedHashSet', 'LinkedHashSet (HashSet is here)'],
+    ['Entry', 'Map.Entry'], ['Iterator', 'iterators'], ['ArrayDeque', 'ArrayDeque (LinkedList is here)'], ['PriorityQueue', 'PriorityQueue'],
     ['Scanner', 'Scanner (there is no keyboard input here)'], ['Random', 'Random (a test needs the same answer every time)'],
     ['StringBuffer', 'StringBuffer'], ['BigInteger', 'BigInteger'], ['BigDecimal', 'BigDecimal'],
     ['Stack', 'Stack'], ['Queue', 'Queue'], ['Deque', 'Deque'], ['Optional', 'Optional'],
@@ -1038,13 +1086,35 @@ const TYPE_HINTS = { byte: 'Use int.', short: 'Use int.', float: 'Use double.', 
 
 function resolveType(node, { allowVoid = false } = {}) {
     const { base, dims, line } = node;
+    if (Object.hasOwn(GENERIC_ARITY, base)) {
+        const example = GENERIC_ARITY[base] === 2 ? 'String, Integer' : 'String';
+        if (!node.targs) throw notYet(`${BOX} needs to be told what ${aType(base)} holds, in angle brackets: ${base}<${example}>`, line);
+        if (dims) throw notYet(`${BOX} does not have arrays of collections.`, line);
+        if (node.targs === 'diamond') return `${base}<>`;
+        if (node.targs.length !== GENERIC_ARITY[base]) {
+            throw compileError(`${base} takes ${GENERIC_ARITY[base] === 2 ? 'two types in its angle brackets, a key type and a value type' : 'one type in its angle brackets'}: ${base}<${example}>`, line);
+        }
+        const args = node.targs.map(a => {
+            if (a.targs || Object.hasOwn(GENERIC_ARITY, a.base)) throw notYet(`${BOX} does not have a collection inside a collection.`, line);
+            if (!a.dims && PRIMITIVES.has(a.base)) {
+                throw compileError(`A collection holds objects, so it cannot hold ${a.base} values directly.`, line, `Use the wrapper type: ${base}<${BOXED.get(a.base)}>`);
+            }
+            const t = resolveType(a);
+            if (t !== 'String' && !isWrapper(t)) {
+                throw notYet(`${BOX} has collections of Strings and of the wrapper types (Integer, Double, Character, Boolean, Long), and not of ${t}.`, line);
+            }
+            return t;
+        });
+        return `${base}<${args.join(',')}>`;
+    }
+    if (node.targs) throw notYet(`${BOX} does not have ${base}<…>.`, line, 'The collections here are ArrayList, LinkedList, HashSet and HashMap.');
     let name;
     if (PRIMITIVES.has(base) || base === 'String' || base === 'StringBuilder' || isWrapper(base)) name = base;
     else if (base === 'void' && allowVoid) name = 'void';
     else if (base === 'string') throw compileError('Java spells the type String, with a capital S.', line);
     else if (NOT_YET_TYPES.has(base)) throw notYet(`${BOX} does not have ${NOT_YET_TYPES.get(base)} yet.`, line, TYPE_HINTS[base] ?? null);
     else if (base === 'var') throw compileError('var can only be used for a local variable that is given a value straight away.', line);
-    else throw notYet(`${BOX} does not know the type "${base}".`, line, 'The types here are int, long, double, boolean, char, String, StringBuilder, the wrappers Integer, Double, Boolean, Character and Long, and arrays of them.');
+    else throw notYet(`${BOX} does not know the type "${base}".`, line, 'The types here are int, long, double, boolean, char, String, StringBuilder, the wrappers Integer, Double, Boolean, Character and Long, arrays of them, and the collections ArrayList, LinkedList, HashSet and HashMap.');
     return name + '[]'.repeat(dims);
 }
 
@@ -1164,6 +1234,7 @@ export function javaDouble(x) {
 
 /** How a value of this type reads when Java joins it to a String. */
 function textOf(type) {
+    if (isCollection(type)) return collectionText(type);
     switch (type) {
         case 'int': return v => String(v);
         case 'long': return v => v.toString();
@@ -1750,6 +1821,506 @@ const printWith = (type, newline) => {
     const show = textOf(type);
     return v => M.print(show(v) + newline);
 };
+// ─── Collections ─────────────────────────────────────────────────────────────
+//
+// ArrayList, LinkedList, HashSet and HashMap, and the List, Set, Map and Collection types they can be
+// held in. They hold Strings and wrapper objects. A collection's type is written with no spaces:
+// HashMap<String,Integer>.
+//
+// The order a HashSet or HashMap hands its elements back in is not random: it follows from the hash
+// codes and from how Java's table grows. Students print these and loop over them, so the table here is
+// Java's, bucket for bucket. (Java turns a very crowded bucket into a tree; that is declined.)
+
+const ABSENT = Symbol('absent');
+const HASH_BITS = new Float64Array(1);
+const HASH_HALVES = new Int32Array(HASH_BITS.buffer);
+
+/** hashCode(), for the types a collection can hold. */
+function hasher(type) {
+    switch (type) {
+        case 'String': return hashOfString;
+        case 'Boolean': return v => (v ? 1231 : 1237);
+        case 'Long': return v => Number(BigInt.asIntN(32, v ^ (v >> 32n)));
+        case 'Double': return v => {
+            if (v !== v) return 0x7ff80000;
+            HASH_BITS[0] = v;
+            return HASH_HALVES[0] ^ HASH_HALVES[1];
+        };
+        default: return v => v;   // Integer, Character
+    }
+}
+
+/** equals(): 0.0 and -0.0 are different Doubles, and NaN equals itself. */
+const sameAs = type => (type === 'Double' ? Object.is : (a, b) => a === b);
+
+function comparatorFor(type) {
+    const compare = type === 'String' ? compareStrings : type === 'Double' ? compareDoubles
+        : type === 'Boolean' ? (a, b) => Number(a) - Number(b) : (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+    return (a, b) => {
+        if (a === null || b === null) throw nullPointer('An element being compared');
+        return compare(a, b);
+    };
+}
+
+const charge = n => { if (M) cells(n); };
+
+function tableSizeFor(capacity) {
+    let n = 1;
+    while (n < capacity) n *= 2;
+    return n;
+}
+
+/** java.util.HashMap's table. A HashSet is one of these with nothing of interest in the values. */
+class JHash {
+    constructor(keyType, capacity = null) {
+        this.code = hasher(keyType);
+        this.same = sameAs(keyType);
+        this.table = null;
+        this.size = 0;
+        this.mod = 0;
+        this.threshold = capacity === null ? 0 : tableSizeFor(capacity);
+    }
+
+    spread(key) {
+        if (key === null) return 0;
+        const h = this.code(key);
+        return (h ^ (h >>> 16)) | 0;
+    }
+
+    resize() {
+        const old = this.table;
+        const oldCap = old ? old.length : 0;
+        let newCap;
+        let newThr = 0;
+        if (oldCap > 0) {
+            newCap = oldCap * 2;
+            if (oldCap >= 16) newThr = this.threshold * 2;
+        } else if (this.threshold > 0) newCap = this.threshold;
+        else { newCap = 16; newThr = 12; }
+        if (newThr === 0) newThr = Math.trunc(newCap * 0.75);
+        charge(newCap);
+        const table = new Array(newCap).fill(null);
+        if (old) {
+            for (const bucket of old) {
+                if (!bucket) continue;
+                for (const node of bucket) {
+                    const i = node.h & (newCap - 1);
+                    if (table[i]) table[i].push(node); else table[i] = [node];
+                }
+            }
+        }
+        this.table = table;
+        this.threshold = newThr;
+    }
+
+    find(key) {
+        if (!this.table) return null;
+        const h = this.spread(key);
+        const bucket = this.table[h & (this.table.length - 1)];
+        if (!bucket) return null;
+        for (const node of bucket) if (node.h === h && this.same(node.k, key)) return node;
+        return null;
+    }
+
+    /** Returns what was there before, or ABSENT. */
+    put(key, value, onlyIfAbsent = false) {
+        if (!this.table) this.resize();
+        const h = this.spread(key);
+        const i = h & (this.table.length - 1);
+        const bucket = this.table[i];
+        if (!bucket) this.table[i] = [{ h, k: key, v: value }];
+        else {
+            for (const node of bucket) {
+                if (node.h === h && this.same(node.k, key)) {
+                    const old = node.v;
+                    if (!onlyIfAbsent || old === null) node.v = value;
+                    return old;
+                }
+            }
+            bucket.push({ h, k: key, v: value });
+            if (bucket.length >= 9) {
+                if (this.table.length < 64) this.resize();
+                else throw refusal(`${BOX} stops when this many keys land in one slot of a HashMap or HashSet: Java rearranges them in a way that is not copied here.`);
+            }
+        }
+        this.mod++;
+        if (++this.size > this.threshold) this.resize();
+        return ABSENT;
+    }
+
+    remove(key) {
+        if (!this.table) return null;
+        const h = this.spread(key);
+        const i = h & (this.table.length - 1);
+        const bucket = this.table[i];
+        if (!bucket) return null;
+        const at = bucket.findIndex(node => node.h === h && this.same(node.k, key));
+        if (at < 0) return null;
+        const [node] = bucket.splice(at, 1);
+        if (!bucket.length) this.table[i] = null;
+        this.mod++;
+        this.size--;
+        return node;
+    }
+
+    clear() {
+        this.mod++;
+        if (this.table && this.size > 0) {
+            this.size = 0;
+            this.table.fill(null);
+        }
+    }
+
+    /** Every entry, in the order Java's iterator gives them. */
+    nodes() {
+        const out = [];
+        if (this.table) for (const bucket of this.table) if (bucket) for (const node of bucket) out.push(node);
+        return out;
+    }
+}
+
+// What a variable of a collection type refers to. None of them records what it holds: the type of the
+// variable says that, and Java's generics make sure the two agree.
+class JList {
+    constructor(kind, items = []) { this.kind = kind; this.a = items; this.mod = 0; }   // kind: ArrayList, LinkedList, or asList
+    get fixed() { return this.kind === 'asList'; }
+}
+class JSet {
+    constructor(h, view = false) { this.h = h; this.view = view; }   // view: a map's keySet()
+}
+class JMap {
+    constructor(h) { this.h = h; this.keys = null; this.vals = null; }
+}
+class JValues {
+    constructor(map) { this.map = map; }   // a map's values()
+}
+
+const hashOf = c => (c instanceof JValues ? c.map.h : c.h);
+const itemsOf = c => (c instanceof JList ? c.a : c instanceof JSet ? c.h.nodes().map(n => n.k) : c.map.h.nodes().map(n => n.v));
+const sizeOf = c => (c instanceof JList ? c.a.length : hashOf(c).size);
+const modOf = c => (c instanceof JList ? c.mod : hashOf(c).mod);
+
+const cannotChange = what => thrown('UnsupportedOperationException', null,
+    `${what} cannot have elements added or removed.`);
+const noSuchElement = () => thrown('NoSuchElementException', null, 'The list is empty, so there is no element to give. Check isEmpty() first.');
+const fixedList = () => cannotChange('The list Arrays.asList() makes is a fixed-size view of the array, so it');
+const listIndex = (list, index, length) => (list.fixed ? arrayIndex(index, length)
+    : thrown('IndexOutOfBoundsException', `Index ${index} out of bounds for length ${length}`,
+        length === 0 ? 'The list is empty, so it has no positions at all.'
+            : `The list has ${length} element${length === 1 ? '' : 's'}, so its positions run from 0 to ${length - 1}.`));
+
+function hasElement(c, v, same) {
+    if (c instanceof JList) return c.a.some(x => same(x, v));
+    if (c instanceof JSet) return c.h.find(v) !== null;
+    return c.map.h.nodes().some(n => same(n.v, v));
+}
+
+function addElement(c, v) {
+    if (c instanceof JList) {
+        if (c.fixed) throw fixedList();
+        charge(1);
+        c.a.push(v);
+        c.mod++;
+        return true;
+    }
+    if (c instanceof JSet && !c.view) return c.h.put(v, true) === ABSENT;
+    throw cannotChange(c instanceof JSet ? 'A map\'s keySet()' : 'A map\'s values()');
+}
+
+function removeElement(c, v, same) {
+    if (c instanceof JList) {
+        const i = c.a.findIndex(x => same(x, v));
+        if (i < 0) return false;
+        if (c.fixed) throw fixedList();
+        c.a.splice(i, 1);
+        c.mod++;
+        return true;
+    }
+    if (c instanceof JSet) return c.h.remove(v) !== null;
+    const node = c.map.h.nodes().find(n => same(n.v, v));
+    if (!node) return false;
+    c.map.h.remove(node.k);
+    return true;
+}
+
+function clearElements(c) {
+    if (c instanceof JList) {
+        if (c.fixed) { if (c.a.length) throw fixedList(); return; }
+        c.a = [];
+        c.mod++;
+    } else hashOf(c).clear();
+}
+
+function addEvery(c, other) {
+    const items = itemsOf(notNull(other, 'The collection being added')).slice();
+    if (c instanceof JList && !c.fixed) {
+        if (c.kind === 'ArrayList') c.mod++;
+        if (!items.length) return false;
+        charge(items.length);
+        for (const v of items) c.a.push(v);
+        if (c.kind === 'LinkedList') c.mod++;
+        return true;
+    }
+    let changed = false;
+    for (const v of items) if (addElement(c, v)) changed = true;
+    return changed;
+}
+
+/** removeAll (keep = false) and retainAll (keep = true). */
+function filterBy(c, other, same, keep) {
+    notNull(other, 'The collection given');
+    const others = itemsOf(other).slice();
+    const inOther = v => (other instanceof JSet ? other.h.find(v) !== null : others.some(x => same(x, v)));
+    if (c instanceof JList) {
+        const kept = c.a.filter(v => inOther(v) === keep);
+        if (kept.length === c.a.length) return false;
+        if (c.fixed) throw fixedList();
+        c.a = kept;
+        c.mod++;
+        return true;
+    }
+    let changed = false;
+    for (const node of hashOf(c).nodes()) {
+        if (inOther(c instanceof JSet ? node.k : node.v) !== keep) { hashOf(c).remove(node.k); changed = true; }
+    }
+    return changed;
+}
+
+function toJavaArray(c, arr, elem) {
+    notNull(arr, 'The array given to toArray');
+    const items = itemsOf(c);
+    if (arr.a.length < items.length) { charge(items.length); return new JArray(elem, items.slice()); }
+    for (let i = 0; i < items.length; i++) arr.a[i] = items[i];
+    if (arr.a.length > items.length) arr.a[items.length] = null;
+    return arr;
+}
+
+function listGet(list, i) {
+    if (i < 0 || i >= list.a.length) throw listIndex(list, i, list.a.length);
+    return list.a[i];
+}
+function listSet(list, i, v) {
+    if (i < 0 || i >= list.a.length) throw listIndex(list, i, list.a.length);
+    const old = list.a[i];
+    list.a[i] = v;
+    return old;
+}
+function listInsert(list, i, v) {
+    if (list.fixed) throw fixedList();
+    if (i < 0 || i > list.a.length) throw listIndex(list, i, list.a.length);
+    charge(1);
+    list.a.splice(i, 0, v);
+    list.mod++;
+}
+function listRemoveAt(list, i) {
+    if (list.fixed) throw fixedList();
+    if (i < 0 || i >= list.a.length) throw listIndex(list, i, list.a.length);
+    list.mod++;
+    return list.a.splice(i, 1)[0];
+}
+function listTake(list, fromFront, orNull) {
+    if (!list.a.length) { if (orNull) return null; throw noSuchElement(); }
+    return listRemoveAt(list, fromFront ? 0 : list.a.length - 1);
+}
+function listEnd(list, front, orNull) {
+    if (!list.a.length) { if (orNull) return null; throw noSuchElement(); }
+    return list.a[front ? 0 : list.a.length - 1];
+}
+
+const COLLECTION_NOT_YET = {
+    iterator: 'iterator() — walk through it with a for-each loop', stream: 'streams', forEach: 'forEach() with a lambda — use a for-each loop',
+    removeIf: 'removeIf() with a lambda', subList: 'subList()', sort: 'list.sort() — use Collections.sort(list)', hashCode: 'hashCode() on a collection',
+    listIterator: 'listIterator()', replaceAll: 'replaceAll() with a lambda', reversed: 'reversed()',
+};
+const MAP_NOT_YET = {
+    entrySet: 'entrySet() — loop over keySet() and call get(key) for each one', putAll: 'putAll()', forEach: 'forEach() with a lambda — loop over keySet()',
+    merge: 'merge()', compute: 'compute()', computeIfAbsent: 'computeIfAbsent()', computeIfPresent: 'computeIfPresent()', replace: 'replace() — put() replaces a value',
+    hashCode: 'hashCode() on a map',
+};
+// Java lets these take any object at all, and answers false for one of the wrong type. Here that is declined.
+const TAKES_ANY_OBJECT = new Set(['contains', 'remove', 'indexOf', 'lastIndexOf', 'containsKey', 'containsValue', 'get', 'getOrDefault',
+    'equals', 'containsAll', 'removeAll', 'retainAll', 'frequency', 'binarySearch']);
+
+/** The methods of a list, a set, or a map's values(), for a variable of the given type. */
+function collectionMethods(type) {
+    const base = baseOf(type);
+    const [E] = typeArgs(type);
+    const same = sameAs(E);
+    const any = `Collection<${E}>`;
+    const show = textOf(type);
+    const table = {
+        size: [sig('', 'int', sizeOf)],
+        isEmpty: [sig('', 'boolean', c => sizeOf(c) === 0)],
+        contains: [sig(E, 'boolean', (c, v) => hasElement(c, v, same))],
+        add: [sig(E, 'boolean', addElement)],
+        remove: [sig(E, 'boolean', (c, v) => removeElement(c, v, same))],
+        clear: [sig('', 'void', clearElements)],
+        addAll: [sig(any, 'boolean', addEvery)],
+        containsAll: [sig(any, 'boolean', (c, other) => itemsOf(notNull(other, 'The collection given')).every(v => hasElement(c, v, same)))],
+        removeAll: [sig(any, 'boolean', (c, other) => filterBy(c, other, same, false))],
+        retainAll: [sig(any, 'boolean', (c, other) => filterBy(c, other, same, true))],
+        toArray: [sig(`${E}[]`, `${E}[]`, (c, arr) => toJavaArray(c, arr, E)),
+            sig('', 'void', null, { refuse: `toArray() with nothing in its ( ) — that makes an Object[]. Write toArray(new ${E}[0])` })],
+        toString: [sig('', 'String', c => text(show(c)))],
+    };
+    if (base === 'HashSet' || base === 'Set') {
+        table.equals = [sig(`Set<${E}>`, 'boolean', (c, o) => o !== null && o.h.size === c.h.size && o.h.nodes().every(n => c.h.find(n.k) !== null))];
+    }
+    if (!isListType(type)) return table;
+    Object.assign(table, {
+        add: [sig(E, 'boolean', addElement), sig(`int ${E}`, 'void', listInsert)],
+        remove: [sig('int', E, listRemoveAt), sig(E, 'boolean', (c, v) => removeElement(c, v, same))],
+        get: [sig('int', E, listGet)],
+        set: [sig(`int ${E}`, E, listSet)],
+        indexOf: [sig(E, 'int', (c, v) => c.a.findIndex(x => same(x, v)))],
+        lastIndexOf: [sig(E, 'int', (c, v) => { for (let i = c.a.length - 1; i >= 0; i--) if (same(c.a[i], v)) return i; return -1; })],
+        equals: [sig(`List<${E}>`, 'boolean', (c, o) => o !== null && o.a.length === c.a.length && c.a.every((v, i) => same(v, o.a[i])))],
+        // Since Java 21 every list has these six, not only LinkedList.
+        addFirst: [sig(E, 'void', (c, v) => listInsert(c, 0, v))],
+        addLast: [sig(E, 'void', (c, v) => { addElement(c, v); })],
+        removeFirst: [sig('', E, c => listTake(c, true, false))],
+        removeLast: [sig('', E, c => listTake(c, false, false))],
+        getFirst: [sig('', E, c => listEnd(c, true, false))],
+        getLast: [sig('', E, c => listEnd(c, false, false))],
+    });
+    if (base === 'LinkedList') {
+        Object.assign(table, {
+            remove: [sig('', E, c => listTake(c, true, false)), ...table.remove],
+            peekFirst: [sig('', E, c => listEnd(c, true, true))],
+            peekLast: [sig('', E, c => listEnd(c, false, true))],
+            peek: [sig('', E, c => listEnd(c, true, true))],
+            element: [sig('', E, c => listEnd(c, true, false))],
+            pollFirst: [sig('', E, c => listTake(c, true, true))],
+            pollLast: [sig('', E, c => listTake(c, false, true))],
+            poll: [sig('', E, c => listTake(c, true, true))],
+            pop: [sig('', E, c => listTake(c, true, false))],
+            push: [sig(E, 'void', (c, v) => listInsert(c, 0, v))],
+            offer: [sig(E, 'boolean', addElement)],
+            offerLast: [sig(E, 'boolean', addElement)],
+            offerFirst: [sig(E, 'boolean', (c, v) => { listInsert(c, 0, v); return true; })],
+        });
+    }
+    return table;
+}
+
+function mapMethods(type) {
+    const [K, V] = typeArgs(type);
+    const sameValue = sameAs(V);
+    const show = textOf(type);
+    const valueOf = node => (node ? node.v : null);
+    return {
+        put: [sig(`${K} ${V}`, V, (m, k, v) => { const old = m.h.put(k, v); return old === ABSENT ? null : old; })],
+        putIfAbsent: [sig(`${K} ${V}`, V, (m, k, v) => { const old = m.h.put(k, v, true); return old === ABSENT ? null : old; })],
+        get: [sig(K, V, (m, k) => valueOf(m.h.find(k)))],
+        getOrDefault: [sig(`${K} ${V}`, V, (m, k, d) => { const node = m.h.find(k); return node ? node.v : d; })],
+        containsKey: [sig(K, 'boolean', (m, k) => m.h.find(k) !== null)],
+        containsValue: [sig(V, 'boolean', (m, v) => m.h.nodes().some(n => sameValue(n.v, v)))],
+        remove: [sig(K, V, (m, k) => valueOf(m.h.remove(k)))],
+        size: [sig('', 'int', m => m.h.size)],
+        isEmpty: [sig('', 'boolean', m => m.h.size === 0)],
+        clear: [sig('', 'void', m => m.h.clear())],
+        keySet: [sig('', `Set<${K}>`, m => (m.keys ??= new JSet(m.h, true)))],
+        values: [sig('', `Collection<${V}>`, m => (m.vals ??= new JValues(m)))],
+        equals: [sig(`Map<${K},${V}>`, 'boolean', (m, o) => o !== null && o.h.size === m.h.size
+            && o.h.nodes().every(n => { const mine = m.h.find(n.k); return mine !== null && sameValue(mine.v, n.v); }))],
+        toString: [sig('', 'String', m => text(show(m)))],
+    };
+}
+
+/** How a collection prints: [a, b, c] and {key=value, key=value}, as Java writes them. */
+function collectionText(type) {
+    if (isPending(type)) return null;
+    if (isMapType(type)) {
+        const [K, V] = typeArgs(type).map(textOf);
+        return m => (m === null ? 'null' : '{' + m.h.nodes().map(n => `${K(n.k)}=${V(n.v)}`).join(', ') + '}');
+    }
+    const element = textOf(typeArgs(type)[0]);
+    return c => (c === null ? 'null' : '[' + itemsOf(c).map(element).join(', ') + ']');
+}
+
+/** new ArrayList<>(…), new HashSet<>(…), new HashMap<>(…): what to build, once the type is known. */
+function buildCollection(type, how, arg) {
+    if (isPending(type)) throw refusal(`${BOX} could not tell what this new ${baseOf(type)}<>() is meant to hold.`, 'Say so in the angle brackets: new ArrayList<String>()');
+    const base = baseOf(type);
+    const [K] = typeArgs(type);
+    const negative = () => thrown('IllegalArgumentException', `Illegal initial capacity: ${arg}`, 'The number in the ( ) is a starting capacity, and cannot be negative.');
+    if (how === 'capacity' && arg < 0) throw negative();
+    if (base === 'ArrayList' || base === 'LinkedList') {
+        if (how !== 'copy') return new JList(base);
+        const items = itemsOf(notNull(arg, 'The collection being copied')).slice();
+        charge(items.length);
+        return new JList(base, items);
+    }
+    if (base === 'HashSet') {
+        if (how === 'empty') return new JSet(new JHash(K));
+        if (how === 'capacity') return new JSet(new JHash(K, arg));
+        const items = itemsOf(notNull(arg, 'The collection being copied')).slice();
+        const set = new JSet(new JHash(K, Math.ceil(Math.max(items.length, 12) / 0.75)));   // as HashMap.newHashMap sizes it
+        for (const v of items) set.h.put(v, true);
+        return set;
+    }
+    if (how === 'empty') return new JMap(new JHash(K));
+    if (how === 'capacity') return new JMap(new JHash(K, arg));
+    const nodes = notNull(arg, 'The map being copied').h.nodes();
+    const map = new JMap(new JHash(K));
+    if (nodes.length) {
+        map.h.threshold = tableSizeFor(Math.ceil(nodes.length / 0.75));
+        for (const node of nodes) map.h.put(node.k, node.v);
+    }
+    return map;
+}
+
+/** The Collections class, for a first argument that is a list (or any collection) of E. */
+function collectionsMethods(E) {
+    const list = `List<${E}>`;
+    const any = `Collection<${E}>`;
+    const same = sameAs(E);
+    const compare = comparatorFor(E);
+    const given = c => notNull(c, 'The collection given to Collections');
+    const best = wanted => c => {
+        const items = itemsOf(given(c));
+        if (!items.length) throw thrown('NoSuchElementException', null, 'The collection is empty, so it has no largest or smallest element.');
+        let candidate = items[0];
+        for (let i = 1; i < items.length; i++) if (compare(items[i], candidate) * wanted > 0) candidate = items[i];
+        return candidate;
+    };
+    return {
+        sort: [sig(list, 'void', c => {
+            given(c);
+            if (c.a.length > 1) { work(c.a.length); c.a.sort(compare); }
+            if (c.kind === 'ArrayList') c.mod++;
+        })],
+        reverse: [sig(list, 'void', c => { given(c).a.reverse(); })],
+        max: [sig(any, E, best(1))],
+        min: [sig(any, E, best(-1))],
+        frequency: [sig(`${any} ${E}`, 'int', (c, v) => itemsOf(given(c)).filter(x => same(x, v)).length)],
+        binarySearch: [sig(`${list} ${E}`, 'int', (c, key) => {
+            let low = 0;
+            let high = given(c).a.length - 1;
+            while (low <= high) {
+                const mid = (low + high) >>> 1;
+                const order = compare(c.a[mid], key);
+                if (order < 0) low = mid + 1;
+                else if (order > 0) high = mid - 1;
+                else return mid;
+            }
+            return -(low + 1);
+        })],
+        swap: [sig(`${list} int int`, 'void', (c, i, j) => { given(c); listSet(c, i, listSet(c, j, listGet(c, i))); })],
+        addAll: [sig(`${any} ${E}`, 'boolean', (c, ...items) => {
+            given(c);
+            let changed = false;
+            for (const v of items) if (addElement(c, v)) changed = true;
+            return changed;
+        }, { variadic: true })],
+    };
+}
+const COLLECTIONS_NOT_YET = {
+    shuffle: 'Collections.shuffle() — it puts a list in a random order, and a test needs the same answer every time',
+    unmodifiableList: 'Collections.unmodifiableList()', emptyList: 'Collections.emptyList()', nCopies: 'Collections.nCopies()',
+    rotate: 'Collections.rotate()', fill: 'Collections.fill()', reverseOrder: 'Collections.reverseOrder()', disjoint: 'Collections.disjoint()',
+};
+
 // ─── printf and String.format ────────────────────────────────────────────────
 //
 // The part of Java's Formatter a first course uses: %d %s %f %b %c %n %%, a width, a precision, and
@@ -2120,6 +2691,12 @@ function stripParens(node) {
 function convert(node, to) {
     const from = node.type;
     if (from === to) return node;
+    if (isPending(from)) {
+        // new ArrayList<>() handed to something that takes a List<String>: now it is known what it holds.
+        if (!isCollection(to) || isPending(to)) return node;
+        node.type = `${baseOf(from)}<${typeArgs(to).join(',')}>`;
+        return convert(node, to);
+    }
     // Java never boxes and widens in one go, so these are written as two steps: an Integer used as a
     // double is unboxed and then widened; a constant 65 stored in a Character is narrowed and then boxed.
     if (isWrapper(from) && !isWrapper(to) && to !== 'null' && unboxedOf(from) !== to) return convert(convert(node, unboxedOf(from)), to);
@@ -2136,6 +2713,14 @@ function convert(node, to) {
 function passable(from, to) {
     if (from === to) return true;
     if (from === 'null') return isReference(to);
+    if (isCollection(from)) {
+        // An ArrayList<String> is a List<String> and a Collection<String> — and never a List of anything else.
+        if (!isCollection(to) || isPending(to)) return false;
+        const base = baseOf(from);
+        const wanted = baseOf(to);
+        if (base !== wanted && !SUPERTYPES[base].includes(wanted)) return false;
+        return isPending(from) ? GENERIC_ARITY[base] === GENERIC_ARITY[wanted] : from.slice(base.length) === to.slice(wanted.length);
+    }
     return NUMERIC.has(from) && NUMERIC.has(to) && RANK[from] < RANK[to];
 }
 
@@ -2302,7 +2887,7 @@ class Checker {
                 // comes to say "might not have been initialized" for int x = x + 1;
                 d.sym = this.declare(d.name, declared, d.line, s.isFinal);
                 if (d.init) {
-                    d.init = d.init.k === 'arrinit' ? this.arrayInit(d.init, declared) : this.assignable(this.value(d.init), declared, d.line, `the variable ${d.name}`);
+                    d.init = d.init.k === 'arrinit' ? this.arrayInit(d.init, declared) : this.assignable(this.valueFor(d.init, declared), declared, d.line, `the variable ${d.name}`);
                 }
             }
             if (s.isFinal) {
@@ -2315,21 +2900,26 @@ class Checker {
     forEach(s) {
         s.iter = this.value(s.iter);
         const t = s.iter.type;
-        if (!isArray(t)) {
+        s.coll = isCollection(t) && !isMapType(t);
+        if (!isArray(t) && !s.coll) {
             if (t === 'String') {
                 throw compileError('A for-each loop cannot walk through a String directly.', s.line,
                     'Walk through its characters instead: for (char c : text.toCharArray())');
             }
-            throw compileError(`A for-each loop needs an array after the colon, and this is ${aType(t)}.`, s.line);
+            if (isMapType(t)) {
+                throw compileError('A for-each loop cannot walk through a map directly: a map holds pairs, not single elements.', s.line,
+                    'Walk through its keys: for (String key : map.keySet())  — or its values, with map.values()');
+            }
+            throw compileError(`A for-each loop needs an array or a collection after the colon, and this is ${aType(t)}.`, s.line);
         }
-        const elem = elemOf(t);
+        const elem = s.coll ? typeArgs(t)[0] : elemOf(t);
         this.scopes.push(new Map());
         let type;
         if (s.type.base === 'var' && s.type.dims === 0) type = elem;
         else {
             type = resolveType(s.type);
             if (!passableBoxing(elem, type)) {
-                throw compileError(`The array holds ${elem} values, which cannot go into the ${type} variable ${s.name}.`, s.nameLine,
+                throw compileError(`The ${s.coll ? 'collection' : 'array'} holds ${elem} values, which cannot go into the ${type} variable ${s.name}.`, s.nameLine,
                     `Declare the loop variable as ${elem}: for (${elem} ${s.name} : …)`);
             }
         }
@@ -2351,7 +2941,7 @@ class Checker {
         if (!s.e) {
             throw compileError(`${this.method.name} has to return ${aType(ret)}, and this return gives nothing back.`, s.line, 'Write the value after the word return.');
         }
-        s.e = this.assignable(this.value(s.e), ret, s.line, 'the return value', true);
+        s.e = this.assignable(this.valueFor(s.e, ret), ret, s.line, 'the return value', true);
     }
 
     throws(s) {
@@ -2421,7 +3011,7 @@ class Checker {
             throw compileError(`A { … } list makes an array, and this variable is ${aType(type)}.`, init.line, `Declare it as an array: ${type}[] name = { … };`);
         }
         const elem = elemOf(type);
-        init.elems = init.elems.map(e => (e.k === 'arrinit' ? this.arrayInit(e, elem) : this.assignable(this.value(e), elem, e.line, `an element of the ${type} array`)));
+        init.elems = init.elems.map(e => (e.k === 'arrinit' ? this.arrayInit(e, elem) : this.assignable(this.valueFor(e, elem), elem, e.line, `an element of the ${type} array`)));
         init.type = type;
         return init;
     }
@@ -2429,12 +3019,28 @@ class Checker {
     // ── expressions
 
     /** An expression whose value is used: a void method call is not one. */
-    value(node) {
+    /** A value, which may be a new ArrayList<>() that does not know yet what it holds. */
+    loose(node) {
         const e = this.expr(node);
         if (e.type === 'void') {
             throw compileError(`${e.name ? e.name + '()' : 'This method'} does not return anything, so there is no value here to use.`, e.line);
         }
         return e;
+    }
+
+    value(node) {
+        const e = this.loose(node);
+        if (typeof e.type === 'string' && isPending(e.type)) {
+            throw notYet(`${BOX} cannot tell here what this new ${baseOf(e.type)}<>() is meant to hold.`, e.line,
+                `Say so in the angle brackets: new ${baseOf(e.type)}<${GENERIC_ARITY[baseOf(e.type)] === 2 ? 'String, Integer' : 'String'}>()`);
+        }
+        return e;
+    }
+
+    /** A value about to be stored in something of type `to`: a new ArrayList<>() learns from that what it holds. */
+    valueFor(node, to) {
+        if (node.k === 'new' && node.targs === 'diamond' && isCollection(to) && !isPending(to)) node.inferred = to;
+        return this.loose(node);
     }
 
     expr(n) {
@@ -2588,6 +3194,9 @@ class Checker {
                         op === '==' ? 'Compare text with .equals(): a.equals(b)' : 'Compare text with .equals(): !a.equals(b)');
                 }
                 n.optype = 'ref';
+            } else if (isCollection(lt) && isCollection(rt)) {
+                throw notYet(`${op} between ${aType(lt)} and ${aType(rt)} asks whether they are the very same object, and ${BOX} runs that only when both sides have the same type.`, n.line,
+                    'To compare what they hold, use .equals()');
             } else {
                 throw bad((lt === 'String' && rt === 'char') || (lt === 'char' && rt === 'String')
                     ? 'A String and a char are different types. Compare one character with: text.charAt(0) == \'a\''
@@ -2633,7 +3242,7 @@ class Checker {
         n.target = target;
         n.type = target.type;
         if (n.op === '=') {
-            n.e = this.assignable(this.value(n.e), target.type, n.line, target.k === 'name' ? `the variable ${target.name}` : 'this array element');
+            n.e = this.assignable(this.valueFor(n.e, target.type), target.type, n.line, target.k === 'name' ? `the variable ${target.name}` : 'this array element');
             return n;
         }
         const op = n.op.slice(0, -1);
@@ -2847,13 +3456,14 @@ class Checker {
             return { fn: chosen.s.fn, ret: chosen.ret, args: args.map((a, i) => convert(a, chosen.concrete[i])) };
         }
         const given = types.length ? `(${types.join(', ')})` : 'nothing in its ( )';
+        if (types.some(isCollection)) throw notYet(`${describe} cannot be given ${given} in ${BOX}.`, line);
         const forms = sigs.map(s => `(${s.params.join(', ')}${s.variadic ? '…' : ''})`).filter((f, i, all) => all.indexOf(f) === i);
         throw compileError(`${describe} cannot be given ${given}.`, line,
             `It takes ${forms.length === 1 ? forms[0] : 'one of: ' + forms.join('  ')}`);
     }
 
     call(n) {
-        n.args = n.args.map(a => this.value(a));
+        n.args = n.args.map(a => this.loose(a));
 
         // a method written by the student
         if (n.target === null) {
@@ -2887,6 +3497,11 @@ class Checker {
             if (n.args.length === 1 && isArray(n.args[0].type)) {
                 throw notYet('Printing an array shows a code such as [I@1b6d3586, not the values in it.', n.line, 'Use System.out.println(Arrays.toString(nums));');
             }
+            if (n.args.length === 1 && isCollection(n.args[0].type) && !isPending(n.args[0].type)) {
+                // A collection prints its elements: [a, b, c]
+                n.target = null;
+                return this.builtin(n, [sig(n.args[0].type, 'void', printWith(n.args[0].type, n.name === 'println' ? '\n' : ''))], null, `System.out.${n.name}()`);
+            }
             n.target = null;
             return this.builtin(n, sigs, null, `System.out.${n.name}()`);
         }
@@ -2894,6 +3509,12 @@ class Checker {
         // Math.max, Integer.parseInt, …
         const cls = this.className(t);
         if (cls) {
+            if (cls === 'Collections') return this.collectionsCall(n);
+            if (cls === 'Arrays' && n.name === 'asList') return this.asList(n);
+            if (cls === 'List' || cls === 'Set' || cls === 'Map') {
+                throw notYet(`${BOX} does not have ${cls}.${n.name}()${n.name === 'of' || n.name === 'copyOf' ? `, which makes ${aType(cls.toLowerCase())} that can never be changed` : ''}.`, n.line,
+                    cls === 'List' ? 'To make a list you can change: new ArrayList<>(Arrays.asList("a", "b"))' : `Make ${aType(cls === 'Set' ? 'HashSet' : 'HashMap')} and add to it.`);
+            }
             const group = STATICS[cls];
             if (!group) this.unknownClass(cls, n.line);
             if (cls === 'String' && n.name === 'format') { n.target = null; return this.formatCall(n, 'String', 'String.format()'); }
@@ -2926,6 +3547,33 @@ class Checker {
                     n.args[0].type === 'char' ? 'To compare one character: text.charAt(0) == \'a\'' : null);
             }
             return this.builtin(n, sigs, rt, `${rt === 'String' ? 'The String method' : 'The StringBuilder method'} ${n.name}()`);
+        }
+        if (isCollection(rt)) {
+            const map = isMapType(rt);
+            const table = map ? mapMethods(rt) : collectionMethods(rt);
+            const sigs = table[n.name];
+            const kind = map ? 'map' : isListType(rt) ? 'list' : baseOf(rt) === 'Collection' ? 'collection' : 'set';
+            if (!sigs) {
+                const declined = (map ? MAP_NOT_YET : COLLECTION_NOT_YET)[n.name];
+                if (declined) throw notYet(`${BOX} does not have ${declined}.`, n.line);
+                const near = suggestName(n.name, Object.keys(table));
+                throw notYet(`${BOX} does not know a ${kind} method called ${n.name}().`, n.line,
+                    n.name === 'length' ? 'The number of elements is .size()'
+                        : kind === 'set' && n.name === 'get' ? 'A set has no positions, so there is no get(). Ask contains(), or walk through it with a for-each loop.'
+                            : kind === 'map' && (n.name === 'add' || n.name === 'contains') ? (n.name === 'add' ? 'A map stores pairs: map.put(key, value)' : 'For a map, ask containsKey(key) or containsValue(value)')
+                                : near ? `Did you mean .${near}()?` : null);
+            }
+            if (kind === 'list' && n.name === 'remove' && n.args.length === 1 && isWrapper(n.args[0].type) && n.args[0].type !== typeArgs(rt)[0]) {
+                // An Integer is an object, so Java reads remove(count) as “remove the element equal to count” — it does not unbox it into a position.
+                throw notYet(`remove() given ${aType(n.args[0].type)} looks for an element equal to it, and a list of ${typeArgs(rt)[0]} values cannot hold one. ${BOX} does not run that.`, n.line,
+                    n.args[0].type === 'Integer' ? 'To remove by position, give it an int: list.remove((int) index)' : null);
+            }
+            try {
+                return this.builtin(n, sigs, rt, `The ${kind} method ${n.name}()`);
+            } catch (err) {
+                if (!(err instanceof JavaError) || err.unsupported || !TAKES_ANY_OBJECT.has(n.name)) throw err;
+                throw notYet(`${err.message} (Java lets ${n.name}() be given any object, and simply answers that it is not there; ${BOX} does not run that.)`, n.line, err.hint);
+            }
         }
         if (isWrapper(rt)) {
             const table = wrapperMethods(rt);
@@ -3023,8 +3671,86 @@ class Checker {
         return n;
     }
 
+    /** new ArrayList<>(), new HashSet<String>(other), new HashMap<>(16) … */
+    createCollection(n) {
+        const base = n.base;
+        if (INTERFACES.has(base)) {
+            const made = base === 'Map' ? 'HashMap' : base === 'Set' ? 'HashSet' : 'ArrayList';
+            throw compileError(`${base} is an interface: it says what ${aType(base.toLowerCase())} can do, and cannot itself be made with new.`, n.line,
+                `Make ${aType(made)}, which is one kind of ${base}: new ${made}<>()`);
+        }
+        if (!n.targs) throw notYet(`${BOX} needs angle brackets after new ${base}: new ${base}<>()`, n.line);
+        const pair = GENERIC_ARITY[base] === 2;
+        let type;
+        if (n.targs === 'diamond') {
+            const only = n.args.length === 1 ? n.args[0].type : '';
+            if (n.inferred && isMapType(n.inferred) === pair) type = `${base}<${typeArgs(n.inferred).join(',')}>`;
+            else if (isCollection(only) && !isPending(only) && isMapType(only) === pair) type = `${base}<${typeArgs(only).join(',')}>`;   // a copy holds what the original holds
+            else type = `${base}<>`;
+        } else {
+            type = resolveType({ base, dims: 0, line: n.line, targs: n.targs });
+        }
+        n.type = type;
+        if (isPending(type) && n.args.some(a => isReference(a.type) && !isWrapper(a.type))) {
+            throw notYet(`${BOX} cannot tell what this new ${base}<>() is meant to hold.`, n.line, `Say so in the angle brackets: new ${base}<${pair ? 'String, Integer' : 'String'}>(…)`);
+        }
+        // What it holds may only be settled later (new ArrayList<>() as an argument), so the type is read when it is built.
+        const sigs = [sig('', type, () => buildCollection(n.type, 'empty'))];
+        if (base !== 'LinkedList') sigs.push(sig('int', type, capacity => buildCollection(n.type, 'capacity', capacity)));
+        if (!isPending(type)) {
+            sigs.push(sig(pair ? `Map<${typeArgs(type).join(',')}>` : `Collection<${typeArgs(type)[0]}>`, type, other => buildCollection(n.type, 'copy', other)));
+        }
+        const describe = `new ${base}<>()`;
+        const found = this.overload(sigs, n.args, null, describe, n.line);
+        Object.assign(n, { k: 'builtin', target: null, fn: found.fn, args: found.args, type, describe, isNew: true });
+        return n;
+    }
+
+    /** Collections.sort(list), Collections.max(scores) … */
+    collectionsCall(n) {
+        const first = n.args[0];
+        if (COLLECTIONS_NOT_YET[n.name]) throw notYet(`${BOX} does not have ${COLLECTIONS_NOT_YET[n.name]}.`, n.line);
+        const names = Object.keys(collectionsMethods('String'));
+        if (!names.includes(n.name)) {
+            const near = suggestName(n.name, names);
+            throw notYet(`${BOX} does not know Collections.${n.name}().`, n.line, near ? `Did you mean Collections.${near}()?` : null);
+        }
+        if (!first) throw compileError(`Collections.${n.name}() needs a list in its ( ).`, n.line);
+        const t = first.type;
+        if (t === 'null' || isPending(t)) throw notYet(`${BOX} does not run Collections.${n.name}() on ${t === 'null' ? 'a bare null' : 'a brand-new empty collection'}.`, n.line);
+        if (!isCollection(t) || isMapType(t)) {
+            throw compileError(`Collections.${n.name}() works on a list or another collection, and this is ${aType(t)}.`, n.line,
+                isArray(t) ? 'For an array, the class is Arrays: Arrays.sort(array)' : isMapType(t) ? 'A map is not a collection of single elements. Use its keySet() or its values().' : null);
+        }
+        n.target = null;
+        return this.builtin(n, collectionsMethods(typeArgs(t)[0])[n.name], null, `Collections.${n.name}()`);
+    }
+
+    /** Arrays.asList(array) and Arrays.asList("a", "b", "c"): a fixed-size list. Given an array, it is a view of that array. */
+    asList(n) {
+        const types = n.args.map(a => a.type);
+        n.target = null;
+        const done = (elem, fn, args) => Object.assign(n, { k: 'builtin', fn, args, type: `List<${elem}>`, describe: 'Arrays.asList()' });
+        if (types.length === 1 && isArray(types[0])) {
+            const elem = elemOf(types[0]);
+            if (elem !== 'String' && !isWrapper(elem)) {
+                throw notYet(`${BOX} does not run Arrays.asList() on ${aType(types[0])}.`, n.line,
+                    PRIMITIVES.has(elem) ? `Java would make a list holding the one array, not its elements. Use ${aType(BOXED.get(elem))}[] rather than ${aType(elem)}[].` : null);
+            }
+            return done(elem, arr => new JList('asList', notNull(arr, 'The array given to Arrays.asList').a), n.args);
+        }
+        const kinds = new Set(types.filter(t => t !== 'null').map(t => BOXED.get(t) ?? t));
+        const [elem] = kinds;
+        if (kinds.size !== 1 || (elem !== 'String' && !isWrapper(elem))) {
+            throw notYet(`${BOX} runs Arrays.asList() on one array, or on values that are all of one type: all Strings, or all ints, and so on.`, n.line);
+        }
+        return done(elem, (...items) => { charge(items.length); return new JList('asList', items); }, n.args.map(a => convert(a, elem)));
+    }
+
     create(n) {
         n.args = n.args.map(a => this.value(a));
+        if (Object.hasOwn(GENERIC_ARITY, n.base)) return this.createCollection(n);
+        if (n.targs) throw notYet(`${BOX} does not have ${n.base}<…>.`, n.line, 'The collections here are ArrayList, LinkedList, HashSet and HashMap.');
         if (n.base === 'StringBuilder') {
             const found = this.overload([
                 sig('', 'StringBuilder', () => new JBuilder()),
@@ -3819,8 +4545,31 @@ function cs(s) {
         case 'foreach': {
             const iter = cx(s.iter);
             const slot = s.sym.slot;
-            const conv = s.conv;
+            const plain = s.conv;
+            const conv = plain && (v => { try { return plain(v); } catch (err) { throw at(err, line); } });   // unboxing a null element
             const body = cs(s.body);
+            if (s.coll) {
+                return f => {
+                    const c = iter(f);
+                    if (c === null) throw at(nullPointer('The collection this loop walks through'), line);
+                    // A list is read as it stands on each pass; a set or a map's keys are entries, read as the loop reaches them.
+                    const nodes = c instanceof JList ? null : hashOf(c).nodes();
+                    const keys = c instanceof JSet;
+                    const started = modOf(c);
+                    for (let i = 0; ; i++) {
+                        if (modOf(c) !== started) {
+                            throw at(refusal('This loop added to or removed from the collection it is walking through. Java does not allow that: it stops with a ConcurrentModificationException, or quietly skips an element.',
+                                'Loop with an index instead, or collect what to remove in a second list and remove it after the loop.'), line);
+                        }
+                        if (i >= (nodes ? nodes.length : c.a.length)) return 0;
+                        tick();
+                        const item = nodes ? (keys ? nodes[i].k : nodes[i].v) : c.a[i];
+                        f[slot] = conv ? conv(item) : item;
+                        const signal = loopBody(body(f));
+                        if (signal !== 0) return signal === BRK ? 0 : signal;
+                    }
+                };
+            }
             return f => {
                 const arr = iter(f);
                 if (arr === null) throw at(nullPointer('The array this loop walks through'), line);
@@ -3962,6 +4711,28 @@ export function javaFromJson(value, type) {
         return new JArray(elemOf(type), value.map(v => javaFromJson(v, elemOf(type))));
     }
     if (isWrapper(type)) return value === null ? null : javaFromJson(value, unboxedOf(type));
+    if (isCollection(type)) {
+        // A list or a set is written as an array; a map as an array of [key, value] pairs, so that their order is kept.
+        if (value === null) return null;
+        if (!Array.isArray(value) || isPending(type)) throw wrong();
+        const base = baseOf(type);
+        const [K, V] = typeArgs(type);
+        if (isMapType(type)) {
+            const map = new JMap(new JHash(K));
+            for (const pair of value) {
+                if (!Array.isArray(pair) || pair.length !== 2) throw wrong();
+                map.h.put(javaFromJson(pair[0], K), javaFromJson(pair[1], V));
+            }
+            return map;
+        }
+        const items = value.map(v => javaFromJson(v, K));
+        if (base === 'HashSet' || base === 'Set') {
+            const set = new JSet(new JHash(K));
+            for (const v of items) set.h.put(v, true);
+            return set;
+        }
+        return new JList(base === 'LinkedList' ? 'LinkedList' : 'ArrayList', items);
+    }
     switch (type) {
         case 'int':
             if (!Number.isInteger(value) || value < INT_MIN || value > INT_MAX) throw wrong();
@@ -4007,6 +4778,11 @@ export function javaRepr(value, type) {
     if (type === 'void') return '(nothing)';
     if (value === null || value === undefined) return 'null';
     if (isArray(type)) return '[' + value.a.map(v => javaRepr(v, elemOf(type))).join(', ') + ']';
+    if (isCollection(type)) {
+        const [K, V] = typeArgs(type);
+        if (isMapType(type)) return '{' + value.h.nodes().map(n => `${javaRepr(n.k, K)}=${javaRepr(n.v, V)}`).join(', ') + '}';
+        return '[' + itemsOf(value).map(v => javaRepr(v, K)).join(', ') + ']';
+    }
     switch (type) {
         case 'char': case 'Character': return quote(String.fromCharCode(value), "'");
         case 'String': return quote(value, '"');
@@ -4028,6 +4804,20 @@ export function javaEquals(actual, expected, type) {
     if (actual === null || expected === null || actual === undefined) return actual === expected;
     if (isArray(type)) {
         return actual.a.length === expected.a.length && actual.a.every((v, i) => javaEquals(v, expected.a[i], elemOf(type)));
+    }
+    if (isCollection(type)) {
+        // A list is equal in order; a set or a map by what it holds, in whatever order it was filled.
+        const [K, V] = typeArgs(type);
+        if (actual instanceof JList) {
+            return expected instanceof JList && actual.a.length === expected.a.length && actual.a.every((v, i) => javaEquals(v, expected.a[i], K));
+        }
+        const mine = hashOf(actual);
+        if (expected instanceof JList || mine.size !== hashOf(expected).size) return false;
+        if (actual instanceof JValues) return false;
+        return hashOf(expected).nodes().every(n => {
+            const node = mine.find(n.k);
+            return node !== null && (actual instanceof JSet || javaEquals(node.v, n.v, V));
+        });
     }
     if (type === 'double' || type === 'Double') {
         if (actual === expected || (actual !== actual && expected !== expected)) return true;

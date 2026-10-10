@@ -12,8 +12,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { findJdk, runOnJdk, runOnJtiny, caseForProblem } from './helpers/jdk.js';
-import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, interestingDoubles } from './helpers/java-corpus.js';
+import { runProblemOnJtiny, findJdk, runOnJdk, runOnJtiny, caseForProblem } from './helpers/jdk.js';
+import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, collectionCases, collectionTypeCases, interestingDoubles } from './helpers/java-corpus.js';
 import { javaDouble } from '../src/jtiny.js';
 
 const jdk = findJdk();
@@ -29,6 +29,8 @@ const FLOW_CASES = 600;     // method bodies: does it compile, and then what doe
 const TYPE_CASES = 900;     // expressions built with no regard for type: does it compile
 const BOX_CASES = 600;      // the same, with Integer, Double and the other wrappers among them
 const FORMAT_CASES = 400;   // String.format and printf with formats made at random
+const COLLECTION_CASES = 30;   // × 25 runs of adds, removes and lookups: the order a HashMap and a HashSet print in
+const COLLECTION_TYPE_CASES = 600;   // collection methods called on, and handed, anything at all
 const ROUNDING_CASES = 6;   // × 150 doubles × 9 ways of writing each: where %.2f rounds
 
 // Everything goes to the JDK in one process: starting a JVM costs more than all the cases together.
@@ -37,7 +39,8 @@ const reject = Object.entries(REJECTS).map(([name, methods]) => [name, { methods
 const refuse = Object.entries(REFUSES);
 const fuzz = fuzzCases(FUZZ_SEED, FUZZ_CASES);
 const generated = [...flowCases(FUZZ_SEED, FLOW_CASES), ...typeCases(FUZZ_SEED, TYPE_CASES), ...boxCases(FUZZ_SEED, BOX_CASES),
-  ...formatCases(FUZZ_SEED, FORMAT_CASES), ...roundingCases(FUZZ_SEED, ROUNDING_CASES)];
+  ...formatCases(FUZZ_SEED, FORMAT_CASES), ...roundingCases(FUZZ_SEED, ROUNDING_CASES),
+  ...collectionTypeCases(FUZZ_SEED, COLLECTION_TYPE_CASES), ...collectionCases(FUZZ_SEED, COLLECTION_CASES)];
 const doubles = interestingDoubles(FUZZ_SEED, 1500);
 // A Java method may hold only so much code, so the bit patterns go in several.
 const DOUBLES_PER_METHOD = 800;
@@ -102,7 +105,7 @@ describe('every Java problem in the question sets: its reference solution, on re
   setProblems.forEach(([setId, index, question], i) => {
     it(`${setId}[${index}] ${question.signature}`, () => {
       assert.ok(javaProblems[i].compiled, `the reference solution does not compile on real Java: ${javaProblems[i].compileError}`);
-      const mine = runOnJtiny(problemCases[i]);
+      const mine = runProblemOnJtiny(question);
       assert.ok(mine.compiled, `jtiny refused the reference solution: ${mine.compileError}`);
       assertSameCalls(problemCases[i], javaProblems[i], mine);
     });
@@ -164,7 +167,8 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
   // Java error on what javac accepts; and a different answer. Declining is none of them.
   const BATCH = 100;
   for (let from = 0; from < generated.length; from += BATCH) {
-    const kind = from < FLOW_CASES ? 'method bodies' : from < FLOW_CASES + TYPE_CASES + BOX_CASES ? 'type puzzles' : 'formats';
+    const kind = from < FLOW_CASES ? 'method bodies' : from < FLOW_CASES + TYPE_CASES + BOX_CASES ? 'type puzzles'
+      : from < FLOW_CASES + TYPE_CASES + BOX_CASES + FORMAT_CASES + ROUNDING_CASES ? 'formats' : 'collections';
     it(`seed ${FUZZ_SEED}, ${kind} ${from + 1}–${Math.min(from + BATCH, generated.length)}`, () => {
       const disagreements = [];
       let bothRan = 0;
@@ -186,7 +190,8 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
         if (k >= 0 && !(got.includes('?refused') && got.length !== want.length)) disagreements.push(`${testCase.calls[k]}: Java ${want[k]}, jtiny ${got[k]}\n${testCase.methods}`);
       }
       assert.deepEqual(disagreements.slice(0, 3), [], `\n${disagreements.slice(0, 3).join('\n\n')}\n`);
-      assert.ok(bothRan >= Math.min(10, generated.length - from), `only ${bothRan} of this batch compiled on both sides; the generator has drifted`);
+      // Most collection puzzles are type errors, so fewer of them run.
+      assert.ok(bothRan >= Math.min(kind === 'collections' ? 3 : 10, generated.length - from), `only ${bothRan} of this batch compiled on both sides; the generator has drifted`);
     });
   }
 });

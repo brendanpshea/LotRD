@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { compileJava, evaluateJava, javaText, javaRepr, javaDouble, parseJavaSignature, JavaError } from '../../src/jtiny.js';
+import { compileJava, evaluateJava, callJava, assembleJava, javaFromJson, javaText, javaRepr, javaDouble, parseJavaSignature, JavaError } from '../../src/jtiny.js';
 
 const MINIMUM_JAVA = 25;   // the Java sets teach Java 25, and a few cases here need it
 
@@ -45,6 +45,12 @@ const SHOW = `
   static String $show(Double[] v) { return java.util.Arrays.toString(v); }
   static String $show(Character[] v) { return java.util.Arrays.toString(v); }
   static String $show(Boolean[] v) { return java.util.Arrays.toString(v); }
+  static String $show(Collection<?> v) { return String.valueOf(v); }
+  static String $show(Map<?, ?> v) { return String.valueOf(v); }
+  @SafeVarargs static <T> ArrayList<T> $list(T... xs) { return new ArrayList<>(Arrays.asList(xs)); }
+  @SafeVarargs static <T> LinkedList<T> $linked(T... xs) { return new LinkedList<>(Arrays.asList(xs)); }
+  @SafeVarargs static <T> HashSet<T> $set(T... xs) { HashSet<T> s = new HashSet<>(); for (T x : xs) s.add(x); return s; }
+  @SuppressWarnings("unchecked") static <K, V> HashMap<K, V> $map(Object... kv) { HashMap<K, V> m = new HashMap<>(); for (int i = 0; i < kv.length; i += 2) m.put((K) kv[i], (V) kv[i + 1]); return m; }
   static String $show(int[] v) { return java.util.Arrays.toString(v); }
   static String $show(long[] v) { return java.util.Arrays.toString(v); }
   static String $show(double[] v) { return java.util.Arrays.toString(v); }
@@ -72,6 +78,15 @@ export function javaLiteral(value, type) {
     const braces = (v, t) => (v === null ? 'null' : `{${v.map(x => (t.endsWith('[]') ? braces(x, t.slice(0, -2)) : javaLiteral(x, t))).join(', ')}}`);
     return `new ${type} ${braces(value, elem)}`;
   }
+  if (type.endsWith('>')) {
+    // A collection: made by a helper, with the element type spelled out so that an empty one, or a null in one, is still typed.
+    const base = type.slice(0, type.indexOf('<'));
+    const [K, V] = type.slice(type.indexOf('<') + 1, -1).split(',');
+    const element = (v, t) => (v === null ? `(${t}) null` : javaLiteral(v, t));
+    if (V) return `this.<${K}, ${V}>$map(${value.map(([k, v]) => `${element(k, K)}, ${element(v, V)}`).join(', ')})`;
+    const helper = base === 'LinkedList' ? '$linked' : base === 'HashSet' || base === 'Set' ? '$set' : '$list';
+    return `this.<${K}>${helper}(${value.map(v => element(v, K)).join(', ')})`;
+  }
   const WRAPPED = { Integer: 'int', Long: 'long', Double: 'double', Character: 'char', Boolean: 'boolean' };
   if (WRAPPED[type]) return javaLiteral(value, WRAPPED[type]);
   switch (type) {
@@ -95,6 +110,35 @@ export function caseForProblem(question) {
     methods: `${sig.header} {\n${question.solution}\n}`,
     calls: question.tests.map(t => `${sig.name}(${t.args.map((a, i) => javaLiteral(a, sig.params[i].type)).join(', ')})`),
   };
+}
+
+/**
+ * A question's reference solution on jtiny, the way the game runs it: each row's arguments are made from
+ * the question file, not written as Java. (A map argument has no Java expression that jtiny runs.)
+ */
+export function runProblemOnJtiny(question) {
+  const sig = parseJavaSignature(question.signature);
+  let method;
+  try {
+    const program = compileJava(assembleJava(question.signature, question.solution).source);
+    method = program.methods.get(sig.name).find(m => m.paramTypes.join() === sig.params.map(p => p.type).join());
+  } catch (err) {
+    if (!(err instanceof JavaError)) throw err;
+    return { compiled: false, compileError: err.message, unsupported: err.unsupported, out: '' };
+  }
+  let out = '';
+  let refused = null;
+  for (const row of question.tests) {
+    const result = callJava(method, row.args.map((a, i) => javaFromJson(a, sig.params[i].type)));
+    out += result.machine.out;
+    if (result.error) {
+      if (result.error.exception) out += `!${result.error.exception}\n`;
+      else { out += '?refused\n'; refused = refused || result.error.message; }
+    } else {
+      out += show(result.value, sig.ret) + '\n';
+    }
+  }
+  return { compiled: true, compileError: null, out, refused };
 }
 
 /** One test case as a Java class: its methods, and each call printed or its exception named. */

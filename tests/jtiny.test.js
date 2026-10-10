@@ -220,7 +220,7 @@ describe('a Java problem: the wording of the errors beginners make', () => {
     assert.match(run('return s.length();', q).results[0].error.message, /^NullPointerException$/);
   });
   it('something this box does not run is declined by name', () => {
-    assert.match(message('ArrayList<Integer> xs = new ArrayList<>();\nreturn 0;'), /does not have ArrayList<…>/);
+    assert.match(message('TreeMap<String, Integer> xs = new TreeMap<>();\nreturn 0;'), /does not have TreeMap<…>.*ArrayList, LinkedList, HashSet and HashMap/s);
     assert.match(message('try { return a / b; } catch (Exception e) { return 0; }'), /try \/ catch is not available here yet/);
     assert.match(message('return (int) Math.random();'), /Math\.random\(\).*same answer every time/);
   });
@@ -269,6 +269,57 @@ describe('a Java problem: wrapper objects, null, and formatted text', () => {
     const outcome = run('System.out.printf("%d + %d%n", a, b);\nreturn a + b;', withTests(SUM.signature, [{ args: [1, 2], expect: 3 }]));
     assert.equal(outcome.results[0].passed, true);
     assert.match(JSON.stringify(outcome.results[0]), /1 \+ 2/);
+  });
+});
+
+describe('a Java problem: lists, sets and maps', () => {
+  const LONG = withTests('public ArrayList<String> longTitles(ArrayList<String> songs, int minLength)', [
+    { args: [['Imagine', 'Kids', 'Yesterday'], 5], expect: ['Imagine', 'Yesterday'] },
+    { args: [[], 1], expect: [] },
+  ]);
+  const COUNT = withTests('public HashMap<String, Integer> countPlays(String[] plays)', [
+    { args: [['b', 'a', 'b']], expect: [['a', 1], ['b', 2]] },
+  ]);
+
+  it('a test hands a method a list, and the call is written the way Java prints one', () => {
+    const outcome = run('ArrayList<String> out = new ArrayList<>();\nfor (String s : songs) {\n    if (s.length() >= minLength) {\n        out.add(s);\n    }\n}\nreturn out;', LONG);
+    assert.deepEqual(outcome.results.map(r => r.passed), [true, true]);
+    assert.equal(outcome.results[0].call, 'longTitles(["Imagine", "Kids", "Yesterday"], 5)');
+  });
+  it('a list is compared in order', () => {
+    const outcome = run('ArrayList<String> out = new ArrayList<>(songs);\nCollections.reverse(out);\nout.remove("Kids");\nreturn out;', LONG);
+    assert.equal(outcome.results[0].passed, false);
+  });
+  it('a map is written as pairs in the question file, and compared by what it holds, in any order', () => {
+    const body = 'HashMap<String, Integer> m = new HashMap<>();\nfor (String p : plays) {\n    if (m.containsKey(p)) {\n        m.put(p, m.get(p) + 1);\n    } else {\n        m.put(p, 1);\n    }\n}\nreturn m;';
+    assert.equal(run(body, COUNT).results[0].passed, true);
+    assert.equal(run('HashMap<String, Integer> m = new HashMap<>();\nm.put("b", 2);\nreturn m;', COUNT).results[0].passed, false);
+  });
+  it('a set is compared by what it holds', () => {
+    const q = withTests('public HashSet<String> unique(String[] names)', [{ args: [['x', 'y', 'x']], expect: ['y', 'x'] }]);
+    assert.equal(run('HashSet<String> s = new HashSet<>();\nfor (String n : names) {\n    s.add(n);\n}\nreturn s;', q).results[0].passed, true);
+  });
+  it('removing inside a for-each is stopped, and the message names the exception Java would throw', () => {
+    const err = run('for (String s : songs) {\n    if (s.length() < minLength) {\n        songs.remove(s);\n    }\n}\nreturn songs;', LONG).results[0].error;
+    assert.match(err.message, /ConcurrentModificationException/);
+    assert.match(err.hint, /index/);
+    assert.equal(err.line, 1);
+  });
+  it('get past the end says how long the list is', () => {
+    const err = run('ArrayList<String> out = new ArrayList<>();\nout.add(songs.get(songs.size()));\nreturn out;', LONG).results[0].error;
+    assert.match(err.message, /^IndexOutOfBoundsException/);
+    assert.match(err.hint, /3 elements.*0 to 2/);
+  });
+  it('the habits of arrays, on a list', () => {
+    assert.match(run('return songs.length;', LONG).error.message, /length/);
+    assert.match(run('songs.length();\nreturn songs;', LONG).error.hint, /\.size\(\)/);
+    assert.match(run('ArrayList<int> xs = new ArrayList<>();\nreturn songs;', LONG).error.hint, /ArrayList<Integer>/);
+    assert.match(run('List<String> xs = new List<>();\nreturn songs;', LONG).error.hint, /new ArrayList<>\(\)/);
+  });
+  it('what is not here is declined by name', () => {
+    assert.match(run('Collections.shuffle(songs);\nreturn songs;', LONG).error.message, /random order/);
+    assert.match(run('songs.removeIf(s -> s.length() < 5);\nreturn songs;', LONG).error.message, /does not have/);
+    assert.match(run('List<String> xs = List.of("a");\nreturn songs;', LONG).error.hint, /new ArrayList<>\(Arrays\.asList/);
   });
 });
 

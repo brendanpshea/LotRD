@@ -12,6 +12,46 @@
     "feedback": "An array's length is fixed when it is created; an ArrayList resizes itself as you add and remove. The other three are real confusions. An ArrayList cannot hold primitives at all: a list of whole numbers is a List<Integer>, and each int is boxed. Indexed reads are, if anything, slightly faster on a plain array. And Java arrays DO check bounds: a bad index throws ArrayIndexOutOfBoundsException, it does not read stray memory."
   },
   {
+    "type": "cloze",
+    "question": "The collections come in three families. An ArrayList and a LinkedList are each a kind of {{1}}: an ordered sequence that allows duplicates. A HashSet is a kind of {{2}}: no duplicates. A HashMap is a kind of {{3}}: keys, each with a value.",
+    "blanks": [
+      {
+        "accept": [
+          "List",
+          "list"
+        ],
+        "hint": "ordered"
+      },
+      {
+        "accept": [
+          "Set",
+          "set"
+        ],
+        "hint": "unique"
+      },
+      {
+        "accept": [
+          "Map",
+          "map"
+        ],
+        "hint": "pairs"
+      }
+    ],
+    "feedback": "List, Set and Map are interfaces: each names what a family of collections can do. A List keeps its elements in order and by position, and is happy to hold the same value twice. A Set holds each value once. A Map stores pairs, and looks a value up by its key. ArrayList, LinkedList, HashSet and HashMap are the classes that do the work."
+  },
+  {
+    "question": "Experienced Java programmers usually write the first line rather than the second. What is the practical gain?\nList<String> names = new ArrayList<>();\nArrayList<String> names = new ArrayList<>();",
+    "correct": [
+      "Code that uses names relies on List alone, so another list class can be swapped in with one edit"
+    ],
+    "incorrect": [
+      "The variable becomes read-only, which protects the elements from being changed by accident",
+      "A List variable may hold elements of several types, while an ArrayList variable may not",
+      "List is the lighter type, so every call to get and add runs faster through it"
+    ],
+    "feedback": "List is an interface: a named set of methods (add, get, size, remove...) that every kind of list promises to have. ArrayList and LinkedList are two classes that keep that promise in different ways. If the variable's type is List, the rest of the code can use only those shared methods, so changing new ArrayList<>() to new LinkedList<>() is the only edit needed. The declared type does not make the list read-only, does not loosen the element type, and does not change the speed: the object is an ArrayList either way."
+  },
+  {
     "type": "fill_blank",
     "question": "Complete the declaration of a list that will hold int values such as 3 and 42:\nList<___> nums = new ArrayList<>();",
     "correct": [
@@ -19,6 +59,18 @@
     ],
     "case_sensitive": true,
     "feedback": "The type between the angle brackets must be a class, never a primitive, so List<int> does not compile. Integer is the wrapper class for int, and autoboxing converts between the two for you: nums.add(3) just works. The capital letter matters: integer and Int are not Java types."
+  },
+  {
+    "question": "What happens with these two lines?\nList<String> words = new ArrayList<>();\nwords.add(42);",
+    "correct": [
+      "The compiler rejects words.add(42), so the program never runs"
+    ],
+    "incorrect": [
+      "It runs, and 42 is converted into the String \"42\" as it is stored",
+      "It compiles, then throws ClassCastException when the add runs",
+      "It runs, because the empty <> leaves the element type open"
+    ],
+    "feedback": "List<String> is a promise the compiler enforces: only Strings go in, so words.add(42) is a compile-time error and no exception is ever involved. Nothing converts 42 to \"42\" for you. The empty diamond <> does not leave the type open; it tells the compiler to copy the type from the left-hand side, so new ArrayList<>() here means new ArrayList<String>()."
   },
   {
     "type": "code_line",
@@ -53,7 +105,7 @@
       "String first = words.remove(0);",
       "String first = words.get(1);"
     ],
-    "feedback": "get(0) reads the element and changes nothing. words[0] is array syntax and does not compile for a list. remove(0) also hands back the element at index 0, but it deletes it from the list on the way out. get(1) reads the SECOND element, because list indexes start at 0 just as array indexes do. Since Java 21, words.getFirst() is another way to say get(0)."
+    "feedback": "get(0) reads the element and changes nothing. words[0] is array syntax and does not compile for a list. remove(0) also hands back the element at index 0, but it deletes it from the list on the way out. get(1) reads the SECOND element, because list indexes start at 0 just as array indexes do."
   },
   {
     "type": "cloze",
@@ -90,6 +142,39 @@
     ],
     "case_sensitive": true,
     "feedback": "add(1, \"x\") INSERTS at index 1: it overwrites nothing. Everything from index 1 onward shifts one place right, so the list becomes [a, x, b, c] and index 2 now holds b. If the line had been runes.set(1, \"x\"), b would have been replaced and index 2 would hold c."
+  },
+  {
+    "type": "code_trace",
+    "question": "addAll adds every element of another collection. What does this print?",
+    "code": "ArrayList<String> list = new ArrayList<>();\nlist.add(\"Imagine\");\nString[] more = {\"Yesterday\", \"Let It Be\"};\nlist.addAll(Arrays.asList(more));\nSystem.out.println(list.size());\nSystem.out.println(list.get(1));",
+    "language": "java",
+    "correct": [
+      "3\nYesterday"
+    ],
+    "case_sensitive": true,
+    "feedback": "Arrays.asList(more) presents the array as a list, and addAll appends every element of it, in order, to the end of list. So list is [Imagine, Yesterday, Let It Be]: three elements, with \"Yesterday\" at index 1. Writing list.add(more) would not compile, because add takes one String and more is a String[]."
+  },
+  {
+    "type": "code_trace",
+    "question": "This fragment reads both ends of a list. What does it print?",
+    "code": "List<Integer> hp = new ArrayList<>(Arrays.asList(10, 20, 30, 40));\nint last = hp.get(hp.size() - 1);\nint first = hp.get(0);\nSystem.out.println(last + first);",
+    "language": "java",
+    "correct": [
+      "50"
+    ],
+    "case_sensitive": true,
+    "feedback": "size() is 4, so the last valid index is 3 and get(3) is 40. get(0) is the first element, 10. Both values are int, so + adds them: 50. Asking for hp.get(hp.size()) would throw IndexOutOfBoundsException, exactly as arr[arr.length] does for an array."
+  },
+  {
+    "type": "code_trace",
+    "question": "indexOf searches a list from the front. What does this print?",
+    "code": "List<String> loot = new ArrayList<>(Arrays.asList(\"gem\", \"axe\", \"gem\"));\nSystem.out.println(loot.indexOf(\"gem\") + \" \" + loot.indexOf(\"bow\"));",
+    "language": "java",
+    "correct": [
+      "0 -1"
+    ],
+    "case_sensitive": true,
+    "feedback": "indexOf returns the position of the FIRST element equal to its argument, so \"gem\" gives 0 even though there is another at index 2. When nothing matches it returns -1, a number that can never be a real index. It does not return null (the result is an int) and it does not throw. The + \" \" + in the middle makes this String concatenation, not arithmetic."
   },
   {
     "type": "matching",
@@ -138,67 +223,19 @@
     "feedback_template": "Each add makes the list one longer, whether it appends or inserts at index 0. Each remove(0) makes it one shorter. So the size is {{a}} - {{r}} + 1 = {{expected}}. Inserting at index 0 shifts the other elements along; it does not overwrite one."
   },
   {
-    "type": "code_trace",
-    "question": "This fragment reads both ends of a list. What does it print?",
-    "code": "List<Integer> hp = new ArrayList<>(List.of(10, 20, 30, 40));\nint last = hp.get(hp.size() - 1);\nint first = hp.getFirst();\nSystem.out.println(last + first);",
-    "language": "java",
-    "correct": [
-      "50"
-    ],
-    "case_sensitive": true,
-    "feedback": "size() is 4, so the last valid index is 3 and get(3) is 40. getFirst() (Java 21 and later) is get(0), which is 10; there is a matching getLast() too. Both values are int, so + adds them: 50. Asking for hp.get(hp.size()) would throw IndexOutOfBoundsException, exactly as arr[arr.length] does for an array."
-  },
-  {
-    "question": "names is a List<String>. Which of these visit every element of names, one at a time, without an error?",
-    "correct": [
-      "for (String n : names) { System.out.println(n); }",
-      "for (int i = 0; i < names.size(); i++) { System.out.println(names.get(i)); }",
-      "names.forEach(n -> System.out.println(n));"
-    ],
-    "incorrect": [
-      "for (int i = 0; i < names.size(); i++) { System.out.println(names[i]); }",
-      "for (int i = 0; i <= names.size(); i++) { System.out.println(names.get(i)); }"
-    ],
-    "feedback": "The for-each loop, the index loop with get(i), and the forEach method all work. forEach takes a small piece of code written with an arrow: n -> ... means \"given an element n, do this\". names[i] is array syntax and does not compile for a list. The loop that uses <= runs one step too far: its last pass calls get(size()), which throws IndexOutOfBoundsException."
-  },
-  {
-    "question": "What happens with these two lines?\nList<String> words = new ArrayList<>();\nwords.add(42);",
-    "correct": [
-      "The compiler rejects words.add(42), so the program never runs"
-    ],
-    "incorrect": [
-      "It runs, and 42 is converted into the String \"42\" as it is stored",
-      "It compiles, then throws ClassCastException when the add runs",
-      "It runs, because the empty <> leaves the element type open"
-    ],
-    "feedback": "List<String> is a promise the compiler enforces: only Strings go in, so words.add(42) is a compile-time error and no exception is ever involved. Nothing converts 42 to \"42\" for you. The empty diamond <> does not leave the type open; it tells the compiler to copy the type from the left-hand side, so new ArrayList<>() here means new ArrayList<String>()."
-  },
-  {
-    "question": "Experienced Java programmers usually write the first line rather than the second. What is the practical gain?\nList<String> names = new ArrayList<>();\nArrayList<String> names = new ArrayList<>();",
-    "correct": [
-      "The code that uses names relies on List alone, so a different list class can be swapped in by editing one word"
-    ],
-    "incorrect": [
-      "The variable becomes read-only, which protects the elements from being changed by accident",
-      "A List variable may hold elements of several types, while an ArrayList variable may not",
-      "List is the lighter type, so every call to get and add runs faster through it"
-    ],
-    "feedback": "List is an interface: a named set of methods (add, get, size, remove...) that every kind of list promises to have. ArrayList and LinkedList are two classes that keep that promise in different ways. If the variable's type is List, the rest of the code can use only those shared methods, so changing new ArrayList<>() to new LinkedList<>() is the only edit needed. The declared type does not make the list read-only, does not loosen the element type, and does not change the speed: the object is an ArrayList either way."
-  },
-  {
     "type": "npc_demo",
     "question": "NPC: Index or value?",
     "npc": "zoya",
     "intro": "Zoya lines up three numbered clay tokens on the bench: 5, 1, 9. \"One method name, two different jobs,\" they say. \"Java picks the job by looking at the TYPE of what you hand it.\"",
     "steps": [
       {
-        "say": "Here are my tokens as a list of Integer objects.\nList<Integer> tokens = new ArrayList<>(List.of(5, 1, 9));\nA list has two remove methods. remove(int index) deletes whatever sits at that position. remove(Object o) searches for an element equal to o and deletes that.",
+        "say": "Here are my tokens as a list of Integer objects.\nList<Integer> tokens = new ArrayList<>(Arrays.asList(5, 1, 9));\nA list has two remove methods. remove(int index) deletes whatever sits at that position. remove(Object o) searches for an element equal to o and deletes that.",
         "beats": [
           {
             "say": "Here are my tokens as a list of Integer objects."
           },
           {
-            "code": "List<Integer> tokens = new ArrayList<>(List.of(5, 1, 9));",
+            "code": "List<Integer> tokens = new ArrayList<>(Arrays.asList(5, 1, 9));",
             "language": "java"
           },
           {
@@ -251,7 +288,7 @@
   {
     "type": "code_trace",
     "question": "The list holds numbers, and the argument to remove is a number too. What does this print?",
-    "code": "List<Integer> nums = new ArrayList<>(List.of(10, 20, 30, 2));\nnums.remove(2);\nSystem.out.println(nums);",
+    "code": "List<Integer> nums = new ArrayList<>(Arrays.asList(10, 20, 30, 2));\nnums.remove(2);\nSystem.out.println(nums);",
     "language": "java",
     "correct": [
       "[10, 20, 2]",
@@ -261,20 +298,9 @@
     "feedback": "The argument 2 is an int, so Java chooses remove(int index) and deletes the element at POSITION 2, which is 30. The value 2 at the end of the list is untouched. To delete the value 2 instead you would write nums.remove(Integer.valueOf(2)), which selects remove(Object) and leaves [10, 20, 30]."
   },
   {
-    "type": "code_trace",
-    "question": "indexOf searches a list from the front. What does this print?",
-    "code": "List<String> loot = new ArrayList<>(List.of(\"gem\", \"axe\", \"gem\"));\nSystem.out.println(loot.indexOf(\"gem\") + \" \" + loot.indexOf(\"bow\"));",
-    "language": "java",
-    "correct": [
-      "0 -1"
-    ],
-    "case_sensitive": true,
-    "feedback": "indexOf returns the position of the FIRST element equal to its argument, so \"gem\" gives 0 even though there is another at index 2. When nothing matches it returns -1, a number that can never be a real index. It does not return null (the result is an int) and it does not throw. The + \" \" + in the middle makes this String concatenation, not arithmetic."
-  },
-  {
     "type": "cloze",
     "prompt": "remove has two forms, and they hand back different things. Fill in what each line prints.",
-    "question": "List<String> t = new ArrayList<>(List.of(\"a\", \"b\", \"c\"));\nSystem.out.println(t.remove(0));    // prints {{1}}\nSystem.out.println(t.remove(\"c\"));  // prints {{2}}\nSystem.out.println(t.remove(\"z\"));  // prints {{3}}\nSystem.out.println(t);              // prints {{4}}",
+    "question": "List<String> t = new ArrayList<>(Arrays.asList(\"a\", \"b\", \"c\"));\nSystem.out.println(t.remove(0));    // prints {{1}}\nSystem.out.println(t.remove(\"c\"));  // prints {{2}}\nSystem.out.println(t.remove(\"z\"));  // prints {{3}}\nSystem.out.println(t);              // prints {{4}}",
     "language": "java",
     "blanks": [
       {
@@ -308,137 +334,179 @@
     "feedback": "remove(int index) returns the element it took out, so the first call prints a. remove(Object) returns a boolean: true if it found and deleted a match (\"c\"), false if there was nothing to delete (\"z\"). A failed remove(Object) is not an error and throws nothing. Two elements are gone, so [b] is left."
   },
   {
-    "question": "What happens with these two lines?\nList<String> days = List.of(\"Mon\", \"Tue\");\ndays.add(\"Wed\");",
+    "question": "Given this list, which of the statements below throw an exception when they run?\nList<Integer> nums = new ArrayList<>(Arrays.asList(1, 2, 3));",
     "correct": [
-      "It compiles, then throws UnsupportedOperationException"
+      "nums.get(3);",
+      "nums.set(3, 9);",
+      "nums.remove(3);",
+      "nums.add(5, 0);"
     ],
     "incorrect": [
-      "It does not compile, since List.of has no add method",
-      "It runs, and days then holds three elements",
-      "It runs, but the add is ignored and the size stays 2"
+      "nums.remove(Integer.valueOf(7));",
+      "nums.indexOf(7);"
     ],
-    "feedback": "List.of builds an IMMUTABLE list: its contents can never change. The variable's type is still List, and List has an add method, so the compiler is satisfied. The refusal comes at run time, as an UnsupportedOperationException, and it is loud rather than silent. set, remove and sort are refused the same way. Set.of and Map.of behave alike."
+    "feedback": "nums has indexes 0 to 2. get(3) and set(3, 9) are both out of range. remove(3) has an int argument, so it means position 3, not the value 3, and that is out of range too. add(5, 0) tries to insert at position 5 of a 3-element list: inserting is allowed at positions 0 to 3, no further. All four throw IndexOutOfBoundsException. Looking for a value that is not there is not an error: remove(Object) just returns false, and indexOf returns -1."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What does this fragment print?\nList<Integer> nums = new ArrayList<>();\nfor (int i = 0; i < 8; i++) {\n    nums.add(i * 10);\n}\nfor (int j = 0; j < {{r}}; j++) {\n    nums.remove(0);\n}\nSystem.out.println(nums.get({{k}}));",
+    "variables": {
+      "r": {
+        "min": 1,
+        "max": 3
+      },
+      "k": {
+        "min": 1,
+        "max": 4
+      }
+    },
+    "answer": {
+      "expr": "(k + r) * 10",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The first loop builds [0, 10, 20, 30, 40, 50, 60, 70]: the value at index i is i * 10. Each remove(0) deletes the front element and every other element slides one index to the left. After {{r}} removals, the element now at index {{k}} is the one that started {{r}} places further right, and its value is {{expected}}."
+  },
+  {
+    "question": "names is a List<String>. Which of these visit every element of names, one at a time, without an error?",
+    "correct": [
+      "for (String n : names) { System.out.println(n); }",
+      "for (int i = 0; i < names.size(); i++) { System.out.println(names.get(i)); }",
+      "int i = 0; while (i < names.size()) { System.out.println(names.get(i)); i++; }"
+    ],
+    "incorrect": [
+      "for (int i = 0; i < names.size(); i++) { System.out.println(names[i]); }",
+      "for (int i = 0; i <= names.size(); i++) { System.out.println(names.get(i)); }"
+    ],
+    "feedback": "The for-each loop, the index loop with get(i), and the while loop with its own counter all visit every element once. names[i] is array syntax and does not compile for a list. The loop that uses <= runs one step too far: its last pass calls get(size()), which throws IndexOutOfBoundsException."
+  },
+  {
+    "question": "What happens when this fragment runs?\nList<String> bag = new ArrayList<>(Arrays.asList(\"rope\", \"rock\", \"map\", \"rock\", \"key\"));\nfor (String item : bag) {\n    if (item.equals(\"rock\")) {\n        bag.remove(item);\n    }\n}\nSystem.out.println(bag);",
+    "correct": [
+      "It throws ConcurrentModificationException"
+    ],
+    "incorrect": [
+      "It prints [rope, map, key]",
+      "It prints [rope, map, rock, key]",
+      "It does not compile: remove is not allowed in a for-each"
+    ],
+    "feedback": "Removing \"rock\" is a structural change: the list gets shorter while the for-each loop is part-way through it. When the loop asks for its next element it sees that the list changed underneath it and throws ConcurrentModificationException, so the println is never reached. The compiler cannot see this coming; the code is perfectly legal Java. A loop that does not hold a place in the list is safe: while (bag.contains(\"rock\")) { bag.remove(\"rock\"); } leaves [rope, map, key]."
+  },
+  {
+    "question": "names is an ArrayList<String> with five elements, and total is an int. Which of these statements can be the body of\nfor (String s : names) { ... }\nwith no risk of a ConcurrentModificationException?",
+    "correct": [
+      "names.set(0, s.toUpperCase());",
+      "total += names.size();",
+      "System.out.println(names.indexOf(s));"
+    ],
+    "incorrect": [
+      "names.add(s.toUpperCase() + \"!\");",
+      "names.remove(names.indexOf(s));",
+      "names.add(0, s.toUpperCase());"
+    ],
+    "feedback": "The loop objects to STRUCTURAL changes, the ones that alter how many elements the list has: every form of add and remove. set replaces one element and leaves the size alone, so it is allowed, and size() and indexOf only read. (remove can occasionally slip through without an exception, when it happens on the second-to-last pass, but the loop then silently skips an element. It is a bug either way.)"
+  },
+  {
+    "question": "Which of these are reasons to choose a plain array rather than an ArrayList?",
+    "correct": [
+      "The number of elements is known, and it will never change",
+      "The data is a grid of rows and columns, such as a game board",
+      "The elements are ints, and they should be stored without boxing"
+    ],
+    "incorrect": [
+      "Elements will be added and removed while the program runs",
+      "The code will often ask whether a given element is present",
+      "Nobody knows yet how many elements there are going to be"
+    ],
+    "feedback": "An array is the simpler, leaner tool when its limits do not matter: a fixed number of elements, a 2D grid, or primitives such as int that an ArrayList would have to box as Integer objects. The other three are what an ArrayList is for: it grows and shrinks by itself, and it comes with contains, indexOf and remove already written."
+  },
+  {
+    "type": "cloze",
+    "question": "String[] songArray = {\"Song 1\", \"Song 2\"};\nArrayList<String> songList = new ArrayList<>({{1}}.asList(songArray));   // array to ArrayList\nString[] back = songList.{{2}}(new String[0]);                           // ArrayList to array",
+    "blanks": [
+      {
+        "accept": [
+          "Arrays"
+        ],
+        "hint": "a class",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "toArray"
+        ],
+        "hint": "a method",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "Arrays.asList(songArray) presents an array as a list, and handing that to new ArrayList<>(…) copies it into a list that can grow. Going back, toArray(new String[0]) builds an array holding the list's elements; the empty array you pass in is only there to say what type of array you want."
+  },
+  {
+    "question": "An ArrayList keeps its elements side by side in an array. A LinkedList keeps each element in its own node, holding links to the node before and the node after. With many thousands of elements, which of these claims are true?",
+    "correct": [
+      "add(0, x), inserting at the very front, is much quicker on the LinkedList",
+      "get(i) for an i near the middle is much quicker on the ArrayList"
+    ],
+    "incorrect": [
+      "add(i, x) for an i near the middle is much quicker on the LinkedList, since no elements have to shift",
+      "The LinkedList needs less memory per element, since it has no spare array slots",
+      "A LinkedList cannot be stored in a variable of type List, as it has no array inside",
+      "A for-each loop over the LinkedList fails, since its elements have no index"
+    ],
+    "feedback": "An ArrayList can jump straight to slot i, but inserting at the front makes it shift every element along. A LinkedList adds at either END by relinking a node or two, which is why it is quick there. The middle is the famous trap: nothing shifts, true, but a LinkedList has to WALK node by node to reach position i first, and that walk is far slower than the ArrayList's shift. Measured, middle inserts are tens of times slower on the LinkedList. Each node also carries two links, so it uses more memory, not less. Both classes are Lists, and both work in a for-each loop."
   },
   {
     "type": "code_trace",
-    "question": "A fixed list is copied into an ArrayList. What does this print?",
-    "code": "List<Integer> fixed = List.of(3, 1, 2);\nList<Integer> copy = new ArrayList<>(fixed);\ncopy.add(9);\ncopy.remove(0);\ncopy.add(7);\nSystem.out.println(fixed.size() + \" \" + copy.size());",
+    "question": "A LinkedList has methods for both of its ends. What does this print?",
+    "code": "LinkedList<String> q = new LinkedList<>();\nq.addLast(\"A\");\nq.addLast(\"B\");\nq.addFirst(\"C\");\nq.removeLast();\nSystem.out.println(q.peekFirst());\nSystem.out.println(q.size());\nSystem.out.println(q);",
     "language": "java",
     "correct": [
-      "3 4"
+      "C\n2\n[C, A]"
     ],
     "case_sensitive": true,
-    "feedback": "new ArrayList<>(fixed) makes a separate, changeable list that starts with the same three elements. Two adds and one remove leave the copy with 4; the original List.of list still has 3 and never noticed. This is the standard idiom when you want List.of's short syntax but need a list you can change."
-  },
-  {
-    "question": "nums is an ArrayList<Integer> holding 3, 1, 2. What does this statement do?\nnums.sort(Comparator.naturalOrder());",
-    "correct": [
-      "It rearranges nums itself into 1, 2, 3 and returns nothing"
-    ],
-    "incorrect": [
-      "It returns a new list 1, 2, 3 and leaves nums as 3, 1, 2",
-      "It rearranges nums itself into 3, 2, 1, largest first",
-      "It fails to compile, as sort accepts Strings but not numbers"
-    ],
-    "feedback": "sort works IN PLACE: the list you call it on is rearranged, and the method's return type is void, so there is nothing to assign. Natural order means ascending for numbers and alphabetical for Strings, and both work. Largest-first needs Comparator.reverseOrder(). The older spelling Collections.sort(nums) does exactly the same job; it simply calls nums.sort for you."
+    "feedback": "addLast puts A and then B at the back: [A, B]. addFirst puts C at the front: [C, A, B]. removeLast takes B off the back: [C, A]. peekFirst reports the front element, C, and leaves it where it is, which is why the size is still 2. (removeFirst would have returned C as well, and taken it out.)"
   },
   {
     "type": "matching",
-    "question": "Every time, nums starts as the ArrayList [3, 1, 2]. Match each fragment to what it prints.",
+    "question": "q is a LinkedList<String>. Match each call to what it does.",
     "pairs": [
       {
-        "term": "Collections.sort(nums); print(nums);",
-        "definition": "[1, 2, 3]"
+        "term": "q.addFirst(x)",
+        "definition": "Puts x at the front"
       },
       {
-        "term": "Collections.reverse(nums); print(nums);",
-        "definition": "[2, 1, 3]"
+        "term": "q.addLast(x)",
+        "definition": "Puts x at the back"
       },
       {
-        "term": "nums.sort(Comparator.reverseOrder()); print(nums);",
-        "definition": "[3, 2, 1]"
+        "term": "q.removeFirst()",
+        "definition": "Takes the front element out, and returns it"
       },
       {
-        "term": "print(Collections.max(nums));",
-        "definition": "3"
+        "term": "q.removeLast()",
+        "definition": "Takes the back element out, and returns it"
       },
       {
-        "term": "print(Collections.frequency(nums, 3));",
-        "definition": "1"
+        "term": "q.peekFirst()",
+        "definition": "Returns the front element, and leaves it there"
       },
       {
-        "term": "print(nums.indexOf(3));",
-        "definition": "0"
+        "term": "q.peekLast()",
+        "definition": "Returns the back element, and leaves it there"
       }
     ],
-    "feedback": "The trap is reverse versus reverseOrder. Collections.reverse flips the list end to end without sorting anything, so [3, 1, 2] becomes [2, 1, 3]. Sorting with Comparator.reverseOrder() puts the largest first: [3, 2, 1]. max returns the largest element (3), frequency counts how many elements equal 3 (one), and indexOf says where 3 sits (position 0). The last three only look; they change nothing."
+    "feedback": "Three verbs, each at two ends. add puts something in; remove takes it out and hands it to you; peek only looks. All six take the same short time however long the list is, which is what a LinkedList is good at: nothing has to shift along when its ends change."
   },
   {
-    "type": "npc_demo",
-    "question": "NPC: Who goes first?",
-    "npc": "zoya",
-    "intro": "Zoya drops three name-tags on the bench: \"pear\", \"fig\", \"apple\". \"Sorting needs a rule,\" they say. \"In Java the rule is an object called a Comparator. Its whole job is to answer one question about two elements: which goes first?\"",
-    "steps": [
-      {
-        "say": "sort takes the Comparator as its argument. The simplest rule is natural order: alphabetical for Strings, ascending for numbers.\nList<String> tags = new ArrayList<>(List.of(\"pear\", \"fig\", \"apple\"));\ntags.sort(Comparator.naturalOrder());\n// [apple, fig, pear]\nComparator.reverseOrder() is the same rule run backwards, so it would give [pear, fig, apple].",
-        "beats": [
-          {
-            "say": "sort takes the Comparator as its argument. The simplest rule is natural order: alphabetical for Strings, ascending for numbers."
-          },
-          {
-            "code": "List<String> tags = new ArrayList<>(List.of(\"pear\", \"fig\", \"apple\"));\ntags.sort(Comparator.naturalOrder());\n// [apple, fig, pear]",
-            "language": "java"
-          },
-          {
-            "say": "Comparator.reverseOrder() is the same rule run backwards, so it would give [pear, fig, apple]."
-          }
-        ]
-      },
-      {
-        "say": "You can also build a rule from one property of each element. This one compares the tags by their length.\ntags.sort(Comparator.comparing(String::length));\nRead String::length as \"for each String, use its length()\". Shortest goes first, because lengths are numbers and numbers sort ascending.",
-        "beats": [
-          {
-            "say": "You can also build a rule from one property of each element. This one compares the tags by their length."
-          },
-          {
-            "code": "tags.sort(Comparator.comparing(String::length));",
-            "language": "java"
-          },
-          {
-            "say": "Read String::length as \"for each String, use its length()\". Shortest goes first, because lengths are numbers and numbers sort ascending."
-          }
-        ],
-        "check": {
-          "prompt": "After sorting [apple, fig, pear] by length, what does tags.getFirst() return?",
-          "answer": "fig",
-          "wrong": [
-            "apple",
-            "pear"
-          ],
-          "why": "fig has 3 letters, pear has 4 and apple has 5, so the order by length is [fig, pear, apple] and the first element is fig."
-        }
-      },
-      {
-        "say": "Same list, three different orders, and the only thing I changed was the Comparator. The list does the sorting; the Comparator only supplies the rule.",
-        "beats": [
-          {
-            "say": "Same list, three different orders, and the only thing I changed was the Comparator. The list does the sorting; the Comparator only supplies the rule."
-          }
-        ]
-      }
-    ],
-    "outro": "\"A monster ahead has sorted some words of its own. Work out its rule before you work out its answer.\""
-  },
-  {
-    "type": "code_trace",
-    "question": "The same list is sorted twice, by two different rules. What does this print?",
-    "code": "List<String> beasts = new ArrayList<>(List.of(\"wolf\", \"ox\", \"bat\", \"hydra\"));\nbeasts.sort(Comparator.reverseOrder());\nString a = beasts.getFirst();\nbeasts.sort(Comparator.comparing(String::length));\nString b = beasts.getFirst();\nSystem.out.println(a + \" \" + b);",
-    "language": "java",
+    "question": "A help desk serves people in the order they arrived. line is a LinkedList<String>. Which pair of calls gives that behaviour?",
     "correct": [
-      "wolf ox"
+      "line.addLast(p) to join, line.removeFirst() to serve"
     ],
-    "case_sensitive": true,
-    "feedback": "reverseOrder() is alphabetical order backwards, so the list becomes [wolf, ox, hydra, bat] and a is wolf. Comparator.comparing(String::length) then orders by length, shortest first: ox has 2 letters, so b is ox. Each sort rearranges the same list in place; a and b were read at different moments."
+    "incorrect": [
+      "line.addLast(p) to join, line.removeLast() to serve",
+      "line.addFirst(p) to join, line.removeFirst() to serve",
+      "line.addFirst(p) to join, line.peekFirst() to serve"
+    ],
+    "feedback": "First in, first out: people join at one end and are served from the other. addLast with removeFirst does that. Joining and leaving at the SAME end, as the next two options do, serves the newest arrival first; that is a stack, the right shape for a “recently played” history but not for a queue. And peekFirst only looks: nobody would ever leave the line."
   },
   {
     "type": "code_trace",
@@ -450,6 +518,17 @@
     ],
     "case_sensitive": true,
     "feedback": "A List keeps every element it is given, duplicates included, so its size is 5. A Set holds each distinct value once: the second and third \"a\" are quietly refused (add returns false, nothing is thrown), leaving a, b and c. That one difference is the usual reason to choose a Set."
+  },
+  {
+    "type": "code_trace",
+    "question": "add reports whether the set changed. What does this print?",
+    "code": "HashSet<String> seen = new HashSet<>();\nboolean a = seen.add(\"Queen\");\nboolean b = seen.add(\"Beatles\");\nboolean c = seen.add(\"Queen\");\nSystem.out.println(a + \" \" + c);\nSystem.out.println(seen.size());",
+    "language": "java",
+    "correct": [
+      "true false\n2"
+    ],
+    "case_sensitive": true,
+    "feedback": "add returns true when the element was new and went in, and false when it was already there and nothing changed. The first \"Queen\" is new: true. The second is a duplicate: false, with no error. So the set holds two artists. That returned boolean is a neat way to ask “have I seen this one before?” and remember it in the same step."
   },
   {
     "type": "dynamic_numeric",
@@ -484,7 +563,7 @@
       "seen.get(0) returns \"orc\", the element that was added first",
       "A for-each loop over seen is sure to visit \"orc\" before \"elf\""
     ],
-    "feedback": "A duplicate add is refused politely: add returns false and nothing is thrown. (Set.of(\"orc\", \"orc\") is the call that throws, not HashSet.add.) contains is fast because a HashSet jumps almost straight to where an element would be, using its hash code, instead of checking every element the way a list must. The price is that a HashSet has no positions: there is no get(index) at all, and the order a for-each loop visits the elements in is not the order they were added and is not promised to be anything in particular."
+    "feedback": "A duplicate add is refused politely: add returns false and nothing is thrown. contains is fast because a HashSet jumps almost straight to where an element would be, using its hash code, instead of checking every element the way a list must. The price is that a HashSet has no positions: there is no get(index) at all, and the order a for-each loop visits the elements in is not the order they were added and is not promised to be anything in particular."
   },
   {
     "type": "fill_blank",
@@ -496,6 +575,18 @@
     "feedback": "A map stores key-value pairs, and put(key, value) is how a pair goes in. Maps have no add method: add takes one element, and a map entry always has two parts. get(key) is how the value comes back out."
   },
   {
+    "question": "Which declaration makes a map from a track number to a song title, so that 1 leads to \"Yesterday\"?",
+    "correct": [
+      "HashMap<Integer, String> tracks = new HashMap<>();"
+    ],
+    "incorrect": [
+      "HashMap<String, Integer> tracks = new HashMap<>();",
+      "HashMap<int, String> tracks = new HashMap<>();",
+      "HashMap<Integer> tracks = new HashMap<>();"
+    ],
+    "feedback": "The angle brackets hold two types: the key type first, then the value type. A track number looks up a title, so the key is the number: HashMap<Integer, String>. The other way round would look up a number by its title. int is a primitive and cannot go in angle brackets, which is what Integer is for. And a map always needs both types."
+  },
+  {
     "type": "code_trace",
     "question": "One key is put twice, and one key is never put at all. What does this print?",
     "code": "Map<String, Integer> hp = new HashMap<>();\nhp.put(\"orc\", 5);\nhp.put(\"elf\", 7);\nhp.put(\"orc\", 9);\nSystem.out.println(hp.size() + \" \" + hp.get(\"orc\") + \" \" + hp.get(\"imp\"));",
@@ -505,6 +596,17 @@
     ],
     "case_sensitive": true,
     "feedback": "A map holds each key once. The second put for \"orc\" does not add an entry; it replaces the value 5 with 9, so there are 2 entries. get on a key that is absent returns null. It does not throw, and it does not return 0 even though the values are Integers."
+  },
+  {
+    "type": "code_trace",
+    "question": "put hands back whatever the key held before. What does this print?",
+    "code": "HashMap<String, String> m = new HashMap<>();\nString a = m.put(\"Yesterday\", \"Paul\");\nString b = m.put(\"Yesterday\", \"Wings\");\nSystem.out.println(a);\nSystem.out.println(b);\nSystem.out.println(m.size());",
+    "language": "java",
+    "correct": [
+      "null\nPaul\n1"
+    ],
+    "case_sensitive": true,
+    "feedback": "The first put finds no entry for \"Yesterday\", so there is nothing to hand back: null. The second put finds \"Paul\" there, replaces it with \"Wings\", and returns the \"Paul\" it displaced. A map holds each key once, so after two puts on the same key its size is 1."
   },
   {
     "type": "dynamic_numeric",
@@ -542,94 +644,28 @@
     "feedback": "get returns null for a missing key. Assigning that to an int makes Java unbox it, and unboxing null throws NullPointerException. The line compiles happily, because Integer-to-int is normally automatic. There is no default of 0 for a missing key, and get never throws just because the key is absent. The safe spelling is stock.getOrDefault(\"axe\", 0)."
   },
   {
-    "type": "npc_demo",
-    "question": "NPC: Counting with a map",
-    "npc": "zoya",
-    "intro": "Zoya empties a sack of coloured beads onto the bench. \"I want to know how many of each colour. A Map<String, Integer> is made for this: each colour is a key, and its value is the count so far.\"",
-    "steps": [
-      {
-        "say": "The whole trick is one line, run once for every bead.\nMap<String, Integer> counts = new HashMap<>();\nfor (String c : beads) {\n    counts.put(c, counts.getOrDefault(c, 0) + 1);\n}\ngetOrDefault(c, 0) means: give me the value stored for key c, or 0 if c is not a key yet. A plain get would hand back null for a new colour, and null + 1 crashes.",
-        "beats": [
-          {
-            "say": "The whole trick is one line, run once for every bead."
-          },
-          {
-            "code": "Map<String, Integer> counts = new HashMap<>();\nfor (String c : beads) {\n    counts.put(c, counts.getOrDefault(c, 0) + 1);\n}",
-            "language": "java"
-          },
-          {
-            "say": "getOrDefault(c, 0) means: give me the value stored for key c, or 0 if c is not a key yet. A plain get would hand back null for a new colour, and null + 1 crashes."
-          }
-        ]
-      },
-      {
-        "say": "My beads are red, blue, red. First bead: red is not a key, so getOrDefault gives 0, and I put red with 1.\nSecond bead: blue is new as well, so blue goes in with 1. The map now has two entries.\nThird bead: red again. This time getOrDefault finds the 1 that is already stored.",
-        "beats": [
-          {
-            "say": "My beads are red, blue, red. First bead: red is not a key, so getOrDefault gives 0, and I put red with 1."
-          },
-          {
-            "say": "Second bead: blue is new as well, so blue goes in with 1. The map now has two entries."
-          },
-          {
-            "say": "Third bead: red again. This time getOrDefault finds the 1 that is already stored."
-          }
-        ],
-        "check": {
-          "prompt": "What does the map hold after the third bead?",
-          "answer": "{red=2, blue=1}",
-          "wrong": [
-            "{red=1, blue=1, red=1}",
-            "{red=1, blue=1}"
-          ],
-          "why": "put on a key that already exists replaces its value, so red goes from 1 to 2. A map never holds the same key twice."
-        }
-      },
-      {
-        "say": "So after the loop, counts.size() is the number of DIFFERENT colours, and counts.get(\"red\") is how many red beads there were.",
-        "beats": [
-          {
-            "say": "So after the loop, counts.size() is the number of DIFFERENT colours, and counts.get(\"red\") is how many red beads there were."
-          }
-        ]
-      }
-    ],
-    "outro": "\"The next monster counts creatures instead of beads. Walk its list one word at a time, exactly as I did.\""
-  },
-  {
-    "type": "code_trace",
-    "question": "This is the counting idiom at work. What does it print?",
-    "code": "String[] seen = {\"elf\", \"orc\", \"elf\", \"imp\", \"elf\", \"orc\", \"bat\"};\nMap<String, Integer> counts = new HashMap<>();\nfor (String s : seen) {\n    counts.put(s, counts.getOrDefault(s, 0) + 1);\n}\nSystem.out.println(counts.get(\"elf\") + \" \" + counts.size());",
-    "language": "java",
+    "question": "songs is a HashMap<String, String>, and title may not be one of its keys. The second line can crash:\nString artist = songs.get(title);\nSystem.out.println(artist.toUpperCase());\nWhich condition, wrapped around the println, prevents the crash?",
     "correct": [
-      "3 4"
+      "if (artist != null)"
     ],
-    "case_sensitive": true,
-    "feedback": "Each pass looks up the count so far (0 for a creature not met before), adds 1, and puts it back under the same key. \"elf\" appears three times, so its value climbs 1, 2, 3. size() counts distinct keys: elf, orc, imp and bat make 4, however many times each was seen."
+    "incorrect": [
+      "if (artist != \"\")",
+      "if (!artist.isEmpty())",
+      "if (!songs.isEmpty())"
+    ],
+    "feedback": "get returns null for a key that is not in the map, and calling toUpperCase() on null throws NullPointerException. Comparing with null first is the fix. null is not the empty String, so the comparison with \"\" lets it through; isEmpty() is itself a method call on artist, and crashes one step earlier; and a map that is not empty can still be missing this one key. (songs.containsKey(title) would also do.)"
   },
   {
-    "type": "dynamic_numeric",
-    "question": "stock is a HashMap<String, Integer> whose only entry is \"axe\" with the value {{a}}. After these two lines run, what is stock.get(\"axe\") + stock.get(\"bow\")?\nstock.put(\"axe\", stock.getOrDefault(\"axe\", 0) + {{b}});\nstock.put(\"bow\", stock.getOrDefault(\"bow\", 0) + {{c}});",
-    "variables": {
-      "a": {
-        "min": 2,
-        "max": 9
-      },
-      "b": {
-        "min": 2,
-        "max": 6
-      },
-      "c": {
-        "min": 1,
-        "max": 5
-      }
-    },
-    "answer": {
-      "expr": "a + b + c",
-      "tolerance_abs": 0
-    },
-    "allow_expression": true,
-    "feedback_template": "\"axe\" is already a key, so getOrDefault returns its stored {{a}}, and the put replaces that with {{a}} + {{b}}. \"bow\" is not a key yet, so getOrDefault falls back to 0 and \"bow\" goes in with 0 + {{c}}. Adding the two stored values gives {{expected}}. The 0 is used only when the key is missing."
+    "question": "songs is a HashMap<String, String> with one entry: the key \"Imagine\" leads to the value \"John Lennon\". Which expression is true?",
+    "correct": [
+      "songs.containsValue(\"John Lennon\")"
+    ],
+    "incorrect": [
+      "songs.containsKey(\"John Lennon\")",
+      "songs.containsValue(\"Imagine\")",
+      "songs.get(\"John Lennon\") != null"
+    ],
+    "feedback": "\"Imagine\" is the key and \"John Lennon\" is the value, and each method looks on one side only: containsKey among the keys, containsValue among the values. get also works from the key side, so get(\"John Lennon\") finds nothing and returns null. A map answers “what goes with this key?”, never the reverse."
   },
   {
     "type": "matching",
@@ -638,10 +674,6 @@
       {
         "term": "m.get(\"z\")",
         "definition": "null"
-      },
-      {
-        "term": "m.getOrDefault(\"z\", 0)",
-        "definition": "0"
       },
       {
         "term": "m.containsKey(\"b\")",
@@ -656,11 +688,11 @@
         "definition": "1"
       },
       {
-        "term": "m.values().size()",
+        "term": "m.put(\"b\", 9)",
         "definition": "2"
       }
     ],
-    "feedback": "get gives null for an absent key, and getOrDefault gives your fallback instead. containsKey looks among the keys (\"b\" is one); containsValue looks among the values (1 and 2, so 3 is not there). remove(key) deletes the entry and hands back the value it held, here 1. values() is the collection of all the values, one per entry, so its size is 2."
+    "feedback": "get gives null for a key that is not there. containsKey looks among the keys (\"b\" is one); containsValue looks among the values (1 and 2, so 3 is not there). remove(key) deletes the entry and hands back the value it held, here 1. put on a key that already exists replaces the value and hands back the old one: the 2 that \"b\" had."
   },
   {
     "type": "cloze",
@@ -690,118 +722,165 @@
         "case_sensitive": true
       }
     ],
-    "feedback": "A map cannot go straight into a for-each loop; you loop over one of its views. keySet() is the Set of keys, and inside the loop get(name) fetches each key's value. values() skips the keys and hands you the values directly, which is all a total needs. (entrySet() gives key and value together when you want both.)"
+    "feedback": "A map cannot go straight into a for-each loop; you loop over one of its views. keySet() is the Set of keys, and inside the loop get(name) fetches each key's value. values() skips the keys and hands you the values directly, which is all a total needs."
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Pulling bricks from a wall you are walking along",
+    "question": "NPC: Counting with a map",
     "npc": "zoya",
-    "intro": "Zoya writes a row of numbers on the slate: 4, -1, 7, -3, 8. \"I want the negatives gone. Watch the obvious way fail first.\"",
+    "intro": "Zoya empties a sack of coloured beads onto the bench. \"I want to know how many of each colour. A Map<String, Integer> is made for this: each colour is a key, and its value is the count so far.\"",
     "steps": [
       {
-        "say": "The obvious way: walk the list with a for-each loop and remove the bad ones as I meet them.\nfor (int n : nums) {\n    if (n < 0) {\n        nums.remove(Integer.valueOf(n));\n    }\n}\nA for-each loop keeps a bookmark in the list. Removing an element changes the list's SIZE behind the bookmark's back. On its next step the loop notices and throws ConcurrentModificationException.",
+        "say": "For each bead, ask the map one question first: have I met this colour before?",
         "beats": [
           {
-            "say": "The obvious way: walk the list with a for-each loop and remove the bad ones as I meet them."
+            "say": "For each bead, I ask the map one question first: have I met this colour before?"
           },
           {
-            "code": "for (int n : nums) {\n    if (n < 0) {\n        nums.remove(Integer.valueOf(n));\n    }\n}",
+            "code": "Map<String, Integer> counts = new HashMap<>();\nfor (String c : beads) {\n    if (counts.containsKey(c)) {\n        counts.put(c, counts.get(c) + 1);\n    } else {\n        counts.put(c, 1);\n    }\n}",
             "language": "java"
           },
           {
-            "say": "A for-each loop keeps a bookmark in the list. Removing an element changes the list's SIZE behind the bookmark's back. On its next step the loop notices and throws ConcurrentModificationException."
+            "say": "containsKey(c) answers it. If the colour is already a key, get its count, add 1, and put it back. If it is not, this is the first one: put it in with 1."
+          },
+          {
+            "say": "The question has to come first. For a colour that is not there, get(c) hands back null, and null + 1 crashes."
           }
         ]
       },
       {
-        "say": "Adding or removing is called a STRUCTURAL change, because it changes how many elements there are. That is what the loop objects to.\nReplacing an element with set, or just reading, changes no sizes, so those are fine inside a for-each.",
+        "say": "put on a key that is already there replaces its value. That is what makes the count climb.",
         "beats": [
           {
-            "say": "Adding or removing is called a STRUCTURAL change, because it changes how many elements there are. That is what the loop objects to."
+            "say": "My beads are red, blue, red. First bead: red is not a key, so the else runs and red goes in with 1."
           },
           {
-            "say": "Replacing an element with set, or just reading, changes no sizes, so those are fine inside a for-each."
+            "say": "Second bead: blue is new as well, so blue goes in with 1. The map now has two entries."
+          },
+          {
+            "say": "Third bead: red again. This time containsKey is true, so I get the 1 that is stored, add 1, and put the result back under the same key."
           }
         ],
         "check": {
-          "prompt": "Which line is safe inside  for (int n : nums) { ... } ?",
-          "answer": "nums.set(0, n);",
+          "prompt": "What does the map hold after the third bead?",
+          "answer": "{red=2, blue=1}",
           "wrong": [
-            "nums.add(n);",
-            "nums.remove(0);"
+            "{red=1, blue=1, red=1}",
+            "{red=1, blue=1}"
           ],
-          "why": "set swaps one element for another and the size stays the same. add and remove are structural changes."
+          "why": "put on a key that already exists replaces its value, so red goes from 1 to 2. A map never holds the same key twice."
         }
       },
       {
-        "say": "The right tool does the walking AND the removing for you:\nnums.removeIf(n -> n < 0);\n// [4, 7, 8]\nRead the arrow as a test: \"given an element n, is n < 0?\" removeIf deletes every element whose answer is true.",
-        "beats": [
-          {
-            "say": "The right tool does the walking AND the removing for you:"
-          },
-          {
-            "code": "nums.removeIf(n -> n < 0);\n// [4, 7, 8]",
-            "language": "java"
-          },
-          {
-            "say": "Read the arrow as a test: \"given an element n, is n < 0?\" removeIf deletes every element whose answer is true."
-          }
-        ]
+        "say": "After the loop, counts.size() is the number of DIFFERENT colours, and counts.get(\"red\") is how many red beads there were."
       }
     ],
-    "outro": "\"Two monsters ahead: one tries the obvious way, one uses removeIf with a different test. You know how each story ends.\""
-  },
-  {
-    "question": "What happens when this fragment runs?\nList<String> bag = new ArrayList<>(List.of(\"rope\", \"rock\", \"map\", \"rock\", \"key\"));\nfor (String item : bag) {\n    if (item.equals(\"rock\")) {\n        bag.remove(item);\n    }\n}\nSystem.out.println(bag);",
-    "correct": [
-      "It throws ConcurrentModificationException"
-    ],
-    "incorrect": [
-      "It prints [rope, map, key]",
-      "It prints [rope, map, rock, key]",
-      "It does not compile: remove is not allowed in a for-each"
-    ],
-    "feedback": "Removing \"rock\" is a structural change: the list gets shorter while the for-each loop is part-way through it. When the loop asks for its next element it sees that the list changed underneath it and throws ConcurrentModificationException, so the println is never reached. The compiler cannot see this coming; the code is perfectly legal Java. bag.removeIf(item -> item.equals(\"rock\")) does the job safely and leaves [rope, map, key]."
+    "outro": "\"The next monster counts creatures instead of beads. Walk its list one word at a time, exactly as I did.\""
   },
   {
     "type": "code_trace",
-    "question": "removeIf is given a test. What does this print?",
-    "code": "List<Integer> dice = new ArrayList<>(List.of(6, 3, 4, 1, 2, 5));\ndice.removeIf(d -> d % 2 == 0);\nSystem.out.println(dice);",
+    "question": "This is the counting loop at work. What does it print?",
+    "code": "String[] seen = {\"elf\", \"orc\", \"elf\", \"imp\", \"elf\", \"orc\", \"bat\"};\nMap<String, Integer> counts = new HashMap<>();\nfor (String s : seen) {\n    if (counts.containsKey(s)) {\n        counts.put(s, counts.get(s) + 1);\n    } else {\n        counts.put(s, 1);\n    }\n}\nSystem.out.println(counts.get(\"elf\") + \" \" + counts.size());",
     "language": "java",
     "correct": [
-      "[3, 1, 5]",
-      "[3,1,5]"
+      "3 4"
     ],
     "case_sensitive": true,
-    "feedback": "The arrow reads \"given an element d, is d % 2 == 0?\", which is true for even numbers. removeIf deletes every element that passes the test, so 6, 4 and 2 go. The survivors keep their original order: [3, 1, 5]. Nothing is sorted, and the test describes what to REMOVE, not what to keep."
+    "feedback": "Each pass asks whether the creature is already a key. If not, it goes in with a count of 1; if so, its count is fetched, raised by 1, and put back under the same key. \"elf\" appears three times, so its value climbs 1, 2, 3. size() counts distinct keys: elf, orc, imp and bat make 4, however many times each was seen."
   },
   {
-    "question": "names is an ArrayList<String> with five elements, and total is an int. Which of these statements can be the body of\nfor (String s : names) { ... }\nwith no risk of a ConcurrentModificationException?",
-    "correct": [
-      "names.set(0, s.toUpperCase());",
-      "total += names.size();",
-      "System.out.println(names.indexOf(s));"
+    "type": "ordering",
+    "question": "words is a String[] of creature names. Arrange these lines into a fragment that counts how often each name appears and then prints the count for \"elf\".",
+    "language": "java",
+    "items": [
+      "Map<String, Integer> counts = new HashMap<>();",
+      "for (String w : words) {",
+      "    if (counts.containsKey(w)) {",
+      "        counts.put(w, counts.get(w) + 1);",
+      "    } else {",
+      "        counts.put(w, 1);",
+      "    } }   // close the if and the loop",
+      "System.out.println(counts.get(\"elf\"));"
     ],
-    "incorrect": [
-      "names.add(s + \"!\");",
-      "names.remove(s);",
-      "names.add(0, s);"
-    ],
-    "feedback": "The loop objects to STRUCTURAL changes, the ones that alter how many elements the list has: every form of add and remove. set replaces one element and leaves the size alone, so it is allowed, and size() and indexOf only read. (remove can occasionally slip through without an exception, when it happens on the second-to-last pass, but the loop then silently skips an element. It is a bug either way.)"
+    "feedback": "The map has to exist before the loop can use it. Inside the loop the question comes first: is w already a key? If so its count is fetched, raised by 1 and put back; otherwise w goes in with 1. The println comes after the loop has closed, once every word has been counted; placed inside, it would print a running count on every pass."
   },
   {
-    "question": "An ArrayList keeps its elements side by side in an array. A LinkedList keeps each element in its own node, holding links to the node before and the node after. With many thousands of elements, which of these claims are true?",
+    "type": "matching",
+    "question": "Every time, nums starts as the ArrayList [3, 1, 2]. Match each fragment to what it prints.",
+    "pairs": [
+      {
+        "term": "Collections.sort(nums); print(nums);",
+        "definition": "[1, 2, 3]"
+      },
+      {
+        "term": "Collections.reverse(nums); print(nums);",
+        "definition": "[2, 1, 3]"
+      },
+      {
+        "term": "Collections.sort(nums); Collections.reverse(nums); print(nums);",
+        "definition": "[3, 2, 1]"
+      },
+      {
+        "term": "print(Collections.max(nums));",
+        "definition": "3"
+      },
+      {
+        "term": "print(Collections.min(nums));",
+        "definition": "1"
+      },
+      {
+        "term": "print(Collections.frequency(nums, 9));",
+        "definition": "0"
+      }
+    ],
+    "feedback": "The trap is what reverse does. Collections.reverse flips the list end to end without sorting anything, so [3, 1, 2] becomes [2, 1, 3]. To get largest first, sort and THEN reverse: [1, 2, 3] becomes [3, 2, 1]. max and min return the largest and the smallest element, and frequency counts how many elements equal its second argument: no 9s here, so 0. The last three only look; they change nothing."
+  },
+  {
+    "type": "code_trace",
+    "question": "The lecture's advice: sort a copy when the original order still matters. What does this print?",
+    "code": "ArrayList<String> master = new ArrayList<>();\nmaster.add(\"pear\");\nmaster.add(\"fig\");\nmaster.add(\"apple\");\nArrayList<String> sorted = new ArrayList<>(master);\nCollections.sort(sorted);\nSystem.out.println(sorted.get(0));\nSystem.out.println(master.get(0));",
+    "language": "java",
     "correct": [
-      "add(0, x), inserting at the very front, is much quicker on the LinkedList",
-      "get(i) for an i near the middle is much quicker on the ArrayList"
+      "apple\npear"
+    ],
+    "case_sensitive": true,
+    "feedback": "new ArrayList<>(master) makes a second, separate list that starts with the same three elements. Collections.sort rearranges the list it is given, here the copy, into [apple, fig, pear]; master is a different list and is still [pear, fig, apple]. Had the code said sorted = master, there would be one list with two names, and both lines would print apple."
+  },
+  {
+    "question": "What does Collections.shuffle(playlist) do?",
+    "correct": [
+      "Rearranges playlist itself, in a different order each run"
     ],
     "incorrect": [
-      "add(i, x) for an i near the middle is much quicker on the LinkedList, since no elements have to shift",
-      "The LinkedList needs less memory per element, since it has no spare array slots",
-      "A LinkedList cannot be stored in a variable of type List, as it has no array inside",
-      "A for-each loop over the LinkedList fails, since its elements have no index"
+      "Returns a shuffled copy, and leaves playlist as it was",
+      "Rearranges playlist itself, in the same order each run",
+      "Rearranges playlist itself, and removes its duplicates"
     ],
-    "feedback": "An ArrayList can jump straight to slot i, but inserting at the front makes it shift every element along. A LinkedList adds at either END by relinking a node or two, which is why it is quick there. The middle is the famous trap: nothing shifts, true, but a LinkedList has to WALK node by node to reach position i first, and that walk is far slower than the ArrayList's shift. Measured, middle inserts are tens of times slower on the LinkedList. Each node also carries two links, so it uses more memory, not less. Both classes are Lists, and both work in a for-each loop."
+    "feedback": "Like sort and reverse, shuffle works on the list you hand it and returns nothing, and the order it leaves is random: run the program again and it will differ. To keep the original order as well, shuffle a copy: new ArrayList<>(playlist). Nothing is added or removed; the same songs are there, duplicates included."
+  },
+  {
+    "question": "Collections.binarySearch(songs, \"Imagine\") is called on a list that has NOT been sorted. What can be said about the result?",
+    "correct": [
+      "It cannot be trusted, since binarySearch assumes sorted order"
+    ],
+    "incorrect": [
+      "It is still right, though slower than on a sorted list",
+      "It is always -1, since nothing can be found unsorted",
+      "It throws an exception to report the unsorted list"
+    ],
+    "feedback": "Binary search finds things quickly by halving: it looks at the middle element and throws away the half that cannot hold the target. That reasoning only works if the list is in order. On an unsorted list it does not check and does not complain; it just follows its rule and may say “not found” (a negative number) for something that is there. Sort first: Collections.sort(songs)."
+  },
+  {
+    "type": "code_trace",
+    "question": "Three kinds of collection work together here. What does this print?",
+    "code": "ArrayList<Integer> rolls = new ArrayList<>(Arrays.asList(4, 2, 4, 6, 2));\nHashSet<Integer> unique = new HashSet<>(rolls);\nArrayList<Integer> best = new ArrayList<>(unique);\nCollections.sort(best);\nCollections.reverse(best);\nbest.remove(1);\nSystem.out.println(best + \" \" + rolls.size());",
+    "language": "java",
+    "correct": [
+      "[6, 2] 5",
+      "[6,2] 5"
+    ],
+    "case_sensitive": true,
+    "feedback": "Copying rolls into a HashSet drops the duplicates, leaving 2, 4 and 6. A set has no order to sort, so the values are copied into an ArrayList; sort makes it [2, 4, 6] and reverse flips that to [6, 4, 2]. best.remove(1) has an int argument, so it deletes POSITION 1 (the 4), not the value 1. rolls was only ever copied from, and still has its 5 elements."
   },
   {
     "type": "matching",
@@ -824,68 +903,874 @@
         "definition": "A waiting line: players join at the back and leave from the front"
       },
       {
-        "term": "List.of(...)",
-        "definition": "The seven day names, which no code should be able to alter"
+        "term": "String[]",
+        "definition": "The seven day names: a fixed number, never added to or removed"
       }
     ],
-    "feedback": "Ask what the program does most. Reading by position and changing over time: ArrayList. \"Have I seen this before?\" with no duplicates: HashSet. Looking one thing up by another: HashMap. Working only at the two ends: LinkedList (ArrayDeque is the other common choice for a queue). Data that must never change: List.of, which refuses every add, set and remove."
+    "feedback": "Ask what the program does most. Reading by position and changing over time: ArrayList. “Have I seen this before?” with no duplicates: HashSet. Looking one thing up by another: HashMap. Working only at the two ends: LinkedList. And when the number of elements is fixed for good, a plain array is still the simplest thing that works."
   },
   {
-    "question": "Given these two lists, which of the statements below throw an exception when they run?\nList<Integer> fixed = List.of(1, 2, 3);\nList<Integer> nums = new ArrayList<>(fixed);",
-    "correct": [
-      "fixed.set(0, 9);",
-      "nums.get(3);",
-      "nums.remove(3);",
-      "nums.add(5, 0);"
-    ],
-    "incorrect": [
-      "nums.remove(Integer.valueOf(7));",
-      "nums.indexOf(7);"
-    ],
-    "feedback": "fixed came from List.of, so it is immutable and set throws UnsupportedOperationException. nums has indexes 0 to 2. get(3) is out of range. remove(3) has an int argument, so it means position 3, not the value 3, and that is out of range too. add(5, 0) tries to insert at position 5 of a 3-element list: inserting is allowed at positions 0 to 3, no further. All three throw IndexOutOfBoundsException. Looking for a value that is not there is not an error: remove(Object) just returns false, and indexOf returns -1."
-  },
-  {
-    "type": "ordering",
-    "question": "words is a String[] of creature names. Arrange these lines into a fragment that counts how often each name appears and then prints the count for \"elf\".",
-    "language": "java",
-    "items": [
-      "Map<String, Integer> counts = new HashMap<>();",
-      "for (String w : words) {",
-      "    counts.put(w, counts.getOrDefault(w, 0) + 1);",
-      "}",
-      "System.out.println(counts.get(\"elf\"));"
-    ],
-    "feedback": "The map has to exist before the loop can use it. The put line belongs INSIDE the loop, because it is the only place w exists, and it must run once per word. The println comes after the closing brace, once every word has been counted; placed inside, it would print a running count on every pass."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "What does this fragment print?\nList<Integer> nums = new ArrayList<>();\nfor (int i = 0; i < 8; i++) {\n    nums.add(i * 10);\n}\nfor (int j = 0; j < {{r}}; j++) {\n    nums.remove(0);\n}\nSystem.out.println(nums.get({{k}}));",
-    "variables": {
-      "r": {
-        "min": 1,
-        "max": 3
+    "type": "npc_demo",
+    "question": "NPC: A list goes in, a list comes out",
+    "npc": "zoya",
+    "intro": "Zoya slides a tray of name-tags across the bench, and an empty tray after it. \"Until now your methods took a number or a word. A method can be handed a whole collection, and can hand one back.\"",
+    "steps": [
+      {
+        "say": "A parameter can be a list. Inside the method it is used like any other list: loop over it, ask its size, call get.",
+        "beats": [
+          {
+            "code": "public static ArrayList<String> shortNames(ArrayList<String> names) {\n    ArrayList<String> result = new ArrayList<>();\n    for (String name : names) {\n        if (name.length() <= 3) {\n            result.add(name);\n        }\n    }\n    return result;\n}",
+            "language": "java"
+          },
+          {
+            "say": "The pattern is the one you know from arrays, with one difference: the result starts EMPTY and grows. Nobody had to count the short names first to know how big to make it."
+          },
+          {
+            "say": "The table writes a list the way Java prints one, in square brackets. A row might read  shortNames([\"Ana\", \"Mikhail\", \"Bo\"])  wanting  [\"Ana\", \"Bo\"]."
+          }
+        ],
+        "check": {
+          "prompt": "Why does shortNames build a second list instead of removing the long names from names inside the loop?",
+          "answer": "Removing from a list inside a for-each over it fails",
+          "wrong": [
+            "A parameter cannot be changed by a method",
+            "remove() works on arrays, and not on lists"
+          ],
+          "why": "Adding to or removing from a list while a for-each loop is walking through it makes Java throw ConcurrentModificationException. Filling a second list avoids the problem altogether."
+        }
       },
-      "k": {
-        "min": 1,
-        "max": 4
+      {
+        "say": "A method can return a set or a map as well. Those are checked by what they hold, not by the order they print in.",
+        "beats": [
+          {
+            "say": "For a list, the order is part of the answer: [a, b] and [b, a] are different lists."
+          },
+          {
+            "say": "A HashSet and a HashMap have no order of their own, so the table only asks that yours holds the right things. As ever: Run costs nothing, and only Submit counts."
+          }
+        ]
       }
-    },
-    "answer": {
-      "expr": "(k + r) * 10",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The first loop builds [0, 10, 20, 30, 40, 50, 60, 70]: the value at index i is i * 10. Each remove(0) deletes the front element and every other element slides one index to the left. After {{r}} removals, the element now at index {{k}} is the one that started {{r}} places further right, and its value is {{expected}}."
+    ],
+    "outro": "\"Read the method line first. It tells you what you are handed and what you owe back: a list, a set, a map, or just a number.\""
   },
   {
-    "type": "code_trace",
-    "question": "Three kinds of collection work together here. What does this print?",
-    "code": "List<Integer> rolls = List.of(4, 2, 4, 6, 2);\nSet<Integer> unique = new HashSet<>(rolls);\nList<Integer> best = new ArrayList<>(unique);\nbest.sort(Comparator.reverseOrder());\nbest.remove(1);\nSystem.out.println(best + \" \" + rolls.size());",
+    "type": "code_write",
     "language": "java",
-    "correct": [
-      "[6, 2] 5",
-      "[6,2] 5"
+    "question": "Return the last song in the playlist. If the playlist is empty, return  none",
+    "signature": "public static String lastSong(ArrayList<String> playlist)",
+    "tests": [
+      {
+        "args": [
+          [
+            "Imagine",
+            "Yesterday",
+            "Kids"
+          ]
+        ],
+        "expect": "Kids"
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": "none"
+      },
+      {
+        "args": [
+          [
+            "Help"
+          ]
+        ],
+        "expect": "Help"
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b"
+          ]
+        ],
+        "expect": "b"
+      }
     ],
-    "case_sensitive": true,
-    "feedback": "Copying rolls into a HashSet drops the duplicates, leaving 2, 4 and 6 in no promised order. A Set cannot be sorted, so the values are copied into an ArrayList, and reverseOrder() makes it [6, 4, 2]. best.remove(1) has an int argument, so it deletes POSITION 1 (the 4), not the value 1. rolls is a List.of list that nothing here tried to change: still 5 elements."
+    "solution": "if (playlist.isEmpty()) {\n    return \"none\";\n}\nreturn playlist.get(playlist.size() - 1);",
+    "hint": "The last index is one less than size(). Check isEmpty() first: an empty list has no last element.",
+    "feedback": "A list of 3 songs has indexes 0, 1 and 2, so the last one is at size() - 1. On an empty list that would be get(-1), which throws IndexOutOfBoundsException, so the empty case is dealt with first."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Build a playlist from three songs. Add first and then second, then insert priority at the very beginning. Return the playlist.",
+    "signature": "public static ArrayList<String> buildPlaylist(String first, String second, String priority)",
+    "tests": [
+      {
+        "args": [
+          "Imagine",
+          "Yesterday",
+          "Kids"
+        ],
+        "expect": [
+          "Kids",
+          "Imagine",
+          "Yesterday"
+        ]
+      },
+      {
+        "args": [
+          "a",
+          "b",
+          "c"
+        ],
+        "expect": [
+          "c",
+          "a",
+          "b"
+        ]
+      },
+      {
+        "args": [
+          "Help",
+          "Help",
+          "Help"
+        ],
+        "expect": [
+          "Help",
+          "Help",
+          "Help"
+        ]
+      },
+      {
+        "args": [
+          "x",
+          "y",
+          ""
+        ],
+        "expect": [
+          "",
+          "x",
+          "y"
+        ]
+      }
+    ],
+    "solution": "ArrayList<String> playlist = new ArrayList<>();\nplaylist.add(first);\nplaylist.add(second);\nplaylist.add(0, priority);\nreturn playlist;",
+    "hint": "add(song) puts a song at the end. add(0, song) inserts one at index 0, and everything else moves along.",
+    "feedback": "add with one argument appends; add with an index and an element inserts there and shifts the rest right. Nothing is overwritten, so the list has all three songs, with the priority one first."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Each number in the list is how many times one song was played. Return the total number of plays.",
+    "signature": "public static int totalPlays(ArrayList<Integer> plays)",
+    "tests": [
+      {
+        "args": [
+          [
+            3,
+            10,
+            2
+          ]
+        ],
+        "expect": 15
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            7
+          ]
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          [
+            0,
+            0,
+            5
+          ]
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          [
+            100,
+            250,
+            1,
+            49
+          ]
+        ],
+        "expect": 400
+      }
+    ],
+    "solution": "int total = 0;\nfor (int count : plays) {\n    total += count;\n}\nreturn total;",
+    "hint": "An accumulator and a for-each loop. The loop variable can be an int: Java unboxes each Integer for you.",
+    "feedback": "The list holds Integer objects, because a collection cannot hold a primitive, but the loop variable may be declared int and each element is unboxed on the way out. The rest is the running-total pattern you have used on arrays."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a new list holding only the titles that have at least minLength characters, in their original order.",
+    "signature": "public static ArrayList<String> longTitles(ArrayList<String> songs, int minLength)",
+    "tests": [
+      {
+        "args": [
+          [
+            "Imagine",
+            "Kids",
+            "Yesterday",
+            "Go"
+          ],
+          5
+        ],
+        "expect": [
+          "Imagine",
+          "Yesterday"
+        ]
+      },
+      {
+        "args": [
+          [
+            "Imagine",
+            "Kids"
+          ],
+          4
+        ],
+        "expect": [
+          "Imagine",
+          "Kids"
+        ]
+      },
+      {
+        "args": [
+          [
+            "a",
+            "bb"
+          ],
+          3
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [],
+          1
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [
+            "Help",
+            "Hey Jude"
+          ],
+          0
+        ],
+        "expect": [
+          "Help",
+          "Hey Jude"
+        ]
+      }
+    ],
+    "solution": "ArrayList<String> result = new ArrayList<>();\nfor (String song : songs) {\n    if (song.length() >= minLength) {\n        result.add(song);\n    }\n}\nreturn result;",
+    "hint": "Start with an empty ArrayList, loop over songs, and add the ones that pass the test.",
+    "feedback": "The result starts empty and grows by one for each title that passes: no counting first, as an array would need. “At least” includes the length itself, so the test is >=."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Remove every copy of title from the playlist, and return the playlist. A song may appear more than once, or not at all.",
+    "signature": "public static ArrayList<String> removeSong(ArrayList<String> playlist, String title)",
+    "tests": [
+      {
+        "args": [
+          [
+            "Kids",
+            "Imagine",
+            "Kids"
+          ],
+          "Kids"
+        ],
+        "expect": [
+          "Imagine"
+        ]
+      },
+      {
+        "args": [
+          [
+            "Kids",
+            "Imagine"
+          ],
+          "Help"
+        ],
+        "expect": [
+          "Kids",
+          "Imagine"
+        ]
+      },
+      {
+        "args": [
+          [],
+          "Kids"
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [
+            "a",
+            "a",
+            "a"
+          ],
+          "a"
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b",
+            "a",
+            "c"
+          ],
+          "a"
+        ],
+        "expect": [
+          "b",
+          "c"
+        ]
+      }
+    ],
+    "solution": "while (playlist.contains(title)) {\n    playlist.remove(title);\n}\nreturn playlist;",
+    "hint": "remove(title) takes out only the FIRST match. Keep going for as long as the playlist still contains the title.",
+    "feedback": "remove(Object) deletes the first element equal to its argument and stops there, so one call is not enough when a song is on the list twice. A while loop on contains keeps removing until none is left. A for-each loop would not do: removing from a list inside a for-each over it throws ConcurrentModificationException."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "A listener requests a song. An urgent request goes to the front of the queue; any other goes to the back. Return the queue.",
+    "signature": "public static LinkedList<String> requestSong(LinkedList<String> queue, String song, boolean urgent)",
+    "tests": [
+      {
+        "args": [
+          [
+            "a",
+            "b"
+          ],
+          "z",
+          true
+        ],
+        "expect": [
+          "z",
+          "a",
+          "b"
+        ]
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b"
+          ],
+          "z",
+          false
+        ],
+        "expect": [
+          "a",
+          "b",
+          "z"
+        ]
+      },
+      {
+        "args": [
+          [],
+          "z",
+          true
+        ],
+        "expect": [
+          "z"
+        ]
+      },
+      {
+        "args": [
+          [],
+          "z",
+          false
+        ],
+        "expect": [
+          "z"
+        ]
+      },
+      {
+        "args": [
+          [
+            "a"
+          ],
+          "a",
+          true
+        ],
+        "expect": [
+          "a",
+          "a"
+        ]
+      }
+    ],
+    "solution": "if (urgent) {\n    queue.addFirst(song);\n} else {\n    queue.addLast(song);\n}\nreturn queue;",
+    "hint": "A LinkedList has a method for each end: addFirst and addLast.",
+    "feedback": "addFirst puts the song at the front, where it will be played next; addLast puts it at the back, behind everything already waiting. Either one takes the same short time however long the queue is."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return how many DIFFERENT artists are named in the array. An artist named several times counts once.",
+    "signature": "public static int countUnique(String[] artists)",
+    "tests": [
+      {
+        "args": [
+          [
+            "Queen",
+            "Beatles",
+            "Queen"
+          ]
+        ],
+        "expect": 2
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          [
+            "a",
+            "a",
+            "a"
+          ]
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        "expect": 3
+      },
+      {
+        "args": [
+          [
+            "Queen",
+            "queen"
+          ]
+        ],
+        "expect": 2
+      }
+    ],
+    "solution": "HashSet<String> unique = new HashSet<>();\nfor (String artist : artists) {\n    unique.add(artist);\n}\nreturn unique.size();",
+    "hint": "Add every name to a HashSet, and ask the set for its size.",
+    "feedback": "A set keeps each value once, so adding every name and asking for the size counts the distinct ones with no searching on your part. \"Queen\" and \"queen\" are different Strings, so they count as two."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return true if any song appears in the list more than once.",
+    "signature": "public static boolean hasDuplicate(ArrayList<String> songs)",
+    "tests": [
+      {
+        "args": [
+          [
+            "a",
+            "b",
+            "a"
+          ]
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          [
+            "a"
+          ]
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          [
+            "a",
+            "a"
+          ]
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          [
+            "x",
+            "y",
+            "z",
+            "y"
+          ]
+        ],
+        "expect": true
+      }
+    ],
+    "solution": "HashSet<String> seen = new HashSet<>();\nfor (String song : songs) {\n    if (!seen.add(song)) {\n        return true;\n    }\n}\nreturn false;",
+    "hint": "A HashSet refuses duplicates. Either compare its size with the list's, or use the true/false that add returns.",
+    "feedback": "add returns false when the song is already in the set, and that is exactly the question being asked, so the method can stop the moment it happens. Copying the whole list into a set and comparing the two sizes is another good answer."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Look up who performs a song. If the title is not in the map, return  Unknown",
+    "signature": "public static String findArtist(HashMap<String, String> songs, String title)",
+    "tests": [
+      {
+        "args": [
+          [
+            [
+              "Imagine",
+              "John Lennon"
+            ],
+            [
+              "Hotel California",
+              "Eagles"
+            ]
+          ],
+          "Imagine"
+        ],
+        "expect": "John Lennon"
+      },
+      {
+        "args": [
+          [
+            [
+              "Imagine",
+              "John Lennon"
+            ],
+            [
+              "Hotel California",
+              "Eagles"
+            ]
+          ],
+          "Yesterday"
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          [],
+          "Imagine"
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          [
+            [
+              "Imagine",
+              "John Lennon"
+            ]
+          ],
+          "imagine"
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          [
+            [
+              "a",
+              "b"
+            ],
+            [
+              "b",
+              "c"
+            ]
+          ],
+          "b"
+        ],
+        "expect": "c"
+      }
+    ],
+    "solution": "String artist = songs.get(title);\nif (artist == null) {\n    return \"Unknown\";\n}\nreturn artist;",
+    "hint": "get(title) returns the artist, or null when there is no such key. Check for null before you return.",
+    "feedback": "get does not throw for a missing key; it returns null, and the caller has to notice. Checking the result against null is the lecture's safe-retrieval pattern. Keys are compared exactly, so \"imagine\" does not find \"Imagine\"."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Each element of the array is one play of a song. Return a map from each title to the number of times it was played.",
+    "signature": "public static HashMap<String, Integer> countPlays(String[] plays)",
+    "tests": [
+      {
+        "args": [
+          [
+            "Kids",
+            "Imagine",
+            "Kids"
+          ]
+        ],
+        "expect": [
+          [
+            "Imagine",
+            1
+          ],
+          [
+            "Kids",
+            2
+          ]
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [
+            "a",
+            "a",
+            "a"
+          ]
+        ],
+        "expect": [
+          [
+            "a",
+            3
+          ]
+        ]
+      },
+      {
+        "args": [
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        "expect": [
+          [
+            "a",
+            1
+          ],
+          [
+            "b",
+            1
+          ],
+          [
+            "c",
+            1
+          ]
+        ]
+      },
+      {
+        "args": [
+          [
+            "x",
+            "y",
+            "x",
+            "y",
+            "x"
+          ]
+        ],
+        "expect": [
+          [
+            "x",
+            3
+          ],
+          [
+            "y",
+            2
+          ]
+        ]
+      }
+    ],
+    "solution": "HashMap<String, Integer> counts = new HashMap<>();\nfor (String title : plays) {\n    if (counts.containsKey(title)) {\n        counts.put(title, counts.get(title) + 1);\n    } else {\n        counts.put(title, 1);\n    }\n}\nreturn counts;",
+    "hint": "For each title: if it is already a key, put back its count plus 1; otherwise put it in with 1.",
+    "feedback": "The counting loop: ask containsKey first, because get on a title that is not there returns null, and null + 1 crashes. put on a key that already exists replaces its value, which is how the count climbs."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "The map gives the number of plays for each song. Return the title with the most plays. No two songs in a test are tied for the most. If the map is empty, return  none",
+    "signature": "public static String mostPlayed(HashMap<String, Integer> plays)",
+    "tests": [
+      {
+        "args": [
+          [
+            [
+              "Kids",
+              3
+            ],
+            [
+              "Imagine",
+              10
+            ],
+            [
+              "Help",
+              2
+            ]
+          ]
+        ],
+        "expect": "Imagine"
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": "none"
+      },
+      {
+        "args": [
+          [
+            [
+              "a",
+              1
+            ]
+          ]
+        ],
+        "expect": "a"
+      },
+      {
+        "args": [
+          [
+            [
+              "a",
+              5
+            ],
+            [
+              "b",
+              4
+            ],
+            [
+              "c",
+              9
+            ],
+            [
+              "d",
+              0
+            ]
+          ]
+        ],
+        "expect": "c"
+      },
+      {
+        "args": [
+          [
+            [
+              "x",
+              0
+            ],
+            [
+              "y",
+              -1
+            ]
+          ]
+        ],
+        "expect": "x"
+      }
+    ],
+    "solution": "String best = \"none\";\nint most = 0;\nfor (String title : plays.keySet()) {\n    if (best.equals(\"none\") || plays.get(title) > most) {\n        best = title;\n        most = plays.get(title);\n    }\n}\nreturn best;",
+    "hint": "Loop over keySet(), and get each key's value. Remember the best title so far and its count.",
+    "feedback": "A map cannot go straight into a for-each loop, but its keySet() can, and get fetches each key's value. The rest is the find-the-largest pattern. The first title has to be taken whatever its count, or a map whose counts are all 0 or less would wrongly answer “none”."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return a NEW list holding the same titles in alphabetical order. The list you were given must be left in its original order.",
+    "signature": "public static ArrayList<String> sortedCopy(ArrayList<String> songs)",
+    "tests": [
+      {
+        "args": [
+          [
+            "pear",
+            "fig",
+            "apple"
+          ]
+        ],
+        "expect": [
+          "apple",
+          "fig",
+          "pear"
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expect": []
+      },
+      {
+        "args": [
+          [
+            "b",
+            "a",
+            "b"
+          ]
+        ],
+        "expect": [
+          "a",
+          "b",
+          "b"
+        ]
+      },
+      {
+        "args": [
+          [
+            "Zebra",
+            "apple",
+            "Mango"
+          ]
+        ],
+        "expect": [
+          "Mango",
+          "Zebra",
+          "apple"
+        ]
+      },
+      {
+        "args": [
+          [
+            "x"
+          ]
+        ],
+        "expect": [
+          "x"
+        ]
+      }
+    ],
+    "solution": "ArrayList<String> copy = new ArrayList<>(songs);\nCollections.sort(copy);\nreturn copy;",
+    "hint": "new ArrayList<>(songs) makes a separate copy. Collections.sort rearranges the list it is handed.",
+    "feedback": "Collections.sort changes the list you give it and returns nothing, so to keep the original order you sort a copy. new ArrayList<>(songs) is that copy: a second list with the same elements. Capital letters come before small ones in this order, which is why Zebra sorts ahead of apple."
   }
 ]

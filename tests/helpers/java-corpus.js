@@ -676,6 +676,189 @@ export const AGREES = {
       int h(String name, double avg) { for (int i = 0; i < 3; i++) { System.out.printf("%-6s%6.1f%n", name + i, avg * i); } return 7; }`,
     calls: ['a(3.14159)', 'a(2.0)', 'b(3)', 'c(1.5)', 'd(1)', 'e("plain")', 'e(null)', 'g(7)', 'h("row", 3.333)'],
   },
+  // ── collections
+  'ArrayList: add, insert, get, set, remove, search': {
+    methods: J`String build() { ArrayList<String> xs = new ArrayList<>(); xs.add("Hotel California"); xs.add("Stairway"); xs.add(1, "Bohemian"); xs.add(0, "First"); xs.add(xs.size(), "Last"); return xs + " " + xs.size(); }
+      ArrayList<String> abc() { return new ArrayList<>(Arrays.asList("a", "b", "c", "b")); }
+      String get(int i) { return abc().get(i); }
+      String set(int i) { ArrayList<String> xs = abc(); String old = xs.set(i, "z"); return old + xs; }
+      String removeAt(int i) { ArrayList<String> xs = abc(); String old = xs.remove(i); return old + xs; }
+      String removeIt(String s) { ArrayList<String> xs = abc(); boolean was = xs.remove(s); return was + "" + xs; }
+      String insert(int i) { ArrayList<String> xs = abc(); xs.add(i, "z"); return "" + xs; }
+      int find(String s) { return abc().indexOf(s); }
+      int findLast(String s) { return abc().lastIndexOf(s); }
+      boolean has(String s) { return abc().contains(s); }
+      String cleared() { ArrayList<String> xs = abc(); xs.clear(); return xs + " " + xs.isEmpty() + xs.size(); }
+      String nulls() { ArrayList<String> xs = new ArrayList<>(); xs.add(null); xs.add("a"); xs.add(null); return xs + " " + xs.indexOf(null) + xs.lastIndexOf(null) + xs.contains(null) + xs.remove(null) + xs; }
+      String addAll() { ArrayList<String> xs = abc(); ArrayList<String> ys = new ArrayList<>(); boolean a = ys.addAll(xs); boolean b = ys.addAll(new ArrayList<>()); ys.addAll(ys); return a + "" + b + ys; }
+      String typed() { ArrayList<String> xs = new ArrayList<String>(); xs.add("x"); ArrayList<String> ys = new ArrayList<>(10); ys.add("y"); var zs = new ArrayList<Double>(); zs.add(1.5); return "" + xs + ys + zs; }
+      int negative() { ArrayList<String> xs = new ArrayList<>(-1); return xs.size(); }
+      String toArr() { ArrayList<String> xs = abc(); String[] a = xs.toArray(new String[0]); String[] big = new String[6]; Arrays.fill(big, "?"); String[] b = xs.toArray(big); return Arrays.toString(a) + Arrays.toString(b) + (b == big); }
+      String same() { ArrayList<String> xs = abc(); ArrayList<String> ys = xs; ys.add("d"); return (xs == ys) + "" + xs + xs.equals(abc()) + abc().equals(abc()); }
+      boolean bool() { ArrayList<String> xs = new ArrayList<>(); return xs.add("a") && xs.remove("a") && !xs.remove("a"); }`,
+    calls: ['build()', 'get(0)', 'get(3)', 'get(4)', 'get(-1)', 'set(1)', 'set(4)', 'removeAt(0)', 'removeAt(3)', 'removeAt(4)', 'removeIt("b")', 'removeIt("q")', 'removeIt(null)', 'insert(0)', 'insert(4)', 'insert(5)', 'insert(-1)',
+      'find("b")', 'find("q")', 'find(null)', 'findLast("b")', 'has("c")', 'has("C")', 'cleared()', 'nulls()', 'addAll()', 'typed()', 'negative()', 'toArr()', 'same()', 'bool()', 'abc()', 'abc().size()', 'abc().isEmpty()',
+      'new ArrayList<String>()', 'new ArrayList<String>().isEmpty()', 'abc().get(1).length()', 'abc().toString().length()'],
+  },
+  'a list of Integers: remove(int) removes by position, remove(Integer) by value': {
+    methods: J`ArrayList<Integer> nums() { ArrayList<Integer> xs = new ArrayList<>(); for (int i = 5; i > 0; i--) { xs.add(i * 10); } xs.add(2); return xs; }
+      String byIndex(int i) { ArrayList<Integer> xs = nums(); int old = xs.remove(i); return old + "" + xs; }
+      String byValue(Integer v) { ArrayList<Integer> xs = nums(); boolean was = xs.remove(v); return was + "" + xs; }
+      String byChar(char c) { ArrayList<Integer> xs = nums(); return xs.remove(c) + "" + xs; }
+      int sum() { int t = 0; for (int x : nums()) { t += x; } return t; }
+      int sumBoxed() { int t = 0; for (Integer x : nums()) { t += x; } return t; }
+      double avg() { ArrayList<Integer> xs = nums(); int t = 0; for (int i = 0; i < xs.size(); i++) { t += xs.get(i); } return (double) t / xs.size(); }
+      int holes() { ArrayList<Integer> xs = nums(); xs.add(null); int t = 0; for (int x : xs) { t += x; } return t; }
+      String doubles() { ArrayList<Double> ds = new ArrayList<>(); ds.add(1.5); ds.add(2.0); ds.add(-0.0); ds.add(0.0 / 0); return ds + " " + ds.contains(0.0) + ds.contains(-0.0) + ds.indexOf(0.0 / 0) + ds.get(1); }
+      String chars() { ArrayList<Character> cs = new ArrayList<>(); for (char c : "hello".toCharArray()) { cs.add(c); } return cs + " " + cs.indexOf('l') + cs.contains('z') + cs.get(0); }
+      String longs() { ArrayList<Long> ls = new ArrayList<>(); ls.add(5L); ls.add(5000000000L); return ls + " " + ls.contains(5L) + ls.indexOf(5000000000L); }
+      String bools() { ArrayList<Boolean> bs = new ArrayList<>(); bs.add(true); bs.add(false); bs.add(1 > 2); return bs + " " + bs.indexOf(false) + bs.get(0); }
+      String setGet() { ArrayList<Integer> xs = nums(); xs.set(0, xs.get(0) + 1); xs.set(1, xs.get(1) * 2); return "" + xs; }
+      int unbox() { ArrayList<Integer> xs = new ArrayList<>(); xs.add(null); return xs.get(0); }
+      boolean has(int v) { return nums().contains(v); }
+      int at(int v) { return nums().indexOf(v); }`,
+    calls: ['nums()', 'byIndex(0)', 'byIndex(2)', 'byIndex(5)', 'byIndex(50)', 'byValue(50)', 'byValue(2)', 'byValue(7)', 'byValue(null)', "byChar('\\u0001')", 'sum()', 'sumBoxed()', 'avg()', 'holes()',
+      'doubles()', 'chars()', 'longs()', 'bools()', 'setGet()', 'unbox()', 'has(30)', 'has(31)', 'at(2)', 'at(10)', 'at(99)'],
+  },
+  'LinkedList and the List type: the ends of a list, and one method that takes either kind': {
+    methods: J`String queue() { LinkedList<String> q = new LinkedList<>(); q.addFirst("b"); q.addFirst("a"); q.addLast("c"); q.add("d"); q.add(1, "x"); return q + " " + q.peekFirst() + q.peekLast() + q.getFirst() + q.getLast() + q.size(); }
+      String drain() { LinkedList<Integer> q = new LinkedList<>(Arrays.asList(1, 2, 3)); String s = ""; while (!q.isEmpty()) { s += q.removeFirst(); } return s + q + q.peekFirst() + q.peekLast() + q.poll(); }
+      String stack() { LinkedList<String> st = new LinkedList<>(); st.push("a"); st.push("b"); st.push("c"); return st.pop() + st.peek() + st + st.removeLast() + st.remove() + st; }
+      String empty(int which) { LinkedList<String> q = new LinkedList<>(); if (which == 0) { return q.removeFirst(); } if (which == 1) { return q.removeLast(); } if (which == 2) { return q.getFirst(); } if (which == 3) { return q.pop(); } if (which == 4) { return q.element(); } return "" + q.pollFirst() + q.pollLast() + q.offer("z") + q.offerFirst("y") + q; }
+      int count(List<String> xs) { return xs.size(); }
+      String first(List<String> xs) { if (xs.isEmpty()) { return "none"; } return xs.get(0); }
+      String both() { List<String> a = new ArrayList<>(); List<String> b = new LinkedList<>(); a.add("x"); b.add("y"); b.add("z"); return first(a) + first(b) + count(a) + count(b) + first(new ArrayList<>()) + count(new LinkedList<>()); }
+      String ends() { ArrayList<String> xs = new ArrayList<>(Arrays.asList("a", "b", "c")); xs.addFirst("0"); xs.addLast("9"); return xs.removeFirst() + xs.removeLast() + xs.getFirst() + xs.getLast() + xs; }
+      String emptyArrayList(int which) { ArrayList<String> xs = new ArrayList<>(); if (which == 0) { return xs.removeFirst(); } if (which == 1) { return xs.getLast(); } return xs.get(0); }
+      String linkedIndex(int i) { LinkedList<String> q = new LinkedList<>(Arrays.asList("a", "b")); return q.get(i) + q.set(i, "z") + q.remove(i) + q; }
+      String coll() { Collection<String> c = new ArrayList<>(); c.add("a"); c.add("a"); Collection<String> d = new HashSet<>(c); return c + " " + d + c.size() + d.size() + c.contains("a") + d.remove("a") + d.isEmpty(); }
+      String equal() { List<String> a = new ArrayList<>(Arrays.asList("a", "b")); List<String> b = new LinkedList<>(Arrays.asList("a", "b")); return a.equals(b) + "" + b.equals(a) + a.equals(null) + (a == a); }`,
+    calls: ['queue()', 'drain()', 'stack()', 'empty(0)', 'empty(1)', 'empty(2)', 'empty(3)', 'empty(4)', 'empty(5)', 'both()', 'ends()', 'emptyArrayList(0)', 'emptyArrayList(1)', 'emptyArrayList(2)',
+      'linkedIndex(0)', 'linkedIndex(1)', 'linkedIndex(2)', 'linkedIndex(-1)', 'coll()', 'equal()', 'count(new ArrayList<>())', 'first(new LinkedList<>(Arrays.asList("q")))', 'count(null)'],
+  },
+  'Arrays.asList is a fixed-size view of its array': {
+    methods: J`String view() { String[] arr = {"c", "a", "b"}; List<String> xs = Arrays.asList(arr); xs.set(0, "z"); arr[1] = "y"; Collections.sort(xs); return xs + Arrays.toString(arr) + xs.size() + xs.get(2) + xs.contains("y") + xs.indexOf("z"); }
+      String add() { List<String> xs = Arrays.asList("a", "b"); xs.add("c"); return "" + xs; }
+      String remove() { List<String> xs = Arrays.asList("a", "b"); xs.remove(0); return "" + xs; }
+      String removeMissing() { List<String> xs = Arrays.asList("a", "b"); return xs.remove("q") + "" + xs; }
+      String removeThere() { List<String> xs = Arrays.asList("a", "b"); return xs.remove("a") + "" + xs; }
+      String clear(int n) { List<String> xs = Arrays.asList(new String[n]); xs.clear(); return "" + xs; }
+      String bad(int i) { List<Integer> xs = Arrays.asList(1, 2, 3); return "" + xs.get(i); }
+      String copy() { List<Integer> xs = Arrays.asList(3, 1, 2); ArrayList<Integer> ys = new ArrayList<>(xs); ys.add(0); Collections.sort(ys); return xs + "" + ys; }
+      String boxed() { Integer[] arr = {3, null, 1}; List<Integer> xs = Arrays.asList(arr); arr[1] = 2; return xs + " " + xs.size(); }
+      String ends() { List<String> xs = Arrays.asList("a", "b"); return xs.getFirst() + xs.getLast(); }
+      String addAll() { List<String> xs = Arrays.asList("a"); return xs.addAll(new ArrayList<>()) + "" + xs.addAll(Arrays.asList("b")); }
+      String nullArray() { String[] arr = null; return "" + Arrays.asList(arr); }
+      String mixed() { return "" + Arrays.asList(1.5, 2.0) + Arrays.asList('a', 'b') + Arrays.asList(true) + Arrays.asList(5L, 6L) + Arrays.asList("a", null) + Arrays.asList(1, null, 3); }`,
+    calls: ['view()', 'add()', 'remove()', 'removeMissing()', 'removeThere()', 'clear(0)', 'clear(2)', 'bad(0)', 'bad(3)', 'bad(-1)', 'copy()', 'boxed()', 'ends()', 'addAll()', 'nullArray()', 'mixed()'],
+  },
+  'HashSet: no duplicates, and the order Java hands the elements back in': {
+    methods: J`String artists() { HashSet<String> s = new HashSet<>(); boolean a = s.add("Queen"); boolean b = s.add("Beatles"); boolean c = s.add("Queen"); return a + "" + b + c + s.size() + s; }
+      String album() { HashSet<String> s = new HashSet<>(); String[] a1 = {"Arctic Monkeys", "Kendrick Lamar", "Vampire Weekend"}; String[] a2 = {"Kendrick Lamar", "Arctic Monkeys", "Tame Impala"}; String[] a3 = {"Travis Scott", "Kendrick Lamar", "The Strokes"};
+        for (String x : a1) { s.add(x); } for (String x : a2) { s.add(x); } for (String x : a3) { s.add(x); } String out = ""; for (String x : s) { out += x + "|"; } return out + s.size() + s.contains("Kendrick Lamar") + s.contains("Drake"); }
+      String words(String text) { HashSet<String> s = new HashSet<>(); for (String w : text.split(" ")) { s.add(w); } return s + " " + s.size(); }
+      String ints(int n, int step) { HashSet<Integer> s = new HashSet<>(); for (int i = 0; i < n; i++) { s.add(i * step - 40); } return "" + s; }
+      String chars(String text) { HashSet<Character> s = new HashSet<>(); for (char c : text.toCharArray()) { s.add(c); } return s + " " + s.size(); }
+      String doubles() { HashSet<Double> s = new HashSet<>(); s.add(1.5); s.add(0.0); s.add(-0.0); s.add(0.0 / 0); s.add(0.0 / 0); s.add(100.25); s.add(1e10); s.add(-3.75); return s + " " + s.size() + s.contains(0.0); }
+      String longs() { HashSet<Long> s = new HashSet<>(); for (long i = 1; i < 2000000000000L; i *= 37) { s.add(i); s.add(-i); } return "" + s; }
+      String bools() { HashSet<Boolean> s = new HashSet<>(); s.add(false); s.add(true); s.add(false); return "" + s; }
+      String removing() { HashSet<String> s = new HashSet<>(Arrays.asList("Rock", "Jazz", "Classical", "Pop", "Folk")); boolean a = s.remove("Jazz"); boolean b = s.remove("Jazz"); return a + "" + b + s + s.size() + s.isEmpty(); }
+      String cleared() { HashSet<String> s = new HashSet<>(Arrays.asList("a", "b")); s.clear(); s.add("z"); s.add("a"); return s + " " + s.size(); }
+      String nullIn() { HashSet<String> s = new HashSet<>(); s.add("b"); s.add(null); s.add("a"); s.add(null); return s + " " + s.contains(null) + s.remove(null) + s; }
+      String dedupe(int n) { ArrayList<Integer> xs = new ArrayList<>(); for (int i = 0; i < n; i++) { xs.add(i * i % 17); } HashSet<Integer> s = new HashSet<>(xs); ArrayList<Integer> back = new ArrayList<>(s); return xs.size() + " " + s + back; }
+      String sized(int cap, int n) { HashSet<Integer> s = new HashSet<>(cap); for (int i = 0; i < n; i++) { s.add(i * 31); } return "" + s; }
+      String ops() { HashSet<Integer> a = new HashSet<>(Arrays.asList(1, 2, 3, 4, 20, 40)); HashSet<Integer> b = new HashSet<>(Arrays.asList(3, 4, 5, 40)); HashSet<Integer> both = new HashSet<>(a); both.retainAll(b); HashSet<Integer> either = new HashSet<>(a); either.addAll(b);
+        HashSet<Integer> only = new HashSet<>(a); only.removeAll(b); return both + "" + either + only + a.containsAll(both) + b.containsAll(a) + a.equals(b) + both.equals(new HashSet<>(Arrays.asList(40, 4, 3))); }
+      String asSet() { Set<String> s = new HashSet<>(); s.add("x"); s.add("y"); s.add("x"); return s + " " + s.size(); }
+      String grown() { HashSet<String> s = new HashSet<>(); for (int i = 0; i < 100; i++) { s.add("song" + i); } String out = ""; int n = 0; for (String x : s) { if (n++ < 30) { out += x.substring(4) + ","; } } return out + s.size(); }
+      String shrink() { HashSet<Integer> s = new HashSet<>(); for (int i = 0; i < 200; i++) { s.add(i * 7); } for (int i = 0; i < 195; i++) { s.remove(i * 7); } s.add(3); s.add(100000); return "" + s; }
+      String collide() { HashSet<String> s = new HashSet<>(); s.add("BB"); s.add("Aa"); s.add("AaAa"); s.add("BBBB"); s.add("AaBB"); s.add("C#"); s.add("Aa"); return s + " " + "Aa".hashCode() + "BB".hashCode(); }`,
+    calls: ['artists()', 'album()', 'words("the quick brown fox jumps over the lazy dog and the cat")', 'words("")', 'words("a a a")', 'ints(5, 1)', 'ints(13, 1)', 'ints(13, 16)', 'ints(40, 7)', 'ints(30, -1000003)',
+      'chars("hello world")', 'chars("The Quick Brown Fox")', 'doubles()', 'longs()', 'bools()', 'removing()', 'cleared()', 'nullIn()', 'dedupe(10)', 'dedupe(40)', 'dedupe(0)',
+      'sized(0, 5)', 'sized(1, 5)', 'sized(2, 3)', 'sized(3, 20)', 'sized(100, 20)', 'sized(17, 40)', 'sized(-1, 1)', 'ops()', 'asSet()', 'grown()', 'shrink()', 'collide()'],
+  },
+  'HashMap: keys to values, and the order of keySet() and values()': {
+    methods: J`HashMap<String, String> songs() { HashMap<String, String> m = new HashMap<>(); m.put("Purple Rain", "Prince"); m.put("Highway 61 Revisted", "Bob Dylan"); m.put("Dark Side of the Moon", "Pink Floyd"); m.put("Under the Pink", "Tori Amos"); return m; }
+      String walk() { HashMap<String, String> m = songs(); String out = ""; for (String song : m.keySet()) { out += song + ">" + m.get(song) + "|"; } for (String artist : m.values()) { out += artist + ","; } return out + m.size(); }
+      String puts() { HashMap<String, String> m = new HashMap<>(); String a = m.put("Yesterday", "Beatles"); String b = m.put("Hey Jude", "Beatles"); String c = m.put("Yesterday", "Paul McCartney"); return a + " " + b + " " + c + " " + m + m.size(); }
+      String look(String title) { HashMap<String, String> m = songs(); String artist = m.get(title); if (artist != null) { return title + " is by " + artist; } return "Unknown " + title; }
+      String checks() { HashMap<String, String> m = songs(); return "" + m.containsKey("Purple Rain") + m.containsKey("Prince") + m.containsValue("Prince") + m.containsValue("Purple Rain") + m.isEmpty() + m.size(); }
+      String removes() { HashMap<String, String> m = songs(); String a = m.remove("Purple Rain"); String b = m.remove("Purple Rain"); return a + " " + b + " " + m + m.size(); }
+      String cleared() { HashMap<String, String> m = songs(); m.clear(); m.put("z", "1"); m.put("a", "2"); return m + " " + m.size() + m.isEmpty(); }
+      String counts(String text) { HashMap<String, Integer> m = new HashMap<>(); for (String w : text.split(" ")) { if (m.containsKey(w)) { m.put(w, m.get(w) + 1); } else { m.put(w, 1); } } return "" + m; }
+      String letters(String text) { HashMap<Character, Integer> m = new HashMap<>(); for (char c : text.toCharArray()) { m.put(c, m.getOrDefault(c, 0) + 1); } return "" + m; }
+      int missing() { HashMap<String, Integer> m = new HashMap<>(); return m.get("nobody"); }
+      String ratings() { HashMap<String, Double> m = new HashMap<>(); m.put("Yesterday", 4.8); m.put("Imagine", 5.0); m.put("Help", 3.25); double t = 0; for (double r : m.values()) { t += r; } return m + " " + t + m.get("Imagine"); }
+      String tracks(int n) { HashMap<Integer, String> m = new HashMap<>(); for (int i = n; i > 0; i--) { m.put(i * 3, "t" + i); } return m + m.get(3) + m.get(4) + m.containsKey(6); }
+      String nulls() { HashMap<String, String> m = new HashMap<>(); m.put(null, "none"); m.put("a", null); m.put("b", "x"); return m + " " + m.get(null) + m.get("a") + m.containsKey("a") + m.containsKey("q") + m.containsValue(null) + m.getOrDefault("a", "d") + m.getOrDefault("q", "d") + m.putIfAbsent("a", "now") + m.putIfAbsent("b", "no") + m.putIfAbsent("c", "new") + m; }
+      String views() { HashMap<String, Integer> m = new HashMap<>(); m.put("one", 1); m.put("two", 2); m.put("three", 3); Set<String> keys = m.keySet(); Collection<Integer> vals = m.values(); m.put("four", 4); boolean a = keys.remove("one"); boolean b = vals.remove(3);
+        return keys + "" + vals + m + a + b + keys.size() + vals.size() + keys.contains("two") + vals.contains(2) + (keys == m.keySet()) + (vals == m.values()); }
+      String viewAdd(int which) { HashMap<String, Integer> m = new HashMap<>(); m.put("a", 1); if (which == 0) { m.keySet().add("b"); } else { m.values().add(2); } return "" + m; }
+      String copies() { HashMap<String, Integer> m = new HashMap<>(); for (int i = 0; i < 20; i++) { m.put("k" + i * 37, i); } HashMap<String, Integer> c = new HashMap<>(m); c.put("extra", -1); m.remove("k0"); Map<String, Integer> e = new HashMap<>(new HashMap<String, Integer>()); ArrayList<String> keys = new ArrayList<>(m.keySet()); Collections.sort(keys);
+        return m + "|" + c + "|" + e + keys + Collections.max(m.values()) + m.equals(c) + c.equals(c); }
+      String sized(int cap, int n) { HashMap<Integer, Integer> m = new HashMap<>(cap); for (int i = 0; i < n; i++) { m.put(i * 17 - 50, i); } return "" + m; }
+      String asMap() { Map<String, Integer> m = new HashMap<>(); m.put("b", 2); m.put("a", 1); int t = 0; for (String k : m.keySet()) { t += m.get(k); } return m + " " + t; }
+      String grown() { HashMap<String, Integer> m = new HashMap<>(); for (int i = 0; i < 300; i++) { m.put("song " + i * 7, i); } for (int i = 0; i < 290; i++) { m.remove("song " + i * 7); } return m + "" + m.size(); }`,
+    calls: ['songs()', 'walk()', 'puts()', 'look("Purple Rain")', 'look("Yesterday")', 'look(null)', 'checks()', 'removes()', 'cleared()', 'counts("the cat and the hat and the bat")', 'counts("")', 'counts("to be or not to be that is the question")',
+      'letters("mississippi")', 'letters("Hello, World!")', 'letters("")', 'missing()', 'ratings()', 'tracks(5)', 'tracks(14)', 'tracks(100)', 'nulls()', 'views()', 'viewAdd(0)', 'viewAdd(1)', 'copies()',
+      'sized(0, 3)', 'sized(1, 6)', 'sized(5, 9)', 'sized(64, 9)', 'sized(12, 13)', 'sized(-5, 1)', 'asMap()', 'grown()', 'songs().size()', 'songs().get("Under the Pink").length()'],
+  },
+  'the Collections class: sort, reverse, max, min, frequency, binarySearch, swap': {
+    methods: J`ArrayList<String> songs() { ArrayList<String> xs = new ArrayList<>(); xs.add("Stairway to Heaven"); xs.add("Bohemian Rhapsody"); xs.add("Hotel California"); xs.add("Imagine"); xs.add("Sweet Child O' Mine"); return xs; }
+      String sorted() { ArrayList<String> xs = songs(); ArrayList<String> copy = new ArrayList<>(xs); Collections.sort(copy); return copy + "" + xs.get(0) + Collections.min(xs) + Collections.max(xs) + Collections.binarySearch(copy, "Hotel California") + Collections.binarySearch(copy, "Zebra") + Collections.binarySearch(copy, "Aardvark") + Collections.binarySearch(copy, "Jump"); }
+      String reversed() { ArrayList<String> xs = songs(); Collections.reverse(xs); return "" + xs; }
+      int freq(String s) { ArrayList<String> xs = new ArrayList<>(Arrays.asList("Beatles", "Queen", "Beatles", "Led Zeppelin", "Beatles", null)); return Collections.frequency(xs, s); }
+      String nums() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(30, -5, 100, 7, 7, 0)); int hi = Collections.max(xs); int lo = Collections.min(xs); Collections.sort(xs); Collections.swap(xs, 0, 5); return xs + " " + hi + lo + Collections.frequency(xs, 7) + Collections.binarySearch(xs, 30); }
+      String caps() { ArrayList<String> xs = new ArrayList<>(Arrays.asList("banana", "Apple", "cherry", "apple", "Banana", "10", "9", "")); Collections.sort(xs); return "" + xs; }
+      String doubles() { ArrayList<Double> xs = new ArrayList<>(Arrays.asList(2.5, -1.0, 0.0, -0.0, 0.0 / 0, 1e9)); Collections.sort(xs); return xs + "" + Collections.max(xs) + Collections.min(xs); }
+      String others() { ArrayList<Character> cs = new ArrayList<>(Arrays.asList('z', 'A', 'm')); ArrayList<Boolean> bs = new ArrayList<>(Arrays.asList(true, false, true)); ArrayList<Long> ls = new ArrayList<>(Arrays.asList(5000000000L, -1L, 3L)); Collections.sort(cs); Collections.sort(bs); Collections.sort(ls); return "" + cs + bs + ls + Collections.max(cs) + Collections.min(bs) + Collections.max(ls); }
+      String linked() { LinkedList<String> q = new LinkedList<>(Arrays.asList("c", "a", "b")); Collections.sort(q); Collections.reverse(q); return q + "" + Collections.max(q) + Collections.binarySearch(q, "a"); }
+      String ofSet() { HashSet<Integer> s = new HashSet<>(Arrays.asList(4, 9, 2)); HashMap<String, Integer> m = new HashMap<>(); m.put("a", 5); m.put("b", 1); return "" + Collections.max(s) + Collections.min(s) + Collections.max(m.values()) + Collections.min(m.keySet()) + Collections.frequency(s, 9) + Collections.frequency(m.values(), 5); }
+      String empty(int which) { ArrayList<String> xs = new ArrayList<>(); if (which == 0) { return Collections.max(xs); } if (which == 1) { return Collections.min(xs); } Collections.sort(xs); Collections.reverse(xs); return xs + "" + Collections.binarySearch(xs, "a") + Collections.frequency(xs, "a"); }
+      String withNull(int which) { ArrayList<String> xs = new ArrayList<>(); xs.add("b"); xs.add(null); if (which == 0) { Collections.sort(xs); } if (which == 1) { return Collections.max(xs); } if (which == 2) { return "" + Collections.binarySearch(xs, null); } return "" + xs; }
+      String oneNull() { ArrayList<String> xs = new ArrayList<>(); xs.add(null); Collections.sort(xs); return xs + "" + Collections.max(xs); }
+      String swapBad(int i, int j) { ArrayList<String> xs = songs(); Collections.swap(xs, i, j); return xs.get(0); }
+      String addAll() { ArrayList<String> xs = new ArrayList<>(); boolean a = Collections.addAll(xs, "c", "a"); boolean b = Collections.addAll(xs); HashSet<Integer> s = new HashSet<>(); boolean c = Collections.addAll(s, 1, 2, 1); boolean d = Collections.addAll(s, 2); return "" + a + b + c + d + xs + s; }
+      String dupes() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 3, 3, 3, 3, 3, 5, 7)); return "" + Collections.binarySearch(xs, 3) + Collections.binarySearch(xs, 4) + Collections.binarySearch(xs, 8) + Collections.binarySearch(xs, 0); }`,
+    calls: ['sorted()', 'reversed()', 'freq("Beatles")', 'freq("Queen")', 'freq("Kiss")', 'freq(null)', 'nums()', 'caps()', 'doubles()', 'others()', 'linked()', 'ofSet()', 'empty(0)', 'empty(1)', 'empty(2)',
+      'withNull(0)', 'withNull(1)', 'withNull(2)', 'withNull(3)', 'oneNull()', 'swapBad(0, 4)', 'swapBad(0, 5)', 'swapBad(-1, 0)', 'swapBad(2, 2)', 'addAll()', 'dupes()'],
+  },
+  'a for-each loop over a collection, and what may be done to the collection inside it': {
+    methods: J`String each() { ArrayList<String> xs = new ArrayList<>(Arrays.asList("a", "b", "c")); String s = ""; for (String x : xs) { s += x.toUpperCase(); } for (var x : xs) { s += x; } return s; }
+      String setInside() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); int i = 0; String s = ""; for (int x : xs) { s += x; if (i < 2) { xs.set(i + 1, x * 10); } i++; } return s + xs; }
+      String removeThenBreak() { ArrayList<String> xs = new ArrayList<>(Arrays.asList("a", "b", "c")); for (String x : xs) { if (x.equals("b")) { xs.remove(x); break; } } return "" + xs; }
+      String addThenReturn() { HashSet<String> s = new HashSet<>(Arrays.asList("a", "b")); for (String x : s) { s.add(x + "!"); return s.size() + ""; } return "never"; }
+      String putSameKey() { HashMap<String, Integer> m = new HashMap<>(); m.put("a", 1); m.put("b", 2); m.put("c", 3); String s = ""; for (String k : m.keySet()) { m.put(k, m.get(k) * 10); m.put("c", m.get("c") + 1); } for (int v : m.values()) { s += v + ","; } return s + m; }
+      String valuesLive() { HashMap<String, Integer> m = new HashMap<>(); m.put("a", 1); m.put("b", 2); m.put("c", 3); String s = ""; for (int v : m.values()) { s += v; m.put("c", 99); m.put("b", 50); } return s; }
+      String asListSort() { String[] arr = {"c", "b", "a"}; List<String> xs = Arrays.asList(arr); String s = ""; for (String x : xs) { s += x; Collections.sort(xs); } return s; }
+      String linkedSort() { LinkedList<String> q = new LinkedList<>(Arrays.asList("c", "b", "a")); String s = ""; for (String x : q) { s += x; Collections.sort(q); Collections.reverse(q); Collections.reverse(q); } return s; }
+      String reverseInside() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3, 4)); String s = ""; for (int x : xs) { s += x; Collections.reverse(xs); } return s + xs; }
+      String nested() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); HashSet<Integer> seen = new HashSet<>(); int pairs = 0; for (int a : xs) { for (int b : xs) { if (a < b && seen.add(a * 10 + b)) { pairs++; } } } return pairs + "" + seen; }
+      String overNull() { ArrayList<String> xs = null; String s = ""; for (String x : xs) { s += x; } return s; }
+      String empties() { String s = "."; for (String x : new ArrayList<String>()) { s += x; } for (int k : new HashMap<Integer, String>().keySet()) { s += k; } for (String x : new HashSet<String>()) { s += x; } return s; }
+      String byIndexRemove() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 2, 3, 2)); for (int i = xs.size() - 1; i >= 0; i--) { if (xs.get(i) == 2) { xs.remove(i); } } return "" + xs; }
+      String skipping() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 2, 3, 2)); for (int i = 0; i < xs.size(); i++) { if (xs.get(i) == 2) { xs.remove(i); } } return "" + xs; }`,
+    calls: ['each()', 'setInside()', 'removeThenBreak()', 'addThenReturn()', 'putSameKey()', 'valuesLive()', 'asListSort()', 'linkedSort()', 'reverseInside()', 'nested()', 'overNull()', 'empties()', 'byIndexRemove()', 'skipping()'],
+  },
+  'collections handed to a method and handed back, printed, joined to text, and compared with null': {
+    methods: J`ArrayList<String> build() { ArrayList<String> xs = new ArrayList<>(); xs.add("Wish You Were Here"); xs.add("When Doves Cry"); xs.add(0, "Still Into You"); return xs; }
+      void addTo(ArrayList<String> xs, String s) { xs.add(s); }
+      String shared() { ArrayList<String> xs = build(); addTo(xs, "Kids"); addTo(xs, "Kids"); return xs.size() + "" + xs; }
+      String show() { ArrayList<String> xs = build(); HashMap<String, Integer> m = new HashMap<>(); m.put("x", 1); HashSet<Double> s = new HashSet<>(); s.add(2.0); System.out.println(xs); System.out.print(m); System.out.println(s); System.out.println("got " + xs + m + s + m.keySet() + m.values()); return "Tracks: " + xs.size(); }
+      HashMap<String, Integer> tally(String[] words) { HashMap<String, Integer> m = new HashMap<>(); for (String w : words) { m.put(w, m.getOrDefault(w, 0) + 1); } return m; }
+      HashSet<String> unique(ArrayList<String> xs) { return new HashSet<>(xs); }
+      List<Integer> evens(List<Integer> xs) { List<Integer> out = new ArrayList<>(); for (int x : xs) { if (x % 2 == 0) { out.add(x); } } return out; }
+      Set<Character> letters(String s) { Set<Character> out = new HashSet<>(); for (char c : s.toCharArray()) { out.add(c); } return out; }
+      Map<Integer, String> names() { Map<Integer, String> m = new HashMap<>(); m.put(2, "two"); m.put(1, "one"); return m; }
+      String nothing() { ArrayList<String> xs = null; HashMap<String, String> m = null; return (xs == null) + "" + (m != null) + xs + m; }
+      int sizeOf(ArrayList<String> xs) { if (xs == null) { return -1; } return xs.size(); }
+      int over(List<String> xs) { return 1; } int over(ArrayList<String> xs) { return 2; } int over(Collection<String> xs) { return 3; }
+      String picks() { ArrayList<String> a = new ArrayList<>(); List<String> b = a; LinkedList<String> c = new LinkedList<>(); HashSet<String> d = new HashSet<>(); Collection<String> e = a; return "" + over(a) + over(b) + over(c) + over(d) + over(e); }
+      ArrayList<String> tern(boolean f) { ArrayList<String> a = new ArrayList<>(); a.add("a"); ArrayList<String> b = new ArrayList<>(); return f ? a : b; }
+      Collection<Integer> vals() { HashMap<String, Integer> m = new HashMap<>(); m.put("a", 1); return m.values(); }`,
+    calls: ['build()', 'shared()', 'show()', 'tally(new String[] {"a", "b", "a"})', 'tally(new String[0])', 'unique(build())', 'unique(new ArrayList<>())', 'evens(Arrays.asList(1, 2, 3, 4, 10))', 'evens(new LinkedList<>())',
+      'letters("banana")', 'names()', 'nothing()', 'sizeOf(null)', 'sizeOf(build())', 'sizeOf(new ArrayList<>())', 'picks()', 'tern(true)', 'tern(false)', 'vals()', 'build().get(0)', 'build().contains("Kids")', 'names().get(1)', 'names().keySet()'],
+  },
 };
 
 /**
@@ -1068,6 +1251,37 @@ export const REJECTS = {
   'an Integer has no length()': J`int f(Integer n) { return n.length(); }`,
   '++ on a Boolean': J`Boolean f(Boolean b) { b++; return b; }`,
   'a call that fits two boxed overloads': J`int g(Integer a, long b) { return 1; } int g(long a, Integer b) { return 2; } int f() { return g(1, 2); }`,
+  // ── collections: what a list may hold, and which type may stand for which
+  'a list of int': J`int f() { ArrayList<int> xs = new ArrayList<>(); return xs.size(); }`,
+  'a number added to a list of Strings': J`int f() { ArrayList<String> xs = new ArrayList<>(); xs.add(5); return xs.size(); }`,
+  'text added to a list of Integers': J`int f() { ArrayList<Integer> xs = new ArrayList<>(); xs.add("5"); return xs.size(); }`,
+  'an int added to a list of Doubles': J`int f() { ArrayList<Double> xs = new ArrayList<>(); xs.add(5); return xs.size(); }`,
+  'an element taken out as the wrong type': J`int f() { ArrayList<String> xs = new ArrayList<>(); int n = xs.get(0); return n; }`,
+  'square brackets on a list': J`String f() { ArrayList<String> xs = new ArrayList<>(); return xs[0]; }`,
+  'length on a list': J`int f() { ArrayList<String> xs = new ArrayList<>(); return xs.length; }`,
+  'a list of Strings as a list of Integers': J`int f() { ArrayList<String> xs = new ArrayList<>(); ArrayList<Integer> ys = xs; return ys.size(); }`,
+  'a List stored in an ArrayList variable': J`int f() { List<String> xs = new ArrayList<>(); ArrayList<String> ys = xs; return ys.size(); }`,
+  'a set stored in a list variable': J`int f() { List<String> xs = new HashSet<>(); return xs.size(); }`,
+  'new List': J`int f() { List<String> xs = new List<>(); return xs.size(); }`,
+  'new Map': J`int f() { Map<String, Integer> m = new Map<>(); return m.size(); }`,
+  'one type for a HashMap': J`int f() { HashMap<String> m = new HashMap<>(); return m.size(); }`,
+  'two types for an ArrayList': J`int f() { ArrayList<String, Integer> xs = new ArrayList<>(); return xs.size(); }`,
+  'empty angle brackets on the left': J`int f() { ArrayList<> xs = new ArrayList<String>(); return xs.size(); }`,
+  'the wrong loop variable for a list': J`int f() { ArrayList<String> xs = new ArrayList<>(); int t = 0; for (int x : xs) { t += x; } return t; }`,
+  'a for-each over a map': J`int f() { HashMap<String, Integer> m = new HashMap<>(); int t = 0; for (String k : m) { t++; } return t; }`,
+  'a wrong value type in put': J`int f() { HashMap<String, Integer> m = new HashMap<>(); m.put("a", "b"); return m.size(); }`,
+  'a wrong key type in put': J`int f() { HashMap<String, Integer> m = new HashMap<>(); m.put(1, 2); return m.size(); }`,
+  'a value read out as text': J`String f() { HashMap<String, Integer> m = new HashMap<>(); String s = m.get("a"); return s; }`,
+  'put with one argument': J`int f() { HashMap<String, Integer> m = new HashMap<>(); m.put("a"); return m.size(); }`,
+  'a copy of a list of another type': J`int f() { ArrayList<Integer> xs = new ArrayList<>(); ArrayList<String> ys = new ArrayList<>(xs); return ys.size(); }`,
+  'Collections.sort on an array': J`int f(int[] xs) { Collections.sort(xs); return xs[0]; }`,
+  'Collections.max on a map': J`int f() { HashMap<String, Integer> m = new HashMap<>(); return Collections.max(m); }`,
+  'a list handed to a method that takes an array': J`int g(String[] xs) { return xs.length; } int f() { ArrayList<String> xs = new ArrayList<>(); return g(xs); }`,
+  'an ArrayList method on a set variable': J`int f() { Set<String> s = new HashSet<>(); s.add(0, "a"); return s.size(); }`,
+  'LinkedList with a capacity': J`int f() { LinkedList<String> q = new LinkedList<>(10); return q.size(); }`,
+  'a list of Strings returned as a list of Integers': J`ArrayList<Integer> f() { ArrayList<String> xs = new ArrayList<>(); return xs; }`,
+  'a list where an int is wanted': J`int f() { ArrayList<Integer> xs = new ArrayList<>(); return xs + 1; }`,
+  'set() result used as a boolean': J`boolean f() { ArrayList<String> xs = new ArrayList<>(); xs.add("a"); return xs.set(0, "b"); }`,
 };
 
 /**
@@ -1087,9 +1301,22 @@ export const REFUSES = {
   '== between two Integers': { methods: J`boolean f(Integer a, Integer b) { return a == b; }`, calls: ['f(5, 5)'] },
   '!= between two Doubles': { methods: J`boolean f(Double a, Double b) { return a != b; }`, calls: ['f(5.0, 5.0)'] },
   'Byte, Short and Float': { methods: J`int f() { Short s = 6; return s + 1; }`, calls: ['f()'] },
-  'ArrayList': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(); xs.add(1); return xs.size(); }`, calls: ['f()'] },
+  'changing a list inside a for-each over it': { methods: J`String f() { ArrayList<String> xs = new ArrayList<>(Arrays.asList("a", "b", "c", "d")); try2(xs); return "" + xs; } void try2(ArrayList<String> xs) { for (String x : xs) { if (x.equals("c")) { xs.remove(x); } } }`, calls: ['f()'] },
+  'adding to a set inside a for-each over it': { methods: J`int f() { HashSet<Integer> s = new HashSet<>(Arrays.asList(1, 2, 3)); int n = 0; for (int x : s) { if (n++ == 1) { s.add(x + 100); } } return n; }`, calls: ['f()'] },
+  'sorting an ArrayList inside a for-each over it': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); int n = 0; for (int x : xs) { n++; if (n == 3) { Collections.sort(xs); } } return n; }`, calls: ['f()'] },
+  'a HashSet with many keys in one slot, which Java rearranges into a tree': { methods: J`String f() { HashSet<Integer> s = new HashSet<>(); for (int i = 0; i < 100; i++) { s.add(i * 65537 - 40); } return "" + s; }`, calls: ['f()'] },
+  'Collections.shuffle': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); Collections.shuffle(xs); return xs.size(); }`, calls: ['f()'] },
+  'a list of lists': { methods: J`int f() { ArrayList<ArrayList<String>> xs = new ArrayList<>(); return xs.size(); }`, calls: ['f()'] },
+  'a map of lists': { methods: J`int f() { HashMap<String, ArrayList<String>> m = new HashMap<>(); return m.size(); }`, calls: ['f()'] },
+  'a TreeMap': { methods: J`int f() { TreeMap<String, Integer> m = new TreeMap<>(); m.put("a", 1); return m.size(); }`, calls: ['f()'] },
+  'entrySet': { methods: J`int f() { HashMap<String, Integer> m = new HashMap<>(); m.put("a", 1); int t = 0; for (Map.Entry<String, Integer> e : m.entrySet()) { t += e.getValue(); } return t; }`, calls: ['f()'] },
+  'a raw ArrayList': { methods: J`int f() { ArrayList xs = new ArrayList(); xs.add("a"); return xs.size(); }`, calls: ['f()'] },
+  'contains with a value of another type': { methods: J`boolean f() { ArrayList<Long> xs = new ArrayList<>(); xs.add(5L); return xs.contains(5); }`, calls: ['f()'] },
+  'a new collection whose type nothing gives': { methods: J`int f() { return new ArrayList<>().size(); }`, calls: ['f()'] },
+  'Arrays.asList of an int array': { methods: J`int f() { int[] xs = {1, 2, 3}; return Arrays.asList(xs).size(); }`, calls: ['f()'] },
+  'an iterator': { methods: J`int f() { ArrayList<String> xs = new ArrayList<>(); return xs.iterator().hasNext() ? 1 : 0; }`, calls: ['f()'] },
+  'a lambda': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); xs.removeIf(x -> x > 1); return xs.size(); }`, calls: ['f()'] },
   'List.of': { methods: J`int f() { return List.of(1, 2).size(); }`, calls: ['f()'] },
-  'HashMap': { methods: J`int f() { Map<String, Integer> m = new HashMap<>(); m.put("a", 1); return m.get("a"); }`, calls: ['f()'] },
   'try and catch': { methods: J`int f(int a) { try { return 10 / a; } catch (ArithmeticException e) { return -1; } }`, calls: ['f(0)'] },
   'a format in hexadecimal': { methods: J`String f(int n) { return String.format("%x", n); }`, calls: ['f(255)'] },
   'a format in scientific notation': { methods: J`String f(double d) { return String.format("%e", d); }`, calls: ['f(3.14159)'] },
@@ -1568,4 +1795,119 @@ export function roundingCases(seed, count, perCase = 150) {
     methods: '  String m(double x) { return String.format("%.0f %.1f %.2f %.3f %,.2f %f %012.4f %+.1f %.10f", x, x, x, x, x, x, x, x, x); }',
     calls: Array.from({ length: perCase }, () => `m(${one()})`),
   }));
+}
+
+// ─── generated collection work ───────────────────────────────────────────────
+//
+// One method that does a long, pseudo-random run of adds, removes and lookups on a list, two sets and
+// three maps, and prints them all at the end. The run is steered by its arguments, so each call is a
+// different history — and the order a HashSet or a HashMap prints in depends on all of it: which keys,
+// in what order, how often the table grew, what was removed in between.
+
+const COLLECTION_METHOD = String.raw`  String m(int seed, int steps, int range, int spread) {
+    ArrayList<Integer> list = new ArrayList<>();
+    LinkedList<String> queue = new LinkedList<>();
+    HashSet<Integer> ints = new HashSet<>();
+    HashSet<String> words = new HashSet<>();
+    HashMap<Integer, Integer> byInt = new HashMap<>();
+    HashMap<String, Integer> byWord = new HashMap<>();
+    HashMap<Character, Integer> byChar = new HashMap<>();
+    HashMap<Long, Double> byLong = new HashMap<>();
+    HashSet<Double> reals = new HashSet<>();
+    int x = seed;
+    for (int i = 0; i < steps; i++) {
+      x = x * 1103515245 + 12345;
+      int k = ((x >>> 8) % range - range / 3) * spread;
+      int op = (x >>> 20) % 11;
+      String word = "w" + k;
+      if (op < 4) {
+        list.add(k); ints.add(k); words.add(word); byInt.put(k, i); byWord.put(word, i);
+        byChar.put((char) ('a' + (k & 63)), i); byLong.put(k * 2654435761L, k / 4.0); reals.add(k * 0.37); if (reals.size() < 30) { reals.add(k / 8.0); } queue.addLast(word);
+      } else if (op == 4) {
+        list.remove(Integer.valueOf(k)); ints.remove(k); words.remove(word); byInt.remove(k); byWord.remove(word); byLong.remove(k * 2654435761L); reals.remove(k * 0.37); reals.remove(k / 8.0);
+      } else if (op == 5) {
+        if (!list.isEmpty()) { list.remove(list.size() / 2); }
+        if (!queue.isEmpty()) { queue.removeFirst(); }
+      } else if (op == 6) {
+        byInt.put(k, byInt.getOrDefault(k, 0) - 1); byWord.putIfAbsent(word, -i);
+      } else if (op == 7) {
+        if (ints.contains(k) != byInt.containsKey(k) && i < 0) { return "impossible"; }
+        if (list.size() > 3) { list.set(1, list.get(0) + list.indexOf(k)); }
+      } else if (op == 8 && (x & 4096) != 0) {
+        ints = new HashSet<>(ints); byWord = new HashMap<>(byWord); words = new HashSet<>(list.size() + 1); for (int v : list) { words.add("w" + v); }
+      } else if (op == 9 && (x & 12288) == 0) {
+        ints.clear(); byInt.clear(); reals.clear();
+      } else {
+        queue.addFirst(word); byChar.remove((char) ('a' + (k & 63)));
+      }
+    }
+    String keys = "";
+    for (int key : byInt.keySet()) { keys += key + ">" + byInt.get(key) + " "; }
+    int total = 0;
+    for (int v : byWord.values()) { total += v; }
+    ArrayList<Integer> sorted = new ArrayList<>(ints);
+    Collections.sort(sorted);
+    return list + " | " + queue + " | " + ints + " | " + words + " | " + byInt + " | " + byWord + " | " + byChar + " | " + byLong + " | " + reals + " | " + keys + total + sorted
+      + byInt.keySet() + byWord.values() + (sorted.isEmpty() ? "" : "" + Collections.max(sorted) + Collections.min(ints));
+  }`;
+
+/** `count` cases of `perCase` calls each: short runs and long ones, keys packed together and keys far apart. */
+export function collectionCases(seed, count, perCase = 25) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, () => ({
+    methods: COLLECTION_METHOD,
+    calls: Array.from({ length: perCase }, () => {
+      const steps = rng.pick([3, 8, 13, 20, 40, 90, 200, 500]);
+      const range = rng.pick([4, 9, 17, 40, 100, 1000, 100000]);
+      const spread = rng.pick([1, 1, 1, 1, 3, 10, 100, 1000003, -7, 31]);
+      return `m(${rng.int(1000000)}, ${steps}, ${range}, ${spread})`;
+    }),
+  }));
+}
+
+// ─── generated collection puzzles ────────────────────────────────────────────
+//
+// A method call picked with no regard for what it is called on or handed, stored in a variable of a
+// random type. javac decides which of these compile; jtiny has to agree, or say that it will not say.
+
+const COLLECTION_SETUP = String.raw`    String[] arr = {"b", "a", "c"};
+    ArrayList<String> as = new ArrayList<>(Arrays.asList("b", "a", "b")); ArrayList<Integer> ai = new ArrayList<>(Arrays.asList(3, 1, 2)); List<String> ls = new LinkedList<>(as);
+    LinkedList<String> ks = new LinkedList<>(); ks.add("k"); HashSet<String> hs = new HashSet<>(as); Set<Integer> si = new HashSet<>(ai);
+    HashMap<String, Integer> m = new HashMap<>(); m.put("a", 1); m.put("b", 2); Map<Integer, String> mi = new HashMap<>(); mi.put(1, "one"); Collection<String> cs = m.keySet();`;
+const COLLECTION_NAMES = ['as', 'as', 'ai', 'ls', 'ks', 'hs', 'si', 'm', 'm', 'mi', 'cs'];
+const COLLECTION_LEAVES = [...COLLECTION_NAMES, 's', 's', 'a', 'a', 'I', 'x', 'c', 'arr', '"a"', '"k"', '1', '0', '2', 'null', '1.5', "'a'", 'true',
+  'new ArrayList<>()', 'new HashSet<String>()', 'new LinkedList<Integer>()', 'm.keySet()', 'm.values()', 'Arrays.asList(arr)', 'as.get(0)', 'm.get(s)', 'ai.get(a)', 'as.size()'];
+const COLLECTION_CALLS = ['add', 'add', 'remove', 'remove', 'get', 'get', 'set', 'contains', 'indexOf', 'size', 'isEmpty', 'addAll', 'put', 'put', 'containsKey', 'containsValue',
+  'keySet', 'values', 'getOrDefault', 'addFirst', 'removeFirst', 'peekFirst', 'clear', 'equals', 'toString', 'removeAll', 'retainAll', 'containsAll', 'putIfAbsent',
+  'lastIndexOf', 'getFirst', 'getLast', 'addLast', 'removeLast', 'length', 'push', 'pop', 'poll'];
+const COLLECTION_TYPES = ['int', 'boolean', 'String', 'Integer', 'var', 'var', 'double', 'ArrayList<String>', 'List<String>', 'List<Integer>', 'Set<String>', 'Set<Integer>',
+  'Collection<String>', 'Collection<Integer>', 'HashMap<String, Integer>', 'Map<String, Integer>', 'Map<Integer, String>', 'LinkedList<String>', 'HashSet<String>', 'ArrayList<Integer>'];
+
+function collectionExpression(rng, depth) {
+  const sub = () => (depth <= 0 || rng.next() < 0.6 ? rng.pick(COLLECTION_LEAVES) : collectionExpression(rng, depth - 1));
+  const some = n => Array.from({ length: n }, sub).join(', ');
+  switch (rng.int(14)) {
+    case 0: case 1: case 2: case 3: case 4: case 5:
+      return `${rng.next() < 0.8 ? rng.pick(COLLECTION_NAMES) : sub()}.${rng.pick(COLLECTION_CALLS)}(${some(rng.pick([0, 1, 1, 1, 2, 2]))})`;
+    case 6: case 7: return `Collections.${rng.pick(['sort', 'max', 'min', 'frequency', 'reverse', 'binarySearch', 'swap', 'addAll'])}(${some(rng.pick([1, 1, 2, 2, 3]))})`;
+    case 8: return `new ${rng.pick(['ArrayList', 'LinkedList', 'HashSet', 'HashMap'])}<${rng.pick(['', '', '', 'String', 'Integer', 'String, Integer'])}>(${some(rng.pick([0, 0, 1]))})`;
+    case 9: return `Arrays.asList(${some(rng.pick([1, 1, 2, 3]))})`;
+    case 10: return `(${sub()} ${rng.pick(['==', '!=', '+'])} ${sub()})`;
+    case 11: return `(t ? ${sub()} : ${sub()})`;
+    default: return sub();
+  }
+}
+
+/** `count` cases: half store the result in a variable of a random type, half are a statement whose effect is printed. */
+export function collectionTypeCases(seed, count, depth = 1) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, (_, i) => {
+    const expression = collectionExpression(rng, depth);
+    const after = 'return "" + as + ai + ls + ks + hs + si + m + mi + cs;';
+    const body = i % 2 ? `${expression}; ${after}` : `${rng.pick(COLLECTION_TYPES)} v = ${expression}; return v + " " + as + ai + ls + ks + hs + si + m + mi + cs;`;
+    return {
+      methods: `  String m(String s, int a, Integer I, double x, char c, boolean t) {\n${COLLECTION_SETUP}\n    ${body}\n  }`,
+      calls: ['m("a", 1, 2, 1.5, \'b\', true)', 'm("zz", 0, null, -1.0, \'a\', false)'],
+    };
+  });
 }
