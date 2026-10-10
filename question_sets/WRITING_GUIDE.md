@@ -761,17 +761,59 @@ A `double` result is compared with a small tolerance (one part in a billion), be
 
 The student may type the body, paste the whole method, add helper methods beside it, or paste a whole class around it. Line numbers in errors count the lines of their box.
 
-**What the practice Java runs** (`src/jtiny.js`): `int`, `long`, `double`, `boolean`, `char`, `String`, `StringBuilder`, the wrappers `Integer`, `Long`, `Double`, `Character` and `Boolean` (with boxing, unboxing and `null`), and arrays of them (including arrays of arrays); `ArrayList`, `LinkedList`, `HashSet` and `HashMap` holding Strings or wrappers, declared as themselves or as `List`, `Set`, `Map` or `Collection`, with `Arrays.asList` and the `Collections` class (`sort`, `reverse`, `max`, `min`, `frequency`, `binarySearch`, `swap`, `addAll`); every operator, with Java's integer division, overflow, `char` arithmetic and implicit conversions; `if`/`else`, `while`, `do`, `for`, for-each, `switch` in both forms and as a value, `break`, `continue`, `return`, `throw`; `var` and `final`; helper methods, overloading and recursion; `String.format` and `System.out.printf` with `%d`, `%s`, `%f`, `%b`, `%c`, `%n`, a width, a precision and the flags `-` `0` `,` `+`; the common methods of `String`, `StringBuilder`, `Math`, `Integer`, `Double`, `Character`, `Boolean` and `Arrays`; `System.out.println` (shown beside the test, never graded).
+**What the practice Java runs** (`src/jtiny.js`): `int`, `long`, `double`, `boolean`, `char`, `String`, `StringBuilder`, the wrappers `Integer`, `Long`, `Double`, `Character` and `Boolean` (with boxing, unboxing and `null`), and arrays of them (including arrays of arrays); `ArrayList`, `LinkedList`, `HashSet` and `HashMap` holding Strings or wrappers, declared as themselves or as `List`, `Set`, `Map` or `Collection`, with `Arrays.asList` and the `Collections` class (`sort`, `reverse`, `max`, `min`, `frequency`, `binarySearch`, `swap`, `addAll`); every operator, with Java's integer division, overflow, `char` arithmetic and implicit conversions; `if`/`else`, `while`, `do`, `for`, for-each, `switch` in both forms and as a value, `break`, `continue`, `return`, `throw`; `var` and `final`; helper methods, overloading and recursion; `String.format` and `System.out.printf` with `%d`, `%s`, `%f`, `%b`, `%c`, `%n`, a width, a precision and the flags `-` `0` `,` `+`; the common methods of `String`, `StringBuilder`, `Math`, `Integer`, `Double`, `Character`, `Boolean` and `Arrays`; `System.out.println` (shown beside the test, never graded); and classes of the student's own, with fields, constructors (overloaded, and handing over with `this(…)`), `this`, `private`, `static` fields and methods, `toString`, and objects kept in arrays, lists and as the values of a map.
 
 It also applies Java's compile-time rules, by Java's own definitions: a type error, a missing `return`, an unreachable line and a variable that "might not have been initialized" are all refused, as `javac` would refuse them.
 
-**What it declines, by name:** a collection inside a collection (`ArrayList<ArrayList<String>>`, `HashMap<String, ArrayList<String>>`), the other collection classes (`TreeMap`, `ArrayDeque`, …), `List.of`, `entrySet`, iterators, `Collections.shuffle`, adding to or removing from a collection inside a for-each over it (the student is told Java would throw `ConcurrentModificationException`), `==` between two wrapper objects (as between two Strings: `.equals()` is offered), `try`/`catch`, other format letters such as `%x` and `%e`, regular expressions (`split` takes plain text only), lambdas and streams, `float`/`byte`/`short`, classes and fields of the student's own, `Math.random`, and `Math.pow` unless the answer is an exact whole number. Do not write a problem whose natural answer needs one of these.
+**What it declines, by name:** a collection inside a collection (`ArrayList<ArrayList<String>>`, `HashMap<String, ArrayList<String>>`), the other collection classes (`TreeMap`, `ArrayDeque`, …), `List.of`, `entrySet`, iterators, `Collections.shuffle`, adding to or removing from a collection inside a for-each over it (the student is told Java would throw `ConcurrentModificationException`), `==` between two wrapper objects (as between two Strings: `.equals()` is offered), `try`/`catch`, other format letters such as `%x` and `%e`, regular expressions (`split` takes plain text only), lambdas and streams, `float`/`byte`/`short`, inheritance, interfaces, enums and records, a class of the student's own named like one of Java's (`Character`, `String`), an object with no `toString()` printed or joined to text (Java shows a code such as `Monster@1b6d3586` that differs from run to run), objects of the student's classes in a `HashSet` or as the keys of a `HashMap`, an `equals(Object)` written for a class, `final` fields set in a constructor, `Math.random`, and `Math.pow` unless the answer is an exact whole number. Do not write a problem whose natural answer needs one of these.
 
 **A `HashSet` and a `HashMap` print and loop in Java's own order.** The table behind them is Java's, bucket for bucket, so a trace question that prints a `HashMap` has one right answer and the practice Java gives it. (The one case it declines is a table so crowded that Java reorganises a bucket into a tree, which takes dozens of keys chosen to collide.)
 
 **`==` between two Strings is declined on purpose.** In Java it compares identity, and whether two equal Strings are the same object depends on how each was made — the classic bug that works in a test and fails in production. The student is told to use `.equals()`.
 
 **It is checked against the real JDK.** `tests/jtiny-differential.test.js` runs several thousand programs on `javac` + the JVM and on jtiny and requires the same result, the same exception, and the same decision about what compiles. Every Java problem in a question set gets the same treatment: its reference solution has to pass its own tests here, and when you add problems, add the kind of code they need to `tests/helpers/java-corpus.js` if it is not already there.
+
+### Java class problems
+
+The Java counterpart of the Python class problems above, with the same two shapes and the same kind of test: a short script, then one expression to look at.
+
+```json
+{
+  "type": "code_write",
+  "language": "java",
+  "question": "Finish takeDamage so that it lowers THIS monster's health by amount. Health must never go below 0.",
+  "scaffold": "public class Monster {\n    private int health;\n\n    Monster(int health) {\n        this.health = health;\n    }\n\n    public int getHealth() {\n        return health;\n    }\n",
+  "signature": "public void takeDamage(int amount)",
+  "tests": [
+    { "run": "Monster m = new Monster(30);\nm.takeDamage(10);", "check": "m.getHealth()", "expect": 20 },
+    { "run": "Monster m = new Monster(30);\nm.takeDamage(99);", "check": "m.getHealth()", "expect": 0 },
+    { "run": "Monster a = new Monster(30);\nMonster b = new Monster(8);\na.takeDamage(5);", "check": "b.getHealth()", "expect": 8 }
+  ],
+  "solution": "health = health - amount;\nif (health < 0) {\n    health = 0;\n}",
+  "feedback": "The method changes the object's own field…"
+}
+```
+
+| Field | Notes |
+|-------|-------|
+| `signature` | Either the first line of ONE METHOD — `public void takeDamage(int amount)`, or a constructor's, `Monster(String name, int health)` — or a CLASS line, `public class Weapon`, to ask for the whole class |
+| `scaffold` | For one method: the class so far, shown read-only above the box. It must END inside that class, with exactly one `{` still open; complete classes may come before it. For a whole class: optional, and holds the complete classes it works with (an `Item` for a `Hero` to buy) |
+| `tests[].run` | Optional Java statements. Each test starts from a fresh program (static fields included), so make the objects here |
+| `tests[].check` | One Java expression, with no semicolon, evaluated after `run`. Its type decides how `expect` is read. It may not be an object of the student's class: check a getter, or `"" + thing` |
+| `tests[].expect` | As for method problems |
+| `{ "private": "Weapon.damage" }` | A test with nothing to run: it passes when that field is declared `private`. This is how a problem about encapsulation checks that the fields were actually hidden |
+
+The test code runs as code OUTSIDE the student's classes, so it cannot read a private field — a test that tries does not compile, exactly as in Java. `run` plus `check` must fit in 160 characters; the whole row is shown.
+
+What the student may type: the body alone; or the method pasted with its first line; or, for a whole class, its members, or the class pasted with its class line. An error in the *test's* own lines (nearly always a constructor or method that is missing, misnamed, or takes different values) is reported on that row without a line number.
+
+Writing good ones — everything said for Python class problems applies, and also:
+
+1. **Say every name the tests use.** A whole-class question has to list the fields, the constructor's parameters and each method's first line. `getHealth` and `gethealth` are different methods.
+2. **Do not call the class `Character`, `String`, `Integer` or any other name Java already has.** The course's own bank has a `Character` class; here it is `Hero`.
+3. **Give the class a `toString()` before a test prints it**, and never have a test print an object that lacks one.
+4. **Have methods return text rather than print it.** What is printed is shown beside the row but not graded.
+5. **For a whole class, add the `private` rows** if the lesson is encapsulation; without them a class with public fields passes.
 
 ### Writing Good Write-the-Code Problems
 

@@ -5,7 +5,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
 import { runProblem, isScriptProblem, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
-import { runJavaProblem, parseJavaSignature, javaFromJson } from '../src/jtiny.js';
+import { runJavaProblem, parseJavaSignature, javaFromJson, isJavaClassProblem, javaScriptTypes } from '../src/jtiny.js';
 
 const ROOT = join(import.meta.dirname, '..');
 const MAX_TYPED_ANSWER_CHARS = 12;
@@ -586,6 +586,54 @@ describe('Question set file validation', () => {
               assert.ok(refs.includes(bi),
                 `${label}: blanks[${bi - 1}] has no {{${bi}}} placeholder in the question`);
             }
+          } else if (type === 'code_write' && q.language === 'java' && isJavaClassProblem(q)) {
+            // A Java class problem: graded by short scripts, because what a method does shows only in
+            // what the object has become. Either one method of a class that is given (scaffold, and
+            // the method's first line) or a whole class (the class line).
+            const sig = String(q.signature ?? '').trim();
+            const wholeClass = /^(?:public\s+)?class\s+[A-Z]\w*$/.test(sig);
+            if (wholeClass) {
+              if (q.scaffold !== undefined) {
+                assert.ok(typeof q.scaffold === 'string' && /\bclass\s+[A-Z]\w*\s*\{/.test(q.scaffold) && q.scaffold.trim().endsWith('}'),
+                  `${label}: for a whole-class problem, scaffold is the complete classes it works with`);
+              }
+            } else {
+              assert.ok(typeof q.scaffold === 'string' && /\bclass\s+[A-Z]\w*\s*\{/.test(q.scaffold),
+                `${label}: a Java class problem needs a signature like "public class Potion", or a scaffold holding the class so far`);
+              // The first line of a method — public String buyItem(Item item) — or of a constructor: Monster(String name, int health).
+              // (Whether it fits the class is settled below, when the reference solution is compiled.)
+              assert.ok(/^(?:(?:public|private)\s+)?(?:[\w<>\[\], ]+\s+)?\w+\s*\([^()]*\)$/.test(sig),
+                `${label}: with a scaffold, signature is the first line of the method or constructor to write`);
+              const opened = (q.scaffold.match(/\{/g) || []).length - (q.scaffold.match(/\}/g) || []).length;
+              assert.equal(opened, 1, `${label}: scaffold has to END inside the class the method belongs to, with exactly one { still open`);
+            }
+            assert.ok(Array.isArray(q.tests) && q.tests.filter(t => typeof t.check === 'string').length >= 3, `${label}: code_write needs at least 3 test cases`);
+            for (const [ti, t] of q.tests.entries()) {
+              assert.ok(!('args' in t), `${label}: test ${ti + 1} mixes "args" with "check"; a problem is one kind or the other`);
+              if ('private' in t) {
+                assert.ok(/^[A-Z]\w*\.[a-z]\w*$/.test(t.private) && Object.keys(t).length === 1,
+                  `${label}: test ${ti + 1}: "private" is all there is to such a test, written Class.field`);
+                continue;
+              }
+              assert.ok(typeof t.check === 'string' && t.check.trim() && !t.check.includes('\n') && !t.check.trim().endsWith(';'),
+                `${label}: test ${ti + 1} needs a one-line "check" expression, with no semicolon`);
+              assert.ok(t.run === undefined || typeof t.run === 'string', `${label}: test ${ti + 1} "run" must be text`);
+              assert.ok('expect' in t, `${label}: test ${ti + 1} needs an expect value`);
+              // The whole row is shown to the student, on a phone as well.
+              assert.ok(`${t.run ?? ''}${t.check}`.length <= 160, `${label}: test ${ti + 1} is too long to read in the results table`);
+            }
+            assert.ok(typeof q.solution === 'string' && q.solution.trim().length > 0, `${label}: code_write needs a reference solution`);
+            // The reference solution has to compile, and each expect has to be a value of its check's type.
+            let types;
+            assert.doesNotThrow(() => { types = javaScriptTypes(q); }, `${label}: the reference solution, or one of the tests, does not compile`);
+            q.tests.forEach((t, ti) => {
+              if (types[ti]) assert.doesNotThrow(() => javaFromJson(t.expect, types[ti]), `${label}: test ${ti + 1} expects something that is not ${types[ti]}`);
+            });
+            if ('hint' in q) {
+              assert.ok(typeof q.hint === 'string' && q.hint.trim().length > 0 && q.hint.length <= 240 && !q.hint.includes('\n'),
+                `${label}: hint must be one line of at most 240 characters`);
+            }
+            if ('starter' in q) assert.ok(typeof q.starter === 'string', `${label}: starter must be a string when present`);
           } else if (type === 'code_write' && q.language === 'java') {
             // A Java method: the signature is its first line, and every value in the
             // test table has to be a legal value of the type that line declares.
@@ -1196,7 +1244,10 @@ describe('code_write problems are solvable', () => {
       for (const { q, i } of problems) {
         const java = q.language === 'java';
         const run = (question, body) => (java ? runJavaProblem(question, body) : runProblem(question, body));
-        const name = java ? parseJavaSignature(q.signature).name
+        const javaWholeClass = java && isJavaClassProblem(q) && /\bclass\s+\w+\s*$/.test(String(q.signature).trim());
+        const name = javaWholeClass ? String(q.signature).trim().split(/\s+/).pop()
+          : java && isJavaClassProblem(q) ? String(q.signature).trim().replace(/\s*\(.*$/, '').split(/\s+/).pop()
+          : java ? parseJavaSignature(q.signature).name
           : isScriptProblem(q)
             ? String(q.signature).trim().replace(/^(def|class)\s+/, '').replace(/[(:].*$/, '')
             : parseSignature(q.signature).name;
@@ -1221,7 +1272,11 @@ describe('code_write problems are solvable', () => {
           // laziest possible answer, so at least one case must reject each of the
           // constants a student could stumble into.
           // (In Java most of these do not even compile for a given return type, which rules them out as well.)
-          const lazyBodies = java
+          const lazyBodies = javaWholeClass
+            ? ['int nothing;', 'public String toString() {\n    return "";\n}']
+            : java && isJavaClassProblem(q)
+              ? ['return;', 'int nothing = 0;', 'return 0;', 'return true;', 'return false;', 'return "";', 'return null;']
+            : java
             ? ['return 0;', 'return 1;', 'return true;', 'return false;', 'return "";', 'return null;', 'return 0.0;', "return 'a';",
               'return new int[0];', 'return new String[0];']
             : isScriptProblem(q)

@@ -13,7 +13,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runProblemOnJtiny, findJdk, runOnJdk, runOnJtiny, caseForProblem } from './helpers/jdk.js';
-import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, collectionCases, collectionTypeCases, interestingDoubles } from './helpers/java-corpus.js';
+import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, collectionCases, collectionTypeCases, objectCases, interestingDoubles } from './helpers/java-corpus.js';
 import { javaDouble } from '../src/jtiny.js';
 
 const jdk = findJdk();
@@ -31,16 +31,17 @@ const BOX_CASES = 600;      // the same, with Integer, Double and the other wrap
 const FORMAT_CASES = 400;   // String.format and printf with formats made at random
 const COLLECTION_CASES = 30;   // × 25 runs of adds, removes and lookups: the order a HashMap and a HashSet print in
 const COLLECTION_TYPE_CASES = 600;   // collection methods called on, and handed, anything at all
+const OBJECT_CASES = 600;     // two small classes, used with no regard for what is private, static or null
 const ROUNDING_CASES = 6;   // × 150 doubles × 9 ways of writing each: where %.2f rounds
 
 // Everything goes to the JDK in one process: starting a JVM costs more than all the cases together.
 const agree = Object.entries({ ...AGREES, ...PROBLEMS });
-const reject = Object.entries(REJECTS).map(([name, methods]) => [name, { methods, calls: [] }]);
+const reject = Object.entries(REJECTS).map(([name, source]) => [name, typeof source === 'string' ? { methods: source, calls: [] } : { methods: '', calls: [], ...source }]);
 const refuse = Object.entries(REFUSES);
 const fuzz = fuzzCases(FUZZ_SEED, FUZZ_CASES);
 const generated = [...flowCases(FUZZ_SEED, FLOW_CASES), ...typeCases(FUZZ_SEED, TYPE_CASES), ...boxCases(FUZZ_SEED, BOX_CASES),
   ...formatCases(FUZZ_SEED, FORMAT_CASES), ...roundingCases(FUZZ_SEED, ROUNDING_CASES),
-  ...collectionTypeCases(FUZZ_SEED, COLLECTION_TYPE_CASES), ...collectionCases(FUZZ_SEED, COLLECTION_CASES)];
+  ...collectionTypeCases(FUZZ_SEED, COLLECTION_TYPE_CASES), ...collectionCases(FUZZ_SEED, COLLECTION_CASES), ...objectCases(FUZZ_SEED, OBJECT_CASES)];
 const doubles = interestingDoubles(FUZZ_SEED, 1500);
 // A Java method may hold only so much code, so the bit patterns go in several.
 const DOUBLES_PER_METHOD = 800;
@@ -63,8 +64,31 @@ const SAMPLE_PROBLEM = {
   ],
   solution: 'double[] out = new double[values.length];\nfor (int i = 0; i < values.length; i++) {\n    out[i] = values[i] * by;\n}\nreturn out;',
 };
+// And a class problem: private fields, a constructor, a setter that guards, a second class it is handed, and toString.
+const SAMPLE_CLASS_PROBLEM = {
+  signature: 'public class Hero',
+  scaffold: 'class Item {\n    private String name;\n    private int price;\n\n    Item(String name, int price) {\n        this.name = name;\n        this.price = price;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public int getPrice() {\n        return price;\n    }\n}',
+  tests: [
+    { run: 'Hero h = new Hero("Aria", 50);\nItem potion = new Item("Potion", 20);', check: 'h.buy(potion)', expect: true },
+    { run: 'Hero h = new Hero("Aria", 50);\nh.buy(new Item("Potion", 20));\nh.buy(new Item("Sword", 80));', check: 'h.getGold()', expect: 30 },
+    { run: 'Hero h = new Hero("Aria", -5);\nSystem.out.println(h);', check: '"" + h + h.getGold() / 2.0', expect: 'Aria (0 gold)0.0' },
+    { run: 'Hero a = new Hero("A", 9);\nHero b = new Hero("B", 1);\na.buy(new Item("x", 4));', check: 'b.toString()', expect: 'B (1 gold)' },
+    { private: 'Hero.gold' },
+  ],
+  solution: 'private String name;\nprivate int gold;\n\nHero(String name, int gold) {\n    this.name = name;\n    this.gold = gold < 0 ? 0 : gold;\n}\n\npublic int getGold() {\n    return gold;\n}\n\npublic boolean buy(Item item) {\n    if (item.getPrice() > gold) {\n        return false;\n    }\n    gold -= item.getPrice();\n    return true;\n}\n\n@Override\npublic String toString() {\n    return name + " (" + gold + " gold)";\n}',
+};
+const SAMPLE_METHOD_IN_CLASS = {
+  signature: 'public void takeDamage(int amount)',
+  scaffold: 'public class Monster {\n    private int health;\n\n    Monster(int health) {\n        this.health = health;\n    }\n\n    public int getHealth() {\n        return health;\n    }\n',
+  tests: [
+    { run: 'Monster m = new Monster(30);\nm.takeDamage(10);', check: 'm.getHealth()', expect: 20 },
+    { run: 'Monster m = new Monster(30);\nm.takeDamage(99);', check: 'm.getHealth()', expect: 0 },
+    { run: 'Monster a = new Monster(30);\nMonster b = new Monster(8);\na.takeDamage(5);', check: 'b.getHealth()', expect: 8 },
+  ],
+  solution: 'health = health - amount;\nif (health < 0) {\n    health = 0;\n}',
+};
 const root = new URL('../', import.meta.url);
-const setProblems = [['(a sample, kept here)', 0, SAMPLE_PROBLEM]];
+const setProblems = [['(a sample, kept here)', 0, SAMPLE_PROBLEM], ['(a sample class, kept here)', 0, SAMPLE_CLASS_PROBLEM], ['(a sample method of a class, kept here)', 0, SAMPLE_METHOD_IN_CLASS]];
 for (const setId of JSON.parse(readFileSync(new URL('question_sets/index.json', root), 'utf8'))) {
   JSON.parse(readFileSync(new URL(`question_sets/${setId}`, root), 'utf8')).forEach((q, i) => {
     if (q.type === 'code_write' && q.language === 'java') setProblems.push([setId, i, q]);
@@ -168,7 +192,8 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
   const BATCH = 100;
   for (let from = 0; from < generated.length; from += BATCH) {
     const kind = from < FLOW_CASES ? 'method bodies' : from < FLOW_CASES + TYPE_CASES + BOX_CASES ? 'type puzzles'
-      : from < FLOW_CASES + TYPE_CASES + BOX_CASES + FORMAT_CASES + ROUNDING_CASES ? 'formats' : 'collections';
+      : from < FLOW_CASES + TYPE_CASES + BOX_CASES + FORMAT_CASES + ROUNDING_CASES ? 'formats'
+        : from < generated.length - OBJECT_CASES ? 'collections' : 'objects';
     it(`seed ${FUZZ_SEED}, ${kind} ${from + 1}–${Math.min(from + BATCH, generated.length)}`, () => {
       const disagreements = [];
       let bothRan = 0;
@@ -191,7 +216,7 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
       }
       assert.deepEqual(disagreements.slice(0, 3), [], `\n${disagreements.slice(0, 3).join('\n\n')}\n`);
       // Most collection puzzles are type errors, so fewer of them run.
-      assert.ok(bothRan >= Math.min(kind === 'collections' ? 3 : 10, generated.length - from), `only ${bothRan} of this batch compiled on both sides; the generator has drifted`);
+      assert.ok(bothRan >= Math.min(kind === 'objects' ? 1 : kind === 'collections' ? 3 : 10, generated.length - from), `only ${bothRan} of this batch compiled on both sides; the generator has drifted`);
     });
   }
 });

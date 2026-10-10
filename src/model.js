@@ -22,7 +22,8 @@ import {
     describeCall, fromJson, pyRepr, parseSignature,
 } from "./pytiny.js";
 import {
-    runJavaProblem, javaProblemHeader, parseJavaSignature, javaFromJson, javaRepr, describeJavaCall,
+    runJavaProblem, javaProblemHeader, javaProblemFooter, isJavaClassProblem, describeJavaScript,
+    parseJavaSignature, javaFromJson, javaRepr, describeJavaCall,
 } from "./jtiny.js";
 
 /**
@@ -42,6 +43,22 @@ export function codeWriteHeader(question) {
     return isJavaProblem(question) ? javaProblemHeader(question) : problemHeader(question);
 }
 
+/** What is shown below the editor: for Java, the brace or braces that close what the student wrote. */
+export function codeWriteFooter(question) {
+    return isJavaProblem(question) ? javaProblemFooter(question) : "";
+}
+
+/** What the student is writing: a "function", a "method" (of a class that is given, or a Java method), or a whole "class". */
+export function codeWriteKind(question) {
+    const wholeClass = /^\s*(?:(?:public|final)\s+)*class\s/.test(question?.signature || "");
+    if (isJavaProblem(question)) {
+        // Monster(String name, int health): a capital, and no return type in front of it
+        const constructor = /^\s*(?:public\s+)?[A-Z]\w*\s*\(/.test(question?.signature || "");
+        return wholeClass ? "class" : constructor ? "constructor" : "method";
+    }
+    return question?.scaffold ? "method" : wholeClass ? "class" : "function";
+}
+
 /**
  * How many attack dice a write-the-code question is worth in total, split
  * between the player and the monster by the share of tests that passed.
@@ -54,9 +71,13 @@ export function codeWriteSolutionText(question) {
     const lines = body.split("\n").filter(l => l.trim().length > 0);
     if (isJavaProblem(question)) {
         const open = javaProblemHeader(question);
-        if (lines.length === 0) return `${open}\n}`;
+        const close = javaProblemFooter(question);
+        if (lines.length === 0) return `${open}\n${close}`;
         const least = Math.min(...lines.map(l => l.length - l.trimStart().length));
-        return `${open}\n${lines.map(l => "    " + l.slice(least)).join("\n")}\n}`;
+        // One method of a class that is given sits two levels in. The blank lines between a class's members are kept.
+        const pad = close === "}" ? "    " : "        ";
+        const kept = isJavaClassProblem(question) ? body.split("\n") : lines;
+        return `${open}\n${kept.map(l => (l.trim().length === 0 ? "" : pad + l.slice(least))).join("\n")}\n${close}`;
     }
     // A method problem shows the class it belongs to, so the body sits one level deeper.
     const header = problemHeader(question);
@@ -77,6 +98,11 @@ export function codeWriteSolutionText(question) {
 export function codeWriteExamples(question, limit = 3) {
     if (Array.isArray(question?.examples) && question.examples.length > 0) {
         return question.examples.slice(0, limit);
+    }
+    if (isJavaProblem(question) && isJavaClassProblem(question)) {
+        // A class problem's example is the steps taken and what they should leave behind.
+        return (question.tests || []).filter(testCase => typeof testCase.check === "string").slice(0, limit).map(testCase =>
+            `${describeJavaScript(testCase)} → ${typeof testCase.expect === "string" ? JSON.stringify(testCase.expect) : String(testCase.expect)}`);
     }
     if (isJavaProblem(question)) {
         const { name, ret, params } = parseJavaSignature(question.signature);

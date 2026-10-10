@@ -181,6 +181,36 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
       report.worked = doc().querySelector('.reference-solution pre').innerText;
       return report;
     },
+    // A CLASS problem in Java, taken from the set that has them: one method of a class that is
+    // given (which: 'method'), or a whole class whose fields have to be private (which: 'class').
+    async javaClassProblem({ set, which }) {
+      const gc = win().gameController;
+      await gc._launchSet(set, 'new');
+      await until(() => gc.model, 'the set to load');
+      const scripted = q => q.type === 'code_write' && q.tests.some(t => t.check);
+      const wholeClass = q => q.signature.includes('class ');
+      const question = gc.model.questions.find(q => scripted(q) && (which === 'class' ? wholeClass(q) && q.tests.some(t => t.private) : q.scaffold && !wholeClass(q)));
+      gc.model.questions_to_ask = [question];
+      gc.model.current_question = null;
+      gc.continueAdventure();
+      await until(() => doc().querySelector('[data-ref=bodyInput]'), 'the editor');
+      const box = doc().querySelector('[data-ref=bodyInput]');
+      const run = async body => { box.value = body; box.dispatchEvent(new (win().Event)('input')); doc().querySelector('[data-action=run]').click(); await sleep(200); return doc().querySelector('[data-ref=runResults]').innerText; };
+      const report = {
+        tests: question.tests.length,
+        label: doc().querySelector('[data-ref=taskLabel]').textContent,
+        shown: doc().querySelector('[data-ref=signature]').innerText,
+        closing: doc().querySelector('[data-ref=signatureClose]').innerText,
+        examples: doc().querySelector('[data-ref=examples]').innerText,
+        // The same answer with the word private taken out: it still works, and is still not what was asked for.
+        notPrivate: await run(question.solution.split('private ').join('')),
+        correct: await run(question.solution),
+      };
+      doc().querySelector('[data-action=submit]').click();
+      await until(() => doc().querySelector('.reference-solution'), 'the results screen');
+      report.worked = doc().querySelector('.reference-solution pre').innerText;
+      return report;
+    },
     // A write-the-query problem: the tables are shown, Run sends the query to SQLite
     // in a background worker, and the result comes back as rows on the screen. This
     // scenario needs REAL time (see visit): a worker gets no turns on a virtual clock.

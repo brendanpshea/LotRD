@@ -8,7 +8,10 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { compileJava, evaluateJava, callJava, assembleJava, javaFromJson, javaText, javaRepr, javaDouble, parseJavaSignature, JavaError } from '../../src/jtiny.js';
+import {
+  compileJava, evaluateJava, callJava, assembleJava, javaFromJson, javaText, javaRepr, javaDouble, parseJavaSignature, JavaError,
+  isJavaClassProblem, assembleJavaClass, javaScriptTypes, runJavaProblem,
+} from '../../src/jtiny.js';
 
 const MINIMUM_JAVA = 25;   // the Java sets teach Java 25, and a few cases here need it
 
@@ -105,6 +108,17 @@ export function javaLiteral(value, type) {
 
 /** A Java write-the-code question as a comparison case: its reference solution, called with every row of its table. */
 export function caseForProblem(question) {
+  if (isJavaClassProblem(question)) {
+    // A class problem: the solution's classes, and each test's script as a method that returns what it checks.
+    const { source } = assembleJavaClass({ scaffold: question.scaffold, signature: question.signature, body: question.solution });
+    const types = javaScriptTypes(question);
+    const scripts = question.tests.map((t, i) => [t, i]).filter(([t]) => typeof t.check === 'string');
+    return {
+      classes: source,
+      methods: scripts.map(([t, i]) => `${types[i].replace(/,/g, ', ')} $t${i}() {\n${t.run ?? ''}\nreturn ${t.check};\n}`).join('\n'),
+      calls: scripts.map(([, i]) => `$t${i}()`),
+    };
+  }
   const sig = parseJavaSignature(question.signature);
   return {
     methods: `${sig.header} {\n${question.solution}\n}`,
@@ -117,6 +131,20 @@ export function caseForProblem(question) {
  * the question file, not written as Java. (A map argument has no Java expression that jtiny runs.)
  */
 export function runProblemOnJtiny(question) {
+  if (isJavaClassProblem(question)) {
+    // What the game's own runner makes of the reference solution: each row's value if it is the expected one.
+    const outcome = runJavaProblem(question, question.solution);
+    if (!outcome.ok) return { compiled: false, compileError: outcome.error.message, unsupported: false, out: '' };
+    const types = javaScriptTypes(question);
+    let out = '';
+    question.tests.forEach((t, i) => {
+      if (typeof t.check !== 'string') return;
+      const row = outcome.results[i];
+      out += row.output.map(line => `${line}\n`).join('');
+      out += row.error ? `!${row.error.message.split(':')[0]}\n` : row.passed ? `${show(javaFromJson(t.expect, types[i]), types[i])}\n` : `not the expected value: ${row.actualRepr}\n`;
+    });
+    return { compiled: true, compileError: null, out, refused: null };
+  }
   const sig = parseJavaSignature(question.signature);
   let method;
   try {
@@ -142,11 +170,14 @@ export function runProblemOnJtiny(question) {
 }
 
 /** One test case as a Java class: its methods, and each call printed or its exception named. */
-export function javaClassFor({ methods, calls }, className) {
+export function javaClassFor({ methods, calls, classes = '' }, className) {
   const body = calls.map(call =>
     `    try { System.out.println($show(${call})); } catch (Throwable t) { System.out.println("!" + t.getClass().getSimpleName()); }`).join('\n');
-  return `import java.util.*;\npublic class ${className} {\n${methods}\n${SHOW}\n  void $run() {\n${body}\n  }\n` +
-    `  public static void main(String[] args) { new ${className}().$run(); }\n}\n`;
+  // `classes` are the case's own classes. They go beside the test class, not inside it: a class written
+  // inside another may read its private fields, which is exactly what these cases are testing.
+  const beside = classes.replace(/\bpublic\s+(?=class\b)/g, '');
+  return `package ${className.toLowerCase()};\nimport java.util.*;\npublic class ${className} {\n${methods}\n${SHOW}\n  void $run() {\n${body}\n  }\n` +
+    `  public static void main(String[] args) { new ${className}().$run(); }\n}\n${beside}\n`;
 }
 
 // Compiles and runs every case in ONE JVM, and compiles them together — some
@@ -229,7 +260,7 @@ public class Driver {
     for (int i = 0; i < n; i++) {
       lines[i] = failed.containsKey(i)
           ? "C\\t" + B64.encodeToString(failed.get(i).getBytes(StandardCharsets.UTF_8)) + "\\t"
-          : run(classes, "P" + i, real);
+          : run(classes, "p" + i + ".P" + i, real);
     }
     real.print(String.join("\\n", lines));
     real.flush();
@@ -267,10 +298,10 @@ export function runOnJdk(jdk, cases) {
  * call it refused to finish — a limit, or something it does not run — is
  * written "?refused", which never matches anything Java prints.
  */
-export function runOnJtiny({ methods, calls }, limits = {}) {
+export function runOnJtiny({ methods, calls, classes = '' }, limits = {}) {
   let program;
   try {
-    program = compileJava(methods);
+    program = compileJava(classes ? `${classes}\n${methods}` : methods);
   } catch (err) {
     if (!(err instanceof JavaError)) throw err;
     return { compiled: false, compileError: err.message, unsupported: err.unsupported, out: '' };

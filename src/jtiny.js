@@ -26,13 +26,18 @@
  * Collection, with the Collections class; every operator; if / else, while,
  * do, for, for-each, switch (both forms, and as an expression), break,
  * continue, return, throw; helper methods, overloading and recursion; printf
- * and String.format with %d %s %f %b %c %n; and the library methods listed in
- * the tables below.
+ * and String.format with %d %s %f %b %c %n; the library methods listed in
+ * the tables below; and classes of the student's own: fields, constructors
+ * (and this(…)), this, private, static fields and methods, toString, and
+ * objects held in arrays, lists and as the values of a map.
  *
  * What it refuses, by name: byte / short / float, a collection inside a
  * collection, the other collection classes, changing a collection inside a
  * for-each over it (Java throws, or skips an element), random shuffling,
- * classes and fields, try / catch, lambdas, labels, regular expressions — and
+ * inheritance, interfaces, enums and records, an object printed with no
+ * toString() of its own (Java shows a code that differs from run to run),
+ * objects as the elements of a set or the keys of a map, final fields set in
+ * a constructor, try / catch, lambdas, labels, regular expressions — and
  * == between two Strings or two wrapper objects, which Java answers by object
  * identity; .equals() is what a student means.
  *
@@ -403,87 +408,145 @@ class Parser {
             while (!this.isOp(';') && this.tok.t !== 'eof') this.next();
             this.expectOp(';', 'at the end of the import line');
         }
-        let start = this.p;
-        while (this.tok.t === 'kw' && MODIFIERS.has(this.tok.v)) this.next();
-        let methods;
-        if (this.isKw('class')) {
-            this.next();
-            const name = this.expectIdent('the name of the class');
-            if (this.isKw('extends') || this.isKw('implements')) {
-                throw notYet(`${BOX} does not run classes that extend or implement anything.`, name.line);
+        const classes = [];
+        const loose = { methods: [], fields: [], ctors: [] };   // members written with no class around them
+        while (this.tok.t !== 'eof') {
+            const start = this.p;
+            const mods = new Set();
+            while (this.tok.t === 'kw' && MODIFIERS.has(this.tok.v)) mods.add(this.next().v);
+            if (this.isKw('class')) {
+                this.next();
+                const name = this.expectIdent('the name of the class');
+                if (this.isOp('<')) throw notYet(`${BOX} does not run a class that takes a type in angle brackets of its own.`, name.line);
+                if (this.isKw('extends') || this.isKw('implements')) {
+                    throw notYet(`${BOX} does not run classes that extend or implement anything.`, name.line);
+                }
+                this.expectOp('{', 'after the class name');
+                const members = this.parseMembers(name.v);
+                this.expectOp('}', 'to close the class');
+                classes.push({ name: name.v, line: name.line, mods, ...members });
+                continue;
             }
-            this.expectOp('{', 'after the class name');
-            methods = this.parseMembers(true);
-            this.expectOp('}', 'to close the class');
-            if (this.tok.t !== 'eof') this.fail(`There is code after the end of class ${name.v}.`, 'Check that every { has exactly one matching }.');
-        } else {
+            if (this.isKw('interface') || this.isKw('enum') || (this.isId() && this.tok.v === 'record' && this.peek().t === 'id')) {
+                throw notYet(`${BOX} does not run ${this.tok.v === 'enum' ? 'enums' : this.tok.v === 'record' ? 'records' : 'interfaces'}.`, this.tok.line);
+            }
             this.p = start;
-            methods = this.parseMembers(false);
-            if (this.tok.t !== 'eof') {
+            const found = this.parseMembers(null);
+            loose.methods.push(...found.methods);
+            loose.fields.push(...found.fields);
+            if (this.p === start) {
                 if (this.isOp('}')) this.fail('There is one more } than there are {.', 'Every { needs exactly one matching }.');
+                if (classes.length) this.fail(`There is code after the end of class ${classes[classes.length - 1].name}.`, 'Check that every { has exactly one matching }.');
                 this.fail('This line is outside the method.', 'Check that every { has a matching } — a } too early ends the method before this line.');
             }
         }
-        return { methods };
+        return { classes, loose };
     }
 
-    parseMembers(inClass) {
-        const methods = [];
+    parseParams() {
+        this.next();   // (
+        const params = [];
+        while (!this.isOp(')')) {
+            if (params.length) this.expectOp(',', 'between parameters');
+            const isFinal = this.eatKw('final');
+            const type = this.parseType();
+            if (this.isOp('...')) throw notYet(`${BOX} does not have varargs (...).`, this.tok.line, 'Take an array instead: int[] nums');
+            const pname = this.expectIdent('a parameter name');
+            if (this.isOp('[')) throw notYet(`${BOX} wants the [] on the type: int[] ${pname.v}`, pname.line);
+            params.push({ type, name: pname.v, isFinal, line: pname.line });
+        }
+        this.next();   // )
+        if (this.isKw('throws')) {
+            throw notYet(`${BOX} does not use throws clauses.`, this.tok.line, 'Remove "throws …" from the method line.');
+        }
+        return params;
+    }
+
+    /** The fields, constructors and methods of a class. `className` is null for members written with no class around them. */
+    parseMembers(className) {
+        const members = { methods: [], fields: [], ctors: [] };
         for (;;) {
             if (this.tok.t === 'eof' || this.isOp('}')) break;
             if (this.eatOp(';')) continue;
             const first = this.tok;
+            const start = this.p;
+            let override = false;
+            while (this.isOp('@')) {
+                this.next();
+                const word = this.expectIdent('the name of an annotation after @');
+                if (word.v !== 'Override') throw notYet(`${BOX} does not read the annotation @${word.v}.`, first.line, 'Remove that line.');
+                override = true;
+            }
             const mods = new Set();
-            if (this.isOp('@')) throw notYet(`${BOX} does not read annotations such as @Override.`, first.line, 'Remove that line.');
             while (this.tok.t === 'kw' && MODIFIERS.has(this.tok.v)) mods.add(this.next().v);
             if (this.isKw('class') || this.isKw('interface') || this.isKw('enum') || (this.isId() && this.tok.v === 'record' && this.peek().t === 'id')) {
-                throw notYet(`${BOX} runs methods, not ${inClass ? 'nested ' : ''}classes.`, first.line, 'Write the method the problem asks for.');
+                if (!className) { this.p = start; break; }   // the next class in the file
+                throw notYet(`${BOX} does not run a class inside another class.`, first.line, `Close ${className} with its } first, and write the next class after it.`);
             }
-            const looksLikeMethod = (this.isKw('void') || this.isId() || (this.tok.t === 'kw' && PRIMITIVE_WORDS.has(this.tok.v)));
-            if (!looksLikeMethod) {
-                if (!inClass) break;
-                this.fail(`Java expected a method here, but found ${describeToken(this.tok)}.`);
+            const looksLikeMember = (this.isKw('void') || this.isId() || (this.tok.t === 'kw' && PRIMITIVE_WORDS.has(this.tok.v)));
+            if (!looksLikeMember) {
+                if (!className) { this.p = start; break; }
+                this.fail(`Java expected a field, a constructor or a method here, but found ${describeToken(this.tok)}.`,
+                    this.tok.t === 'kw' ? 'Statements such as if, for and return belong inside a method.' : null);
             }
+            // A constructor: the name of the class, and then (
             if (this.isId() && this.isOp('(', this.peek())) {
-                throw notYet(`${BOX} does not run constructors.`, first.line, 'A method needs a return type before its name: public int total(...)');
-            }
-            const save = this.p;
-            const ret = this.parseType({ allowVoid: true });
-            if (!this.isId() || !this.isOp('(', this.peek())) {
-                if (this.isId() && (this.isOp('=', this.peek()) || this.isOp(';', this.peek()) || this.isOp(',', this.peek()))) {
-                    throw notYet(`${BOX} does not have fields — variables declared outside a method.`, first.line,
-                        'Declare the variable inside the method that uses it.');
+                const name = this.next();
+                if (name.v !== className) {
+                    throw compileError(`${name.v}() has no return type in front of its name.`, name.line,
+                        className ? `A method needs one: public int ${name.v}(…). A constructor has none, but then its name has to be the name of the class, ${className}.`
+                            : `A method needs one: public int ${name.v}(…)`);
                 }
-                if (!inClass && mods.size === 0) { this.p = save; break; }
-                this.fail(`Java expected a method name and ( here, but found ${describeToken(this.tok)}.`);
+                if (override) throw compileError('@Override cannot go on a constructor.', name.line);
+                for (const word of ['static', 'final', 'abstract']) {
+                    if (mods.has(word)) throw compileError(`A constructor cannot be ${word}.`, name.line);
+                }
+                const params = this.parseParams();
+                if (!this.isOp('{')) this.fail(`Java expected { to open the body of the ${name.v} constructor, but found ${describeToken(this.tok)}.`);
+                const body = this.parseBlock();
+                members.ctors.push({
+                    name: name.v, params, body, line: name.line, endLine: this.tokens[this.p - 1].line, mods,
+                    isCtor: true, isStatic: false, ret: { base: 'void', dims: 0, line: name.line },
+                });
+                continue;
             }
-            const name = this.next();
-            this.next();   // (
-            const params = [];
-            while (!this.isOp(')')) {
-                if (params.length) this.expectOp(',', 'between parameters');
-                const isFinal = this.eatKw('final');
-                const type = this.parseType();
-                if (this.isOp('...')) throw notYet(`${BOX} does not have varargs (...).`, this.tok.line, 'Take an array instead: int[] nums');
-                const pname = this.expectIdent('a parameter name');
-                if (this.isOp('[')) throw notYet(`${BOX} wants the [] on the type: int[] ${pname.v}`, pname.line);
-                params.push({ type, name: pname.v, isFinal, line: pname.line });
+            const type = this.parseType({ allowVoid: true });
+            if (this.isId() && this.isOp('(', this.peek())) {
+                const name = this.next();
+                const params = this.parseParams();
+                if (!this.isOp('{')) {
+                    if (this.isOp(';')) this.fail(`The method ${name.v} has no body.`, 'After the ) comes { … } with the code inside.');
+                    this.fail(`Java expected { to open the body of ${name.v}, but found ${describeToken(this.tok)}.`);
+                }
+                const body = this.parseBlock();
+                members.methods.push({
+                    name: name.v, ret: type, params, body, line: name.line, endLine: this.tokens[this.p - 1].line,
+                    isStatic: mods.has('static'), mods, override,
+                });
+                continue;
             }
-            this.next();   // )
-            if (this.isKw('throws')) {
-                throw notYet(`${BOX} does not use throws clauses.`, this.tok.line, 'Remove "throws …" from the method line.');
+            // A field: a type, a name, and perhaps a starting value
+            if (this.isId() && (this.isOp('=', this.peek()) || this.isOp(';', this.peek()) || this.isOp(',', this.peek()))) {
+                if (override) throw compileError('@Override goes on a method, and this is a field.', first.line);
+                if (type.base === 'void') this.fail('A field cannot be void: void means “no value”, and is only for methods.');
+                do {
+                    const name = this.expectIdent('a field name');
+                    if (this.isOp('[')) throw notYet(`${BOX} wants the [] on the type: ${type.base}[] ${name.v}`, name.line);
+                    let init = null;
+                    if (this.eatOp('=')) init = this.isOp('{') ? this.parseArrayInit() : this.parseExpr();
+                    members.fields.push({ typeNode: type, name: name.v, init, mods, line: name.line });
+                } while (this.eatOp(','));
+                this.expectOp(';', 'at the end of this field');
+                continue;
             }
-            if (!this.isOp('{')) {
-                if (this.isOp(';')) this.fail(`The method ${name.v} has no body.`, 'After the ) comes { … } with the code inside.');
-                this.fail(`Java expected { to open the body of ${name.v}, but found ${describeToken(this.tok)}.`);
+            if (!className && mods.size === 0 && !override) { this.p = start; break; }
+            if (this.isId()) {
+                const name = this.next();
+                this.fail(`After ${name.v}, Java expected ; to end a field, or ( to begin a method, but found ${describeToken(this.tok)}.`);
             }
-            const body = this.parseBlock();
-            methods.push({
-                name: name.v, ret, params, body, line: name.line, endLine: this.tokens[this.p - 1].line,
-                isStatic: mods.has('static'), mods,
-            });
+            this.fail(`Java expected a name here, for a field or a method, but found ${describeToken(this.tok)}.`);
         }
-        return methods;
+        return members;
     }
 
     // ── statements
@@ -626,7 +689,7 @@ class Parser {
     }
 
     checkStatementExpression(e) {
-        if (e.k === 'assign' || e.k === 'incdec' || e.k === 'call' || e.k === 'new') return;
+        if (e.k === 'assign' || e.k === 'incdec' || e.k === 'call' || e.k === 'new' || e.k === 'thiscall') return;
         const hint = e.k === 'binary' && e.op === '=='
             ? '== compares two values. To store a value, use a single ='
             : 'A statement has to DO something: store a value, call a method, or return.';
@@ -768,12 +831,7 @@ class Parser {
             const op = this.next();
             let target = left;
             while (target.k === 'paren') target = target.e;
-            if (target.k !== 'name' && target.k !== 'index') {
-                if (target.k === 'field') {
-                    throw compileError(target.name === 'length'
-                        ? 'The length of an array cannot be changed.'
-                        : 'Only a variable or an array element can be given a value here.', op.line);
-                }
+            if (target.k !== 'name' && target.k !== 'index' && target.k !== 'field') {
                 throw compileError('The left side of = has to be a variable (or an array element).', op.line,
                     op.v === '=' ? 'To compare two values use ==' : null);
             }
@@ -877,7 +935,7 @@ class Parser {
     incTarget(target, opToken) {
         let inner = target;
         while (inner.k === 'paren') inner = inner.e;
-        if (inner.k !== 'name' && inner.k !== 'index') {
+        if (inner.k !== 'name' && inner.k !== 'index' && inner.k !== 'field') {
             throw compileError(`${opToken.v} needs a variable to change, and this is not one.`, opToken.line);
         }
         return inner;
@@ -957,7 +1015,8 @@ class Parser {
                 if (t.v === 'null') return { k: 'lit', type: 'null', value: null, line };
                 if (t.v === 'new') return this.parseNew(line);
                 if (t.v === 'switch') return this.parseSwitch(line, true);
-                if (t.v === 'this' || t.v === 'super') throw notYet(`${BOX} does not have "${t.v}" — there are no objects of your own here yet.`, line);
+                if (t.v === 'this') return this.isOp('(') ? { k: 'thiscall', args: this.parseArgs(), line } : { k: 'this', line };
+                if (t.v === 'super') throw notYet(`${BOX} does not have "super": it belongs to classes that extend other classes, which are not run here.`, line);
                 if (PRIMITIVE_WORDS.has(t.v)) {
                     throw compileError(`A declaration such as "${t.v} x" cannot go in the middle of an expression.`, line,
                         'Declare the variable on its own line first.');
@@ -1066,7 +1125,11 @@ const typeArgs = t => t.slice(t.indexOf('<') + 1, -1).split(',');
 const isMapType = t => isCollection(t) && GENERIC_ARITY[baseOf(t)] === 2;
 const isListType = t => isCollection(t) && SUPERTYPES[baseOf(t)].concat(baseOf(t)).includes('List');
 
-const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t) || isCollection(t);
+// The classes the student's own program declares, while it is being checked: name → class.
+let CLASSES = new Map();
+const isOwnClass = t => CLASSES.has(t);
+
+const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t) || isCollection(t) || isOwnClass(t);
 
 const promote = (a, b) => (a === 'double' || b === 'double' ? 'double' : a === 'long' || b === 'long' ? 'long' : 'int');
 
@@ -1100,11 +1163,16 @@ function resolveType(node, { allowVoid = false } = {}) {
                 throw compileError(`A collection holds objects, so it cannot hold ${a.base} values directly.`, line, `Use the wrapper type: ${base}<${BOXED.get(a.base)}>`);
             }
             const t = resolveType(a);
-            if (t !== 'String' && !isWrapper(t)) {
-                throw notYet(`${BOX} has collections of Strings and of the wrapper types (Integer, Double, Character, Boolean, Long), and not of ${t}.`, line);
+            if (t !== 'String' && !isWrapper(t) && !isOwnClass(t)) {
+                throw notYet(`${BOX} has collections of Strings, of the wrapper types (Integer, Double, Character, Boolean, Long) and of your own classes, and not of ${t}.`, line);
             }
             return t;
         });
+        if (isOwnClass(args[0]) && (base === 'HashSet' || base === 'Set' || GENERIC_ARITY[base] === 2)) {
+            // Where an object lands in a hash table depends on its hashCode(), which for a plain object differs from run to run.
+            throw notYet(`${BOX} does not use ${args[0]} objects as the elements of a set or the keys of a map.`, line,
+                `A list of them works: ArrayList<${args[0]}>. So does a map that has them as its values: HashMap<String, ${args[0]}>.`);
+        }
         return `${base}<${args.join(',')}>`;
     }
     if (node.targs) throw notYet(`${BOX} does not have ${base}<…>.`, line, 'The collections here are ArrayList, LinkedList, HashSet and HashMap.');
@@ -1113,6 +1181,7 @@ function resolveType(node, { allowVoid = false } = {}) {
     else if (base === 'void' && allowVoid) name = 'void';
     else if (base === 'string') throw compileError('Java spells the type String, with a capital S.', line);
     else if (NOT_YET_TYPES.has(base)) throw notYet(`${BOX} does not have ${NOT_YET_TYPES.get(base)} yet.`, line, TYPE_HINTS[base] ?? null);
+    else if (isOwnClass(base)) name = base;
     else if (base === 'var') throw compileError('var can only be used for a local variable that is given a value straight away.', line);
     else throw notYet(`${BOX} does not know the type "${base}".`, line, 'The types here are int, long, double, boolean, char, String, StringBuilder, the wrappers Integer, Double, Boolean, Character and Long, arrays of them, and the collections ArrayList, LinkedList, HashSet and HashMap.');
     return name + '[]'.repeat(dims);
@@ -1132,6 +1201,10 @@ class JArray {
 }
 class JBuilder {
     constructor(s = '') { this.s = s; }
+}
+/** An object of one of the student's own classes: its class, and the values of its fields. */
+class JObject {
+    constructor(cls) { this.cls = cls; this.f = cls.defaults.slice(); }
 }
 
 const wrap64 = v => BigInt.asIntN(64, v);
@@ -1248,8 +1321,19 @@ function textOf(type) {
             const inner = textOf(unboxedOf(type));
             return v => (v === null ? 'null' : inner(v));
         }
-        default: return null;   // arrays: refused where they would be printed
+        default: return isArray(type) || type === 'void' ? null : objectText;   // arrays are refused where they would be printed
     }
+}
+
+/** An object of the student's own class as text: whatever its toString() returns. */
+function objectText(v) {
+    if (v === null) return 'null';
+    const m = v.cls.toStringMethod;
+    if (!m) throw refusal(`A ${v.cls.name} has no toString() method, so Java would show it as a code such as ${v.cls.name}@1b6d3586.`);
+    const frame = new Array(m.frameSize);
+    frame[m.thisSlot] = v;
+    const shown = invoke(m, frame, null);
+    return shown === null ? 'null' : shown;
 }
 
 // ─── The running machine ─────────────────────────────────────────────────────
@@ -2484,7 +2568,7 @@ const number2 = fnFor => [
 ];
 
 const anyArray = t => !isArray(t);   // one-dimensional only
-const sortable = t => t !== 'boolean' && t !== 'Boolean' && !isArray(t) && t !== 'StringBuilder';
+const sortable = t => t !== 'boolean' && t !== 'Boolean' && !isArray(t) && t !== 'StringBuilder' && !isOwnClass(t);
 
 const STATICS = {
     Math: {
@@ -2628,6 +2712,12 @@ const STATICS = {
     },
 };
 
+/** Would a class of the student's own with this name hide one of Java's? */
+function isTakenClassName(name) {
+    return name === 'String' || name === 'StringBuilder' || name === 'Object' || name === 'System' || isWrapper(name)
+        || Object.hasOwn(STATICS, name) || Object.hasOwn(GENERIC_ARITY, name) || NOT_YET_TYPES.has(name) || NOT_YET_CLASSES.has(name) || THROWABLE.has(name) || /Exception$|Error$/.test(name);
+}
+
 const NOT_YET_CLASSES = new Map([
     ['Scanner', 'Scanner — there is no keyboard input here; the values arrive as the method\'s parameters'],
     ['Random', 'Random — a test needs the same answer every time'],
@@ -2733,23 +2823,225 @@ function passableBoxing(from, to) {
 
 class Checker {
     constructor(program) {
-        this.methods = new Map();
-        for (const m of program.methods) {
+        this.program = program;
+        const classes = program.classes.slice();
+        let host;
+        if (program.loose.methods.length || program.loose.fields.length || !classes.length) {
+            // Methods written with no class around them belong to a class with no name.
+            host = { name: '$Main', line: 1, mods: new Set(), implicit: true, ctors: [], ...program.loose };
+            classes.push(host);
+        } else {
+            host = classes.find(c => c.methods.some(m => m.name === 'main' && m.isStatic)) || classes.find(c => c.mods.has('public')) || classes[0];
+        }
+        program.all = classes;
+        program.host = host;
+        CLASSES = new Map();
+        for (const c of classes) {
+            if (!c.implicit && isTakenClassName(c.name)) {
+                throw notYet(`${BOX} cannot run a class of your own called ${c.name}, because Java already has a ${c.name}.`, c.line, `Pick another name for it, such as Game${c.name}.`);
+            }
+            if (CLASSES.has(c.name)) throw compileError(`There are two classes called ${c.name}.`, c.line);
+            CLASSES.set(c.name, c);
+        }
+        for (const c of classes) this.declareClass(c);
+        for (const c of classes) this.checkClass(c);
+        this.methods = host.methodMap;
+        this.cls = host;
+    }
+
+    /** What a class has: the types of its fields, and the lines of its constructors and methods. */
+    declareClass(c) {
+        c.fieldMap = new Map();
+        c.instanceFields = [];
+        c.staticFields = [];
+        for (const f of c.fields) {
+            f.cls = c;
+            f.type = resolveType(f.typeNode);
+            f.isStatic = f.mods.has('static');
+            f.isPrivate = f.mods.has('private');
+            f.isFinal = f.mods.has('final');
+            if (c.fieldMap.has(f.name)) throw compileError(`${c.implicit ? 'There is' : `${c.name} has`} already a field called ${f.name}.`, f.line);
+            if (f.isFinal && !f.init) {
+                throw notYet(`${BOX} does not run a final field that is given its value later, in a constructor.`, f.line, 'Give it its value on the line that declares it, or remove the word final.');
+            }
+            const list = f.isStatic ? c.staticFields : c.instanceFields;
+            f.index = list.length;
+            f.order = c.fieldMap.size;
+            list.push(f);
+            c.fieldMap.set(f.name, f);
+        }
+        c.defaults = c.instanceFields.map(f => defaultOf(f.type));
+        c.methodMap = new Map();
+        const declare = (m, list, what) => {
+            m.cls = c;
             m.retType = resolveType(m.ret, { allowVoid: true });
-            m.paramTypes = m.params.map(p => resolveType(p.type));
-            const list = this.methods.get(m.name) || [];
+            m.paramTypes = m.params.map(q => resolveType(q.type));
             // Two methods may share a name (overloading) as long as their parameter TYPES differ.
             // Different parameter names, or a different return type, do not count.
             for (const other of list) {
                 if (other.paramTypes.join() === m.paramTypes.join()) {
-                    throw compileError(`There are two methods called ${m.name} that take the same types of values${m.paramTypes.length ? ` (${m.paramTypes.join(', ')})` : ''}.`, m.line,
-                        'Two methods may share a name only if their parameter types differ. A different return type or different parameter names is not enough.');
+                    throw compileError(`There are two ${what} that take the same types of values${m.paramTypes.length ? ` (${m.paramTypes.join(', ')})` : ''}.`, m.line,
+                        `Two ${m.isCtor ? 'constructors' : 'methods'} may share a name only if their parameter types differ. ${m.isCtor ? 'Different' : 'A different return type or different'} parameter names ${m.isCtor ? 'are' : 'is'} not enough.`);
                 }
             }
             list.push(m);
-            this.methods.set(m.name, list);
+        };
+        for (const m of c.methods) {
+            const list = c.methodMap.get(m.name) || [];
+            declare(m, list, `methods called ${m.name}`);
+            c.methodMap.set(m.name, list);
         }
-        for (const m of program.methods) this.checkMethod(m);
+        const ctors = [];
+        for (const k of c.ctors) declare(k, ctors, `${c.name} constructors`);
+        if (!ctors.length) {
+            // A class with no constructor written gets one that takes nothing and does nothing.
+            ctors.push({
+                name: c.name, cls: c, isCtor: true, implicit: true, isStatic: false, params: [], paramTypes: [], retType: 'void', mods: new Set(['public']),
+                line: c.line, endLine: c.line, body: { k: 'block', body: [], line: c.line, endLine: c.line },
+            });
+        }
+        c.ctors = ctors;
+
+        // The methods every Java object already has. toString() may be replaced; it has to be done Java's way.
+        for (const m of c.methods) {
+            const plain = m.paramTypes.length === 0;
+            if (plain && ['getClass', 'notify', 'notifyAll', 'wait', 'clone', 'finalize'].includes(m.name)) {
+                throw notYet(`${BOX} does not let a class write its own ${m.name}(): every Java object already has a method of that name.`, m.line);
+            }
+            if (plain && !c.implicit && (m.name === 'toString' || m.name === 'hashCode')) {
+                const want = m.name === 'toString' ? 'String' : 'int';
+                if (m.isStatic) throw compileError(`${m.name}() cannot be static: it replaces the ${m.name}() that every object already has.`, m.line);
+                if (m.retType !== want) throw compileError(`${m.name}() has to return ${aType(want)}, because it replaces the ${m.name}() that every object already has.`, m.line);
+                if (!m.mods.has('public')) {
+                    throw compileError(`${m.name}() has to be public, because the ${m.name}() it replaces is public.`, m.line, `Write: public ${want} ${m.name}()`);
+                }
+            } else if (m.override) {
+                throw compileError(`@Override says that ${m.name}() replaces a method the class already had, and it had none like this.`, m.line,
+                    m.name.toLowerCase() === 'tostring' ? 'The method is spelled toString, with a capital S, and takes nothing in its ( ).' : 'Remove @Override, or check the spelling of the method and what it takes.');
+            }
+        }
+        c.toStringMethod = c.implicit ? null : (c.methodMap.get('toString') || []).find(m => m.paramTypes.length === 0) || null;
+    }
+
+    checkClass(c) {
+        this.cls = c;
+        this.methods = c.methodMap;
+        // Starting values of fields are worked out from the top down, each as if in a small method of its own.
+        c.init = { name: c.name, isStatic: false, cls: c, frameSize: 1, thisSlot: 0, retType: 'void' };
+        c.clinit = { name: c.name, isStatic: true, cls: c, frameSize: 0, retType: 'void' };
+        for (const f of c.fields) {
+            if (!f.init) continue;
+            this.method = f.isStatic ? c.clinit : c.init;
+            this.scopes = [new Map()];
+            this.ctx = [];
+            this.initOf = f;
+            f.init = f.init.k === 'arrinit' ? this.arrayInit(f.init, f.type) : this.assignable(this.valueFor(f.init, f.type), f.type, f.line, `the field ${f.name}`);
+            this.initOf = null;
+        }
+        for (const k of c.ctors) this.checkMethod(k);
+        for (const m of c.methods) this.checkMethod(m);
+        // A constructor may hand over to another with this(…), but not round in a circle.
+        for (const k of c.ctors) {
+            const seen = new Set([k]);
+            for (let at = k; at.chain;) {
+                at = at.chain.ctor;
+                if (seen.has(at)) throw compileError('This constructor calls itself, directly or through another constructor, so it could never finish.', k.chain.line);
+                seen.add(at);
+            }
+        }
+    }
+
+    /** `this`: the object a method was called on. */
+    thisExpr(n) {
+        if (this.method.isStatic) {
+            throw compileError(`“this” means the object a method was called on, and ${this.method.name} is static, so there is no such object here.`, n.line);
+        }
+        if (this.beforeThis) throw compileError('The object cannot be used yet inside the ( ) of this(…).', n.line);
+        n.type = this.cls.name;
+        n.slot = this.method.thisSlot;
+        return n;
+    }
+
+    /** A field being read or written: `health`, `this.health`, `goblin.health`, `Monster.count`. `target` is the object, or null. */
+    fieldAccess(n, fld, target) {
+        const owner = fld.cls.name;
+        if (fld.isPrivate && fld.cls !== this.cls) {
+            throw compileError(`${fld.name} is private in ${owner}, so code outside ${owner} cannot read or change it directly.`, n.line,
+                `Go through one of ${owner}'s methods, such as a getter: get${fld.name[0].toUpperCase()}${fld.name.slice(1)}()`);
+        }
+        if (this.initOf && !target && fld.cls === this.cls && fld.isStatic === this.initOf.isStatic && fld.order >= this.initOf.order) {
+            throw notYet(`${BOX} does not use the field ${fld.name} before the line that declares it.`, n.line, 'Fields get their starting values from the top down. Move this field below that one.');
+        }
+        const node = { k: 'field', name: fld.name, fld, type: fld.type, line: n.line, target: null };
+        if (fld.isStatic) return node;
+        if (target) node.target = target;
+        else {
+            if (this.method.isStatic) {
+                throw compileError(`${fld.name} belongs to each ${fld.cls.implicit ? 'object' : `${owner} object`}, and ${this.method.name} is static, so there is no object here to take it from.`, n.line,
+                    fld.cls.implicit ? null : `Make an object first, and use its field: ${owner} x = new ${owner}(…);  x.${fld.name}`);
+            }
+            if (this.beforeThis) throw compileError(`The field ${fld.name} cannot be used yet inside the ( ) of this(…).`, n.line);
+            node.target = { k: 'this', type: this.cls.name, slot: this.method.thisSlot, line: n.line };
+        }
+        return node;
+    }
+
+    /** A value about to be turned into text. An object whose class has no toString() would show as Monster@1b6d3586. */
+    shown(type, line) {
+        if (typeof type !== 'string') return;
+        const inside = isCollection(type) ? (isPending(type) ? [] : typeArgs(type)) : [type.replace(/(\[\])+$/, '')];
+        for (const t of inside) {
+            const c = CLASSES.get(t);
+            if (c && !c.toStringMethod) {
+                if (c.implicit) throw notYet(`${BOX} does not turn “this” into text here: Java would show a code such as Main@1b6d3586.`, line);
+                throw notYet(`A ${t} has no toString() method, so Java would show it as a code such as ${t}@1b6d3586, different on every run.`, line,
+                    `Give ${t} one:  public String toString() { return … ; }`);
+            }
+        }
+    }
+
+    /** new Monster("Goblin", 30) */
+    createObject(n, c) {
+        n.name = `new ${c.name}`;
+        const ctor = this.chooseOverload(n, c.ctors);
+        if (ctor.mods.has('private') && c !== this.cls) {
+            throw compileError(`That ${c.name} constructor is private, so only code inside ${c.name} can use it.`, n.line);
+        }
+        n.args = n.args.map((a, i) => convert(a, ctor.paramTypes[i]));
+        return Object.assign(n, { k: 'newobj', cls: c, ctor, type: c.name });
+    }
+
+    /** goblin.roar(), this.heal(5), Monster.count() — a method of one of the student's classes. `target` is the object, or null for a call on the class. */
+    objectCall(n, c, target) {
+        const list = c.methodMap.get(n.name);
+        if (!list) {
+            if (target && n.name === 'equals' && n.args.length === 1 && (n.args[0].type === 'null' || isOwnClass(n.args[0].type))) {
+                // With no equals() of its own, an object equals only itself.
+                return Object.assign(n, { k: 'builtin', target, fn: (a, b) => a === b, type: 'boolean', describe: `The ${c.name} method equals()` });
+            }
+            if (target && n.name === 'toString' && n.args.length === 0) this.shown(c.name, n.line);
+            if (target && ['hashCode', 'getClass', 'equals'].includes(n.name)) {
+                throw notYet(`${BOX} does not run ${n.name}() on ${aType(c.name)}${n.name === 'equals' ? ' with that in its ( )' : ''}.`, n.line);
+            }
+            const near = suggestName(n.name, [...c.methodMap.keys()]);
+            throw compileError(`${aType(c.name)[0].toUpperCase() + aType(c.name).slice(1)} has no method called ${n.name}().`, n.line,
+                c.fieldMap.has(n.name) ? `${n.name} is a field, not a method: leave off the ( ).` : near ? `Did you mean ${near}()?` : null);
+        }
+        const m = this.chooseOverload(n, list);
+        if (m.mods.has('private') && c !== this.cls) {
+            throw compileError(`${n.name}() is private in ${c.name}, so code outside ${c.name} cannot call it.`, n.line);
+        }
+        n.args = n.args.map((a, i) => convert(a, m.paramTypes[i]));
+        if (target && m.isStatic) throw notYet(`${BOX} calls a static method through its class, not through an object: ${c.name}.${n.name}(…)`, n.line);
+        if (!target && !m.isStatic) {
+            throw compileError(`${n.name}() is not static, so it has to be called on ${aType(c.name)} object, not on the class.`, n.line,
+                `Make an object first: ${c.name} x = new ${c.name}(…);  x.${n.name}(…)`);
+        }
+        n.method = m;
+        n.type = m.retType;
+        n.recv = target;
+        n.target = null;
+        return n;
     }
 
     // ── scopes
@@ -2782,10 +3074,26 @@ class Checker {
 
     checkMethod(m) {
         this.method = m;
+        this.cls = m.cls;
+        this.methods = m.cls.methodMap;
         m.frameSize = 0;
         this.scopes = [new Map()];
         this.ctx = [];
         m.paramSyms = m.params.map((p, i) => Object.assign(this.declare(p.name, m.paramTypes[i], p.line, p.isFinal), { isParam: true }));
+        // The arguments fill the first slots of a call's frame; the object the method was called on comes after them.
+        if (!m.isStatic) m.thisSlot = m.frameSize++;
+        const first = m.body.body[0];
+        if (m.isCtor && first && first.k === 'expr' && first.e.k === 'thiscall') {
+            // this(name, 50, 10): hand over to another constructor of the same class
+            const call = first.e;
+            this.beforeThis = true;
+            call.args = call.args.map(a => this.loose(a));
+            this.beforeThis = false;
+            call.name = `this`;
+            const target = this.chooseOverload(call, m.cls.ctors);
+            m.chain = { ctor: target, args: call.args.map((a, i) => convert(a, target.paramTypes[i])), line: call.line };
+            m.body.body = m.body.body.slice(1);
+        }
         for (const s of m.body.body) this.stmt(s);
     }
 
@@ -2935,6 +3243,7 @@ class Checker {
         }
         const ret = this.method.retType;
         if (ret === 'void') {
+            if (s.e && this.method.isCtor) throw compileError('A constructor sets up the new object, and does not return a value.', s.line);
             if (s.e) throw compileError(`${this.method.name} is declared void, so it cannot return a value.`, s.line);
             return;
         }
@@ -3065,6 +3374,11 @@ class Checker {
             case 'field': return this.field(n);
             case 'call': return this.call(n);
             case 'new': return this.create(n);
+            case 'this': return this.thisExpr(n);
+            case 'thiscall':
+                // Since Java 25 a constructor may do some things before its this(…). Here it has to come first.
+                if (this.method.isCtor) throw notYet(`${BOX} wants this(…) as the first line of the constructor.`, n.line);
+                throw compileError('this(…) hands over to another constructor, so it can only be used inside a constructor.', n.line);
             case 'newarr': return this.newArray(n);
             case 'switchexpr': return this.switch(n, true);
             case 'arrinit':
@@ -3076,7 +3390,9 @@ class Checker {
     name(n) {
         const sym = this.lookup(n.name);
         if (!sym) {
-            if (STATICS[n.name] || NOT_YET_CLASSES.has(n.name) || n.name === 'System') {
+            const fld = this.cls.fieldMap.get(n.name);
+            if (fld) return this.fieldAccess(n, fld, null);
+            if (STATICS[n.name] || NOT_YET_CLASSES.has(n.name) || n.name === 'System' || isOwnClass(n.name)) {
                 throw compileError(`${n.name} is a class, not a value. It needs a dot and a method after it.`, n.line);
             }
             const near = suggestName(n.name, this.visibleNames());
@@ -3152,6 +3468,7 @@ class Checker {
                 throw notYet('Joining an array to a String shows a code such as [I@1b6d3586, not the values in it.', n.line,
                     'Use Arrays.toString(nums) to get the values as text.');
             }
+            this.shown(other, n.line);
             n.mode = 'concat';
             n.type = 'String';
         } else if (['+', '-', '*', '/', '%'].includes(op)) {
@@ -3233,6 +3550,13 @@ class Checker {
         if (t.k === 'name' && t.sym.isFinal) {
             throw compileError(`${t.name} is final, so it cannot be ${verb}.`, node.line, 'Remove the word final from its declaration if it needs to change.');
         }
+        if (t.k === 'field' && !t.fld) throw compileError('The length of an array cannot be changed.', node.line);
+        if (t.k === 'field' && t.fld.isFinal) {
+            throw compileError(`${t.name} is final, so it cannot be ${verb}.`, node.line, 'Remove the word final from its declaration if it needs to change.');
+        }
+        if (t.k !== 'name' && t.k !== 'index' && t.k !== 'field') {
+            throw compileError('Only a variable, a field or an array element can be given a value.', node.line);
+        }
         delete t.const;
         return t;
     }
@@ -3242,7 +3566,7 @@ class Checker {
         n.target = target;
         n.type = target.type;
         if (n.op === '=') {
-            n.e = this.assignable(this.valueFor(n.e, target.type), target.type, n.line, target.k === 'name' ? `the variable ${target.name}` : 'this array element');
+            n.e = this.assignable(this.valueFor(n.e, target.type), target.type, n.line, target.k === 'name' ? `the variable ${target.name}` : target.k === 'field' ? `the field ${target.name}` : 'this array element');
             return n;
         }
         const op = n.op.slice(0, -1);
@@ -3256,6 +3580,7 @@ class Checker {
         n.opfrom = T;
         if (concat) {
             if (isArray(R)) throw notYet('Joining an array to a String shows a code such as [I@1b6d3586, not the values in it.', n.line, 'Use Arrays.toString(nums) to get the values as text.');
+            this.shown(R, n.line);
             n.mode = 'concat';
             n.e = e;
         } else if (T === 'boolean' && R === 'boolean' && (op === '&' || op === '|' || op === '^')) {
@@ -3364,11 +3689,23 @@ class Checker {
 
     /** Is this node the name of a class (rather than a variable that happens to share the name)? */
     className(node) {
-        return node && node.k === 'name' && !this.lookup(node.name) ? node.name : null;
+        return node && node.k === 'name' && !this.lookup(node.name) && !this.cls.fieldMap.has(node.name) ? node.name : null;
     }
 
     field(n) {
         const cls = this.className(n.target);
+        if (cls && isOwnClass(cls)) {
+            const c = CLASSES.get(cls);
+            const fld = c.fieldMap.get(n.name);
+            if (!fld) {
+                const near = suggestName(n.name, [...c.fieldMap.keys()]);
+                throw compileError(`${cls} has no field called ${n.name}.`, n.line, c.methodMap.has(n.name) ? `${n.name} is a method, so it needs ( ) after it.` : near ? `Did you mean ${near}?` : null);
+            }
+            if (!fld.isStatic) {
+                throw compileError(`${n.name} belongs to each ${cls} object, not to the class ${cls} itself.`, n.line, `Use it on an object: ${cls} x = new ${cls}(…);  x.${n.name}`);
+            }
+            return this.fieldAccess(n, fld, null);
+        }
         if (cls) {
             if (cls === 'System') throw compileError(`System.${n.name} is not a value on its own.`, n.line, 'To print, write System.out.println(…)');
             const group = STATICS[cls];
@@ -3383,6 +3720,17 @@ class Checker {
         }
         n.target = this.value(n.target);
         const t = n.target.type;
+        if (isOwnClass(t)) {
+            const c = CLASSES.get(t);
+            const fld = c.fieldMap.get(n.name);
+            if (!fld) {
+                const near = suggestName(n.name, [...c.fieldMap.keys()]);
+                throw compileError(`${aType(t)[0].toUpperCase() + aType(t).slice(1)} has no field called ${n.name}.`, n.line,
+                    c.methodMap.has(n.name) ? `${n.name} is a method, so it needs ( ) after it.` : near ? `Did you mean ${near}?` : null);
+            }
+            if (fld.isStatic) throw notYet(`${BOX} reads a static field through its class, not through an object: ${t}.${n.name}`, n.line);
+            return this.fieldAccess(n, fld, n.target);
+        }
         if (isArray(t) && n.name === 'length') { n.type = 'int'; return n; }
         if (n.name === 'length' && (t === 'String' || t === 'StringBuilder')) {
             throw compileError(`For ${aType(t)}, length is a method, so it needs ( ) after it.`, n.line, 'text.length() — only an array uses .length without the ( ).');
@@ -3456,7 +3804,7 @@ class Checker {
             return { fn: chosen.s.fn, ret: chosen.ret, args: args.map((a, i) => convert(a, chosen.concrete[i])) };
         }
         const given = types.length ? `(${types.join(', ')})` : 'nothing in its ( )';
-        if (types.some(isCollection)) throw notYet(`${describe} cannot be given ${given} in ${BOX}.`, line);
+        if (types.some(t => isCollection(t) || isOwnClass(t.replace(/(\[\])+$/, '')))) throw notYet(`${describe} cannot be given ${given} in ${BOX}.`, line);
         const forms = sigs.map(s => `(${s.params.join(', ')}${s.variadic ? '…' : ''})`).filter((f, i, all) => all.indexOf(f) === i);
         throw compileError(`${describe} cannot be given ${given}.`, line,
             `It takes ${forms.length === 1 ? forms[0] : 'one of: ' + forms.join('  ')}`);
@@ -3478,7 +3826,13 @@ class Checker {
             const m = this.chooseOverload(n, list);
             n.args = n.args.map((a, i) => convert(a, m.paramTypes[i]));
             if (this.method.isStatic && !m.isStatic) {
-                throw compileError(`${this.method.name} is static, so it cannot call ${m.name}(), which is not.`, n.line, `Make ${m.name} static too, or remove static from ${this.method.name}.`);
+                throw compileError(`${this.method.name} is static, so it cannot call ${m.name}(), which is not.`, n.line,
+                    this.cls.implicit || this.cls.fieldMap.size === 0 ? `Make ${m.name} static too, or remove static from ${this.method.name}.`
+                        : `${m.name}() works on one ${this.cls.name} object. Make an object and call it on that: x.${m.name}(…)`);
+            }
+            if (!m.isStatic) {
+                if (this.beforeThis) throw compileError(`${m.name}() cannot be called yet inside the ( ) of this(…).`, n.line);
+                n.selfSlot = this.method.thisSlot;   // the same object this method is working on
             }
             n.method = m;
             n.type = m.retType;
@@ -3497,8 +3851,9 @@ class Checker {
             if (n.args.length === 1 && isArray(n.args[0].type)) {
                 throw notYet('Printing an array shows a code such as [I@1b6d3586, not the values in it.', n.line, 'Use System.out.println(Arrays.toString(nums));');
             }
-            if (n.args.length === 1 && isCollection(n.args[0].type) && !isPending(n.args[0].type)) {
-                // A collection prints its elements: [a, b, c]
+            if (n.args.length === 1 && ((isCollection(n.args[0].type) && !isPending(n.args[0].type)) || isOwnClass(n.args[0].type))) {
+                // A collection prints its elements: [a, b, c]. An object prints what its toString() returns.
+                this.shown(n.args[0].type, n.line);
                 n.target = null;
                 return this.builtin(n, [sig(n.args[0].type, 'void', printWith(n.args[0].type, n.name === 'println' ? '\n' : ''))], null, `System.out.${n.name}()`);
             }
@@ -3508,6 +3863,7 @@ class Checker {
 
         // Math.max, Integer.parseInt, …
         const cls = this.className(t);
+        if (cls && isOwnClass(cls)) return this.objectCall(n, CLASSES.get(cls), null);
         if (cls) {
             if (cls === 'Collections') return this.collectionsCall(n);
             if (cls === 'Arrays' && n.name === 'asList') return this.asList(n);
@@ -3531,6 +3887,7 @@ class Checker {
         // text.length(), sb.append(…), nums.clone()
         n.target = this.value(t);
         const rt = n.target.type;
+        if (isOwnClass(rt)) return this.objectCall(n, CLASSES.get(rt), n.target);
         if (rt === 'String' || rt === 'StringBuilder') {
             if (rt === 'String' && n.name === 'formatted') return this.formatCall(n, 'String', 'The String method formatted()');
             const table = rt === 'String' ? STRING_METHODS : BUILDER_METHODS;
@@ -3553,6 +3910,7 @@ class Checker {
             const table = map ? mapMethods(rt) : collectionMethods(rt);
             const sigs = table[n.name];
             const kind = map ? 'map' : isListType(rt) ? 'list' : baseOf(rt) === 'Collection' ? 'collection' : 'set';
+            if (n.name === 'toString') this.shown(rt, n.line);
             if (!sigs) {
                 const declined = (map ? MAP_NOT_YET : COLLECTION_NOT_YET)[n.name];
                 if (declined) throw notYet(`${BOX} does not have ${declined}.`, n.line);
@@ -3644,6 +4002,7 @@ class Checker {
                 'For example: System.out.printf("%d items%n", count);');
         }
         for (const v of values) {
+            this.shown(v.type, n.line);
             if (isArray(v.type)) throw notYet(`${BOX} does not hand an array to ${describe}.`, n.line, 'Format one element at a time, or use Arrays.toString(nums) with %s.');
             if (v.type === 'null') throw notYet(`${BOX} does not hand a bare null to ${describe}.`, n.line);
         }
@@ -3722,8 +4081,13 @@ class Checker {
             throw compileError(`Collections.${n.name}() works on a list or another collection, and this is ${aType(t)}.`, n.line,
                 isArray(t) ? 'For an array, the class is Arrays: Arrays.sort(array)' : isMapType(t) ? 'A map is not a collection of single elements. Use its keySet() or its values().' : null);
         }
+        const element = typeArgs(t)[0];
+        if (isOwnClass(element) && ['sort', 'max', 'min', 'binarySearch'].includes(n.name)) {
+            throw compileError(`Collections.${n.name}() has to know which of two elements comes first, and Java has no order of its own for ${element} objects.`, n.line,
+                `Compare them yourself in a loop, using one of their fields or getters.`);
+        }
         n.target = null;
-        return this.builtin(n, collectionsMethods(typeArgs(t)[0])[n.name], null, `Collections.${n.name}()`);
+        return this.builtin(n, collectionsMethods(element)[n.name], null, `Collections.${n.name}()`);
     }
 
     /** Arrays.asList(array) and Arrays.asList("a", "b", "c"): a fixed-size list. Given an array, it is a view of that array. */
@@ -3733,7 +4097,7 @@ class Checker {
         const done = (elem, fn, args) => Object.assign(n, { k: 'builtin', fn, args, type: `List<${elem}>`, describe: 'Arrays.asList()' });
         if (types.length === 1 && isArray(types[0])) {
             const elem = elemOf(types[0]);
-            if (elem !== 'String' && !isWrapper(elem)) {
+            if (elem !== 'String' && !isWrapper(elem) && !isOwnClass(elem)) {
                 throw notYet(`${BOX} does not run Arrays.asList() on ${aType(types[0])}.`, n.line,
                     PRIMITIVES.has(elem) ? `Java would make a list holding the one array, not its elements. Use ${aType(BOXED.get(elem))}[] rather than ${aType(elem)}[].` : null);
             }
@@ -3741,13 +4105,18 @@ class Checker {
         }
         const kinds = new Set(types.filter(t => t !== 'null').map(t => BOXED.get(t) ?? t));
         const [elem] = kinds;
-        if (kinds.size !== 1 || (elem !== 'String' && !isWrapper(elem))) {
+        if (kinds.size !== 1 || (elem !== 'String' && !isWrapper(elem) && !isOwnClass(elem))) {
             throw notYet(`${BOX} runs Arrays.asList() on one array, or on values that are all of one type: all Strings, or all ints, and so on.`, n.line);
         }
         return done(elem, (...items) => { charge(items.length); return new JList('asList', items); }, n.args.map(a => convert(a, elem)));
     }
 
     create(n) {
+        if (isOwnClass(n.base)) {
+            if (n.targs) throw compileError(`${n.base} does not take a type in angle brackets.`, n.line);
+            n.args = n.args.map(a => this.loose(a));
+            return this.createObject(n, CLASSES.get(n.base));
+        }
         n.args = n.args.map(a => this.value(a));
         if (Object.hasOwn(GENERIC_ARITY, n.base)) return this.createCollection(n);
         if (n.targs) throw notYet(`${BOX} does not have ${n.base}<…>.`, n.line, 'The collections here are ArrayList, LinkedList, HashSet and HashMap.');
@@ -3903,7 +4272,7 @@ class Flow {
             alive = this.stmt(s);
         }
         if (alive && method.retType !== 'void') {
-            const text = JSON.stringify(method.body, (k, v) => (k === 'sym' || k === 'method' ? undefined : typeof v === 'bigint' ? String(v) : v));
+            const text = JSON.stringify(method.body, (k, v) => (k === 'sym' || k === 'method' || k === 'fld' || k === 'cls' || k === 'ctor' ? undefined : typeof v === 'bigint' ? String(v) : v));
             const hint = !text.includes('"k":"return"')
                 ? (text.includes('"describe":"System.out.print') ? 'Printing shows a value on the screen; a test looks at what the method RETURNS. Use return.' : 'End the method with return and the answer.')
                 : 'A return inside an if or a loop might be skipped. Add a return at the end for the case where none of them ran.';
@@ -3984,11 +4353,13 @@ class Flow {
                     if (e.op !== '=') this.read(t.sym, S, e.line);
                     return given(this.expr(e.e, S), t.sym.slot);
                 }
+                if (t.k === 'field') return this.expr(e.e, t.target ? this.expr(t.target, S) : S);
                 return this.expr(e.e, this.expr(t.i, this.expr(t.target, S)));
             }
             case 'incdec': {
                 const t = e.target;
                 if (t.k === 'name') { this.read(t.sym, S, e.line); return S; }
+                if (t.k === 'field') return t.target ? this.expr(t.target, S) : S;
                 return this.expr(t.i, this.expr(t.target, S));
             }
             case 'cond': {
@@ -3996,8 +4367,10 @@ class Flow {
                 return meet(this.expr(e.a, t), this.expr(e.b, f));
             }
             case 'index': return this.expr(e.i, this.expr(e.target, S));
-            case 'field': return this.expr(e.target, S);
-            case 'call': return this.all(e.args, S);
+            case 'field': return e.target ? this.expr(e.target, S) : S;
+            case 'this': return S;
+            case 'call': return this.all(e.args, e.recv ? this.expr(e.recv, S) : S);
+            case 'newobj': return this.all(e.args, S);
             case 'builtin': return this.all(e.args, e.target ? this.expr(e.target, S) : S);
             case 'new': return this.all(e.args, S);
             case 'newarr': return e.init ? this.all(e.init.elems, S) : this.all(e.sizes, S);
@@ -4206,6 +4579,58 @@ function invoke(method, frame, line) {
     return undefined;
 }
 
+// ── objects of the student's own classes
+
+/** Give a class's static fields their starting values, the first time the class is used. */
+function ensureInit(c) {
+    if (c.ready) return;
+    c.ready = true;
+    c.statics = c.staticFields.map(f => defaultOf(f.type));
+    const frame = new Array(c.clinit.frameSize);
+    for (const [i, code] of c.staticCode) c.statics[i] = code(frame);
+}
+
+/** Give a new object's fields the starting values written beside them, from the top down. */
+function runInit(c, obj) {
+    if (!c.initCode.length) return;
+    const frame = new Array(c.init.frameSize);
+    frame[0] = obj;
+    for (const [i, code] of c.initCode) obj.f[i] = code(frame);
+}
+
+function construct(ctor, obj, argv, line) {
+    const frame = new Array(ctor.frameSize);
+    for (let i = 0; i < argv.length; i++) frame[i] = argv[i];
+    frame[ctor.thisSlot] = obj;
+    invoke(ctor, frame, line);
+}
+
+/** An object made without a constructor: what the unnamed class around loose methods is. */
+function bareObject(c) {
+    ensureInit(c);
+    const obj = new JObject(c);
+    runInit(c, obj);
+    return obj;
+}
+
+/** A constructor first hands over to another (this(…)) or gives the fields their starting values; then its own lines run. */
+function constructorCode(m, body) {
+    const c = m.cls;
+    const slot = m.thisSlot;
+    if (m.chain) {
+        const args = m.chain.args.map(cx);
+        const { ctor, line } = m.chain;
+        return f => {
+            construct(ctor, f[slot], args.map(a => a(f)), line);
+            return body(f);
+        };
+    }
+    return f => {
+        runInit(c, f[slot]);
+        return body(f);
+    };
+}
+
 function compoundFunction(n) {
     const T = n.type;
     if (n.mode === 'concat') {
@@ -4287,6 +4712,42 @@ function cx(n) {
         case 'assign': {
             const t = n.target;
             const e = cx(n.e);
+            if (t.k === 'field') {
+                const { fld } = t;
+                const i = fld.index;
+                const combine = n.op === '=' ? null : compoundFunction(n);
+                const boxed = combine && isWrapper(n.type) && n.mode !== 'concat';
+                const unboxable = old => { if (old === null) throw at(nullPointer(`The ${n.type} being changed`), line); };
+                if (fld.isStatic) {
+                    const c = fld.cls;
+                    if (!combine) return f => { const v = e(f); ensureInit(c); return (c.statics[i] = v); };
+                    return f => {
+                        ensureInit(c);
+                        const old = c.statics[i];
+                        if (boxed) unboxable(old);
+                        const b = e(f);
+                        try { return (c.statics[i] = combine(old, b)); } catch (err) { throw at(err, line); }
+                    };
+                }
+                const obj = cx(t.target);
+                const what = `The ${fld.cls.name} whose ${fld.name} was being changed`;
+                if (!combine) {
+                    return f => {
+                        const o = obj(f);
+                        const v = e(f);
+                        if (o === null) throw at(nullPointer(what), line);
+                        return (o.f[i] = v);
+                    };
+                }
+                return f => {
+                    const o = obj(f);
+                    if (o === null) throw at(nullPointer(what), line);
+                    const old = o.f[i];
+                    if (boxed) unboxable(old);
+                    const b = e(f);
+                    try { return (o.f[i] = combine(old, b)); } catch (err) { throw at(err, line); }
+                };
+            }
             if (n.op === '=') {
                 if (t.k === 'name') { const slot = t.sym.slot; return f => (f[slot] = e(f)); }
                 const arr = cx(t.target);
@@ -4328,6 +4789,25 @@ function cx(n) {
             const t = n.target;
             const plainStep = stepper(n.type, n.op === '++' ? 1 : -1);
             const step = isWrapper(n.type) ? v => { try { return plainStep(v); } catch (err) { throw at(err, line); } } : plainStep;
+            if (t.k === 'field') {
+                const { fld } = t;
+                const i = fld.index;
+                const { prefix } = n;
+                if (fld.isStatic) {
+                    const c = fld.cls;
+                    return f => { ensureInit(c); const old = c.statics[i]; const now = step(old); c.statics[i] = now; return prefix ? now : old; };
+                }
+                const obj = cx(t.target);
+                const what = `The ${fld.cls.name} whose ${fld.name} was being changed`;
+                return f => {
+                    const o = obj(f);
+                    if (o === null) throw at(nullPointer(what), line);
+                    const old = o.f[i];
+                    const now = step(old);
+                    o.f[i] = now;
+                    return prefix ? now : old;
+                };
+            }
             if (t.k === 'name') {
                 const slot = t.sym.slot;
                 return n.prefix ? f => (f[slot] = step(f[slot])) : f => { const old = f[slot]; f[slot] = step(old); return old; };
@@ -4362,6 +4842,22 @@ function cx(n) {
             };
         }
         case 'field': {
+            if (n.fld) {
+                const { fld } = n;
+                const i = fld.index;
+                if (fld.isStatic) {
+                    const c = fld.cls;
+                    return f => { ensureInit(c); return c.statics[i]; };
+                }
+                if (n.target.k === 'this') { const slot = n.target.slot; return f => f[slot].f[i]; }
+                const obj = cx(n.target);
+                const what = `The ${fld.cls.name} whose ${fld.name} was asked for`;
+                return f => {
+                    const o = obj(f);
+                    if (o === null) throw at(nullPointer(what), line);
+                    return o.f[i];
+                };
+            }
             const arr = cx(n.target);
             return f => {
                 const a = arr(f);
@@ -4369,13 +4865,44 @@ function cx(n) {
                 return a.a.length;
             };
         }
+        case 'this': { const slot = n.slot; return f => f[slot]; }
+        case 'newobj': {
+            const c = n.cls;
+            const { ctor } = n;
+            const args = n.args.map(cx);
+            return f => {
+                ensureInit(c);
+                cells(c.instanceFields.length + 1);
+                const obj = new JObject(c);
+                construct(ctor, obj, args.map(a => a(f)), line);
+                return obj;
+            };
+        }
         case 'call': {
             const m = n.method;
             const args = n.args.map(cx);
             const count = args.length;
+            const recv = n.recv ? cx(n.recv) : null;
+            const { selfSlot } = n;
+            const thisSlot = m.thisSlot;
+            const what = `The ${m.cls.name} that .${m.name}() was called on`;
+            if (recv) {
+                // The object, then the arguments, and only then the check that there is an object: Java's order.
+                return f => {
+                    const self = recv(f);
+                    const frame = new Array(m.frameSize);
+                    for (let i = 0; i < count; i++) frame[i] = args[i](f);
+                    if (self === null) throw at(nullPointer(what), line);
+                    frame[thisSlot] = self;
+                    return invoke(m, frame, line);
+                };
+            }
+            const c = m.cls;
             return f => {
                 const frame = new Array(m.frameSize);
                 for (let i = 0; i < count; i++) frame[i] = args[i](f);
+                if (thisSlot !== undefined) frame[thisSlot] = selfSlot === undefined ? bareObject(c) : f[selfSlot];
+                else ensureInit(c);
                 return invoke(m, frame, line);
             };
         }
@@ -4647,12 +5174,38 @@ function cs(s) {
 /** Text → a program whose methods are checked and ready to call. Throws JavaError if it would not compile. */
 export function compileJava(source) {
     const program = parseJava(source);
-    const checker = new Checker(program);
-    for (const m of program.methods) {
-        new Flow(m);
-        m.code = cs(m.body);
+    const outer = CLASSES;
+    try {
+        const checker = new Checker(program);
+        const classMap = CLASSES;
+        for (const c of program.all) {
+            const starting = f => [f.index, f.init.k === 'arrinit' ? compileArrayInit(f.init) : cx(f.init)];
+            c.initCode = c.instanceFields.filter(f => f.init).map(starting);
+            c.staticCode = c.staticFields.filter(f => f.init).map(starting);
+            c.ready = false;
+            c.statics = null;
+            for (const m of [...c.ctors, ...c.methods]) {
+                new Flow(m);
+                const body = cs(m.body);
+                m.code = m.isCtor ? constructorCode(m, body) : body;
+            }
+        }
+        const { host } = program;
+        let self = null;
+        return {
+            methods: host.methodMap,
+            checker,
+            classes: program.all,
+            classMap,
+            host,
+            /** Forget what the classes' static fields hold, as if the program had just started. */
+            reset() { for (const c of program.all) c.ready = false; self = null; },
+            /** The one object of the host class that loose test code runs inside. */
+            self() { return self ?? (self = bareObject(host)); },
+        };
+    } finally {
+        CLASSES = outer;
     }
-    return { methods: checker.methods, checker };
 }
 
 function inMachine(limits, run) {
@@ -4677,6 +5230,8 @@ export function callJava(method, args, limits = {}) {
     return inMachine(limits, () => {
         const frame = new Array(method.frameSize);
         args.forEach((a, i) => { frame[i] = a; });
+        if (method.thisSlot !== undefined) frame[method.thisSlot] = bareObject(method.cls);
+        else ensureInit(method.cls);
         return invoke(method, frame, null);
     });
 }
@@ -4691,12 +5246,27 @@ export function evaluateJava(program, expression, limits = {}) {
     const tree = parser.parseExpr();
     if (parser.tok.t !== 'eof') throw compileError('There is more after the end of the expression.', parser.tok.line);
     const checker = program.checker;
-    checker.method = { name: '(test)', isStatic: false, frameSize: 0, retType: 'void' };
-    checker.scopes = [new Map()];
-    checker.ctx = [];
-    const typed = checker.expr(tree);
-    const run = cx(typed);
-    const result = inMachine(limits, () => run([]));
+    const outer = CLASSES;
+    CLASSES = program.classMap;
+    let typed;
+    let run;
+    try {
+        checker.cls = program.host;
+        checker.methods = program.host.methodMap;
+        checker.method = { name: '(test)', isStatic: false, frameSize: 1, thisSlot: 0, retType: 'void', cls: program.host };
+        checker.scopes = [new Map()];
+        checker.ctx = [];
+        typed = checker.expr(tree);
+        run = cx(typed);
+    } finally {
+        CLASSES = outer;
+    }
+    const frameSize = checker.method.frameSize;
+    const result = inMachine(limits, () => {
+        const frame = new Array(frameSize);
+        frame[0] = program.self();
+        return run(frame);
+    });
     return { ...result, type: typed.type };
 }
 
@@ -4841,8 +5411,8 @@ export function parseJavaSignature(signature) {
     let method;
     try {
         const program = parseJava(`${header} {}`);
-        if (program.methods.length !== 1) throw new Error('not one method');
-        [method] = program.methods;
+        if (program.classes.length || program.loose.fields.length || program.loose.methods.length !== 1) throw new Error('not one method');
+        [method] = program.loose.methods;
         return {
             name: method.name,
             ret: resolveType(method.ret, { allowVoid: true }),
@@ -4981,12 +5551,243 @@ export function runJavaTestCases({ signature, body, tests, limits = {}, now = ()
     };
 }
 
+// ─── Class problems ──────────────────────────────────────────────────────────
+//
+// A method is graded by calling it: values in, a value out. An object cannot be: what a method DOES
+// shows only in what the object has become. So a class problem's tests are short scripts, each
+// followed by one expression to look at:
+//
+//     { "run": "Monster m = new Monster(\"Goblin\", 30);\nm.takeDamage(10);", "check": "m.getHealth()", "expect": 20 }
+//
+// and a test may instead ask that a field be private:  { "private": "Monster.health" }
+//
+// Two shapes of problem use this, the same two the Python class problems have:
+//   • write ONE METHOD: the question supplies `scaffold` (the class so far, read only, ending inside
+//     the class) and `signature` is the method's first line; the student writes its body;
+//   • write A WHOLE CLASS: `signature` is the class line, `public class Potion`, and the student
+//     writes its fields, constructors and methods. A `scaffold` here is other classes it works with.
+
+/** True for a problem graded by scripts rather than by calling one method. */
+export function isJavaClassProblem(question) {
+    return Array.isArray(question?.tests) && question.tests.some(t => t && (typeof t.check === 'string' || typeof t.private === 'string'));
+}
+
+const classLineName = signature => (/\bclass\s+([A-Za-z_$][\w$]*)\s*$/.exec(headerOf(signature)) || [])[1] ?? null;
+const scaffoldOf = question => (question?.scaffold ? String(question.scaffold).replace(/\r\n?/g, '\n').replace(/\s+$/, '') : '');
+
+/** Put the student's text where it belongs. Returns { source, lineOffset, pasted }. */
+export function assembleJavaClass({ scaffold = null, signature, body }) {
+    const raw = String(body ?? '').replace(/\r\n?/g, '\n');
+    const wholeClass = classLineName(signature) !== null;
+    if (raw.trim().length === 0) {
+        throw compileError('You have not written any code yet.', 1,
+            wholeClass ? 'Write what the class needs: its fields first, then a constructor, then its methods.' : 'Write the lines that make the method do its job.');
+    }
+    const top = scaffoldOf({ scaffold });
+    const above = top ? top.split('\n').length : 0;
+    const header = headerOf(signature);
+    if (wholeClass) {
+        // A whole class pasted in with its class line is run as written, after any classes it works with.
+        const pasted = /^\s*(?:import\b[^;]*;\s*)*(?:(?:public|final|abstract)\s+)*class\b/.test(raw);
+        if (pasted) return { source: `${top}${top ? '\n' : ''}${raw}\n`, lineOffset: above, pasted: true };
+        return { source: `${top}${top ? '\n' : ''}${header} {\n${raw}\n}\n`, lineOffset: above + 1, pasted: false };
+    }
+    // One method of a class whose beginning is given. It may be pasted in with its first line; so may a constructor.
+    const constructor = (/^(?:public\s+)?([A-Z]\w*)\s*\(/.exec(header) || [])[1];
+    const pastedConstructor = constructor && new RegExp(`^\\s*(?:public\\s+)?${constructor}\\s*\\([^()]*\\)\\s*\\{`).test(raw);
+    if (pastedConstructor || looksPasted(raw)) return { source: `${top}\n${raw}\n}\n`, lineOffset: above, pasted: true };
+    return { source: `${top}\n${header} {\n${raw}\n}\n}\n`, lineOffset: above + 1, pasted: false };
+}
+
+// Lines of a test script are numbered from here, so an error in one can be told apart from an error
+// in the student's own code — whose line numbers they need to see.
+const SCRIPT_LINE_BASE = 100000;
+
+function shiftLines(node, by, seen = new Set()) {
+    if (!node || typeof node !== 'object' || seen.has(node)) return;
+    seen.add(node);
+    if (Array.isArray(node)) { for (const n of node) shiftLines(n, by, seen); return; }
+    if (typeof node.line === 'number') node.line += by;
+    if (typeof node.endLine === 'number') node.endLine += by;
+    for (const value of Object.values(node)) if (value && typeof value === 'object') shiftLines(value, by, seen);
+}
+
+/** The class a test script runs in: one with nothing in it, so that it sees the student's classes only from outside. */
+function outsideClass(program) {
+    if (!program.outside) {
+        const c = { name: '$Test', line: 1, mods: new Set(), implicit: true, fields: [], methods: [], ctors: [] };
+        program.checker.declareClass(c);
+        Object.assign(c, { init: { frameSize: 1 }, clinit: { frameSize: 0 }, initCode: [], staticCode: [], ready: false, statics: null });
+        program.outside = c;
+    }
+    return program.outside;
+}
+
+/** A test's script and the expression it ends on, as one method to call. Returns { method, type }. */
+function compileJavaScript(program, runText, checkText) {
+    const outer = CLASSES;
+    CLASSES = program.classMap;
+    try {
+        const host = outsideClass(program);
+        const block = new Parser(tokenize(`{\n${String(runText ?? '').replace(/\r\n?/g, '\n')}\n}`)).parseBlock();
+        const checkParser = new Parser(tokenize(String(checkText)));
+        const check = checkParser.parseExpr();
+        if (checkParser.tok.t !== 'eof') throw compileError('There is more after the end of the expression being checked.', 1);
+        shiftLines(block, SCRIPT_LINE_BASE);
+        shiftLines(check, SCRIPT_LINE_BASE);
+        const method = { name: 'the test', isStatic: false, params: [], paramTypes: [], cls: host, mods: new Set(), retType: 'void', body: block, line: block.line, endLine: block.endLine, frameSize: 0 };
+        const { checker } = program;
+        checker.method = method;
+        checker.cls = host;
+        checker.methods = host.methodMap;
+        checker.scopes = [new Map()];
+        checker.ctx = [];
+        method.thisSlot = method.frameSize++;
+        for (const statement of block.body) checker.stmt(statement);
+        const typed = checker.value(check);
+        if (isOwnClass(typed.type.replace(/(\[\])+$/, '')) || (isCollection(typed.type) && typeArgs(typed.type).some(isOwnClass))) {
+            throw new Error(`a test's check has to be a number, text, true/false or a collection of those, and "${checkText}" is ${aType(typed.type)}`);
+        }
+        block.body.push({ k: 'return', e: typed, line: block.endLine });
+        method.retType = typed.type;
+        new Flow(method);
+        method.code = cs(block);
+        return { method, type: typed.type, host };
+    } finally {
+        CLASSES = outer;
+    }
+}
+
+/** `Monster m = new Monster("Goblin", 30); m.takeDamage(10); m.getHealth()` — how a script test is written out in the results table. */
+export function describeJavaScript(testCase) {
+    if (typeof testCase.private === 'string') {
+        const [owner, field] = testCase.private.split('.');
+        return `${field} is private in ${owner}`;
+    }
+    const steps = String(testCase.run ?? '').split('\n').map(l => l.trim()).filter(Boolean);
+    return [...steps, testCase.check].join(' ');
+}
+
+/**
+ * The Java type of each test's check, worked out from the reference solution. The comparison with
+ * the real JDK needs it to declare the method each test becomes.
+ */
+export function javaScriptTypes(question) {
+    const { source } = assembleJavaClass({ scaffold: question.scaffold, signature: question.signature, body: question.solution });
+    const program = compileJava(source);
+    return question.tests.map(t => (typeof t.private === 'string' ? null : compileJavaScript(program, t.run, t.check).type));
+}
+
+/**
+ * Run a class problem's tests. Returns the same shape as runJavaTestCases, so the
+ * results table and the grading treat the two kinds of problem alike.
+ */
+export function runJavaScriptCases({ scaffold = null, signature, body, tests, limits = {}, now = () => Date.now() }) {
+    const cases = Array.isArray(tests) ? tests : [];
+    const bodyLines = String(body ?? '').replace(/\r\n?/g, '\n').split('\n').length;
+    let lineOffset = 0;
+    const report = err => ({
+        message: err.message,
+        hint: err.hint ?? null,
+        line: err.line === null || err.line === undefined || err.line >= SCRIPT_LINE_BASE ? null : Math.min(bodyLines, Math.max(1, err.line - lineOffset)),
+        kind: err.kind ?? 'runtime',
+    });
+
+    let program;
+    try {
+        const assembled = assembleJavaClass({ scaffold, signature, body });
+        lineOffset = assembled.lineOffset;
+        program = compileJava(assembled.source);
+    } catch (err) {
+        if (err instanceof JavaError) {
+            // An error in the lines above the student's own (the class so far) has no line of theirs to point at.
+            const shown = report(err);
+            if (typeof err.line === 'number' && err.line <= lineOffset && lineOffset > 0) shown.line = null;
+            return failed(shown, cases);
+        }
+        throw err;
+    }
+    const wanted = classLineName(signature);
+    if (wanted && !program.classMap.has(wanted)) {
+        const near = suggestName(wanted, [...program.classMap.keys()].filter(n => !n.startsWith('$')));
+        return failed({ message: `I could not find a class called ${wanted}.`, hint: `${near ? `You wrote ${near}. ` : ''}The problem needs: ${headerOf(signature)}`, line: null, kind: 'syntax' }, cases);
+    }
+
+    const results = [];
+    const startedAt = now();
+    for (const testCase of cases) {
+        const row = { call: describeJavaScript(testCase), expectedRepr: null, actualRepr: null, passed: false, output: [], error: null };
+        results.push(row);
+        if (typeof testCase.private === 'string') {
+            // Not something to run: a look at how the field was declared.
+            const [owner, field] = testCase.private.split('.');
+            const fld = program.classMap.get(owner)?.fieldMap.get(field);
+            row.expectedRepr = 'true';
+            if (!fld) row.error = { message: `${owner} has no field called ${field}.`, hint: 'The problem names the fields it wants. Check the spelling, capitals included.', line: null, kind: 'syntax' };
+            else {
+                row.actualRepr = String(fld.isPrivate);
+                row.passed = fld.isPrivate;
+            }
+            continue;
+        }
+        if (now() - startedAt > TOTAL_RUN_MS) {
+            row.error = { message: 'This run was stopped — the earlier tests took too long.', hint: null, line: null, kind: 'limit' };
+            continue;
+        }
+        let script;
+        try {
+            script = compileJavaScript(program, testCase.run, testCase.check);
+        } catch (err) {
+            if (!(err instanceof JavaError)) throw err;
+            // The TEST's own lines would not compile against this class: nearly always a constructor or a
+            // method that is missing, misnamed, or takes different values from the ones the problem asks for.
+            row.error = report(err);
+            row.error.line = null;
+            continue;
+        }
+        const expected = javaFromJson(testCase.expect, script.type);
+        row.expectedRepr = javaRepr(expected, script.type);
+        program.reset();
+        const run = inMachine({ ...limits, now }, () => {
+            const frame = new Array(script.method.frameSize);
+            frame[script.method.thisSlot] = bareObject(script.host);
+            return invoke(script.method, frame, null);
+        });
+        if (run.error) row.error = report(run.error);
+        else {
+            row.actualRepr = javaRepr(run.value, script.type);
+            row.passed = javaEquals(run.value, expected, script.type);
+        }
+        row.output = run.machine.outputLines();
+    }
+
+    return {
+        ok: true,
+        error: null,
+        results,
+        passed: results.filter(r => r.passed).length,
+        total: results.length,
+        printedOnly: false,
+    };
+}
+
 /** Run a Java write-the-code question. */
 export function runJavaProblem(question, body, options = {}) {
+    if (isJavaClassProblem(question)) {
+        return runJavaScriptCases({ scaffold: question.scaffold, signature: question.signature, body, tests: question.tests, ...options });
+    }
     return runJavaTestCases({ signature: question.signature, body, tests: question.tests, ...options });
 }
 
-/** What the student is shown above the box: the method line, opened. */
+/** What the student is shown above the box: the class so far (if any), and the line they are completing, opened. */
 export function javaProblemHeader(question) {
-    return `${headerOf(question?.signature)} {`;
+    const top = scaffoldOf(question);
+    const line = `${headerOf(question?.signature)} {`;
+    if (!top) return line;
+    return classLineName(question.signature) !== null ? `${top}\n\n${line}` : `${top}\n    ${line}`;
+}
+
+/** And below it: the brace (or the two) that the box's contents are closed with. */
+export function javaProblemFooter(question) {
+    return question?.scaffold && classLineName(question.signature) === null ? '    }\n}' : '}';
 }

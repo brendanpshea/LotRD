@@ -3,7 +3,7 @@ import {
   fillBlankLengthHint,
 } from "./util.js";
 import { highlightJava, highlightPython } from "./highlight.js";
-import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, isJavaProblem } from "./model.js";
+import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
 
 const LEVEL_TITLES = [
@@ -1640,8 +1640,7 @@ export class GameUI {
     // the student is completing; a whole-class problem shows just its class line.
     const java = isJavaProblem(q);
     const highlight = java ? highlightJava : highlightPython;
-    const writingClass = !java && /^\s*class\s/.test(q.signature || "");
-    const kind = q.scaffold || java ? "method" : writingClass ? "class" : "function";
+    const kind = codeWriteKind(q);
     $(this.root, "[data-ref=signature]").innerHTML = highlight(codeWriteHeader(q));
     $(this.root, "[data-ref=signature]").setAttribute("aria-label",
       q.scaffold ? "The class so far, ending in the method you are writing" : `${kind} definition`);
@@ -1678,9 +1677,12 @@ export class GameUI {
 
     const input = $(this.root, "[data-ref=bodyInput]");
     input.value = q.starter ? String(q.starter) : "";
-    if (java) input.placeholder = "    // your code here";
+    if (java) input.placeholder = kind === "class" ? "    // the fields, constructors and methods" : "    // your code here";
     const closing = $(this.root, "[data-ref=signatureClose]");
-    if (closing) closing.hidden = !java;
+    if (closing) {
+      closing.hidden = !java;
+      if (java) closing.textContent = codeWriteFooter(q);
+    }
     const paintEditor = this._bindCodeEditorChrome(input, highlight);
 
     const resultsEl = $(this.root, "[data-ref=runResults]");

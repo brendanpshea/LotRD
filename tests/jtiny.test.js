@@ -323,6 +323,93 @@ describe('a Java problem: lists, sets and maps', () => {
   });
 });
 
+describe('a Java class problem: tests are short scripts, and the student writes a method or a whole class', () => {
+  const MONSTER = 'public class Monster {\n    private String name;\n    private int health;\n\n    Monster(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    public int getHealth() {\n        return health;\n    }\n';
+  const DAMAGE = {
+    type: 'code_write', language: 'java', scaffold: MONSTER, signature: 'public void takeDamage(int amount)',
+    tests: [
+      { run: 'Monster m = new Monster("Goblin", 30);\nm.takeDamage(10);', check: 'm.getHealth()', expect: 20 },
+      { run: 'Monster m = new Monster("Goblin", 30);\nm.takeDamage(99);', check: 'm.getHealth()', expect: 0 },
+      { run: 'Monster a = new Monster("A", 30);\nMonster b = new Monster("B", 8);\na.takeDamage(5);', check: 'b.getHealth()', expect: 8 },
+    ],
+    solution: 'health = health - amount;\nif (health < 0) {\n    health = 0;\n}',
+  };
+  const WEAPON = {
+    type: 'code_write', language: 'java', signature: 'public class Weapon',
+    tests: [
+      { run: 'Weapon w = new Weapon("Sword", 25);', check: 'w.getDamage()', expect: 25 },
+      { run: 'Weapon w = new Weapon("Stick", -50);', check: 'w.getDamage()', expect: 0 },
+      { run: 'Weapon w = new Weapon("Axe", 40);', check: 'w.describe()', expect: 'Axe deals 40 damage.' },
+      { private: 'Weapon.damage' },
+    ],
+    solution: 'private String name;\nprivate int damage;\n\nWeapon(String name, int damage) {\n    this.name = name;\n    this.damage = damage < 0 ? 0 : damage;\n}\n\npublic int getDamage() {\n    return damage;\n}\n\npublic String describe() {\n    return name + " deals " + damage + " damage.";\n}',
+  };
+  const passed = outcome => outcome.results.map(r => r.passed);
+
+  it('one method of a class that is given: the body alone, or the method pasted with its first line', () => {
+    assert.deepEqual(passed(run(DAMAGE.solution, DAMAGE)), [true, true, true]);
+    assert.deepEqual(passed(run(`public void takeDamage(int amount) {\n${DAMAGE.solution}\n}`, DAMAGE)), [true, true, true]);
+  });
+  it('a row is written as the steps taken and the thing looked at, and a wrong answer shows what was there instead', () => {
+    const outcome = run('health -= amount;', DAMAGE);
+    assert.deepEqual(passed(outcome), [true, false, true]);
+    assert.equal(outcome.results[1].call, 'Monster m = new Monster("Goblin", 30); m.takeDamage(99); m.getHealth()');
+    assert.equal(outcome.results[1].expectedRepr, '0');
+    assert.equal(outcome.results[1].actualRepr, '-69');
+  });
+  it('an error in the student\'s lines is counted in the lines of their box, not of the class above it', () => {
+    const outcome = run('health = health - amount;\nint left = "none";', DAMAGE);
+    assert.equal(outcome.ok, false);
+    assert.equal(outcome.error.line, 2);
+    const thrown = run('int[] xs = new int[1];\nhealth = xs[amount];', DAMAGE).results[0].error;
+    assert.match(thrown.message, /ArrayIndexOutOfBoundsException/);
+    assert.equal(thrown.line, 2);
+  });
+  it('a whole class: written as its members, or pasted with its class line', () => {
+    assert.deepEqual(passed(run(WEAPON.solution, WEAPON)), [true, true, true, true]);
+    assert.deepEqual(passed(run(`public class Weapon {\n${WEAPON.solution}\n}`, WEAPON)), [true, true, true, true]);
+  });
+  it('a field that was to be private and is not fails the row that asks, and only that row', () => {
+    const outcome = run(WEAPON.solution.replace('private int damage', 'int damage'), WEAPON);
+    assert.deepEqual(passed(outcome), [true, true, true, false]);
+    assert.equal(outcome.results[3].call, 'damage is private in Weapon');
+  });
+  it('a test that cannot be run against the class says what it needed, with no line number to chase', () => {
+    const outcome = run(WEAPON.solution.replace('getDamage', 'getdamage'), WEAPON);
+    assert.equal(outcome.ok, true);
+    assert.match(outcome.results[0].error.message, /has no method called getDamage\(\)/);
+    assert.match(outcome.results[0].error.hint, /getdamage/);
+    assert.equal(outcome.results[0].error.line, null);
+    assert.equal(outcome.results[2].passed, true);
+  });
+  it('a class under another name is told which name was wanted', () => {
+    const outcome = run(`public class Wepon {\n${WEAPON.solution.replace('Weapon(String', 'Wepon(String')}\n}`, WEAPON);
+    assert.match(outcome.error.message, /could not find a class called Weapon/);
+    assert.match(outcome.error.hint, /You wrote Wepon/);
+  });
+  it('the mistakes of a first class, in words', () => {
+    const message = body => { const o = run(body, WEAPON); const e = o.error || o.results.find(r => r.error).error; return `${e.message} | ${e.hint}`; };
+    assert.match(message('private int damage;\nvoid Weapon(String name, int damage) {\n    this.damage = damage;\n}'), /takes 0 values, but this call gives it 2/);
+    assert.match(message('private int damage;\nweapon(String name, int damage) {\n}'), /no return type.*name of the class, Weapon/s);
+    assert.match(message('private int damage;\nWeapon(String name, int damage) {\n    damage = damage;\n}\npublic static int getDamage() {\n    return damage;\n}'), /belongs to each Weapon object.*static/s);
+    assert.match(message('private int damage\nWeapon(String name, int damage) { }'), /expected ; to end a field/);
+    assert.match(message(`${WEAPON.solution}\n@Override\npublic String tostring() {\n    return name;\n}`), /@Override.*capital S/s);
+    assert.match(message(WEAPON.solution.replace('public String describe', 'String toString')), /toString\(\) has to be public/);
+  });
+  it('an object with no toString() is not printed as a made-up code', () => {
+    const q = { ...DAMAGE, tests: [{ run: 'Monster m = new Monster("G", 3);\nm.takeDamage(1);', check: 'm.getHealth()', expect: 2 }, DAMAGE.tests[0], DAMAGE.tests[1]] };
+    const outcome = run('health -= amount;\nSystem.out.println(this);', q);
+    assert.match(outcome.error.message, /no toString\(\) method.*Monster@/);
+    assert.match(outcome.error.hint, /public String toString\(\)/);
+  });
+  it('what a method prints is kept beside its row, and static fields start afresh for every test', () => {
+    const q = { ...WEAPON, tests: [{ run: 'Weapon a = new Weapon("a", 1);\nWeapon b = new Weapon("b", 2);', check: 'Weapon.made', expect: 2 }, { run: 'Weapon a = new Weapon("a", 1);', check: 'Weapon.made', expect: 1 }, WEAPON.tests[0]] };
+    const outcome = run('static int made = 0;\nprivate int damage;\nWeapon(String name, int damage) {\n    this.damage = damage;\n    made++;\n    System.out.println("made " + name);\n}\npublic int getDamage() {\n    return damage;\n}', q);
+    assert.deepEqual(passed(outcome), [true, true, true]);
+    assert.deepEqual(outcome.results[0].output, ['made a', 'made b']);
+  });
+});
+
 describe('a Java problem: a run cannot hang or grow without limit', () => {
   it('an endless loop is stopped, test by test', () => {
     const outcome = run('while (a < 100) { b++; }\nreturn b;', SUM, { limits: { steps: 5000 } });

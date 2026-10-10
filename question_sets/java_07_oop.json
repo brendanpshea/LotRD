@@ -1,5 +1,43 @@
 [
   {
+    "question": "A Monster object has a name and a health value, and it can roar and take damage. In object-oriented terms, which is which?",
+    "correct": [
+      "name and health are its state (fields); roar and takeDamage are its behavior (methods)"
+    ],
+    "incorrect": [
+      "name and health are its behavior (methods); roar and takeDamage are its state (fields)",
+      "All four are state, because all four of them belong to the one Monster object",
+      "All four are behavior, because all four of them are written inside the Monster class"
+    ],
+    "feedback": "An object bundles two things. Its state is what it KNOWS: the data kept in its fields, such as a name and a health value. Its behavior is what it can DO: its methods, such as roar() and takeDamage(). Keeping the two together is the whole idea: a monster carries its own health and knows how to lose some of it."
+  },
+  {
+    "type": "cloze",
+    "question": "A {{1}} is a blueprint: it says what fields and methods every Monster will have. An {{2}}, also called an instance, is one actual Monster built from that blueprint, and it is made with the keyword {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "class"
+        ],
+        "hint": "the blueprint"
+      },
+      {
+        "accept": [
+          "object"
+        ],
+        "hint": "one built thing"
+      },
+      {
+        "accept": [
+          "new"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "A class is written once and describes a kind of thing. Objects are made from it, as many as you like, each by a new expression: Monster goblin = new Monster(); Monster dragon = new Monster(); is one class and two objects. The class is the plan; the objects are the monsters."
+  },
+  {
     "type": "fill_blank",
     "question": "Complete the line so that it creates a Dog object and runs the Dog constructor:\nDog rex = ___ Dog(\"Rex\");",
     "correct": [
@@ -7,6 +45,58 @@
     ],
     "case_sensitive": true,
     "feedback": "new creates the object and runs the constructor; rex then holds a reference to the finished object. Leave the word out and the line does not compile, because Dog(\"Rex\") on its own looks like a call to a method named Dog. Declaring just  Dog rex;  creates no object at all: a local variable written that way has no value yet (the compiler will not let you read it), and a field written that way holds null."
+  },
+  {
+    "type": "code_trace",
+    "question": "Two objects are made from one class, and their fields are set with a dot. What does this print?",
+    "code": "class Monster {\n    String name;\n    int health;\n}\n\nMonster goblin = new Monster();\ngoblin.name = \"Goblin\";\ngoblin.health = 30;\nMonster dragon = new Monster();\ndragon.name = \"Dragon\";\ndragon.health = 200;\ngoblin.health = goblin.health - 5;\nSystem.out.println(goblin.health);\nSystem.out.println(dragon.health);",
+    "language": "java",
+    "correct": [
+      "25\n200"
+    ],
+    "case_sensitive": true,
+    "feedback": "goblin.health means “the health field of the object goblin refers to”. Each Monster made with new has fields of its own, so taking 5 from the goblin leaves the dragon at 200. The class is one blueprint; the objects are two separate monsters."
+  },
+  {
+    "type": "code_trace",
+    "question": "Two Counter objects are created from the same class. What does the program print?",
+    "code": "class Counter {\n    private int count = 0;\n    void increment() { count++; }\n    int get() { return count; }\n}\n\nCounter a = new Counter();\nCounter b = new Counter();\na.increment();\na.increment();\nb.increment();\nSystem.out.println(a.get() + \" \" + b.get());",
+    "language": "java",
+    "correct": [
+      "2 1"
+    ],
+    "case_sensitive": true,
+    "feedback": "count is an instance field, so each object made with new carries its own copy. new ran twice, which makes two objects and two separate counts: a's is raised twice and b's once. Nothing done to one object reaches the other."
+  },
+  {
+    "type": "matching",
+    "question": "You are writing a Hero class for a game. Match each kind of variable to the piece of data it suits.",
+    "pairs": [
+      {
+        "term": "field",
+        "definition": "One hero's current hit points, remembered between method calls"
+      },
+      {
+        "term": "local variable",
+        "definition": "A running total needed only while one method adds up a hero's loot"
+      },
+      {
+        "term": "parameter",
+        "definition": "The amount of damage a caller hands to takeDamage(...)"
+      }
+    ],
+    "feedback": "Ask who owns the data and how long it has to live. Data that each object must remember belongs in a field: it stays for as long as the object does, and every method of the class can use it. A value needed only during one method call is a local variable, gone when the method returns. A value the caller supplies for that call is a parameter."
+  },
+  {
+    "type": "code_trace",
+    "question": "A method can use and change the fields of the object it is called on. What does this print?",
+    "code": "class Monster {\n    String name;\n    int health;\n\n    void takeDamage(int amount) {\n        health = health - amount;\n    }\n}\n\nMonster orc = new Monster();\norc.health = 60;\norc.takeDamage(10);\norc.takeDamage(25);\nSystem.out.println(orc.health);",
+    "language": "java",
+    "correct": [
+      "25"
+    ],
+    "case_sensitive": true,
+    "feedback": "Inside takeDamage, health means the health of whichever monster the method was called on: here, the orc. The field is not a local variable, so it does not vanish when the method ends: after the first call it holds 50, and the second call starts from there and leaves 25."
   },
   {
     "question": "class Potion {\n    private int doses;\n    Potion(int doses) {\n        this.doses = doses;\n    }\n}\nWhen does the body of  Potion(int doses)  run?",
@@ -33,6 +123,17 @@
       "A constructor can be called again on an existing object to reset it, as in rex.Dog(\"Max\")"
     ],
     "feedback": "A constructor is named after its class and has NO return type at all. That matters: write  void Dog() { ... }  and it still compiles, but as an ordinary method that happens to be called Dog, so new Dog() never runs it and the fields keep their defaults. A class can have several constructors with different parameter lists. The free no-argument constructor exists only while you have written none: add Dog(String name) and  new Dog()  stops compiling. And a constructor runs only as part of new; rex.Dog(\"Max\") is not legal, so resetting an object is a job for a method."
+  },
+  {
+    "type": "ordering",
+    "question": "Put in order, first to last, what happens when Java runs this line:\nDog rex = new Dog(\"Rex\");",
+    "items": [
+      "Memory is set aside for one new Dog object",
+      "The new object's fields are filled with default values",
+      "The constructor body runs and assigns the fields",
+      "A reference to the finished object is stored in rex"
+    ],
+    "feedback": "The right-hand side is finished before the assignment happens. new first makes room for the object and fills its fields with defaults, which is why a constructor that forgets a field leaves 0, false or null behind. Then the constructor body runs. Only when the object is complete does = store a reference to it in rex."
   },
   {
     "type": "npc_demo",
@@ -107,50 +208,15 @@
     "feedback": "this.hp is the field of the object being built; plain hp is the parameter, because a parameter shadows a field with the same name. The field goes on the left since that is where the value is stored. hp = hp; compiles but changes nothing, and hp = this.hp; copies in the wrong direction, overwriting the parameter with the field's default."
   },
   {
-    "type": "matching",
-    "question": "Each line declares a field that no constructor ever assigns. Match each field to what is shown when it is printed.",
-    "pairs": [
-      {
-        "term": "private int hp;",
-        "definition": "0"
-      },
-      {
-        "term": "private double speed;",
-        "definition": "0.0"
-      },
-      {
-        "term": "private boolean alive;",
-        "definition": "false"
-      },
-      {
-        "term": "private String title;",
-        "definition": "null"
-      }
-    ],
-    "feedback": "Java fills every field of a new object with a default before the constructor runs: 0 for whole-number types, 0.0 for double, false for boolean, and null for any field that refers to an object — String included. A String field does not start as an empty string; it starts as null, meaning it refers to no object at all."
-  },
-  {
-    "question": "class Chest {\n    private int coins;\n\n    void show() {\n        int gems;\n        System.out.println(coins);\n        System.out.println(gems);\n    }\n}\nNeither coins nor gems is ever assigned. What happens?",
+    "type": "code_trace",
+    "question": "This class has two constructors. What does the program print?",
+    "code": "class Weapon {\n    String name;\n    int damage;\n    int price;\n\n    Weapon(String name, int damage, int price) {\n        this.name = name;\n        this.damage = damage;\n        this.price = price;\n    }\n\n    Weapon(String name, int damage) {\n        this.name = name;\n        this.damage = damage;\n        this.price = 0;\n    }\n}\n\nWeapon sword = new Weapon(\"Sword\", 15, 25);\nWeapon stick = new Weapon(\"Stick\", 2);\nSystem.out.println(sword.price + \" \" + stick.price);\nSystem.out.println(stick.damage);",
+    "language": "java",
     "correct": [
-      "It does not compile: the local variable gems was never given a value"
+      "25 0\n2"
     ],
-    "incorrect": [
-      "It prints 0 twice, because an int starts at 0 wherever it is declared",
-      "It does not compile: the field coins has no starting value",
-      "It compiles and prints 0, then throws an exception when gems is read"
-    ],
-    "feedback": "Default values are a privilege of fields. coins is a field, so it quietly starts at 0 and printing it is legal. gems is a local variable, and locals get no default: the compiler reports that gems might not have been initialized and refuses to build the class. Because the compiler catches it, nothing is left to go wrong while the program runs."
-  },
-  {
-    "type": "ordering",
-    "question": "Put in order, first to last, what happens when Java runs this line:\nDog rex = new Dog(\"Rex\");",
-    "items": [
-      "Memory is set aside for one new Dog object",
-      "The new object's fields are filled with default values",
-      "The constructor body runs and assigns the fields",
-      "A reference to the finished object is stored in rex"
-    ],
-    "feedback": "The right-hand side is finished before the assignment happens. new first makes room for the object and fills its fields with defaults, which is why a constructor that forgets a field leaves 0, false or null behind. Then the constructor body runs. Only when the object is complete does = store a reference to it in rex."
+    "case_sensitive": true,
+    "feedback": "A class may have several constructors as long as they take different lists of values; that is called overloading. Java chooses by what is in the parentheses: three values run the first constructor, two values run the second, which sets the price to 0 itself. The stick still gets its own name and damage."
   },
   {
     "type": "code_trace",
@@ -164,150 +230,16 @@
     "feedback": "Java picks the constructor whose parameter list matches the arguments. new Potion(\"Elixir\") matches the one-parameter constructor, and this(name, 3) inside it runs the two-parameter constructor of the same class with doses = 3. q calls the two-parameter constructor directly with 5. Chaining with this(...) keeps the real set-up code in one place. (Older Java insisted that this(...) open the constructor; Java 25 allows other statements ahead of it, provided they do not use the object being built.)"
   },
   {
-    "type": "code_trace",
-    "question": "Two Counter objects are created from the same class. What does the program print?",
-    "code": "class Counter {\n    private int count = 0;\n    void increment() { count++; }\n    int get() { return count; }\n}\n\nCounter a = new Counter();\nCounter b = new Counter();\na.increment();\na.increment();\nb.increment();\nSystem.out.println(a.get() + \" \" + b.get());",
-    "language": "java",
+    "question": "A Monster's health field is NOT private. What can go wrong that making it private would prevent?",
     "correct": [
-      "2 1"
-    ],
-    "case_sensitive": true,
-    "feedback": "count is an instance field, so each object made with new carries its own copy. new ran twice, which makes two objects and two separate counts: a's is raised twice and b's once. Nothing done to one object reaches the other."
-  },
-  {
-    "type": "npc_demo",
-    "question": "NPC: Two tags, one chest",
-    "npc": "zoya",
-    "intro": "Zoya ties a paper tag marked a to the handle of an iron chest, then ties a second tag, marked b, to the same handle. “This,” they say, “is the one picture of objects I need you to keep.”",
-    "steps": [
-      {
-        "say": "new ran once, so there is one Chest object. A variable like a does not contain the chest. It holds a reference: a tag tied to the object, telling Java where to find it. b = a copies the tag, not the chest.",
-        "beats": [
-          {
-            "say": "Count how many times new runs here."
-          },
-          {
-            "code": "Chest a = new Chest();\nChest b = a;",
-            "language": "java"
-          },
-          {
-            "say": "Once — so there is ONE Chest object. The variable a does not contain the chest. It holds a reference: a tag tied to the object, telling Java where to find it."
-          },
-          {
-            "say": "b = a copies the tag, not the chest. Two variables, one object. Programmers call a and b aliases for the same object."
-          }
-        ]
-      },
-      {
-        "say": "Now I drop five coins in through the tag marked b, and look through the tag marked a.",
-        "beats": [
-          {
-            "say": "The chest starts with 0 coins. I drop five in through the tag marked b, then look through the tag marked a."
-          },
-          {
-            "code": "b.addCoins(5);\nSystem.out.println(a.getCoins());",
-            "language": "java"
-          }
-        ],
-        "check": {
-          "prompt": "What is printed?",
-          "answer": "5",
-          "wrong": [
-            "0",
-            "Nothing — a has no coins, so it is an error"
-          ],
-          "why": "a and b refer to the same object, so a change made through either reference is seen through both."
-        }
-      },
-      {
-        "say": "If I wanted a second, separate chest I would have to run new a second time. To count objects, count how many times new runs — not how many variables there are."
-      }
-    ],
-    "outro": "“The next monster has tied two tags to one Counter. Find the single object and the rest is easy.”"
-  },
-  {
-    "type": "code_trace",
-    "question": "Look closely at how b gets its value. What does the program print?",
-    "code": "class Counter {\n    private int count = 0;\n    void increment() { count++; }\n    int get() { return count; }\n}\n\nCounter a = new Counter();\nCounter b = a;\na.increment();\nb.increment();\nb.increment();\nSystem.out.println(a.get() + \" \" + b.get());",
-    "language": "java",
-    "correct": [
-      "3 3"
-    ],
-    "case_sensitive": true,
-    "feedback": "new runs once, so there is one Counter object. Counter b = a; copies the reference held in a, which makes b an alias: a second name for the same object. All three increment() calls therefore land on the same count, and both get() calls read it. For two independent counters, b would need its own new Counter()."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "A Counter object has a private int count that starts at 0. Its increment() method adds 1 to count, and get() returns count.\n\nCounter a = new Counter();\nCounter b = a;\nCounter c = new Counter();\n\nNext, a.increment() is called {{n}} times, b.increment() is called {{m}} times, and c.increment() is called {{k}} times. What does a.get() return?",
-    "variables": {
-      "n": {
-        "min": 2,
-        "max": 5
-      },
-      "m": {
-        "min": 1,
-        "max": 4
-      },
-      "k": {
-        "min": 1,
-        "max": 3
-      }
-    },
-    "answer": {
-      "expr": "n + m",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "new runs twice, so there are two objects. b = a makes b a second reference to the first object, which means the {{n}} calls through a and the {{m}} calls through b all raise the same count, giving {{expected}}. c refers to a separate object, so its {{k}} calls change nothing that a can see."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "How many Golem objects does this code create?\nGolem first = new Golem();\nGolem second = first;\nfor (int i = 0; i < {{n}}; i++) {\n    Golem g = new Golem();\n    Golem h = g;\n}",
-    "variables": {
-      "n": {
-        "min": 3,
-        "max": 9
-      }
-    },
-    "answer": {
-      "expr": "n + 1",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "Objects are created by new, not by declaring variables. new Golem() runs once before the loop and once on each of the {{n}} passes through it, which makes {{expected}} objects. second = first and h = g only copy references, so they add names for objects that already exist."
-  },
-  {
-    "type": "code_trace",
-    "question": "The == operator is used on object variables here. What does the program print?",
-    "code": "class Gem {\n    private int cut;\n    Gem(int cut) { this.cut = cut; }\n}\n\nGem a = new Gem(4);\nGem b = new Gem(4);\nGem c = a;\nSystem.out.println((a == b) + \" \" + (a == c));",
-    "language": "java",
-    "correct": [
-      "false true"
-    ],
-    "case_sensitive": true,
-    "feedback": "On object variables, == compares the references: it asks whether both sides refer to the very same object, and never looks inside. a and b came from two separate new expressions, so they are two objects and a == b is false even though both hold 4. c was copied from a, so both refer to one object and a == c is true."
-  },
-  {
-    "question": "Gem has one field, one constructor, and nothing else:\nclass Gem {\n    private int cut;\n    Gem(int cut) { this.cut = cut; }\n}\n\nGem a = new Gem(4);\nGem b = new Gem(4);\nSystem.out.println(a.equals(b));\nWhat happens, and why?",
-    "correct": [
-      "It prints false: a class that writes no equals gets a basic one that works like =="
+      "Code in any other class can set it to a nonsense value such as -999"
     ],
     "incorrect": [
-      "It prints true: equals compares two objects field by field, and both hold 4",
-      "It does not compile, because Gem declares no method named equals",
-      "It prints false because cut is private; a public cut would give true"
+      "Two Monster objects would end up sharing one single health value",
+      "The Monster's own methods would be unable to change the health",
+      "The health value would be lost each time one of its methods ends"
     ],
-    "feedback": "Every class is handed a basic equals for free, so the call compiles. That free version knows nothing about your fields: it simply checks whether the two references lead to the same object, exactly as == does. a and b are separate objects, so the answer is false. To make equals compare contents, the class has to supply its own version. String does that, which is why equals works on text, and a record does it for you. Whether the field is private or public makes no difference."
-  },
-  {
-    "question": "class Hero {\n    private String name;\n    private String title;\n\n    Hero(String name) { this.name = name; }\n\n    String getTitle() { return title; }\n}\n\nHero h = new Hero(\"Ayla\");\nSystem.out.println(h.getTitle().length());\nWhat happens when this runs?",
-    "correct": [
-      "It throws a NullPointerException, because title still holds null"
-    ],
-    "incorrect": [
-      "It prints 0, because an unset String field is an empty string",
-      "It does not compile, because the constructor leaves title unassigned",
-      "It prints 4, because the word null is four characters long"
-    ],
-    "feedback": "The constructor sets name and never touches title, so title keeps the default for a field that refers to an object: null, meaning no object at all. The compiler does not insist that a constructor assign every field, so the class builds. getTitle() returns null without complaint; the crash comes one step later, when .length() is called on a reference that leads nowhere. Giving title a starting value, such as \"\" or \"Novice\", in the constructor prevents it."
+    "feedback": "A field that is not private can be written by anyone: goblin.health = -999; compiles and runs, and the game's rules are broken. Making it private means the only way to change it is through the class's own methods, which can refuse a bad value. That is encapsulation. Objects never share a field of this kind, a class can always use its own fields, and a field lasts as long as its object."
   },
   {
     "type": "cloze",
@@ -365,11 +297,11 @@
       "A method of Vault can read the gold of a different Vault object passed in as a parameter"
     ],
     "incorrect": [
-      "Its value is fixed once the constructor has finished running",
-      "It is shared between Vault objects, in the way a static field is",
-      "The class will not compile unless a constructor gives it a value"
+      "Its value can no longer be changed once the constructor has finished running",
+      "It is shared: every Vault object reads and writes the very same gold value",
+      "The class will not compile unless one of its constructors gives it a value"
     ],
-    "feedback": "private controls WHO may touch a field, and nothing else. The boundary is the class, not the object, so a Vault method such as  boolean richerThan(Vault other)  may read other.gold. private does not freeze the value (that is final), does not share it between objects (that is static), and does not oblige a constructor to set it: an unassigned int field simply starts at 0."
+    "feedback": "private controls WHO may touch a field, and nothing else. The boundary is the class, not the object, so a Vault method such as  boolean richerThan(Vault other)  may read other.gold. private does not freeze the value, does not make objects share it (each Vault still has a gold of its own), and does not oblige a constructor to set it."
   },
   {
     "question": "The class Hero has the field  private int level;  Which method is a correctly written getter for it?",
@@ -522,131 +454,50 @@
     "feedback": "Getters and setters are ordinary methods, so they can contain any logic. A setter can validate; a getter can simply return the field (most do) or build its answer, as in return first + \" \" + last;. A field with a getter and no setter is read-only from outside, which is often exactly what you want. A getter hands back a copy of the value, not the field itself, so h.getHp() = 5; does not compile. The names getHp and setHp are a convention people and tools rely on; the compiler does not care."
   },
   {
-    "type": "npc_demo",
-    "question": "NPC: One tally for the whole workshop",
-    "npc": "zoya",
-    "intro": "A slate hangs by the workshop door with a single chalk number on it. “Every golem carries its own power,” Zoya says. “But that slate? There is one of it, and it belongs to the workshop, not to any golem.”",
-    "steps": [
-      {
-        "say": "power is an instance field: every Golem object gets its own copy. made is marked static, so it belongs to the class itself. There is exactly one made, however many golems exist — it is the slate by the door.",
-        "beats": [
-          {
-            "say": "Two fields, and one word makes them very different."
-          },
-          {
-            "code": "class Golem {\n    private static int made = 0;\n    private int power;\n\n    Golem(int power) {\n        this.power = power;\n        made++;\n    }\n\n    static int getMade() { return made; }\n}",
-            "language": "java"
-          },
-          {
-            "say": "power is an instance field: every Golem object gets its own copy. made is marked static, so it belongs to the class itself. There is exactly ONE made, however many golems exist. It is the slate by the door."
-          }
-        ]
-      },
-      {
-        "say": "Every run of the constructor adds 1 to that single shared field.",
-        "beats": [
-          {
-            "say": "Each run of the constructor adds 1 to that single shared field. I shape three golems:"
-          },
-          {
-            "code": "new Golem(4);\nnew Golem(9);\nnew Golem(2);",
-            "language": "java"
-          }
-        ],
-        "check": {
-          "prompt": "What does Golem.getMade() return?",
-          "answer": "3",
-          "wrong": [
-            "1",
-            "15"
-          ],
-          "why": "All three constructors raised the same static field, so it reads 3. The powers 4, 9 and 2 live in three separate instance fields and never touch it."
-        }
-      },
-      {
-        "say": "Look at the call: Golem.getMade() — class name, dot, method. A static method needs no object. The price is that it has no this, so it cannot read an instance field such as power: which golem's power would it mean?"
-      }
+    "type": "code_trace",
+    "question": "A Hero is handed Item objects. What does the program print?",
+    "code": "class Item {\n    private int price;\n\n    Item(int price) {\n        this.price = price;\n    }\n\n    int getPrice() {\n        return price;\n    }\n}\n\nclass Hero {\n    private int gold;\n\n    Hero(int gold) {\n        this.gold = gold;\n    }\n\n    void buy(Item item) {\n        if (gold >= item.getPrice()) {\n            gold -= item.getPrice();\n        }\n    }\n\n    int getGold() {\n        return gold;\n    }\n}\n\nHero hero = new Hero(50);\nItem potion = new Item(20);\nItem sword = new Item(40);\nhero.buy(potion);\nhero.buy(sword);\nhero.buy(potion);\nSystem.out.println(hero.getGold());",
+    "language": "java",
+    "correct": [
+      "10"
     ],
-    "outro": "“The next monster numbers its tickets with a static field. Keep two columns as you trace: one for the class, one for each object.”"
+    "case_sensitive": true,
+    "feedback": "The hero starts with 50. The potion costs 20, which the hero can afford: 30 left. The sword costs 40, more than 30, so the if is false and nothing changes. A second potion goes through: 10 left. The Hero never looks inside the Item; it asks the item for its price, each time, through getPrice()."
+  },
+  {
+    "question": "price is a private field of Item. Inside Hero's method  buy(Item item),  how does the hero find out what the item costs?",
+    "correct": [
+      "By calling item.getPrice(), a public method of Item"
+    ],
+    "incorrect": [
+      "By reading item.price, since buy was handed the item",
+      "By reading this.price, since the hero now owns the item",
+      "It cannot: a private field is hidden from all objects"
+    ],
+    "feedback": "private means “only code inside Item may touch this”, and buy is code inside Hero, so item.price does not compile, whoever the item was handed to. this.price would be a field of the HERO, which has none. The way in is the one Item offers: its public getter. Objects work together by calling each other's methods."
+  },
+  {
+    "question": "Which line makes a list that can hold Monster objects?",
+    "correct": [
+      "ArrayList<Monster> monsters = new ArrayList<>();"
+    ],
+    "incorrect": [
+      "ArrayList<monsters> Monster = new ArrayList<>();",
+      "Monster[] monsters = new ArrayList<Monster>();",
+      "ArrayList monsters = new Monster<ArrayList>();"
+    ],
+    "feedback": "The angle brackets say what the list holds, and a class of your own can go there just as String or Integer can: ArrayList<Monster>. The variable's name comes after the type. A Monster[] is an array, a different thing, and it is the ArrayList that is made with new, not the Monster."
   },
   {
     "type": "code_trace",
-    "question": "One of these fields is static and the other is not. What does the program print?",
-    "code": "class Ticket {\n    private static int issued = 0;\n    private int number;\n\n    Ticket() {\n        issued++;\n        number = issued;\n    }\n\n    int getNumber() { return number; }\n    static int getIssued() { return issued; }\n}\n\nTicket a = new Ticket();\nTicket b = new Ticket();\nTicket c = new Ticket();\nSystem.out.println(a.getNumber() + \" \" + c.getNumber() + \" \" + Ticket.getIssued());",
+    "question": "A list of objects, walked with a for-each loop. What does this print?",
+    "code": "class Monster {\n    private String name;\n    private int health;\n\n    Monster(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    int getHealth() {\n        return health;\n    }\n}\n\nArrayList<Monster> monsters = new ArrayList<>();\nmonsters.add(new Monster(\"Goblin\", 30));\nmonsters.add(new Monster(\"Orc\", 60));\nmonsters.add(new Monster(\"Dragon\", 200));\nint total = 0;\nfor (Monster m : monsters) {\n    total += m.getHealth();\n}\nSystem.out.println(monsters.size());\nSystem.out.println(total);",
     "language": "java",
     "correct": [
-      "1 3 3"
+      "3\n290"
     ],
     "case_sensitive": true,
-    "feedback": "issued is static: one shared field for the whole class, raised by every constructor call, so it ends at 3. number is an instance field: each ticket copies the value issued had at the moment that ticket was made, and keeps it. a was first and holds 1; c was third and holds 3. Later tickets do not change a's number, because that copy belongs to a alone."
-  },
-  {
-    "type": "dynamic_numeric",
-    "question": "class Counter {\n    private static int total = 0;\n    private int count = 0;\n\n    void increment() {\n        count++;\n        total++;\n    }\n\n    int getCount() { return count; }\n    static int getTotal() { return total; }\n}\n\nCounter a = new Counter();\nCounter b = new Counter();\n\nNext, a.increment() is called {{n}} times and b.increment() is called {{m}} times. What number does this line then print?\nSystem.out.println(a.getCount() + Counter.getTotal());",
-    "variables": {
-      "n": {
-        "min": 2,
-        "max": 6
-      },
-      "m": {
-        "min": 1,
-        "max": 5
-      }
-    },
-    "derived": {
-      "total": "n + m"
-    },
-    "answer": {
-      "expr": "2 * n + m",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "count is an instance field, so a's own count only sees a's {{n}} calls. total is static, one field shared by the whole class, so it sees every call made on any Counter: {{n}} and {{m}} together make {{total}}. Both are ints, so + adds them, and the line prints {{expected}}."
-  },
-  {
-    "question": "class Hero {\n    private int hp = 10;\n\n    static void report() {\n        System.out.println(hp);\n    }\n}\nThis class does not compile. Why?",
-    "correct": [
-      "report() is static, so it runs with no particular Hero, and there is no hp to read"
-    ],
-    "incorrect": [
-      "hp is private, so even a method of Hero needs a getter in order to read it",
-      "report() is void, and a void method is not allowed to print a field's value",
-      "hp gets its value where it is declared, when a constructor should assign it"
-    ],
-    "feedback": "A static method belongs to the class and can be called as Hero.report() before a single Hero exists. hp is an instance field, so there is one per object, and inside report() Java has no object to take it from. The compiler says: non-static variable hp cannot be referenced from a static context. Remove static from report(), or pass a Hero in as a parameter. private is not the problem, since methods of Hero may use Hero's private fields; void methods print things all the time; and giving a field its value where it is declared is perfectly legal."
-  },
-  {
-    "type": "code_line",
-    "question": "The class Dice has a static method named roll that takes no arguments. From a different class, write the statement that calls it without creating a Dice object. Ignore the value it returns.",
-    "language": "java",
-    "correct": [
-      "Dice.roll();",
-      "Dice.roll()"
-    ],
-    "case_sensitive": true,
-    "feedback": "A static method is called through the class: class name, dot, method name. No object is needed, so there is no new. You have been doing this all along with Math.sqrt(...) and Integer.parseInt(...). new Dice().roll() would build an object only to throw it away."
-  },
-  {
-    "type": "matching",
-    "question": "You are writing a Hero class for a game. Match each kind of variable to the piece of data it suits.",
-    "pairs": [
-      {
-        "term": "instance field",
-        "definition": "One hero's current hit points, remembered between method calls"
-      },
-      {
-        "term": "static field",
-        "definition": "How many heroes the program has created so far"
-      },
-      {
-        "term": "local variable",
-        "definition": "A running total needed only while one method adds up a hero's loot"
-      },
-      {
-        "term": "parameter",
-        "definition": "The amount of damage a caller hands to takeDamage(...)"
-      }
-    ],
-    "feedback": "Ask who owns the data and how long it has to live. Data each object must remember is an instance field. Data about the class as a whole, of which there is exactly one, is a static field. A value needed only during one method call is a local variable, gone when the method returns (and with no default value). A value the caller supplies for that call is a parameter."
+    "feedback": "Each add puts one new Monster in the list, so its size is 3. In the loop, m is each monster in turn, and m.getHealth() asks that monster for its own health: 30 + 60 + 200 = 290. A new Monster can be made right inside add(…); it does not need a variable of its own."
   },
   {
     "question": "Dog declares a name field and a constructor, and no toString method.\nDog rex = new Dog(\"Rex\");\nSystem.out.println(rex);\nWhich of these could this print?",
@@ -656,14 +507,14 @@
     "incorrect": [
       "Rex",
       "rex",
-      "Dog[name=Rex]"
+      "Dog: Rex"
     ],
-    "feedback": "println asks the object for its toString(). A class that writes none gets a basic one: the class name, an @, and a hexadecimal number that says nothing about the fields (the number varies from run to run). Java does not guess that name is the interesting field, and the object has no idea what its variable is called. Dog[name=Rex] is what you would get if Dog were a record. For an ordinary class you write toString yourself."
+    "feedback": "println asks the object for its toString(). A class that writes none gets a basic one: the class name, an @, and a code that says nothing about the fields (and varies from run to run). Java does not guess that name is the interesting field, and the object has no idea what its variable is called. To see something useful, the class has to write toString itself."
   },
   {
     "type": "code_trace",
     "question": "This class supplies its own toString. What does the program print?",
-    "code": "class Potion {\n    private final String name;\n    private final int doses;\n\n    Potion(String name, int doses) {\n        this.name = name;\n        this.doses = doses;\n    }\n\n    @Override\n    public String toString() {\n        return name + \" x\" + doses;\n    }\n}\n\nPotion p = new Potion(\"Elixir\", 3);\nSystem.out.println(p);",
+    "code": "class Potion {\n    private String name;\n    private int doses;\n\n    Potion(String name, int doses) {\n        this.name = name;\n        this.doses = doses;\n    }\n\n    @Override\n    public String toString() {\n        return name + \" x\" + doses;\n    }\n}\n\nPotion p = new Potion(\"Elixir\", 3);\nSystem.out.println(p);",
     "language": "java",
     "correct": [
       "Elixir x3"
@@ -672,107 +523,434 @@
     "feedback": "println(p) calls p.toString() for you, and this class has replaced the basic Potion@... version with one that builds a readable string: name, then \" x\", then doses. The same call happens whenever an object is joined to a String with +. The @Override line asks the compiler to check that the method really does replace an existing one, so a slip such as tostring() is caught instead of silently ignored."
   },
   {
-    "question": "This one line is a complete type:\nrecord Point(int x, int y) {}\nWhich of these does Java write for you?",
+    "question": "Monster writes a method  public String toString().  What does it mean to say that this OVERRIDES the default toString()?",
     "correct": [
-      "A constructor that takes x and y",
-      "Accessor methods named x() and y()",
-      "A toString() giving text like Point[x=3, y=7]",
-      "An equals() that compares x and y"
+      "Monster's version replaces the default one, and is what runs"
     ],
     "incorrect": [
-      "Getter methods named getX() and getY()",
-      "Setter methods named setX() and setY()"
+      "Both versions run: the default one first, then Monster's",
+      "The default one still runs unless toString() is named",
+      "Monster's version runs only for the first Monster made"
     ],
-    "feedback": "A record is a compact way to declare a class whose whole job is to hold some values. From the header Java generates private final fields, a constructor taking every component, accessors named after the components with no get prefix, so p.x() and not p.getX(), plus toString, equals and hashCode based on the values. It writes no setters, because a record's fields are final: a record object does not change after it is built."
+    "feedback": "Every class starts out with a toString() that gives the class name and a code. Writing your own with exactly the same name, return type and (empty) parameter list replaces it: from then on, wherever Java needs a Monster as text, yours is the one that runs, for every Monster. Putting @Override above it asks the compiler to check that it really does replace something."
   },
   {
-    "type": "code_trace",
-    "question": "A record can have methods of its own as well as the ones Java writes for it. What does the program print?",
-    "code": "record Point(int x, int y) {\n    int sum() { return x + y; }\n}\n\nPoint p = new Point(3, 7);\nSystem.out.println(p.x() + \" \" + p.sum());",
-    "language": "java",
+    "question": "Monster's toString() returns  name + \" [HP=\" + health + \"]\".  monsters is an ArrayList holding a Goblin with 30 health and an Orc with 60. What does  System.out.println(monsters);  print?",
     "correct": [
-      "3 10"
-    ],
-    "case_sensitive": true,
-    "feedback": "new Point(3, 7) uses the constructor Java generated from the record header. p.x() is the generated accessor for the component x, giving 3. sum() is an ordinary method written inside the record's braces; it reads the two fields and returns their total. A record is a full class, with the repetitive parts written for you."
-  },
-  {
-    "type": "code_trace",
-    "question": "Both points are created separately with the same values. What does the program print?",
-    "code": "record Point(int x, int y) {}\n\nPoint a = new Point(2, 3);\nPoint b = new Point(2, 3);\nSystem.out.println(a.equals(b) + \" \" + (a == b));",
-    "language": "java",
-    "correct": [
-      "true false"
-    ],
-    "case_sensitive": true,
-    "feedback": "A record gets an equals() that compares the components, and 2, 3 matches 2, 3, so a.equals(b) is true. == is never redefined by anything: it still asks whether a and b are the same object, and two new expressions made two objects, so it is false. Use equals() to ask whether two objects hold the same data."
-  },
-  {
-    "question": "record Point(int x, int y) {}\n\nPoint p = new Point(3, 7);\nWhich statement leaves p referring to a point whose x is 5 and whose y is still 7?",
-    "correct": [
-      "p = new Point(5, p.y());"
+      "[Goblin [HP=30], Orc [HP=60]]"
     ],
     "incorrect": [
-      "p.x = 5;",
-      "p.setX(5);",
-      "p.x(5);"
+      "[Monster@1b6d3586, Monster@4e25154f]",
+      "Goblin [HP=30] Orc [HP=60]",
+      "[Goblin, Orc]"
     ],
-    "feedback": "A record's fields are private and final, so an existing Point can never be altered: p.x = 5; does not compile, no setX was generated, and the accessor x() takes no arguments. To \"change\" a record you build a new one from the old values and point the variable at it. Objects that cannot change are called immutable, and they are safe to share: an alias cannot alter one behind your back."
+    "feedback": "A list prints itself as square brackets around its elements, separated by commas, and to show each element it calls that element's toString(). So each monster appears exactly as its own toString() describes it. Without a toString() in Monster, the list would show the default class-name-and-code for each one."
   },
   {
-    "type": "code_trace",
-    "question": "An enum is a type with a fixed list of named values. What does the program print?",
-    "code": "enum Rank { BRONZE, SILVER, GOLD }\n\nRank r = Rank.SILVER;\nSystem.out.println(r + \" \" + r.ordinal() + \" \" + Rank.values().length);",
+    "type": "npc_demo",
+    "question": "NPC: A test that tells a little story",
+    "npc": "zoya",
+    "intro": "Zoya sets an unfinished clay figure on the bench, and beside it a short list of things to try on it. \"A method could be tested by handing it numbers. An object cannot. What a method DID shows only in what the object has become.\"",
+    "steps": [
+      {
+        "say": "Each test makes an object, does something to it, and then looks at one thing.",
+        "beats": [
+          {
+            "say": "From here on, each row of the table is a little story: make an object, do something to it, then look at one thing."
+          },
+          {
+            "code": "Monster m = new Monster(\"Goblin\", 30);\nm.takeDamage(10);\nm.getHealth()        // wanted: 20",
+            "language": "java"
+          },
+          {
+            "say": "The last line is what the test looks at. Everything above it is how the object got there."
+          }
+        ],
+        "check": {
+          "prompt": "A row reads  Monster a = new Monster(\"A\", 30); Monster b = new Monster(\"B\", 8); a.takeDamage(5); b.getHealth()  — what should it show?",
+          "answer": "8",
+          "wrong": [
+            "3",
+            "25"
+          ],
+          "why": "The damage was done to a. b is a different object with a health of its own, and nothing touched it. A row like this is there to catch a class whose objects are not keeping their own data."
+        }
+      },
+      {
+        "say": "Sometimes you write one method of a class that is given. Sometimes you write the whole class.",
+        "beats": [
+          {
+            "say": "First you will be handed a class that is nearly finished, and write one method of it. The class so far is shown above the box; read its fields before you start."
+          },
+          {
+            "say": "Later the box is the whole class: fields first, then a constructor, then the methods. The question says exactly what to call each one, because the tests will use those names."
+          },
+          {
+            "say": "Some rows only ask whether a field is private. As always: Run costs nothing, and only Submit counts."
+          }
+        ]
+      }
+    ],
+    "outro": "\"Spelling counts here. If the question says getHealth, a method called gethealth is a method the tests cannot find.\""
+  },
+  {
+    "type": "code_write",
     "language": "java",
-    "correct": [
-      "SILVER 1 3"
+    "question": "Finish describe() so that it returns a sentence about THIS potion, built from its three fields, in the form  Health Potion restores 50 health and costs 10 gold.",
+    "scaffold": "public class Potion {\n    String name;\n    int healingAmount;\n    int price;\n",
+    "signature": "public String describe()",
+    "tests": [
+      {
+        "run": "Potion p = new Potion();\np.name = \"Health Potion\";\np.healingAmount = 50;\np.price = 10;",
+        "check": "p.describe()",
+        "expect": "Health Potion restores 50 health and costs 10 gold."
+      },
+      {
+        "run": "Potion p = new Potion();\np.name = \"Mana Elixir\";\np.healingAmount = 30;\np.price = 15;",
+        "check": "p.describe()",
+        "expect": "Mana Elixir restores 30 health and costs 15 gold."
+      },
+      {
+        "run": "Potion a = new Potion();\na.name = \"A\";\na.price = 5;\nPotion b = new Potion();\nb.name = \"B\";\nb.price = 9;",
+        "check": "a.describe()",
+        "expect": "A restores 0 health and costs 5 gold."
+      }
     ],
-    "case_sensitive": true,
-    "feedback": "Printing an enum constant shows its name, so r gives SILVER. ordinal() is the constant's position in the declaration, counted from 0 as with array indexes: BRONZE 0, SILVER 1, GOLD 2. Rank.values() returns an array of all the constants, and there are 3 of them."
+    "solution": "return name + \" restores \" + healingAmount + \" health and costs \" + price + \" gold.\";",
+    "hint": "Inside a method, the fields are used by their names: name, healingAmount and price. Join them to the fixed words with +.",
+    "feedback": "A method uses the fields of the object it was called on, by their plain names. It RETURNS the sentence instead of printing it, so that whoever called it can decide what to do with the text."
   },
   {
-    "question": "A hero's rank could be stored in a field declared  String rank;  or, given\nenum Rank { BRONZE, SILVER, GOLD }\nin a field declared  Rank rank;  What does the enum version gain?",
-    "correct": [
-      "A misspelt value such as Rank.SLIVER is rejected by the compiler"
-    ],
-    "incorrect": [
-      "New ranks can be added to Rank while the program is running",
-      "Two Rank values have to be compared with equals(), which is safer than ==",
-      "A Rank field is not able to hold null, which a String field can"
-    ],
-    "feedback": "A String field accepts any text, so \"SLIVER\" or \"gold \" slips through and the bug appears much later. A Rank field can hold one of the three constants and nothing else, and a name that is not on the list is a compile error. The list is fixed when the program is compiled; it cannot grow while the program runs. Each constant exists exactly once, so == is the normal, safe way to compare enum values. A Rank field can still be null, and like any field that refers to an object it starts that way."
-  },
-  {
-    "type": "code_trace",
-    "question": "An enum can have methods, and a switch can cover its constants one by one. What does the program print?",
-    "code": "enum Rank {\n    BRONZE, SILVER, GOLD;\n\n    int bonus() {\n        return switch (this) {\n            case BRONZE -> 1;\n            case SILVER -> 5;\n            case GOLD -> 20;\n        };\n    }\n}\n\nRank[] party = { Rank.GOLD, Rank.BRONZE, Rank.GOLD };\nint total = 0;\nfor (Rank r : party) {\n    total += r.bonus();\n}\nSystem.out.println(total);",
+    "type": "code_write",
     "language": "java",
-    "correct": [
-      "41"
+    "question": "Write the body of the constructor: store its two parameters in the fields that have the same names.",
+    "scaffold": "public class Monster {\n    private String name;\n    private int health;\n\n    public String getName() {\n        return name;\n    }\n\n    public int getHealth() {\n        return health;\n    }\n",
+    "signature": "Monster(String name, int health)",
+    "tests": [
+      {
+        "run": "Monster m = new Monster(\"Goblin\", 30);",
+        "check": "m.getName()",
+        "expect": "Goblin"
+      },
+      {
+        "run": "Monster m = new Monster(\"Goblin\", 30);",
+        "check": "m.getHealth()",
+        "expect": 30
+      },
+      {
+        "run": "Monster a = new Monster(\"Orc\", 60);\nMonster b = new Monster(\"Slime\", 10);",
+        "check": "a.getName() + a.getHealth() + b.getName() + b.getHealth()",
+        "expect": "Orc60Slime10"
+      }
     ],
-    "case_sensitive": true,
-    "feedback": "Inside bonus(), this is whichever constant the method was called on. The switch expression gives 20 for GOLD, 1 for BRONZE and 20 for GOLD again, so total ends at 41. The switch needs no default because it names every constant of the enum; add a fourth rank later and the compiler will point at this switch until you deal with it."
+    "solution": "this.name = name;\nthis.health = health;",
+    "hint": "The parameters hide the fields of the same names. this.name is the field; plain name is the parameter.",
+    "feedback": "Inside the constructor, name on its own means the parameter. this.name means the field of the object being built, so this.name = name; copies the one into the other. Writing name = name; compiles, copies the parameter onto itself, and leaves the field empty."
   },
   {
-    "type": "code_trace",
-    "question": "Coin supplies its own equals, which compares values. The loop counts two different things. What does the program print?",
-    "code": "class Coin {\n    private final int value;\n\n    Coin(int value) { this.value = value; }\n\n    @Override\n    public boolean equals(Object other) {\n        // true when other is a Coin (call it c) with the same value\n        return other instanceof Coin c && c.value == this.value;\n    }\n}\n\nCoin[] purse = { new Coin(5), new Coin(9), new Coin(5) };\nCoin target = new Coin(5);\nint same = 0;\nint equal = 0;\nfor (Coin c : purse) {\n    if (c == target) { same++; }\n    if (c.equals(target)) { equal++; }\n}\nSystem.out.println(same + \" \" + equal);",
+    "type": "code_write",
     "language": "java",
-    "correct": [
-      "0 2"
+    "question": "Finish takeDamage so that it lowers THIS monster's health by amount. Health must never go below 0.",
+    "scaffold": "public class Monster {\n    private String name;\n    private int health;\n\n    Monster(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public int getHealth() {\n        return health;\n    }\n",
+    "signature": "public void takeDamage(int amount)",
+    "tests": [
+      {
+        "run": "Monster m = new Monster(\"Goblin\", 30);\nm.takeDamage(10);",
+        "check": "m.getHealth()",
+        "expect": 20
+      },
+      {
+        "run": "Monster m = new Monster(\"Goblin\", 30);\nm.takeDamage(99);",
+        "check": "m.getHealth()",
+        "expect": 0
+      },
+      {
+        "run": "Monster m = new Monster(\"Goblin\", 30);\nm.takeDamage(10);\nm.takeDamage(20);",
+        "check": "m.getHealth()",
+        "expect": 0
+      },
+      {
+        "run": "Monster a = new Monster(\"A\", 30);\nMonster b = new Monster(\"B\", 8);\na.takeDamage(5);",
+        "check": "b.getHealth()",
+        "expect": 8
+      }
     ],
-    "case_sensitive": true,
-    "feedback": "new runs four times, so there are four Coin objects, and target is a different object from every coin in the purse: c == target is never true and same stays 0. equals() has been written to compare value, and two of the purse's coins hold 5, so equal reaches 2. Notice that equals reads c.value, the private field of another Coin: private means private to the class, not to one object. (A class that writes its own equals should also write a matching hashCode; records do both for you.)"
+    "solution": "health = health - amount;\nif (health < 0) {\n    health = 0;\n}",
+    "hint": "Subtract first. Then, if health has gone below 0, set it back to 0.",
+    "feedback": "The method changes the object's own field, and nothing needs to be returned: the change is still there the next time anyone asks. The if is the class protecting its own data; no caller can make this monster's health negative."
   },
   {
-    "type": "code_trace",
-    "question": "Both static methods receive the same Hero. What does the program print?",
-    "code": "class Hero {\n    private int hp;\n\n    Hero(int hp) { this.hp = hp; }\n\n    int getHp() { return hp; }\n    void setHp(int hp) { this.hp = hp; }\n}\n\nclass Temple {\n    static void heal(Hero h) {\n        h.setHp(h.getHp() + 10);\n    }\n\n    static void swap(Hero h) {\n        h = new Hero(99);\n    }\n}\n\nHero a = new Hero(50);\nTemple.heal(a);\nTemple.swap(a);\nSystem.out.println(a.getHp());",
+    "type": "code_write",
     "language": "java",
-    "correct": [
-      "60"
+    "question": "Finish the setter. A damage from 0 to 100 is stored as it is. Anything below 0 is stored as 0, and anything above 100 is stored as 100.",
+    "scaffold": "public class Weapon {\n    private String name;\n    private int damage;\n\n    Weapon(String name) {\n        this.name = name;\n    }\n\n    public int getDamage() {\n        return damage;\n    }\n",
+    "signature": "public void setDamage(int newDamage)",
+    "tests": [
+      {
+        "run": "Weapon w = new Weapon(\"Axe\");\nw.setDamage(60);",
+        "check": "w.getDamage()",
+        "expect": 60
+      },
+      {
+        "run": "Weapon w = new Weapon(\"Dagger\");\nw.setDamage(-10);",
+        "check": "w.getDamage()",
+        "expect": 0
+      },
+      {
+        "run": "Weapon w = new Weapon(\"Bow\");\nw.setDamage(150);",
+        "check": "w.getDamage()",
+        "expect": 100
+      },
+      {
+        "run": "Weapon w = new Weapon(\"Spear\");\nw.setDamage(100);",
+        "check": "w.getDamage()",
+        "expect": 100
+      },
+      {
+        "run": "Weapon w = new Weapon(\"Spear\");\nw.setDamage(40);\nw.setDamage(0);",
+        "check": "w.getDamage()",
+        "expect": 0
+      }
     ],
-    "case_sensitive": true,
-    "feedback": "Calling a method copies the reference in a into the parameter h, so inside the method h is an alias for the caller's object. heal() uses that alias to change the object itself, and the caller sees hp rise from 50 to 60. swap() only points its own copy, h, at a brand-new Hero; the caller's variable a was never touched and still refers to the first object. The 99-hp hero is dropped when swap() returns."
+    "solution": "if (newDamage < 0) {\n    damage = 0;\n} else if (newDamage > 100) {\n    damage = 100;\n} else {\n    damage = newDamage;\n}",
+    "hint": "Three cases: too low, too high, and fine. An if / else if / else that assigns damage in each.",
+    "feedback": "A setter is the one door into a private field, so it is the place to check what comes through. Here a bad value is pulled back to the nearest allowed one; the edges 0 and 100 are themselves allowed, which is why the tests are < 0 and > 100."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Finish buyItem. If the hero has enough gold, take the item's price off the gold and return  Aria buys Health Potion for 20 gold.  If not, leave the gold alone and return  Aria cannot afford Sword.",
+    "scaffold": "class Item {\n    private String name;\n    private int price;\n\n    Item(String name, int price) {\n        this.name = name;\n        this.price = price;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public int getPrice() {\n        return price;\n    }\n}\n\npublic class Hero {\n    private String name;\n    private int gold;\n\n    Hero(String name, int gold) {\n        this.name = name;\n        this.gold = gold;\n    }\n\n    public int getGold() {\n        return gold;\n    }\n",
+    "signature": "public String buyItem(Item item)",
+    "tests": [
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 50);\nItem potion = new Item(\"Health Potion\", 20);",
+        "check": "hero.buyItem(potion)",
+        "expect": "Aria buys Health Potion for 20 gold."
+      },
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 50);\nhero.buyItem(new Item(\"Health Potion\", 20));",
+        "check": "hero.getGold()",
+        "expect": 30
+      },
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 10);\nItem sword = new Item(\"Sword\", 25);",
+        "check": "hero.buyItem(sword)",
+        "expect": "Aria cannot afford Sword."
+      },
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 10);\nhero.buyItem(new Item(\"Sword\", 25));",
+        "check": "hero.getGold()",
+        "expect": 10
+      },
+      {
+        "run": "Hero hero = new Hero(\"Bo\", 20);\nhero.buyItem(new Item(\"Potion\", 20));",
+        "check": "hero.getGold()",
+        "expect": 0
+      }
+    ],
+    "solution": "if (gold >= item.getPrice()) {\n    gold -= item.getPrice();\n    return name + \" buys \" + item.getName() + \" for \" + item.getPrice() + \" gold.\";\n}\nreturn name + \" cannot afford \" + item.getName() + \".\";",
+    "hint": "The item's fields are private. Ask it: item.getPrice() and item.getName(). “Enough” includes having exactly the price.",
+    "feedback": "Two objects working together. The hero cannot read item.price, because that field is private to Item; it calls the getters Item offers instead. The hero's own gold is its own field, used by its plain name. Having exactly the price is enough, so the test is >=."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write toString so that a monster is shown as its name and health in the form  Goblin [HP=30]",
+    "scaffold": "public class Monster {\n    private String name;\n    private int health;\n\n    Monster(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    @Override",
+    "signature": "public String toString()",
+    "tests": [
+      {
+        "run": "Monster m = new Monster(\"Goblin\", 30);",
+        "check": "m.toString()",
+        "expect": "Goblin [HP=30]"
+      },
+      {
+        "run": "Monster m = new Monster(\"Dragon\", 200);",
+        "check": "\"A wild \" + m + \" appears!\"",
+        "expect": "A wild Dragon [HP=200] appears!"
+      },
+      {
+        "run": "ArrayList<Monster> ms = new ArrayList<>();\nms.add(new Monster(\"Goblin\", 30));\nms.add(new Monster(\"Orc\", 60));",
+        "check": "\"\" + ms",
+        "expect": "[Goblin [HP=30], Orc [HP=60]]"
+      }
+    ],
+    "solution": "return name + \" [HP=\" + health + \"]\";",
+    "hint": "Return the text; do not print it. Join the name, the fixed pieces \" [HP=\" and \"]\", and the health.",
+    "feedback": "toString() returns the text that stands for the object. Java then calls it for you wherever a Monster is needed as text: in println, when it is joined to a String with +, and for every element when a list is printed."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Monster.\nFields (not private):  String name,  int health,  int attackPower.\nA constructor  Monster(String name, int health, int attackPower)  that stores all three.\nA second constructor  Monster(String name)  that gives the monster 50 health and 10 attackPower.\nA method  String roar()  that returns  Dragon roars with power 50!",
+    "signature": "public class Monster",
+    "tests": [
+      {
+        "run": "Monster dragon = new Monster(\"Dragon\", 200, 50);",
+        "check": "dragon.name + \" \" + dragon.health + \" \" + dragon.attackPower",
+        "expect": "Dragon 200 50"
+      },
+      {
+        "run": "Monster goblin = new Monster(\"Goblin\");",
+        "check": "goblin.name + \" \" + goblin.health + \" \" + goblin.attackPower",
+        "expect": "Goblin 50 10"
+      },
+      {
+        "run": "Monster dragon = new Monster(\"Dragon\", 200, 50);",
+        "check": "dragon.roar()",
+        "expect": "Dragon roars with power 50!"
+      },
+      {
+        "run": "Monster goblin = new Monster(\"Goblin\");",
+        "check": "goblin.roar()",
+        "expect": "Goblin roars with power 10!"
+      },
+      {
+        "run": "Monster a = new Monster(\"Orc\", 80, 15);\nMonster b = new Monster(\"Slime\", 10, 2);",
+        "check": "a.roar() + \" \" + b.health",
+        "expect": "Orc roars with power 15! 10"
+      }
+    ],
+    "solution": "String name;\nint health;\nint attackPower;\n\nMonster(String name, int health, int attackPower) {\n    this.name = name;\n    this.health = health;\n    this.attackPower = attackPower;\n}\n\nMonster(String name) {\n    this.name = name;\n    this.health = 50;\n    this.attackPower = 10;\n}\n\nString roar() {\n    return name + \" roars with power \" + attackPower + \"!\";\n}",
+    "hint": "A constructor has the class's name and no return type. Two constructors are told apart by what they take in their ( ).",
+    "feedback": "Fields first, then the constructors, then the method. Both constructors have the name of the class and no return type; Java chooses between them by the number of values in new Monster(…). The second can also be written in one line, this(name, 50, 10); which hands the work to the first."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Weapon.\nPrivate fields:  String name,  int damage.\nA constructor  Weapon(String name, int damage).\nGetters  getName()  and  getDamage().\nA setter  setDamage(int newDamage).\nA method  String describe()  that returns  Sword deals 25 damage.\nDamage is always kept from 0 to 100: a lower value becomes 0 and a higher one becomes 100, in the constructor as well as in the setter.",
+    "signature": "public class Weapon",
+    "tests": [
+      {
+        "run": "Weapon w = new Weapon(\"Sword\", 25);",
+        "check": "w.getName() + \" \" + w.getDamage()",
+        "expect": "Sword 25"
+      },
+      {
+        "run": "Weapon w = new Weapon(\"Broken Stick\", -50);",
+        "check": "w.getDamage()",
+        "expect": 0
+      },
+      {
+        "run": "Weapon w = new Weapon(\"God Sword\", 999);",
+        "check": "w.getDamage()",
+        "expect": 100
+      },
+      {
+        "run": "Weapon w = new Weapon(\"Axe\", 40);\nw.setDamage(60);",
+        "check": "w.getDamage()",
+        "expect": 60
+      },
+      {
+        "run": "Weapon w = new Weapon(\"Bow\", 20);\nw.setDamage(150);",
+        "check": "w.getDamage()",
+        "expect": 100
+      },
+      {
+        "run": "Weapon w = new Weapon(\"Dagger\", 30);\nw.setDamage(-10);",
+        "check": "w.describe()",
+        "expect": "Dagger deals 0 damage."
+      },
+      {
+        "private": "Weapon.name"
+      },
+      {
+        "private": "Weapon.damage"
+      }
+    ],
+    "solution": "private String name;\nprivate int damage;\n\nWeapon(String name, int damage) {\n    this.name = name;\n    setDamage(damage);\n}\n\npublic String getName() {\n    return name;\n}\n\npublic int getDamage() {\n    return damage;\n}\n\npublic void setDamage(int newDamage) {\n    if (newDamage < 0) {\n        damage = 0;\n    } else if (newDamage > 100) {\n        damage = 100;\n    } else {\n        damage = newDamage;\n    }\n}\n\npublic String describe() {\n    return name + \" deals \" + damage + \" damage.\";\n}",
+    "hint": "The rule for damage is the same in the constructor and in the setter. The constructor may simply call setDamage(damage).",
+    "feedback": "Encapsulation in one class: the fields are private, so the constructor and the setter are the only ways a damage value gets in, and both apply the same rule. Calling setDamage from the constructor keeps that rule written in one place."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Hero. The class Item is given above.\nPrivate fields:  String name,  int gold.\nA constructor  Hero(String name, int gold).\nGetters  getName()  and  getGold().\nboolean canAfford(Item item)  is true when the hero's gold is at least the item's price.\nString buyItem(Item item):  if the hero can afford it, take the price off the gold and return  Aria buys Health Potion for 20 gold.  Otherwise change nothing and return  Aria cannot afford Sword.\nString status()  returns  Aria has 30 gold.",
+    "scaffold": "class Item {\n    private String name;\n    private int price;\n\n    Item(String name, int price) {\n        this.name = name;\n        this.price = price;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public int getPrice() {\n        return price;\n    }\n}",
+    "signature": "public class Hero",
+    "tests": [
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 50);",
+        "check": "hero.getName() + \" \" + hero.getGold()",
+        "expect": "Aria 50"
+      },
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 20);\nItem potion = new Item(\"Potion\", 20);",
+        "check": "hero.canAfford(potion)",
+        "expect": true
+      },
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 10);\nItem sword = new Item(\"Sword\", 25);",
+        "check": "hero.canAfford(sword)",
+        "expect": false
+      },
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 50);\nItem potion = new Item(\"Health Potion\", 20);",
+        "check": "hero.buyItem(potion)",
+        "expect": "Aria buys Health Potion for 20 gold."
+      },
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 40);\nhero.buyItem(new Item(\"Potion\", 15));",
+        "check": "hero.buyItem(new Item(\"Shield\", 30))",
+        "expect": "Aria cannot afford Shield."
+      },
+      {
+        "run": "Hero hero = new Hero(\"Aria\", 50);\nhero.buyItem(new Item(\"Potion\", 20));\nhero.buyItem(new Item(\"Sword\", 80));",
+        "check": "hero.status()",
+        "expect": "Aria has 30 gold."
+      },
+      {
+        "private": "Hero.gold"
+      }
+    ],
+    "solution": "private String name;\nprivate int gold;\n\nHero(String name, int gold) {\n    this.name = name;\n    this.gold = gold;\n}\n\npublic String getName() {\n    return name;\n}\n\npublic int getGold() {\n    return gold;\n}\n\npublic boolean canAfford(Item item) {\n    return gold >= item.getPrice();\n}\n\npublic String buyItem(Item item) {\n    if (canAfford(item)) {\n        gold -= item.getPrice();\n        return name + \" buys \" + item.getName() + \" for \" + item.getPrice() + \" gold.\";\n    }\n    return name + \" cannot afford \" + item.getName() + \".\";\n}\n\npublic String status() {\n    return name + \" has \" + gold + \" gold.\";\n}",
+    "hint": "buyItem can call canAfford(item) to decide. An Item is asked for its details through item.getName() and item.getPrice().",
+    "feedback": "One class using another through its public methods. Hero never touches Item's private fields; it asks. And buyItem leans on canAfford, a method of the same class, so the rule for “can afford” is written once."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Dungeon, which keeps a list of monsters. The class Monster is given above.\nPrivate fields:  String name,  ArrayList<Monster> monsters.\nA constructor  Dungeon(String name)  that starts with an empty list.\nvoid addMonster(Monster m)  adds a monster to the list.\nint getMonsterCount()  returns how many are in it.\nint attackAll(int damage)  calls takeDamage(damage) on every monster, then removes the defeated ones from the list, and returns how many were removed.\ntoString()  returns  Dark Cave (3 monsters)",
+    "scaffold": "class Monster {\n    private String name;\n    private int health;\n\n    Monster(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    public int getHealth() {\n        return health;\n    }\n\n    public void takeDamage(int amount) {\n        health = health - amount;\n        if (health < 0) {\n            health = 0;\n        }\n    }\n\n    public boolean isDefeated() {\n        return health == 0;\n    }\n\n    @Override\n    public String toString() {\n        return name + \" [HP=\" + health + \"]\";\n    }\n}",
+    "signature": "public class Dungeon",
+    "tests": [
+      {
+        "run": "Dungeon d = new Dungeon(\"Dark Cave\");",
+        "check": "d.getMonsterCount()",
+        "expect": 0
+      },
+      {
+        "run": "Dungeon d = new Dungeon(\"Dark Cave\");\nd.addMonster(new Monster(\"Goblin\", 30));\nd.addMonster(new Monster(\"Orc\", 60));",
+        "check": "d.getMonsterCount()",
+        "expect": 2
+      },
+      {
+        "run": "Dungeon d = new Dungeon(\"Dark Cave\");\nd.addMonster(new Monster(\"Goblin\", 30));",
+        "check": "\"\" + d",
+        "expect": "Dark Cave (1 monsters)"
+      },
+      {
+        "run": "Dungeon d = new Dungeon(\"Pit\");\nd.addMonster(new Monster(\"A\", 30));\nd.addMonster(new Monster(\"B\", 60));\nd.addMonster(new Monster(\"C\", 5));",
+        "check": "d.attackAll(30)",
+        "expect": 2
+      },
+      {
+        "run": "Dungeon d = new Dungeon(\"Pit\");\nd.addMonster(new Monster(\"A\", 30));\nd.addMonster(new Monster(\"B\", 60));\nd.attackAll(30);",
+        "check": "d.toString()",
+        "expect": "Pit (1 monsters)"
+      },
+      {
+        "run": "Dungeon d = new Dungeon(\"Pit\");\nMonster orc = new Monster(\"Orc\", 60);\nd.addMonster(orc);\nd.attackAll(10);",
+        "check": "orc.getHealth() + d.getMonsterCount()",
+        "expect": 51
+      },
+      {
+        "private": "Dungeon.monsters"
+      }
+    ],
+    "solution": "private String name;\nprivate ArrayList<Monster> monsters;\n\nDungeon(String name) {\n    this.name = name;\n    this.monsters = new ArrayList<>();\n}\n\npublic void addMonster(Monster m) {\n    monsters.add(m);\n}\n\npublic int getMonsterCount() {\n    return monsters.size();\n}\n\npublic int attackAll(int damage) {\n    for (Monster m : monsters) {\n        m.takeDamage(damage);\n    }\n    int removed = 0;\n    for (int i = monsters.size() - 1; i >= 0; i--) {\n        if (monsters.get(i).isDefeated()) {\n            monsters.remove(i);\n            removed++;\n        }\n    }\n    return removed;\n}\n\n@Override\npublic String toString() {\n    return name + \" (\" + monsters.size() + \" monsters)\";\n}",
+    "hint": "The constructor has to MAKE the list: monsters = new ArrayList<>(); For attackAll, do the damage in one loop and the removing in a second loop that counts down by index.",
+    "feedback": "A field can be a whole collection of other objects, as long as the constructor makes the list; a field that is only declared holds no list at all. Removing inside a for-each over the same list is not allowed, which is why attackAll removes in a second loop, by index, from the end back to the start."
   }
 ]

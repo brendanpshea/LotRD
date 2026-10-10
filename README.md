@@ -239,7 +239,7 @@ A CodingBat-style problem: the signature is fixed and shown above the box, the s
 
 The code runs on `src/pytiny.js`, a small Python interpreter written for this purpose (see [Runtime Architecture](#runtime-architecture)).
 
-A question marked `"language": "java"` is a Java method instead, run by `src/jtiny.js`: the signature is the method line, the student writes the body, and the same test table grades it. See *Java problems* in the writing guide for what it runs and what it declines. The standalone *Java Lab* set (`java_lab_01_methods.json`) is thirty of them, from true-and-false tests through Strings and loops to arrays.
+A question marked `"language": "java"` is a Java method instead, run by `src/jtiny.js`: the signature is the method line, the student writes the body, and the same test table grades it. See *Java problems* in the writing guide for what it runs and what it declines. The standalone *Java Lab* set (`java_lab_01_methods.json`) is thirty of them, from true-and-false tests through Strings and loops to arrays. From the Objects and Classes chapter on, a Java question may instead ask for one method of a class that is given, or for a whole class; those are graded, like the Python class problems, by short scripts that make objects and then look at one thing (*Java class problems* in the writing guide).
 
 ### Write the Query (`sql_write`)
 

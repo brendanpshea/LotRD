@@ -105,6 +105,44 @@ describe('in a real browser: a write-the-method problem', { skip }, () => {
   });
 });
 
+describe('in a real browser: a Java class problem', { skip }, () => {
+  let server, method, whole;
+  before(async () => {
+    server = await startServer();
+    method = await visit(browser, server.origin, 'javaClassProblem', { set: 'java_07_oop.json', which: 'method' });
+    whole = await visit(browser, server.origin, 'javaClassProblem', { set: 'java_07_oop.json', which: 'class' });
+  });
+  after(async () => { await server?.close(); });
+
+  it('one method: the class so far is shown above the box, ending in the method line, and both braces below', () => {
+    assert.equal(method.label, 'Write the method:');
+    assert.match(method.shown, /^public class Potion \{/);
+    assert.match(method.shown.trim(), /public String describe\(\) \{$/);
+    assert.equal(method.closing.replace(/\s/g, ''), '}}');
+  });
+
+  it('one method: the examples are the steps a test takes and what it then looks at', () => {
+    assert.match(method.examples, /Potion p = new Potion\(\);.*p\.describe\(\) → "Health Potion restores 50 health and costs 10 gold\."/s);
+  });
+
+  it('one method: the right body passes every test, and the worked answer is the whole class', () => {
+    assert.match(method.correct, new RegExp(`${method.tests} (of|/) ${method.tests}|all ${method.tests}`, 'i'));
+    assert.match(method.worked, /^public class Potion \{[\s\S]*\n {8}return name \+ " restores "[\s\S]*\n {4}\}\n\}$/);
+  });
+
+  it('a whole class: only the class line is shown, and the box is the class', () => {
+    assert.equal(whole.label, 'Write the class:');
+    assert.equal(whole.shown.trim(), 'public class Weapon {');
+    assert.equal(whole.closing.trim(), '}');
+  });
+
+  it('a whole class: a field that should be private and is not fails its own row, and nothing else', () => {
+    assert.match(whole.notPrivate, new RegExp(`${whole.tests - 2} of ${whole.tests} tests passed`));
+    assert.match(whole.notPrivate, /name is private in Weapon/);
+    assert.match(whole.correct, new RegExp(`${whole.tests} (of|/) ${whole.tests}|all ${whole.tests}`, 'i'));
+  });
+});
+
 describe('in a real browser: a write-the-method problem in Java', { skip }, () => {
   let server, seen;
   before(async () => {

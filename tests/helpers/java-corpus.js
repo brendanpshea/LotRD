@@ -859,6 +859,170 @@ export const AGREES = {
     calls: ['build()', 'shared()', 'show()', 'tally(new String[] {"a", "b", "a"})', 'tally(new String[0])', 'unique(build())', 'unique(new ArrayList<>())', 'evens(Arrays.asList(1, 2, 3, 4, 10))', 'evens(new LinkedList<>())',
       'letters("banana")', 'names()', 'nothing()', 'sizeOf(null)', 'sizeOf(build())', 'sizeOf(new ArrayList<>())', 'picks()', 'tern(true)', 'tern(false)', 'vals()', 'build().get(0)', 'build().contains("Kids")', 'names().get(1)', 'names().keySet()'],
   },
+  // ── classes of the student's own. `classes` are declared beside the test class; `methods` are test code inside it.
+  'a class with fields and a method, and objects that each have their own': {
+    classes: J`class Potion { String name; int healingAmount; int price; double weight; boolean rare; char grade; long id; Potion next;
+        String describe() { return name + " restores " + healingAmount + " health and costs " + price + " gold."; }
+        int total() { return healingAmount + price; } }`,
+    methods: J`Potion make(String n, int h, int p) { Potion x = new Potion(); x.name = n; x.healingAmount = h; x.price = p; return x; }
+      String blank() { Potion p = new Potion(); return p.name + " " + p.healingAmount + " " + p.price + " " + p.weight + " " + p.rare + " " + (int) p.grade + " " + p.id + " " + (p.next == null) + " " + p.describe(); }
+      String two() { Potion a = make("A", 10, 5); Potion b = make("B", 99, 50); a.price = 6; return a.describe() + b.describe() + (a == b) + (a != b) + (a == a); }
+      String alias() { Potion a = make("A", 1, 1); Potion b = a; b.name = "changed"; b.healingAmount += 9; b.price++; ++b.price; a.price *= 2; return a.name + a.healingAmount + a.price + (a == b) + a.equals(b) + a.equals(make("A", 1, 1)) + a.equals(null); }
+      int change(Potion p) { p.price = 100; p = new Potion(); p.price = 1; return p.price; }
+      String passed() { Potion p = make("P", 1, 1); int inner = change(p); return inner + " " + p.price; }
+      String nothing(int which) { Potion p = null; if (which == 0) { return p.name; } if (which == 1) { return p.describe(); } if (which == 2) { p.price = 5; } if (which == 3) { p.price++; } if (which == 4) { p.price += 2; } return "" + (p == null); }
+      String chain() { Potion a = make("a", 1, 1); a.next = make("b", 2, 2); a.next.next = make("c", 3, 3); int t = 0; for (Potion at = a; at != null; at = at.next) { t += at.price; } return a.next.next.name + t + a.next.describe() + (a.next.next.next == null); }
+      String chainNull() { Potion a = make("a", 1, 1); return a.next.name; }
+      String fields() { Potion p = new Potion(); p.weight = 1 / 2; p.weight += 0.25; p.rare = !p.rare; p.grade = 'a'; p.grade++; p.grade += 1; p.id = Integer.MAX_VALUE; p.id++; p.id *= 2; return p.weight + " " + p.rare + " " + p.grade + " " + p.id + " " + p.total(); }
+      String array() { Potion[] shelf = new Potion[3]; shelf[1] = make("mid", 5, 5); String s = ""; for (Potion p : shelf) { s += (p == null ? "-" : p.name); } shelf[1].price = 9; return s + shelf[1].total() + shelf.length; }
+      String arrayNull() { Potion[] shelf = new Potion[2]; return shelf[0].describe(); }`,
+    calls: ['blank()', 'two()', 'alias()', 'passed()', 'nothing(0)', 'nothing(1)', 'nothing(2)', 'nothing(3)', 'nothing(4)', 'nothing(5)', 'chain()', 'chainNull()', 'fields()', 'array()', 'arrayNull()',
+      'make("Elixir", 30, 15).describe()', 'make("x", 1, 2).total()', 'new Potion().describe()', 'new Potion().price', 'make("x", 1, 2).name.length()'],
+  },
+  'constructors, this, and one constructor handing over to another': {
+    classes: J`class Monster { String name; int health; int attackPower;
+        Monster(String name, int health, int attackPower) { this.name = name; this.health = health; this.attackPower = attackPower; }
+        Monster(String name) { this(name, 50, 10); }
+        Monster() { this("Slime"); health = health / 2; }
+        String roar() { return name + " roars with power " + attackPower + "!"; }
+        String status() { return this.name + " [HP=" + this.health + ", ATK=" + attackPower + "]"; }
+        Monster stronger() { attackPower += 5; return this; }
+        boolean beats(Monster other) { return this.attackPower > other.attackPower; }
+        Monster twin() { return new Monster(name, health, attackPower); } }
+      class Weapon { String name; int damage; int price = 7; String label = "w" + price;
+        Weapon(String n, int d) { name = n; damage = d; }
+        Weapon(String name, int damage, int price) { name = name; this.damage = damage; this.price = price; return; }
+        Weapon(int damage) { this("fist", damage); if (damage > 5) { return; } label = "weak"; } }
+      class Plain { int n = 3; int twice = n * 2; String s; }`,
+    methods: J`String all() { Monster d = new Monster("Dragon", 200, 50); Monster g = new Monster("Goblin"); Monster s = new Monster(); return d.status() + g.status() + s.status() + d.roar(); }
+      String self() { Monster g = new Monster("Goblin"); Monster same = g.stronger().stronger(); Monster t = g.twin(); return g.status() + (same == g) + (t == g) + t.status() + g.beats(t) + t.stronger().beats(g); }
+      String weapons() { Weapon a = new Weapon("Axe", 9); Weapon b = new Weapon("Bow", 4, 30); Weapon c = new Weapon(9); Weapon e = new Weapon(2); return a.name + a.damage + a.price + a.label + "|" + b.name + b.damage + b.price + b.label + "|" + c.name + c.label + "|" + e.name + e.label; }
+      String plain() { Plain p = new Plain(); return p.n + " " + p.twice + " " + p.s; }
+      boolean nullBeats() { return new Monster("a").beats(null); }`,
+    calls: ['all()', 'self()', 'weapons()', 'plain()', 'nullBeats()', 'new Monster("Orc", 60, 10).roar()', 'new Monster().name', 'new Monster("x").health + new Monster().health', 'new Weapon(1).price'],
+  },
+  'private fields, with getters and setters that guard them': {
+    classes: J`class Weapon { private String name; private int damage;
+        Weapon(String name, int damage) { this.name = name; setDamage(damage); }
+        public String getName() { return name; }
+        public int getDamage() { return damage; }
+        public void setDamage(int newDamage) { if (newDamage < 0) { damage = 0; } else if (newDamage > 100) { damage = 100; } else { damage = newDamage; } }
+        public String describe() { return name + " deals " + damage + " damage."; }
+        private int half() { return damage / 2; }
+        public int halved() { return this.half() + half(); }
+        public boolean sameAs(Weapon other) { return other != null && damage == other.damage && name.equals(other.name); }
+        public void copyFrom(Weapon other) { this.damage = other.damage; other.name = name + "*"; } }
+      class Monster { private String name; private int health;
+        Monster(String name, int health) { this.name = name; this.health = health; }
+        public int getHealth() { return health; }
+        public void setHealth(int newHealth) { if (newHealth < 0) { this.health = 0; } else { this.health = newHealth; } }
+        public void takeDamage(int amount) { health = health - amount; if (health < 0) { health = 0; } System.out.println(name + " takes " + amount + " damage and now has " + health + " health."); }
+        public boolean isDefeated() { return health == 0; } }`,
+    methods: J`String clamp(int d) { Weapon w = new Weapon("Sword", d); return w.getDamage() + " " + w.describe(); }
+      String set(int d) { Weapon w = new Weapon("Axe", 40); w.setDamage(d); return w.getName() + w.getDamage() + w.halved(); }
+      String peers() { Weapon a = new Weapon("A", 5); Weapon b = new Weapon("A", 5); Weapon c = new Weapon("C", 70); boolean same = a.sameAs(b); a.copyFrom(c); return same + "" + a.sameAs(c) + a.sameAs(null) + a.getDamage() + c.getName(); }
+      String fight() { Monster m = new Monster("Dragon", 200); m.takeDamage(30); m.setHealth(-999); boolean gone = m.isDefeated(); m.setHealth(150); m.takeDamage(500); return gone + " " + m.getHealth() + m.isDefeated(); }`,
+    calls: ['clamp(25)', 'clamp(-50)', 'clamp(999)', 'clamp(0)', 'clamp(100)', 'set(60)', 'set(-10)', 'set(150)', 'peers()', 'fight()', 'new Weapon("Club", -5).describe()', 'new Monster("x", 3).getHealth()'],
+  },
+  'objects working together: one object handed to another, and held by another': {
+    classes: J`class Item { private String name; private int price;
+        Item(String name, int price) { this.name = name; if (price < 0) { this.price = 0; } else { this.price = price; } }
+        public String getName() { return name; }
+        public int getPrice() { return price; } }
+      class Hero { private String name; private int gold; private Item held; private int bought;
+        Hero(String name, int gold) { this.name = name; this.gold = gold < 0 ? 0 : gold; }
+        public String getName() { return name; }
+        public int getGold() { return gold; }
+        public boolean canAfford(Item item) { return gold >= item.getPrice(); }
+        public String buyItem(Item item) { if (canAfford(item)) { gold -= item.getPrice(); held = item; bought++; return name + " buys " + item.getName() + " for " + item.getPrice() + " gold."; } return name + " cannot afford " + item.getName() + "."; }
+        public String status() { return name + " has " + gold + " gold."; }
+        public String holding() { return held.getName(); }
+        public Item getHeld() { return held; }
+        public int count() { return bought; }
+        public void give(Hero other, int amount) { if (amount > gold) { amount = gold; } gold -= amount; other.gold += amount; } }
+      class Store { private String name; private int sales;
+        Store(String name) { this.name = name; }
+        public String sell(String itemName, int price, Hero buyer) { Item item = new Item(itemName, price); String said = buyer.buyItem(item); if (buyer.getHeld() == item) { sales++; return buyer.getName() + " buys " + itemName + " from " + name + " for " + price + " gold."; } return said; }
+        public int getSales() { return sales; } }`,
+    methods: J`String shop() { Hero hero = new Hero("Aria", 40); Item p = new Item("Potion", 15); Item s = new Item("Shield", 30); String a = hero.buyItem(p); String b = hero.buyItem(s); return a + b + hero.status() + hero.holding() + hero.count() + (hero.getHeld() == p); }
+      String exact() { Hero hero = new Hero("Aria", 20); Item potion = new Item("Potion", 20); return hero.canAfford(potion) + hero.buyItem(potion) + hero.getGold() + hero.canAfford(potion) + hero.canAfford(new Item("Free", -5)); }
+      String empty() { Hero broke = new Hero("Bob", -10); return broke.getGold() + broke.status() + (broke.getHeld() == null) + broke.holding(); }
+      String gift() { Hero a = new Hero("A", 30); Hero b = new Hero("B", 5); a.give(b, 12); b.give(a, 100); a.give(a, 3); return a.status() + b.status(); }
+      String store() { Store st = new Store("Magic Shop"); Hero h = new Hero("Aria", 50); String a = st.sell("Potion", 20, h); String b = st.sell("Sword", 80, h); return a + b + st.getSales() + h.status(); }
+      String noItem() { return new Hero("x", 5).buyItem(null); }`,
+    calls: ['shop()', 'exact()', 'empty()', 'gift()', 'store()', 'noItem()', 'new Item("Cursed Ring", -5).getPrice()', 'new Hero("Aria", 50).canAfford(new Item("x", 50))'],
+  },
+  'toString, and collections of objects': {
+    classes: J`class Monster { private String name; private int health;
+        Monster(String name, int health) { this.name = name; this.health = health < 0 ? 0 : health; }
+        public String getName() { return name; }
+        public int getHealth() { return health; }
+        public void takeDamage(int amount) { if (amount < 0) { return; } health -= amount; if (health < 0) { health = 0; } }
+        public boolean isDefeated() { return health == 0; }
+        @Override
+        public String toString() { return name + " [HP=" + health + "]"; } }
+      class Dungeon { private String name; private ArrayList<Monster> monsters;
+        Dungeon(String name) { this.name = name; this.monsters = new ArrayList<>(); }
+        public void addMonster(Monster m) { monsters.add(m); }
+        public int getMonsterCount() { return monsters.size(); }
+        public String listMonsters() { if (monsters.isEmpty()) { return "The dungeon is empty."; } String out = ""; for (int i = 0; i < monsters.size(); i++) { if (i > 0) { out += "\n"; } out += monsters.get(i); } return out; }
+        public int attackAll(int damage) { for (Monster m : monsters) { m.takeDamage(damage); } int gone = 0; for (int i = monsters.size() - 1; i >= 0; i--) { if (monsters.get(i).isDefeated()) { monsters.remove(i); gone++; } } return gone; }
+        public Monster strongest() { Monster best = null; for (Monster m : monsters) { if (best == null || m.getHealth() > best.getHealth()) { best = m; } } return best; }
+        @Override public String toString() { return name + " (" + monsters.size() + " monsters)"; } }
+      class Ghost { public String toString() { return null; } }
+      class Loud { int n; public String toString() { n++; return "loud" + n; } }`,
+    methods: J`Dungeon cave() { Dungeon d = new Dungeon("Dark Cave"); d.addMonster(new Monster("Goblin", 30)); d.addMonster(new Monster("Orc", 60)); d.addMonster(new Monster("Dragon", 200)); return d; }
+      String printed() { Monster g = new Monster("Goblin", 30); System.out.println(g); System.out.print(g); System.out.println(); Monster none = null; System.out.println(none); return "it is " + g + "!" + none + g.toString().length(); }
+      String listed() { ArrayList<Monster> ms = new ArrayList<>(); ms.add(new Monster("Goblin", 30)); ms.add(new Monster("Orc", 60)); ms.add(null); System.out.println(ms); return ms + " " + ms.size() + ms.get(1) + ms.toString().length() + String.format("%s|%10s|%-12s|", ms.get(0), ms.get(1), ms.get(2)); }
+      String dungeon() { Dungeon d = cave(); String before = d + ": " + d.listMonsters(); int gone = d.attackAll(60); return before + " / " + gone + " / " + d + ": " + d.listMonsters() + " / " + d.strongest() + d.attackAll(-5) + d.attackAll(1000) + d.listMonsters() + d.strongest(); }
+      String finding() { ArrayList<Monster> ms = new ArrayList<>(); Monster orc = new Monster("Orc", 60); ms.add(new Monster("Orc", 60)); ms.add(orc); ms.add(orc); return ms.indexOf(orc) + " " + ms.contains(orc) + ms.contains(new Monster("Orc", 60)) + ms.lastIndexOf(orc) + ms.remove(orc) + ms.size() + Collections.frequency(ms, orc) + ms.remove(new Monster("Orc", 60)); }
+      String mapped() { HashMap<String, Monster> byName = new HashMap<>(); for (String n : new String[] {"Goblin", "Orc", "Imp"}) { byName.put(n, new Monster(n, n.length() * 10)); } byName.get("Orc").takeDamage(5); Monster none = byName.get("Dragon"); return byName + " " + byName.get("Orc") + none + byName.containsKey("Imp") + byName.values() + byName.get("Imp").getHealth(); }
+      String linked() { LinkedList<Monster> q = new LinkedList<>(); q.addFirst(new Monster("b", 2)); q.addFirst(new Monster("a", 1)); q.addLast(new Monster("c", 3)); Monster first = q.removeFirst(); Collections.reverse(q); return first + "" + q + q.peekFirst().getName(); }
+      String arrays() { Monster[] ms = { new Monster("a", 1), null, new Monster("c", 3) }; List<Monster> view = Arrays.asList(ms); ms[1] = new Monster("b", 2); return Arrays.toString(ms) + view + view.get(1).getName() + Arrays.asList(new Monster("z", 9)); }
+      String ghost() { Ghost g = new Ghost(); Loud l = new Loud(); String s = "" + l + l; return g + "|" + g.toString() + "|" + s + l.n + String.valueOf(l.toString()); }
+      int ghostLength() { return new Ghost().toString().length(); }`,
+    calls: ['printed()', 'listed()', 'dungeon()', 'finding()', 'mapped()', 'linked()', 'arrays()', 'ghost()', 'ghostLength()', '"" + cave()', 'cave().getMonsterCount()', '"" + cave().strongest()', 'new Dungeon("Pit").listMonsters()', '"" + new Monster("x", -3)', '"" + new Dungeon("Pit")'],
+  },
+  'static fields and methods, and the order in which a new object is set up': {
+    classes: J`class Counter { static int made; static String log = "start"; static int doubled = made * 2 + 1; int id; String tag = note("field");
+        Counter() { this(100); log += " ctor0"; }
+        Counter(int base) { made++; id = base + made; log += " ctor1"; }
+        static String note(String what) { log += " " + what; return what + made; }
+        static int count() { return made; }
+        static void reset() { made = 0; log = ""; }
+        int next() { return made + id; }
+        static int twice(int n) { return n * 2; } }
+      class Bank { static double rate = 0.5; static int[] slots = new int[3]; static final int LIMIT = 4; private static int secret = 7; double balance = rate * 10; int[] own = {1, 2};
+        static int peek() { return secret; }
+        void grow() { balance += balance * rate; slots[0]++; own[0]++; } }`,
+    methods: J`int calls = 0;
+      static int shared = 5;
+      int bump() { calls++; shared += 2; return calls * 100 + shared; }
+      String order() { Counter.reset(); Counter a = new Counter(); Counter b = new Counter(7); return Counter.log + "|" + a.id + " " + b.id + " " + a.tag + " " + b.tag + " " + Counter.count() + " " + a.next() + " " + Counter.made + Counter.twice(4); }
+      String bank() { Bank a = new Bank(); Bank.rate = 0.25; Bank b = new Bank(); a.grow(); b.grow(); b.grow(); Bank.slots[2] = Bank.LIMIT; return a.balance + " " + b.balance + " " + Arrays.toString(Bank.slots) + a.own[0] + b.own[0] + Bank.peek() + (Bank.rate += 1); }
+      String host() { return bump() + " " + bump() + " " + calls + " " + shared + " " + this.calls; }`,
+    calls: ['Counter.doubled', 'order()', 'order()', 'Counter.count()', 'bank()', 'host()', 'host()', 'bump()', 'calls', 'shared', 'Counter.twice(Counter.made)'],
+  },
+  'evaluation order around objects, and fields of every kind': {
+    classes: J`class Box { Integer boxed; Double ratio = 1.5; String text; StringBuilder sb = new StringBuilder("x"); ArrayList<String> items = new ArrayList<>(); HashMap<String, Integer> counts = new HashMap<>(); Box inner; int[] nums; long big = 1L << 40; char c = 'q'; boolean on = true;
+        Box add(String s) { items.add(s); sb.append(s); if (counts.containsKey(s)) { counts.put(s, counts.get(s) + 1); } else { counts.put(s, 1); } return this; }
+        int size() { return items.size(); }
+        String note(String what, int v) { text = (text == null ? "" : text) + what; return what + v; } }`,
+    methods: J`String log = "";
+      int say(String s, int v) { log += s; return v; }
+      Box none() { log += "T"; return null; }
+      String fields() { Box b = new Box(); b.add("a").add("b").add("a"); b.inner = new Box(); b.inner.add("z"); b.nums = new int[] {4, 5}; b.nums[1] += 3; return b.boxed + " " + b.ratio + " " + b.text + " " + b.sb + b.items + b.counts + b.size() + b.inner.items + (b.inner.inner == null) + b.nums[1] + b.big + b.c + b.on; }
+      String unbox(int which) { Box b = new Box(); if (which == 0) { int n = b.boxed; return "" + n; } if (which == 1) { b.boxed++; } if (which == 2) { b.boxed += 1; } if (which == 3) { b.boxed = 4; b.boxed++; b.boxed += 2; b.ratio /= 2; } return b.boxed + " " + b.ratio; }
+      String callOnNull() { log = ""; try2(); return log; }
+      void try2() { none().note("x", say("A", 1)); }
+      String assignOnNull() { log = ""; try3(); return log; }
+      void try3() { none().big = say("A", 1); }
+      String compoundOnNull() { log = ""; try4(); return log; }
+      void try4() { none().big += say("A", 1); }
+      String logged() { return log; }
+      String args() { Box b = new Box(); return b.note("a", say("1", 1)) + b.note("b", say("2", 2)) + b.text + log; }`,
+    calls: ['fields()', 'unbox(0)', 'unbox(1)', 'unbox(2)', 'unbox(3)', 'callOnNull()', 'logged()', 'assignOnNull()', 'logged()', 'compoundOnNull()', 'logged()', 'args()'],
+  },
 };
 
 /**
@@ -1282,6 +1446,59 @@ export const REJECTS = {
   'a list of Strings returned as a list of Integers': J`ArrayList<Integer> f() { ArrayList<String> xs = new ArrayList<>(); return xs; }`,
   'a list where an int is wanted': J`int f() { ArrayList<Integer> xs = new ArrayList<>(); return xs + 1; }`,
   'set() result used as a boolean': J`boolean f() { ArrayList<String> xs = new ArrayList<>(); xs.add("a"); return xs.set(0, "b"); }`,
+  // ── classes: what belongs to an object, what is private, and what a constructor may be
+  'a private field read from outside': { classes: J`class Monster { private int health; }`, methods: J`int f() { Monster m = new Monster(); return m.health; }` },
+  'a private field changed from outside': { classes: J`class Monster { private int health; }`, methods: J`int f() { Monster m = new Monster(); m.health = -999; return 0; }` },
+  'a private method called from outside': { classes: J`class Monster { private int secret() { return 1; } }`, methods: J`int f() { return new Monster().secret(); }` },
+  'a private constructor used from outside': { classes: J`class Monster { private Monster() { } }`, methods: J`int f() { Monster m = new Monster(); return 0; }` },
+  'no constructor that takes nothing, once another is written': { classes: J`class Monster { String name; Monster(String name) { this.name = name; } }`, methods: J`int f() { Monster m = new Monster(); return 0; }` },
+  'a constructor given the wrong types': { classes: J`class Monster { Monster(String name, int health) { } }`, methods: J`int f() { Monster m = new Monster(30, "Goblin"); return 0; }` },
+  'a constructor given too few values': { classes: J`class Monster { Monster(String name, int health) { } }`, methods: J`int f() { Monster m = new Monster("Goblin"); return 0; }` },
+  'a method with no return type, and not the name of the class': { classes: J`class Monster { int health; Mosnter(int h) { health = h; } }`, methods: J`int f() { return 0; }` },
+  'a constructor that returns a value': { classes: J`class Monster { int health; Monster(int h) { health = h; return h; } }`, methods: J`int f() { return 0; }` },
+  'this(…) outside a constructor': { classes: J`class Monster { int health; Monster(int h) { health = h; } void reset() { this(5); } }`, methods: J`int f() { return 0; }` },
+  'a constructor that calls itself': { classes: J`class Monster { Monster(int h) { this(h); } }`, methods: J`int f() { return 0; }` },
+  'two constructors that call each other': { classes: J`class Monster { Monster(int h) { this(); } Monster() { this(1); } }`, methods: J`int f() { return 0; }` },
+  'a field of the object used in this(…)': { classes: J`class Monster { int base; Monster(int h) { } Monster() { this(base); } }`, methods: J`int f() { return 0; }` },
+  'two constructors that take the same types': { classes: J`class Monster { Monster(int a) { } Monster(int b) { } }`, methods: J`int f() { return 0; }` },
+  'two fields with one name': { classes: J`class Monster { int health; String health; }`, methods: J`int f() { return 0; }` },
+  'two classes with one name': { classes: J`class Monster { } class Monster { }`, methods: J`int f() { return 0; }` },
+  'a field that does not exist': { classes: J`class Monster { int health; }`, methods: J`int f() { Monster m = new Monster(); return m.heatlh; }` },
+  'a method that does not exist': { classes: J`class Monster { int health; }`, methods: J`int f() { Monster m = new Monster(); return m.getHealth(); }` },
+  'a field called like a method': { classes: J`class Monster { int health; }`, methods: J`int f() { Monster m = new Monster(); return m.health(); }` },
+  'a method used like a field': { classes: J`class Monster { int getHealth() { return 1; } }`, methods: J`int f() { Monster m = new Monster(); return m.getHealth; }` },
+  'this in a static method': { classes: J`class Monster { int health; static int f() { return this.health; } }`, methods: J`int f() { return 0; }` },
+  'a field of the object in a static method': { classes: J`class Monster { int health; static int f() { return health; } }`, methods: J`int f() { return 0; }` },
+  'a method of the object called from a static method': { classes: J`class Monster { int get() { return 1; } static int f() { return get(); } }`, methods: J`int f() { return 0; }` },
+  'a method of the object called on the class': { classes: J`class Monster { int get() { return 1; } }`, methods: J`int f() { return Monster.get(); }` },
+  'a field of the object read from the class': { classes: J`class Monster { int health; }`, methods: J`int f() { return Monster.health; }` },
+  'a class used as a value': { classes: J`class Monster { }`, methods: J`int f() { Monster m = Monster; return 0; }` },
+  'an object stored as text': { classes: J`class Monster { }`, methods: J`String f() { String s = new Monster(); return s; }` },
+  'an object of one class stored as another': { classes: J`class Monster { } class Item { }`, methods: J`int f() { Monster m = new Item(); return 0; }` },
+  'an object of another class handed to a method': { classes: J`class Monster { } class Item { } class Hero { void buy(Item i) { } }`, methods: J`int f() { new Hero().buy(new Monster()); return 0; }` },
+  'two different classes compared with ==': { classes: J`class Monster { } class Item { }`, methods: J`boolean f() { return new Monster() == new Item(); }` },
+  'arithmetic on an object': { classes: J`class Monster { int health; }`, methods: J`int f() { Monster m = new Monster(); return m + 1; }` },
+  'an object as a condition': { classes: J`class Monster { }`, methods: J`int f() { Monster m = new Monster(); if (m) { return 1; } return 0; }` },
+  'toString that is not public': { classes: J`class Monster { String toString() { return "m"; } }`, methods: J`int f() { return 0; }` },
+  'toString that returns a number': { classes: J`class Monster { public int toString() { return 1; } }`, methods: J`int f() { return 0; }` },
+  'a static toString': { classes: J`class Monster { public static String toString() { return "m"; } }`, methods: J`int f() { return 0; }` },
+  '@Override on a method that replaces nothing': { classes: J`class Monster { @Override public String describe() { return "m"; } }`, methods: J`int f() { return 0; }` },
+  '@Override on toString misspelled': { classes: J`class Monster { @Override public String tostring() { return "m"; } }`, methods: J`int f() { return 0; }` },
+  '@Override on toString with a parameter': { classes: J`class Monster { @Override public String toString(int n) { return "m"; } }`, methods: J`int f() { return 0; }` },
+  'a final field given a new value': { classes: J`class Monster { final int max = 5; void grow() { max = 6; } }`, methods: J`int f() { return 0; }` },
+  'a void field': { classes: J`class Monster { void health; }`, methods: J`int f() { return 0; }` },
+  'a field given a value of the wrong type': { classes: J`class Monster { int health = "full"; }`, methods: J`int f() { return 0; }` },
+  'a field assigned the wrong type': { classes: J`class Monster { int health; void set(String s) { health = s; } }`, methods: J`int f() { return 0; }` },
+  'a statement loose in a class': { classes: J`class Monster { int health; health = 5; }`, methods: J`int f() { return 0; }` },
+  'a getter that returns nothing': { classes: J`class Monster { int health; int getHealth() { health = 1; } }`, methods: J`int f() { return 0; }` },
+  'a field used before the line that declares it': { classes: J`class Monster { int a = b + 1; int b = 2; }`, methods: J`int f() { return 0; }` },
+  'a field given its own value': { classes: J`class Monster { int a = a + 1; }`, methods: J`int f() { return 0; }` },
+  'sorting a list of objects that have no order': { classes: J`class Monster { }`, methods: J`int f() { ArrayList<Monster> ms = new ArrayList<>(); Collections.sort(ms); return 0; }` },
+  'a list of one class given an object of another': { classes: J`class Monster { } class Item { }`, methods: J`int f() { ArrayList<Monster> ms = new ArrayList<>(); ms.add(new Item()); return 0; }` },
+  'an element of a list of objects taken out as text': { classes: J`class Monster { }`, methods: J`String f() { ArrayList<Monster> ms = new ArrayList<>(); return ms.get(0); }` },
+  'a class that is never declared': J`int f() { Monster m = new Monster(); return 0; }`,
+  'the length of an array given a new value': J`int f(int[] xs) { xs.length = 3; return 0; }`,
+  'a constant of Math given a new value': J`double f() { Math.PI = 3; return 0; }`,
 };
 
 /**
@@ -1305,6 +1522,19 @@ export const REFUSES = {
   'adding to a set inside a for-each over it': { methods: J`int f() { HashSet<Integer> s = new HashSet<>(Arrays.asList(1, 2, 3)); int n = 0; for (int x : s) { if (n++ == 1) { s.add(x + 100); } } return n; }`, calls: ['f()'] },
   'sorting an ArrayList inside a for-each over it': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); int n = 0; for (int x : xs) { n++; if (n == 3) { Collections.sort(xs); } } return n; }`, calls: ['f()'] },
   'a HashSet with many keys in one slot, which Java rearranges into a tree': { methods: J`String f() { HashSet<Integer> s = new HashSet<>(); for (int i = 0; i < 100; i++) { s.add(i * 65537 - 40); } return "" + s; }`, calls: ['f()'] },
+  'an object with no toString, printed': { classes: J`class Monster { int health; }`, methods: J`String f() { Monster m = new Monster(); return "" + m; }`, calls: ['f().length() > 0'] },
+  'a list of objects with no toString, printed': { classes: J`class Monster { }`, methods: J`int f() { ArrayList<Monster> ms = new ArrayList<>(); ms.add(new Monster()); System.out.println(ms.size()); return ("" + ms).length(); }`, calls: ['f() > 0'] },
+  'this(…) that is not the first line, which Java 25 allows': { classes: J`class Monster { int health; Monster(int h) { health += h; } Monster() { health = 1; this(5); } }`, methods: J`int f() { return new Monster().health; }`, calls: ['f()'] },
+  'a set of objects': { classes: J`class Monster { }`, methods: J`int f() { HashSet<Monster> ms = new HashSet<>(); ms.add(new Monster()); return ms.size(); }`, calls: ['f()'] },
+  'objects as the keys of a map': { classes: J`class Monster { }`, methods: J`int f() { HashMap<Monster, Integer> ms = new HashMap<>(); return ms.size(); }`, calls: ['f()'] },
+  'hashCode of an object': { classes: J`class Monster { }`, methods: J`boolean f() { return new Monster().hashCode() == 0; }`, calls: ['f() || true'] },
+  'a class that extends another': { classes: J`class Monster { int health; } class Dragon extends Monster { }`, methods: J`int f() { return new Dragon().health; }`, calls: ['f()'] },
+  'an interface': { classes: J`interface Fighter { int power(); } class Monster implements Fighter { public int power() { return 3; } }`, methods: J`int f() { return new Monster().power(); }`, calls: ['f()'] },
+  'a static method called through an object': { classes: J`class Monster { static int count() { return 3; } }`, methods: J`int f() { Monster m = new Monster(); return m.count(); }`, calls: ['f()'] },
+  'a final field given its value in the constructor': { classes: J`class Monster { final int max; Monster() { max = 5; } }`, methods: J`int f() { return new Monster().max; }`, calls: ['f()'] },
+  'a class of your own called Character': { classes: J`class Character { int gold = 5; }`, methods: J`int f() { return new Character().gold; }`, calls: ['f()'] },
+  'equals written for the class': { classes: J`class Monster { int h; public boolean equals(Object o) { return true; } }`, methods: J`boolean f() { return new Monster().equals(new Monster()); }`, calls: ['f()'] },
+  'a field assigned before the line that declares it': { classes: J`class Monster { int a = (b = 5) + 1; int b; }`, methods: J`int f() { return new Monster().a; }`, calls: ['f()'] },
   'Collections.shuffle': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); Collections.shuffle(xs); return xs.size(); }`, calls: ['f()'] },
   'a list of lists': { methods: J`int f() { ArrayList<ArrayList<String>> xs = new ArrayList<>(); return xs.size(); }`, calls: ['f()'] },
   'a map of lists': { methods: J`int f() { HashMap<String, ArrayList<String>> m = new HashMap<>(); return m.size(); }`, calls: ['f()'] },
@@ -1346,7 +1576,6 @@ export const REFUSES = {
   'Math.round of a long': { methods: J`long f(long n) { return Math.round(n); }`, calls: ['f(5L)'] },
   'Scanner': { methods: J`int f() { Scanner in = new Scanner(System.in); return in.nextInt(); }`, calls: ['1'] },
   'an if that ends at a stray semicolon': { methods: J`int f(int a) { if (a > 0); return 1; }`, calls: ['f(1)'] },
-  'this': { methods: J`int g() { return 1; } int f() { return this.g(); }`, calls: ['f()'] },
   'an underscore as a name': { methods: J`int f(int[] xs) { int n = 0; for (int _ : xs) n++; return n; }`, calls: ['f(new int[3])'] },
   'a yield statement in an old-style value switch': { methods: J`int f(int a) { return switch (a) { case 1: yield 10; default: yield 20; }; }`, calls: ['f(1)'] },
 };
@@ -1908,6 +2137,68 @@ export function collectionTypeCases(seed, count, depth = 1) {
     return {
       methods: `  String m(String s, int a, Integer I, double x, char c, boolean t) {\n${COLLECTION_SETUP}\n    ${body}\n  }`,
       calls: ['m("a", 1, 2, 1.5, \'b\', true)', 'm("zz", 0, null, -1.0, \'a\', false)'],
+    };
+  });
+}
+
+// ─── generated object puzzles ────────────────────────────────────────────────
+//
+// Two small classes, and one line that uses them with no regard for what is private, what is static,
+// what is null or what type anything has. javac decides which lines compile; jtiny has to agree.
+
+const OBJECT_CLASSES = String.raw`class Item { private String name; int price; static int made; private static int hidden = 3; final int tax = 2; Integer boxed;
+  Item(String name, int price) { this.name = name; this.price = price; made++; }
+  Item(String name) { this(name, 1); }
+  public String getName() { return name; }
+  private int secret() { return price * 2; }
+  public int twice() { return secret() + hidden; }
+  static int count() { return made; }
+  public Item cheaper(Item other) { return other.price < price ? other : this; }
+  public void setPrice(int price) { this.price = price < 0 ? 0 : price; }
+  public String toString() { return name + "$" + price; } }
+class Hero { String name; private int gold = 10; Item held; ArrayList<Item> bag = new ArrayList<>(); Hero friend; double luck = 0.5;
+  Hero(String name) { this.name = name; }
+  int getGold() { return gold; }
+  void take(Item i) { held = i; bag.add(i); gold -= i.price; }
+  boolean has(Item i) { return bag.contains(i); }
+  Hero meet(Hero other) { friend = other; return this; }
+  static Hero named(String n) { return new Hero(n); } }`;
+const OBJECT_SETUP = 'Item i = new Item("axe", 5); Item j = new Item("bow"); Hero h = new Hero("Ann"); Hero g = null; h.take(i); ArrayList<Item> items = new ArrayList<>(); items.add(j);';
+const OBJECT_AFTER = 'i + " " + j + " " + h.getGold() + h.bag + h.name + Item.count() + items + (h.held == i) + (h.friend == null)';
+const OBJECTS = ['i', 'i', 'j', 'h', 'h', 'g', 'h.held', 'h.friend', 'items.get(0)', 'this', 'Item', 'Hero', 'new Item("z", 9)', 'Hero.named("Bo")', 'h.bag', 'items', 's'];
+const OBJECT_LEAVES = [...OBJECTS, 'a', 'a', 's', 't', 'null', '1', '0', '"x"', '2.5', 'i.price', 'h.name', 'Item.made', 'h.luck', 'i.boxed'];
+const OBJECT_FIELDS = ['name', 'price', 'made', 'hidden', 'tax', 'boxed', 'gold', 'held', 'bag', 'friend', 'luck', 'length', 'size'];
+const OBJECT_METHODS = ['getName', 'secret', 'twice', 'count', 'cheaper', 'setPrice', 'toString', 'getGold', 'take', 'has', 'meet', 'named', 'equals', 'add', 'contains', 'indexOf', 'size', 'get', 'remove', 'length'];
+const OBJECT_TYPES = ['int', 'int', 'String', 'boolean', 'double', 'Item', 'Item', 'Hero', 'var', 'var', 'ArrayList<Item>', 'Integer'];
+
+function objectExpression(rng, depth) {
+  const sub = () => (depth <= 0 || rng.next() < 0.65 ? rng.pick(OBJECT_LEAVES) : objectExpression(rng, depth - 1));
+  const obj = () => (rng.next() < 0.85 ? rng.pick(OBJECTS) : sub());
+  const some = n => Array.from({ length: n }, sub).join(', ');
+  switch (rng.int(16)) {
+    case 0: case 1: case 2: return `${obj()}.${rng.pick(OBJECT_FIELDS)}`;
+    case 3: case 4: case 5: case 6: return `${obj()}.${rng.pick(OBJECT_METHODS)}(${some(rng.pick([0, 0, 1, 1, 1, 2]))})`;
+    case 7: return `new ${rng.pick(['Item', 'Item', 'Hero'])}(${some(rng.pick([0, 1, 1, 2, 2, 3]))})`;
+    case 8: return `(${obj()}.${rng.pick(OBJECT_FIELDS)} ${rng.pick(['=', '=', '+=', '-='])} ${sub()})`;
+    case 9: return `${obj()}.${rng.pick(OBJECT_FIELDS)}${rng.pick(['++', '--'])}`;
+    case 10: return `(${sub()} ${rng.pick(['==', '!=', '+', '<'])} ${sub()})`;
+    case 11: return `(t ? ${sub()} : ${sub()})`;
+    case 12: return `${rng.pick(['getName', 'count', 'twice', 'named', 'getGold'])}(${some(rng.pick([0, 1]))})`;
+    case 13: return `(${rng.pick(['i', 'j', 'h', 'g', 'a', 's'])} = ${sub()})`;
+    default: return sub();
+  }
+}
+
+/** `count` cases: half store the result in a variable of a random type, half are a statement whose effect is printed. */
+export function objectCases(seed, count, depth = 1) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, (_, k) => {
+    const expression = objectExpression(rng, depth);
+    const body = k % 2 ? `${expression}; return ${OBJECT_AFTER};` : `${rng.pick(OBJECT_TYPES)} v = ${expression}; return v + " " + ${OBJECT_AFTER};`;
+    return {
+      classes: OBJECT_CLASSES,
+      methods: `  String m(int a, String s, boolean t) {\n    ${OBJECT_SETUP}\n    ${body}\n  }`,
+      calls: ['m(1, "axe", true)', 'm(-4, null, false)'],
     };
   });
 }
