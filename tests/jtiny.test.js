@@ -410,6 +410,66 @@ describe('a Java class problem: tests are short scripts, and the student writes 
   });
 });
 
+describe('a Java class problem: a class built on another', () => {
+  const PIXAR = 'public class PixarCharacter {\n    private String name;\n\n    public PixarCharacter(String name) {\n        this.name = name;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public String perform() {\n        return name + " bows.";\n    }\n}';
+  const TOY = {
+    type: 'code_write', language: 'java', scaffold: PIXAR, signature: 'class Toy extends PixarCharacter',
+    tests: [
+      { run: 'Toy t = new Toy("Woody", "Andy");', check: 't.getName() + "/" + t.getOwner()', expect: 'Woody/Andy' },
+      { run: 'PixarCharacter c = new Toy("Rex", "Andy");', check: 'c.perform()', expect: 'Rex poses for Andy!' },
+      { run: 'PixarCharacter c = new PixarCharacter("Joy");', check: 'c.perform()', expect: 'Joy bows.' },
+      { private: 'Toy.owner' },
+    ],
+    solution: 'private String owner;\n\nToy(String name, String owner) {\n    super(name);\n    this.owner = owner;\n}\n\npublic String getOwner() {\n    return owner;\n}\n\n@Override\npublic String perform() {\n    return getName() + " poses for " + owner + "!";\n}',
+  };
+  const said = body => { const o = run(body, TOY); const e = o.error || o.results.find(r => r.error).error; return `${e.message} | ${e.hint}`; };
+
+  it('a subclass, written under a class line that says extends, is run through a superclass variable', () => {
+    const outcome = run(TOY.solution, TOY);
+    assert.deepEqual(outcome.results.map(r => r.passed), [true, true, true, true]);
+  });
+  it('an override that does not match is a new method, and the test sees the old one run', () => {
+    const outcome = run(TOY.solution.replace('@Override\npublic String perform()', 'public String perform(int times)'), TOY);
+    assert.deepEqual(outcome.results.map(r => r.passed), [true, false, true, true]);
+    assert.equal(outcome.results[1].actualRepr, '"Rex bows."');
+  });
+  it('leaving out super(…) is explained by what Java tried instead', () => {
+    assert.match(said(TOY.solution.replace('    super(name);\n', '')), /has to begin by calling super\(…\).*no constructor that takes nothing.*super\(String name\)/s);
+  });
+  it('a private field of the superclass points the student at its getter', () => {
+    assert.match(said(TOY.solution.replace('getName() + " poses', 'name + " poses')), /name is private in PixarCharacter, so even Toy, which extends PixarCharacter.*getName\(\)/s);
+  });
+  it('an override that is harder to reach, and @Override on a method that replaces nothing', () => {
+    assert.match(said(TOY.solution.replace('public String perform()', 'String perform()')), /left with no access word here, and public in PixarCharacter.*Make it public/s);
+    assert.match(said(TOY.solution.replace('public String perform()', 'public String preform()')), /@Override says that preform\(\) replaces.*Did you mean perform\(\)/s);
+    assert.match(said(TOY.solution.replace('public String perform()', 'public String perform(String how)')), /PixarCharacter has perform\(\)\. The parameter types have to match exactly/);
+  });
+  it('a wrong cast is the exception Java throws, with what the object really was', () => {
+    const q = { ...TOY, tests: [{ run: 'PixarCharacter c = new PixarCharacter("Joy");', check: 'Toy.ownerOf(c)', expect: 'x' }, TOY.tests[0], TOY.tests[2]] };
+    const err = run(`${TOY.solution}\n\nstatic String ownerOf(PixarCharacter c) {\n    Toy t = (Toy) c;\n    return t.owner;\n}`, q).results[0].error;
+    assert.match(err.message, /^ClassCastException: class PixarCharacter cannot be cast to class Toy/);
+    assert.match(err.hint, /instanceof Toy/);
+    assert.equal(err.line, 18);
+  });
+  it('a method the superclass variable does not have is explained, with the cast that reaches it', () => {
+    const q = { ...TOY, tests: [{ run: 'PixarCharacter c = new Toy("Rex", "Andy");', check: 'c.getOwner()', expect: 'Andy' }, TOY.tests[0], TOY.tests[2]] };
+    const row = run(TOY.solution, q).results[0];
+    assert.match(row.error.message, /A PixarCharacter has no method called getOwner\(\)/);
+    assert.match(row.error.hint, /Toy has one.*instanceof.*\(\(Toy\) x\)\.getOwner/s);
+  });
+  it('abstract classes and interfaces: what must be written, and what cannot be made', () => {
+    const shape = { ...TOY, scaffold: 'abstract class Shape {\n    public abstract double area();\n}\n\ninterface Named {\n    String name();\n}', signature: 'class Square extends Shape implements Named',
+      tests: [{ run: 'Shape s = new Square(3);', check: 's.area()', expect: 9 }, { run: 'Named n = new Square(2);', check: 'n.name()', expect: 'square' }, { run: 'Square q = new Square(1);', check: 'q.area() + q.name()', expect: '1.0square' }] };
+    const good = 'private double side;\n\nSquare(double side) {\n    this.side = side;\n}\n\npublic double area() {\n    return side * side;\n}\n\npublic String name() {\n    return "square";\n}';
+    assert.deepEqual(run(good, shape).results.map(r => r.passed), [true, true, true]);
+    const why = body => { const o = run(body, shape); return `${o.error.message} | ${o.error.hint}`; };
+    assert.match(why(good.replace(/public String name\(\) \{\n {4}return "square";\n\}/, '')), /Square has to write name\(\) itself: it implements Named.*public String name\(\)/s);
+    assert.match(why(good.replace('public double area()', 'public double area(int n)')), /Square has to write area\(\) itself: Shape declares it abstract/);
+    assert.match(why(good.replace('public String name()', 'String name()')), /public in Named.*Make it public/s);
+    assert.match(why(`${good}\n\nstatic Shape blank() {\n    return new Shape();\n}`), /Shape is abstract, so no object can be made from it directly.*new Square/s);
+  });
+});
+
 describe('a Java problem: a run cannot hang or grow without limit', () => {
   it('an endless loop is stopped, test by test', () => {
     const outcome = run('while (a < 100) { b++; }\nreturn b;', SUM, { limits: { steps: 5000 } });

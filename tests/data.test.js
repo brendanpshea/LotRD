@@ -591,7 +591,8 @@ describe('Question set file validation', () => {
             // what the object has become. Either one method of a class that is given (scaffold, and
             // the method's first line) or a whole class (the class line).
             const sig = String(q.signature ?? '').trim();
-            const wholeClass = /^(?:public\s+)?class\s+[A-Z]\w*$/.test(sig);
+            // public class Potion, or class Fish extends PixarCharacter, or class Player extends GameObject implements Movable, Drawable
+            const wholeClass = /^(?:public\s+)?(?:abstract\s+)?class\s+([A-Z]\w*)(?:\s+extends\s+[A-Z]\w*)?(?:\s+implements\s+[A-Z]\w*(?:\s*,\s*[A-Z]\w*)*)?$/.test(sig);
             if (wholeClass) {
               if (q.scaffold !== undefined) {
                 assert.ok(typeof q.scaffold === 'string' && /\bclass\s+[A-Z]\w*\s*\{/.test(q.scaffold) && q.scaffold.trim().endsWith('}'),
@@ -1244,8 +1245,9 @@ describe('code_write problems are solvable', () => {
       for (const { q, i } of problems) {
         const java = q.language === 'java';
         const run = (question, body) => (java ? runJavaProblem(question, body) : runProblem(question, body));
-        const javaWholeClass = java && isJavaClassProblem(q) && /\bclass\s+\w+\s*$/.test(String(q.signature).trim());
-        const name = javaWholeClass ? String(q.signature).trim().split(/\s+/).pop()
+        const javaClassLine = java && isJavaClassProblem(q) ? /^(?:public\s+)?(?:abstract\s+)?class\s+([A-Z]\w*)(?:\s+extends\s+[A-Z]\w*)?(?:\s+implements\s+[A-Z]\w*(?:\s*,\s*[A-Z]\w*)*)?$/.exec(String(q.signature).trim()) : null;
+        const javaWholeClass = javaClassLine !== null;
+        const name = javaWholeClass ? javaClassLine[1]
           : java && isJavaClassProblem(q) ? String(q.signature).trim().replace(/\s*\(.*$/, '').split(/\s+/).pop()
           : java ? parseJavaSignature(q.signature).name
           : isScriptProblem(q)

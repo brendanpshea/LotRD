@@ -29,13 +29,18 @@
  * and String.format with %d %s %f %b %c %n; the library methods listed in
  * the tables below; and classes of the student's own: fields, constructors
  * (and this(…)), this, private, static fields and methods, toString, and
- * objects held in arrays, lists and as the values of a map.
+ * objects held in arrays, lists and as the values of a map; extends and
+ * super(…), overriding with the object's own class deciding which version
+ * runs, super.method(), protected, equals(Object), instanceof (with or
+ * without a name) and casts, abstract classes, and interfaces with default
+ * methods.
  *
  * What it refuses, by name: byte / short / float, a collection inside a
  * collection, the other collection classes, changing a collection inside a
  * for-each over it (Java throws, or skips an element), random shuffling,
- * inheritance, interfaces, enums and records, an object printed with no
- * toString() of its own (Java shows a code that differs from run to run),
+ * enums, records and sealed types, a class inside a class unless it is
+ * static, an Object holding anything but an object of the student's own
+ * classes, an object printed with no toString() of its own (Java shows a code that differs from run to run),
  * objects as the elements of a set or the keys of a map, final fields set in
  * a constructor, try / catch, lambdas, labels, regular expressions — and
  * == between two Strings or two wrapper objects, which Java answers by object
@@ -414,21 +419,15 @@ class Parser {
             const start = this.p;
             const mods = new Set();
             while (this.tok.t === 'kw' && MODIFIERS.has(this.tok.v)) mods.add(this.next().v);
-            if (this.isKw('class')) {
-                this.next();
-                const name = this.expectIdent('the name of the class');
-                if (this.isOp('<')) throw notYet(`${BOX} does not run a class that takes a type in angle brackets of its own.`, name.line);
-                if (this.isKw('extends') || this.isKw('implements')) {
-                    throw notYet(`${BOX} does not run classes that extend or implement anything.`, name.line);
-                }
-                this.expectOp('{', 'after the class name');
-                const members = this.parseMembers(name.v);
-                this.expectOp('}', 'to close the class');
-                classes.push({ name: name.v, line: name.line, mods, ...members });
+            if (this.isKw('class') || this.isKw('interface')) {
+                classes.push(...this.parseClassDecl(mods));
                 continue;
             }
-            if (this.isKw('interface') || this.isKw('enum') || (this.isId() && this.tok.v === 'record' && this.peek().t === 'id')) {
-                throw notYet(`${BOX} does not run ${this.tok.v === 'enum' ? 'enums' : this.tok.v === 'record' ? 'records' : 'interfaces'}.`, this.tok.line);
+            if (this.isKw('enum') || (this.isId() && this.tok.v === 'record' && this.peek().t === 'id')) {
+                throw notYet(`${BOX} does not run ${this.tok.v === 'enum' ? 'enums' : 'records'}.`, this.tok.line);
+            }
+            if (this.isId() && (this.tok.v === 'sealed' || this.tok.v === 'non') && (this.peek().t === 'kw' || this.isOp('-', this.peek()))) {
+                throw notYet(`${BOX} does not run sealed classes.`, this.tok.line, 'Remove the word sealed, and the permits list with it.');
             }
             this.p = start;
             const found = this.parseMembers(null);
@@ -441,6 +440,55 @@ class Parser {
             }
         }
         return { classes, loose };
+    }
+
+    /**
+     * class Name [extends A] [implements B, C] { … }   or   interface Name [extends B, C] { … }
+     * Returns the class, followed by any static classes written inside it (which are run as classes of their own).
+     */
+    parseClassDecl(mods) {
+        const isInterface = this.isKw('interface');
+        const what = isInterface ? 'interface' : 'class';
+        this.next();
+        const name = this.expectIdent(`the name of the ${what}`);
+        if (this.isOp('<')) throw notYet(`${BOX} does not run ${aType(what)} that takes a type in angle brackets of its own.`, name.line);
+        const names = () => {
+            const out = [];
+            do {
+                const t = this.parseType();
+                if (t.targs || t.dims) throw notYet(`${BOX} does not extend or implement a type written with angle brackets or [].`, name.line);
+                out.push(t.base);
+            } while (this.eatOp(','));
+            return out;
+        };
+        let superName = null;
+        const interfaceNames = [];
+        if (this.eatKw('extends')) {
+            const list = names();
+            if (isInterface) interfaceNames.push(...list);
+            else {
+                if (list.length > 1) {
+                    throw compileError(`A class can extend only one class, and ${name.v} names ${list.length}.`, name.line, 'Having several is what implements is for, with interfaces.');
+                }
+                [superName] = list;
+            }
+        }
+        if (this.eatKw('implements')) {
+            if (isInterface) throw compileError('An interface extends other interfaces. Only a class implements them.', name.line);
+            interfaceNames.push(...names());
+        }
+        if (this.isKw('extends')) throw compileError('extends comes before implements.', name.line, `class ${name.v} extends … implements …`);
+        if (this.isId() && this.tok.v === 'permits') throw notYet(`${BOX} does not run sealed classes.`, name.line);
+        this.expectOp('{', `after the ${what} name`);
+        const members = this.parseMembers(name.v, isInterface);
+        this.expectOp('}', `to close the ${what}`);
+        const cls = { kind: what, name: name.v, line: name.line, mods, superName, interfaceNames, methods: members.methods, fields: members.fields, ctors: members.ctors, nestIn: null };
+        const all = [cls];
+        for (const inner of members.nested) {
+            if (!inner.nestIn) inner.nestIn = cls;
+            all.push(inner);
+        }
+        return all;
     }
 
     parseParams() {
@@ -462,9 +510,9 @@ class Parser {
         return params;
     }
 
-    /** The fields, constructors and methods of a class. `className` is null for members written with no class around them. */
-    parseMembers(className) {
-        const members = { methods: [], fields: [], ctors: [] };
+    /** The fields, constructors and methods of a class or interface. `className` is null for members written with no class around them. */
+    parseMembers(className, isInterface = false) {
+        const members = { methods: [], fields: [], ctors: [], nested: [] };
         for (;;) {
             if (this.tok.t === 'eof' || this.isOp('}')) break;
             if (this.eatOp(';')) continue;
@@ -478,10 +526,16 @@ class Parser {
                 override = true;
             }
             const mods = new Set();
-            while (this.tok.t === 'kw' && MODIFIERS.has(this.tok.v)) mods.add(this.next().v);
+            while ((this.tok.t === 'kw' && MODIFIERS.has(this.tok.v)) || (isInterface && this.isKw('default'))) mods.add(this.next().v);
             if (this.isKw('class') || this.isKw('interface') || this.isKw('enum') || (this.isId() && this.tok.v === 'record' && this.peek().t === 'id')) {
                 if (!className) { this.p = start; break; }   // the next class in the file
-                throw notYet(`${BOX} does not run a class inside another class.`, first.line, `Close ${className} with its } first, and write the next class after it.`);
+                if (this.isKw('enum') || this.isId()) throw notYet(`${BOX} does not run ${this.tok.v}s.`, first.line);
+                if (this.isKw('class') && !mods.has('static') && !isInterface) {
+                    throw notYet(`${BOX} does not run a class inside another class unless it is marked static.`, first.line,
+                        `Write static class …, or close ${className} with its } first and put the next class after it.`);
+                }
+                members.nested.push(...this.parseClassDecl(mods));
+                continue;
             }
             const looksLikeMember = (this.isKw('void') || this.isId() || (this.tok.t === 'kw' && PRIMITIVE_WORDS.has(this.tok.v)));
             if (!looksLikeMember) {
@@ -514,11 +568,19 @@ class Parser {
             if (this.isId() && this.isOp('(', this.peek())) {
                 const name = this.next();
                 const params = this.parseParams();
-                if (!this.isOp('{')) {
-                    if (this.isOp(';')) this.fail(`The method ${name.v} has no body.`, 'After the ) comes { … } with the code inside.');
-                    this.fail(`Java expected { to open the body of ${name.v}, but found ${describeToken(this.tok)}.`);
+                let body = null;
+                if (this.isOp(';') && (mods.has('abstract') || isInterface)) {
+                    // public abstract String perform();   — a method every subclass has to write for itself
+                    this.next();
+                } else {
+                    if (!this.isOp('{')) {
+                        if (this.isOp(';')) {
+                            this.fail(`The method ${name.v} has no body.`, 'After the ) comes { … } with the code inside. Only a method marked abstract ends at the ) with a semicolon.');
+                        }
+                        this.fail(`Java expected { to open the body of ${name.v}, but found ${describeToken(this.tok)}.`);
+                    }
+                    body = this.parseBlock();
                 }
-                const body = this.parseBlock();
                 members.methods.push({
                     name: name.v, ret: type, params, body, line: name.line, endLine: this.tokens[this.p - 1].line,
                     isStatic: mods.has('static'), mods, override,
@@ -689,7 +751,7 @@ class Parser {
     }
 
     checkStatementExpression(e) {
-        if (e.k === 'assign' || e.k === 'incdec' || e.k === 'call' || e.k === 'new' || e.k === 'thiscall') return;
+        if (e.k === 'assign' || e.k === 'incdec' || e.k === 'call' || e.k === 'new' || e.k === 'thiscall' || e.k === 'supercall' || e.k === 'supermethod') return;
         const hint = e.k === 'binary' && e.op === '=='
             ? '== compares two values. To store a value, use a single ='
             : 'A statement has to DO something: store a value, call a method, or return.';
@@ -859,7 +921,15 @@ class Parser {
         let left = this.parseUnary();
         for (;;) {
             const t = this.tok;
-            if (this.isKw('instanceof')) throw notYet(`${BOX} does not have instanceof.`, t.line);
+            if (this.isKw('instanceof')) {
+                // c instanceof Toy,  and  c instanceof Toy t  which also names the object as a Toy
+                if (BINARY_PRECEDENCE['<'] < minPrec) break;
+                this.next();
+                const to = this.parseType();
+                const bind = this.isId() ? this.next() : null;
+                left = { k: 'instanceof', e: left, to, bind: bind ? bind.v : null, bindLine: bind ? bind.line : null, line: t.line };
+                continue;
+            }
             if (t.t !== 'op') break;
             const prec = BINARY_PRECEDENCE[t.v];
             if (prec === undefined || prec < minPrec) break;
@@ -917,7 +987,8 @@ class Parser {
                         (after.t === 'id' || after.t === 'str' || after.t === 'char' || after.t === 'int' || after.t === 'double' ||
                             this.isOp('(', after) || this.isOp('!', after) || this.isOp('~', after) ||
                             (after.t === 'kw' && ['new', 'this', 'true', 'false', 'null', 'super'].includes(after.v)))) {
-                        if (isWrapper(n.v) && k === this.p + 2) {
+                        if (k === this.p + 2) {
+                            // (Integer) x, (Toy) c: the checker decides whether this is a cast it runs
                             this.next();
                             const type = this.parseType();
                             this.expectOp(')', 'to close the cast');
@@ -1016,7 +1087,17 @@ class Parser {
                 if (t.v === 'new') return this.parseNew(line);
                 if (t.v === 'switch') return this.parseSwitch(line, true);
                 if (t.v === 'this') return this.isOp('(') ? { k: 'thiscall', args: this.parseArgs(), line } : { k: 'this', line };
-                if (t.v === 'super') throw notYet(`${BOX} does not have "super": it belongs to classes that extend other classes, which are not run here.`, line);
+                if (t.v === 'super') {
+                    // super(name, movie): the superclass's constructor.  super.introduce(): the superclass's version of a method.
+                    if (this.isOp('(')) return { k: 'supercall', args: this.parseArgs(), line };
+                    if (this.isOp('.') && this.peek().t === 'id') {
+                        this.next();
+                        const name = this.next();
+                        if (this.isOp('(')) return { k: 'supermethod', name: name.v, args: this.parseArgs(), line: name.line };
+                        throw notYet(`${BOX} does not read a field through super. Use the field's own name, or a getter.`, line);
+                    }
+                    throw compileError('super has to be followed by ( … ) to run the superclass\'s constructor, or by a dot and a method.', line);
+                }
                 if (PRIMITIVE_WORDS.has(t.v)) {
                     throw compileError(`A declaration such as "${t.v} x" cannot go in the middle of an expression.`, line,
                         'Declare the variable on its own line first.');
@@ -1117,6 +1198,7 @@ const SUPERTYPES = {
     HashSet: ['Set', 'Collection'], Set: ['Collection'], Collection: [], HashMap: ['Map'], Map: [],
 };
 const INTERFACES = new Set(['List', 'Set', 'Collection', 'Map']);
+const NO_BINDINGS = { t: [], f: [] };
 const isCollection = t => t.endsWith('>');
 /** new ArrayList<>() before anything has said what it holds. */
 const isPending = t => t.endsWith('<>');
@@ -1128,8 +1210,12 @@ const isListType = t => isCollection(t) && SUPERTYPES[baseOf(t)].concat(baseOf(t
 // The classes the student's own program declares, while it is being checked: name → class.
 let CLASSES = new Map();
 const isOwnClass = t => CLASSES.has(t);
+/** A variable of this type refers to an object of one of the student's classes (or to null). */
+const isObjectType = t => t === 'Object' || CLASSES.has(t);
+/** May an object whose class is `from` stand where `to` is wanted? A Toy may, where a PixarCharacter is. */
+const isSubtype = (from, to) => from === to || (isOwnClass(from) && (to === 'Object' || CLASSES.get(from).supers.has(to)));
 
-const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t) || isCollection(t) || isOwnClass(t);
+const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t) || isCollection(t) || isObjectType(t);
 
 const promote = (a, b) => (a === 'double' || b === 'double' ? 'double' : a === 'long' || b === 'long' ? 'long' : 'int');
 
@@ -1138,7 +1224,7 @@ const aType = t => (t === 'null' ? 'null' : /^[aeiou]/i.test(t) ? `an ${t}` : `a
 const NOT_YET_TYPES = new Map([
     ['byte', 'the byte type'], ['short', 'the short type'], ['float', 'the float type'],
     ['Byte', 'the wrapper type Byte'], ['Short', 'the wrapper type Short'], ['Float', 'the wrapper type Float'],
-    ['Object', 'the Object type'], ['TreeMap', 'TreeMap (HashMap is here)'], ['TreeSet', 'TreeSet (HashSet is here)'],
+    ['TreeMap', 'TreeMap (HashMap is here)'], ['TreeSet', 'TreeSet (HashSet is here)'],
     ['LinkedHashMap', 'LinkedHashMap (HashMap is here)'], ['LinkedHashSet', 'LinkedHashSet (HashSet is here)'],
     ['Entry', 'Map.Entry'], ['Iterator', 'iterators'], ['ArrayDeque', 'ArrayDeque (LinkedList is here)'], ['PriorityQueue', 'PriorityQueue'],
     ['Scanner', 'Scanner (there is no keyboard input here)'], ['Random', 'Random (a test needs the same answer every time)'],
@@ -1181,7 +1267,7 @@ function resolveType(node, { allowVoid = false } = {}) {
     else if (base === 'void' && allowVoid) name = 'void';
     else if (base === 'string') throw compileError('Java spells the type String, with a capital S.', line);
     else if (NOT_YET_TYPES.has(base)) throw notYet(`${BOX} does not have ${NOT_YET_TYPES.get(base)} yet.`, line, TYPE_HINTS[base] ?? null);
-    else if (isOwnClass(base)) name = base;
+    else if (isObjectType(base)) name = base;
     else if (base === 'var') throw compileError('var can only be used for a local variable that is given a value straight away.', line);
     else throw notYet(`${BOX} does not know the type "${base}".`, line, 'The types here are int, long, double, boolean, char, String, StringBuilder, the wrappers Integer, Double, Boolean, Character and Long, arrays of them, and the collections ArrayList, LinkedList, HashSet and HashMap.');
     return name + '[]'.repeat(dims);
@@ -1328,7 +1414,7 @@ function textOf(type) {
 /** An object of the student's own class as text: whatever its toString() returns. */
 function objectText(v) {
     if (v === null) return 'null';
-    const m = v.cls.toStringMethod;
+    const m = v.cls.vtable && v.cls.vtable.get('toString()');   // the object's own class decides, whatever the variable's type
     if (!m) throw refusal(`A ${v.cls.name} has no toString() method, so Java would show it as a code such as ${v.cls.name}@1b6d3586.`);
     const frame = new Array(m.frameSize);
     frame[m.thisSlot] = v;
@@ -1935,7 +2021,20 @@ function hasher(type) {
 }
 
 /** equals(): 0.0 and -0.0 are different Doubles, and NaN equals itself. */
-const sameAs = type => (type === 'Double' ? Object.is : (a, b) => a === b);
+const sameAs = type => (type === 'Double' ? Object.is
+    // For objects of the student's classes: what is being looked for is asked whether it equals the element.
+    : isObjectType(type) ? (element, wanted) => (wanted === null ? element === null : objectEquals(wanted, element))
+        : (a, b) => a === b);
+
+/** a.equals(b), for an object of one of the student's classes: its own equals(Object) if its class has one, else “the very same object”. */
+function objectEquals(a, b) {
+    const m = a.cls.vtable && a.cls.vtable.get('equals(Object)');
+    if (!m) return a === b;
+    const frame = new Array(m.frameSize);
+    frame[0] = b;
+    frame[m.thisSlot] = a;
+    return invoke(m, frame, null);
+}
 
 function comparatorFor(type) {
     const compare = type === 'String' ? compareStrings : type === 'Double' ? compareDoubles
@@ -2096,7 +2195,7 @@ const listIndex = (list, index, length) => (list.fixed ? arrayIndex(index, lengt
 function hasElement(c, v, same) {
     if (c instanceof JList) return c.a.some(x => same(x, v));
     if (c instanceof JSet) return c.h.find(v) !== null;
-    return c.map.h.nodes().some(n => same(n.v, v));
+    return c.map.h.nodes().some(n => n.v === v || same(n.v, v));
 }
 
 function addElement(c, v) {
@@ -2258,7 +2357,7 @@ function collectionMethods(type) {
         set: [sig(`int ${E}`, E, listSet)],
         indexOf: [sig(E, 'int', (c, v) => c.a.findIndex(x => same(x, v)))],
         lastIndexOf: [sig(E, 'int', (c, v) => { for (let i = c.a.length - 1; i >= 0; i--) if (same(c.a[i], v)) return i; return -1; })],
-        equals: [sig(`List<${E}>`, 'boolean', (c, o) => o !== null && o.a.length === c.a.length && c.a.every((v, i) => same(v, o.a[i])))],
+        equals: [sig(`List<${E}>`, 'boolean', (c, o) => o !== null && o.a.length === c.a.length && c.a.every((v, i) => same(o.a[i], v)))],
         // Since Java 21 every list has these six, not only LinkedList.
         addFirst: [sig(E, 'void', (c, v) => listInsert(c, 0, v))],
         addLast: [sig(E, 'void', (c, v) => { addElement(c, v); })],
@@ -2289,7 +2388,8 @@ function collectionMethods(type) {
 
 function mapMethods(type) {
     const [K, V] = typeArgs(type);
-    const sameValue = sameAs(V);
+    const equalValue = sameAs(V);
+    const sameValue = (held, wanted) => held === wanted || equalValue(held, wanted);   // Java looks for the very same object first
     const show = textOf(type);
     const valueOf = node => (node ? node.v : null);
     return {
@@ -2306,7 +2406,7 @@ function mapMethods(type) {
         keySet: [sig('', `Set<${K}>`, m => (m.keys ??= new JSet(m.h, true)))],
         values: [sig('', `Collection<${V}>`, m => (m.vals ??= new JValues(m)))],
         equals: [sig(`Map<${K},${V}>`, 'boolean', (m, o) => o !== null && o.h.size === m.h.size
-            && o.h.nodes().every(n => { const mine = m.h.find(n.k); return mine !== null && sameValue(mine.v, n.v); }))],
+            && m.h.nodes().every(n => { const theirs = o.h.find(n.k); return theirs !== null && equalValue(theirs.v, n.v); }))],
         toString: [sig('', 'String', m => text(show(m)))],
     };
 }
@@ -2712,6 +2812,73 @@ const STATICS = {
     },
 };
 
+// The two methods every object has from the class Object, for a class that writes neither.
+const OBJECT_EQUALS = {
+    name: 'equals', key: 'equals(Object)', params: [{ name: 'other' }], paramTypes: ['Object'], retType: 'boolean', mods: new Set(['public']), isStatic: false,
+    native: (self, other) => self === other,   // with no equals() of its own, an object equals only itself
+};
+const OBJECT_TO_STRING = {
+    name: 'toString', key: 'toString()', params: [], paramTypes: [], retType: 'String', mods: new Set(['public']), isStatic: false,
+    native: self => { throw refusal(`A ${self.cls.name} has no toString() method, so Java would show it as a code such as ${self.cls.name}@1b6d3586.`); },
+};
+const OBJECT_METHODS = [OBJECT_EQUALS, OBJECT_TO_STRING];
+const ACCESS_RANK = m => (m.mods.has('public') ? 3 : m.mods.has('protected') ? 2 : m.mods.has('private') ? 0 : 1);
+const ACCESS_WORD = ['private', 'left with no access word', 'protected', 'public'];
+const methodKey = m => `${m.name}(${m.paramTypes.join(',')})`;
+/** Classes written inside one outer class may use each other's private members. */
+const nestOf = c => { let at = c; while (at.nest) at = at.nest; return at; };
+const sameNest = (a, b) => nestOf(a) === nestOf(b);
+
+/** The field called `name` that an object of class c has: its own, or one from a superclass. */
+function fieldOf(c, name) {
+    for (let at = c; at; at = at.superClass) {
+        const f = at.fieldMap.get(name);
+        if (f) return f;
+    }
+    return null;
+}
+
+/** Every method called `name` that a c has: its own, then inherited ones it has not replaced. */
+function methodsNamed(c, name) {
+    const seen = new Set();
+    const out = [];
+    const add = m => { if (!seen.has(m.key)) { seen.add(m.key); out.push(m); } };
+    for (let at = c; at; at = at.superClass) {
+        for (const m of at.methodMap.get(name) || []) {
+            if (at !== c && m.mods.has('private')) continue;   // a private method is not handed down
+            add(m);
+        }
+    }
+    for (const i of c.allInterfaces) for (const m of i.methodMap.get(name) || []) add(m);
+    return out;
+}
+
+/** Does every object of this type (or at least some class of that type) have a toString() of its own? */
+function hasToString(type) {
+    if (isOwnClass(type)) {
+        const own = CLASSES.get(type).vtable.get('toString()');
+        if (own && !own.isAbstract) return true;
+    }
+    for (const c of CLASSES.values()) {
+        if (c.implicit || !isSubtype(c.name, type)) continue;
+        const m = c.vtable.get('toString()');
+        if (m && !m.isAbstract) return true;
+    }
+    return false;
+}
+
+/** A conversion Java allows and this box does not make: said as a refusal, never as a Java error. */
+function declinedConversion(from, to) {
+    if (typeof from !== 'string' || from === to) return null;
+    if (to === 'Object' && from !== 'void' && !isObjectType(from) && from !== 'null') {
+        return `${BOX} keeps only objects of your own classes in an Object, and this is ${aType(from)}.`;
+    }
+    if (isArray(from) && isArray(to) && isObjectType(elemOf(to)) && isOwnClass(elemOf(from)) && isSubtype(elemOf(from), elemOf(to))) {
+        return `${BOX} does not use ${aType(from)} where ${aType(to)} is wanted. Make the array ${aType(to)} from the start; it can hold ${elemOf(from)} objects.`;
+    }
+    return null;
+}
+
 /** Would a class of the student's own with this name hide one of Java's? */
 function isTakenClassName(name) {
     return name === 'String' || name === 'StringBuilder' || name === 'Object' || name === 'System' || isWrapper(name)
@@ -2803,6 +2970,7 @@ function convert(node, to) {
 function passable(from, to) {
     if (from === to) return true;
     if (from === 'null') return isReference(to);
+    if (isOwnClass(from)) return isSubtype(from, to);
     if (isCollection(from)) {
         // An ArrayList<String> is a List<String> and a Collection<String> — and never a List of anything else.
         if (!isCollection(to) || isPending(to)) return false;
@@ -2828,7 +2996,7 @@ class Checker {
         let host;
         if (program.loose.methods.length || program.loose.fields.length || !classes.length) {
             // Methods written with no class around them belong to a class with no name.
-            host = { name: '$Main', line: 1, mods: new Set(), implicit: true, ctors: [], ...program.loose };
+            host = { kind: 'class', name: '$Main', line: 1, mods: new Set(), implicit: true, ctors: [], superName: null, interfaceNames: [], ...program.loose };
             classes.push(host);
         } else {
             host = classes.find(c => c.methods.some(m => m.name === 'main' && m.isStatic)) || classes.find(c => c.mods.has('public')) || classes[0];
@@ -2838,23 +3006,89 @@ class Checker {
         CLASSES = new Map();
         for (const c of classes) {
             if (!c.implicit && isTakenClassName(c.name)) {
-                throw notYet(`${BOX} cannot run a class of your own called ${c.name}, because Java already has a ${c.name}.`, c.line, `Pick another name for it, such as Game${c.name}.`);
+                throw notYet(`${BOX} cannot run ${aType(c.kind)} of your own called ${c.name}, because Java already has a ${c.name}.`, c.line, `Pick another name for it, such as Game${c.name}.`);
             }
             if (CLASSES.has(c.name)) throw compileError(`There are two classes called ${c.name}.`, c.line);
             CLASSES.set(c.name, c);
         }
-        for (const c of classes) this.declareClass(c);
-        for (const c of classes) this.checkClass(c);
+        const ordered = this.link(classes);
+        for (const c of ordered) this.declareClass(c);
+        for (const c of ordered) this.checkClass(c);
         this.methods = host.methodMap;
         this.cls = host;
     }
 
-    /** What a class has: the types of its fields, and the lines of its constructors and methods. */
+    /** Who extends and implements whom. Returns the classes with every superclass ahead of its subclasses. */
+    link(classes) {
+        const named = (c, name, verb) => {
+            const found = CLASSES.get(name);
+            if (found) return found;
+            if (name === 'Object' || isTakenClassName(name)) throw notYet(`${BOX} does not let a class ${verb === 'extends' ? 'extend' : 'implement'} ${name}, which is one of Java's own.`, c.line);
+            const near = suggestName(name, [...CLASSES.keys()].filter(n => !n.startsWith('$')));
+            throw compileError(`${c.name} ${verb} ${name}, and there is no ${verb === 'extends' && c.kind === 'class' ? 'class' : 'interface'} called ${name}.`, c.line, near ? `Did you mean ${near}?` : null);
+        };
+        for (const c of classes) {
+            c.superClass = null;
+            c.interfaces = [];
+            c.nest = c.nestIn || null;
+            c.isInterface = c.kind === 'interface';
+            c.isAbstract = c.isInterface || c.mods.has('abstract');
+            if (c.mods.has('abstract') && c.mods.has('final')) throw compileError(`${c.name} cannot be both abstract and final.`, c.line);
+            if (c.superName && c.superName !== 'Object') {
+                const parent = named(c, c.superName, 'extends');
+                if (parent.kind === 'interface') {
+                    throw compileError(`${parent.name} is an interface, so ${c.name} implements it; extends is for a class.`, c.line, `class ${c.name} implements ${parent.name}`);
+                }
+                if (parent.mods.has('final')) throw compileError(`${parent.name} is final, so no class may extend it.`, c.line);
+                c.superClass = parent;
+            }
+            for (const name of c.interfaceNames || []) {
+                const face = named(c, name, c.isInterface ? 'extends' : 'implements');
+                if (face.kind !== 'interface') {
+                    throw compileError(`${face.name} is a class, so ${c.name} extends it; ${c.isInterface ? 'an interface can only extend interfaces' : 'implements is for an interface'}.`, c.line,
+                        c.isInterface ? null : `class ${c.name} extends ${face.name}`);
+                }
+                if (c.interfaces.includes(face)) throw compileError(`${c.name} names ${face.name} twice.`, c.line);
+                c.interfaces.push(face);
+            }
+        }
+        const ordered = [];
+        const state = new Map();
+        const visit = c => {
+            if (state.get(c) === 'done') return;
+            if (state.get(c) === 'busy') throw compileError(`${c.name} ends up extending itself, which no class can do.`, c.line);
+            state.set(c, 'busy');
+            if (c.superClass) visit(c.superClass);
+            for (const face of c.interfaces) visit(face);
+            state.set(c, 'done');
+            ordered.push(c);
+        };
+        classes.forEach(visit);
+        for (const c of ordered) this.ancestry(c);
+        return ordered;
+    }
+
+    ancestry(c) {
+        c.superClass = c.superClass || null;
+        c.interfaces = c.interfaces || [];
+        c.allInterfaces = new Set(c.superClass ? c.superClass.allInterfaces : []);
+        for (const face of c.interfaces) {
+            c.allInterfaces.add(face);
+            for (const more of face.allInterfaces) c.allInterfaces.add(more);
+        }
+        c.supers = new Set([c.name, ...(c.superClass ? c.superClass.supers : []), ...[...c.allInterfaces].map(face => face.name)]);
+    }
+
+    /** What a class has: the types of its fields, and the lines of its constructors and methods. Its superclass is done already. */
     declareClass(c) {
+        if (!c.supers) this.ancestry(c);
+        const kind = c.isInterface ? 'interface' : 'class';
         c.fieldMap = new Map();
         c.instanceFields = [];
         c.staticFields = [];
+        const inherited = c.superClass ? c.superClass.fieldCount : 0;
         for (const f of c.fields) {
+            if (c.isInterface) throw notYet(`${BOX} does not run an interface that has fields (constants). An interface here is a list of methods.`, f.line);
             f.cls = c;
             f.type = resolveType(f.typeNode);
             f.isStatic = f.mods.has('static');
@@ -2865,17 +3099,20 @@ class Checker {
                 throw notYet(`${BOX} does not run a final field that is given its value later, in a constructor.`, f.line, 'Give it its value on the line that declares it, or remove the word final.');
             }
             const list = f.isStatic ? c.staticFields : c.instanceFields;
-            f.index = list.length;
+            f.index = f.isStatic ? list.length : inherited + list.length;
             f.order = c.fieldMap.size;
             list.push(f);
             c.fieldMap.set(f.name, f);
         }
-        c.defaults = c.instanceFields.map(f => defaultOf(f.type));
+        // An object has room for its superclass's fields first, then its own.
+        c.fieldCount = inherited + c.instanceFields.length;
+        c.defaults = [...(c.superClass ? c.superClass.defaults : []), ...c.instanceFields.map(f => defaultOf(f.type))];
         c.methodMap = new Map();
         const declare = (m, list, what) => {
             m.cls = c;
             m.retType = resolveType(m.ret, { allowVoid: true });
             m.paramTypes = m.params.map(q => resolveType(q.type));
+            m.key = methodKey(m);
             // Two methods may share a name (overloading) as long as their parameter TYPES differ.
             // Different parameter names, or a different return type, do not count.
             for (const other of list) {
@@ -2890,10 +3127,29 @@ class Checker {
             const list = c.methodMap.get(m.name) || [];
             declare(m, list, `methods called ${m.name}`);
             c.methodMap.set(m.name, list);
+            if (c.isInterface) {
+                // In an interface a method is public, and has no body unless it is marked default.
+                if (m.isStatic || m.mods.has('private')) throw notYet(`${BOX} does not run static or private methods in an interface.`, m.line);
+                if (m.body && !m.mods.has('default')) {
+                    throw compileError(`${m.name}() has a body, and a method in an interface has none: it ends at the ) with a semicolon.`, m.line, 'The class that implements the interface writes the body. (A method marked default may have one.)');
+                }
+                m.mods.add('public');
+            }
+            m.isAbstract = !m.body;
+            if (m.isAbstract && !c.isInterface) {
+                if (!c.isAbstract) {
+                    throw compileError(`${m.name}() is abstract, so ${c.name} has to be declared abstract as well.`, m.line, `Write: abstract class ${c.name}`);
+                }
+                if (m.isStatic || m.mods.has('private') || m.mods.has('final')) throw compileError(`An abstract method cannot also be ${m.isStatic ? 'static' : m.mods.has('private') ? 'private' : 'final'}.`, m.line);
+            }
+            if (m.mods.has('abstract') && m.body) throw compileError(`${m.name}() is marked abstract, so it cannot have a body.`, m.line, 'Remove the { … }, and end the line with a semicolon, or remove the word abstract.');
         }
         const ctors = [];
-        for (const k of c.ctors) declare(k, ctors, `${c.name} constructors`);
-        if (!ctors.length) {
+        for (const k of c.ctors) {
+            if (c.isInterface) throw compileError(`An interface has no constructors: no object is ever made from ${c.name} itself.`, k.line);
+            declare(k, ctors, `${c.name} constructors`);
+        }
+        if (!ctors.length && !c.isInterface) {
             // A class with no constructor written gets one that takes nothing and does nothing.
             ctors.push({
                 name: c.name, cls: c, isCtor: true, implicit: true, isStatic: false, params: [], paramTypes: [], retType: 'void', mods: new Set(['public']),
@@ -2902,25 +3158,87 @@ class Checker {
         }
         c.ctors = ctors;
 
-        // The methods every Java object already has. toString() may be replaced; it has to be done Java's way.
+        // The methods every Java object already has. toString() and equals() may be replaced; it has to be done Java's way.
         for (const m of c.methods) {
             const plain = m.paramTypes.length === 0;
             if (plain && ['getClass', 'notify', 'notifyAll', 'wait', 'clone', 'finalize'].includes(m.name)) {
-                throw notYet(`${BOX} does not let a class write its own ${m.name}(): every Java object already has a method of that name.`, m.line);
+                throw notYet(`${BOX} does not let a ${kind} write its own ${m.name}(): every Java object already has a method of that name.`, m.line);
             }
-            if (plain && !c.implicit && (m.name === 'toString' || m.name === 'hashCode')) {
-                const want = m.name === 'toString' ? 'String' : 'int';
+            const replaces = c.implicit ? null : (plain && (m.name === 'toString' || m.name === 'hashCode')) ? (m.name === 'toString' ? 'String' : 'int') : m.key === 'equals(Object)' ? 'boolean' : null;
+            if (replaces) {
+                m.replacesObjectMethod = true;
                 if (m.isStatic) throw compileError(`${m.name}() cannot be static: it replaces the ${m.name}() that every object already has.`, m.line);
-                if (m.retType !== want) throw compileError(`${m.name}() has to return ${aType(want)}, because it replaces the ${m.name}() that every object already has.`, m.line);
+                if (m.retType !== replaces) throw compileError(`${m.name}() has to return ${aType(replaces)}, because it replaces the ${m.name}() that every object already has.`, m.line);
                 if (!m.mods.has('public')) {
-                    throw compileError(`${m.name}() has to be public, because the ${m.name}() it replaces is public.`, m.line, `Write: public ${want} ${m.name}()`);
+                    throw compileError(`${m.name}() has to be public, because the ${m.name}() it replaces is public.`, m.line, `Write: public ${replaces} ${m.name}(${m.name === 'equals' ? 'Object other' : ''})`);
                 }
-            } else if (m.override) {
-                throw compileError(`@Override says that ${m.name}() replaces a method the class already had, and it had none like this.`, m.line,
-                    m.name.toLowerCase() === 'tostring' ? 'The method is spelled toString, with a capital S, and takes nothing in its ( ).' : 'Remove @Override, or check the spelling of the method and what it takes.');
             }
         }
-        c.toStringMethod = c.implicit ? null : (c.methodMap.get('toString') || []).find(m => m.paramTypes.length === 0) || null;
+        this.inherit(c);
+    }
+
+    /** What c takes from above it: which of its methods replace inherited ones (and whether they may), and what is left for it to write. */
+    inherit(c) {
+        const fromClasses = new Map(c.superClass ? c.superClass.vtable : []);
+        const fromInterfaces = new Map();
+        for (const face of c.allInterfaces) {
+            for (const list of face.methodMap.values()) {
+                for (const m of list) {
+                    const had = fromInterfaces.get(m.key);
+                    if (had && had !== m && !had.isAbstract && !m.isAbstract) throw notYet(`${BOX} does not choose between two interfaces that each supply a default ${m.name}().`, c.line);
+                    if (!had || had.isAbstract) fromInterfaces.set(m.key, m);
+                }
+            }
+        }
+        const replacing = (m, above) => {
+            const where = above.cls.name;
+            if (above.mods.has('final')) throw compileError(`${m.name}() is final in ${where}, so ${c.name} cannot replace it.`, m.line);
+            if (m.isStatic !== above.isStatic) {
+                throw compileError(`${m.name}() is ${m.isStatic ? 'static' : 'not static'} here and ${above.isStatic ? 'static' : 'not static'} in ${where}; a method that replaces another has to match it.`, m.line);
+            }
+            if (m.retType !== above.retType && !(isOwnClass(m.retType) && isSubtype(m.retType, above.retType))) {
+                throw compileError(`${m.name}() returns ${m.retType === 'void' ? 'nothing' : aType(m.retType)} here, and ${above.retType === 'void' ? 'nothing' : aType(above.retType)} in ${where}. A method that replaces another has to return the same type.`, m.line);
+            }
+            if (ACCESS_RANK(m) < ACCESS_RANK(above)) {
+                const was = ACCESS_WORD[ACCESS_RANK(above)];
+                throw compileError(`${m.name}() is ${ACCESS_WORD[ACCESS_RANK(m)]} here, and ${was} in ${where}. A method that replaces another cannot be harder to reach.`, m.line,
+                    `Make it ${was}: ${was} ${m.retType} ${m.name}(…)`);
+            }
+        };
+        for (const m of c.methods) {
+            const above = [fromClasses.get(m.key), fromInterfaces.get(m.key)].filter(Boolean);
+            // A static method of a superclass is not replaced, only hidden; the same rules hold.
+            for (let at = c.superClass; at; at = at.superClass) {
+                const hidden = (at.methodMap.get(m.name) || []).find(x => x.isStatic && x.key === m.key && !x.mods.has('private'));
+                if (hidden) { above.push(hidden); break; }
+            }
+            for (const up of above) replacing(m, up);
+            if (m.override && !above.length && !m.replacesObjectMethod) {
+                const near = suggestName(m.name, [...new Set([...fromClasses.values(), ...fromInterfaces.values()].map(x => x.name)), 'toString', 'equals']);
+                const sameName = [...fromClasses.values(), ...fromInterfaces.values()].find(x => x.name === m.name);
+                throw compileError(`@Override says that ${m.name}() replaces a method ${c.name} already had from above, and there is none like this.`, m.line,
+                    sameName ? `${sameName.cls.name} has ${m.name}(${sameName.paramTypes.join(', ')}). The parameter types have to match exactly.`
+                        : m.name.toLowerCase() === 'tostring' ? 'The method is spelled toString, with a capital S, and takes nothing in its ( ).'
+                            : near && near !== m.name ? `Did you mean ${near}()?` : 'Remove @Override, or check the spelling of the method and what it takes.');
+            }
+        }
+        const vtable = fromClasses;
+        for (const [key, m] of fromInterfaces) {
+            const have = vtable.get(key);
+            if (!have || (have.isAbstract && have.cls.isInterface && !m.isAbstract)) vtable.set(key, m);
+            else if (!have.isAbstract && !have.cls.isInterface && !have.mods.has('public') && have.cls !== c) {
+                throw compileError(`${have.name}() comes to ${c.name} from ${have.cls.name}, where it is not public; to stand for the ${have.name}() of ${m.cls.name} it has to be.`, c.line);
+            }
+        }
+        for (const m of c.methods) if (!m.isStatic && !m.mods.has('private')) vtable.set(m.key, m);
+        c.vtable = vtable;
+        if (!c.isAbstract) {
+            for (const m of vtable.values()) {
+                if (!m.isAbstract) continue;
+                throw compileError(`${c.name} has to write ${m.name}(${m.paramTypes.join(', ')}) itself: ${m.cls.isInterface ? `it implements ${m.cls.name}, which asks for one` : `${m.cls.name} declares it abstract`}.`, c.line,
+                    `Write ${m.cls.isInterface ? 'public ' : ''}${m.retType} ${m.name}(${m.params.map((q, i) => `${m.paramTypes[i]} ${q.name}`).join(', ')}) { … } in ${c.name}, or declare ${c.name} abstract.`);
+            }
+        }
     }
 
     checkClass(c) {
@@ -2939,7 +3257,7 @@ class Checker {
             this.initOf = null;
         }
         for (const k of c.ctors) this.checkMethod(k);
-        for (const m of c.methods) this.checkMethod(m);
+        for (const m of c.methods) if (m.body) this.checkMethod(m);
         // A constructor may hand over to another with this(…), but not round in a circle.
         for (const k of c.ctors) {
             const seen = new Set([k]);
@@ -2956,7 +3274,7 @@ class Checker {
         if (this.method.isStatic) {
             throw compileError(`“this” means the object a method was called on, and ${this.method.name} is static, so there is no such object here.`, n.line);
         }
-        if (this.beforeThis) throw compileError('The object cannot be used yet inside the ( ) of this(…).', n.line);
+        if (this.beforeThis) throw compileError('The object cannot be used yet inside the ( ) of this(…) or super(…).', n.line);
         n.type = this.cls.name;
         n.slot = this.method.thisSlot;
         return n;
@@ -2965,8 +3283,9 @@ class Checker {
     /** A field being read or written: `health`, `this.health`, `goblin.health`, `Monster.count`. `target` is the object, or null. */
     fieldAccess(n, fld, target) {
         const owner = fld.cls.name;
-        if (fld.isPrivate && fld.cls !== this.cls) {
-            throw compileError(`${fld.name} is private in ${owner}, so code outside ${owner} cannot read or change it directly.`, n.line,
+        if (fld.isPrivate && !sameNest(fld.cls, this.cls)) {
+            const below = !this.cls.implicit && isSubtype(this.cls.name, owner);
+            throw compileError(`${fld.name} is private in ${owner}, so ${below ? `even ${this.cls.name}, which extends ${owner},` : `code outside ${owner}`} cannot read or change it directly.`, n.line,
                 `Go through one of ${owner}'s methods, such as a getter: get${fld.name[0].toUpperCase()}${fld.name.slice(1)}()`);
         }
         if (this.initOf && !target && fld.cls === this.cls && fld.isStatic === this.initOf.isStatic && fld.order >= this.initOf.order) {
@@ -2980,7 +3299,7 @@ class Checker {
                 throw compileError(`${fld.name} belongs to each ${fld.cls.implicit ? 'object' : `${owner} object`}, and ${this.method.name} is static, so there is no object here to take it from.`, n.line,
                     fld.cls.implicit ? null : `Make an object first, and use its field: ${owner} x = new ${owner}(…);  x.${fld.name}`);
             }
-            if (this.beforeThis) throw compileError(`The field ${fld.name} cannot be used yet inside the ( ) of this(…).`, n.line);
+            if (this.beforeThis) throw compileError(`The field ${fld.name} cannot be used yet inside the ( ) of this(…) or super(…).`, n.line);
             node.target = { k: 'this', type: this.cls.name, slot: this.method.thisSlot, line: n.line };
         }
         return node;
@@ -2991,57 +3310,148 @@ class Checker {
         if (typeof type !== 'string') return;
         const inside = isCollection(type) ? (isPending(type) ? [] : typeArgs(type)) : [type.replace(/(\[\])+$/, '')];
         for (const t of inside) {
+            if (!isObjectType(t) || hasToString(t)) continue;
             const c = CLASSES.get(t);
-            if (c && !c.toStringMethod) {
-                if (c.implicit) throw notYet(`${BOX} does not turn “this” into text here: Java would show a code such as Main@1b6d3586.`, line);
-                throw notYet(`A ${t} has no toString() method, so Java would show it as a code such as ${t}@1b6d3586, different on every run.`, line,
-                    `Give ${t} one:  public String toString() { return … ; }`);
-            }
+            if (c && c.implicit) throw notYet(`${BOX} does not turn “this” into text here: Java would show a code such as Main@1b6d3586.`, line);
+            throw notYet(`${t === 'Object' ? 'No class here has' : `A ${t} has no`} toString() method, so Java would show ${t === 'Object' ? 'the object' : 'it'} as a code such as ${t === 'Object' ? 'Monster' : t}@1b6d3586, different on every run.`, line,
+                t === 'Object' ? null : `Give ${t} one:  public String toString() { return … ; }`);
         }
     }
 
     /** new Monster("Goblin", 30) */
     createObject(n, c) {
+        if (c.isAbstract) {
+            const below = [...CLASSES.values()].find(x => !x.isAbstract && x !== c && isSubtype(x.name, c.name));
+            throw compileError(`${c.name} is ${c.isInterface ? 'an interface' : 'abstract'}, so no object can be made from it directly.`, n.line,
+                below ? `Make an object of a class that ${c.isInterface ? 'implements' : 'extends'} it, such as new ${below.name}(…).` : null);
+        }
         n.name = `new ${c.name}`;
         const ctor = this.chooseOverload(n, c.ctors);
-        if (ctor.mods.has('private') && c !== this.cls) {
+        if (ctor.mods.has('private') && !sameNest(c, this.cls)) {
             throw compileError(`That ${c.name} constructor is private, so only code inside ${c.name} can use it.`, n.line);
         }
         n.args = n.args.map((a, i) => convert(a, ctor.paramTypes[i]));
         return Object.assign(n, { k: 'newobj', cls: c, ctor, type: c.name });
     }
 
-    /** goblin.roar(), this.heal(5), Monster.count() — a method of one of the student's classes. `target` is the object, or null for a call on the class. */
-    objectCall(n, c, target) {
-        const list = c.methodMap.get(n.name);
-        if (!list) {
-            if (target && n.name === 'equals' && n.args.length === 1 && (n.args[0].type === 'null' || isOwnClass(n.args[0].type))) {
-                // With no equals() of its own, an object equals only itself.
-                return Object.assign(n, { k: 'builtin', target, fn: (a, b) => a === b, type: 'boolean', describe: `The ${c.name} method equals()` });
-            }
-            if (target && n.name === 'toString' && n.args.length === 0) this.shown(c.name, n.line);
-            if (target && ['hashCode', 'getClass', 'equals'].includes(n.name)) {
-                throw notYet(`${BOX} does not run ${n.name}() on ${aType(c.name)}${n.name === 'equals' ? ' with that in its ( )' : ''}.`, n.line);
-            }
-            const near = suggestName(n.name, [...c.methodMap.keys()]);
-            throw compileError(`${aType(c.name)[0].toUpperCase() + aType(c.name).slice(1)} has no method called ${n.name}().`, n.line,
-                c.fieldMap.has(n.name) ? `${n.name} is a field, not a method: leave off the ( ).` : near ? `Did you mean ${near}()?` : null);
+    /**
+     * goblin.roar(), this.heal(5), Monster.count(), super.introduce() — a method of one of the student's classes.
+     * `c` is the class (or interface) the call is made on, or null for a plain Object. `target` is the object, null for a call on the class.
+     */
+    objectCall(n, c, target, { viaSuper = false } = {}) {
+        const typeName = c ? c.name : 'Object';
+        const declared = c ? methodsNamed(c, n.name) : [];
+        // Whatever the class, the object also has equals(Object) and toString() from the class Object.
+        const list = target || viaSuper ? [...declared, ...OBJECT_METHODS.filter(m => m.name === n.name && !declared.some(d => d.key === m.key))] : declared;
+        if (!list.length) {
+            if (['hashCode', 'getClass'].includes(n.name)) throw notYet(`${BOX} does not run ${n.name}() on ${aType(typeName)}.`, n.line);
+            const hidden = c && [...(function* up() { for (let at = c.superClass; at; at = at.superClass) yield* at.methodMap.get(n.name) || []; }())].find(m => m.mods.has('private'));
+            if (hidden) throw compileError(`${n.name}() is private in ${hidden.cls.name}, so it is not handed down to ${typeName}.`, n.line);
+            const all = c ? [...new Set([...(function* names() { for (let at = c; at; at = at.superClass) yield* at.methodMap.keys(); for (const face of c.allInterfaces) yield* face.methodMap.keys(); }())])] : [];
+            const near = suggestName(n.name, all);
+            const below = c && [...CLASSES.values()].find(x => x !== c && isSubtype(x.name, c.name) && x.methodMap.has(n.name));
+            throw compileError(`${aType(typeName)[0].toUpperCase() + aType(typeName).slice(1)} has no method called ${n.name}().`, n.line,
+                c && fieldOf(c, n.name) ? `${n.name} is a field, not a method: leave off the ( ).`
+                    : below ? `${below.name} has one, but this variable is ${aType(typeName)}, and only ${typeName}'s methods can be called through it. Check with instanceof, then cast: ((${below.name}) x).${n.name}(…)`
+                        : near ? `Did you mean ${near}()?` : null);
         }
         const m = this.chooseOverload(n, list);
-        if (m.mods.has('private') && c !== this.cls) {
-            throw compileError(`${n.name}() is private in ${c.name}, so code outside ${c.name} cannot call it.`, n.line);
+        if (m.mods.has('private') && !sameNest(m.cls, this.cls)) {
+            throw compileError(`${n.name}() is private in ${m.cls.name}, so code outside ${m.cls.name} cannot call it.`, n.line);
         }
         n.args = n.args.map((a, i) => convert(a, m.paramTypes[i]));
-        if (target && m.isStatic) throw notYet(`${BOX} calls a static method through its class, not through an object: ${c.name}.${n.name}(…)`, n.line);
-        if (!target && !m.isStatic) {
-            throw compileError(`${n.name}() is not static, so it has to be called on ${aType(c.name)} object, not on the class.`, n.line,
-                `Make an object first: ${c.name} x = new ${c.name}(…);  x.${n.name}(…)`);
+        if (target && m.isStatic) throw notYet(`${BOX} calls a static method through its class, not through an object: ${m.cls.name}.${n.name}(…)`, n.line);
+        if (!target && !viaSuper && !m.isStatic) {
+            throw compileError(`${n.name}() is not static, so it has to be called on ${aType(typeName)} object, not on the class.`, n.line,
+                `Make an object first: ${typeName} x = new ${typeName}(…);  x.${n.name}(…)`);
         }
+        if (viaSuper) {
+            if (m.isAbstract) throw compileError(`${m.cls.name} only declares ${n.name}(); it has no version of its own for super.${n.name}() to run.`, n.line);
+            if (m.isStatic) throw notYet(`${BOX} calls a static method through its class: ${m.cls.name}.${n.name}(…)`, n.line);
+            if (m === OBJECT_TO_STRING) throw notYet(`super.toString() here would be Java's own, which shows a code such as ${this.cls.name}@1b6d3586.`, n.line);
+            n.selfSlot = this.method.thisSlot;
+            n.direct = true;   // exactly the superclass's version, whatever the object really is
+        } else if (target && m === OBJECT_TO_STRING) {
+            this.shown(typeName, n.line);
+        }
+        n.k = 'call';
         n.method = m;
         n.type = m.retType;
         n.recv = target;
         n.target = null;
         return n;
+    }
+
+    /** super.introduce(): the superclass's version of a method, run on this same object. */
+    superMethod(n) {
+        if (this.method.isStatic) throw compileError(`super means “this object, seen as its superclass”, and ${this.method.name} is static, so there is no object here.`, n.line);
+        if (this.beforeThis) throw compileError('The object cannot be used yet inside the ( ) of this(…) or super(…).', n.line);
+        if (this.cls.isInterface) throw notYet(`${BOX} does not use super inside an interface.`, n.line);
+        n.args = n.args.map(a => this.loose(a));
+        return this.objectCall(n, this.cls.superClass, null, { viaSuper: true });
+    }
+
+    /** c instanceof Toy, and c instanceof Toy t */
+    instanceOf(n) {
+        n.e = this.value(n.e);
+        const from = n.e.type;
+        const to = resolveType(n.to);
+        n.type = 'boolean';
+        n.binds = { t: [], f: [] };
+        if (!isOwnClass(to)) {
+            if (to === 'Object' && isObjectType(from)) throw notYet(`Every object is an Object, so this asks only whether the value is null. ${BOX} does not run it.`, n.line, 'Compare with null instead: x != null');
+            throw notYet(`${BOX} runs instanceof with your own classes and interfaces, and ${to} is one of Java's.`, n.line);
+        }
+        if (!isObjectType(from) && from !== 'null') {
+            if (PRIMITIVES.has(from)) throw compileError(`instanceof asks what kind of object something is, and ${aType(from)} is not an object.`, n.line);
+            throw notYet(`${BOX} runs instanceof on objects of your own classes, and this is ${aType(from)}.`, n.line);
+        }
+        this.castable(from, to, n.line, 'be');
+        n.target = to;
+        if (n.bind) {
+            if (this.lookup(n.bind)) throw compileError(`${n.bind} is already the name of a variable here, so it cannot also name the ${to}.`, n.bindLine, 'Pick a different name after the type.');
+            n.sym = { name: n.bind, type: to, slot: this.method.frameSize++, isFinal: false, constVal: undefined, line: n.bindLine };
+            n.binds.t.push(n.sym);
+        }
+        return n;
+    }
+
+    /** Could an object held as a `from` ever be a `to`? If not, Java rejects the cast (or the instanceof) outright. */
+    castable(from, to, line, verb) {
+        if (from === 'null' || from === 'Object' || to === 'Object' || isSubtype(from, to) || isSubtype(to, from)) return;
+        const a = CLASSES.get(from);
+        const b = CLASSES.get(to);
+        if ((a.isInterface && !b.mods.has('final')) || (b.isInterface && !a.mods.has('final'))) return;   // some class might be both
+        throw compileError(`${aType(from)[0].toUpperCase() + aType(from).slice(1)} can never ${verb} ${aType(to)}: neither class extends the other.`, line);
+    }
+
+    /** (Toy) c — treat an object as a more particular type, checked when the line runs. */
+    refCast(n, e, to) {
+        const from = e.type;
+        if (!isObjectType(from) && from !== 'null') {
+            // Anything at all may be cast to Object in Java; here an Object holds only objects of the student's classes.
+            if (to === 'Object') throw notYet(declinedConversion(from, to) || `${BOX} does not cast ${aType(from)} to Object.`, n.line);
+            if (PRIMITIVES.has(from) || from === 'String' || isWrapper(from) || isArray(from)) {
+                throw compileError(`${aType(from)[0].toUpperCase() + aType(from).slice(1)} cannot be cast to ${aType(to)}.`, n.line);
+            }
+            throw notYet(`${BOX} casts only objects of your own classes to ${to}, and this is ${aType(from)}.`, n.line);
+        }
+        if (to !== 'Object') this.castable(from, to, n.line, 'be cast to');
+        // Upward (a Toy as a PixarCharacter) always works, and needs no check when it runs.
+        const checked = !(from === 'null' || to === 'Object' || isSubtype(from, to));
+        return { k: 'refcast', e, target: to, checked, type: to, line: n.line, wasCast: true };
+    }
+
+    /** The variables that an instanceof with a name brings in, made visible for the part of the code where the test is known to have passed. */
+    withBindings(syms, run) {
+        if (!syms || !syms.length) return run();
+        const scope = new Map();
+        for (const sym of syms) {
+            if (scope.has(sym.name)) throw compileError(`${sym.name} is named twice in this condition.`, sym.line);
+            scope.set(sym.name, sym);
+        }
+        this.scopes.push(scope);
+        try { return run(); } finally { this.scopes.pop(); }
     }
 
     // ── scopes
@@ -3056,7 +3466,7 @@ class Checker {
 
     declare(name, type, line, isFinal = false) {
         const earlier = this.lookup(name);
-        if (earlier) {
+        if (earlier && !earlier.declined) {
             throw compileError(earlier.isParam ? `${name} is already the name of one of this method's parameters.` : `The variable ${name} is already declared in this method.`, line,
                 earlier.isParam ? `Use ${name} as it is, or pick a different name for the new variable.`
                     : `A variable is declared once. To give it a new value later, leave the type off: ${name} = …;`);
@@ -3093,6 +3503,37 @@ class Checker {
             const target = this.chooseOverload(call, m.cls.ctors);
             m.chain = { ctor: target, args: call.args.map((a, i) => convert(a, target.paramTypes[i])), line: call.line };
             m.body.body = m.body.body.slice(1);
+        } else if (m.isCtor) {
+            // super(name, movie): the superclass sets up its part of the object first. Left out, Java supplies super().
+            const parent = m.cls.superClass;
+            const call = first && first.k === 'expr' && first.e.k === 'supercall' ? first.e : null;
+            if (call) {
+                this.beforeThis = true;
+                call.args = call.args.map(a => this.loose(a));
+                this.beforeThis = false;
+                m.body.body = m.body.body.slice(1);
+            }
+            if (!parent) {
+                if (call && call.args.length) {
+                    throw compileError(`${m.cls.name} does not extend another class, so there is no constructor for super(…) to hand these values to.`, call.line);
+                }
+            } else {
+                const usable = parent.ctors.filter(k => !k.mods.has('private') || sameNest(parent, m.cls));
+                const forms = usable.map(k => `super(${k.params.map((q, i) => `${k.paramTypes[i]} ${q.name}`).join(', ')})`).join('  or  ');
+                if (!call) {
+                    const plain = usable.find(k => k.paramTypes.length === 0);
+                    if (!plain) {
+                        throw compileError(`${m.implicit ? `${m.cls.name} needs a constructor, and it` : `This ${m.cls.name} constructor`} has to begin by calling super(…): ${parent.name} has no constructor that takes nothing, so Java cannot call one for you.`,
+                            m.line, `First line of the constructor: ${forms}`);
+                    }
+                    m.superCall = { ctor: plain, args: [], line: m.line };
+                } else {
+                    call.name = 'super';
+                    if (!usable.length) throw compileError(`${parent.name}'s constructors are private, so ${m.cls.name} cannot call one.`, call.line);
+                    const target = this.chooseOverload(call, usable);
+                    m.superCall = { ctor: target, args: call.args.map((a, i) => convert(a, target.paramTypes[i])), line: call.line };
+                }
+            }
         }
         for (const s of m.body.body) this.stmt(s);
     }
@@ -3117,15 +3558,29 @@ class Checker {
             case 'empty': break;
             case 'local': this.local(s); break;
             case 'expr': s.e = this.expr(s.e); break;
-            case 'if':
+            case 'if': {
                 s.cond = this.condition(s.cond, 'An if');
-                this.stmt(s.then);
-                if (s.otherwise) this.stmt(s.otherwise);
+                // if (c instanceof Toy t) { … }: inside the braces, t is c as a Toy.
+                const binds = s.cond.binds || NO_BINDINGS;
+                this.withBindings(binds.t, () => this.stmt(s.then));
+                if (s.otherwise) this.withBindings(binds.f, () => this.stmt(s.otherwise));
+                // if (!(c instanceof Toy t)) { return; }  — after this, t is a Toy for the rest of the block.
+                const leaves = x => ['return', 'throw', 'break', 'continue'].includes(x.k) || (x.k === 'block' && x.body.length > 0 && leaves(x.body[x.body.length - 1]));
+                const sure = !s.otherwise && leaves(s.then);
+                for (const sym of [...binds.f, ...(s.otherwise ? binds.t : [])]) {
+                    if (this.lookup(sym.name)) continue;
+                    // Where it is not plain that Java brings the name into scope here, using it is declined rather than guessed at.
+                    this.scopes[this.scopes.length - 1].set(sym.name, sure && binds.f.includes(sym) ? sym
+                        : { ...sym, declined: `${BOX} cannot tell whether ${sym.name} may be used here. Use it inside the if that tests instanceof.` });
+                }
                 break;
-            case 'while':
+            }
+            case 'while': {
                 s.cond = this.condition(s.cond, 'A while loop');
-                this.inLoop(s.body);
+                const binds = s.cond.binds || NO_BINDINGS;
+                this.withBindings(binds.t, () => this.inLoop(s.body));
                 break;
+            }
             case 'do':
                 this.inLoop(s.body);
                 s.cond = this.condition(s.cond, 'A do-while loop');
@@ -3134,8 +3589,10 @@ class Checker {
                 this.scopes.push(new Map());
                 for (const i of s.init) this.stmt(i);
                 if (s.cond) s.cond = this.condition(s.cond, 'A for loop');
-                s.update = s.update.map(u => this.expr(u));
-                this.inLoop(s.body);
+                this.withBindings(s.cond && s.cond.binds ? s.cond.binds.t : null, () => {
+                    s.update = s.update.map(u => this.expr(u));
+                    this.inLoop(s.body);
+                });
                 this.scopes.pop();
                 break;
             case 'foreach': this.forEach(s); break;
@@ -3303,8 +3760,12 @@ class Checker {
                 : `If losing the ${from === 'double' ? 'decimal part' : 'extra range'} is what you want, say so with a cast: (${to}) value`;
             throw compileError(`${aType(from)[0].toUpperCase() + aType(from).slice(1)} cannot be stored in ${where} (${aType(to)}) without a cast — Java will not shrink it for you.`, line, hint);
         }
+        const declined = declinedConversion(from, to);
+        if (declined) throw notYet(declined, line);
         let hint = null;
-        if (to === 'String' && PRIMITIVES.has(from)) hint = from === 'char' ? 'To turn a char into text: "" + c or String.valueOf(c)' : 'To turn a value into text: String.valueOf(x) or "" + x';
+        if (isObjectType(from) && isOwnClass(to) && isSubtype(to, from)) {
+            hint = `Every ${to} is ${aType(from)}, but not every ${from} is ${aType(to)}. If you are sure this one is, check with instanceof and then cast: (${to}) value`;
+        } else if (to === 'String' && PRIMITIVES.has(from)) hint = from === 'char' ? 'To turn a char into text: "" + c or String.valueOf(c)' : 'To turn a value into text: String.valueOf(x) or "" + x';
         else if (from === 'String' && to === 'int') hint = 'To read a number out of text: Integer.parseInt(text)';
         else if (from === 'String' && to === 'char') hint = 'A String is not a char, even when it is one character long. Take a character out with .charAt(0)';
         else if (from === 'String' && to === 'double') hint = 'To read a number out of text: Double.parseDouble(text)';
@@ -3361,8 +3822,15 @@ class Checker {
                 n.e = this.expr(n.e);
                 n.type = n.e.type;
                 if (n.e.const) n.const = n.e.const;
+                if (n.e.binds) n.binds = n.e.binds;
                 return n;
             }
+            case 'instanceof': return this.instanceOf(n);
+            case 'supermethod': return this.superMethod(n);
+            case 'supercall':
+                // Since Java 25 a constructor may do some things before its super(…). Here it has to come first.
+                if (this.method.isCtor) throw notYet(`${BOX} wants super(…) as the first line of the constructor.`, n.line);
+                throw compileError('super(…) runs the superclass\'s constructor, so it can only be used inside a constructor.', n.line);
             case 'name': return this.name(n);
             case 'unary': return this.unary(n);
             case 'binary': return this.binary(n);
@@ -3390,7 +3858,12 @@ class Checker {
     name(n) {
         const sym = this.lookup(n.name);
         if (!sym) {
-            const fld = this.cls.fieldMap.get(n.name);
+            let fld = fieldOf(this.cls, n.name);
+            // …or a static field of the class this one is written inside
+            for (let outer = this.cls.nest; outer && !fld; outer = outer.nest) {
+                const f = fieldOf(outer, n.name);
+                if (f && f.isStatic) fld = f;
+            }
             if (fld) return this.fieldAccess(n, fld, null);
             if (STATICS[n.name] || NOT_YET_CLASSES.has(n.name) || n.name === 'System' || isOwnClass(n.name)) {
                 throw compileError(`${n.name} is a class, not a value. It needs a dot and a method after it.`, n.line);
@@ -3400,6 +3873,7 @@ class Checker {
                 near ? `Did you mean ${near}?${near.toLowerCase() === n.name.toLowerCase() ? ' Java treats capital and small letters as different.' : ''}`
                     : 'A variable has to be declared, with its type, before it is used — and it only exists inside the { } it was declared in.');
         }
+        if (sym.declined) throw notYet(sym.declined, n.line);
         n.sym = sym;
         n.type = sym.type;
         if (sym.constVal !== undefined) n.const = { v: sym.constVal };
@@ -3428,11 +3902,31 @@ class Checker {
         }
         n.e = n.op === '!' ? e : convert(e, n.type);
         if (n.e.const) n.const = { v: unaryFunction(n.op, n.type)(n.e.const.v) };
+        if (n.op === '!' && e.binds) n.binds = { t: e.binds.f, f: e.binds.t };
+        return n;
+    }
+
+    /** a && b, a || b. A name brought in by instanceof on the left can be used on the right: c instanceof Toy t && t.isNew() */
+    logical(n) {
+        const and = n.op === '&&';
+        const l = this.prim(n.l);
+        const lb = l.binds || NO_BINDINGS;
+        const r = this.withBindings(and ? lb.t : lb.f, () => this.prim(n.r));
+        const rb = r.binds || NO_BINDINGS;
+        if (l.type !== 'boolean' || r.type !== 'boolean') {
+            throw compileError(`The operator ${n.op} cannot be used between ${aType(l.type)} and ${aType(r.type)}.`, n.line, `${n.op} joins two true-or-false tests, such as x > 0 ${n.op} x < 10`);
+        }
+        n.l = l;
+        n.r = r;
+        n.type = 'boolean';
+        if (l.const && r.const) n.const = { v: and ? l.const.v && r.const.v : l.const.v || r.const.v };
+        if (lb.t.length || lb.f.length || rb.t.length || rb.f.length) n.binds = and ? { t: [...lb.t, ...rb.t], f: [] } : { t: [], f: [...lb.f, ...rb.f] };
         return n;
     }
 
     binary(n) {
         const op = n.op;
+        if (op === '&&' || op === '||') return this.logical(n);
         let l = this.value(n.l);
         let r = this.value(n.r);
         const equality = op === '==' || op === '!=';
@@ -3505,12 +3999,19 @@ class Checker {
                 n.r = convert(r, n.optype);
             } else if (lt === 'boolean' && rt === 'boolean') {
                 n.optype = 'boolean';
+            } else if (isObjectType(lt) && isObjectType(rt) && lt !== rt) {
+                // Two objects of related classes may be the same object; of unrelated classes, never.
+                this.castable(lt, rt, n.line, 'be the same object as');
+                n.optype = 'ref';
             } else if (isReference(lt) && isReference(rt) && (lt === rt || lt === 'null' || rt === 'null')) {
                 if (lt === 'String' && rt === 'String') {
                     throw notYet(`${op} between two Strings asks whether they are the very same object, not whether they hold the same text, so ${BOX} does not run it.`, n.line,
                         op === '==' ? 'Compare text with .equals(): a.equals(b)' : 'Compare text with .equals(): !a.equals(b)');
                 }
                 n.optype = 'ref';
+            } else if ((lt === 'Object' && isReference(rt)) || (rt === 'Object' && isReference(lt))
+                || (isCollection(lt) && isOwnClass(rt) && CLASSES.get(rt).isInterface) || (isCollection(rt) && isOwnClass(lt) && CLASSES.get(lt).isInterface)) {
+                throw notYet(`${BOX} compares two objects with ${op} only when both are objects of your own classes.`, n.line);
             } else if (isCollection(lt) && isCollection(rt)) {
                 throw notYet(`${op} between ${aType(lt)} and ${aType(rt)} asks whether they are the very same object, and ${BOX} runs that only when both sides have the same type.`, n.line,
                     'To compare what they hold, use .equals()');
@@ -3619,8 +4120,9 @@ class Checker {
 
     conditional(n) {
         n.c = this.condition(n.c, 'A ? :');
-        const a = this.value(n.a);
-        const b = this.value(n.b);
+        const binds = n.c.binds || NO_BINDINGS;
+        const a = this.withBindings(binds.t, () => this.value(n.a));
+        const b = this.withBindings(binds.f, () => this.value(n.b));
         const at = a.type;
         const bt = b.type;
         // JLS 15.25. With a wrapper on one side the result is usually the primitive, which is how
@@ -3652,6 +4154,10 @@ class Checker {
         const to = resolveType(n.to);
         const e = this.value(n.e);
         const from = e.type;
+        if (isObjectType(to)) return this.refCast(n, e, to);
+        if (!PRIMITIVES.has(to) && !isWrapper(to)) {
+            throw notYet(`${BOX} does not have casts to object types such as (${to}).`, n.line, to === 'String' ? 'To turn a value into text use String.valueOf(x) or "" + x' : null);
+        }
         // A wrapper may be cast to the primitive it holds, or to a wider one — (double) count — but not narrowed.
         const unboxing = isWrapper(from) && passable(unboxedOf(from), to);
         // And a cast boxes only into the matching wrapper: (Integer) 5, never (Double) 5.
@@ -3689,14 +4195,14 @@ class Checker {
 
     /** Is this node the name of a class (rather than a variable that happens to share the name)? */
     className(node) {
-        return node && node.k === 'name' && !this.lookup(node.name) && !this.cls.fieldMap.has(node.name) ? node.name : null;
+        return node && node.k === 'name' && !this.lookup(node.name) && !fieldOf(this.cls, node.name) ? node.name : null;
     }
 
     field(n) {
         const cls = this.className(n.target);
         if (cls && isOwnClass(cls)) {
             const c = CLASSES.get(cls);
-            const fld = c.fieldMap.get(n.name);
+            const fld = fieldOf(c, n.name);
             if (!fld) {
                 const near = suggestName(n.name, [...c.fieldMap.keys()]);
                 throw compileError(`${cls} has no field called ${n.name}.`, n.line, c.methodMap.has(n.name) ? `${n.name} is a method, so it needs ( ) after it.` : near ? `Did you mean ${near}?` : null);
@@ -3722,7 +4228,7 @@ class Checker {
         const t = n.target.type;
         if (isOwnClass(t)) {
             const c = CLASSES.get(t);
-            const fld = c.fieldMap.get(n.name);
+            const fld = fieldOf(c, n.name);
             if (!fld) {
                 const near = suggestName(n.name, [...c.fieldMap.keys()]);
                 throw compileError(`${aType(t)[0].toUpperCase() + aType(t).slice(1)} has no field called ${n.name}.`, n.line,
@@ -3815,8 +4321,17 @@ class Checker {
 
         // a method written by the student
         if (n.target === null) {
-            const list = this.methods.get(n.name);
-            if (!list) {
+            let list = methodsNamed(this.cls, n.name);
+            // …or a static method of the class this one is written inside
+            for (let outer = this.cls.nest; outer && !list.length; outer = outer.nest) list = methodsNamed(outer, n.name).filter(m => m.isStatic);
+            if (!list.length && this.cls.implicit && ['toString', 'equals', 'hashCode', 'getClass'].includes(n.name)) {
+                throw notYet(`${BOX} does not run ${n.name}() with no object in front of it here.`, n.line);
+            }
+            if (!list.length && !this.cls.implicit && !this.method.isStatic && OBJECT_METHODS.some(m => m.name === n.name)) {
+                // toString() or equals(x) with nothing in front: this object's own
+                return this.objectCall(n, this.cls, { k: 'this', type: this.cls.name, slot: this.method.thisSlot, line: n.line });
+            }
+            if (!list.length) {
                 const hint = n.name === 'println' || n.name === 'print' ? 'To print, write System.out.println(…)'
                     : ['length', 'charAt', 'substring', 'equals', 'indexOf'].includes(n.name) ? `${n.name}() belongs to a String: text.${n.name}(…)`
                         : ['abs', 'max', 'min', 'pow', 'sqrt', 'round'].includes(n.name) ? `${n.name}() belongs to Math: Math.${n.name}(…)`
@@ -3831,7 +4346,7 @@ class Checker {
                         : `${m.name}() works on one ${this.cls.name} object. Make an object and call it on that: x.${m.name}(…)`);
             }
             if (!m.isStatic) {
-                if (this.beforeThis) throw compileError(`${m.name}() cannot be called yet inside the ( ) of this(…).`, n.line);
+                if (this.beforeThis) throw compileError(`${m.name}() cannot be called yet inside the ( ) of this(…) or super(…).`, n.line);
                 n.selfSlot = this.method.thisSlot;   // the same object this method is working on
             }
             n.method = m;
@@ -3851,7 +4366,7 @@ class Checker {
             if (n.args.length === 1 && isArray(n.args[0].type)) {
                 throw notYet('Printing an array shows a code such as [I@1b6d3586, not the values in it.', n.line, 'Use System.out.println(Arrays.toString(nums));');
             }
-            if (n.args.length === 1 && ((isCollection(n.args[0].type) && !isPending(n.args[0].type)) || isOwnClass(n.args[0].type))) {
+            if (n.args.length === 1 && ((isCollection(n.args[0].type) && !isPending(n.args[0].type)) || isObjectType(n.args[0].type))) {
                 // A collection prints its elements: [a, b, c]. An object prints what its toString() returns.
                 this.shown(n.args[0].type, n.line);
                 n.target = null;
@@ -3887,7 +4402,7 @@ class Checker {
         // text.length(), sb.append(…), nums.clone()
         n.target = this.value(t);
         const rt = n.target.type;
-        if (isOwnClass(rt)) return this.objectCall(n, CLASSES.get(rt), n.target);
+        if (isObjectType(rt)) return this.objectCall(n, CLASSES.get(rt) || null, n.target);
         if (rt === 'String' || rt === 'StringBuilder') {
             if (rt === 'String' && n.name === 'formatted') return this.formatCall(n, 'String', 'The String method formatted()');
             const table = rt === 'String' ? STRING_METHODS : BUILDER_METHODS;
@@ -3951,6 +4466,7 @@ class Checker {
             if (n.name === 'equals') throw notYet(`.equals() on an array asks whether two names share ONE array, not whether the values match, so ${BOX} does not run it.`, n.line, 'Use Arrays.equals(a, b).');
             if (n.name === 'toString') throw notYet('.toString() on an array gives a code such as [I@1b6d3586, not the values in it.', n.line, 'Use Arrays.toString(nums).');
             const sigs = ARRAY_METHODS[n.name];
+            if (!sigs && ['hashCode', 'getClass'].includes(n.name)) throw notYet(`${BOX} does not run ${n.name}() on an array.`, n.line);
             if (!sigs) throw compileError(`An array has no method called ${n.name}().`, n.line, n.name === 'size' ? 'The number of elements is nums.length' : 'Helpers for arrays live in Arrays: Arrays.sort(nums), Arrays.toString(nums).');
             return this.builtin(n, sigs, rt, `The array method ${n.name}()`);
         }
@@ -3971,6 +4487,12 @@ class Checker {
         if (fits.length === 1) return fits[0];
         if (fits.length === 0) {
             const sameCount = list.filter(m => m.paramTypes.length === types.length);
+            for (const m of sameCount) {
+                for (let i = 0; i < types.length; i++) {
+                    const declined = declinedConversion(types[i], m.paramTypes[i]);
+                    if (declined) throw notYet(declined, n.line);
+                }
+            }
             if (list.length === 1 && sameCount.length === 0) {
                 const want = list[0].params.length;
                 throw compileError(`${n.name}() takes ${want} value${want === 1 ? '' : 's'}, but this call gives it ${types.length}.`, n.line);
@@ -4369,6 +4891,7 @@ class Flow {
             case 'index': return this.expr(e.i, this.expr(e.target, S));
             case 'field': return e.target ? this.expr(e.target, S) : S;
             case 'this': return S;
+            case 'instanceof': case 'refcast': return this.expr(e.e, S);
             case 'call': return this.all(e.args, e.recv ? this.expr(e.recv, S) : S);
             case 'newobj': return this.all(e.args, S);
             case 'builtin': return this.all(e.args, e.target ? this.expr(e.target, S) : S);
@@ -4585,6 +5108,7 @@ function invoke(method, frame, line) {
 function ensureInit(c) {
     if (c.ready) return;
     c.ready = true;
+    if (c.superClass) ensureInit(c.superClass);   // a superclass is made ready before its subclasses
     c.statics = c.staticFields.map(f => defaultOf(f.type));
     const frame = new Array(c.clinit.frameSize);
     for (const [i, code] of c.staticCode) c.statics[i] = code(frame);
@@ -4622,6 +5146,16 @@ function constructorCode(m, body) {
         const { ctor, line } = m.chain;
         return f => {
             construct(ctor, f[slot], args.map(a => a(f)), line);
+            return body(f);
+        };
+    }
+    if (m.superCall) {
+        // The superclass's constructor first; then this class's fields get their starting values; then the lines written here.
+        const args = m.superCall.args.map(cx);
+        const { ctor, line } = m.superCall;
+        return f => {
+            construct(ctor, f[slot], args.map(a => a(f)), line);
+            runInit(c, f[slot]);
             return body(f);
         };
     }
@@ -4866,6 +5400,31 @@ function cx(n) {
             };
         }
         case 'this': { const slot = n.slot; return f => f[slot]; }
+        case 'instanceof': {
+            const e = cx(n.e);
+            const { target } = n;
+            if (!n.sym) return f => { const v = e(f); return v !== null && v.cls.supers.has(target); };
+            const { slot } = n.sym;
+            return f => {
+                const v = e(f);
+                if (v === null || !v.cls.supers.has(target)) return false;
+                f[slot] = v;   // c instanceof Toy t: from here t is that object, as a Toy
+                return true;
+            };
+        }
+        case 'refcast': {
+            const e = cx(n.e);
+            if (!n.checked) return e;
+            const { target } = n;
+            return f => {
+                const v = e(f);
+                if (v !== null && !v.cls.supers.has(target)) {
+                    throw at(thrown('ClassCastException', `class ${v.cls.name} cannot be cast to class ${target}`,
+                        `The object is ${aType(v.cls.name)}, which is not ${aType(target)}. Check first: if (x instanceof ${target}) { … }`), line);
+                }
+                return v;
+            };
+        }
         case 'newobj': {
             const c = n.cls;
             const { ctor } = n;
@@ -4885,9 +5444,33 @@ function cx(n) {
             const recv = n.recv ? cx(n.recv) : null;
             const { selfSlot } = n;
             const thisSlot = m.thisSlot;
-            const what = `The ${m.cls.name} that .${m.name}() was called on`;
+            const what = `The ${m.cls ? m.cls.name : 'object'} that .${m.name}() was called on`;
+            if (!m.isStatic && !n.direct && !m.mods.has('private') && (recv || selfSlot !== undefined)) {
+                // Which version runs is decided by the object's own class when the line runs, not by the variable's type.
+                const { key } = m;
+                const builtIn = m.native || null;
+                return f => {
+                    const self = recv ? recv(f) : f[selfSlot];
+                    const argv = new Array(count);
+                    for (let i = 0; i < count; i++) argv[i] = args[i](f);
+                    // The object, then the arguments, and only then the check that there is an object: Java's order.
+                    if (self === null) throw at(nullPointer(what), line);
+                    const impl = self.cls.vtable.get(key);
+                    if (!impl) {
+                        try { return builtIn(self, ...argv); } catch (err) { throw at(err, line); }
+                    }
+                    const frame = new Array(impl.frameSize);
+                    for (let i = 0; i < count; i++) frame[i] = argv[i];
+                    frame[impl.thisSlot] = self;
+                    return invoke(impl, frame, line);
+                };
+            }
+            if (m.native) {
+                // super.equals(x) in a class with no superclass of its own: Java's plain “the very same object”
+                const builtIn = m.native;
+                return f => builtIn(f[selfSlot], ...args.map(a => a(f)));
+            }
             if (recv) {
-                // The object, then the arguments, and only then the check that there is an object: Java's order.
                 return f => {
                     const self = recv(f);
                     const frame = new Array(m.frameSize);
@@ -5185,6 +5768,7 @@ export function compileJava(source) {
             c.ready = false;
             c.statics = null;
             for (const m of [...c.ctors, ...c.methods]) {
+                if (!m.body) continue;   // abstract: there is nothing of it to run
                 new Flow(m);
                 const body = cs(m.body);
                 m.code = m.isCtor ? constructorCode(m, body) : body;
@@ -5572,7 +6156,7 @@ export function isJavaClassProblem(question) {
     return Array.isArray(question?.tests) && question.tests.some(t => t && (typeof t.check === 'string' || typeof t.private === 'string'));
 }
 
-const classLineName = signature => (/\bclass\s+([A-Za-z_$][\w$]*)\s*$/.exec(headerOf(signature)) || [])[1] ?? null;
+const classLineName = signature => (/\bclass\s+([A-Za-z_$][\w$]*)(?:\s+extends\s+[\w$]+)?(?:\s+implements\s+[\w$]+(?:\s*,\s*[\w$]+)*)?\s*$/.exec(headerOf(signature)) || [])[1] ?? null;
 const scaffoldOf = question => (question?.scaffold ? String(question.scaffold).replace(/\r\n?/g, '\n').replace(/\s+$/, '') : '');
 
 /** Put the student's text where it belongs. Returns { source, lineOffset, pasted }. */

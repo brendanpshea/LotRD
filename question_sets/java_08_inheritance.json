@@ -58,13 +58,16 @@
     "feedback": "Methods are inherited, so eat() works on a Dog. Constructors are NOT inherited: an empty Dog gets only a no-argument constructor, so new Dog(\"Rex\") is a compile error. Private fields are still part of every Dog object (Animal's own methods use them) but are not accessible from Dog's code, with or without super. And a class may extend just one class."
   },
   {
-    "type": "fill_blank",
-    "question": "A private member is hidden even from subclasses. The access modifier that opens a member to subclasses (and to classes in the same package) while still hiding it from unrelated classes in other packages is ___.",
+    "question": "name is a private field of PixarCharacter, which also has a public getName(). Inside a method of  class Toy extends PixarCharacter,  which line compiles?",
     "correct": [
-      "protected"
+      "return getName() + \" plays\";"
     ],
-    "case_sensitive": false,
-    "feedback": "protected sits between package-private (no modifier) and public: the same package can see it, and so can subclasses wherever they live. It is the usual choice for a field or helper method that a parent class wants its subclasses - but not the whole world - to use. Many designs still keep fields private and give subclasses a protected getter instead."
+    "incorrect": [
+      "return name + \" plays\";",
+      "return this.name + \" plays\";",
+      "return super.name + \" plays\";"
+    ],
+    "feedback": "A Toy object does contain a name, but private means private to the class that declares it, and Toy is a different class. However the field is written, Toy may not touch it. The public getter is inherited, so getName() is the way in. (Had the field been protected, the first two would compile.)"
   },
   {
     "question": "What does a call such as super(name) inside a subclass constructor do?",
@@ -87,6 +90,18 @@
     ],
     "case_sensitive": true,
     "feedback": "super(name); runs Animal(String name). Because Animal has no no-argument constructor, leaving this line out would not compile: the super() that Java inserts automatically would have nothing to call. Older Java insisted this call open the constructor; since Java 25 other statements may come before it, provided they do not use the object being built."
+  },
+  {
+    "question": "PixarCharacter has exactly one constructor, and it takes a name. What happens when this subclass is compiled?\nclass Toy extends PixarCharacter {\n    private String owner;\n\n    Toy(String name, String owner) {\n        this.owner = owner;\n    }\n}",
+    "correct": [
+      "Compile error: Java adds super(), and there is no such constructor"
+    ],
+    "incorrect": [
+      "It compiles, and the name of every Toy is simply left as null",
+      "It compiles, since Toy inherits the constructor that takes a name",
+      "Compile error: a subclass is not allowed fields of its own"
+    ],
+    "feedback": "A constructor that does not call super(…) gets super() added for it, with nothing in the parentheses. PixarCharacter has no constructor that takes nothing, so the class does not compile. Constructors are never inherited, and Java will not guess what to pass. The fix is the missing first line: super(name);"
   },
   {
     "type": "npc_demo",
@@ -161,41 +176,24 @@
     "feedback_template": "Creating one object of the last class runs every constructor in the chain once, from the top class down: {{d}} lines per object. With {{n}} objects that is {{expected}} lines. Building a subclass object runs its parents' constructors as well as its own."
   },
   {
-    "question": "Animal has the constructor Animal(String name). On JDK 25, what happens when this class is compiled?\nclass Dog extends Animal {\n    Dog(String name) {\n        if (name.isBlank()) throw new IllegalArgumentException(\"no name\");\n        super(name);\n    }\n}",
-    "correct": [
-      "It compiles: code may run before super(...) if it leaves the new object alone"
-    ],
-    "incorrect": [
-      "Compile error: the super(...) call has to come ahead of any other statement",
-      "It compiles, but Java quietly moves super(name) above the if when it runs",
-      "Compile error: a constructor may not throw anything before super(...) runs"
-    ],
-    "feedback": "Java 25 made flexible constructor bodies final: statements may come before super(...) so you can check or prepare arguments before the parent constructor sees them. The check really does run first - a blank name is rejected before Animal's constructor starts. Older compilers (before 25) rejected this file, and older books still state that rule. What remains forbidden before super(...) is using the object under construction: calling its instance methods, reading its fields, or passing this anywhere."
-  },
-  {
     "type": "code_trace",
-    "question": "This is compiled and run on JDK 25. What does it print?",
-    "code": "class Base {\n    Base() { System.out.print(\"B\"); }\n}\nclass Kid extends Base {\n    Kid() {\n        System.out.print(\"k\");\n        super();\n        System.out.print(\"K\");\n    }\n}\n\nnew Kid();",
+    "question": "The subclass hands a value up to the superclass. What does this print?",
+    "code": "class Figure {\n    private String name;\n\n    Figure(String name) {\n        this.name = name;\n    }\n\n    String getName() {\n        return name;\n    }\n}\n\nclass Toy extends Figure {\n    private String owner;\n\n    Toy(String name, String owner) {\n        super(name);\n        this.owner = owner;\n    }\n\n    String tag() {\n        return getName() + \"/\" + owner;\n    }\n}\n\nToy rex = new Toy(\"Rex\", \"Al\");\nSystem.out.println(rex.getName());\nSystem.out.println(rex.tag());",
     "language": "java",
     "correct": [
-      "kBK"
+      "Rex\nRex/Al"
     ],
     "case_sensitive": true,
-    "feedback": "Statements run in the order written. The println before super() does not touch the Kid object, so Java 25 allows it, and k appears first. Then super() runs Base's constructor (B), and the rest of Kid's constructor prints K. The parent's constructor still finishes before Kid does anything with the object itself."
+    "feedback": "super(name) runs Figure's constructor, which stores \"Rex\" in the name field that every Figure has. Then Toy's constructor stores its own extra field. getName() was written once, in Figure, and a Toy inherits it; tag() is Toy's own, and has to call getName() because name is private to Figure."
   },
   {
-    "question": "Dog extends Animal, and Animal declares an instance method bark(). On JDK 25, which of these lines may legally appear BEFORE super(name); inside the constructor Dog(String name)?",
+    "type": "fill_blank",
+    "question": "A private member is hidden even from subclasses. The access modifier that opens a member to subclasses (and to classes in the same package) while still hiding it from unrelated classes in other packages is ___.",
     "correct": [
-      "System.out.println(\"making a dog\");",
-      "String n = name.trim();",
-      "if (name == null) name = \"?\";"
+      "protected"
     ],
-    "incorrect": [
-      "bark();",
-      "System.out.println(this);",
-      "String s = toString();"
-    ],
-    "feedback": "Before super(...) runs, the parent part of the object does not exist yet, so the compiler rejects anything that uses the object: bark() and toString() are instance method calls on it, and println(this) hands it to other code (\"cannot reference this before supertype constructor has been called\"). Printing a message, working on the parameter, or fixing up an argument involve only local values, so they are fine."
+    "case_sensitive": false,
+    "feedback": "protected sits between package-private (no modifier) and public: the same package can see it, and so can subclasses wherever they live. It is the usual choice for a field or helper method that a parent class wants its subclasses - but not the whole world - to use. Many designs still keep fields private and give subclasses a protected getter instead."
   },
   {
     "question": "What does it mean for a subclass to override a method?",
@@ -279,6 +277,41 @@
     ],
     "case_sensitive": true,
     "feedback": "super.tag() calls the parent's version of an overridden method, so an override can build on the inherited behaviour rather than throw it away. C's tag() is \"C\" + B's tag(); B's tag() is A's tag() + \"B\", which is \"AB\". Put together: \"C\" + \"AB\" = CAB. Where each class puts its own letter - before or after the super call - decides the order."
+  },
+  {
+    "question": "class Gem { } declares nothing at all, yet System.out.println(new Gem()) prints text such as Gem@1b6d3586. Where does the toString() method that produced this text come from?",
+    "correct": [
+      "Gem inherits it from Object, the root of every class"
+    ],
+    "incorrect": [
+      "The compiler writes one into every class as it compiles it",
+      "println builds the text itself when a class has no toString()",
+      "Gem inherits it from String, since println works with Strings"
+    ],
+    "feedback": "A class with no extends clause silently extends java.lang.Object, so every object has Object's methods - toString(), equals() and hashCode() among them. Object's toString() returns the class name, @, and a hash code in hexadecimal. When you write your own toString() you are overriding that inherited method, which is why it takes @Override and has to be public."
+  },
+  {
+    "question": "Hero wants its own equals, so that a.equals(b) and list.contains(…) compare names. Which first line OVERRIDES the equals that every object already has?",
+    "correct": [
+      "public boolean equals(Object obj)"
+    ],
+    "incorrect": [
+      "public boolean equals(Hero other)",
+      "boolean equals(Object obj)",
+      "public boolean isEqual(Object obj)"
+    ],
+    "feedback": "To override a method you match its parameter list, and the equals inherited from Object takes an Object. equals(Hero other) is a different method with the same name, an overload: contains() would go on calling the inherited one. Without public the method is harder to reach than the one it replaces, which Java rejects. And another name replaces nothing. @Override catches all three slips."
+  },
+  {
+    "type": "code_trace",
+    "question": "This class overrides equals to compare names. What does the program print?",
+    "code": "class Hero {\n    private String name;\n\n    Hero(String name) {\n        this.name = name;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (!(obj instanceof Hero)) {\n            return false;\n        }\n        Hero other = (Hero) obj;\n        return name.equals(other.name);\n    }\n}\n\nHero a = new Hero(\"Dash\");\nHero b = new Hero(\"Dash\");\nSystem.out.println(a == b);\nSystem.out.println(a.equals(b));",
+    "language": "java",
+    "correct": [
+      "false\ntrue"
+    ],
+    "case_sensitive": true,
+    "feedback": "a and b are two separate objects, so == (the very same object?) is false, and nothing a class writes can change that. equals is a method, and this class has replaced the inherited one: it checks that the other object is a Hero, casts it so that its name can be read, and compares the two names. Same name, so true."
   },
   {
     "type": "npc_demo",
@@ -381,6 +414,25 @@
     "feedback": "Going up (Dog to Animal to Object) is automatic. Going down needs an explicit cast, because the compiler knows only that a is some Animal; without the cast, Dog d = a; is rejected. With a cast the compiler trusts you and the check moves to run time: a really holds a Dog, so it succeeds, while c holds a Cat, so the JVM throws ClassCastException."
   },
   {
+    "type": "dynamic_numeric",
+    "question": "abstract class Shape { abstract int sides(); }\nclass Triangle extends Shape { @Override int sides() { return 3; } }\nclass Square extends Shape { @Override int sides() { return 4; } }\n\nA Shape[] named shapes holds {{t}} Triangle objects and {{s}} Square objects, in a mixed order. What is total after this loop?\nint total = 0;\nfor (Shape sh : shapes) {\n    total += sh.sides();\n}",
+    "variables": {
+      "t": {
+        "min": 2,
+        "max": 6
+      },
+      "s": {
+        "min": 2,
+        "max": 6
+      }
+    },
+    "answer": {
+      "expr": "3 * t + 4 * s",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The loop only ever sees the declared type Shape, but each call to sides() runs the version belonging to the actual object: 3 for every Triangle and 4 for every Square. {{t}} triangles give 3 x {{t}} and {{s}} squares give 4 x {{s}}, so total is {{expected}}. One loop, no if statements - that is what polymorphism buys you."
+  },
+  {
     "type": "npc_demo",
     "question": "NPC: Ask before you cast",
     "npc": "zoya",
@@ -444,27 +496,40 @@
     "feedback": "a instanceof Dog d tests the runtime type and, when the test passes, declares d as a Dog referring to the same object - so inside the if you can write d.fetch() with no cast. The older two-step form, if (a instanceof Dog) { Dog d = (Dog) a; ... }, still works and you will meet it in older code."
   },
   {
-    "question": "class Gem { } declares nothing at all, yet System.out.println(new Gem()) prints text such as Gem@1b6d3586. Where does the toString() method that produced this text come from?",
+    "type": "code_trace",
+    "question": "instanceof asks what an object really is. What does this print?",
+    "code": "class Figure {\n}\n\nclass Toy extends Figure {\n}\n\nclass Monster extends Figure {\n}\n\nFigure[] cast = { new Toy(), new Monster(), new Toy(), new Figure(), new Toy() };\nint toys = 0;\nint others = 0;\nfor (Figure f : cast) {\n    if (f instanceof Toy) {\n        toys++;\n    } else {\n        others++;\n    }\n}\nSystem.out.println(toys + \" \" + others);\nSystem.out.println(cast[1] instanceof Figure);",
+    "language": "java",
     "correct": [
-      "Gem inherits it from Object, the root of every class"
+      "3 2\ntrue"
     ],
-    "incorrect": [
-      "The compiler writes one into each class, as it does for records",
-      "println builds the text itself when a class has no toString()",
-      "Gem inherits it from String, since println works with Strings"
-    ],
-    "feedback": "A class with no extends clause silently extends java.lang.Object, so every object has Object's methods - toString(), equals() and hashCode() among them. Object's toString() returns the class name, @, and a hash code in hexadecimal. When you write your own toString() you are overriding that inherited method, which is why it takes @Override and has to be public."
+    "case_sensitive": true,
+    "feedback": "Every element is held in a Figure variable, but instanceof looks at the object. Three of the five are Toys. The Monster and the plain Figure are not, so they are counted as others. The last line asks whether a Monster is a Figure: it is, because Monster extends Figure, and instanceof is true for the object's own class and for everything above it."
   },
   {
     "type": "code_trace",
-    "question": "Trace the loop over the Object array. What does this print?",
-    "code": "Object[] bag = { \"hi\", 3, \"yo\", 2.5, 7 };\nint sum = 0;\nfor (Object o : bag) {\n    if (o instanceof Integer n) {\n        sum += n;\n    }\n}\nSystem.out.println(sum);",
+    "question": "A method only Toy has is reached by checking, then casting. What does this print?",
+    "code": "class Figure {\n    String perform() {\n        return \"bow\";\n    }\n}\n\nclass Toy extends Figure {\n    @Override\n    String perform() {\n        return \"pose\";\n    }\n\n    String play() {\n        return \"play\";\n    }\n}\n\nFigure f = new Toy();\nString out = f.perform();\nif (f instanceof Toy) {\n    Toy t = (Toy) f;\n    out = out + \" \" + t.play();\n}\nSystem.out.println(out);",
     "language": "java",
     "correct": [
-      "10"
+      "pose play"
     ],
     "case_sensitive": true,
-    "feedback": "Since every class descends from Object, an Object[] can hold anything: here two Strings, two Integers (the ints 3 and 7 are autoboxed) and a Double. The pattern o instanceof Integer n is true just for the two Integers and binds each to n, so sum is 3 + 7 = 10. The Double 2.5 is not an Integer, so it is skipped rather than truncated."
+    "feedback": "f.perform() runs Toy's version, because the object is a Toy: pose. But f.play() would not compile, since the variable's type is Figure and Figure has no play(). So the code first asks whether the object is a Toy, then casts: t is the same object, held in a Toy variable, and play() can be called through it."
+  },
+  {
+    "question": "interface Pet { }\nclass Animal { }\nclass Dog extends Animal implements Pet { }\nclass Cat extends Animal { }\n\nAnimal a = new Dog();\nAnimal n = null;\nWhich of these expressions evaluate to true?",
+    "correct": [
+      "a instanceof Dog",
+      "a instanceof Animal",
+      "a instanceof Pet",
+      "a instanceof Object"
+    ],
+    "incorrect": [
+      "a instanceof Cat",
+      "n instanceof Animal"
+    ],
+    "feedback": "instanceof asks about the object, not the variable: the object is a Dog, and a Dog is also an Animal, a Pet (through implements) and an Object, so all four are true. It is not a Cat - sharing a parent does not make siblings interchangeable. And n refers to no object at all, so instanceof answers false for null whatever n's declared type says; that is why no separate null check is needed before it."
   },
   {
     "question": "What does the keyword abstract mean when it is applied to a class?",
@@ -517,25 +582,6 @@
     "feedback": "describe() is written once, in the abstract parent, and calls wheels() - a method Vehicle itself leaves unfinished. When describe() runs on a Trike, that inner call is dispatched to the object's runtime class, so Trike's wheels() supplies 3. This is the main use of an abstract class: shared code in the parent, with the varying step filled in by each subclass."
   },
   {
-    "type": "dynamic_numeric",
-    "question": "abstract class Shape { abstract int sides(); }\nclass Triangle extends Shape { @Override int sides() { return 3; } }\nclass Square extends Shape { @Override int sides() { return 4; } }\n\nA Shape[] named shapes holds {{t}} Triangle objects and {{s}} Square objects, in a mixed order. What is total after this loop?\nint total = 0;\nfor (Shape sh : shapes) {\n    total += sh.sides();\n}",
-    "variables": {
-      "t": {
-        "min": 2,
-        "max": 6
-      },
-      "s": {
-        "min": 2,
-        "max": 6
-      }
-    },
-    "answer": {
-      "expr": "3 * t + 4 * s",
-      "tolerance_abs": 0
-    },
-    "feedback_template": "The loop only ever sees the declared type Shape, but each call to sides() runs the version belonging to the actual object: 3 for every Triangle and 4 for every Square. {{t}} triangles give 3 x {{t}} and {{s}} squares give 4 x {{s}}, so total is {{expected}}. One loop, no if statements - that is what polymorphism buys you."
-  },
-  {
     "type": "fill_blank",
     "question": "interface Drawable { void draw(); }\nAn interface lists methods that a class promises to supply. Circle makes that promise with the header: class Circle ___ Drawable",
     "correct": [
@@ -543,6 +589,33 @@
     ],
     "case_sensitive": false,
     "feedback": "A class implements an interface and extends a class; mixing the two up is a compile error. Having made the promise, Circle has to provide a public draw() method, and a Circle can then be used wherever a Drawable is expected: Drawable d = new Circle();"
+  },
+  {
+    "type": "cloze",
+    "question": "PixarCharacter is a class. Quotable and Rescuable are interfaces. Complete the header.\npublic class Superhero {{1}} PixarCharacter {{2}} Quotable{{3}} Rescuable {",
+    "blanks": [
+      {
+        "accept": [
+          "extends"
+        ],
+        "hint": "for the class",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "implements"
+        ],
+        "hint": "for the interfaces",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          ","
+        ],
+        "hint": "one symbol"
+      }
+    ],
+    "feedback": "A class extends one class and implements any number of interfaces, in that order, with the interfaces separated by commas. Superhero then inherits what PixarCharacter has, and owes a public method for everything Quotable and Rescuable list."
   },
   {
     "type": "code_trace",
@@ -568,6 +641,17 @@
       "new Drawable() creates an object, provided every method has a default body"
     ],
     "feedback": "class Duck implements Swimmer, Flyer { } is legal, and default methods come along for free. An interface has no constructors and no per-object fields (any field in an interface is a static final constant), and it can never be instantiated with new, however many default methods it has. A class that skips an abstract method of its interface does not compile unless it is declared abstract."
+  },
+  {
+    "type": "code_trace",
+    "question": "Two classes with nothing else in common implement one interface. What does this print?",
+    "code": "interface Performer {\n    String perform();\n}\n\nclass Toy implements Performer {\n    public String perform() {\n        return \"T\";\n    }\n}\n\nclass Robot implements Performer {\n    public String perform() {\n        return \"R\";\n    }\n}\n\nPerformer[] acts = { new Toy(), new Robot(), new Toy() };\nString show = \"\";\nfor (Performer p : acts) {\n    show += p.perform();\n}\nSystem.out.println(show);",
+    "language": "java",
+    "correct": [
+      "TRT"
+    ],
+    "case_sensitive": true,
+    "feedback": "An interface is a type, so a Performer[] can hold any object whose class implements Performer, whatever else those classes are. The loop calls perform() on each, and each object runs its own class's version. Toy and Robot share no superclass here; the interface is all they have in common, and all the loop needs."
   },
   {
     "type": "cloze",
@@ -609,64 +693,334 @@
     "feedback": "Bird and Plane already have parent classes, and a class can extend just one, so a second parent class Flyer is impossible. A plane is not a bird, so Plane extends Bird abuses is-a (and Plane already has a parent). A List<Object> compiles only until you call fly(): the declared type Object has no such method. An interface is the tool for a shared ability across unrelated classes: List<Flyer> holds both, and fly() is callable on every element."
   },
   {
-    "question": "interface Pet { }\nclass Animal { }\nclass Dog extends Animal implements Pet { }\nclass Cat extends Animal { }\n\nAnimal a = new Dog();\nAnimal n = null;\nWhich of these expressions evaluate to true?",
-    "correct": [
-      "a instanceof Dog",
-      "a instanceof Animal",
-      "a instanceof Pet",
-      "a instanceof Object"
-    ],
-    "incorrect": [
-      "a instanceof Cat",
-      "n instanceof Animal"
-    ],
-    "feedback": "instanceof asks about the object, not the variable: the object is a Dog, and a Dog is also an Animal, a Pet (through implements) and an Object, so all four are true. It is not a Cat - sharing a parent does not make siblings interchangeable. And n refers to no object at all, so instanceof answers false for null whatever n's declared type says; that is why no separate null check is needed before it."
-  },
-  {
-    "question": "What does the keyword final mean when it is applied to a class?",
-    "correct": [
-      "No other class is allowed to extend it"
-    ],
-    "incorrect": [
-      "Its objects are frozen once they are constructed",
-      "It may be subclassed but not instantiated with new",
-      "Its methods are locked, yet it may still be extended"
-    ],
-    "feedback": "final class Key { } means class Master extends Key is a compile error (\"cannot inherit from final Key\"). String is final, and so is every record. It says nothing about whether objects can change - a final class can have setters; immutability is a separate design choice. \"Subclassed but not instantiated\" describes abstract, the opposite. Locking individual methods is what final on a METHOD does, leaving the class open."
-  },
-  {
-    "question": "What does this header do?\nsealed interface Shape permits Circle, Square { }",
-    "correct": [
-      "Lets Circle and Square implement Shape, and turns every other type away"
-    ],
-    "incorrect": [
-      "Stops all classes from implementing Shape, as final does for a class",
-      "Creates Circle and Square automatically as empty implementing classes",
-      "Lets any class implement Shape, but documents the two expected ones"
-    ],
-    "feedback": "sealed sits between open and final: the type can be implemented, but by exactly the types on its permits list, which you still have to write yourself. A record Triangle() implements Shape elsewhere is a compile error. The payoff is that the compiler knows the complete list of Shapes, so a switch over a Shape can be checked for missing cases."
-  },
-  {
     "type": "ordering",
     "question": "Arrange these lines from top to bottom so that every name is declared before the line that uses it, ending with the line that prints 3.",
     "language": "java",
     "items": [
       "interface Shape { int sides(); }",
-      "record Tri() implements Shape { public int sides() { return 3; } }",
+      "class Tri implements Shape { public int sides() { return 3; } }",
       "Shape s = new Tri();",
       "System.out.println(s.sides());"
     ],
-    "feedback": "The interface comes first because Tri's header names it. Tri has to exist before new Tri() can build one, and s has to hold an object before s.sides() can be called. Note that a record can implement an interface (it cannot extend a class), and that its sides() is public because interface methods are public."
+    "feedback": "The interface comes first because Tri's header names it. Tri has to exist before new Tri() can build one, and s has to hold an object before s.sides() can be called. Note that the variable's type is the interface, and that Tri's sides() is public because interface methods are public."
   },
   {
-    "type": "code_trace",
-    "question": "Trace the switch over the sealed type. What does this print?",
-    "code": "sealed interface Shape permits Circle, Square { }\nrecord Circle(int r) implements Shape { }\nrecord Square(int side) implements Shape { }\n\nShape s = new Square(4);\nString out = switch (s) {\n    case Circle c -> \"r \" + c.r();\n    case Square q -> \"side \" + q.side();\n};\nSystem.out.println(out);",
-    "language": "java",
-    "correct": [
-      "side 4"
+    "type": "npc_demo",
+    "question": "NPC: Building on a class you did not write",
+    "npc": "zoya",
+    "intro": "Zoya sets a finished clay figure on the bench and a lump of fresh clay beside it. \"The finished one is the superclass. It is not yours to change. The lump is your subclass: everything the first one has, and whatever you add.\"",
+    "steps": [
+      {
+        "say": "The superclass is shown above the box. Read what it offers before you write: its constructor, and its public methods.",
+        "beats": [
+          {
+            "code": "public class PixarCharacter {\n    private String name;\n\n    public PixarCharacter(String name) {\n        this.name = name;\n    }\n\n    public String getName() {\n        return name;\n    }\n}",
+            "language": "java"
+          },
+          {
+            "say": "Two things to notice. Its only constructor takes a name, so your constructor has to hand one up: super(name); on its first line."
+          },
+          {
+            "say": "And name is private. Your subclass has a name, but cannot touch the field. It asks, like everyone else: getName()."
+          }
+        ],
+        "check": {
+          "prompt": "Inside  class Toy extends PixarCharacter,  which line gives the toy's name?",
+          "answer": "getName()",
+          "wrong": [
+            "this.name",
+            "super.name"
+          ],
+          "why": "The field is private to PixarCharacter, so neither this.name nor super.name compiles in Toy. The public getter is inherited, and can be called with nothing in front of it."
+        }
+      },
+      {
+        "say": "A method that replaces one from above must match it exactly, and be at least as easy to reach.",
+        "beats": [
+          {
+            "say": "When you override a method, or write one that an interface or an abstract class asks for, copy its first line exactly: the same name, the same parameters, the same return type."
+          },
+          {
+            "say": "If the one above is public, yours has to be public too. The practice Java will tell you, in the words the real compiler uses, when a method is “harder to reach” than the one it replaces."
+          }
+        ]
+      }
     ],
-    "case_sensitive": true,
-    "feedback": "s is declared as Shape but holds a Square, so the switch skips case Circle c and matches case Square q, binding q to the object exactly as an instanceof pattern would; q.side() is 4. There is no default branch, and none is needed: Shape is sealed, so the compiler knows Circle and Square are the only possibilities - and would refuse to compile the switch if a third permitted type were added and not handled."
+    "outro": "\"Tests here often hold your object in a variable of the superclass's type. If your method really replaces the one above, the test will see yours run.\""
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the body of Toy's constructor. The name and the movie belong to the PixarCharacter part of the object, so hand them up; the owner is Toy's own.",
+    "scaffold": "public class PixarCharacter {\n    private String name;\n    private String movie;\n\n    public PixarCharacter(String name, String movie) {\n        this.name = name;\n        this.movie = movie;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public String getMovie() {\n        return movie;\n    }\n\n    public String introduce() {\n        return \"Hi! I'm \" + name + \" from \" + movie + \".\";\n    }\n}\n\nclass Toy extends PixarCharacter {\n    private String owner;\n\n    public String getOwner() {\n        return owner;\n    }\n",
+    "signature": "Toy(String name, String movie, String owner)",
+    "tests": [
+      {
+        "run": "Toy t = new Toy(\"Woody\", \"Toy Story\", \"Andy\");",
+        "check": "t.getName()",
+        "expect": "Woody"
+      },
+      {
+        "run": "Toy t = new Toy(\"Woody\", \"Toy Story\", \"Andy\");",
+        "check": "t.getOwner()",
+        "expect": "Andy"
+      },
+      {
+        "run": "Toy t = new Toy(\"Woody\", \"Toy Story\", \"Andy\");",
+        "check": "t.introduce()",
+        "expect": "Hi! I'm Woody from Toy Story."
+      },
+      {
+        "run": "Toy a = new Toy(\"Rex\", \"Toy Story\", \"Andy\");\nToy b = new Toy(\"Forky\", \"Toy Story 4\", \"Bonnie\");",
+        "check": "a.getOwner() + b.getMovie()",
+        "expect": "AndyToy Story 4"
+      }
+    ],
+    "solution": "super(name, movie);\nthis.owner = owner;",
+    "hint": "First line: super(name, movie); That runs PixarCharacter's constructor. Then store the owner with this.owner.",
+    "feedback": "PixarCharacter keeps name and movie private, and has a constructor that sets them, so the subclass passes them up with super(…). Only then does Toy deal with the one field it added. Leave super(…) out and Java tries super() with nothing in it, which PixarCharacter does not have."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Override introduce() so that a Toy says everything a PixarCharacter says and then who it belongs to:  Hi! I'm Woody from Toy Story. I belong to Andy!  Use the superclass's version for the first part.",
+    "scaffold": "public class PixarCharacter {\n    private String name;\n    private String movie;\n\n    public PixarCharacter(String name, String movie) {\n        this.name = name;\n        this.movie = movie;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public String getMovie() {\n        return movie;\n    }\n\n    public String introduce() {\n        return \"Hi! I'm \" + name + \" from \" + movie + \".\";\n    }\n}\n\nclass Toy extends PixarCharacter {\n    private String owner;\n\n    Toy(String name, String movie, String owner) {\n        super(name, movie);\n        this.owner = owner;\n    }\n\n    @Override",
+    "signature": "public String introduce()",
+    "tests": [
+      {
+        "run": "Toy t = new Toy(\"Woody\", \"Toy Story\", \"Andy\");",
+        "check": "t.introduce()",
+        "expect": "Hi! I'm Woody from Toy Story. I belong to Andy!"
+      },
+      {
+        "run": "PixarCharacter c = new Toy(\"Rex\", \"Toy Story\", \"Bonnie\");",
+        "check": "c.introduce()",
+        "expect": "Hi! I'm Rex from Toy Story. I belong to Bonnie!"
+      },
+      {
+        "run": "PixarCharacter c = new PixarCharacter(\"Joy\", \"Inside Out\");",
+        "check": "c.introduce()",
+        "expect": "Hi! I'm Joy from Inside Out."
+      }
+    ],
+    "solution": "return super.introduce() + \" I belong to \" + owner + \"!\";",
+    "hint": "super.introduce() gives back the sentence PixarCharacter makes. Add the rest to it with +.",
+    "feedback": "super.introduce() runs the version this method replaces, so the Toy builds on the superclass's sentence instead of copying it. The second test holds the Toy in a PixarCharacter variable and still gets the Toy's sentence: the object decides which version runs."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Fish. The class PixarCharacter is given above.\nPrivate fields:  String habitat,  boolean canTalk.\nA constructor  Fish(String name, String movie, String habitat, boolean canTalk)  that hands the first two up.\nGetters  getHabitat()  and  getCanTalk().\nString swim()  returns  Nemo swims through the coral reef!",
+    "scaffold": "public class PixarCharacter {\n    private String name;\n    private String movie;\n\n    public PixarCharacter(String name, String movie) {\n        this.name = name;\n        this.movie = movie;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public String getMovie() {\n        return movie;\n    }\n\n    public String introduce() {\n        return \"Hi! I'm \" + name + \" from \" + movie + \".\";\n    }\n}",
+    "signature": "class Fish extends PixarCharacter",
+    "tests": [
+      {
+        "run": "Fish nemo = new Fish(\"Nemo\", \"Finding Nemo\", \"coral reef\", true);",
+        "check": "nemo.swim()",
+        "expect": "Nemo swims through the coral reef!"
+      },
+      {
+        "run": "Fish nemo = new Fish(\"Nemo\", \"Finding Nemo\", \"coral reef\", true);",
+        "check": "nemo.getHabitat() + \" \" + nemo.getCanTalk()",
+        "expect": "coral reef true"
+      },
+      {
+        "run": "Fish bruce = new Fish(\"Bruce\", \"Finding Nemo\", \"open ocean\", false);",
+        "check": "bruce.introduce()",
+        "expect": "Hi! I'm Bruce from Finding Nemo."
+      },
+      {
+        "run": "PixarCharacter c = new Fish(\"Dory\", \"Finding Dory\", \"the reef\", true);",
+        "check": "c.getName() + c.getMovie()",
+        "expect": "DoryFinding Dory"
+      },
+      {
+        "private": "Fish.habitat"
+      }
+    ],
+    "solution": "private String habitat;\nprivate boolean canTalk;\n\nFish(String name, String movie, String habitat, boolean canTalk) {\n    super(name, movie);\n    this.habitat = habitat;\n    this.canTalk = canTalk;\n}\n\npublic String getHabitat() {\n    return habitat;\n}\n\npublic boolean getCanTalk() {\n    return canTalk;\n}\n\npublic String swim() {\n    return getName() + \" swims through the \" + habitat + \"!\";\n}",
+    "hint": "Only the two new fields are Fish's to declare. The name is reached with getName(), which Fish inherits.",
+    "feedback": "A subclass declares only what it adds. The name and the movie live in the PixarCharacter part, set by super(name, movie) and read back with the inherited getters; introduce() comes along with no code at all."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Override equals. Two Superheroes are equal when they have the same name AND the same power; strength does not count. Anything that is not a Superhero, null included, is not equal.",
+    "scaffold": "class Villain {\n}\n\npublic class Superhero {\n    private String name;\n    private String power;\n    private int strengthLevel;\n\n    Superhero(String name, String power, int strengthLevel) {\n        this.name = name;\n        this.power = power;\n        this.strengthLevel = strengthLevel;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public int getStrengthLevel() {\n        return strengthLevel;\n    }\n\n    @Override\n    public String toString() {\n        return name + \" | Power: \" + power + \" | Strength: \" + strengthLevel;\n    }\n\n    @Override",
+    "signature": "public boolean equals(Object obj)",
+    "tests": [
+      {
+        "run": "Superhero a = new Superhero(\"Dash\", \"Speed\", 70);\nSuperhero b = new Superhero(\"Dash\", \"Speed\", 5);",
+        "check": "a.equals(b)",
+        "expect": true
+      },
+      {
+        "run": "Superhero a = new Superhero(\"Dash\", \"Speed\", 70);\nSuperhero b = new Superhero(\"Dash\", \"Ice\", 70);",
+        "check": "a.equals(b)",
+        "expect": false
+      },
+      {
+        "run": "Superhero a = new Superhero(\"Dash\", \"Speed\", 70);\nSuperhero b = new Superhero(\"Violet\", \"Speed\", 70);",
+        "check": "a.equals(b)",
+        "expect": false
+      },
+      {
+        "run": "Superhero a = new Superhero(\"Dash\", \"Speed\", 70);",
+        "check": "a.equals(null)",
+        "expect": false
+      },
+      {
+        "run": "Superhero a = new Superhero(\"Dash\", \"Speed\", 70);",
+        "check": "a.equals(new Villain())",
+        "expect": false
+      },
+      {
+        "run": "ArrayList<Superhero> team = new ArrayList<>();\nteam.add(new Superhero(\"Dash\", \"Speed\", 70));",
+        "check": "team.contains(new Superhero(\"Dash\", \"Speed\", 1))",
+        "expect": true
+      }
+    ],
+    "solution": "if (!(obj instanceof Superhero)) {\n    return false;\n}\nSuperhero other = (Superhero) obj;\nreturn name.equals(other.name) && power.equals(other.power);",
+    "hint": "Rule out what is not a Superhero with instanceof (null is not one). Then cast, and compare the two Strings with .equals().",
+    "feedback": "The parameter is an Object, so it could be anything; instanceof rules out other classes, and null with them. After the cast the other hero's private fields can be read, because both objects are of this class. The last test shows the point of overriding: contains() calls equals, and now finds a hero who merely looks the same."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write findStrongest. It returns the Superhero in the array with the highest strength level. If the array is empty, it returns null.",
+    "scaffold": "public class Superhero {\n    private String name;\n    private String power;\n    private int strengthLevel;\n\n    Superhero(String name, String power, int strengthLevel) {\n        this.name = name;\n        this.power = power;\n        this.strengthLevel = strengthLevel;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public int getStrengthLevel() {\n        return strengthLevel;\n    }\n\n    @Override\n    public String toString() {\n        return name + \" | Power: \" + power + \" | Strength: \" + strengthLevel;\n    }\n",
+    "signature": "public static Superhero findStrongest(Superhero[] heroes)",
+    "tests": [
+      {
+        "run": "Superhero[] hs = { new Superhero(\"A\", \"a\", 5), new Superhero(\"B\", \"b\", 50), new Superhero(\"C\", \"c\", 9) };",
+        "check": "Superhero.findStrongest(hs).getName()",
+        "expect": "B"
+      },
+      {
+        "run": "Superhero[] hs = { new Superhero(\"A\", \"a\", 95), new Superhero(\"B\", \"b\", 50) };",
+        "check": "Superhero.findStrongest(hs).getName()",
+        "expect": "A"
+      },
+      {
+        "run": "Superhero[] hs = { new Superhero(\"Solo\", \"one\", -3) };",
+        "check": "\"\" + Superhero.findStrongest(hs)",
+        "expect": "Solo | Power: one | Strength: -3"
+      },
+      {
+        "run": "Superhero[] hs = new Superhero[0];",
+        "check": "Superhero.findStrongest(hs) == null",
+        "expect": true
+      }
+    ],
+    "solution": "Superhero best = null;\nfor (Superhero h : heroes) {\n    if (best == null || h.strengthLevel > best.strengthLevel) {\n        best = h;\n    }\n}\nreturn best;",
+    "hint": "Keep the best hero so far in a variable that starts as null. A hero beats it if there is no best yet, or its strength is higher.",
+    "feedback": "The find-the-largest pattern, keeping the whole object rather than just the number. It is static because it is not about one hero: it is called on the class, Superhero.findStrongest(…). Starting best at null handles the empty array, and a hero whose strength is negative."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Monster. The abstract class PixarCharacter is given above.\nA private field  int scarePower.\nA constructor  Monster(String name, String movie, int scarePower).\nA getter  getScarePower().\nperform()  returns  Sulley leaps out and roars!\nString scare()  returns  Sulley scares with power 9!\ntoString()  returns  Monster: Sulley (Monsters, Inc.)  — the word Monster, a colon, and then what PixarCharacter's toString() gives.",
+    "scaffold": "public abstract class PixarCharacter {\n    private String name;\n    private String movie;\n\n    public PixarCharacter(String name, String movie) {\n        this.name = name;\n        this.movie = movie;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public abstract String perform();\n\n    @Override\n    public String toString() {\n        return name + \" (\" + movie + \")\";\n    }\n}",
+    "signature": "class Monster extends PixarCharacter",
+    "tests": [
+      {
+        "run": "PixarCharacter c = new Monster(\"Sulley\", \"Monsters, Inc.\", 9);",
+        "check": "c.perform()",
+        "expect": "Sulley leaps out and roars!"
+      },
+      {
+        "run": "Monster m = new Monster(\"Mike\", \"Monsters, Inc.\", 4);",
+        "check": "m.scare()",
+        "expect": "Mike scares with power 4!"
+      },
+      {
+        "run": "PixarCharacter c = new Monster(\"Sulley\", \"Monsters, Inc.\", 9);",
+        "check": "\"\" + c",
+        "expect": "Monster: Sulley (Monsters, Inc.)"
+      },
+      {
+        "run": "Monster m = new Monster(\"Mike\", \"Monsters, Inc.\", 4);",
+        "check": "m.getScarePower() + m.getName()",
+        "expect": "4Mike"
+      },
+      {
+        "private": "Monster.scarePower"
+      }
+    ],
+    "solution": "private int scarePower;\n\nMonster(String name, String movie, int scarePower) {\n    super(name, movie);\n    this.scarePower = scarePower;\n}\n\npublic int getScarePower() {\n    return scarePower;\n}\n\n@Override\npublic String perform() {\n    return getName() + \" leaps out and roars!\";\n}\n\npublic String scare() {\n    return getName() + \" scares with power \" + scarePower + \"!\";\n}\n\n@Override\npublic String toString() {\n    return \"Monster: \" + super.toString();\n}",
+    "hint": "perform() is abstract above, so Monster has to write it, and as public. For toString(), super.toString() gives the name and movie part.",
+    "feedback": "PixarCharacter leaves perform() unwritten, so a class that extends it has to supply one or it will not compile; and since the one above is public, so is this one. toString() builds on the superclass's with super.toString() rather than repeating it."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write runParade. For each character in the array, in order, add two lines to the result: its toString(), then its perform(). After them add one last line of the form  Parade: 2 toys, 1 monsters.  Put \"\\n\" between lines, with none after the last.",
+    "scaffold": "public abstract class PixarCharacter {\n    private String name;\n    private String movie;\n\n    public PixarCharacter(String name, String movie) {\n        this.name = name;\n        this.movie = movie;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public abstract String perform();\n\n    @Override\n    public String toString() {\n        return name + \" (\" + movie + \")\";\n    }\n}\n\nclass Toy extends PixarCharacter {\n    Toy(String name, String movie) {\n        super(name, movie);\n    }\n\n    @Override\n    public String perform() {\n        return getName() + \" comes to life!\";\n    }\n}\n\nclass Monster extends PixarCharacter {\n    Monster(String name, String movie) {\n        super(name, movie);\n    }\n\n    @Override\n    public String perform() {\n        return getName() + \" roars!\";\n    }\n}\n\nclass ParadeUtils {",
+    "signature": "public static String runParade(PixarCharacter[] cast)",
+    "tests": [
+      {
+        "run": "PixarCharacter[] cast = { new Toy(\"Woody\", \"Toy Story\"), new Monster(\"Sulley\", \"Monsters, Inc.\") };",
+        "check": "ParadeUtils.runParade(cast)",
+        "expect": "Woody (Toy Story)\nWoody comes to life!\nSulley (Monsters, Inc.)\nSulley roars!\nParade: 1 toys, 1 monsters"
+      },
+      {
+        "run": "PixarCharacter[] cast = { new Toy(\"A\", \"x\"), new Toy(\"B\", \"x\"), new Monster(\"C\", \"y\") };",
+        "check": "ParadeUtils.runParade(cast)",
+        "expect": "A (x)\nA comes to life!\nB (x)\nB comes to life!\nC (y)\nC roars!\nParade: 2 toys, 1 monsters"
+      },
+      {
+        "run": "PixarCharacter[] cast = new PixarCharacter[0];",
+        "check": "ParadeUtils.runParade(cast)",
+        "expect": "Parade: 0 toys, 0 monsters"
+      },
+      {
+        "run": "PixarCharacter[] cast = { new Monster(\"M\", \"z\") };",
+        "check": "ParadeUtils.runParade(cast)",
+        "expect": "M (z)\nM roars!\nParade: 0 toys, 1 monsters"
+      }
+    ],
+    "solution": "String out = \"\";\nint toys = 0;\nint monsters = 0;\nfor (PixarCharacter c : cast) {\n    out += c + \"\\n\" + c.perform() + \"\\n\";\n    if (c instanceof Toy) {\n        toys++;\n    } else if (c instanceof Monster) {\n        monsters++;\n    }\n}\nreturn out + \"Parade: \" + toys + \" toys, \" + monsters + \" monsters\";",
+    "hint": "One loop. perform() needs no if: each object runs its own. Only the counting needs instanceof.",
+    "feedback": "The loop calls perform() without knowing or caring which kind of character it has; that is polymorphism. instanceof is kept for the one job that really is about the kind: the count. Putting \"\\n\" after every character line, and none after the summary, gives exactly one line break between lines."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Player. GameObject, Movable and Drawable are given above.\nPrivate fields:  int x,  int y,  int speed.\nA constructor  Player(String name, int x, int y, int speed).\nmove(int dx, int dy)  adds dx to x and dy to y.\ngetPosition()  returns  (3, 5)\ndraw()  returns  [Player Hero at (3, 5)]\nupdate()  moves the player right by its speed.",
+    "scaffold": "abstract class GameObject {\n    private String name;\n\n    GameObject(String name) {\n        this.name = name;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public abstract void update();\n}\n\ninterface Movable {\n    void move(int dx, int dy);\n\n    String getPosition();\n}\n\ninterface Drawable {\n    String draw();\n}",
+    "signature": "class Player extends GameObject implements Movable, Drawable",
+    "tests": [
+      {
+        "run": "Player p = new Player(\"Hero\", 3, 5, 2);",
+        "check": "p.getPosition()",
+        "expect": "(3, 5)"
+      },
+      {
+        "run": "Player p = new Player(\"Hero\", 3, 5, 2);\np.move(-1, 4);",
+        "check": "p.getPosition()",
+        "expect": "(2, 9)"
+      },
+      {
+        "run": "Drawable d = new Player(\"Hero\", 3, 5, 2);",
+        "check": "d.draw()",
+        "expect": "[Player Hero at (3, 5)]"
+      },
+      {
+        "run": "GameObject g = new Player(\"Hero\", 0, 0, 2);\ng.update();\ng.update();",
+        "check": "((Movable) g).getPosition()",
+        "expect": "(4, 0)"
+      },
+      {
+        "run": "GameObject g = new Player(\"Zed\", 1, 1, 0);",
+        "check": "g.getName() + (g instanceof Drawable)",
+        "expect": "Zedtrue"
+      },
+      {
+        "private": "Player.x"
+      }
+    ],
+    "solution": "private int x;\nprivate int y;\nprivate int speed;\n\nPlayer(String name, int x, int y, int speed) {\n    super(name);\n    this.x = x;\n    this.y = y;\n    this.speed = speed;\n}\n\npublic void move(int dx, int dy) {\n    x += dx;\n    y += dy;\n}\n\npublic String getPosition() {\n    return \"(\" + x + \", \" + y + \")\";\n}\n\npublic String draw() {\n    return \"[Player \" + getName() + \" at \" + getPosition() + \"]\";\n}\n\npublic void update() {\n    move(speed, 0);\n}",
+    "hint": "Four methods are owed: move and getPosition to Movable, draw to Drawable, update to GameObject. All four have to be public.",
+    "feedback": "One class, three promises. It extends GameObject, which requires update(); it implements Movable and Drawable, which require the other three. The tests hold the same object as a Drawable, as a GameObject and as a Movable: each type allows only its own methods, and each call runs Player's code."
   }
 ]

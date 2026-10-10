@@ -50,7 +50,7 @@ export function codeWriteFooter(question) {
 
 /** What the student is writing: a "function", a "method" (of a class that is given, or a Java method), or a whole "class". */
 export function codeWriteKind(question) {
-    const wholeClass = /^\s*(?:(?:public|final)\s+)*class\s/.test(question?.signature || "");
+    const wholeClass = /^\s*(?:(?:public|final|abstract)\s+)*class\s/.test(question?.signature || "");
     if (isJavaProblem(question)) {
         // Monster(String name, int health): a capital, and no return type in front of it
         const constructor = /^\s*(?:public\s+)?[A-Z]\w*\s*\(/.test(question?.signature || "");

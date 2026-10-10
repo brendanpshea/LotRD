@@ -1023,6 +1023,157 @@ export const AGREES = {
       String args() { Box b = new Box(); return b.note("a", say("1", 1)) + b.note("b", say("2", 2)) + b.text + log; }`,
     calls: ['fields()', 'unbox(0)', 'unbox(1)', 'unbox(2)', 'unbox(3)', 'callOnNull()', 'logged()', 'assignOnNull()', 'logged()', 'compoundOnNull()', 'logged()', 'args()'],
   },
+  // ── inheritance
+  'a subclass: what it inherits, what super(…) does, and the order an object is built in': {
+    classes: J`class PixarFigure { private String name; private String movie; protected String catchphrase; String note = Log.say("C-field");
+        public PixarFigure(String name, String movie, String catchphrase) { this.name = name; this.movie = movie; this.catchphrase = catchphrase; Log.say("C-ctor " + describe()); }
+        public PixarFigure(String name) { this(name, "unknown", "..."); Log.say("C-short"); }
+        public String introduce() { return "Hi! I'm " + name + " from " + movie + "."; }
+        public String getName() { return name; }
+        public String getMovie() { return movie; }
+        public String describe() { return "character"; }
+        protected String shout() { return catchphrase.toUpperCase(); } }
+      class Toy extends PixarFigure { private String owner = Log.say("T-field"); int plays;
+        public Toy(String name, String movie, String catchphrase, String owner) { super(name, movie, catchphrase); this.owner = owner; Log.say("T-ctor"); }
+        public Toy(String name) { super(name); Log.say("T-short"); }
+        public String getPlayed() { plays++; return getName() + " is being played with by " + owner + "!"; }
+        public String describe() { return "toy of " + owner; }
+        public String loud() { return shout() + catchphrase.length(); } }
+      class Monster extends PixarFigure { private double scareRating;
+        public Monster(String name, double scareRating) { super(name, "Monsters, Inc.", "Boo"); this.scareRating = scareRating; }
+        public double getScareRating() { return scareRating; } }
+      class Plain { int a = 1; Plain() { Log.say("P"); } }
+      class Sub extends Plain { int b = a + 1; }
+      class SubSub extends Sub { int c = b + a; SubSub() { Log.say("SS"); } }
+      class Log { static String log = ""; static String say(String s) { log += s + ";"; return s; } static String take() { String out = log; log = ""; return out; } }`,
+    methods: J`String woody() { Toy w = new Toy("Woody", "Toy Story", "Reach for the sky!", "Andy"); return w.introduce() + w.getPlayed() + w.getName() + w.getMovie() + w.describe() + w.loud() + w.catchphrase + w.note + w.plays; }
+      String order() { Log.take(); Toy w = new Toy("Woody", "Toy Story", "x", "Andy"); return Log.take(); }
+      String shortOrder() { Log.take(); Toy t = new Toy("Rex"); return Log.take() + t.introduce() + t.describe(); }
+      String monster() { Monster m = new Monster("Sulley", 9.7); return m.introduce() + m.getScareRating() + m.describe() + m.catchphrase; }
+      String implicit() { Log.take(); SubSub x = new SubSub(); Sub y = new Sub(); return Log.take() + x.a + x.b + x.c + y.b; }
+      String base() { PixarFigure c = new PixarFigure("Joy", "Inside Out", "Yay"); return c.introduce() + c.describe(); }`,
+    calls: ['woody()', 'order()', 'shortOrder()', 'monster()', 'implicit()', 'base()', 'new Toy("Buzz").getName()', 'new Monster("Mike", 7.2).getMovie()'],
+  },
+  'overriding: the object decides which version runs, and super.method() reaches the one above': {
+    classes: J`class Figure { private String name; Figure(String name) { this.name = name; }
+        public String getName() { return name; }
+        public String introduce() { return "[" + name + "] " + perform(); }
+        public String perform() { return name + " waves."; }
+        public String perform(int times) { return name + " waves " + times + " times."; }
+        private String secret() { return "base secret"; }
+        public String tell() { return secret(); }
+        static String kind() { return "character"; }
+        public Figure self() { return this; }
+        @Override public String toString() { return "Figure " + name; } }
+      class Toy extends Figure { private String owner; Toy(String name, String owner) { super(name); this.owner = owner; }
+        @Override public String introduce() { return super.introduce() + " (I belong to " + owner + "!)"; }
+        @Override public String perform() { return getName() + " does the quick-draw!"; }
+        public String secret() { return "toy secret"; }
+        static String kind() { return "toy"; }
+        @Override public Toy self() { return this; }
+        public String owner() { return owner; } }
+      class Monster extends Figure { Monster(String name) { super(name); }
+        @Override public String introduce() { return "ROAR! I'm " + getName(); }
+        @Override public String perform(int times) { return super.perform(times) + super.perform() + " Loudly."; }
+        @Override public String toString() { return "Monster " + super.toString(); } }
+      class Baby extends Toy { Baby(String name) { super(name, "nobody"); }
+        @Override public String perform() { return "goo " + super.perform(); } }`,
+    methods: J`String all() { Figure[] cast = { new Toy("Buzz", "Andy"), new Monster("Mike"), new Figure("Extra"), new Baby("Bo") }; String out = ""; for (Figure c : cast) { out += c.introduce() + "|" + c.perform(2) + "|" + c + "|" + c.tell() + "\n"; } return out; }
+      String held() { Figure c = new Toy("Woody", "Andy"); Toy t = new Toy("Jessie", "Emily"); Figure same = t; return c.perform() + c.self().perform() + t.self().owner() + same.introduce() + (same == t) + t.secret() + c.tell() + Figure.kind() + Toy.kind(); }
+      String list() { ArrayList<Figure> cs = new ArrayList<>(); cs.add(new Monster("Sulley")); cs.add(new Toy("Rex", "Andy")); cs.add(0, new Baby("Bonnie")); String out = "" + cs; for (Figure c : cs) { out += c.perform(); } return out + cs.get(1).introduce(); }
+      String give(Figure c) { return c.perform(); }
+      String passed() { return give(new Toy("A", "B")) + give(new Monster("C")) + give(new Baby("D")); }`,
+    calls: ['all()', 'held()', 'list()', 'passed()', 'give(null)', 'new Baby("x").introduce()', '"" + new Monster("m")', 'new Toy("t", "o").self().owner()'],
+  },
+  'the class Object: toString, and an equals that compares what two objects hold': {
+    classes: J`class Hero { private String name; private int strength; private String power;
+        Hero(String name, String power, int strength) { this.name = name; this.power = power; this.strength = strength; }
+        public int getStrength() { return strength; }
+        @Override public String toString() { return name + " | Power: " + power + " | Strength: " + strength; }
+        @Override public boolean equals(Object obj) { Log.calls++; if (this == obj) { return true; } if (obj == null) { return false; } if (!(obj instanceof Hero)) { return false; } Hero other = (Hero) obj; return name.equals(other.name) && power.equals(other.power); }
+        static Hero findStrongest(Hero[] heroes) { Hero best = null; for (Hero h : heroes) { if (best == null || h.strength > best.strength) { best = h; } } return best; } }
+      class Sidekick extends Hero { Sidekick(String name) { super(name, "none", 1); } }
+      class Villain { String name; Villain(String name) { this.name = name; } }
+      class Log { static int calls; static int take() { int n = calls; calls = 0; return n; } }`,
+    methods: J`Hero bob() { return new Hero("Mr. Incredible", "Super strength", 95); }
+      String same() { Hero a = bob(); Hero b = bob(); Hero weak = new Hero("Mr. Incredible", "Super strength", 3); Hero other = new Hero("Frozone", "Ice", 80); return (a == b) + " " + a.equals(b) + a.equals(weak) + a.equals(other) + a.equals(null) + a.equals(a) + b.equals(a) + a.equals(new Villain("x")) + a.equals(new Sidekick("Mr. Incredible")); }
+      String plain() { Villain a = new Villain("Syndrome"); Villain b = new Villain("Syndrome"); Villain c = a; return a.equals(b) + "" + a.equals(c) + a.equals(null) + a.equals(bob()); }
+      String asObject() { Object o = bob(); Object v = new Villain("v"); Object none = null; return o + " " + o.toString().length() + o.equals(bob()) + o.equals(v) + v.equals(v) + (o == v) + (none == null) + none + (o instanceof Hero) + (v instanceof Hero) + ((Hero) o).getStrength(); }
+      String inList() { ArrayList<Hero> hs = new ArrayList<>(); Hero a = bob(); hs.add(a); hs.add(new Hero("Frozone", "Ice", 80)); hs.add(bob()); hs.add(null); Log.take(); String out = hs.indexOf(bob()) + " " + Log.take() + hs.contains(new Hero("Frozone", "Ice", 0)) + Log.take() + hs.contains(new Hero("Dash", "Speed", 1)) + Log.take() + hs.lastIndexOf(bob()) + hs.indexOf(null) + Collections.frequency(hs, bob()) + Log.take();
+        boolean gone = hs.remove(bob()); return out + gone + hs.size() + (hs.get(0) == a) + hs.remove(new Hero("no", "no", 0)) + Log.take(); }
+      String inMap() { HashMap<String, Hero> m = new HashMap<>(); Hero a = bob(); m.put("bob", a); m.put("frozone", new Hero("Frozone", "Ice", 80)); Log.take(); return m.containsValue(a) + "" + Log.take() + m.containsValue(bob()) + m.containsValue(new Hero("x", "y", 1)) + m.values().contains(bob()) + m.get("bob").equals(bob()); }
+      String lists() { ArrayList<Hero> a = new ArrayList<>(); a.add(bob()); ArrayList<Hero> b = new ArrayList<>(); b.add(bob()); ArrayList<Villain> c = new ArrayList<>(); c.add(new Villain("v")); ArrayList<Villain> d = new ArrayList<>(); d.add(new Villain("v")); return a.equals(b) + "" + c.equals(d) + c.equals(c); }
+      String strongest() { Hero[] hs = { new Hero("A", "a", 5), new Hero("B", "b", 50), new Sidekick("C"), new Hero("D", "d", 50) }; return Hero.findStrongest(hs) + " / " + Hero.findStrongest(new Hero[0]); }`,
+    calls: ['same()', 'plain()', 'asObject()', 'inList()', 'inMap()', 'lists()', 'strongest()', '"" + bob()', 'bob().equals(bob())'],
+  },
+  'instanceof and casts: asking what an object really is': {
+    classes: J`interface Quotable { String getQuote(); }
+      class Figure { String name; Figure(String name) { this.name = name; } String perform() { return name + " bows."; } }
+      class Toy extends Figure implements Quotable { Toy(String name) { super(name); } String getPlayed() { return name + " is played with."; } public String getQuote() { return "To infinity!"; } }
+      class Monster extends Figure { Monster(String name) { super(name); } String scare() { return "BOO from " + name; } }
+      class BigMonster extends Monster { BigMonster(String name) { super(name); } }`,
+    methods: J`String what(Figure c) { return (c instanceof Toy) + " " + (c instanceof Figure) + " " + (c instanceof Monster) + " " + (c instanceof BigMonster) + " " + (c instanceof Quotable); }
+      String act(Figure c) { if (c instanceof Toy) { Toy t = (Toy) c; return t.getPlayed(); } else if (c instanceof Monster) { Monster m = (Monster) c; return m.scare(); } return c.perform(); }
+      String named(Figure c) { if (c instanceof Toy t) { return t.getPlayed() + t.getQuote(); } if (c instanceof Monster m && m.name.length() > 3) { return m.scare(); } return "plain " + (c == null ? "nothing" : c.name); }
+      String early(Figure c) { if (!(c instanceof Monster m)) { return "not a monster"; } return m.scare(); }
+      String either(Figure c) { if (!(c instanceof Toy t) || t.name.isEmpty()) { return "no"; } return t.getQuote(); }
+      String pick(Figure c) { return c instanceof Toy t ? t.getPlayed() : "other"; }
+      String loop() { Figure[] cast = { new Toy("Woody"), new Monster("Sulley"), new BigMonster("Ted"), new Figure("Extra"), null, new Toy("Buzz") }; int toys = 0; int monsters = 0; int quotes = 0; String out = ""; for (Figure c : cast) { if (c instanceof Toy) { toys++; } else if (c instanceof Monster) { monsters++; } if (c instanceof Quotable q) { quotes++; out += q.getQuote(); } } return toys + " " + monsters + " " + quotes + out; }
+      String bad(Figure c) { Monster m = (Monster) c; return m == null ? "null" : m.scare(); }
+      String up() { Toy t = new Toy("Rex"); Figure c = (Figure) t; Figure d = t; Quotable q = t; Object o = q; return c.perform() + (c == d) + q.getQuote() + ((Toy) o).getPlayed() + ((Quotable) c).getQuote() + ((Figure) o).name; }
+      String badFace(Figure c) { Quotable q = (Quotable) c; return q.getQuote(); }
+      String chain(Figure c) { return ((Toy) c).getPlayed() + ((Monster) c).scare(); }`,
+    calls: ['what(new Toy("a"))', 'what(new Monster("a"))', 'what(new BigMonster("a"))', 'what(new Figure("a"))', 'what(null)', 'act(new Toy("Woody"))', 'act(new BigMonster("Ted"))', 'act(new Figure("Extra"))',
+      'named(new Toy("Woody"))', 'named(new Monster("Sulley"))', 'named(new Monster("Al"))', 'named(null)', 'early(new Toy("a"))', 'early(new BigMonster("Ted"))', 'early(null)', 'either(new Toy("a"))', 'either(new Toy(""))', 'either(new Monster("m"))',
+      'pick(new Toy("t"))', 'pick(new Monster("m"))', 'loop()', 'bad(new Monster("ok"))', 'bad(new Toy("no"))', 'bad(null)', 'bad(new Figure("no"))', 'up()', 'badFace(new Toy("t"))', 'badFace(new Monster("m"))', 'chain(new Toy("t"))'],
+  },
+  'abstract classes and interfaces: methods a class is made to write': {
+    classes: J`interface Movable { void move(int dx, int dy); String getPosition(); }
+      interface Drawable { String draw(); default String frame() { return "<" + draw() + ">"; } }
+      interface Named { String getName(); }
+      interface Loud extends Named { default String shout() { return getName().toUpperCase() + "!"; } }
+      abstract class GameObject implements Loud { private String name; protected boolean active = true; static int made;
+        GameObject(String name) { this.name = name; made++; }
+        public String getName() { return name; }
+        public abstract void update();
+        public String status() { update(); return name + (active ? " on" : " off"); } }
+      class Player extends GameObject implements Movable, Drawable { private int x; private int y; private int speed;
+        Player(String name, int x, int y, int speed) { super(name); this.x = x; this.y = y; this.speed = speed; }
+        public void move(int dx, int dy) { x += dx; y += dy; }
+        public String getPosition() { return "(" + x + ", " + y + ")"; }
+        public String draw() { return "[Player " + getName() + " at " + getPosition() + "]"; }
+        public void update() { move(speed, 0); } }
+      class Obstacle extends GameObject implements Drawable { private int x;
+        Obstacle(String name, int x) { super(name); this.x = x; }
+        public String draw() { return "[Obstacle " + getName() + " at " + x + "]"; }
+        public void update() { active = false; }
+        @Override public String frame() { return "#" + draw() + "#"; } }
+      abstract class Half implements Movable { public String getPosition() { return "half"; } }
+      class Whole extends Half { int moves; public void move(int dx, int dy) { moves += dx + dy; } }
+      class Engine { static String run(GameObject[] objects, int ticks) { String out = ""; int movable = 0; int drawable = 0;
+          for (int t = 1; t <= ticks; t++) { out += "=== Tick " + t + " ===\n"; for (GameObject o : objects) { o.update(); }
+            for (GameObject o : objects) { if (o instanceof Movable) { Movable m = (Movable) o; out += o.getName() + " -> " + m.getPosition() + "\n"; } }
+            for (GameObject o : objects) { if (o instanceof Drawable) { out += ((Drawable) o).draw() + "\n"; } } }
+          for (GameObject o : objects) { if (o instanceof Movable) { movable++; } if (o instanceof Drawable) { drawable++; } }
+          return out + "Done: " + movable + " movable, " + drawable + " drawable, " + objects.length + " total"; } }`,
+    methods: J`String game() { GameObject[] objects = { new Player("Hero", 0, 0, 2), new Obstacle("Rock", 5) }; return Engine.run(objects, 2); }
+      String faces() { Player p = new Player("P", 1, 1, 1); Movable m = p; Drawable d = p; Loud l = p; Named n = l; m.move(2, 3); Drawable[] ds = { p, new Obstacle("O", 4) }; String out = m.getPosition() + d.draw() + l.shout() + n.getName() + d.frame(); for (Drawable x : ds) { out += x.frame(); } return out + (m == d) + (d instanceof Movable) + (ds[1] instanceof Movable); }
+      String status() { GameObject a = new Player("A", 0, 0, 5); GameObject b = new Obstacle("B", 1); return a.status() + b.status() + a.status() + ((Player) a).getPosition() + GameObject.made + a.shout(); }
+      String half() { Whole w = new Whole(); Movable m = w; Half h = w; m.move(2, 3); h.move(1, 1); return h.getPosition() + m.getPosition() + w.moves; }
+      String lists() { ArrayList<Drawable> ds = new ArrayList<>(); ds.add(new Obstacle("o", 1)); ds.add(new Player("p", 0, 0, 0)); HashMap<String, GameObject> byName = new HashMap<>(); for (Drawable d : ds) { GameObject g = (GameObject) d; byName.put(g.getName(), g); } return ds.get(0).draw() + ds.size() + byName.get("p").status() + byName.containsKey("o"); }
+      String draw(Drawable d) { return d == null ? "nothing" : d.draw(); }`,
+    calls: ['game()', 'faces()', 'status()', 'half()', 'lists()', 'draw(new Obstacle("x", 9))', 'draw(new Player("y", 1, 2, 3))', 'draw(null)'],
+  },
+  'classes written inside one class, as the lecture writes its programs': {
+    classes: J`class Studio { private static int count = 0; static String title() { return "Studio " + count; }
+        static class Figure { private String name; Figure(String name) { this.name = name; count++; } String perform() { return name + " bows. " + title(); } private String hidden() { return "h" + name; } }
+        static class Toy extends Figure { private String owner; Toy(String name, String owner) { super(name); this.owner = owner; } @Override String perform() { return "Toy of " + owner + ": " + super.perform(); } }
+        interface Quotable { String quote(); }
+        static class Fish extends Figure implements Quotable { Fish(String name) { super(name); } public String quote() { return "Just keep swimming"; } }
+        static String show() { Figure[] cast = { new Toy("Woody", "Andy"), new Fish("Dory"), new Figure("Extra") }; String out = ""; for (Figure c : cast) { out += c.perform() + "/" + c.name + c.hidden(); if (c instanceof Quotable q) { out += q.quote(); } } Toy t = new Toy("Rex", "Andy"); return out + t.owner + count; } }`,
+    methods: J`String run() { return Studio.show(); }`,
+    calls: ['run()', 'Studio.title()'],
+  },
 };
 
 /**
@@ -1499,6 +1650,63 @@ export const REJECTS = {
   'a class that is never declared': J`int f() { Monster m = new Monster(); return 0; }`,
   'the length of an array given a new value': J`int f(int[] xs) { xs.length = 3; return 0; }`,
   'a constant of Math given a new value': J`double f() { Math.PI = 3; return 0; }`,
+
+  // ── inheritance: what a subclass must, may and may not do
+  'a subclass constructor that does not call super(…), when the superclass needs values': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { } }`, methods: J`int f() { return 0; }` },
+  'a subclass with no constructor, when the superclass needs values': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { }`, methods: J`int f() { return 0; }` },
+  'super(…) given the wrong values': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { super(name, 5); } }`, methods: J`int f() { return 0; }` },
+  'super(…) in a method': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { super(name); } void again() { super("x"); } }`, methods: J`int f() { return 0; }` },
+  'a private field of the superclass used in the subclass': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { super(name); } String who() { return name; } }`, methods: J`int f() { return 0; }` },
+  'a private field of the superclass set through this': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { super(name); this.name = "x"; } }`, methods: J`int f() { return 0; }` },
+  'a private method of the superclass called in the subclass': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { super(name); } String who() { return hidden(); } }`, methods: J`int f() { return 0; }` },
+  'a subclass method called through a superclass variable': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { super(name); } String getPlayed() { return "p"; } }`, methods: J`String f() { Figure c = new Toy("a"); return c.getPlayed(); }` },
+  'a superclass object stored in a subclass variable': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { super(name); } }`, methods: J`int f() { Toy t = new Figure("a"); return 0; }` },
+  'a superclass variable stored in a subclass variable without a cast': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String name) { super(name); } }`, methods: J`int f() { Figure c = new Toy("a"); Toy t = c; return 0; }` },
+  'one subclass stored as another': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } } class Monster extends Figure { Monster(String n) { super(n); } }`, methods: J`int f() { Monster m = new Toy("a"); return 0; }` },
+  'a cast between two subclasses': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } } class Monster extends Figure { Monster(String n) { super(n); } }`, methods: J`int f() { Toy t = new Toy("a"); Monster m = (Monster) t; return 0; }` },
+  'instanceof between two subclasses': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } } class Monster extends Figure { Monster(String n) { super(n); } }`, methods: J`boolean f() { Toy t = new Toy("a"); return t instanceof Monster; }` },
+  '== between two unrelated classes': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } } class Monster extends Figure { Monster(String n) { super(n); } }`, methods: J`boolean f() { Toy t = new Toy("a"); Monster m = new Monster("b"); return t == m; }` },
+  'instanceof on a number': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } `, methods: J`boolean f(int n) { return n instanceof Figure; }` },
+  'a cast from text to a class': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } `, methods: J`int f(String s) { Figure c = (Figure) s; return 0; }` },
+  '@Override on a method the superclass does not have': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } @Override public String introduse() { return "x"; } }`, methods: J`int f() { return 0; }` },
+  '@Override on a method with different parameters': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } @Override public String perform(int times) { return "x"; } }`, methods: J`int f() { return 0; }` },
+  '@Override on a private method of the superclass': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } @Override public String hidden() { return "x"; } }`, methods: J`int f() { return 0; }` },
+  'an override that is harder to reach': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } String perform() { return "x"; } }`, methods: J`int f() { return 0; }` },
+  'an override that is private': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } private String plain() { return "x"; } }`, methods: J`int f() { return 0; }` },
+  'an override with another return type': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } public int perform() { return 1; } }`, methods: J`int f() { return 0; }` },
+  'an override of a final method': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } public String fixed() { return "x"; } }`, methods: J`int f() { return 0; }` },
+  'a static method replacing one that is not': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } public static String perform() { return "x"; } }`, methods: J`int f() { return 0; }` },
+  'a method replacing a static one': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } String kind() { return "x"; } }`, methods: J`int f() { return 0; }` },
+  'extending a final class': { classes: J`final class Box { } class Crate extends Box { }`, methods: J`int f() { return 0; }` },
+  'extending two classes': { classes: J`class A { } class B { } class C extends A, B { }`, methods: J`int f() { return 0; }` },
+  'a class that extends itself': { classes: J`class A extends A { }`, methods: J`int f() { return 0; }` },
+  'two classes that extend each other': { classes: J`class A extends B { } class B extends A { }`, methods: J`int f() { return 0; }` },
+  'extending a class that does not exist': { classes: J`class Toy extends Figur { }`, methods: J`int f() { return 0; }` },
+  'extends used with an interface': { classes: J`interface Quotable { String getQuote(); } class Toy extends Quotable { public String getQuote() { return "q"; } }`, methods: J`int f() { return 0; }` },
+  'implements used with a class': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy implements Figure { }`, methods: J`int f() { return 0; }` },
+  'an interface method left unwritten': { classes: J`interface Quotable { String getQuote(); } class Toy implements Quotable { }`, methods: J`int f() { return 0; }` },
+  'an interface method written without public': { classes: J`interface Quotable { String getQuote(); } class Toy implements Quotable { String getQuote() { return "q"; } }`, methods: J`int f() { return 0; }` },
+  'an interface method written with other parameters': { classes: J`interface Quotable { String getQuote(); } class Toy implements Quotable { public String getQuote(int n) { return "q"; } }`, methods: J`int f() { return 0; }` },
+  'an interface made with new': { classes: J`interface Quotable { String getQuote(); } `, methods: J`int f() { Quotable q = new Quotable(); return 0; }` },
+  'an interface method with a body': { classes: J`interface Quotable { String getQuote() { return "q"; } }`, methods: J`int f() { return 0; }` },
+  'a constructor in an interface': { classes: J`interface Quotable { Quotable() { } }`, methods: J`int f() { return 0; }` },
+  'a method not in the interface called through it': { classes: J`interface Quotable { String getQuote(); } class Toy implements Quotable { public String getQuote() { return "q"; } public String play() { return "p"; } }`, methods: J`String f() { Quotable q = new Toy(); return q.play(); }` },
+  'an abstract class made with new': { classes: J`abstract class Shape { abstract double area(); String describe() { return "s"; } } `, methods: J`int f() { Shape s = new Shape(); return 0; }` },
+  'an abstract method left unwritten': { classes: J`abstract class Shape { abstract double area(); String describe() { return "s"; } } class Circle extends Shape { }`, methods: J`int f() { return 0; }` },
+  'an abstract method in a class that is not abstract': { classes: J`class Shape { abstract double area(); }`, methods: J`int f() { return 0; }` },
+  'an abstract method with a body': { classes: J`abstract class Shape { abstract double area() { return 1; } }`, methods: J`int f() { return 0; }` },
+  'a method with no body that is not abstract': { classes: J`abstract class Shape { double area(); }`, methods: J`int f() { return 0; }` },
+  'an abstract method written with other parameters': { classes: J`abstract class Shape { abstract double area(); String describe() { return "s"; } } class Circle extends Shape { double area(int r) { return 1; } }`, methods: J`int f() { return 0; }` },
+  'super.method() on an abstract method': { classes: J`abstract class Shape { abstract double area(); String describe() { return "s"; } } class Circle extends Shape { double area() { return super.area(); } }`, methods: J`int f() { return 0; }` },
+  'super in a static method': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } static String s() { return super.perform(); } }`, methods: J`int f() { return 0; }` },
+  'equals that is not public': { classes: J`class A { boolean equals(Object o) { return true; } }`, methods: J`int f() { return 0; }` },
+  'equals that returns a number': { classes: J`class A { public int equals(Object o) { return 1; } }`, methods: J`int f() { return 0; }` },
+  'a method of the subclass through a list of the superclass': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } String getPlayed() { return "p"; } }`, methods: J`String f() { ArrayList<Figure> cs = new ArrayList<>(); cs.add(new Toy("a")); return cs.get(0).getPlayed(); }` },
+  'a list of subclass objects stored as a list of the superclass': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } }`, methods: J`int f() { ArrayList<Toy> ts = new ArrayList<>(); ArrayList<Figure> cs = ts; return 0; }` },
+  'a superclass object added to a list of the subclass': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } }`, methods: J`int f() { ArrayList<Toy> ts = new ArrayList<>(); ts.add(new Figure("a")); return 0; }` },
+  'a name from instanceof used where the test may have failed': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } String p() { return "p"; } }`, methods: J`String f(Figure c) { if (c instanceof Toy t) { return "a"; } return t.p(); }` },
+  'a name from instanceof used on the wrong side of ||': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } String p() { return "p"; } }`, methods: J`boolean f(Figure c) { return c instanceof Toy t || t.p().isEmpty(); }` },
+  'a name from instanceof that is already a variable': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } }`, methods: J`boolean f(Figure c) { int t = 1; return c instanceof Toy t; }` },
 };
 
 /**
@@ -1528,13 +1736,25 @@ export const REFUSES = {
   'a set of objects': { classes: J`class Monster { }`, methods: J`int f() { HashSet<Monster> ms = new HashSet<>(); ms.add(new Monster()); return ms.size(); }`, calls: ['f()'] },
   'objects as the keys of a map': { classes: J`class Monster { }`, methods: J`int f() { HashMap<Monster, Integer> ms = new HashMap<>(); return ms.size(); }`, calls: ['f()'] },
   'hashCode of an object': { classes: J`class Monster { }`, methods: J`boolean f() { return new Monster().hashCode() == 0; }`, calls: ['f() || true'] },
-  'a class that extends another': { classes: J`class Monster { int health; } class Dragon extends Monster { }`, methods: J`int f() { return new Dragon().health; }`, calls: ['f()'] },
-  'an interface': { classes: J`interface Fighter { int power(); } class Monster implements Fighter { public int power() { return 3; } }`, methods: J`int f() { return new Monster().power(); }`, calls: ['f()'] },
   'a static method called through an object': { classes: J`class Monster { static int count() { return 3; } }`, methods: J`int f() { Monster m = new Monster(); return m.count(); }`, calls: ['f()'] },
   'a final field given its value in the constructor': { classes: J`class Monster { final int max; Monster() { max = 5; } }`, methods: J`int f() { return new Monster().max; }`, calls: ['f()'] },
   'a class of your own called Character': { classes: J`class Character { int gold = 5; }`, methods: J`int f() { return new Character().gold; }`, calls: ['f()'] },
-  'equals written for the class': { classes: J`class Monster { int h; public boolean equals(Object o) { return true; } }`, methods: J`boolean f() { return new Monster().equals(new Monster()); }`, calls: ['f()'] },
   'a field assigned before the line that declares it': { classes: J`class Monster { int a = (b = 5) + 1; int b; }`, methods: J`int f() { return new Monster().a; }`, calls: ['f()'] },
+  'an Object that holds text': { methods: J`String f() { Object o = "text"; return "" + o; }`, calls: ['f()'] },
+  'an Object that holds a number': { methods: J`String f() { Object o = 5; return "" + o; }`, calls: ['f()'] },
+  'text handed to a method that takes an Object': { classes: J`class A { boolean same(Object o) { return o == this; } }`, methods: J`boolean f() { return new A().same("x"); }`, calls: ['f()'] },
+  'an array of subclass objects used as an array of the superclass': { classes: J`class A { } class B extends A { }`, methods: J`int f() { B[] bs = new B[2]; A[] as = bs; return as.length; }`, calls: ['f()'] },
+  'a sealed class': { classes: J`sealed class A permits B { } final class B extends A { }`, methods: J`int f() { return 1; }`, calls: ['f()'] },
+  'a record': { classes: J`record Point(int x, int y) { }`, methods: J`int f() { return new Point(1, 2).x(); }`, calls: ['f()'] },
+  'an enum': { classes: J`enum Rank { LOW, HIGH }`, methods: J`int f() { return Rank.HIGH.ordinal(); }`, calls: ['f()'] },
+  'a constant in an interface': { classes: J`interface Limits { int MAX = 5; } class A implements Limits { int top() { return MAX; } }`, methods: J`int f() { return new A().top(); }`, calls: ['f()'] },
+  'a class inside a class, not marked static': { classes: J`class Outer { class Inner { int n = 1; } int get() { return new Inner().n; } }`, methods: J`int f() { return new Outer().get(); }`, calls: ['f()'] },
+  'super(…) that is not the first line, which Java 25 allows': { classes: J`class A { int n; A(int n) { this.n = n; } } class B extends A { B(int n) { int twice = n * 2; super(twice); } }`, methods: J`int f() { return new B(3).n; }`, calls: ['f()'] },
+  'getClass': { classes: J`class A { }`, methods: J`boolean f() { A a = new A(); return a.getClass() == a.getClass(); }`, calls: ['f()'] },
+  'instanceof with one of Java\'s classes': { classes: J`class A { }`, methods: J`boolean f() { Object o = new A(); return o instanceof String; }`, calls: ['f()'] },
+  'a name from instanceof used after an if with an else': { classes: J`class A { } class B extends A { int n = 4; }`, methods: J`int f(A a) { if (!(a instanceof B b)) { return 0; } else { } return b.n; }`, calls: ['f(new B())'] },
+  'two interfaces with the same default method': { classes: J`interface P { default String hi() { return "p"; } } interface Q { default String hi() { return "q"; } } class A implements P, Q { public String hi() { return "a"; } }`, methods: J`String f() { return new A().hi(); }`, calls: ['f()'] },
+  'the plain toString through super': { classes: J`class A { public String toString() { return "A:" + super.toString().length(); } }`, methods: J`int f() { return ("" + new A()).length(); }`, calls: ['f() > 0 ? 1 : 0'] },
   'Collections.shuffle': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); Collections.shuffle(xs); return xs.size(); }`, calls: ['f()'] },
   'a list of lists': { methods: J`int f() { ArrayList<ArrayList<String>> xs = new ArrayList<>(); return xs.size(); }`, calls: ['f()'] },
   'a map of lists': { methods: J`int f() { HashMap<String, ArrayList<String>> m = new HashMap<>(); return m.size(); }`, calls: ['f()'] },
@@ -2198,6 +2418,85 @@ export function objectCases(seed, count, depth = 1) {
     return {
       classes: OBJECT_CLASSES,
       methods: `  String m(int a, String s, boolean t) {\n    ${OBJECT_SETUP}\n    ${body}\n  }`,
+      calls: ['m(1, "axe", true)', 'm(-4, null, false)'],
+    };
+  });
+}
+
+// ─── generated inheritance puzzles ───────────────────────────────────────────
+//
+// A small hierarchy — an abstract class, two interfaces, three classes below them — and one line that
+// uses it with no regard for which type a variable has, what its object really is, or what may be cast
+// to what. javac decides which lines compile, and the JVM which casts fail; jtiny has to agree.
+
+const FAMILY_CLASSES = String.raw`interface Quotable { String quote(); }
+interface Movable { int move(int by); default String where() { return "at " + move(0); } }
+abstract class Figure implements Quotable { private String name; protected int level = 1; static int made;
+  Figure(String name) { this.name = name; made++; }
+  public String getName() { return name; }
+  public abstract String perform();
+  public String quote() { return name + "!"; }
+  public String twice() { return perform() + perform(); }
+  private String hidden() { return "h"; }
+  static String kind() { return "figure"; }
+  @Override public String toString() { return "F:" + name; }
+  @Override public boolean equals(Object o) { return o instanceof Figure f && f.name.equals(name); } }
+class Toy extends Figure implements Movable { private int x; String owner = "Andy";
+  Toy(String name) { super(name); }
+  Toy(String name, int x) { super(name); this.x = x; }
+  public String perform() { return "toy " + getName(); }
+  public int move(int by) { x += by; return x; }
+  public String getPlayed() { return owner + " plays"; }
+  static String kind() { return "toy"; }
+  @Override public String toString() { return "T:" + super.toString(); } }
+class Robot extends Toy { Robot(String name) { super(name, 10); level = 5; }
+  @Override public String perform() { return "beep " + super.perform(); }
+  @Override public String quote() { return "BEEP"; }
+  public Robot copy() { return new Robot(getName()); } }
+class Monster extends Figure { double scare = 9.5;
+  Monster(String name) { super(name); }
+  public String perform() { return "roar " + level; }
+  public String scareIt() { return "boo"; } }`;
+const FAMILY_SETUP = 'Toy toy = new Toy("Woody"); Robot bot = new Robot("Rob"); Monster mon = new Monster("Sul"); Figure fig = bot; Figure f2 = mon; Quotable q = toy; Movable mv = bot; Object obj = mon; Figure none = null; '
+  + 'ArrayList<Figure> list = new ArrayList<>(); list.add(toy); list.add(mon); Figure[] arr = { toy, bot, mon };';
+const FAMILY_AFTER = 'toy + " " + bot + mon + fig.perform() + f2.twice() + q.quote() + mv.where() + list + Figure.made + bot.level + toy.owner + (obj == mon) + arr[0] + arr[2]';
+const FAMILY = ['toy', 'toy', 'bot', 'bot', 'mon', 'fig', 'fig', 'f2', 'q', 'mv', 'obj', 'none', 'list.get(0)', 'list.get(1)', 'arr[1]', 'this', 'new Toy("z")', 'new Monster("m")', 'new Robot("r")',
+  '((Toy) fig)', '((Monster) fig)', '((Figure) obj)', '((Movable) fig)', '((Quotable) obj)', '((Robot) toy)', '((Movable) f2)', 'Figure', 'Toy', 'Robot', 'null'];
+const FAMILY_LEAVES = [...FAMILY, 'a', 's', 't', '1', '"x"', 'list', 'arr', 'bot.level', 'toy.owner', 'mon.scare'];
+const FAMILY_TYPES = ['Figure', 'Toy', 'Robot', 'Monster', 'Quotable', 'Movable', 'Object'];
+const FAMILY_FIELDS = ['name', 'level', 'made', 'x', 'owner', 'scare', 'length'];
+const FAMILY_METHODS = ['getName', 'perform', 'quote', 'twice', 'hidden', 'kind', 'toString', 'equals', 'move', 'where', 'getPlayed', 'scareIt', 'copy', 'add', 'contains', 'indexOf', 'remove', 'hashCode'];
+const FAMILY_DECLARED = [...FAMILY_TYPES, ...FAMILY_TYPES, 'String', 'int', 'boolean', 'double', 'var', 'var', 'ArrayList<Figure>', 'Figure[]'];
+
+function familyExpression(rng, depth) {
+  const sub = () => (depth <= 0 || rng.next() < 0.7 ? rng.pick(FAMILY_LEAVES) : familyExpression(rng, depth - 1));
+  const who = () => (rng.next() < 0.9 ? rng.pick(FAMILY) : sub());
+  const some = n => Array.from({ length: n }, sub).join(', ');
+  switch (rng.int(18)) {
+    case 0: case 1: return `${who()}.${rng.pick(FAMILY_FIELDS)}`;
+    case 2: case 3: case 4: case 5: return `${who()}.${rng.pick(FAMILY_METHODS)}(${some(rng.pick([0, 0, 0, 1, 1, 2]))})`;
+    case 6: case 7: return `(${who()} instanceof ${rng.pick(FAMILY_TYPES)})`;
+    case 8: return `(${who()} instanceof ${rng.pick(FAMILY_TYPES)} z && z.${rng.pick(FAMILY_METHODS)}(${some(rng.pick([0, 0, 1]))}) != null)`;
+    case 9: case 10: return `((${rng.pick(FAMILY_TYPES)}) ${who()})`;
+    case 11: return `((${rng.pick(FAMILY_TYPES)}) ${who()}).${rng.pick(FAMILY_METHODS)}(${some(rng.pick([0, 0, 1]))})`;
+    case 12: return `(${who()} ${rng.pick(['==', '!='])} ${who()})`;
+    case 13: return `new ${rng.pick(['Toy', 'Robot', 'Monster', 'Figure', 'Quotable'])}(${some(rng.pick([0, 1, 1, 2]))})`;
+    case 14: return `(${rng.pick(['toy', 'bot', 'mon', 'fig', 'q', 'mv', 'obj', 'arr[0]', 'bot.level'])} = ${sub()})`;
+    case 15: return `(t ? ${who()} : ${who()})`;
+    case 16: return `${rng.pick(['perform', 'kind', 'getName', 'toString'])}(${some(rng.pick([0, 1]))})`;
+    default: return sub();
+  }
+}
+
+/** `count` cases: half store the result in a variable of a random type, half are a statement whose effect is printed. */
+export function inheritanceCases(seed, count, depth = 1) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, (_, k) => {
+    const expression = familyExpression(rng, depth);
+    const body = k % 2 ? `${expression}; return ${FAMILY_AFTER};` : `${rng.pick(FAMILY_DECLARED)} v = ${expression}; return v + " " + ${FAMILY_AFTER};`;
+    return {
+      classes: FAMILY_CLASSES,
+      methods: `  String m(int a, String s, boolean t) {\n    ${FAMILY_SETUP}\n    ${body}\n  }`,
       calls: ['m(1, "axe", true)', 'm(-4, null, false)'],
     };
   });
