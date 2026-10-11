@@ -13,7 +13,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runProblemOnJtiny, findJdk, runOnJdk, runOnJtiny, caseForProblem } from './helpers/jdk.js';
-import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, collectionCases, collectionTypeCases, objectCases, inheritanceCases, interestingDoubles } from './helpers/java-corpus.js';
+import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, collectionCases, collectionTypeCases, objectCases, inheritanceCases, tryCases, exceptionSiteCases, interestingDoubles } from './helpers/java-corpus.js';
 import { javaDouble } from '../src/jtiny.js';
 
 const jdk = findJdk();
@@ -33,6 +33,7 @@ const COLLECTION_CASES = 30;   // × 25 runs of adds, removes and lookups: the o
 const COLLECTION_TYPE_CASES = 600;   // collection methods called on, and handed, anything at all
 const OBJECT_CASES = 600;     // two small classes, used with no regard for what is private, static or null
 const INHERITANCE_CASES = 600;   // an abstract class, two interfaces and three classes, used with no regard for type
+const TRY_CASES = 800;     // try, catch and finally around lines that throw: which compile, and the path each takes
 const ROUNDING_CASES = 6;   // × 150 doubles × 9 ways of writing each: where %.2f rounds
 
 // Everything goes to the JDK in one process: starting a JVM costs more than all the cases together.
@@ -42,7 +43,9 @@ const refuse = Object.entries(REFUSES);
 const fuzz = fuzzCases(FUZZ_SEED, FUZZ_CASES);
 const generated = [...flowCases(FUZZ_SEED, FLOW_CASES), ...typeCases(FUZZ_SEED, TYPE_CASES), ...boxCases(FUZZ_SEED, BOX_CASES),
   ...formatCases(FUZZ_SEED, FORMAT_CASES), ...roundingCases(FUZZ_SEED, ROUNDING_CASES),
-  ...collectionTypeCases(FUZZ_SEED, COLLECTION_TYPE_CASES), ...collectionCases(FUZZ_SEED, COLLECTION_CASES), ...objectCases(FUZZ_SEED, OBJECT_CASES), ...inheritanceCases(FUZZ_SEED, INHERITANCE_CASES)];
+  ...collectionTypeCases(FUZZ_SEED, COLLECTION_TYPE_CASES), ...collectionCases(FUZZ_SEED, COLLECTION_CASES), ...objectCases(FUZZ_SEED, OBJECT_CASES), ...inheritanceCases(FUZZ_SEED, INHERITANCE_CASES), ...tryCases(FUZZ_SEED, TRY_CASES)];
+// Every exception the library throws, caught: its message, and what the line had done before it failed.
+const sites = exceptionSiteCases();
 const doubles = interestingDoubles(FUZZ_SEED, 1500);
 // A Java method may hold only so much code, so the bit patterns go in several.
 const DOUBLES_PER_METHOD = 800;
@@ -97,7 +100,7 @@ for (const setId of JSON.parse(readFileSync(new URL('question_sets/index.json', 
 }
 const problemCases = setProblems.map(([, , q]) => caseForProblem(q));
 
-const everything = [...problemCases, ...agree.map(([, c]) => c), ...reject.map(([, c]) => c), ...refuse.map(([, c]) => c), ...fuzz, doubleCase, ...generated];
+const everything = [...problemCases, ...agree.map(([, c]) => c), ...reject.map(([, c]) => c), ...refuse.map(([, c]) => c), ...fuzz, doubleCase, ...generated, ...sites];
 const java = jdk ? runOnJdk(jdk, everything) : [];
 let at = 0;
 const take = n => { const slice = java.slice(at, at + n); at += n; return slice; };
@@ -108,6 +111,7 @@ const javaRefuse = take(refuse.length);
 const javaFuzz = take(fuzz.length);
 const [javaDoubles] = take(1);
 const javaGenerated = take(generated.length);
+const javaSites = take(sites.length);
 
 /** Call by call, so a failure names the call rather than dumping two long outputs. */
 function assertSameCalls(testCase, expected, mine) {
@@ -194,7 +198,7 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
   for (let from = 0; from < generated.length; from += BATCH) {
     const kind = from < FLOW_CASES ? 'method bodies' : from < FLOW_CASES + TYPE_CASES + BOX_CASES ? 'type puzzles'
       : from < FLOW_CASES + TYPE_CASES + BOX_CASES + FORMAT_CASES + ROUNDING_CASES ? 'formats'
-        : from < generated.length - OBJECT_CASES - INHERITANCE_CASES ? 'collections' : 'objects';
+        : from < generated.length - OBJECT_CASES - INHERITANCE_CASES - TRY_CASES ? 'collections' : from < generated.length - TRY_CASES ? 'objects' : 'try and catch';
     it(`seed ${FUZZ_SEED}, ${kind} ${from + 1}–${Math.min(from + BATCH, generated.length)}`, () => {
       const disagreements = [];
       let bothRan = 0;
@@ -220,6 +224,35 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
       assert.ok(bothRan >= Math.min(kind === 'objects' ? 1 : kind === 'collections' ? 3 : 10, generated.length - from), `only ${bothRan} of this batch compiled on both sides; the generator has drifted`);
     });
   }
+});
+
+describe('every exception the library throws, caught: the message Java gives, and what the line had already done', { skip }, () => {
+  // A refusal is allowed (the message of a NullPointerException is one Java writes at length); a different message,
+  // or a list or a counter left in a different state from the one Java leaves, is not.
+  it(`${sites.length} lines that can throw, each run with six values`, () => {
+    const differences = [];
+    let compared = 0;
+    sites.forEach((testCase, i) => {
+      const mine = runOnJtiny(testCase, { steps: 200000 });
+      const real = javaSites[i];
+      if (!mine.compiled && mine.unsupported) return;
+      if (real.compiled !== mine.compiled) {
+        differences.push(`${real.compiled ? `jtiny called a Java error (${mine.compileError})` : `jtiny accepted what javac rejects (${real.compileError})`}\n${testCase.methods}`);
+        return;
+      }
+      if (!real.compiled) return;
+      const want = real.out.split('\n');
+      const got = mine.out.split('\n');
+      if (want.length !== got.length) { differences.push(`the output has a different number of lines\n${testCase.methods}`); return; }
+      testCase.calls.forEach((call, k) => {
+        if (got[k] === '?refused') return;
+        compared++;
+        if (want[k] !== got[k]) differences.push(`${call}: Java ${want[k]}, jtiny ${got[k]}\n${testCase.methods.split('\n').find(line => line.includes('try {'))}`);
+      });
+    });
+    assert.deepEqual(differences.slice(0, 5), [], `\n${differences.slice(0, 5).join('\n\n')}\n`);
+    assert.ok(compared >= 1500, `only ${compared} calls were compared; the cases have drifted`);
+  });
 });
 
 describe('a double prints exactly as Java prints it', { skip }, () => {

@@ -1,5 +1,255 @@
 [
   {
+    "type": "npc_demo",
+    "question": "NPC: What happens between writing and running",
+    "npc": "nia",
+    "intro": "Nia the Logic-Weaver holds up two scrolls, one in plain script and one in tight columns of symbols. “You write the first,” she says. “The machine runs the second. Something has to stand in between.”",
+    "steps": [
+      {
+        "say": "Your source code is never run as it stands. The compiler, javac, translates it into bytecode and stores that in a .class file.",
+        "beats": [
+          {
+            "say": "Your source code is never run as it stands. The compiler, javac, reads BankAccount.java and translates it into bytecode, which it stores in BankAccount.class."
+          },
+          {
+            "code": "javac BankAccount.java     // makes BankAccount.class\njava BankAccount           // the JVM loads and runs it",
+            "language": "two commands"
+          },
+          {
+            "say": "Bytecode is not the language of any one computer. It is written for the Java Virtual Machine, the JVM: a program that every kind of computer has its own copy of."
+          }
+        ],
+        "check": {
+          "prompt": "Which file does the JVM load and run?",
+          "answer": "BankAccount.class",
+          "wrong": [
+            "BankAccount.java",
+            "javac"
+          ],
+          "why": "The .java file is for people and for the compiler. What the JVM loads is the bytecode in the .class file, and the same .class file runs on any system that has a JVM."
+        }
+      },
+      {
+        "say": "While the program runs, the JVM keeps its data in separate areas. Objects live on the heap. Method calls and their local variables live on the stack.",
+        "beats": [
+          {
+            "say": "While the program runs, the JVM keeps its data in separate areas of memory."
+          },
+          {
+            "code": "public static void main(String[] args) {\n    int count = 3;\n    BankAccount gru = new BankAccount(\"V001\", \"Gru\");\n}",
+            "language": "java"
+          },
+          {
+            "say": "Each method call gets a frame on the stack holding its parameters and local variables: here count, and the reference gru. The frame is removed the moment the method ends."
+          },
+          {
+            "say": "The object that new makes lives on the heap. It stays there until nothing refers to it, and then the garbage collector removes it."
+          }
+        ],
+        "check": {
+          "prompt": "new BankAccount(\"V001\", \"Gru\") makes an object. Where does that object live?",
+          "answer": "On the heap",
+          "wrong": [
+            "On the stack",
+            "In the .class file"
+          ],
+          "why": "Every object lives on the heap. Only the reference to it, the local variable gru, is in main's frame on the stack."
+        }
+      },
+      {
+        "say": "Some mistakes javac catches before the program ever runs. Others can only show themselves while it runs, and those are what the second half of this chapter is about."
+      }
+    ],
+    "outro": "“First, the journey from source to running program. Then, what Java does when a running program goes wrong.”"
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange what happens to a Java class, from the moment you write it to the moment it runs.",
+    "items": [
+      "You write BankAccount.java, the source code",
+      "javac compiles the source into bytecode",
+      "The bytecode is stored in BankAccount.class",
+      "The JVM's class loader brings the class into memory",
+      "The JVM's execution engine runs the bytecode"
+    ],
+    "feedback": "Source code is for people. javac translates it once into bytecode, kept in a .class file. Nothing runs yet: running is the JVM's job. When the program is started, the JVM loads each class as it is needed and its execution engine carries out the bytecode."
+  },
+  {
+    "question": "What does a .class file hold?",
+    "correct": [
+      "Bytecode: instructions written for the Java Virtual Machine"
+    ],
+    "incorrect": [
+      "Machine code for the one computer on which it was compiled",
+      "The source code again, with its comments and spaces removed",
+      "A saved copy of every object the program made as it ran"
+    ],
+    "feedback": "javac does not produce the machine code of any particular computer. It produces bytecode, a lower-level form of your program that the JVM knows how to carry out. The source is not in there, and neither are objects, which only exist while a program runs."
+  },
+  {
+    "question": "The same compiled banking program runs on a Windows desktop, a Mac laptop and a Linux server, without being compiled again. Why?",
+    "correct": [
+      "Each system has its own JVM, and every JVM runs the same bytecode"
+    ],
+    "incorrect": [
+      "javac writes a separate machine-code file for each kind of system",
+      "The source code travels along, and is compiled again on arrival",
+      "All three systems use the same processor instructions underneath"
+    ],
+    "feedback": "Bytecode is written for the JVM, not for Windows or for a particular processor. Each system has a JVM built for it, and that JVM stands between the bytecode and the machine. So one .class file serves everywhere a JVM exists."
+  },
+  {
+    "type": "matching",
+    "question": "Match each part of the Java Virtual Machine to its job.",
+    "pairs": [
+      {
+        "term": "Class loader",
+        "definition": "Finds a .class file and brings it into memory when it is first needed"
+      },
+      {
+        "term": "Heap",
+        "definition": "Holds every object the program makes"
+      },
+      {
+        "term": "Stack",
+        "definition": "Holds a frame for each method call, with its local variables"
+      },
+      {
+        "term": "Method area",
+        "definition": "Holds what belongs to a class as a whole, such as static variables"
+      },
+      {
+        "term": "Garbage collector",
+        "definition": "Removes objects that nothing refers to any more"
+      },
+      {
+        "term": "JIT compiler",
+        "definition": "Turns bytecode that runs often into fast machine code"
+      }
+    ],
+    "feedback": "The class loader brings classes in as they are needed. Memory is divided by purpose: objects on the heap, method calls and local variables on the stack, class-level information in the method area. The garbage collector clears the heap of objects no longer referred to, and the just-in-time compiler speeds up the bytecode that is used most."
+  },
+  {
+    "question": "A banking program has hundreds of classes. When does the JVM load VillainAccount.class into memory?",
+    "correct": [
+      "The first time the running program needs VillainAccount"
+    ],
+    "incorrect": [
+      "At the start, along with every other class of the program",
+      "While javac is compiling, before the program is ever run",
+      "Each time an object is made with new VillainAccount(…)"
+    ],
+    "feedback": "Classes are loaded when they are first needed and not before, which lets a large program start quickly. A class the run never touches is never loaded. Once loaded, a class stays: making a second VillainAccount does not load it again."
+  },
+  {
+    "type": "ordering",
+    "question": "The class loader meets a class for the first time. Arrange the three things it does, in order.",
+    "items": [
+      "Loading: the .class file is found and its bytecode is read into memory",
+      "Linking: the bytecode is verified, and its references to other classes resolved",
+      "Initialization: the static initialization code of the class is run"
+    ],
+    "feedback": "Load, link, initialize. The bytecode has to be in memory before it can be checked, and it has to be checked and connected to the classes it mentions before any of its code is allowed to run. Initialization is where static variables get their starting values."
+  },
+  {
+    "question": "public static void main(String[] args) {\n    int count = 3;\n    BankAccount gru = new BankAccount(\"V001\", \"Gru\");\n}\n\nWhere are these while main runs?",
+    "correct": [
+      "count and the reference gru on the stack; the object on the heap"
+    ],
+    "incorrect": [
+      "count on the stack; the reference gru and the object in the method area",
+      "count, the reference gru and the object all together on the stack",
+      "count on the heap; the reference gru and the object on the stack"
+    ],
+    "feedback": "Local variables live in their method's frame on the stack, and gru is a local variable: it holds a reference. The BankAccount object that the reference leads to was made with new, and every object lives on the heap. The method area holds class-level information, not objects and not local variables."
+  },
+  {
+    "question": "deposit() has a local variable, fee. What happens to fee when a call of deposit() finishes?",
+    "correct": [
+      "Its stack frame is removed at once, and fee goes with it"
+    ],
+    "incorrect": [
+      "It waits on the heap until the garbage collector removes it",
+      "It moves to the method area, ready for the next call to use",
+      "It keeps its value, and the next call of deposit() begins there"
+    ],
+    "feedback": "Each call of a method gets its own frame on the stack for its parameters and local variables, and the frame is removed the moment the call ends. Nothing has to clean it up, which is why the stack is fast. The garbage collector works on the heap, where objects are; and a later call gets a fresh frame with a fresh fee."
+  },
+  {
+    "question": "static int count(int n) {\n    return 1 + count(n - 1);\n}\n\nA call to count(5) ends with a StackOverflowError. Why?",
+    "correct": [
+      "Each call waits on another call, until the call stack has no room left"
+    ],
+    "incorrect": [
+      "The int result climbs past Integer.MAX_VALUE, which overflows the stack",
+      "The calls create too many objects, so the heap has no memory left",
+      "The method loops forever, and Java halts any loop that runs too long"
+    ],
+    "feedback": "count has no base case, so every call makes another call before it can return. Each unfinished call occupies a frame on the call stack, and the stack is finite. An int that overflows just wraps around silently, no objects are created here, and Java never stops a loop for running long. StackOverflowError is an Error rather than an Exception: fix the recursion, do not catch it."
+  },
+  {
+    "question": "class Bank has  static int totalAccounts  and  String branchLocation.  A program makes 50 Bank objects. How many of each variable are there?",
+    "correct": [
+      "One totalAccounts, shared by all; fifty branchLocations, one each"
+    ],
+    "incorrect": [
+      "Fifty totalAccounts and fifty branchLocations: one each per object",
+      "One totalAccounts and one branchLocation: all fifty share both",
+      "Fifty totalAccounts, one each; one branchLocation, shared by all"
+    ],
+    "feedback": "A static variable belongs to the class itself. It exists once, in the method area, however many objects are made, or even if none are. An instance variable belongs to each object: every Bank on the heap has its own branchLocation."
+  },
+  {
+    "type": "code_trace",
+    "question": "One of these counters is static. What does the program print?",
+    "code": "class Bank {\n    static int totalAccounts = 0;\n    int localAccounts = 0;\n\n    void open() {\n        totalAccounts++;\n        localAccounts++;\n    }\n}\n\nBank north = new Bank();\nBank south = new Bank();\nnorth.open();\nnorth.open();\nsouth.open();\nSystem.out.println(north.localAccounts + \" \" + south.localAccounts);\nSystem.out.println(Bank.totalAccounts);",
+    "language": "java",
+    "correct": [
+      "2 1\n3"
+    ],
+    "case_sensitive": true,
+    "feedback": "localAccounts is an instance variable, so north and south each have their own: north opened two accounts and south one. totalAccounts is static, so there is only one of it, shared; all three calls of open() added to the same counter."
+  },
+  {
+    "question": "Bank has  public static String getBankName()  and  public String getBranchInfo().  Which line compiles in a main method that has made no Bank object?",
+    "correct": [
+      "String s = Bank.getBankName();"
+    ],
+    "incorrect": [
+      "String s = Bank.getBranchInfo();",
+      "String s = this.getBankName();",
+      "String s = getBranchInfo();"
+    ],
+    "feedback": "A static method belongs to the class and is called through the class name, with no object needed. getBranchInfo() is an instance method: it reports on one particular branch, so it needs a Bank object in front of the dot. And main is itself static, so there is no this in it."
+  },
+  {
+    "question": "Which of these mistakes does the compiler catch, before the program ever runs?",
+    "correct": [
+      "A semicolon missing from the end of a statement",
+      "A String stored in a variable declared as double",
+      "deposit(\"fifty dollars\") where deposit takes a double",
+      "A private field read from outside its own class"
+    ],
+    "incorrect": [
+      "An int divided by a variable that turns out to hold 0",
+      "A method called on a variable that turns out to be null",
+      "A withdraw method that adds where it should subtract"
+    ],
+    "feedback": "javac checks what it can see in the text: the syntax, the types of values and arguments, and who may reach what. It cannot know what a variable will hold when the program runs, so a zero divisor and a null show up only then, as exceptions. And a method that does the wrong sum is a logic error: it compiles, it runs, and it is wrong."
+  },
+  {
+    "question": "A bank program accepts withdraw(-50) and the balance goes UP by 50. No error message appears anywhere. What kind of error is this?",
+    "correct": [
+      "A logic error: the program runs, but does the wrong thing"
+    ],
+    "incorrect": [
+      "A syntax error: the compiler ought to have rejected it",
+      "An exception: Java throws one when a result is wrong",
+      "A type error: a negative number is the wrong type here"
+    ],
+    "feedback": "Nothing is wrong with the grammar or the types, so it compiles; and no rule of Java is broken as it runs, so nothing is thrown. Java has no idea that a negative withdrawal makes no sense to a bank. Only the programmer can prevent it: by testing the amount, and throwing an exception when it is not acceptable."
+  },
+  {
     "question": "This code compiles without complaint. What happens when its second line runs?\nint[] a = new int[3];\na[5] = 1;",
     "correct": [
       "Java creates an exception object and throws it, ending the program"
@@ -36,11 +286,37 @@
         "definition": "ArithmeticException"
       },
       {
-        "term": "List.of(1, 2).add(3);",
-        "definition": "UnsupportedOperationException"
+        "term": "ArrayList<String> names = new ArrayList<>();\nnames.get(3);",
+        "definition": "IndexOutOfBoundsException"
       }
     ],
-    "feedback": "The name of an exception tells you what went wrong: a method called on null, text that is not a number, an index outside 0..length-1 (a[2] is one past the end of a 2-slot array), a cast to a type the object is not, integer division by zero, and a change attempted on the unchangeable list that List.of returns."
+    "feedback": "The name of an exception tells you what went wrong: a method called on null, text that is not a number, an array index outside 0..length-1 (a[2] is one past the end of a 2-slot array), a cast to a type the object is not, integer division by zero, and a list asked for a position it does not have."
+  },
+  {
+    "question": "Which of these statements about Java's family of exception classes are true?",
+    "correct": [
+      "Throwable is at the top, above both Error and Exception",
+      "RuntimeException is one of the subclasses of Exception",
+      "NullPointerException is a subclass of RuntimeException"
+    ],
+    "incorrect": [
+      "Error is the subclass of Exception for the serious cases",
+      "IOException is one of the subclasses of RuntimeException",
+      "Exception is a subclass of RuntimeException, not above it"
+    ],
+    "feedback": "Throwable is the root. Under it are two branches, Error and Exception, side by side. Under Exception, one subclass is special: RuntimeException, the parent of the unchecked exceptions such as NullPointerException. The other subclasses of Exception, IOException among them, are the checked ones."
+  },
+  {
+    "question": "A program uses up all its memory, and Java throws an OutOfMemoryError. How should ordinary banking code treat an Error like this one?",
+    "correct": [
+      "Leave it alone: an Error is a system problem beyond the program's control"
+    ],
+    "incorrect": [
+      "Catch it as it would any exception, and move on to the next transaction",
+      "Declare it with throws, because every Error is a checked exception",
+      "Put each use of new inside a try, since any object could be one too many"
+    ],
+    "feedback": "The Error branch is for serious trouble in the system itself, such as running out of memory. A program can rarely do anything sensible about it, so application code does not try to catch Errors. What it catches are Exceptions: problems it can foresee and respond to."
   },
   {
     "type": "dynamic_numeric",
@@ -65,50 +341,6 @@
     },
     "allow_expression": false,
     "feedback_template": "Read a stack trace from the top. The first \"at\" line is where the exception was thrown: inside share, on line {{expected}}. Each line below it is a caller that was still waiting: report called share from line {{m}}, and main called report from line {{b}}. Start debugging at the top line that is in your own code."
-  },
-  {
-    "type": "cloze",
-    "prompt": "Read the stack trace, then fill in the three method names.",
-    "question": "Exception in thread \"main\" java.lang.NullPointerException: Cannot invoke \"String.length()\" because \"name\" is null\n    at Guild.greet(Guild.java:21)\n    at Guild.enrol(Guild.java:14)\n    at Guild.main(Guild.java:6)\n\nThe exception was thrown inside the method {{1}}. That method had been called by {{2}}, which had itself been called by {{3}}.",
-    "blanks": [
-      {
-        "accept": [
-          "greet",
-          "greet()",
-          "Guild.greet"
-        ],
-        "hint": "method"
-      },
-      {
-        "accept": [
-          "enrol",
-          "enrol()",
-          "Guild.enrol"
-        ],
-        "hint": "method"
-      },
-      {
-        "accept": [
-          "main",
-          "main()",
-          "Guild.main"
-        ],
-        "hint": "method"
-      }
-    ],
-    "feedback": "The first line gives the exception type and its message (here Java even names the variable that was null). The \"at\" lines are the call stack, newest call first: greet is where it was thrown, enrol called greet, and main called enrol. So the bug shows itself at Guild.java line 21, but the null may have been handed down from line 14 or line 6."
-  },
-  {
-    "question": "static int count(int n) {\n    return 1 + count(n - 1);\n}\n\nA call to count(5) ends with a StackOverflowError. Why?",
-    "correct": [
-      "Each call waits on another call, until the call stack has no room left"
-    ],
-    "incorrect": [
-      "The int result climbs past Integer.MAX_VALUE, which overflows the stack",
-      "The calls create too many objects, so the heap has no memory left",
-      "The method loops forever, and Java halts any loop that runs too long"
-    ],
-    "feedback": "count has no base case, so every call makes another call before it can return. Each unfinished call occupies a frame on the call stack, and the stack is finite. An int that overflows just wraps around silently, no objects are created here, and Java never stops a loop for running long. StackOverflowError is an Error rather than an Exception: fix the recursion, do not catch it."
   },
   {
     "type": "npc_demo",
@@ -217,50 +449,15 @@
     "feedback_template": "The array has {{n}} slots, indexes 0 to {{last}}, and the loop asks for i from 0 up to one less than {{m}}. Every pass with a valid index prints one line. If i ever reaches {{n}}, the assignment a[i] = i throws before that pass can print; the catch then prints stop once and the loop is over for good. If i never reaches {{n}}, nothing is thrown and the catch is skipped. Total lines here: {{expected}}."
   },
   {
-    "type": "ordering",
-    "question": "A try block holds three statements, and the second one throws an exception that the catch block matches. The try statement also has a finally block. Arrange what happens, from first to last.",
-    "items": [
-      "The first statement in the try block runs",
-      "The second statement throws, so the third is skipped",
-      "The matching catch block runs",
-      "The finally block runs",
-      "The statement after the whole try statement runs"
-    ],
-    "feedback": "A throw abandons the rest of the try block, the matching catch handles the exception, and then the finally block runs. finally runs on every way out of a try, which is why cleanup goes there. Only after finally does execution continue below the try statement."
-  },
-  {
     "type": "code_trace",
-    "question": "What does this code print?",
-    "code": "try {\n    System.out.println(\"A\");\n    int x = 10 / 0;\n    System.out.println(\"B\");\n} catch (ArithmeticException e) {\n    System.out.println(\"C\");\n} finally {\n    System.out.println(\"F\");\n}\nSystem.out.println(\"end\");",
+    "question": "The method throws an exception with a message, and the caller catches it. What does this print?",
+    "code": "static void withdraw(int balance, int amount) {\n    if (amount > balance) {\n        throw new IllegalArgumentException(\"short\");\n    }\n    System.out.println(amount);\n}\n\ntry {\n    withdraw(100, 40);\n    withdraw(100, 500);\n    withdraw(100, 10);\n} catch (IllegalArgumentException e) {\n    System.out.println(e.getMessage());\n}",
     "language": "java",
     "correct": [
-      "A\nC\nF\nend"
+      "40\nshort"
     ],
     "case_sensitive": true,
-    "feedback": "A prints, then 10 / 0 throws an ArithmeticException, so B is skipped. The matching catch prints C, the finally block prints F, and the program continues with end. Remove the division and the output would be A, B, F, end: the catch is skipped when nothing is thrown, but finally still runs."
-  },
-  {
-    "question": "What appears on the screen when this code runs?\nString s = null;\ntry {\n    System.out.println(\"A\");\n    System.out.println(s.length());\n} catch (ArithmeticException e) {\n    System.out.println(\"C\");\n} finally {\n    System.out.println(\"F\");\n}\nSystem.out.println(\"end\");",
-    "correct": [
-      "A and F, then a NullPointerException stack trace"
-    ],
-    "incorrect": [
-      "A, C, F and end, because the catch block handles the failure",
-      "A, F and end, because the finally block clears the exception",
-      "A, then a NullPointerException stack trace straight away"
-    ],
-    "feedback": "A catch only handles the type it names (or a subclass of it), and a NullPointerException is not an ArithmeticException, so C never prints. The finally block still runs on the way out, printing F, but finally does not handle anything: the exception keeps going, end is never printed, and with no other handler the program stops with a stack trace."
-  },
-  {
-    "type": "code_trace",
-    "question": "This try block returns. What does the code print?",
-    "code": "static int f() {\n    try {\n        System.out.println(\"T\");\n        return 1;\n    } finally {\n        System.out.println(\"F\");\n    }\n}\n\nSystem.out.println(f());",
-    "language": "java",
-    "correct": [
-      "T\nF\n1"
-    ],
-    "case_sensitive": true,
-    "feedback": "return 1 works out the value to hand back, but before the method is allowed to leave, its finally block runs and prints F. Only then does the caller receive 1 and print it. Not even a return gets past a finally block, which is what makes it a safe home for cleanup code."
+    "feedback": "The first call passes its test and prints 40. In the second, amount is more than balance, so the method makes an exception object carrying a message and throws it: its own println never runs, and neither does the third call, which is abandoned with the rest of the try. The catch receives the object as e, and e.getMessage() hands back the text it was made with."
   },
   {
     "type": "code_trace",
@@ -272,6 +469,17 @@
     ],
     "case_sensitive": true,
     "feedback": "Casting a String to Integer throws a ClassCastException, so A is skipped. Java tries the catch blocks from the top and runs the FIRST one whose type fits. ClassCastException is not a NullPointerException, but it is a subclass of RuntimeException, so R prints. Only one catch ever runs: the Exception block would also fit, but Java has stopped looking."
+  },
+  {
+    "type": "code_trace",
+    "question": "One try, three catch blocks, four calls. What does the program print?",
+    "code": "static void process(String text, String account) {\n    try {\n        double amount = Double.parseDouble(text);\n        int digits = account.length();\n        if (amount > 100) {\n            throw new IllegalArgumentException(\"big\");\n        }\n        System.out.println(\"ok\");\n    } catch (NumberFormatException e) {\n        System.out.println(\"N\");\n    } catch (NullPointerException e) {\n        System.out.println(\"P\");\n    } catch (IllegalArgumentException e) {\n        System.out.println(e.getMessage());\n    }\n}\n\nprocess(\"50\", \"V001\");\nprocess(\"lots\", \"V001\");\nprocess(\"50\", null);\nprocess(\"999\", \"V001\");",
+    "language": "java",
+    "correct": [
+      "ok\nN\nP\nbig"
+    ],
+    "case_sensitive": true,
+    "feedback": "Each call can fail in a different place, and each failure has its own catch. \"lots\" is not a number, so parseDouble throws a NumberFormatException: N. A null account has no length() to call, a NullPointerException: P. And 999 is over the limit, so the code throws an IllegalArgumentException itself, and the last catch prints its message. Only one catch runs per call, the first whose type fits."
   },
   {
     "question": "What happens with this code?\ntry {\n    int n = Integer.parseInt(text);\n} catch (Exception e) {\n    System.out.println(\"general\");\n} catch (NumberFormatException e) {\n    System.out.println(\"specific\");\n}",
@@ -297,45 +505,66 @@
     "feedback": "Most specific first. A catch for a superclass also takes all of its subclasses, so any subclass block placed below it could never run, and Java rejects that as a compile error. Going from FileNotFoundException to IOException to Exception, each block gets first pick of its own cases before a broader one sees them."
   },
   {
-    "type": "cloze",
-    "prompt": "Both failures deserve the same response. Complete the single handler that deals with either exception.",
-    "question": "try {\n    int n = Integer.parseInt(text);\n    System.out.println(100 / n);\n} {{1}} (NumberFormatException {{2}} ArithmeticException e) {\n    System.out.println(\"bad input\");\n}",
-    "language": "java",
-    "blanks": [
-      {
-        "accept": [
-          "catch"
-        ],
-        "hint": "keyword",
-        "case_sensitive": true
-      },
-      {
-        "accept": [
-          "|"
-        ],
-        "hint": "symbol"
-      }
+    "type": "ordering",
+    "question": "A try block holds three statements, and the second one throws an exception that the catch block matches. The try statement also has a finally block. Arrange what happens, from first to last.",
+    "items": [
+      "The first statement in the try block runs",
+      "The second statement throws, so the third is skipped",
+      "The matching catch block runs",
+      "The finally block runs",
+      "The statement after the whole try statement runs"
     ],
-    "feedback": "This is a multi-catch: one catch block listing several exception types separated by a single vertical bar, with one variable name at the end. It replaces two catch blocks with identical bodies. The separator is | and not ||, a comma or the word \"or\"."
+    "feedback": "A throw abandons the rest of the try block, the matching catch handles the exception, and then the finally block runs. finally runs on every way out of a try, which is why cleanup goes there. Only after finally does execution continue below the try statement."
   },
   {
-    "question": "Each header below follows a try block that calls Integer.parseInt(text). (NumberFormatException is a subclass of IllegalArgumentException.) Which of the headers compile?",
+    "type": "code_trace",
+    "question": "What does this code print?",
+    "code": "try {\n    System.out.println(\"A\");\n    int x = 10 / 0;\n    System.out.println(\"B\");\n} catch (ArithmeticException e) {\n    System.out.println(\"C\");\n} finally {\n    System.out.println(\"F\");\n}\nSystem.out.println(\"end\");",
+    "language": "java",
     "correct": [
-      "catch (NumberFormatException | ArithmeticException e)",
-      "catch (NullPointerException | ArithmeticException | ClassCastException e)"
+      "A\nC\nF\nend"
+    ],
+    "case_sensitive": true,
+    "feedback": "A prints, then 10 / 0 throws an ArithmeticException, so B is skipped. The matching catch prints C, the finally block prints F, and the program continues with end. Remove the division and the output would be A, B, F, end: the catch is skipped when nothing is thrown, but finally still runs."
+  },
+  {
+    "type": "code_trace",
+    "question": "The finally block runs whichever way the try goes. What does this print?",
+    "code": "static String open(String code) {\n    String log = \"\";\n    try {\n        log += \"U\";\n        int n = Integer.parseInt(code);\n        log += \"I\";\n    } catch (NumberFormatException e) {\n        log += \"B\";\n    } finally {\n        log += \"L\";\n    }\n    return log;\n}\n\nSystem.out.println(open(\"12345\"));\nSystem.out.println(open(\"abc\"));",
+    "language": "java",
+    "correct": [
+      "UIL\nUBL"
+    ],
+    "case_sensitive": true,
+    "feedback": "U is for unlock, I for in, B for bad code, L for lock. With \"12345\" nothing is thrown: the try runs to its end, the catch is skipped, and finally adds L. With \"abc\" parseInt throws, so I is skipped and the catch adds B; then finally adds L just the same. Whatever happened in between, the vault ends up locked."
+  },
+  {
+    "question": "What appears on the screen when this code runs?\nString s = null;\ntry {\n    System.out.println(\"A\");\n    System.out.println(s.length());\n} catch (ArithmeticException e) {\n    System.out.println(\"C\");\n} finally {\n    System.out.println(\"F\");\n}\nSystem.out.println(\"end\");",
+    "correct": [
+      "A and F, then a NullPointerException stack trace"
     ],
     "incorrect": [
-      "catch (NumberFormatException | IllegalArgumentException e)",
-      "catch (NumberFormatException e | ArithmeticException e)",
-      "catch (NumberFormatException || ArithmeticException e)",
-      "catch (ArithmeticException, NullPointerException e)"
+      "A, C, F and end, because the catch block handles the failure",
+      "A, F and end, because the finally block clears the exception",
+      "A, then a NullPointerException stack trace straight away"
     ],
-    "feedback": "A multi-catch separates its types with a single |, may list more than two, and has exactly one variable, written once at the end. A comma or || is a syntax error, and so is repeating the variable. The subtle one: the listed types may not be related by subclassing. Catching IllegalArgumentException already covers NumberFormatException, so Java rejects the pair as redundant."
+    "feedback": "A catch only handles the type it names (or a subclass of it), and a NullPointerException is not an ArithmeticException, so C never prints. The finally block still runs on the way out, printing F, but finally does not handle anything: the exception keeps going, end is never printed, and with no other handler the program stops with a stack trace."
   },
   {
-    "question": "Files.readString can throw IOException, which is a checked exception. What does \"checked\" mean for code that calls Files.readString?",
+    "type": "code_trace",
+    "question": "This try block returns. What does the code print?",
+    "code": "static int f() {\n    try {\n        System.out.println(\"T\");\n        return 1;\n    } finally {\n        System.out.println(\"F\");\n    }\n}\n\nSystem.out.println(f());",
+    "language": "java",
     "correct": [
-      "It will not compile unless the call is caught or declared"
+      "T\nF\n1"
+    ],
+    "case_sensitive": true,
+    "feedback": "return 1 works out the value to hand back, but before the method is allowed to leave, its finally block runs and prints F. Only then does the caller receive 1 and print it. Not even a return gets past a finally block, which is what makes it a safe home for cleanup code."
+  },
+  {
+    "question": "new FileReader(\"accounts.txt\") can throw FileNotFoundException, which is a checked exception. What does \"checked\" mean for code that makes a FileReader?",
+    "correct": [
+      "It will not compile unless that line is caught or declared"
     ],
     "incorrect": [
       "It is detected at compile time, so it cannot happen at run time",
@@ -351,47 +580,47 @@
     "intro": "Nia unrolls a scroll with a four-line method on it. “This one never even gets to run,” she says. “The compiler stops it at the gate.”",
     "steps": [
       {
-        "say": "Files.readString reads a whole file into a String. Its own header says throws IOException: a warning that the file might be missing or unreadable.",
+        "say": "new FileReader(…) opens a file for reading. Its own first line says throws FileNotFoundException: a warning that the file might not be there.",
         "beats": [
           {
-            "say": "Files.readString reads a whole file into a String. Its own header says throws IOException: a warning that the file might be missing or unreadable."
+            "say": "new FileReader(…) opens a file for reading. Its own first line says throws FileNotFoundException: a warning that the file might not be there."
           },
           {
-            "code": "static String load() {\n    return Files.readString(Path.of(\"map.txt\"));\n}",
+            "code": "static void load() {\n    FileReader reader = new FileReader(\"map.txt\");\n    System.out.println(\"opened\");\n}",
             "language": "java"
           },
           {
-            "say": "The compiler refuses this method: unreported exception IOException; must be caught or declared to be thrown."
+            "say": "The compiler refuses this method: unreported exception FileNotFoundException; must be caught or declared to be thrown."
           },
           {
-            "say": "IOException is a checked exception. Checked means the compiler checks that you have a plan for it. There are exactly two plans."
+            "say": "FileNotFoundException is a checked exception. Checked means the compiler checks that you have a plan for it. There are exactly two plans."
           }
         ]
       },
       {
-        "say": "Plan one: catch it here. Plan two: declare it, by adding throws IOException to your own header, which hands the problem to your caller.",
+        "say": "Plan one: catch it here. Plan two: declare it, by adding throws FileNotFoundException to your own first line, which hands the problem to your caller.",
         "beats": [
           {
-            "say": "Plan one: catch it right here, and decide what load should give back when the file cannot be read."
+            "say": "Plan one: catch it right here, and decide what load should do when the file is missing."
           },
           {
-            "code": "static String load() {\n    try {\n        return Files.readString(Path.of(\"map.txt\"));\n    } catch (IOException e) {\n        return \"\";\n    }\n}",
+            "code": "static void load() {\n    try {\n        FileReader reader = new FileReader(\"map.txt\");\n        System.out.println(\"opened\");\n    } catch (FileNotFoundException e) {\n        System.out.println(\"no map\");\n    }\n}",
             "language": "java (plan one: catch)"
           },
           {
-            "say": "Plan two: declare it. Add throws IOException to your own header, and the exception is allowed to pass through."
+            "say": "Plan two: declare it. Add throws FileNotFoundException to your own first line, and the exception is allowed to pass through."
           },
           {
-            "code": "static String load() throws IOException {\n    return Files.readString(Path.of(\"map.txt\"));\n}",
+            "code": "static void load() throws FileNotFoundException {\n    FileReader reader = new FileReader(\"map.txt\");\n    System.out.println(\"opened\");\n}",
             "language": "java (plan two: declare)"
           }
         ],
         "check": {
-          "prompt": "With plan two, load() compiles. Who has to deal with IOException now?",
+          "prompt": "With plan two, load() compiles. Who has to deal with FileNotFoundException now?",
           "answer": "Whichever method calls load()",
           "wrong": [
             "Nobody: throws switches the check off",
-            "The Files class handles it itself"
+            "The FileReader class handles it itself"
           ],
           "why": "throws does not handle anything. It moves the same catch-or-declare duty up to the caller."
         }
@@ -428,140 +657,6 @@
       "Rust"
     ],
     "feedback": "What decides it is the family tree. Anything with RuntimeException among its ancestors is unchecked: Leak directly, Drip through Leak, and Rust through IllegalArgumentException, which itself extends RuntimeException. Jam extends Exception without passing through RuntimeException, so it is checked, and Clog inherits that. (Error and its subclasses, such as StackOverflowError, are unchecked as well.) NullPointerException also extends Exception, but so does IOException: it is RuntimeException in the ancestry that makes the difference."
-  },
-  {
-    "type": "cloze",
-    "prompt": "Fill in the three keywords so that setAge compiles and rejects a negative age.",
-    "question": "static void setAge(int age) {{1}} Exception {\n    if (age < 0) {\n        {{2}} {{3}} Exception(\"negative age\");\n    }\n    System.out.println(\"age set\");\n}",
-    "language": "java",
-    "blanks": [
-      {
-        "accept": [
-          "throws"
-        ],
-        "hint": "keyword",
-        "case_sensitive": true
-      },
-      {
-        "accept": [
-          "throw"
-        ],
-        "hint": "keyword",
-        "case_sensitive": true
-      },
-      {
-        "accept": [
-          "new"
-        ],
-        "hint": "keyword",
-        "case_sensitive": true
-      }
-    ],
-    "feedback": "throws (with an s) lives in a method header and declares what the method may let escape; it is required here because Exception is checked. throw (no s) is a statement that actually raises one, and what it raises is an object, so it has to be built with new. Everything after a throw that runs is skipped, which is why \"age set\" is not printed for a negative age."
-  },
-  {
-    "type": "matching",
-    "question": "Inside catch (Exception e), match each call to what it gives you.",
-    "pairs": [
-      {
-        "term": "e.getMessage()",
-        "definition": "Returns just the text that was passed to the constructor"
-      },
-      {
-        "term": "e.getCause()",
-        "definition": "Returns the earlier exception that this one was wrapped around"
-      },
-      {
-        "term": "e.printStackTrace()",
-        "definition": "Prints the type, the text and the chain of method calls"
-      },
-      {
-        "term": "e.toString()",
-        "definition": "Returns the full type name, then a colon, then the text"
-      }
-    ],
-    "feedback": "An exception is an ordinary object carrying information. For new IllegalStateException(\"low\", cause): getMessage() is \"low\", toString() is \"java.lang.IllegalStateException: low\", getCause() is the cause object, and printStackTrace() writes the full report you see when a program crashes."
-  },
-  {
-    "type": "cloze",
-    "prompt": "Complete this custom checked exception so that getMessage() returns the text handed to its constructor.",
-    "question": "class LowManaException {{1}} Exception {\n    LowManaException(String message) {\n        {{2}}(message);\n    }\n}",
-    "language": "java",
-    "blanks": [
-      {
-        "accept": [
-          "extends"
-        ],
-        "hint": "keyword",
-        "case_sensitive": true
-      },
-      {
-        "accept": [
-          "super"
-        ],
-        "hint": "keyword",
-        "case_sensitive": true
-      }
-    ],
-    "feedback": "A custom exception is just a class that extends an existing exception type: Exception makes it checked, RuntimeException would make it unchecked. Passing the message up with super(message) lets the inherited getMessage() return it. this(message) would call this same constructor again, which Java rejects."
-  },
-  {
-    "type": "code_trace",
-    "question": "A custom exception in use. What does the code print?",
-    "code": "class LowMana extends Exception {\n    LowMana(String m) { super(m); }\n}\n\nstatic void cast(int mana) throws LowMana {\n    if (mana < 5) {\n        throw new LowMana(\"need 5\");\n    }\n    System.out.println(\"zap\");\n}\n\ntry {\n    cast(9);\n    cast(2);\n    cast(7);\n} catch (LowMana e) {\n    System.out.println(e.getMessage());\n}",
-    "language": "java",
-    "correct": [
-      "zap\nneed 5"
-    ],
-    "case_sensitive": true,
-    "feedback": "cast(9) passes the test and prints zap. cast(2) throws, so its own println is skipped AND the rest of the try block in the caller is abandoned: cast(7) never happens. The catch prints the message that the constructor passed up with super(m). Because LowMana extends Exception it is checked, which is why cast must say throws LowMana."
-  },
-  {
-    "type": "code_line",
-    "question": "A catch block has logged a problem it cannot actually fix. Its parameter is named e. Write the statement that sends that same exception on to the caller.",
-    "language": "java",
-    "correct": [
-      "throw e;"
-    ],
-    "case_sensitive": true,
-    "feedback": "throw takes any exception object, and e already is one, so no new is needed: throw e; rethrows the very same exception, original stack trace included. throws e would be wrong twice over, since throws belongs in a header and names a type rather than a variable."
-  },
-  {
-    "question": "try (Scanner in = new Scanner(System.in)) {\n    System.out.println(in.nextLine());\n}\n\nThis is a try-with-resources statement. Which statements about it are true?",
-    "correct": [
-      "in.close() is called for you even when the body throws",
-      "The class of the resource must implement AutoCloseable",
-      "It is legal as shown, with no catch and no finally block"
-    ],
-    "incorrect": [
-      "An exception thrown in the body is caught and discarded for you",
-      "The variable in can still be used below the closing brace",
-      "Any object can go in the parentheses, as Object declares close()"
-    ],
-    "feedback": "try-with-resources closes the resource automatically at the end of the block on every way out, which replaces the old habit of calling close() in a finally block. That is its whole job: it does not catch anything, so an exception still propagates after the close. Only AutoCloseable types are allowed (Object has no close method), the variable is scoped to the statement, and unlike a plain try it needs neither catch nor finally."
-  },
-  {
-    "type": "ordering",
-    "question": "Portal implements AutoCloseable, and p.step() throws an IllegalStateException. Arrange the events in the order they happen, first to last.\n\ntry (Portal p = new Portal()) {\n    p.step();\n    System.out.println(\"through\");\n} catch (IllegalStateException e) {\n    System.out.println(\"stuck\");\n}\nSystem.out.println(\"home\");",
-    "items": [
-      "new Portal() creates the resource",
-      "p.step() throws, so \"through\" is skipped",
-      "p.close() is called automatically",
-      "The catch block prints \"stuck\"",
-      "The last line prints \"home\""
-    ],
-    "feedback": "The resource is closed as the try block is left, and that happens BEFORE any catch block runs. By the time the catch prints \"stuck\", the portal is already shut. Then the exception is handled and the program carries on to \"home\"."
-  },
-  {
-    "type": "code_trace",
-    "question": "Two resources are opened in one try-with-resources. What does the code print?",
-    "code": "record Res(String name) implements AutoCloseable {\n    @Override\n    public void close() {\n        System.out.println(\"x\" + name);\n    }\n}\n\ntry (Res a = new Res(\"1\"); Res b = new Res(\"2\")) {\n    System.out.println(\"B\");\n    throw new IllegalStateException();\n} catch (IllegalStateException e) {\n    System.out.println(\"C\");\n}",
-    "language": "java",
-    "correct": [
-      "B\nx2\nx1\nC"
-    ],
-    "case_sensitive": true,
-    "feedback": "The body prints B and then throws. On the way out, Java closes the resources in the REVERSE of the order they were opened, b first (x2) and then a (x1), because a later resource may depend on an earlier one. Only after both are closed does the catch block run and print C."
   },
   {
     "type": "npc_demo",
@@ -614,15 +709,92 @@
     "feedback": "inner prints 1, then a[3] throws an ArrayIndexOutOfBoundsException. inner has no catch, so it is abandoned (no 2) and the exception propagates to outer, which has no catch either (no 3). Back in the try block, the rest is skipped (no 4). ArrayIndexOutOfBoundsException is a subclass of RuntimeException, so the catch fits and prints 5, and then the program continues with 6."
   },
   {
+    "question": "public void processTransfer(String from, String to, double amount)\n        throws InsufficientFundsException {\n\nWhat does the second line tell anyone who calls this method?",
+    "correct": [
+      "The method may let an InsufficientFundsException out to its caller"
+    ],
+    "incorrect": [
+      "The method throws an InsufficientFundsException each time it is run",
+      "The method catches any InsufficientFundsException thrown inside it",
+      "The method is where the InsufficientFundsException class is declared"
+    ],
+    "feedback": "A throws clause is a warning written into the first line of a method: this exception may come out of here. It does not throw anything (that is the statement throw, with no s), it does not catch anything, and it does not create the class. It tells callers what they have to be ready for."
+  },
+  {
+    "question": "processTransfer says  throws InsufficientFundsException,  which is a checked exception.\n\nvoid pay(String from, String to) {\n    processTransfer(from, to, 50.0);\n}\n\nWhat does the compiler say about pay?",
+    "correct": [
+      "Error: pay has to catch the exception, or declare it with throws"
+    ],
+    "incorrect": [
+      "Nothing: pay throws nothing itself, so it has no duty to do anything",
+      "A warning only: pay compiles, and may crash later when it is run",
+      "Error: a method that throws may be called only from inside main"
+    ],
+    "feedback": "A checked exception puts a duty on every caller. pay calls a method that may throw one, so pay has two choices: wrap the call in a try with a catch for it, or add throws InsufficientFundsException to its own first line and pass the duty to whoever calls pay. Doing neither is a compile error, not a warning."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the three keywords so that setAge compiles and rejects a negative age.",
+    "question": "static void setAge(int age) {{1}} Exception {\n    if (age < 0) {\n        {{2}} {{3}} Exception(\"negative age\");\n    }\n    System.out.println(\"age set\");\n}",
+    "language": "java",
+    "blanks": [
+      {
+        "accept": [
+          "throws"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "throw"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "new"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "throws (with an s) lives in a method header and declares what the method may let escape; it is required here because Exception is checked. throw (no s) is a statement that actually raises one, and what it raises is an object, so it has to be built with new. Everything after a throw that runs is skipped, which is why \"age set\" is not printed for a negative age."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Complete this custom checked exception so that getMessage() returns the text handed to its constructor.",
+    "question": "class LowManaException {{1}} Exception {\n    LowManaException(String message) {\n        {{2}}(message);\n    }\n}",
+    "language": "java",
+    "blanks": [
+      {
+        "accept": [
+          "extends"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "super"
+        ],
+        "hint": "keyword",
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "A custom exception is just a class that extends an existing exception type: Exception makes it checked, RuntimeException would make it unchecked. Passing the message up with super(message) lets the inherited getMessage() return it. this(message) would call this same constructor again, which Java rejects."
+  },
+  {
     "type": "code_trace",
-    "question": "One exception is caught and a different one is thrown in its place. What does the code print?",
-    "code": "try {\n    try {\n        Integer.parseInt(\"x\");\n    } catch (NumberFormatException e) {\n        throw new IllegalStateException(\"bad\", e);\n    }\n} catch (IllegalStateException e) {\n    System.out.println(e.getMessage());\n    System.out.println(e.getCause() instanceof NumberFormatException);\n}",
+    "question": "A custom exception in use. What does the code print?",
+    "code": "class LowMana extends Exception {\n    LowMana(String m) { super(m); }\n}\n\nstatic void cast(int mana) throws LowMana {\n    if (mana < 5) {\n        throw new LowMana(\"need 5\");\n    }\n    System.out.println(\"zap\");\n}\n\ntry {\n    cast(9);\n    cast(2);\n    cast(7);\n} catch (LowMana e) {\n    System.out.println(e.getMessage());\n}",
     "language": "java",
     "correct": [
-      "bad\ntrue"
+      "zap\nneed 5"
     ],
     "case_sensitive": true,
-    "feedback": "The inner catch turns a low-level NumberFormatException into an IllegalStateException that means more to the caller, and passes the original along as the second constructor argument, the cause. The outer catch receives the new exception, whose message is bad, and getCause() still holds the original. Wrapping like this is called exception chaining: nothing about the root problem is lost."
+    "feedback": "cast(9) passes the test and prints zap. cast(2) throws, so its own println is skipped AND the rest of the try block in the caller is abandoned: cast(7) never happens. The catch prints the message that the constructor passed up with super(m). Because LowMana extends Exception it is checked, which is why cast must say throws LowMana."
   },
   {
     "question": "Which of these is the best case FOR writing a try/catch?",
@@ -650,14 +822,403 @@
     "feedback": "Catch the most specific type, and only where you can actually respond; otherwise let it travel to a caller who can. An empty catch throws away the one clue you had. A blanket catch (Exception e) around everything treats a typo-level bug and a missing file the same way and usually just hides both. Bugs such as a null you forgot to set or a loop that overruns should be fixed, not caught: a loop should stop because of its condition."
   },
   {
+    "question": "A user types letters where an account number belongs, and the program catches the NumberFormatException. Which message is the most use to that user?",
+    "correct": [
+      "Invalid account number: please use digits only"
+    ],
+    "incorrect": [
+      "An error has occurred. Please try again later",
+      "Exception in thread main: NumberFormatException",
+      "Operation failed with code 17: contact the bank"
+    ],
+    "feedback": "A good message says what was wrong and what to do about it, in the user's terms. \"An error has occurred\" says neither. The name of a Java class means nothing to a customer, and a code number sends them off to ask somebody else."
+  },
+  {
+    "question": "A low-level method, validateAccount, finds an account number that does not exist. The screen the user sees is drawn by code three calls above it. Which design follows the lecture's advice?",
+    "correct": [
+      "validateAccount throws; the code that draws the screen catches, and shows a message"
+    ],
+    "incorrect": [
+      "validateAccount catches the problem itself and prints nothing, so as not to disturb",
+      "Each method in between catches the exception, prints it, and throws a new one upward",
+      "validateAccount returns as normal, and leaves the screen code to notice it somehow"
+    ],
+    "feedback": "Handle an exception where something useful can be done about it. The low-level method is the one that can detect the problem; the user-interface code is the one that can tell the user. Propagation carries the exception from one to the other with no code in between. Swallowing it hides the failure, and catching it at every level only adds noise."
+  },
+  {
     "type": "code_trace",
     "question": "Put it all together. What does the code print?",
-    "code": "static void step(int n) {\n    try {\n        System.out.println(10 / n);\n    } finally {\n        System.out.println(\"F\");\n    }\n}\n\ntry {\n    step(5);\n    step(0);\n    step(1);\n} catch (ArithmeticException | NullPointerException e) {\n    System.out.println(\"C\");\n} finally {\n    System.out.println(\"G\");\n}",
+    "code": "static void step(int n) {\n    try {\n        System.out.println(10 / n);\n    } finally {\n        System.out.println(\"F\");\n    }\n}\n\ntry {\n    step(5);\n    step(0);\n    step(1);\n} catch (ArithmeticException e) {\n    System.out.println(\"C\");\n} finally {\n    System.out.println(\"G\");\n}",
     "language": "java",
     "correct": [
       "2\nF\nF\nC\nG"
     ],
     "case_sensitive": true,
-    "feedback": "step(5) prints 2 and its finally prints F. In step(0) the division throws before anything is printed; step has a finally but no catch, so F prints on the way out and the exception propagates to the caller. There the rest of the try is abandoned, so step(1) never runs. The multi-catch fits ArithmeticException and prints C, and the outer finally prints G last."
+    "feedback": "step(5) prints 2 and its finally prints F. In step(0) the division throws before anything is printed; step has a finally but no catch, so F prints on the way out and the exception propagates to the caller. There the rest of the try is abandoned, so step(1) never runs. The catch fits the ArithmeticException and prints C, and the outer finally prints G last."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: A test that wants an exception",
+    "npc": "nia",
+    "intro": "Nia taps a row of the results table with her chalk. Where the others show a value, this one shows two words. “Sometimes the right answer is to refuse,” she says.",
+    "steps": [
+      {
+        "say": "In the problems that follow, some rows of the table expect a value back. Others expect your code to throw.",
+        "beats": [
+          {
+            "say": "In the problems that follow, most rows of the table expect a value back, as before. But a row can also expect your code to throw."
+          },
+          {
+            "code": "withdraw(100.0, 30.0)  →  70.0\nwithdraw(20.0, 30.0)   →  throws IllegalArgumentException",
+            "language": "two rows of a table"
+          },
+          {
+            "say": "For the second row, returning any value at all is wrong. The row passes only if the call ends with that exception: throw new IllegalArgumentException(\"Insufficient funds\");"
+          }
+        ],
+        "check": {
+          "prompt": "A row says  throws IllegalArgumentException.  Your method returns -1 for that call. Does the row pass?",
+          "answer": "No: it has to throw, not return",
+          "wrong": [
+            "Yes: -1 signals an error",
+            "Yes: any result is accepted"
+          ],
+          "why": "An exception is not a return value. The row asks for the call to be ended by a throw, and nothing else will do."
+        }
+      },
+      {
+        "say": "The practice Java here follows the real compiler's rules. A checked exception that you neither catch nor declare will not compile, and neither will a catch that can never run.",
+        "beats": [
+          {
+            "say": "The practice Java here follows the real compiler's rules for exceptions. A checked exception that you neither catch nor declare will not compile, and it will say so."
+          },
+          {
+            "say": "Two things it does not do: e.printStackTrace(), and a finally block that returns or throws. Print e.getMessage() instead, and keep finally for clean-up."
+          }
+        ]
+      }
+    ],
+    "outro": "“Short ones, all of them. A try, a catch or two, sometimes a finally. Go.”"
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write parsePrice. It turns text into a price with Double.parseDouble. If the text is not a number, it catches the NumberFormatException and returns -1.0 instead.",
+    "signature": "public double parsePrice(String input)",
+    "tests": [
+      {
+        "args": [
+          "4.5"
+        ],
+        "expect": 4.5
+      },
+      {
+        "args": [
+          "12"
+        ],
+        "expect": 12.0
+      },
+      {
+        "args": [
+          "abc"
+        ],
+        "expect": -1.0
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": -1.0
+      },
+      {
+        "args": [
+          "9.99 gold"
+        ],
+        "expect": -1.0
+      }
+    ],
+    "solution": "try {\n    return Double.parseDouble(input);\n} catch (NumberFormatException e) {\n    return -1.0;\n}",
+    "hint": "One try, one catch. The try holds the return that might fail; the catch holds the return for when it does.",
+    "feedback": "Double.parseDouble either hands back a number or throws. When it throws, the return in the try never completes, and control jumps to the catch, which returns the fallback value. Every path through the method ends in a return, so Java is satisfied."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write getPotionName. It returns potions[index]. If the index is outside the array, it catches the ArrayIndexOutOfBoundsException and returns \"Unknown\".",
+    "signature": "public String getPotionName(String[] potions, int index)",
+    "tests": [
+      {
+        "args": [
+          [
+            "Heal",
+            "Mana",
+            "Speed"
+          ],
+          1
+        ],
+        "expect": "Mana"
+      },
+      {
+        "args": [
+          [
+            "Heal",
+            "Mana",
+            "Speed"
+          ],
+          3
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          [
+            "Heal",
+            "Mana",
+            "Speed"
+          ],
+          -1
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          [],
+          0
+        ],
+        "expect": "Unknown"
+      },
+      {
+        "args": [
+          [
+            "Heal"
+          ],
+          0
+        ],
+        "expect": "Heal"
+      }
+    ],
+    "solution": "try {\n    return potions[index];\n} catch (ArrayIndexOutOfBoundsException e) {\n    return \"Unknown\";\n}",
+    "hint": "Let the array decide whether the index is good: read potions[index] inside the try.",
+    "feedback": "Reading potions[index] with a bad index throws an ArrayIndexOutOfBoundsException, whether the index is too large or negative, and for an empty array every index is bad. The catch names exactly that exception, and supplies the answer for that case."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write withdraw. If amount is more than balance, it throws  new IllegalArgumentException(\"Insufficient funds\").  Otherwise it returns what is left.",
+    "signature": "public double withdraw(double balance, double amount)",
+    "tests": [
+      {
+        "args": [
+          100.0,
+          30.0
+        ],
+        "expect": 70.0
+      },
+      {
+        "args": [
+          50.0,
+          50.0
+        ],
+        "expect": 0.0
+      },
+      {
+        "args": [
+          20.0,
+          30.0
+        ],
+        "throws": "IllegalArgumentException"
+      },
+      {
+        "args": [
+          0.0,
+          0.5
+        ],
+        "throws": "IllegalArgumentException"
+      },
+      {
+        "args": [
+          1000.5,
+          0.5
+        ],
+        "expect": 1000.0
+      }
+    ],
+    "solution": "if (amount > balance) {\n    throw new IllegalArgumentException(\"Insufficient funds\");\n}\nreturn balance - amount;",
+    "hint": "throw is a statement, and what it throws is an object: throw new IllegalArgumentException(\"…\");",
+    "feedback": "A method that cannot do what it was asked says so by throwing. throw needs an exception object, made with new and given a message. Nothing after the throw runs, so the return is reached only when the amount was acceptable. IllegalArgumentException is unchecked, which is why the first line needs no throws."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write processWithdrawal, with two catch blocks.\nParse amountText with Double.parseDouble. If the amount is 0 or less, throw  new IllegalArgumentException(\"Amount must be positive\").\nReturn  Dispensing $20.0  if all is well;  Error: not a valid number  if it would not parse;  and  Error:  followed by the exception's message  for the other failure.",
+    "signature": "public String processWithdrawal(String amountText)",
+    "tests": [
+      {
+        "args": [
+          "20"
+        ],
+        "expect": "Dispensing $20.0"
+      },
+      {
+        "args": [
+          "twenty"
+        ],
+        "expect": "Error: not a valid number"
+      },
+      {
+        "args": [
+          "-5"
+        ],
+        "expect": "Error: Amount must be positive"
+      },
+      {
+        "args": [
+          "0"
+        ],
+        "expect": "Error: Amount must be positive"
+      },
+      {
+        "args": [
+          "99.5"
+        ],
+        "expect": "Dispensing $99.5"
+      }
+    ],
+    "solution": "try {\n    double amount = Double.parseDouble(amountText);\n    if (amount <= 0) {\n        throw new IllegalArgumentException(\"Amount must be positive\");\n    }\n    return \"Dispensing $\" + amount;\n} catch (NumberFormatException e) {\n    return \"Error: not a valid number\";\n} catch (IllegalArgumentException e) {\n    return \"Error: \" + e.getMessage();\n}",
+    "hint": "The catch for NumberFormatException has to come first: every NumberFormatException is also an IllegalArgumentException.",
+    "feedback": "Two things can go wrong, and each gets its own catch. The order is not free here: NumberFormatException is a subclass of IllegalArgumentException, so a catch for IllegalArgumentException placed first would take both, and Java refuses to compile a catch that can never run. The second catch reads the message from the exception the try itself threw."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Finish access, using finally. It unlocks the vault (locked = false), then returns \"Granted\" if readCode(code) is 12345 and \"Denied\" if it is another number.\nDo not catch anything: a code that is not a number should still throw. But however access ends, the vault must be locked again.",
+    "scaffold": "public class Vault {\n    private boolean locked = true;\n\n    public boolean isLocked() {\n        return locked;\n    }\n\n    // Reads the code. It refuses unless the vault has been unlocked first.\n    private int readCode(String code) {\n        if (locked) {\n            throw new IllegalStateException(\"Vault is locked\");\n        }\n        return Integer.parseInt(code);\n    }\n",
+    "signature": "public String access(String code)",
+    "tests": [
+      {
+        "run": "Vault v = new Vault();",
+        "check": "v.access(\"12345\")",
+        "expect": "Granted"
+      },
+      {
+        "run": "Vault v = new Vault();",
+        "check": "v.access(\"54321\")",
+        "expect": "Denied"
+      },
+      {
+        "run": "Vault v = new Vault();\nv.access(\"12345\");",
+        "check": "v.isLocked()",
+        "expect": true
+      },
+      {
+        "run": "Vault v = new Vault();\nv.access(\"abc\");",
+        "throws": "NumberFormatException"
+      },
+      {
+        "run": "Vault v = new Vault();\ntry {\n    v.access(\"abc\");\n} catch (NumberFormatException e) {\n}",
+        "check": "v.isLocked()",
+        "expect": true
+      }
+    ],
+    "solution": "try {\n    locked = false;\n    if (readCode(code) == 12345) {\n        return \"Granted\";\n    }\n    return \"Denied\";\n} finally {\n    locked = true;\n}",
+    "hint": "A try may have a finally and no catch at all. Put  locked = true;  in the finally, and nowhere else.",
+    "feedback": "There are three ways out of this try: two returns, and the exception that readCode throws for a code that is not a number. A finally block runs on every one of them, so one line there locks the vault whatever happened. Locking it before each return would miss the third way out, and the last test checks exactly that."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the exception class LoanException. It needs one thing: a public constructor that takes a String message and hands it up to Exception.",
+    "signature": "class LoanException extends Exception",
+    "tests": [
+      {
+        "run": "LoanException e = new LoanException(\"Amount too small\");",
+        "check": "e.getMessage()",
+        "expect": "Amount too small"
+      },
+      {
+        "run": "Exception e = new LoanException(\"Score must be 1-10\");",
+        "check": "e.getMessage()",
+        "expect": "Score must be 1-10"
+      },
+      {
+        "run": "throw new LoanException(\"no\");",
+        "throws": "LoanException"
+      },
+      {
+        "run": "String s = \"\" + new LoanException(\"denied\");",
+        "check": "s",
+        "expect": "LoanException: denied"
+      }
+    ],
+    "solution": "public LoanException(String message) {\n    super(message);\n}",
+    "hint": "The constructor has one line: super(message);",
+    "feedback": "An exception class of your own is an ordinary subclass. Everything an exception does, it inherits: all this class adds is a constructor, and all the constructor does is pass the message up with super(message), so that the inherited getMessage() can hand it back. Because it extends Exception and not RuntimeException, it is a checked exception."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Finish validateLoan. If amount is under 1000 it throws  new LoanException(\"Amount too small\").  If score is not from 1 to 10 it throws  new LoanException(\"Score must be 1-10\").  Otherwise it returns  Gru approved for $5000",
+    "scaffold": "class LoanException extends Exception {\n    public LoanException(String message) {\n        super(message);\n    }\n}\n\npublic class LoanOffice {",
+    "signature": "public String validateLoan(String name, int amount, int score) throws LoanException",
+    "tests": [
+      {
+        "run": "LoanOffice office = new LoanOffice();",
+        "check": "office.validateLoan(\"Gru\", 5000, 8)",
+        "expect": "Gru approved for $5000"
+      },
+      {
+        "run": "LoanOffice office = new LoanOffice();",
+        "check": "office.validateLoan(\"Vector\", 1000, 10)",
+        "expect": "Vector approved for $1000"
+      },
+      {
+        "run": "LoanOffice office = new LoanOffice();\noffice.validateLoan(\"Gru\", 999, 8);",
+        "throws": "LoanException"
+      },
+      {
+        "run": "LoanOffice office = new LoanOffice();\noffice.validateLoan(\"Gru\", 5000, 11);",
+        "throws": "LoanException"
+      },
+      {
+        "run": "String m = \"\";\ntry {\n    new LoanOffice().validateLoan(\"El Macho\", 2000, 0);\n} catch (LoanException e) {\n    m = e.getMessage();\n}",
+        "check": "m",
+        "expect": "Score must be 1-10"
+      }
+    ],
+    "solution": "if (amount < 1000) {\n    throw new LoanException(\"Amount too small\");\n}\nif (score < 1 || score > 10) {\n    throw new LoanException(\"Score must be 1-10\");\n}\nreturn name + \" approved for $\" + amount;",
+    "hint": "Two ifs, each with a throw inside. The return comes after both, with no else needed.",
+    "feedback": "LoanException is checked, so a method that throws one and does not catch it has to say so: that is the throws LoanException on the first line, which is given. Each throw ends the method on the spot, so the return is reached only by a loan that passed both tests."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Finish processApplication, with try, catch and finally. It calls validateLoan(name, amount, score), which is given above.\nIf that returns, the result is what it returned. If it throws, the result is  Denied:  followed by the exception's message. Either way,  (done)  is added on the end:\nGru approved for $5000 (done)\nDenied: Amount too small (done)",
+    "scaffold": "class LoanException extends Exception {\n    public LoanException(String message) {\n        super(message);\n    }\n}\n\npublic class LoanOffice {\n    public String validateLoan(String name, int amount, int score) throws LoanException {\n        if (amount < 1000) {\n            throw new LoanException(\"Amount too small\");\n        }\n        if (score < 1 || score > 10) {\n            throw new LoanException(\"Score must be 1-10\");\n        }\n        return name + \" approved for $\" + amount;\n    }\n",
+    "signature": "public String processApplication(String name, int amount, int score)",
+    "tests": [
+      {
+        "run": "LoanOffice office = new LoanOffice();",
+        "check": "office.processApplication(\"Gru\", 5000, 8)",
+        "expect": "Gru approved for $5000 (done)"
+      },
+      {
+        "run": "LoanOffice office = new LoanOffice();",
+        "check": "office.processApplication(\"Gru\", 500, 8)",
+        "expect": "Denied: Amount too small (done)"
+      },
+      {
+        "run": "LoanOffice office = new LoanOffice();",
+        "check": "office.processApplication(\"Vector\", 9000, 0)",
+        "expect": "Denied: Score must be 1-10 (done)"
+      },
+      {
+        "run": "LoanOffice office = new LoanOffice();",
+        "check": "office.processApplication(\"Bob\", 1000, 1)",
+        "expect": "Bob approved for $1000 (done)"
+      }
+    ],
+    "solution": "String result = \"\";\ntry {\n    result = validateLoan(name, amount, score);\n} catch (LoanException e) {\n    result = \"Denied: \" + e.getMessage();\n} finally {\n    result += \" (done)\";\n}\nreturn result;",
+    "hint": "Declare  String result = \"\";  before the try, so that the try, the catch and the finally can all use it.",
+    "feedback": "validateLoan detects the problem and throws; this method, one level up, decides what to say about it. Because it catches the LoanException, its own first line needs no throws. The variable is declared before the try because a variable declared inside a block is gone when the block ends, and the finally adds its part on both paths."
   }
 ]

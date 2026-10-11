@@ -221,7 +221,7 @@ describe('a Java problem: the wording of the errors beginners make', () => {
   });
   it('something this box does not run is declined by name', () => {
     assert.match(message('TreeMap<String, Integer> xs = new TreeMap<>();\nreturn 0;'), /does not have TreeMap<…>.*ArrayList, LinkedList, HashSet and HashMap/s);
-    assert.match(message('try { return a / b; } catch (Exception e) { return 0; }'), /try \/ catch is not available here yet/);
+    assert.match(message('try (Scanner in = new Scanner("5")) { return 1; }'), /does not have try-with-resources/);
     assert.match(message('return (int) Math.random();'), /Math\.random\(\).*same answer every time/);
   });
 });
@@ -467,6 +467,105 @@ describe('a Java class problem: a class built on another', () => {
     assert.match(why(good.replace('public double area()', 'public double area(int n)')), /Square has to write area\(\) itself: Shape declares it abstract/);
     assert.match(why(good.replace('public String name()', 'String name()')), /public in Named.*Make it public/s);
     assert.match(why(`${good}\n\nstatic Shape blank() {\n    return new Shape();\n}`), /Shape is abstract, so no object can be made from it directly.*new Square/s);
+  });
+});
+
+describe('a Java problem: exceptions, caught and thrown', () => {
+  const SAFE = withTests('public int safeDivide(int a, int b)', [{ args: [6, 3], expect: 2 }, { args: [1, 0], expect: -1 }]);
+  const AGE = withTests('public int checkAge(int age)', [
+    { args: [30], expect: 30 },
+    { args: [-1], throws: 'IllegalArgumentException' },
+    { args: [200], throws: 'IllegalArgumentException' },
+  ]);
+  const LOAN = {
+    type: 'code_write',
+    language: 'java',
+    signature: 'public void withdraw(int amount) throws LoanException',
+    scaffold: 'class LoanException extends Exception {\n    public LoanException(String message) {\n        super(message);\n    }\n}\n\npublic class Account {\n    private int balance = 100;\n\n    public int getBalance() {\n        return balance;\n    }\n',
+    tests: [
+      { run: 'Account a = new Account();\na.withdraw(30);', check: 'a.getBalance()', expect: 70 },
+      { run: 'Account a = new Account();\na.withdraw(500);', throws: 'LoanException' },
+      { run: 'Account a = new Account();\nString m = "";\ntry { a.withdraw(500); } catch (LoanException e) { m = e.getMessage(); }', check: 'm', expect: 'Not enough: 100' },
+    ],
+    solution: 'if (amount > balance) {\n    throw new LoanException("Not enough: " + balance);\n}\nbalance -= amount;',
+  };
+
+  it('a caught exception is handled, and the finally block runs either way', () => {
+    const outcome = run('try {\n    return a / b;\n} catch (ArithmeticException e) {\n    System.out.println("caught " + e.getMessage());\n    return -1;\n} finally {\n    System.out.println("done");\n}', SAFE);
+    assert.deepEqual(outcome.results.map(r => r.passed), [true, true]);
+    assert.deepEqual(outcome.results[0].output, ['done']);
+    assert.deepEqual(outcome.results[1].output, ['caught / by zero', 'done']);
+  });
+
+  it('a test can expect an exception, and says so in the table', () => {
+    const outcome = run('if (age < 0 || age > 150) {\n    throw new IllegalArgumentException("Invalid age: " + age);\n}\nreturn age;', AGE);
+    assert.equal(outcome.passed, 3);
+    assert.deepEqual(outcome.results[1], { call: 'checkAge(-1)', expectedRepr: 'throws IllegalArgumentException', actualRepr: 'throws IllegalArgumentException', passed: true, output: [], error: null, threw: 'IllegalArgumentException' });
+  });
+
+  it('an exception that is a kind of the expected one counts, as a catch would take it', () => {
+    const outcome = run('if (age < 0 || age > 150) {\n    throw new NumberFormatException("no");\n}\nreturn age;', AGE);
+    assert.equal(outcome.passed, 3);
+    assert.equal(outcome.results[1].actualRepr, 'throws NumberFormatException');
+  });
+
+  it('where an exception was expected, returning a value fails and shows the value', () => {
+    const outcome = run('return age;', AGE);
+    assert.deepEqual(outcome.results.map(r => r.passed), [true, false, false]);
+    assert.equal(outcome.results[1].actualRepr, '-1');
+    assert.equal(outcome.results[1].error, null);
+  });
+
+  it('and so does a different exception, which is reported as the error it is', () => {
+    const outcome = run('if (age < 0 || age > 150) {\n    throw new IllegalStateException("odd");\n}\nreturn age;', AGE);
+    assert.equal(outcome.results[1].passed, false);
+    assert.equal(outcome.results[1].error.message, 'IllegalStateException: odd');
+    assert.equal(outcome.results[1].error.line, 2);
+  });
+
+  it('a run stopped for going on too long is not the exception a test asked for', () => {
+    const outcome = run('while (true) { age++; }', AGE, { limits: { steps: 5000 } });
+    assert.equal(outcome.results[1].passed, false);
+    assert.equal(outcome.results[1].error.kind, 'limit');
+  });
+
+  it('an exception class of the problem\'s own: thrown, expected by a test, and caught by another', () => {
+    const outcome = run(LOAN.solution, LOAN);
+    assert.equal(outcome.passed, 3, JSON.stringify(outcome.results));
+    assert.equal(outcome.results[1].call, 'Account a = new Account(); a.withdraw(500);');
+    assert.equal(outcome.results[1].expectedRepr, 'throws LoanException');
+    assert.equal(run('balance -= amount;', LOAN).results[1].actualRepr, 'no exception');
+    assert.equal(javaProblemHeader(LOAN).split('\n').pop(), '    public void withdraw(int amount) throws LoanException {');
+  });
+
+  it('a checked exception that is neither caught nor declared is explained', () => {
+    const q = { ...LOAN, signature: 'public void withdraw(int amount)' };
+    const { error } = run(LOAN.solution, q);
+    assert.match(error.message, /can throw a LoanException, which is a checked exception/);
+    assert.match(error.hint, /throws LoanException/);
+    assert.equal(error.line, 2);
+  });
+
+  it('the order of catches, and a catch that can never run', () => {
+    const body = 'try {\n    return a / b;\n} catch (Exception e) {\n    return -1;\n} catch (ArithmeticException e) {\n    return -2;\n}';
+    const { error } = run(body, SAFE);
+    assert.match(error.message, /can never run: every ArithmeticException is an Exception/);
+    assert.match(error.hint, /particular exception first/);
+    assert.equal(error.line, 5);
+  });
+
+  it('an uncaught exception of the student\'s own shows its name and message', () => {
+    const outcome = run('if (b == 0) {\n    throw new IllegalStateException("b was zero");\n}\nreturn a / b;', SAFE);
+    assert.equal(outcome.results[1].error.message, 'IllegalStateException: b was zero');
+    assert.match(outcome.results[1].error.hint, /Your own code threw this/);
+  });
+
+  it('what this box does not do with an exception is declined by name', () => {
+    const declined = body => { const o = run(body, SAFE); const e = o.error || o.results[1].error; return `${e.message} | ${e.hint}`; };
+    assert.match(declined('try {\n    return a / b;\n} catch (ArithmeticException e) {\n    e.printStackTrace();\n    return -1;\n}'), /does not have printStackTrace\(\).*e\.getMessage\(\)/s);
+    assert.match(declined('try {\n    return a / b;\n} finally {\n    return -1;\n}'), /does not run return inside finally/);
+    assert.match(declined('try {\n    return a / b;\n} catch (Throwable e) {\n    return -1;\n}'), /does not catch Throwable/);
+    assert.match(declined('String s = null;\ntry {\n    return s.length();\n} catch (NullPointerException e) {\n    System.out.println(e.getMessage());\n    return -1;\n}'), /Java writes the message of a NullPointerException itself/);
   });
 });
 

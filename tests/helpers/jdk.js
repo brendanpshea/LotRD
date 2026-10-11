@@ -112,10 +112,12 @@ export function caseForProblem(question) {
     // A class problem: the solution's classes, and each test's script as a method that returns what it checks.
     const { source } = assembleJavaClass({ scaffold: question.scaffold, signature: question.signature, body: question.solution });
     const types = javaScriptTypes(question);
-    const scripts = question.tests.map((t, i) => [t, i]).filter(([t]) => typeof t.check === 'string');
+    // A test that expects an exception has nothing to return: if the exception does not come, it says so.
+    const scripts = question.tests.map((t, i) => [t, i]).filter(([t]) => typeof t.check === 'string' || typeof t.throws === 'string');
     return {
       classes: source,
-      methods: scripts.map(([t, i]) => `${types[i].replace(/,/g, ', ')} $t${i}() {\n${t.run ?? ''}\nreturn ${t.check};\n}`).join('\n'),
+      methods: scripts.map(([t, i]) => (typeof t.throws === 'string' ? `String $t${i}() throws Throwable {\nif (true) {\n${t.run ?? ''}\n}\nreturn "no exception";\n}`
+        : `${types[i].replace(/,/g, ', ')} $t${i}() throws Throwable {\n${t.run ?? ''}\nreturn ${t.check};\n}`)).join('\n'),
       calls: scripts.map(([, i]) => `$t${i}()`),
     };
   }
@@ -138,9 +140,10 @@ export function runProblemOnJtiny(question) {
     const types = javaScriptTypes(question);
     let out = '';
     question.tests.forEach((t, i) => {
-      if (typeof t.check !== 'string') return;
+      if (typeof t.check !== 'string' && typeof t.throws !== 'string') return;
       const row = outcome.results[i];
       out += row.output.map(line => `${line}\n`).join('');
+      if (typeof t.throws === 'string') { out += row.threw ? `!${row.threw}\n` : row.error ? `!${row.error.message.split(':')[0]}\n` : '"no exception"\n'; return; }
       out += row.error ? `!${row.error.message.split(':')[0]}\n` : row.passed ? `${show(javaFromJson(t.expect, types[i]), types[i])}\n` : `not the expected value: ${row.actualRepr}\n`;
     });
     return { compiled: true, compileError: null, out, refused: null };
@@ -176,7 +179,7 @@ export function javaClassFor({ methods, calls, classes = '' }, className) {
   // `classes` are the case's own classes. They go beside the test class, not inside it: a class written
   // inside another may read its private fields, which is exactly what these cases are testing.
   const beside = classes.replace(/\bpublic\s+(?=(?:(?:abstract|final)\s+)*(?:class|interface)\b)/g, '');
-  return `package ${className.toLowerCase()};\nimport java.util.*;\npublic class ${className} {\n${methods}\n${SHOW}\n  void $run() {\n${body}\n  }\n` +
+  return `package ${className.toLowerCase()};\nimport java.util.*;\nimport java.io.*;\npublic class ${className} {\n${methods}\n${SHOW}\n  void $run() {\n${body}\n  }\n` +
     `  public static void main(String[] args) { new ${className}().$run(); }\n}\n${beside}\n`;
 }
 
@@ -283,9 +286,11 @@ export function runOnJdk(jdk, cases) {
     const r = spawnSync(jdk.java, ['-Dfile.encoding=UTF-8', join(dir, 'Driver.java'), dir, String(cases.length)],
       { encoding: 'utf8', timeout: 600000, maxBuffer: 256 * 1024 * 1024 });
     if (r.status !== 0) throw new Error(`The JDK driver failed: ${r.stderr || r.error}`);
-    return r.stdout.split('\n').map(line => {
+    return r.stdout.split('\n').map((line, i) => {
       const [kind, payload, err] = line.split('\t');
-      const text = Buffer.from(payload || '', 'base64').toString('utf8').replace(/\r\n/g, '\n');
+      // Each case is compiled in a package of its own, which shows in the printed name of an exception
+      // class the case declares (p7.LoanException). A student's class has no package, so it is taken off.
+      const text = Buffer.from(payload || '', 'base64').toString('utf8').replace(/\r\n/g, '\n').replace(new RegExp(`\\bp${i}\\.(?=[A-Za-z_$])`, 'g'), '');
       return kind === 'C' ? { compiled: false, compileError: text, out: '' } : { compiled: true, compileError: null, out: text, crashed: err || null };
     });
   } finally {

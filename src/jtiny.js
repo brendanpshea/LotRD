@@ -33,7 +33,9 @@
  * super(…), overriding with the object's own class deciding which version
  * runs, super.method(), protected, equals(Object), instanceof (with or
  * without a name) and casts, abstract classes, and interfaces with default
- * methods.
+ * methods; and exceptions: try / catch / finally, throw, throws and Java's rules
+ * for checked exceptions, exception classes of the student's own, getMessage(),
+ * and Java's own messages, word for word, for the exceptions it throws itself.
  *
  * What it refuses, by name: byte / short / float, a collection inside a
  * collection, the other collection classes, changing a collection inside a
@@ -42,9 +44,12 @@
  * static, an Object holding anything but an object of the student's own
  * classes, an object printed with no toString() of its own (Java shows a code that differs from run to run),
  * objects as the elements of a set or the keys of a map, final fields set in
- * a constructor, try / catch, lambdas, labels, regular expressions — and
- * == between two Strings or two wrapper objects, which Java answers by object
- * identity; .equals() is what a student means.
+ * a constructor, lambdas, labels, regular expressions; of exceptions, a
+ * finally that returns or throws, try-with-resources, causes and stack traces,
+ * catching Throwable, and the message of a NullPointerException or a
+ * ClassCastException, which Java writes at length — and == between two
+ * Strings or two wrapper objects, which Java answers by object identity;
+ * .equals() is what a student means.
  *
  * Everything here is checked against the real JDK in tests/jtiny-differential.test.js.
  *
@@ -75,8 +80,11 @@ export class JavaError extends Error {
 
 const compileError = (msg, line, hint = null) => new JavaError(msg, { line, hint, kind: 'syntax' });
 const notYet = (msg, line, hint = null) => new JavaError(msg, { line, hint, kind: 'syntax', unsupported: true });
-const thrown = (exception, detail = null, hint = null) =>
-    new JavaError(detail === null ? exception : `${exception}: ${detail}`, { kind: 'runtime', exception, hint });
+const thrown = (exception, detail = null, hint = null) => {
+    const err = new JavaError(detail === null ? exception : `${exception}: ${detail}`, { kind: 'runtime', exception, hint });
+    err.detail = detail;   // what getMessage() gives, if the exception is caught
+    return err;
+};
 const refusal = (msg, hint = null) => new JavaError(msg, { kind: 'runtime', hint, unsupported: true });
 const limitError = (msg, hint = null) => new JavaError(msg, { kind: 'limit', hint });
 
@@ -276,9 +284,6 @@ const MODIFIERS = new Set(['public', 'private', 'protected', 'static', 'final', 
 
 // Statements this box does not run, with what to say about each.
 const NOT_YET_STATEMENTS = new Map([
-    ['try', 'try / catch is not available here yet.'],
-    ['catch', 'try / catch is not available here yet.'],
-    ['finally', 'try / catch is not available here yet.'],
     ['synchronized', 'synchronized blocks are not available here.'],
     ['assert', 'assert is not available here.'],
     ['class', 'Declaring a class inside a method is not available here.'],
@@ -504,10 +509,57 @@ class Parser {
             params.push({ type, name: pname.v, isFinal, line: pname.line });
         }
         this.next();   // )
-        if (this.isKw('throws')) {
-            throw notYet(`${BOX} does not use throws clauses.`, this.tok.line, 'Remove "throws …" from the method line.');
-        }
         return params;
+    }
+
+    /** throws IOException, LoanException — the checked exceptions a method admits it may let out. */
+    parseThrows() {
+        const list = [];
+        if (!this.eatKw('throws')) return list;
+        do {
+            const name = this.expectIdent('the name of an exception after throws');
+            if (this.isOp('.')) throw notYet(`${BOX} wants an exception's short name, without the package in front.`, name.line);
+            list.push({ base: name.v, dims: 0, line: name.line });
+        } while (this.eatOp(','));
+        return list;
+    }
+
+    /** try { … } catch (SomeException e) { … } finally { … } */
+    parseTry() {
+        const line = this.next().line;
+        if (this.isOp('(')) throw notYet(`${BOX} does not have try-with-resources: a try with ( ) straight after it.`, line);
+        if (!this.isOp('{')) this.fail(`After try comes a block in braces, but Java found ${describeToken(this.tok)}.`, 'try { … } catch (Exception e) { … }');
+        const block = this.parseBlock();
+        const catches = [];
+        while (this.isKw('catch')) {
+            const catchLine = this.next().line;
+            this.expectOp('(', 'after catch');
+            const isFinal = this.eatKw('final');
+            const types = [];
+            do {
+                const name = this.expectIdent('the type of exception to catch');
+                if (this.isOp('.')) throw notYet(`${BOX} wants an exception's short name, without the package in front.`, name.line);
+                if (this.isOp('<') || this.isOp('[')) this.fail('The type in a catch is the name of one exception class.');
+                types.push({ base: name.v, dims: 0, line: name.line });
+            } while (this.eatOp('|'));
+            if (this.isOp(')')) {
+                this.fail('A catch names the exception it caught, after the type.', `catch (${types.map(t => t.base).join(' | ')} e)`);
+            }
+            const name = this.expectIdent('a name for the caught exception');
+            this.expectOp(')', 'to close the catch');
+            if (!this.isOp('{')) this.fail(`After catch (…) comes a block in braces, but Java found ${describeToken(this.tok)}.`);
+            catches.push({ types, name: name.v, nameLine: name.line, isFinal, body: this.parseBlock(), line: catchLine });
+        }
+        let finallyBlock = null;
+        if (this.isKw('finally')) {
+            this.next();
+            if (!this.isOp('{')) this.fail(`After finally comes a block in braces, but Java found ${describeToken(this.tok)}.`);
+            finallyBlock = this.parseBlock();
+        }
+        if (!catches.length && !finallyBlock) {
+            throw compileError('A try has to be followed by a catch or a finally.', line, 'try { … } catch (Exception e) { … }');
+        }
+        return { k: 'try', block, catches, finallyBlock, line };
     }
 
     /** The fields, constructors and methods of a class or interface. `className` is null for members written with no class around them. */
@@ -556,10 +608,11 @@ class Parser {
                     if (mods.has(word)) throw compileError(`A constructor cannot be ${word}.`, name.line);
                 }
                 const params = this.parseParams();
+                const throwsNodes = this.parseThrows();
                 if (!this.isOp('{')) this.fail(`Java expected { to open the body of the ${name.v} constructor, but found ${describeToken(this.tok)}.`);
                 const body = this.parseBlock();
                 members.ctors.push({
-                    name: name.v, params, body, line: name.line, endLine: this.tokens[this.p - 1].line, mods,
+                    name: name.v, params, throwsNodes, body, line: name.line, endLine: this.tokens[this.p - 1].line, mods,
                     isCtor: true, isStatic: false, ret: { base: 'void', dims: 0, line: name.line },
                 });
                 continue;
@@ -568,6 +621,7 @@ class Parser {
             if (this.isId() && this.isOp('(', this.peek())) {
                 const name = this.next();
                 const params = this.parseParams();
+                const throwsNodes = this.parseThrows();
                 let body = null;
                 if (this.isOp(';') && (mods.has('abstract') || isInterface)) {
                     // public abstract String perform();   — a method every subclass has to write for itself
@@ -582,7 +636,7 @@ class Parser {
                     body = this.parseBlock();
                 }
                 members.methods.push({
-                    name: name.v, ret: type, params, body, line: name.line, endLine: this.tokens[this.p - 1].line,
+                    name: name.v, ret: type, params, throwsNodes, body, line: name.line, endLine: this.tokens[this.p - 1].line,
                     isStatic: mods.has('static'), mods, override,
                 });
                 continue;
@@ -721,6 +775,13 @@ class Parser {
                     this.expectOp(';', 'after the throw');
                     return { k: 'throw', e, line };
                 }
+                case 'try': return this.parseTry();
+                case 'catch':
+                    this.fail('This catch has no try to belong to.', 'A catch comes straight after the } of its try block.');
+                    break;
+                case 'finally':
+                    this.fail('This finally has no try to belong to.', 'finally comes straight after the } of a try block, or of its last catch.');
+                    break;
                 case 'switch': {
                     // `switch (x) { … }` at the start of a statement is a switch statement.
                     this.next();
@@ -1658,7 +1719,7 @@ function lastIndexOfChar(s, ch, from) {
 
 function substring(s, begin, end) {
     if (begin < 0 || begin > end || end > s.length) {
-        throw stringIndex(`begin ${begin}, end ${end}, length ${s.length}`, s.length);
+        throw stringIndex(`Range [${begin}, ${end}) out of bounds for length ${s.length}`, s.length);
     }
     return s.slice(begin, end);
 }
@@ -1704,7 +1765,7 @@ function splitLiteral(s, pattern) {
 }
 
 function parseIntStrict(s, bits) {
-    if (s === null) throw thrown('NumberFormatException', 'Cannot parse null string: null', 'The text to convert is null.');
+    if (s === null) throw thrown('NumberFormatException', 'Cannot parse null string', 'The text to convert is null.');
     if (!/^[+-]?\d+$/.test(s)) {
         if (!isAscii(s)) throw refusal('Turning text into a number is only available here for plain English digits.');
         throw thrown('NumberFormatException', `For input string: "${s}"`,
@@ -1807,7 +1868,7 @@ function copyOfRange(arr, from, to) {
     notNull(arr, 'The array being copied');
     const length = arr.a.length;
     if (from > to) throw thrown('IllegalArgumentException', `${from} > ${to}`, 'The start of the range comes after its end.');
-    if (from < 0 || from > length) throw arrayIndex(from, length);
+    if (from < 0 || from > length) throw Object.assign(arrayIndex(from, length), { inexact: true });   // Java's message here names the kind of array
     cells(to - from);
     const items = arr.a.slice(from, Math.min(to, length));
     while (items.length < to - from) items.push(defaultOf(arr.type));
@@ -1822,7 +1883,7 @@ const STRING_METHODS = {
     })],
     substring: [
         sig('int', 'String', (s, begin) => {
-            if (begin < 0 || begin > s.length) throw stringIndex(`begin ${begin}, end ${s.length}, length ${s.length}`, s.length);
+            if (begin < 0 || begin > s.length) throw stringIndex(`Range [${begin}, ${s.length}) out of bounds for length ${s.length}`, s.length);
             return s.slice(begin);
         }),
         sig('int int', 'String', substring),
@@ -1892,7 +1953,7 @@ const STRING_NOT_YET = {
 };
 
 function builderIndex(sb, i) {
-    if (i < 0 || i >= sb.s.length) throw stringIndex(`index ${i},length ${sb.s.length}`, sb.s.length);
+    if (i < 0 || i >= sb.s.length) throw stringIndex(`Index ${i} out of bounds for length ${sb.s.length}`, sb.s.length);
 }
 const appendWith = type => {
     const show = textOf(type);
@@ -1901,7 +1962,7 @@ const appendWith = type => {
 const insertWith = type => {
     const show = textOf(type);
     return (sb, at, v) => {
-        if (at < 0 || at > sb.s.length) throw stringIndex(`offset ${at}, length ${sb.s.length}`, sb.s.length);
+        if (at < 0 || at > sb.s.length) throw stringIndex(`Range [${at}, ${sb.s.length}) out of bounds for length ${sb.s.length}`, sb.s.length);
         sb.s = text(sb.s.slice(0, at) + show(v) + sb.s.slice(at));
         return sb;
     };
@@ -1932,7 +1993,7 @@ const BUILDER_METHODS = {
     deleteCharAt: [sig('int', 'StringBuilder', (sb, i) => { builderIndex(sb, i); sb.s = sb.s.slice(0, i) + sb.s.slice(i + 1); return sb; })],
     delete: [sig('int int', 'StringBuilder', (sb, start, end) => {
         const stop = Math.min(end, sb.s.length);
-        if (start < 0 || start > stop) throw stringIndex(`start ${start}, end ${stop}, length ${sb.s.length}`, sb.s.length);
+        if (start < 0 || start > stop) throw stringIndex(`Range [${start}, ${stop}) out of bounds for length ${sb.s.length}`, sb.s.length);
         sb.s = sb.s.slice(0, start) + sb.s.slice(stop);
         return sb;
     })],
@@ -1945,7 +2006,7 @@ const BUILDER_METHODS = {
 };
 
 function substringOfBuilder(sb, start, end) {
-    if (start < 0 || start > end || end > sb.s.length) throw stringIndex(`start ${start}, end ${end}, length ${sb.s.length}`, sb.s.length);
+    if (start < 0 || start > end || end > sb.s.length) throw stringIndex(`Range [${start}, ${end}) out of bounds for length ${sb.s.length}`, sb.s.length);
     return sb.s.slice(start, end);
 }
 
@@ -2183,12 +2244,12 @@ const itemsOf = c => (c instanceof JList ? c.a : c instanceof JSet ? c.h.nodes()
 const sizeOf = c => (c instanceof JList ? c.a.length : hashOf(c).size);
 const modOf = c => (c instanceof JList ? c.mod : hashOf(c).mod);
 
-const cannotChange = what => thrown('UnsupportedOperationException', null,
+const cannotChange = (what, detail = null) => thrown('UnsupportedOperationException', detail,
     `${what} cannot have elements added or removed.`);
 const noSuchElement = () => thrown('NoSuchElementException', null, 'The list is empty, so there is no element to give. Check isEmpty() first.');
-const fixedList = () => cannotChange('The list Arrays.asList() makes is a fixed-size view of the array, so it');
-const listIndex = (list, index, length) => (list.fixed ? arrayIndex(index, length)
-    : thrown('IndexOutOfBoundsException', `Index ${index} out of bounds for length ${length}`,
+const fixedList = (detail = null) => cannotChange('The list Arrays.asList() makes is a fixed-size view of the array, so it', detail);
+const listIndex = (list, index, length, adding = false) => (list.fixed ? arrayIndex(index, length)
+    : thrown('IndexOutOfBoundsException', adding || list.kind === 'LinkedList' ? `Index: ${index}, Size: ${length}` : `Index ${index} out of bounds for length ${length}`,
         length === 0 ? 'The list is empty, so it has no positions at all.'
             : `The list has ${length} element${length === 1 ? '' : 's'}, so its positions run from 0 to ${length - 1}.`));
 
@@ -2214,7 +2275,7 @@ function removeElement(c, v, same) {
     if (c instanceof JList) {
         const i = c.a.findIndex(x => same(x, v));
         if (i < 0) return false;
-        if (c.fixed) throw fixedList();
+        if (c.fixed) throw fixedList('remove');
         c.a.splice(i, 1);
         c.mod++;
         return true;
@@ -2257,7 +2318,7 @@ function filterBy(c, other, same, keep) {
     if (c instanceof JList) {
         const kept = c.a.filter(v => inOther(v) === keep);
         if (kept.length === c.a.length) return false;
-        if (c.fixed) throw fixedList();
+        if (c.fixed) throw fixedList('remove');
         c.a = kept;
         c.mod++;
         return true;
@@ -2290,7 +2351,7 @@ function listSet(list, i, v) {
 }
 function listInsert(list, i, v) {
     if (list.fixed) throw fixedList();
-    if (i < 0 || i > list.a.length) throw listIndex(list, i, list.a.length);
+    if (i < 0 || i > list.a.length) throw listIndex(list, i, list.a.length, true);
     charge(1);
     list.a.splice(i, 0, v);
     list.mod++;
@@ -2427,7 +2488,7 @@ function buildCollection(type, how, arg) {
     if (isPending(type)) throw refusal(`${BOX} could not tell what this new ${baseOf(type)}<>() is meant to hold.`, 'Say so in the angle brackets: new ArrayList<String>()');
     const base = baseOf(type);
     const [K] = typeArgs(type);
-    const negative = () => thrown('IllegalArgumentException', `Illegal initial capacity: ${arg}`, 'The number in the ( ) is a starting capacity, and cannot be negative.');
+    const negative = () => thrown('IllegalArgumentException', `${base === 'ArrayList' ? 'Illegal Capacity' : 'Illegal initial capacity'}: ${arg}`, 'The number in the ( ) is a starting capacity, and cannot be negative.');
     if (how === 'capacity' && arg < 0) throw negative();
     if (base === 'ArrayList' || base === 'LinkedList') {
         if (how !== 'copy') return new JList(base);
@@ -2525,7 +2586,7 @@ function parseFormat(format) {
         const m = FORMAT_SPEC.exec(format);
         if (!m) return { problem: `the format has a % that is not followed by one of the letters ${BOX} knows (to print a percent sign, write %%)` };
         const [whole, flags, widthText, precisionText, conv] = m;
-        const spec = { conv, left: flags.includes('-'), zero: flags.includes('0'), group: flags.includes(','), plus: flags.includes('+'),
+        const spec = { conv, whole, left: flags.includes('-'), zero: flags.includes('0'), group: flags.includes(','), plus: flags.includes('+'),
             width: widthText === undefined ? 0 : Number(widthText), precision: precisionText === undefined ? null : Number(precisionText) };
         const no = what => ({ problem: `${whole} in a format — ${what}` });
         if (!'dsfbcn%'.includes(conv)) return no(`the ones here are %d, %s, %f, %b, %c, %n and %%`);
@@ -2639,7 +2700,7 @@ function formatJava(format, values, types, partial = null) {
             else if (piece.conv === '%') out += '%';
             else {
                 if (next >= values.length) {
-                    throw thrown('MissingFormatArgumentException', `Format specifier '%${piece.conv}'`,
+                    throw thrown('MissingFormatArgumentException', `Format specifier '${piece.whole}'`,
                         'The format has more % places than there are values after it.');
                 }
                 out += formatValue(piece, values[next], types[next]);
@@ -2829,6 +2890,160 @@ const methodKey = m => `${m.name}(${m.paramTypes.join(',')})`;
 const nestOf = c => { let at = c; while (at.nest) at = at.nest; return at; };
 const sameNest = (a, b) => nestOf(a) === nestOf(b);
 
+// ─── Exceptions ──────────────────────────────────────────────────────────────
+//
+// Java's exception classes are classes like the student's own, and are here in
+// every program: an exception is an object, with a class that decides which
+// catch takes it. Each holds one thing, its message, in the first field.
+//
+// An exception this box raises itself (a division by zero, a bad index) only
+// becomes an object if it is caught. Where Java's own message for one is longer
+// than can be reproduced here, asking for the message is refused.
+
+// name, superclass, package. A superclass comes before its subclasses.
+const EXCEPTION_TREE = [
+    ['Throwable', null, 'java.lang'],
+    ['Exception', 'Throwable', 'java.lang'],
+    ['RuntimeException', 'Exception', 'java.lang'],
+    ['IllegalArgumentException', 'RuntimeException', 'java.lang'],
+    ['NumberFormatException', 'IllegalArgumentException', 'java.lang'],
+    ['IllegalStateException', 'RuntimeException', 'java.lang'],
+    ['ArithmeticException', 'RuntimeException', 'java.lang'],
+    ['NullPointerException', 'RuntimeException', 'java.lang'],
+    ['ClassCastException', 'RuntimeException', 'java.lang'],
+    ['IndexOutOfBoundsException', 'RuntimeException', 'java.lang'],
+    ['ArrayIndexOutOfBoundsException', 'IndexOutOfBoundsException', 'java.lang'],
+    ['StringIndexOutOfBoundsException', 'IndexOutOfBoundsException', 'java.lang'],
+    ['NegativeArraySizeException', 'RuntimeException', 'java.lang'],
+    ['UnsupportedOperationException', 'RuntimeException', 'java.lang'],
+    ['NoSuchElementException', 'RuntimeException', 'java.util'],
+    ['InputMismatchException', 'NoSuchElementException', 'java.util'],
+    ['ConcurrentModificationException', 'RuntimeException', 'java.util'],
+    ['IllegalFormatException', 'IllegalArgumentException', 'java.util'],
+    ['MissingFormatArgumentException', 'IllegalFormatException', 'java.util'],
+    ['IllegalFormatConversionException', 'IllegalFormatException', 'java.util'],
+    ['IOException', 'Exception', 'java.io'],
+    ['FileNotFoundException', 'IOException', 'java.io'],
+    ['InterruptedException', 'Exception', 'java.lang'],
+    ['ReflectiveOperationException', 'Exception', 'java.lang'],
+    ['ClassNotFoundException', 'ReflectiveOperationException', 'java.lang'],
+];
+// Made only by Java itself: their constructors are not ones a program can call.
+const NOT_FOR_NEW = new Set(['IllegalFormatException', 'MissingFormatArgumentException', 'IllegalFormatConversionException']);
+// What every exception can do besides give its message, and this box does not.
+const THROWABLE_NOT_YET = ['printStackTrace', 'getCause', 'initCause', 'getStackTrace', 'setStackTrace', 'fillInStackTrace', 'addSuppressed', 'getSuppressed'];
+// Java writes these two messages itself, at length, naming the variable or the classes involved.
+const MESSAGE_NOT_KEPT = new Set(['NullPointerException', 'ClassCastException']);
+const UNKNOWN_MESSAGE = Symbol('a message Java writes that this box does not');
+
+/** The name Java prints for a class: java.lang.ArithmeticException, but plain LoanException for a class of the student's own. */
+function printedClassName(c) {
+    if (c.builtin) return `${c.pkg}.${c.name}`;
+    if (!c.nest) return c.name;
+    if (c.nest.implicit) throw refusal(`${BOX} does not show the name of a class written beside loose methods.`);
+    return `${printedClassName(c.nest)}$${c.name}`;
+}
+
+/** Call a method that takes nothing on an object, the object's own class deciding which version runs. */
+function callOn(self, key) {
+    const m = self.cls.vtable.get(key);
+    const frame = new Array(m.frameSize);
+    frame[m.thisSlot] = self;
+    return invoke(m, frame, null);
+}
+
+function buildExceptionClasses() {
+    const map = new Map();
+    const method = (c, name, retType, run) => ({
+        name, key: `${name}()`, params: [], paramTypes: [], retType, mods: new Set(['public']), isStatic: false, isAbstract: false,
+        cls: c, frameSize: 1, thisSlot: 0, throws: [], line: 0, endLine: 0, body: null,
+        code: f => { M.ret = run(f[0]); return RET; },
+    });
+    for (const [name, parentName, pkg] of EXCEPTION_TREE) {
+        const parent = parentName ? map.get(parentName) : null;
+        const c = {
+            kind: 'class', name, pkg, builtin: true, line: 0, mods: new Set(['public']),
+            superName: parentName, interfaceNames: [], nestIn: null, nest: null,
+            superClass: parent, interfaces: [], isInterface: false, isAbstract: false, allInterfaces: new Set(),
+            supers: new Set([name, ...(parent ? parent.supers : [])]),
+            fields: [], fieldMap: new Map(), instanceFields: [], staticFields: [], fieldCount: 1, defaults: [null],
+            methods: [], methodMap: new Map(), ctors: [],
+            init: { frameSize: 1 }, clinit: { frameSize: 0 }, initCode: [], staticCode: [], ready: false, statics: null,
+        };
+        const ctor = (paramTypes, code) => ({
+            name, cls: c, isCtor: true, isStatic: false, params: paramTypes.map(() => ({ name: 'message' })), paramTypes, retType: 'void',
+            mods: new Set(['public']), line: 0, endLine: 0, frameSize: paramTypes.length + 1, thisSlot: paramTypes.length, throws: [], key: `${name}(${paramTypes.join(',')})`, code,
+        });
+        c.ctors = [ctor([], () => 0), ctor(['String'], f => { f[1].f[0] = f[0]; return 0; })];
+        if (!parent) {
+            c.methods = [
+                method(c, 'getMessage', 'String', self => {
+                    if (self.f[0] === UNKNOWN_MESSAGE) {
+                        throw refusal(`Java writes the message of a ${self.cls.name} itself, at more length than ${BOX} can reproduce, so it does not give that message.`,
+                            'Print a message of your own in the catch block instead.');
+                    }
+                    return self.f[0];
+                }),
+                method(c, 'getLocalizedMessage', 'String', self => callOn(self, 'getMessage()')),
+                method(c, 'toString', 'String', self => {
+                    const message = callOn(self, 'getLocalizedMessage()');
+                    const shown = printedClassName(self.cls);
+                    return message === null ? shown : text(`${shown}: ${message}`);
+                }),
+            ];
+            for (const m of c.methods) c.methodMap.set(m.name, [m]);
+            c.vtable = new Map(c.methods.map(m => [m.key, m]));
+        } else {
+            c.vtable = parent.vtable;
+        }
+        map.set(name, c);
+    }
+    return map;
+}
+
+let EXCEPTIONS = null;
+const exceptionClasses = () => EXCEPTIONS ?? (EXCEPTIONS = buildExceptionClasses());
+
+const isThrowable = t => isOwnClass(t) && CLASSES.get(t).supers.has('Throwable');
+/** A checked exception: one Java will not let a method throw without catching it or admitting to it. */
+const isChecked = t => isThrowable(t) && !CLASSES.get(t).supers.has('RuntimeException');
+
+/** The class named in a catch or after throws. */
+function exceptionType(node, where) {
+    const name = node.base;
+    const c = CLASSES.get(name);
+    if (c && c.supers.has('Throwable')) return name;
+    if (!c && !PRIMITIVES.has(name) && name !== 'String' && name !== 'StringBuilder' && name !== 'Object' && !isWrapper(name) && !Object.hasOwn(GENERIC_ARITY, name)) {
+        const near = suggestName(name, [...CLASSES.keys()].filter(n => CLASSES.get(n).supers.has('Throwable')));
+        throw notYet(`${BOX} does not know an exception called ${name}.`, node.line, near && near !== name ? `Did you mean ${near}?` : null);
+    }
+    throw compileError(`${where} takes exceptions only, and ${name} is not one.`, node.line,
+        c ? `To make ${name} an exception, declare it: class ${name} extends Exception` : 'For example: Exception, or IllegalArgumentException.');
+}
+
+/** An exception as an object, for the catch that takes it. */
+function exceptionObject(err) {
+    if (err.thrownObject) return err.thrownObject;
+    const c = exceptionClasses().get(err.exception);
+    if (!c) throw refusal(`${BOX} cannot catch a ${err.exception}.`);
+    const obj = new JObject(c);
+    obj.f[0] = MESSAGE_NOT_KEPT.has(err.exception) || err.inexact ? UNKNOWN_MESSAGE : (err.detail ?? null);
+    obj.err = err;
+    err.thrownObject = obj;
+    return obj;
+}
+
+/** And the other way: an exception object on its way out of a throw statement. */
+function errorFor(obj, line) {
+    if (obj.err) return obj.err;   // thrown again: it is still the same exception, from where it first arose
+    const { name } = obj.cls;
+    const raw = obj.f[0];
+    const err = new JavaError(typeof raw === 'string' ? `${name}: ${raw}` : name, { kind: 'runtime', exception: name, line, hint: 'Your own code threw this, on the line shown.' });
+    err.thrownObject = obj;
+    obj.err = err;
+    return err;
+}
+
 /** The field called `name` that an object of class c has: its own, or one from a superclass. */
 function fieldOf(c, name) {
     for (let at = c; at; at = at.superClass) {
@@ -2860,7 +3075,7 @@ function hasToString(type) {
         if (own && !own.isAbstract) return true;
     }
     for (const c of CLASSES.values()) {
-        if (c.implicit || !isSubtype(c.name, type)) continue;
+        if (c.implicit || c.builtin || !isSubtype(c.name, type)) continue;
         const m = c.vtable.get('toString()');
         if (m && !m.isAbstract) return true;
     }
@@ -2882,7 +3097,7 @@ function declinedConversion(from, to) {
 /** Would a class of the student's own with this name hide one of Java's? */
 function isTakenClassName(name) {
     return name === 'String' || name === 'StringBuilder' || name === 'Object' || name === 'System' || isWrapper(name)
-        || Object.hasOwn(STATICS, name) || Object.hasOwn(GENERIC_ARITY, name) || NOT_YET_TYPES.has(name) || NOT_YET_CLASSES.has(name) || THROWABLE.has(name) || /Exception$|Error$/.test(name);
+        || Object.hasOwn(STATICS, name) || Object.hasOwn(GENERIC_ARITY, name) || NOT_YET_TYPES.has(name) || NOT_YET_CLASSES.has(name) || exceptionClasses().has(name) || name === 'Error';
 }
 
 const NOT_YET_CLASSES = new Map([
@@ -2891,13 +3106,6 @@ const NOT_YET_CLASSES = new Map([
     ['Collections', 'Collections'], ['List', 'lists'], ['ArrayList', 'lists'], ['Map', 'maps'], ['HashMap', 'maps'],
     ['Set', 'sets'], ['HashSet', 'sets'], ['Objects', 'Objects'], ['Stream', 'streams'], ['IntStream', 'streams'],
     ['Thread', 'threads'], ['LocalDate', 'dates'], ['Optional', 'Optional'],
-]);
-
-// Exceptions a method may throw without declaring them.
-const THROWABLE = new Set([
-    'RuntimeException', 'IllegalArgumentException', 'IllegalStateException', 'ArithmeticException',
-    'IndexOutOfBoundsException', 'ArrayIndexOutOfBoundsException', 'StringIndexOutOfBoundsException',
-    'NullPointerException', 'UnsupportedOperationException', 'NumberFormatException', 'NegativeArraySizeException',
 ]);
 
 // ─── Names ───────────────────────────────────────────────────────────────────
@@ -3003,7 +3211,8 @@ class Checker {
         }
         program.all = classes;
         program.host = host;
-        CLASSES = new Map();
+        CLASSES = new Map(exceptionClasses());   // Java's exception classes are there before the program's own
+        this.raised = [];
         for (const c of classes) {
             if (!c.implicit && isTakenClassName(c.name)) {
                 throw notYet(`${BOX} cannot run ${aType(c.kind)} of your own called ${c.name}, because Java already has a ${c.name}.`, c.line, `Pick another name for it, such as Game${c.name}.`);
@@ -3022,6 +3231,7 @@ class Checker {
     link(classes) {
         const named = (c, name, verb) => {
             const found = CLASSES.get(name);
+            if (found && NOT_FOR_NEW.has(name)) throw notYet(`${BOX} does not let a class extend ${name}, which only Java itself makes.`, c.line);
             if (found) return found;
             if (name === 'Object' || isTakenClassName(name)) throw notYet(`${BOX} does not let a class ${verb === 'extends' ? 'extend' : 'implement'} ${name}, which is one of Java's own.`, c.line);
             const near = suggestName(name, [...CLASSES.keys()].filter(n => !n.startsWith('$')));
@@ -3055,7 +3265,7 @@ class Checker {
         const ordered = [];
         const state = new Map();
         const visit = c => {
-            if (state.get(c) === 'done') return;
+            if (c.builtin || state.get(c) === 'done') return;
             if (state.get(c) === 'busy') throw compileError(`${c.name} ends up extending itself, which no class can do.`, c.line);
             state.set(c, 'busy');
             if (c.superClass) visit(c.superClass);
@@ -3112,6 +3322,7 @@ class Checker {
             m.cls = c;
             m.retType = resolveType(m.ret, { allowVoid: true });
             m.paramTypes = m.params.map(q => resolveType(q.type));
+            m.throws = (m.throwsNodes || []).map(t => exceptionType(t, 'A throws clause'));
             m.key = methodKey(m);
             // Two methods may share a name (overloading) as long as their parameter TYPES differ.
             // Different parameter names, or a different return type, do not count.
@@ -3152,7 +3363,7 @@ class Checker {
         if (!ctors.length && !c.isInterface) {
             // A class with no constructor written gets one that takes nothing and does nothing.
             ctors.push({
-                name: c.name, cls: c, isCtor: true, implicit: true, isStatic: false, params: [], paramTypes: [], retType: 'void', mods: new Set(['public']),
+                name: c.name, cls: c, isCtor: true, implicit: true, isStatic: false, params: [], paramTypes: [], throws: [], retType: 'void', mods: new Set(['public']),
                 line: c.line, endLine: c.line, body: { k: 'block', body: [], line: c.line, endLine: c.line },
             });
         }
@@ -3163,6 +3374,9 @@ class Checker {
             const plain = m.paramTypes.length === 0;
             if (plain && ['getClass', 'notify', 'notifyAll', 'wait', 'clone', 'finalize'].includes(m.name)) {
                 throw notYet(`${BOX} does not let a ${kind} write its own ${m.name}(): every Java object already has a method of that name.`, m.line);
+            }
+            if (THROWABLE_NOT_YET.includes(m.name) && c.supers.has('Throwable')) {
+                throw notYet(`${BOX} does not let an exception class write its own ${m.name}(): every Java exception already has a method of that name.`, m.line);
             }
             const replaces = c.implicit ? null : (plain && (m.name === 'toString' || m.name === 'hashCode')) ? (m.name === 'toString' ? 'String' : 'int') : m.key === 'equals(Object)' ? 'boolean' : null;
             if (replaces) {
@@ -3204,6 +3418,12 @@ class Checker {
                 throw compileError(`${m.name}() is ${ACCESS_WORD[ACCESS_RANK(m)]} here, and ${was} in ${where}. A method that replaces another cannot be harder to reach.`, m.line,
                     `Make it ${was}: ${was} ${m.retType} ${m.name}(…)`);
             }
+            // …nor throw a checked exception that the one it replaces does not admit to.
+            const extra = m.throws.find(t => isChecked(t) && !(above.throws || []).some(a => isSubtype(t, a)));
+            if (extra) {
+                throw compileError(`${m.name}() says it throws ${extra} here, and the ${m.name}() in ${where} that it replaces does not. A method that replaces another cannot add a checked exception.`, m.line,
+                    `Catch the ${extra} inside ${m.name}(), or add throws ${extra} to the one in ${where}.`);
+            }
         };
         for (const m of c.methods) {
             const above = [fromClasses.get(m.key), fromInterfaces.get(m.key)].filter(Boolean);
@@ -3213,6 +3433,9 @@ class Checker {
                 if (hidden) { above.push(hidden); break; }
             }
             for (const up of above) replacing(m, up);
+            if (m.replacesObjectMethod && m.throws.some(isChecked)) {
+                throw compileError(`${m.name}() replaces the ${m.name}() that every object has, which throws no checked exception, so this one cannot either.`, m.line);
+            }
             if (m.override && !above.length && !m.replacesObjectMethod) {
                 const near = suggestName(m.name, [...new Set([...fromClasses.values(), ...fromInterfaces.values()].map(x => x.name)), 'toString', 'equals']);
                 const sameName = [...fromClasses.values(), ...fromInterfaces.values()].find(x => x.name === m.name);
@@ -3226,7 +3449,9 @@ class Checker {
         for (const [key, m] of fromInterfaces) {
             const have = vtable.get(key);
             if (!have || (have.isAbstract && have.cls.isInterface && !m.isAbstract)) vtable.set(key, m);
-            else if (!have.isAbstract && !have.cls.isInterface && !have.mods.has('public') && have.cls !== c) {
+            else if (have.cls !== c && (have.throws || []).some(t => isChecked(t) && !(m.throws || []).some(a => isSubtype(t, a)))) {
+                throw notYet(`${BOX} does not run a class whose inherited ${have.name}() throws a checked exception that the ${have.name}() of ${m.cls.name} does not.`, c.line);
+            } else if (!have.isAbstract && !have.cls.isInterface && !have.mods.has('public') && have.cls !== c) {
                 throw compileError(`${have.name}() comes to ${c.name} from ${have.cls.name}, where it is not public; to stand for the ${have.name}() of ${m.cls.name} it has to be.`, c.line);
             }
         }
@@ -3252,6 +3477,7 @@ class Checker {
             this.method = f.isStatic ? c.clinit : c.init;
             this.scopes = [new Map()];
             this.ctx = [];
+            this.raised = [];
             this.initOf = f;
             f.init = f.init.k === 'arrinit' ? this.arrayInit(f.init, f.type) : this.assignable(this.valueFor(f.init, f.type), f.type, f.line, `the field ${f.name}`);
             this.initOf = null;
@@ -3326,12 +3552,36 @@ class Checker {
                 below ? `Make an object of a class that ${c.isInterface ? 'implements' : 'extends'} it, such as new ${below.name}(…).` : null);
         }
         n.name = `new ${c.name}`;
-        const ctor = this.chooseOverload(n, c.ctors);
+        const ctor = c.builtin ? this.exceptionConstructor(n, c) : this.chooseOverload(n, c.ctors);
         if (ctor.mods.has('private') && !sameNest(c, this.cls)) {
             throw compileError(`That ${c.name} constructor is private, so only code inside ${c.name} can use it.`, n.line);
         }
         n.args = n.args.map((a, i) => convert(a, ctor.paramTypes[i]));
+        this.raiseAll(ctor, n.line);
         return Object.assign(n, { k: 'newobj', cls: c, ctor, type: c.name });
+    }
+
+    /**
+     * Which constructor of one of Java's exception classes: the one that takes nothing, or the one that takes a message.
+     * Java's have others (a cause; for some an index), which differ from class to class, so anything else is declined.
+     */
+    exceptionConstructor(n, c) {
+        if (NOT_FOR_NEW.has(c.name)) throw notYet(`${BOX} does not make ${aType(c.name)} with new: only Java itself makes one.`, n.line);
+        const types = n.args.map(a => a.type);
+        if (types.length === 0) return c.ctors[0];
+        if (types.length === 1 && types[0] === 'String') return c.ctors[1];
+        throw notYet(`${BOX} makes ${aType(c.name)} with nothing in its ( ), or with one String: its message.`, n.line, `new ${c.name}("what went wrong")`);
+    }
+
+    /** A place where a checked exception may arise: a throw, or a call to something that says it throws. */
+    raise(type, line) {
+        if (!isChecked(type)) return;
+        if (this.initOf) throw notYet(`${BOX} does not run a field whose starting value can throw a checked exception (${type}).`, line, 'Give the field its value in a constructor instead.');
+        this.raised.push({ type, line });
+    }
+
+    raiseAll(method, line) {
+        for (const t of method.throws || []) this.raise(t, line);
     }
 
     /**
@@ -3345,6 +3595,10 @@ class Checker {
         const list = target || viaSuper ? [...declared, ...OBJECT_METHODS.filter(m => m.name === n.name && !declared.some(d => d.key === m.key))] : declared;
         if (!list.length) {
             if (['hashCode', 'getClass'].includes(n.name)) throw notYet(`${BOX} does not run ${n.name}() on ${aType(typeName)}.`, n.line);
+            if (c && c.supers.has('Throwable') && THROWABLE_NOT_YET.includes(n.name)) {
+                throw notYet(`${BOX} does not have ${n.name}() for an exception.`, n.line,
+                    n.name === 'printStackTrace' ? 'It prints to the error stream, which is not shown here. Print the message instead: System.out.println(e.getMessage());' : 'An exception here gives its message: e.getMessage()');
+            }
             const hidden = c && [...(function* up() { for (let at = c.superClass; at; at = at.superClass) yield* at.methodMap.get(n.name) || []; }())].find(m => m.mods.has('private'));
             if (hidden) throw compileError(`${n.name}() is private in ${hidden.cls.name}, so it is not handed down to ${typeName}.`, n.line);
             const all = c ? [...new Set([...(function* names() { for (let at = c; at; at = at.superClass) yield* at.methodMap.keys(); for (const face of c.allInterfaces) yield* face.methodMap.keys(); }())])] : [];
@@ -3374,6 +3628,7 @@ class Checker {
         } else if (target && m === OBJECT_TO_STRING) {
             this.shown(typeName, n.line);
         }
+        this.raiseAll(m, n.line);
         n.k = 'call';
         n.method = m;
         n.type = m.retType;
@@ -3489,6 +3744,7 @@ class Checker {
         m.frameSize = 0;
         this.scopes = [new Map()];
         this.ctx = [];
+        this.raised = [];
         m.paramSyms = m.params.map((p, i) => Object.assign(this.declare(p.name, m.paramTypes[i], p.line, p.isFinal), { isParam: true }));
         // The arguments fill the first slots of a call's frame; the object the method was called on comes after them.
         if (!m.isStatic) m.thisSlot = m.frameSize++;
@@ -3502,6 +3758,7 @@ class Checker {
             call.name = `this`;
             const target = this.chooseOverload(call, m.cls.ctors);
             m.chain = { ctor: target, args: call.args.map((a, i) => convert(a, target.paramTypes[i])), line: call.line };
+            this.raiseAll(target, call.line);
             m.body.body = m.body.body.slice(1);
         } else if (m.isCtor) {
             // super(name, movie): the superclass sets up its part of the object first. Left out, Java supplies super().
@@ -3527,15 +3784,27 @@ class Checker {
                             m.line, `First line of the constructor: ${forms}`);
                     }
                     m.superCall = { ctor: plain, args: [], line: m.line };
+                    const unsaid = (plain.throws || []).find(t => isChecked(t) && !m.throws.some(a => isSubtype(t, a)));
+                    if (unsaid) {
+                        throw compileError(`${parent.name}'s constructor may throw ${aType(unsaid)}, and ${m.implicit ? `the constructor Java supplies for ${m.cls.name}` : `this ${m.cls.name} constructor, which runs it first,`} does not say so.`, m.line,
+                            `Write a ${m.cls.name} constructor that says it:  ${m.cls.name}() throws ${unsaid} { }`);
+                    }
                 } else {
                     call.name = 'super';
                     if (!usable.length) throw compileError(`${parent.name}'s constructors are private, so ${m.cls.name} cannot call one.`, call.line);
-                    const target = this.chooseOverload(call, usable);
+                    const target = parent.builtin ? this.exceptionConstructor(call, parent) : this.chooseOverload(call, usable);
                     m.superCall = { ctor: target, args: call.args.map((a, i) => convert(a, target.paramTypes[i])), line: call.line };
+                    this.raiseAll(target, call.line);
                 }
             }
         }
         for (const s of m.body.body) this.stmt(s);
+        // A checked exception that can leave the method has to be on its first line, after throws.
+        const loose = this.raised.find(r => !m.throws.some(t => isSubtype(r.type, t)));
+        if (loose) {
+            throw compileError(`This line can throw ${aType(loose.type)}, which is a checked exception: Java will not compile ${m.isCtor ? 'the constructor' : m.name + '()'} unless it either catches it or says it may throw it.`, loose.line,
+                `Put the line in a try with catch (${loose.type} e), or add to the first line of the ${m.isCtor ? 'constructor' : 'method'}: throws ${loose.type}`);
+        }
     }
 
     // ── statements
@@ -3614,6 +3883,7 @@ class Checker {
             }
             case 'return': this.returns(s); break;
             case 'throw': this.throws(s); break;
+            case 'try': this.tryStmt(s); break;
             case 'yield': {
                 const target = this.nearest(c => (c.kind === 'switchexpr' ? true : undefined));
                 if (!target) throw compileError('yield only belongs inside a switch that produces a value.', s.line);
@@ -3711,18 +3981,88 @@ class Checker {
     }
 
     throws(s) {
-        const e = s.e;
-        if (e.k !== 'new') throw notYet(`${BOX} only throws a new exception: throw new IllegalArgumentException("why");`, s.line);
-        if (!THROWABLE.has(e.base)) {
-            if (/Exception$|Error$|^Throwable$/.test(e.base)) {
-                throw notYet(`${BOX} cannot throw ${e.base}.`, s.line, 'IllegalArgumentException and IllegalStateException are the usual ones for a method to throw.');
-            }
-            throw compileError(`${e.base} is not an exception, so it cannot be thrown.`, s.line);
+        s.e = this.value(s.e);
+        const t = s.e.type;
+        if (t === 'null') throw notYet(`${BOX} does not run “throw null”, which in Java throws a NullPointerException.`, s.line);
+        if (!isThrowable(t)) {
+            throw compileError(`Only an exception can be thrown, and this is ${aType(t)}.`, s.line,
+                t === 'String' ? 'Wrap the message in an exception: throw new IllegalArgumentException("why");' : 'For example: throw new IllegalArgumentException("why");');
         }
-        if (e.args.length > 1) throw notYet(`${BOX} gives an exception at most one thing: its message.`, s.line);
-        e.args = e.args.map(a => this.value(a));
-        if (e.args.length && e.args[0].type !== 'String' && e.args[0].type !== 'null') {
-            throw compileError(`The message of an exception is a String, and this is ${aType(e.args[0].type)}.`, s.line);
+        // An exception caught and thrown on is, to Java, whatever the try could have thrown — which may be less than the catch names.
+        const inner = stripParens(s.e);
+        if (inner.k === 'name' && inner.sym.isCatchParam) for (const r of inner.sym.rethrows) this.raise(r, s.line);
+        else this.raise(t, s.line);
+    }
+
+    /** try { … } catch (X e) { … } finally { … } */
+    tryStmt(s) {
+        const outer = this.raised;
+        const inTry = [];
+        this.raised = inTry;
+        this.block(s.block);
+        this.raised = outer;
+
+        const taken = [];   // the types that the catches so far take
+        for (const c of s.catches) {
+            c.caught = c.types.map(t => exceptionType(t, 'A catch'));
+            const open = inTry.filter(r => !taken.some(a => isSubtype(r.type, a)));
+            const rethrows = new Set();
+            c.caught.forEach((name, i) => {
+                const { line } = c.types[i];
+                if (name === 'Throwable') {
+                    throw notYet(`${BOX} does not catch Throwable, which takes in errors of the machine itself.`, line, 'Catch Exception, or better, the particular exception you expect.');
+                }
+                const other = c.caught.find((x, k) => k !== i && isSubtype(name, x));
+                if (other) {
+                    throw compileError(other === name ? `This catch names ${name} twice.` : `Every ${name} is ${aType(other)} already, so a catch cannot list both with |.`, line, `Leave just the wider one: catch (${other} ${c.name})`);
+                }
+                const earlier = taken.find(a => isSubtype(name, a));
+                if (earlier) {
+                    throw compileError(earlier === name ? `An earlier catch already takes ${name}.` : `This catch can never run: every ${name} is ${aType(earlier)}, and the catch for ${earlier} above takes it first.`, line,
+                        earlier === name ? 'Remove one of the two.' : `Put the catch for ${name} above the one for ${earlier}: the particular exception first, the general one after.`);
+                }
+                if (isChecked(name) && name !== 'Exception' && !inTry.some(r => isSubtype(r.type, name) || isSubtype(name, r.type))) {
+                    throw compileError(`Nothing in this try can throw ${aType(name)}, and Java does not allow a catch for a checked exception that cannot arrive.`, line, 'Remove this catch.');
+                }
+                for (const r of open) {
+                    if (isSubtype(r.type, name)) rethrows.add(r.type);
+                    else if (isSubtype(name, r.type)) rethrows.add(name);
+                }
+            });
+            let type = c.caught[0];
+            if (c.caught.length > 1) {
+                if (c.caught.some(name => CLASSES.get(name).allInterfaces.size > 0)) {
+                    throw notYet(`${BOX} does not catch, with |, exception classes that implement an interface.`, c.line);
+                }
+                // The variable is whatever the alternatives have in common: their nearest shared superclass.
+                let shared = CLASSES.get(type);
+                while (!c.caught.every(name => isSubtype(name, shared.name))) shared = shared.superClass;
+                type = shared.name;
+            }
+            taken.push(...c.caught);
+            this.scopes.push(new Map());
+            c.sym = Object.assign(this.declare(c.name, type, c.nameLine, c.isFinal || c.caught.length > 1), { isCatchParam: true, rethrows: [...rethrows] });
+            this.block(c.body);
+            this.scopes.pop();
+        }
+        // What the catches did not take goes on outward.
+        for (const r of inTry) if (!taken.some(a => isSubtype(r.type, a))) outer.push(r);
+
+        if (s.finallyBlock) {
+            // A finally that leaves by its own return, break or throw overrides whatever the try was doing. Java allows it and warns against it.
+            const leaves = node => {
+                if (!node || typeof node !== 'object') return null;
+                if (Array.isArray(node)) { for (const x of node) { const found = leaves(x); if (found) return found; } return null; }
+                if (['return', 'break', 'continue', 'throw', 'yield', 'while', 'do', 'for'].includes(node.k)) return node;
+                for (const v of Object.values(node)) { const found = leaves(v); if (found) return found; }
+                return null;
+            };
+            const found = leaves(s.finallyBlock);
+            if (found) {
+                throw notYet(['while', 'do', 'for'].includes(found.k) ? `${BOX} does not run a ${found.k} loop inside finally.` : `${BOX} does not run ${found.k} inside finally: it would replace whatever the try was returning or throwing.`, found.line,
+                    'Keep finally for clean-up that always finishes: a print, or setting a variable.');
+            }
+            this.block(s.finallyBlock);
         }
     }
 
@@ -4048,6 +4388,10 @@ class Checker {
     /** The variable or array element on the left of an assignment, or under ++. */
     target(node, verb) {
         const t = this.expr(node);
+        if (t.k === 'name' && t.sym.isCatchParam) {
+            if (t.sym.isFinal) throw compileError(`${t.name} is the exception this catch received, and cannot be ${verb}.`, node.line);
+            throw notYet(`${BOX} does not let the exception a catch received (${t.name}) be ${verb}.`, node.line, 'Use a new variable.');
+        }
         if (t.k === 'name' && t.sym.isFinal) {
             throw compileError(`${t.name} is final, so it cannot be ${verb}.`, node.line, 'Remove the word final from its declaration if it needs to change.');
         }
@@ -4349,6 +4693,7 @@ class Checker {
                 if (this.beforeThis) throw compileError(`${m.name}() cannot be called yet inside the ( ) of this(…) or super(…).`, n.line);
                 n.selfSlot = this.method.thisSlot;   // the same object this method is working on
             }
+            this.raiseAll(m, n.line);
             n.method = m;
             n.type = m.retType;
             return n;
@@ -4661,7 +5006,7 @@ class Checker {
             Object.assign(n, { k: 'builtin', target: null, fn: found.fn, args: found.args, type: 'String', describe: 'new String()', isNew: true });
             return n;
         }
-        if (THROWABLE.has(n.base) || /Exception$/.test(n.base)) throw notYet(`${BOX} only makes an exception in order to throw it: throw new ${n.base}(…);`, n.line);
+        if (/Exception$|Error$|^Throwable$/.test(n.base)) throw notYet(`${BOX} does not know an exception called ${n.base}.`, n.line);
         if (PRIMITIVES.has(n.base)) throw compileError(`${n.base} is a plain value type, so there is nothing to make with new.`, n.line, `Just write the value: ${n.base} x = …;`);
         if (NOT_YET_TYPES.has(n.base)) throw notYet(`${BOX} does not have ${NOT_YET_TYPES.get(n.base)} yet.`, n.line, TYPE_HINTS[n.base] ?? null);
         throw notYet(`${BOX} cannot make a new ${n.base}.`, n.line, 'It can make arrays, Strings and StringBuilders.');
@@ -4997,9 +5342,10 @@ class Flow {
                 this.S = NONE;
                 return false;
             case 'throw':
-                this.all(s.e.args, this.S);
+                this.expr(s.e, this.S);
                 this.S = NONE;
                 return false;
+            case 'try': return this.tryStmt(s);
             case 'yield':
                 this.target(t => t.kind === 'switchexpr').yields.push(this.expr(s.e, this.S));
                 this.S = NONE;
@@ -5007,6 +5353,37 @@ class Flow {
             case 'switch': return this.switchStmt(s);
             default: throw new Error(`unexpected statement ${s.k}`);
         }
+    }
+
+    /**
+     * JLS 14.22 and 16.2.15. A catch begins knowing only what was certain before the try, since the try may
+     * have stopped anywhere; so does a finally. After the whole statement a variable has a value if every
+     * way through the try and the catches gave it one, or if the finally did.
+     */
+    tryStmt(s) {
+        const before = this.S;
+        // The breaks and continues that leave from inside pass through the finally on their way.
+        const marks = this.targets.map(t => [t, (t.breaks || []).length, (t.continues || []).length, (t.yields || []).length]);
+        let alive = this.stmt(s.block);
+        let ends = alive ? this.S : NONE;
+        for (const c of s.catches) {
+            this.S = given(before, c.sym.slot);
+            if (this.stmt(c.body)) { ends = alive ? meet(ends, this.S) : this.S; alive = true; }
+        }
+        if (s.finallyBlock) {
+            this.S = before;
+            if (!this.stmt(s.finallyBlock)) throw notYet(`${BOX} does not run a finally block that can never finish.`, s.finallyBlock.line);
+            const after = this.S;
+            const both = set => (set.size === 0 || after.size === 0 ? NONE : new Set([...set].filter(slot => after.has(slot))));
+            for (const [t, breaks, continues, yields] of marks) {
+                for (let i = breaks; i < (t.breaks || []).length; i++) t.breaks[i] = both(t.breaks[i]);
+                for (let i = continues; i < (t.continues || []).length; i++) t.continues[i] = both(t.continues[i]);
+                for (let i = yields; i < (t.yields || []).length; i++) t.yields[i] = both(t.yields[i]);
+            }
+            ends = both(ends);
+        }
+        this.S = alive ? ends : NONE;
+        return alive;
     }
 
     switchStmt(s) {
@@ -5111,7 +5488,16 @@ function ensureInit(c) {
     if (c.superClass) ensureInit(c.superClass);   // a superclass is made ready before its subclasses
     c.statics = c.staticFields.map(f => defaultOf(f.type));
     const frame = new Array(c.clinit.frameSize);
-    for (const [i, code] of c.staticCode) c.statics[i] = code(frame);
+    try {
+        for (const [i, code] of c.staticCode) c.statics[i] = code(frame);
+    } catch (err) {
+        // Java wraps this in an ExceptionInInitializerError and gives up on the class for good.
+        if (err instanceof JavaError && err.kind === 'runtime' && !err.unsupported) {
+            throw refusal(`A static field of ${c.name} threw ${aType(err.exception)} while being given its starting value, which stops Java from using the class at all.`,
+                'Give the field a plain starting value, and do the work in a method.');
+        }
+        throw err;
+    }
 }
 
 /** Give a new object's fields the starting values written beside them, from the top down. */
@@ -5705,11 +6091,53 @@ function cs(s) {
             return f => { M.ret = e(f); return YLD; };
         }
         case 'throw': {
-            const name = s.e.base;
-            const message = s.e.args.length ? cx(s.e.args[0]) : null;
+            const e = cx(s.e);
             return f => {
-                const detail = message ? message(f) : null;
-                throw at(thrown(name, detail, 'Your own code threw this, on the line shown.'), line);
+                const obj = e(f);
+                if (obj === null) throw at(nullPointer('The exception being thrown'), line);
+                throw errorFor(obj, line);
+            };
+        }
+        case 'try': {
+            const block = cs(s.block);
+            const catches = s.catches.map(c => ({ names: c.caught, slot: c.sym.slot, body: cs(c.body) }));
+            const cleanup = s.finallyBlock ? cs(s.finallyBlock) : null;
+            // Only an exception Java would have thrown can be caught. A refusal of this box's, or a run stopped
+            // for going on too long, is not one, and goes straight out past every catch and finally.
+            const catchable = err => err instanceof JavaError && err.kind === 'runtime' && !err.unsupported && err.exception !== null;
+            const attempt = catches.length === 0 ? block : f => {
+                const depth = M.depth;
+                try {
+                    return block(f);
+                } catch (err) {
+                    if (!catchable(err)) throw err;
+                    const obj = exceptionObject(err);
+                    const { supers } = obj.cls;
+                    for (const c of catches) {
+                        if (!c.names.some(name => supers.has(name))) continue;
+                        M.depth = depth;   // the calls the exception came out through are over
+                        f[c.slot] = obj;
+                        return c.body(f);
+                    }
+                    throw err;
+                }
+            };
+            if (!cleanup) return attempt;
+            return f => {
+                const depth = M.depth;
+                let signal;
+                try {
+                    signal = attempt(f);
+                } catch (err) {
+                    if (!catchable(err)) throw err;
+                    M.depth = depth;
+                    cleanup(f);   // and if the finally throws, that exception is the one that goes on
+                    throw err;
+                }
+                const held = M.ret;   // a value on its way out through return waits while the finally runs
+                cleanup(f);
+                M.ret = held;
+                return signal;
             };
         }
         case 'switch': {
@@ -5840,6 +6268,7 @@ export function evaluateJava(program, expression, limits = {}) {
         checker.method = { name: '(test)', isStatic: false, frameSize: 1, thisSlot: 0, retType: 'void', cls: program.host };
         checker.scopes = [new Map()];
         checker.ctx = [];
+        checker.raised = [];   // a test may call something that throws a checked exception; nothing here has to declare it
         typed = checker.expr(tree);
         run = cx(typed);
     } finally {
@@ -6049,6 +6478,24 @@ export function describeJavaCall(name, args, types) {
 
 const TOTAL_RUN_MS = 5000;
 
+/**
+ * A test that expects an exception — { "args": [-5], "throws": "IllegalArgumentException" } — passes when
+ * the run was stopped by that exception, or by one that is a kind of it, as a catch for it would accept.
+ */
+function settleThrown(row, run, wanted, report, returned) {
+    const err = run.error;
+    if (!err) { row.actualRepr = returned; return; }
+    const catchable = err.kind === 'runtime' && !err.unsupported && err.exception;
+    const cls = catchable ? (err.thrownObject ? err.thrownObject.cls : exceptionClasses().get(err.exception)) : null;
+    if (cls && cls.supers.has(wanted)) {
+        row.actualRepr = `throws ${err.exception}`;
+        row.threw = err.exception;
+        row.passed = true;
+    } else {
+        row.error = report(err);
+    }
+}
+
 function failed(error, cases) {
     return { ok: false, error, results: cases.map(() => null), passed: 0, total: cases.length, printedOnly: false };
 }
@@ -6101,10 +6548,11 @@ export function runJavaTestCases({ signature, body, tests, limits = {}, now = ()
     const startedAt = now();
     for (const testCase of cases) {
         const args = (testCase.args || []).map((a, i) => javaFromJson(a, types[i]));
-        const expected = javaFromJson(testCase.expect, want.ret);
+        const throwing = typeof testCase.throws === 'string';
+        const expected = throwing ? null : javaFromJson(testCase.expect, want.ret);
         const row = {
             call: describeJavaCall(want.name, args, types),
-            expectedRepr: javaRepr(expected, want.ret),
+            expectedRepr: throwing ? `throws ${testCase.throws}` : javaRepr(expected, want.ret),
             actualRepr: null,
             passed: false,
             output: [],
@@ -6116,7 +6564,8 @@ export function runJavaTestCases({ signature, body, tests, limits = {}, now = ()
             continue;
         }
         const run = callJava(method, args, { ...limits, now });
-        if (run.error) row.error = report(run.error);
+        if (throwing) settleThrown(row, run, testCase.throws, report, run.error ? null : javaRepr(run.value, want.ret));
+        else if (run.error) row.error = report(run.error);
         else {
             row.actualRepr = javaRepr(run.value, want.ret);
             row.passed = javaEquals(run.value, expected, want.ret);
@@ -6153,7 +6602,7 @@ export function runJavaTestCases({ signature, body, tests, limits = {}, now = ()
 
 /** True for a problem graded by scripts rather than by calling one method. */
 export function isJavaClassProblem(question) {
-    return Array.isArray(question?.tests) && question.tests.some(t => t && (typeof t.check === 'string' || typeof t.private === 'string'));
+    return Array.isArray(question?.tests) && question.tests.some(t => t && (typeof t.check === 'string' || typeof t.private === 'string' || typeof t.run === 'string'));
 }
 
 const classLineName = signature => (/\bclass\s+([A-Za-z_$][\w$]*)(?:\s+extends\s+[\w$]+)?(?:\s+implements\s+[\w$]+(?:\s*,\s*[\w$]+)*)?\s*$/.exec(headerOf(signature)) || [])[1] ?? null;
@@ -6207,18 +6656,21 @@ function outsideClass(program) {
     return program.outside;
 }
 
-/** A test's script and the expression it ends on, as one method to call. Returns { method, type }. */
-function compileJavaScript(program, runText, checkText) {
+/**
+ * A test's script and the expression it ends on, as one method to call. Returns { method, type }.
+ * A test that expects an exception has no expression to end on: `checkText` is null, and so is the type.
+ */
+function compileJavaScript(program, runText, checkText = null) {
     const outer = CLASSES;
     CLASSES = program.classMap;
     try {
         const host = outsideClass(program);
         const block = new Parser(tokenize(`{\n${String(runText ?? '').replace(/\r\n?/g, '\n')}\n}`)).parseBlock();
-        const checkParser = new Parser(tokenize(String(checkText)));
-        const check = checkParser.parseExpr();
-        if (checkParser.tok.t !== 'eof') throw compileError('There is more after the end of the expression being checked.', 1);
+        const checkParser = checkText === null ? null : new Parser(tokenize(String(checkText)));
+        const check = checkParser && checkParser.parseExpr();
+        if (checkParser && checkParser.tok.t !== 'eof') throw compileError('There is more after the end of the expression being checked.', 1);
         shiftLines(block, SCRIPT_LINE_BASE);
-        shiftLines(check, SCRIPT_LINE_BASE);
+        if (check) shiftLines(check, SCRIPT_LINE_BASE);
         const method = { name: 'the test', isStatic: false, params: [], paramTypes: [], cls: host, mods: new Set(), retType: 'void', body: block, line: block.line, endLine: block.endLine, frameSize: 0 };
         const { checker } = program;
         checker.method = method;
@@ -6226,8 +6678,14 @@ function compileJavaScript(program, runText, checkText) {
         checker.methods = host.methodMap;
         checker.scopes = [new Map()];
         checker.ctx = [];
+        checker.raised = [];
         method.thisSlot = method.frameSize++;
         for (const statement of block.body) checker.stmt(statement);
+        if (!check) {
+            new Flow(method);
+            method.code = cs(block);
+            return { method, type: null, host };
+        }
         const typed = checker.value(check);
         if (isOwnClass(typed.type.replace(/(\[\])+$/, '')) || (isCollection(typed.type) && typeArgs(typed.type).some(isOwnClass))) {
             throw new Error(`a test's check has to be a number, text, true/false or a collection of those, and "${checkText}" is ${aType(typed.type)}`);
@@ -6249,7 +6707,7 @@ export function describeJavaScript(testCase) {
         return `${field} is private in ${owner}`;
     }
     const steps = String(testCase.run ?? '').split('\n').map(l => l.trim()).filter(Boolean);
-    return [...steps, testCase.check].join(' ');
+    return [...steps, testCase.check].filter(Boolean).join(' ');
 }
 
 /**
@@ -6259,7 +6717,7 @@ export function describeJavaScript(testCase) {
 export function javaScriptTypes(question) {
     const { source } = assembleJavaClass({ scaffold: question.scaffold, signature: question.signature, body: question.solution });
     const program = compileJava(source);
-    return question.tests.map(t => (typeof t.private === 'string' ? null : compileJavaScript(program, t.run, t.check).type));
+    return question.tests.map(t => (typeof t.private === 'string' ? null : compileJavaScript(program, t.run, typeof t.throws === 'string' ? null : t.check).type));
 }
 
 /**
@@ -6318,9 +6776,10 @@ export function runJavaScriptCases({ scaffold = null, signature, body, tests, li
             row.error = { message: 'This run was stopped — the earlier tests took too long.', hint: null, line: null, kind: 'limit' };
             continue;
         }
+        const throwing = typeof testCase.throws === 'string';
         let script;
         try {
-            script = compileJavaScript(program, testCase.run, testCase.check);
+            script = compileJavaScript(program, testCase.run, throwing ? null : testCase.check);
         } catch (err) {
             if (!(err instanceof JavaError)) throw err;
             // The TEST's own lines would not compile against this class: nearly always a constructor or a
@@ -6329,15 +6788,16 @@ export function runJavaScriptCases({ scaffold = null, signature, body, tests, li
             row.error.line = null;
             continue;
         }
-        const expected = javaFromJson(testCase.expect, script.type);
-        row.expectedRepr = javaRepr(expected, script.type);
+        const expected = throwing ? null : javaFromJson(testCase.expect, script.type);
+        row.expectedRepr = throwing ? `throws ${testCase.throws}` : javaRepr(expected, script.type);
         program.reset();
         const run = inMachine({ ...limits, now }, () => {
             const frame = new Array(script.method.frameSize);
             frame[script.method.thisSlot] = bareObject(script.host);
             return invoke(script.method, frame, null);
         });
-        if (run.error) row.error = report(run.error);
+        if (throwing) settleThrown(row, run, testCase.throws, report, 'no exception');
+        else if (run.error) row.error = report(run.error);
         else {
             row.actualRepr = javaRepr(run.value, script.type);
             row.passed = javaEquals(run.value, expected, script.type);

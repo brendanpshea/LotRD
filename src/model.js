@@ -101,15 +101,16 @@ export function codeWriteExamples(question, limit = 3) {
     }
     if (isJavaProblem(question) && isJavaClassProblem(question)) {
         // A class problem's example is the steps taken and what they should leave behind.
-        return (question.tests || []).filter(testCase => typeof testCase.check === "string").slice(0, limit).map(testCase =>
-            `${describeJavaScript(testCase)} → ${typeof testCase.expect === "string" ? JSON.stringify(testCase.expect) : String(testCase.expect)}`);
+        return (question.tests || []).filter(testCase => typeof testCase.check === "string" || typeof testCase.throws === "string").slice(0, limit).map(testCase =>
+            `${describeJavaScript(testCase)} → ${typeof testCase.throws === "string" ? `throws ${testCase.throws}`
+                : typeof testCase.expect === "string" ? JSON.stringify(testCase.expect) : String(testCase.expect)}`);
     }
     if (isJavaProblem(question)) {
         const { name, ret, params } = parseJavaSignature(question.signature);
         const types = params.map(p => p.type);
         return (question.tests || []).slice(0, limit).map(testCase =>
             `${describeJavaCall(name, (testCase.args || []).map((a, i) => javaFromJson(a, types[i])), types)} → ` +
-            javaRepr(javaFromJson(testCase.expect, ret), ret));
+            (typeof testCase.throws === "string" ? `throws ${testCase.throws}` : javaRepr(javaFromJson(testCase.expect, ret), ret)));
     }
     if (isScriptProblem(question)) {
         // A class problem's example is the steps taken and what they should leave behind.

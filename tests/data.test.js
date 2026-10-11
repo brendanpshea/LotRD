@@ -463,6 +463,10 @@ describe('question_sets/catalog.json', () => {
 // ────────────────────────────────────────────────────────────────────────────────
 // Individual question set files
 // ────────────────────────────────────────────────────────────────────────────────
+// A write-the-code problem is review, done in a few minutes: the long builds are in the course notebooks.
+const MAX_SOLUTION_LINES = 15;
+const solutionLines = q => String(q.solution ?? '').split('\n').filter(line => line.trim()).length;
+
 describe('Question set file validation', () => {
   const index = loadJSON('question_sets/index.json');
 
@@ -603,14 +607,21 @@ describe('Question set file validation', () => {
                 `${label}: a Java class problem needs a signature like "public class Potion", or a scaffold holding the class so far`);
               // The first line of a method — public String buyItem(Item item) — or of a constructor: Monster(String name, int health).
               // (Whether it fits the class is settled below, when the reference solution is compiled.)
-              assert.ok(/^(?:(?:public|private)\s+)?(?:[\w<>\[\], ]+\s+)?\w+\s*\([^()]*\)$/.test(sig),
+              assert.ok(/^(?:(?:public|private)\s+)?(?:[\w<>\[\], ]+\s+)?\w+\s*\([^()]*\)(?:\s+throws\s+[A-Z]\w*(?:\s*,\s*[A-Z]\w*)*)?$/.test(sig),
                 `${label}: with a scaffold, signature is the first line of the method or constructor to write`);
               const opened = (q.scaffold.match(/\{/g) || []).length - (q.scaffold.match(/\}/g) || []).length;
               assert.equal(opened, 1, `${label}: scaffold has to END inside the class the method belongs to, with exactly one { still open`);
             }
-            assert.ok(Array.isArray(q.tests) && q.tests.filter(t => typeof t.check === 'string').length >= 3, `${label}: code_write needs at least 3 test cases`);
+            assert.ok(Array.isArray(q.tests) && q.tests.filter(t => typeof t.check === 'string' || typeof t.throws === 'string').length >= 3, `${label}: code_write needs at least 3 test cases`);
             for (const [ti, t] of q.tests.entries()) {
               assert.ok(!('args' in t), `${label}: test ${ti + 1} mixes "args" with "check"; a problem is one kind or the other`);
+              if ('throws' in t) {
+                // A test that expects an exception: the steps, and the class of exception they must end in.
+                assert.ok(/^[A-Z]\w*$/.test(t.throws) && typeof t.run === 'string' && t.run.trim() && !('check' in t) && !('expect' in t),
+                  `${label}: test ${ti + 1}: a test that expects an exception has "run" and "throws" (the exception's class), and no check or expect`);
+                assert.ok(t.run.length <= 160, `${label}: test ${ti + 1} is too long to read in the results table`);
+                continue;
+              }
               if ('private' in t) {
                 assert.ok(/^[A-Z]\w*\.[a-z]\w*$/.test(t.private) && Object.keys(t).length === 1,
                   `${label}: test ${ti + 1}: "private" is all there is to such a test, written Class.field`);
@@ -624,6 +635,7 @@ describe('Question set file validation', () => {
               assert.ok(`${t.run ?? ''}${t.check}`.length <= 160, `${label}: test ${ti + 1} is too long to read in the results table`);
             }
             assert.ok(typeof q.solution === 'string' && q.solution.trim().length > 0, `${label}: code_write needs a reference solution`);
+            assert.ok(solutionLines(q) <= MAX_SOLUTION_LINES, `${label}: the reference solution is ${solutionLines(q)} lines; a problem here is finished in a few minutes (${MAX_SOLUTION_LINES} lines at most). Ask for one piece, and give the rest in scaffold`);
             // The reference solution has to compile, and each expect has to be a value of its check's type.
             let types;
             assert.doesNotThrow(() => { types = javaScriptTypes(q); }, `${label}: the reference solution, or one of the tests, does not compile`);
@@ -644,15 +656,18 @@ describe('Question set file validation', () => {
             assert.notEqual(sig.ret, 'void', `${label}: the method has to return something for a test to look at`);
             assert.ok(Array.isArray(q.tests) && q.tests.length >= 3, `${label}: code_write needs at least 3 test cases`);
             for (const [ti, t] of q.tests.entries()) {
-              assert.ok(t && Array.isArray(t.args) && 'expect' in t, `${label}: test ${ti + 1} needs an args array and an expect value`);
+              assert.ok(t && Array.isArray(t.args) && ('expect' in t) !== ('throws' in t), `${label}: test ${ti + 1} needs an args array, and either an expect value or the exception it throws`);
+              if ('throws' in t) assert.ok(/^[A-Z]\w*$/.test(t.throws), `${label}: test ${ti + 1}: "throws" is the class of the exception, such as IllegalArgumentException`);
               assert.equal(t.args.length, sig.params.length,
                 `${label}: test ${ti + 1} passes ${t.args.length} arguments but ${sig.header} takes ${sig.params.length}`);
               t.args.forEach((a, ai) => assert.doesNotThrow(() => javaFromJson(a, sig.params[ai].type),
                 `${label}: test ${ti + 1}, argument ${ai + 1} is not a ${sig.params[ai].type}`));
-              assert.doesNotThrow(() => javaFromJson(t.expect, sig.ret), `${label}: test ${ti + 1} expects something that is not a ${sig.ret}`);
+              if (!('throws' in t)) assert.doesNotThrow(() => javaFromJson(t.expect, sig.ret), `${label}: test ${ti + 1} expects something that is not a ${sig.ret}`);
             }
+            assert.ok(q.tests.some(t => 'expect' in t), `${label}: at least one test has to expect a value, not an exception`);
             assert.ok(typeof q.solution === 'string' && /\breturn\b/.test(q.solution),
               `${label}: code_write needs a reference solution that returns`);
+            assert.ok(solutionLines(q) <= MAX_SOLUTION_LINES, `${label}: the reference solution is ${solutionLines(q)} lines; a problem here is finished in a few minutes (${MAX_SOLUTION_LINES} lines at most)`);
             assert.ok(!('scaffold' in q), `${label}: Java problems are one method; scaffold is for Python class problems`);
             if ('hint' in q) {
               assert.ok(typeof q.hint === 'string' && q.hint.trim().length > 0 && q.hint.length <= 240 && !q.hint.includes('\n'),
@@ -685,6 +700,7 @@ describe('Question set file validation', () => {
             }
             assert.ok(typeof q.solution === 'string' && q.solution.trim().length > 0,
               `${label}: code_write needs a reference solution`);
+            assert.ok(solutionLines(q) <= MAX_SOLUTION_LINES, `${label}: the reference solution is ${solutionLines(q)} lines; a problem here is finished in a few minutes (${MAX_SOLUTION_LINES} lines at most)`);
             if ('hint' in q) {
               assert.ok(typeof q.hint === 'string' && q.hint.trim().length > 0 && q.hint.length <= 240,
                 `${label}: hint must be one line of at most 240 characters`);
@@ -713,6 +729,7 @@ describe('Question set file validation', () => {
               `is shown afterwards, and what proves the test table is satisfiable`);
             assert.ok(/\breturn\b/.test(q.solution),
               `${label}: the reference solution never returns anything`);
+            assert.ok(solutionLines(q) <= MAX_SOLUTION_LINES, `${label}: the reference solution is ${solutionLines(q)} lines; a problem here is finished in a few minutes (${MAX_SOLUTION_LINES} lines at most)`);
             if ('hint' in q) {
               assert.ok(typeof q.hint === 'string' && q.hint.trim().length > 0,
                 `${label}: hint must be a non-empty string when present`);

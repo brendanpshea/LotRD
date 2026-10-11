@@ -1174,6 +1174,183 @@ export const AGREES = {
     methods: J`String run() { return Studio.show(); }`,
     calls: ['run()', 'Studio.title()'],
   },
+  // ── exceptions: try, catch, finally
+  'try, catch and finally: which lines run, and in what order': {
+    methods: J`
+      String div(int a, int b) {
+          String log = "";
+          try { log += "try "; log += a / b; log += " after"; }
+          catch (ArithmeticException e) { log += "caught " + e.getMessage(); }
+          finally { log += " finally"; }
+          return log + " end";
+      }
+      int value() { int x = 1; try { return x; } finally { x = 2; System.out.println("finally " + x); } }
+      String nested(int n) {
+          String log = "";
+          try {
+              try { if (n == 1) throw new IllegalStateException("inner"); if (n == 2) throw new IllegalArgumentException("arg"); log += "ok"; }
+              catch (IllegalStateException e) { log += "A:" + e.getMessage(); if (n == 1) throw new RuntimeException("from catch"); }
+              finally { log += "|f1"; }
+          } catch (RuntimeException e) { log += "B:" + e.getMessage(); }
+          finally { log += "|f2"; }
+          return log;
+      }
+      String firstMatch(int n) {
+          try { if (n == 0) throw new NumberFormatException("nf"); if (n == 1) throw new IllegalArgumentException("ia"); if (n == 2) throw new RuntimeException("rt"); return "none"; }
+          catch (NumberFormatException e) { return "number"; }
+          catch (IllegalArgumentException e) { return "argument"; }
+          catch (Exception e) { return "exception"; }
+      }
+      String multi(int n) {
+          try { int[] a = new int[2]; String s = null; return "" + (n == 0 ? a[5] : n == 1 ? s.length() : 10 / (n - 2)); }
+          catch (ArrayIndexOutOfBoundsException | NullPointerException e) { return "either " + (e instanceof NullPointerException); }
+          catch (ArithmeticException e) { return e.getMessage(); }
+      }
+      int loops() {
+          int total = 0;
+          for (int i = 0; i < 6; i++) {
+              try { if (i == 1) continue; if (i == 4) break; total += 10 / (i - 2); }
+              catch (ArithmeticException e) { total += 1000; continue; }
+              finally { total += 100; }
+          }
+          return total;
+      }
+      int uncaught(int n) { try { return 10 / n; } catch (NullPointerException e) { return -1; } finally { System.out.println("cleanup"); } }
+      int inFinally(int n) { try { return 1; } finally { int x = 10 / n; } }
+      int replaced() { try { throw new IllegalStateException("first"); } finally { int[] a = new int[1]; a[3] = 1; } }
+      int onlyFinally(int n) { int x = 0; try { x = 10 / n; } finally { System.out.println("x is " + x); } return x; }`,
+    calls: ['div(6, 3)', 'div(1, 0)', 'value()', 'nested(0)', 'nested(1)', 'nested(2)', 'firstMatch(0)', 'firstMatch(1)', 'firstMatch(2)', 'firstMatch(3)', 'multi(0)', 'multi(1)', 'multi(2)', 'multi(3)',
+      'loops()', 'uncaught(5)', 'uncaught(0)', 'inFinally(1)', 'inFinally(0)', 'replaced()', 'onlyFinally(2)', 'onlyFinally(0)'],
+  },
+  'what a caught exception says about itself': {
+    methods: J`
+      String msg(int n) {
+          try {
+              int[] a = {1, 2}; String s = "abc"; ArrayList<String> list = new ArrayList<>(); list.add("x"); LinkedList<String> linked = new LinkedList<>();
+              switch (n) {
+                  case 0: return "" + 5 / n;
+                  case 1: return "" + a[n + 4];
+                  case 2: return "" + s.charAt(9);
+                  case 3: return s.substring(2, 1);
+                  case 4: return "" + Integer.parseInt("12x");
+                  case 5: return list.get(3);
+                  case 6: return "" + Double.parseDouble("abc");
+                  case 7: return "" + new int[-n].length;
+                  case 8: throw new IllegalStateException();
+                  case 9: throw new RuntimeException("mine");
+                  case 10: return linked.getFirst();
+                  case 11: return linked.get(2);
+                  case 12: list.add(5, "y"); return "added";
+                  case 13: return String.format("%d", s);
+                  case 14: return "" + 7 % (n - 14);
+                  case 15: Arrays.asList("p", "q").add("r"); return "added";
+                  case 16: return "" + Integer.parseInt("");
+                  case 17: return "" + Long.parseLong("99999999999999999999");
+                  default: return "none";
+              }
+          } catch (RuntimeException e) { return e.getMessage() + " / " + e + " / " + e.getLocalizedMessage(); }
+      }`,
+    calls: Array.from({ length: 19 }, (_, n) => `msg(${n})`),
+  },
+  'exception classes of the program\'s own': {
+    classes: J`
+      class LoanException extends Exception {
+          private int code;
+          public LoanException(String message, int code) { super(message); this.code = code; }
+          public int getCode() { return code; }
+      }
+      class Refused extends LoanException {
+          public Refused() { super("refused", 9); }
+          @Override public String getMessage() { return "[" + super.getMessage() + "]"; }
+      }
+      class Quiet extends RuntimeException { }
+      class Named extends RuntimeException {
+          Named(String m) { super(m); }
+          @Override public String toString() { return "Named!" + getMessage() + " " + super.toString(); }
+      }
+      class Outer {
+          static class Inner extends RuntimeException { Inner(String m) { super(m); } }
+          static String show() { return "" + new Inner("in"); }
+      }
+      class Bank {
+          int balance = 100;
+          Bank() { }
+          Bank(int start) throws LoanException { if (start < 0) throw new LoanException("negative start", 1); balance = start; }
+          void withdraw(int amount) throws LoanException {
+              if (amount > balance) throw new LoanException("short by " + (amount - balance), 2);
+              if (amount < 0) throw new Refused();
+              balance -= amount;
+          }
+      }`,
+    methods: J`
+      String take(int amount) {
+          Bank b = new Bank();
+          try { b.withdraw(amount); return "ok " + b.balance; }
+          catch (Refused e) { return "refused: " + e.getMessage() + " " + e.getCode() + " " + e; }
+          catch (LoanException e) { return e.getMessage() + " code " + e.getCode() + " " + e; }
+          finally { System.out.println("balance " + b.balance); }
+      }
+      String open(int start) { try { Bank b = new Bank(start); return "opened " + b.balance; } catch (LoanException e) { return "failed: " + e.getMessage(); } }
+      String shows() { return new Quiet() + " " + new Quiet().getMessage() + " " + new Named("n") + " " + Outer.show() + " " + new LoanException("m", 1) + " " + new Refused().getLocalizedMessage() + " " + new Exception() + new Exception("e").toString(); }
+      int thrownQuiet() { throw new Quiet(); }
+      int thrownChecked() throws LoanException { throw new Refused(); }
+      String held() {
+          Exception e = new IllegalArgumentException("kept"); RuntimeException r = new Named("x");
+          ArrayList<Exception> all = new ArrayList<>(); all.add(e); all.add(r); all.add(new LoanException("z", 3));
+          String out = "";
+          for (Exception x : all) out += x.getMessage() + (x instanceof RuntimeException) + (x instanceof LoanException ? ((LoanException) x).getCode() : -1) + " ";
+          return out + (e == all.get(0)) + e.equals(r);
+      }
+      String later() { RuntimeException saved = null; try { int[] a = new int[1]; a[2] = 0; } catch (RuntimeException e) { saved = e; } return saved.getMessage() + " " + (saved instanceof IndexOutOfBoundsException); }
+      int thrownAgain() { RuntimeException saved = null; try { int z = 0; z = 5 / z; } catch (RuntimeException e) { saved = e; } System.out.println("between"); throw saved; }`,
+    calls: ['take(30)', 'take(500)', 'take(-1)', 'open(5)', 'open(-5)', 'shows()', 'thrownQuiet()', 'thrownChecked()', 'held()', 'later()', 'thrownAgain()'],
+  },
+  'checked exceptions: declared, caught, passed on': {
+    classes: J`
+      class Trouble extends Exception { Trouble(String m) { super(m); } }
+      interface Reader { String read(int n) throws IOException; }
+      class Disk implements Reader { public String read(int n) throws FileNotFoundException { if (n < 0) throw new FileNotFoundException("no " + n); return "d" + n; } }
+      class Memory implements Reader { public String read(int n) { return "m" + n; } }`,
+    methods: J`
+      int risky(int n) throws IOException { if (n > 1) throw new FileNotFoundException("f" + n); if (n < 0) throw new IOException(); return n; }
+      int passes(int n) throws IOException { return risky(n) + 1; }
+      int wider(int n) throws Exception { return risky(n) + 2; }
+      String handles(int n) { try { return "" + passes(n); } catch (FileNotFoundException e) { return "missing " + e.getMessage(); } catch (IOException e) { return "io " + e.getMessage(); } }
+      int rethrows(int n) throws IOException { try { return risky(n); } catch (Exception e) { System.out.println("saw " + e.getMessage()); throw e; } }
+      int rethrowsUnchecked(int n) { try { return 10 / n; } catch (Exception e) { throw e; } }
+      int wraps(int n) { try { return risky(n); } catch (IOException e) { throw new RuntimeException("wrapped " + e.getMessage()); } }
+      String both(int n) throws Trouble {
+          try { if (n == 0) throw new Trouble("zero"); return "" + risky(n); }
+          catch (IOException | Trouble e) { if (n == 0) throw new Trouble("again " + e.getMessage()); return "caught " + e.getMessage(); }
+      }
+      String reads(Reader r, int n) { try { return r.read(n); } catch (IOException e) { return "failed " + e.getMessage(); } }
+      String readers() { Disk d = new Disk(); Memory m = new Memory(); String direct = m.read(1); return direct + reads(d, 2) + reads(d, -2) + reads(m, 3); }
+      int generalThenThrow(int n) { try { if (n > 0) throw new Exception("checked"); return 0; } catch (Exception e) { return e.getMessage().length(); } }
+      int unusedCatch(int n) { try { return n; } catch (Exception e) { return -1; } }
+      int declaresMore(int n) throws IOException, IllegalStateException, Trouble { return n; }`,
+    calls: ['passes(0)', 'passes(5)', 'passes(-1)', 'wider(3)', 'handles(1)', 'handles(4)', 'handles(-1)', 'rethrows(0)', 'rethrows(9)', 'rethrowsUnchecked(0)', 'wraps(1)', 'wraps(7)',
+      'both(0)', 'both(1)', 'both(5)', 'readers()', 'generalThenThrow(1)', 'unusedCatch(4)', 'declaresMore(6)'],
+  },
+  'try, and what Java can be sure of': {
+    methods: J`
+      int both(int n) { int x; try { x = 10 / n; } catch (ArithmeticException e) { x = -1; } return x; }
+      int viaFinally(int n) { int x; try { if (n > 0) n++; } finally { x = 5; } return x + n; }
+      int breakThroughFinally() { int x; while (true) { try { break; } finally { x = 7; } } return x; }
+      int catchLeaves(int n) { int x; try { x = 10 / n; } catch (ArithmeticException e) { return -1; } return x; }
+      int tryLeaves(int n) { try { return 10 / n; } catch (ArithmeticException e) { n = -1; } return n; }
+      int allLeave(int n) { try { return 10 / n; } catch (ArithmeticException e) { throw new IllegalStateException("bad"); } }
+      int throwInTry(int n) { try { if (n == 0) throw new IllegalArgumentException("z"); return n; } catch (IllegalArgumentException e) { return -5; } }
+      int sameName(int n) { try { n = 10 / n; } catch (ArithmeticException e) { n = 1; } try { n = 10 / (n - 1); } catch (ArithmeticException e) { n = 2; } return n; }
+      int deep(int n) { if (n == 0) throw new IllegalStateException("bottom"); return deep(n - 1) + 1; }
+      int deepOk(int n) { return n == 0 ? 0 : deepOk(n - 1) + 1; }
+      int recovers() { int total = 0; for (int i = 0; i < 5; i++) { try { total += deep(300); } catch (IllegalStateException e) { total++; } } return total + deepOk(300); }
+      String inSwitch(int n) {
+          try { return switch (n) { case 1 -> "one"; case 2 -> throw new IllegalStateException("two"); default -> { if (n < 0) throw new IllegalArgumentException("neg"); yield "many"; } }; }
+          catch (IllegalStateException e) { return "caught " + e.getMessage(); }
+      }`,
+    calls: ['both(2)', 'both(0)', 'viaFinally(1)', 'breakThroughFinally()', 'catchLeaves(5)', 'catchLeaves(0)', 'tryLeaves(0)', 'tryLeaves(2)', 'allLeave(0)', 'throwInTry(0)', 'throwInTry(3)', 'sameName(0)', 'sameName(5)',
+      'recovers()', 'inSwitch(1)', 'inSwitch(2)', 'inSwitch(3)', 'inSwitch(-1)'],
+  },
 };
 
 /**
@@ -1707,6 +1884,52 @@ export const REJECTS = {
   'a name from instanceof used where the test may have failed': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } String p() { return "p"; } }`, methods: J`String f(Figure c) { if (c instanceof Toy t) { return "a"; } return t.p(); }` },
   'a name from instanceof used on the wrong side of ||': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } String p() { return "p"; } }`, methods: J`boolean f(Figure c) { return c instanceof Toy t || t.p().isEmpty(); }` },
   'a name from instanceof that is already a variable': { classes: J`class Figure { private String name; protected int level; Figure(String name) { this.name = name; } public String getName() { return name; } public String perform() { return "x"; } String plain() { return "p"; } private String hidden() { return "h"; } public final String fixed() { return "f"; } static String kind() { return "k"; } } class Toy extends Figure { Toy(String n) { super(n); } }`, methods: J`boolean f(Figure c) { int t = 1; return c instanceof Toy t; }` },
+  // ── exceptions
+  'calling a method that throws a checked exception, and neither catching nor declaring it': J`int g() throws IOException { return 1; } int f() { return g(); }`,
+  'a checked exception caught too narrowly': J`int g() throws IOException { return 1; } int f() { try { return g(); } catch (FileNotFoundException e) { return 0; } }`,
+  'a checked exception declared too narrowly': J`int g() throws IOException { return 1; } int f() throws FileNotFoundException { return g(); }`,
+  'a general catch before a particular one': J`int f(int n) { try { return 10 / n; } catch (RuntimeException e) { return 0; } catch (ArithmeticException e) { return 1; } }`,
+  'catch (Exception) before any other': J`int f(int n) { try { return 10 / n; } catch (Exception e) { return 0; } catch (IllegalStateException e) { return 1; } }`,
+  'the same catch twice': J`int f(int n) { try { return 10 / n; } catch (ArithmeticException e) { return 0; } catch (ArithmeticException e) { return 1; } }`,
+  'a catch for a checked exception the try cannot throw': J`int f(int n) { try { return 10 / n; } catch (IOException e) { return 0; } }`,
+  'a catch for a checked exception of the program\'s own that the try cannot throw': { classes: 'class Trouble extends Exception { }', methods: J`int f(int n) { try { return n; } catch (Trouble e) { return 0; } }` },
+  'alternatives in one catch where one is a kind of the other': J`int f(int n) { try { return 10 / n; } catch (RuntimeException | ArithmeticException e) { return 0; } }`,
+  'giving a new value to the exception of a multi-catch': J`int f(int n) { try { return 10 / n; } catch (ArithmeticException | NullPointerException e) { e = null; return 0; } }`,
+  'a try with neither catch nor finally': J`int f(int n) { try { return n; } }`,
+  'a catch with no try': J`int f(int n) { catch (Exception e) { return 0; } return n; }`,
+  'a finally with no try': J`int f(int n) { finally { n++; } return n; }`,
+  'a catch with no name for the exception': J`int f(int n) { try { return 10 / n; } catch (ArithmeticException) { return 0; } }`,
+  'a variable given its value only in the try, with a catch that goes on': J`int f(int n) { int x; try { x = 10 / n; } catch (ArithmeticException e) { } return x; }`,
+  'a variable given its value in the try and read in the finally': J`int f(int n) { int x; try { x = n; } finally { n = x; } return n; }`,
+  'a variable given its value in the try and read in the catch': J`int f(int n) { int x; try { x = 10 / n; } catch (ArithmeticException e) { return x; } return x; }`,
+  'a variable given its value in one catch of two': J`int f(int n) { int x; try { x = 10 / n; } catch (ArithmeticException e) { x = 1; } catch (RuntimeException e) { } return x; }`,
+  'a line after a try in which every path leaves': J`int f(int n) { try { return 10 / n; } catch (ArithmeticException e) { return 0; } n++; return n; }`,
+  'no return after a catch that goes on': J`int f(int n) { try { return 10 / n; } catch (ArithmeticException e) { n = 0; } }`,
+  'no return after a try whose finally goes on': J`int f(int n) { try { n = 10 / n; } finally { n++; } }`,
+  'a line after throw inside a try': J`int f(int n) { try { throw new IllegalStateException(); n++; } catch (IllegalStateException e) { return 0; } }`,
+  'catching something that is not an exception': J`int f(int n) { try { return n; } catch (String e) { return 0; } }`,
+  'throws with something that is not an exception': J`int f(int n) throws String { return n; }`,
+  'throwing a value that is not an exception': J`int f(int n) { throw n; }`,
+  'throwing an object of a class that is not an exception': { classes: 'class Trouble { }', methods: J`int f(int n) { throw new Trouble(); }` },
+  'the caught exception named like a parameter': J`int f(int e) { try { return 10 / e; } catch (ArithmeticException e) { return 0; } }`,
+  'the caught exception named like a local variable': J`int f(int n) { int e = 1; try { return 10 / n; } catch (ArithmeticException e) { return 0; } }`,
+  'the caught exception used after its catch': J`String f(int n) { try { n = 10 / n; } catch (ArithmeticException e) { n = 0; } return e.getMessage(); }`,
+  'an override that adds a checked exception': { classes: J`class A { void go() { } } class B extends A { @Override void go() throws IOException { } }`, methods: 'int f() { return 1; }' },
+  'an override that widens the checked exception': { classes: J`class A { void go() throws FileNotFoundException { } } class B extends A { void go() throws IOException { } }`, methods: 'int f() { return 1; }' },
+  'an interface method implemented with a checked exception it does not allow': { classes: J`interface Job { void run(); } class Slow implements Job { public void run() throws InterruptedException { } }`, methods: 'int f() { return 1; }' },
+  'a constructor supplied by Java over one that throws': { classes: J`class A { A() throws IOException { } } class B extends A { }`, methods: 'int f() { return 1; }' },
+  'a constructor that says nothing over one that throws': { classes: J`class A { A() throws IOException { } } class B extends A { B() { } }`, methods: 'int f() { return 1; }' },
+  'a constructor that throws, called without a catch': { classes: J`class A { A() throws IOException { } }`, methods: 'int f() { A a = new A(); return 1; }' },
+  'super(…) to a constructor that throws, without saying so': { classes: J`class A { A(int n) throws IOException { } } class B extends A { B() { super(1); } }`, methods: 'int f() { return 1; }' },
+  'a checked exception caught as Exception and thrown on, undeclared': J`int g() throws IOException { return 1; } int f() { try { return g(); } catch (Exception e) { throw e; } }`,
+  'a checked exception thrown from a catch, undeclared': J`int f(int n) { try { return 10 / n; } catch (ArithmeticException e) { throw new Exception("x"); } }`,
+  'a checked exception thrown from a finally, undeclared': J`int g() throws IOException { return 1; } int f(int n) { try { return n; } finally { g(); } }`,
+  'a method an exception does not have': J`String f() { try { return "a"; } catch (RuntimeException e) { return e.message(); } }`,
+  'the message read as a field': J`String f() { try { return "a"; } catch (RuntimeException e) { return e.message; } }`,
+  'a toString that says it throws': { classes: J`class A { public String toString() throws IOException { return "a"; } }`, methods: 'int f() { return 1; }' },
+  'an exception stored in a variable of an unrelated exception type': J`int f() { ArithmeticException e = new IllegalStateException("x"); return 1; }`,
+  'a checked exception class extended and thrown undeclared': { classes: 'class Trouble extends Exception { } class Worse extends Trouble { }', methods: J`int f() { throw new Worse(); }` },
+  'instanceof between unrelated exception classes': J`boolean f() { ArithmeticException e = new ArithmeticException(); return e instanceof IllegalStateException; }`,
 };
 
 /**
@@ -1767,7 +1990,6 @@ export const REFUSES = {
   'an iterator': { methods: J`int f() { ArrayList<String> xs = new ArrayList<>(); return xs.iterator().hasNext() ? 1 : 0; }`, calls: ['f()'] },
   'a lambda': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(1, 2, 3)); xs.removeIf(x -> x > 1); return xs.size(); }`, calls: ['f()'] },
   'List.of': { methods: J`int f() { return List.of(1, 2).size(); }`, calls: ['f()'] },
-  'try and catch': { methods: J`int f(int a) { try { return 10 / a; } catch (ArithmeticException e) { return -1; } }`, calls: ['f(0)'] },
   'a format in hexadecimal': { methods: J`String f(int n) { return String.format("%x", n); }`, calls: ['f(255)'] },
   'a format in scientific notation': { methods: J`String f(double d) { return String.format("%e", d); }`, calls: ['f(3.14159)'] },
   'a numbered format argument': { methods: J`String f(int n) { return String.format("%1$d %1$d", n); }`, calls: ['f(5)'] },
@@ -1798,6 +2020,27 @@ export const REFUSES = {
   'an if that ends at a stray semicolon': { methods: J`int f(int a) { if (a > 0); return 1; }`, calls: ['f(1)'] },
   'an underscore as a name': { methods: J`int f(int[] xs) { int n = 0; for (int _ : xs) n++; return n; }`, calls: ['f(new int[3])'] },
   'a yield statement in an old-style value switch': { methods: J`int f(int a) { return switch (a) { case 1: yield 10; default: yield 20; }; }`, calls: ['f(1)'] },
+  // ── exceptions
+  'the message of a NullPointerException, which Java writes at length': { methods: J`String f() { String s = null; try { return "" + s.length(); } catch (NullPointerException e) { return e.getMessage(); } }`, calls: ['f()'] },
+  'a NullPointerException joined to text': { methods: J`String f() { int[] a = null; try { return "" + a[0]; } catch (RuntimeException e) { return "got " + e; } }`, calls: ['f()'] },
+  'the message of a ClassCastException': { classes: 'class A { } class B extends A { } class C extends A { }', methods: J`String f() { A a = new B(); try { C c = (C) a; return "cast"; } catch (ClassCastException e) { return e.getMessage(); } }`, calls: ['f()'] },
+  'a finally that returns': { methods: J`int f() { try { return 1; } finally { return 2; } }`, calls: ['f()'] },
+  'a finally that throws': { methods: J`int f(int n) { try { return 1; } finally { if (n > 0) throw new IllegalStateException(); } }`, calls: ['f(0)'] },
+  'a finally with a loop in it': { methods: J`int f(int n) { try { return n; } finally { for (int i = 0; i < 3; i++) n++; } }`, calls: ['f(1)'] },
+  'catching Throwable': { methods: J`int f(int n) { try { return 10 / n; } catch (Throwable e) { return -1; } }`, calls: ['f(0)'] },
+  'printStackTrace': { methods: J`int f(int n) { try { return 10 / n; } catch (ArithmeticException e) { e.printStackTrace(); return -1; } }`, calls: ['f(0)'] },
+  'an exception made with a cause': { methods: J`int f(int n) { try { return 10 / n; } catch (ArithmeticException e) { throw new RuntimeException("wrapped", e); } }`, calls: ['f(0)'] },
+  'getCause': { methods: J`boolean f() { return new RuntimeException("x").getCause() == null; }`, calls: ['f()'] },
+  'throw null': { methods: J`int f() { throw null; }`, calls: ['f()'] },
+  'giving the caught exception a new value': { methods: J`String f(int n) { try { return "" + 10 / n; } catch (RuntimeException e) { e = new IllegalStateException("other"); return e.getMessage(); } }`, calls: ['f(0)'] },
+  'an exception made with an index': { methods: J`int f() { throw new ArrayIndexOutOfBoundsException(5); }`, calls: ['f()'] },
+  'an exception made with a bare null': { methods: J`int f() { throw new IllegalStateException((String) null); } int g() { throw new NumberFormatException(null); }`, calls: ['g()'] },
+  'a static field whose starting value throws': { classes: 'class Holder { static int x = 10 / Integer.parseInt("0"); }', methods: J`int f() { try { return Holder.x; } catch (ArithmeticException e) { return -1; } }`, calls: ['f()'] },
+  'try with resources': { methods: J`int f() { try (Scanner in = new Scanner("5")) { return in.nextInt(); } }`, calls: ['f()'] },
+  'an exception class with its package written out': { methods: J`int f(int n) { try { return 10 / n; } catch (java.lang.ArithmeticException e) { return -1; } }`, calls: ['f(0)'] },
+  'catching an error of the machine': { methods: J`int f(int n) { try { return f(n + 1); } catch (StackOverflowError e) { return n > 0 ? 1 : 0; } }`, calls: ['f(0)'] },
+  'an exception class that writes its own getCause': { classes: 'class Odd extends RuntimeException { public Throwable getCause() { return null; } }', methods: J`boolean f() { return new Odd().getCause() == null; }`, calls: ['f()'] },
+  'a field whose starting value may throw a checked exception': { classes: 'class Src { static int get() throws IOException { return 4; } } class Uses { int x = Src.get(); Uses() throws IOException { } }', methods: J`int f() throws IOException { return new Uses().x; }`, calls: ['f()'] },
 };
 
 // ─── generated cases ─────────────────────────────────────────────────────────
@@ -2500,4 +2743,216 @@ export function inheritanceCases(seed, count, depth = 1) {
       calls: ['m(1, "axe", true)', 'm(-4, null, false)'],
     };
   });
+}
+
+// ─── generated try / catch / finally ─────────────────────────────────────────
+//
+// Random nests of try, catch and finally around lines that throw — some
+// exceptions checked, some not, some of the case's own — inside the same ifs
+// and loops as above. javac decides which compile: a checked exception neither
+// caught nor declared, a catch that can never run, a catch for a checked
+// exception the try cannot throw, a variable that a try might not have reached.
+// jtiny has to decide the same, and then take the same path through the rest.
+
+const TRY_CLASSES = J`class Checked extends Exception { Checked(String m) { super(m); } }
+class Quiet extends Checked { Quiet() { super("quiet"); } }
+class Loud extends RuntimeException { int code; Loud(String m) { super(m); code = m.length(); }
+  public String getMessage() { return "loud " + super.getMessage(); } }`;
+const TRY_HELPERS = J`  int risky(int n) throws IOException { if (n > 1) throw new FileNotFoundException("f" + n); if (n < 0) throw new IOException(); return n; }
+  int picky(int n) throws Checked { if (n == 1) throw new Checked("c" + n); if (n == 2) throw new Quiet(); return n + 1; }
+  int wild(int n) { if (n > 2) throw new Loud("w" + n); if (n < 0) throw new IllegalStateException("neg"); return n * 2; }
+  int any(int n) throws Exception { if (n == 0) throw new Exception("zero"); return n; }`;
+const TRY_THROWN = ['RuntimeException("r")', 'IllegalArgumentException("ia")', 'IllegalStateException()', 'ArithmeticException("ar")', 'Exception("ex")', 'IOException("io")',
+  'FileNotFoundException("fnf")', 'Checked("ch")', 'Quiet()', 'Loud("ld")', 'NumberFormatException("nf")', 'NullPointerException("np")', 'IndexOutOfBoundsException("ix")'];
+const TRY_CAUGHT = ['Exception', 'Exception', 'RuntimeException', 'RuntimeException', 'ArithmeticException', 'IllegalArgumentException', 'NumberFormatException', 'IllegalStateException',
+  'NullPointerException', 'ArrayIndexOutOfBoundsException', 'IndexOutOfBoundsException', 'IOException', 'IOException', 'FileNotFoundException', 'Checked', 'Checked', 'Quiet', 'Loud', 'Throwable',
+  'ArithmeticException | NullPointerException', 'IOException | Checked', 'IllegalStateException | Loud', 'Exception | Loud', 'Checked | Quiet', 'String'];
+const TRY_RISKS = ['b += 10 / a;', 'b += xs[a];', 'b += s.length();', 'b += Integer.parseInt(t ? "5" : "x" + a);', 'b += risky(a);', 'b += risky(a);', 'b += picky(a);', 'b += picky(a);',
+  'b += wild(a);', 'b += any(a);', 'b += risky(b) + picky(b);', 'xs[b] = a;', 'b %= a;'];
+const TRY_THROWS = ['', '', ' throws Exception', ' throws Exception', ' throws Exception', ' throws IOException', ' throws Checked', ' throws IOException, Checked', ' throws RuntimeException', ' throws FileNotFoundException'];
+export const TRY_ARGUMENTS = ['1, 2, true', '0, 0, false', '5, 1, true', '-1, 3, false', '2, -1, true'];
+
+function tryBody(rng) {
+  const scopes = [[]];
+  let next = 0;
+  let marker = 0;
+  const visible = () => scopes.flat().filter(v => !v.exception);
+  const caught = () => scopes.flat().filter(v => v.exception);
+  const readable = () => {
+    const all = visible();
+    const likely = all.filter(v => v.assigned);
+    if (likely.length && rng.next() < 0.85) return rng.pick(likely).name;
+    if (all.length && rng.next() < 0.9) return rng.pick(all).name;
+    return rng.pick(['a', 'b']);
+  };
+  const writable = () => { const all = visible(); return all.length ? rng.pick(all) : null; };
+  const value = () => rng.pick(['a', 'b', String(rng.int(5)), readable(), readable(), `${readable()} + 1`, 'a + b']);
+  const test = () => rng.pick(['t', 't', '!t', 'a > b', 'a == 1', 'b > 0', `${readable()} > 0`, 'true', 'a > 0 && b > 0']);
+  const pad = depth => '    ' + '  '.repeat(depth);
+
+  const run = (depth, ctx, budget) => {
+    const lines = [];
+    const count = 1 + rng.int(budget);
+    for (let i = 0; i < count; i++) {
+      const [text, leaves] = statement(depth, ctx);
+      lines.push(text);
+      if (leaves && rng.next() < 0.9) break;
+    }
+    return lines.join('\n');
+  };
+  const block = (depth, ctx, opening = '', budget = 3, names = []) => {
+    scopes.push([...names]);
+    const body = (opening ? `${pad(depth + 1)}${opening}\n` : '') + run(depth + 1, ctx, budget);
+    scopes.pop();
+    return `{\n${body}\n${pad(depth)}}`;
+  };
+
+  function statement(depth, ctx) {
+    const p = pad(depth);
+    const deep = depth >= 3;
+    // In a finally, mostly the plain lines that this box runs there; now and then one of the others.
+    const roll = ctx.cleanup && rng.next() < 0.92 ? rng.pick([1, 3, 4, 5, 6, 20]) : rng.int(deep ? 16 : 26);
+    switch (roll) {
+      case 0: { const name = `v${next++}`; scopes[scopes.length - 1].push({ name, assigned: false }); return [`${p}int ${name};`, false]; }
+      case 1: case 2: { const init = value(); const name = `v${next++}`; scopes[scopes.length - 1].push({ name, assigned: true }); return [`${p}int ${name} = ${init};`, false]; }
+      case 3: case 4: {
+        const w = writable();
+        if (!w) return [`${p}a++;`, false];
+        if (rng.next() < 0.25) return [`${p}${w.name} += ${value()};`, false];
+        const v = value();
+        w.assigned = true;
+        return [`${p}${w.name} = ${v};`, false];
+      }
+      case 5: return [`${p}System.out.print("${String.fromCharCode(65 + (marker++ % 26))}");`, false];
+      case 6: return [`${p}b += ${readable()};`, false];
+      case 7: return [`${p}return ${value()};`, true];
+      case 8:
+        if (ctx.loop || rng.next() < 0.05) return [`${p}${rng.next() < 0.5 ? 'break' : 'continue'};`, true];
+        return [`${p}b++;`, false];
+      case 9: case 10: return [`${p}throw new ${rng.pick(TRY_THROWN)};`, true];
+      case 11: case 12: case 13: return [`${p}${rng.pick(TRY_RISKS)}`, false];
+      case 14: case 15: {
+        const e = caught();
+        if (!e.length) return [`${p}${rng.pick(TRY_RISKS)}`, false];
+        const { name } = rng.pick(e);
+        switch (rng.int(8)) {
+          case 0: return [`${p}throw ${name};`, true];
+          case 1: return [`${p}System.out.print(${name}.getMessage());`, false];
+          case 2: return [`${p}System.out.print(${name});`, false];
+          case 3: return [`${p}b += ${name}.getMessage() == null ? 1 : ${name}.getMessage().length();`, false];
+          case 4: return [`${p}b += ${name} instanceof ${rng.pick(['Loud', 'Checked', 'IOException', 'RuntimeException', 'ArithmeticException'])} ? 10 : 20;`, false];
+          case 5: return [`${p}throw new RuntimeException("again " + ${name}.getMessage());`, true];
+          case 6: return [`${p}${name} = null;`, false];
+          default: return [`${p}System.out.print(${name} instanceof RuntimeException);`, false];
+        }
+      }
+      case 16: case 17: case 18: case 19: {
+        // try, with one to three catches and perhaps a finally
+        const body = block(depth, ctx, '', 3);
+        const catches = [];
+        const count = rng.next() < 0.12 ? 0 : 1 + rng.int(rng.next() < 0.3 ? 3 : 1);
+        for (let i = 0; i < count; i++) {
+          const name = `e${next++}`;
+          catches.push(` catch (${rng.pick(TRY_CAUGHT)} ${name}) ${block(depth, ctx, '', 2, [{ name, exception: true }])}`);
+        }
+        const cleanup = count === 0 || rng.next() < 0.35 ? ` finally ${block(depth, { cleanup: true }, '', 2)}` : '';
+        return [`${p}try ${body}${catches.join('')}${cleanup}`, false];
+      }
+      case 20: case 21: case 22: {
+        const c = test();
+        const then = block(depth, ctx);
+        if (rng.next() < 0.5) return [`${p}if (${c}) ${then}`, false];
+        return [`${p}if (${c}) ${then} else ${block(depth, ctx)}`, false];
+      }
+      case 23: return [`${p}while (${rng.next() < 0.5 ? 'b < 4' : test()}) ${block(depth, { loop: true }, GUARD)}`, false];
+      case 24: return [`${p}for (int i${next} = 0; i${next} < 3; i${next++}++) ${block(depth, { loop: true }, GUARD)}`, false];
+      default: {
+        const w = writable();
+        if (w && rng.next() < 0.5) { w.assigned = true; return [`${p}${w.name} = ${rng.int(9)};`, false]; }
+        return [`${p}b += ${value()};`, false];
+      }
+    }
+  }
+
+  let body = run(0, {}, 5);
+  if (rng.next() < 0.8) body += `\n    return ${value()};`;
+  return body;
+}
+
+/** `count` generated methods built around try, each called with every argument set. */
+export function tryCases(seed, count) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, () => {
+    const throwing = rng.pick(TRY_THROWS);
+    return {
+      classes: TRY_CLASSES,
+      methods: `${TRY_HELPERS}\n  int m(int a, int b, boolean t)${throwing} {\n    int g = 0; int[] xs = {3, 4}; String s = t ? "ab" : null;\n${tryBody(rng)}\n  }`,
+      calls: TRY_ARGUMENTS.map(args => `m(${args})`),
+    };
+  });
+}
+
+// ─── every exception the library can throw, caught ───────────────────────────
+//
+// Before there was a catch, an exception ended the run, and only its name
+// could be compared. Now a program can go on afterwards, so two more things
+// have to match Java: the message, and what the line had already done before
+// it failed — the index moved on, the half-built text, the list as it stands.
+
+const SITE_SETUP = J`int z = a - 2; int i = 1; int[] arr = {1, 2, 3}; int[] none = null; String s = "hello"; String nul = null;
+    StringBuilder sb = new StringBuilder("abc"); Integer boxed = null; Integer five = 5;
+    ArrayList<String> list = new ArrayList<>(Arrays.asList("x", "y", "z")); List<String> fixed = Arrays.asList("p", "q");
+    LinkedList<Integer> empty = new LinkedList<>(); LinkedList<Integer> nums = new LinkedList<>(Arrays.asList(4, 5));
+    HashMap<String, Integer> map = new HashMap<>(); map.put("k", 1); HashSet<String> set = new HashSet<>(list);`;
+const SITE_AFTER = 'i + Arrays.toString(arr) + sb + list + fixed + empty + nums + map + set + five';
+const SITES = [
+  'i = 10 / z', 'i = 10 % z', 'i /= z', 'i %= z', 'long w = 5L / z; i = (int) w', 'i = five / z', 'double d = 1.0 / z; i = (int) d',
+  'arr[i++] = 10 / z', 'arr[a] = i++', 'arr[i = 2] = arr[a]', 'i = arr[a] + (i = 5)', 'i = (i = 7) + arr[a]', 'i += arr[a]', 'arr[a]++', 'arr[a] += i++', '--arr[a]',
+  'arr[i++] = arr[a]', 'i = arr[a]', 'arr[a] = 7', 'none[i++] = 1', 'i = none.length', 'i = none[0]', 'for (int q : none) i++',
+  'int[] big = new int[a]; i = big.length', 'int[][] grid = new int[2][a]; i = grid.length', 'int[][] grid = new int[a][2]; i = grid.length', 'String[] names = new String[a]; i = names.length',
+  'i = Arrays.copyOf(arr, a).length', 'i = Arrays.copyOfRange(arr, a, 2).length', 'i = Arrays.copyOfRange(arr, 1, a).length', 'Arrays.sort(none)', 'Arrays.fill(none, 1)', 'i = Arrays.toString(none).length()',
+  'i = s.charAt(a)', 'i = s.substring(a).length()', 'i = s.substring(1, a).length()', 'i = s.substring(a, 2).length()', 'i = s.repeat(a).length()', 'i = nul.length()', 'i = s.compareTo(nul)',
+  'i = s.concat(nul).length()', 'i = s.indexOf(nul)', 'i = s.contains(nul) ? 1 : 2', 'i = nul.equals(s) ? 1 : 2', 'i = s.equals(nul) ? 1 : 2', 'i = (nul + s).length()', 'i = s.split(nul).length',
+  'i = s.replace(nul, "x").length()', 'i = s.startsWith(nul) ? 1 : 2', 'i = String.valueOf(nul).length()', 'i = String.join(nul, "a", "b").length()', 'i = s.toCharArray()[a]',
+  'switch (nul) { case "a": i = 3; break; default: i = 4; }',
+  'sb.insert(a, "Q")', 'sb.deleteCharAt(a)', 'sb.delete(a, 2)', 'sb.delete(1, a)', 'sb.replace(a, 2, "Z")', 'sb.replace(1, a, "Z")', 'sb.setCharAt(a, \'Z\')', 'i = sb.charAt(a)', 'sb.setLength(a)',
+  'i = sb.substring(a).length()', 'i = sb.substring(1, a).length()', 'sb.append("x").deleteCharAt(a)', 'sb.append(nul).insert(a, nul)', 'StringBuilder other = new StringBuilder(a); i = other.length()',
+  'StringBuilder other = new StringBuilder(nul); i = other.length()', 'sb.reverse().setCharAt(a, \'Q\')',
+  'i = boxed', 'i = boxed + 1', 'boxed++', 'i += boxed', 'i = five + boxed', 'i = boxed.intValue()', 'i = boxed.equals(five) ? 1 : 2', 'i = five.equals(boxed) ? 1 : 2', 'i = five.compareTo(boxed)',
+  'i = map.get("zz")', 'i = map.get("k") / z', 'map.put("n", map.get("zz") + 1)', 'i = map.getOrDefault("zz", boxed)', 'map.put("k", map.get("k") + arr[a])',
+  'i = Integer.parseInt(s.substring(0, 1) + a)', 'i = Integer.parseInt(a + "x")', 'i = Integer.parseInt("")', 'i = Integer.parseInt(nul)', 'i = Integer.parseInt(" 5")', 'i = Integer.parseInt("+")',
+  'i = Integer.parseInt("-")', 'i = Integer.parseInt("2147483648")', 'i = Integer.parseInt("5.0")', 'i = Integer.parseInt("١٢")', 'long w = Long.parseLong("9x"); i = (int) w', 'long w = Long.parseLong(nul); i = (int) w',
+  'double d = Double.parseDouble("1.5x"); i = (int) d', 'double d = Double.parseDouble(""); i = (int) d', 'double d = Double.parseDouble("  "); i = (int) d', 'double d = Double.parseDouble(nul); i = (int) d',
+  'i = Integer.valueOf("q")', 'double d = Double.valueOf("q"); i = (int) d', 'i = Boolean.parseBoolean(nul) ? 1 : 2', 'i = Character.getNumericValue(s.charAt(a))',
+  'i = String.format("%d", s).length()', 'i = String.format("%d %d", a).length()', 'i = String.format("%.2f", a).length()', 'i = String.format("%s %s", s).length()', 'i = String.format("%c", s).length()',
+  'i = String.format("%b %d", s, 2.5).length()', 'System.out.printf("%d %d%n", a)', 'System.out.printf("%s=%d%n", s, s)', 'System.out.printf("a%n%d", s)', 'i = "%d items".formatted(s).length()',
+  'i = String.format(nul, a).length()', 'i = String.format("%5d|%-5s|%05d", a, s).length()',
+  'i = list.get(a).length()', 'list.set(a, "n")', 'list.add(a, "n")', 'list.remove(a)', 'list.remove(i++ + a)', 'list.add(list.get(a))', 'list.set(i++, list.get(a))', 'list.addAll(a, fixed)', 'list.addAll(null)',
+  'i = list.containsAll(null) ? 1 : 2', 'list.removeAll(null)', 'list.retainAll(null)', 'list.add(null); Collections.sort(list)', 'list.add(1, null); i = Collections.max(list).length()',
+  'list.clear(); i = list.getFirst().length()', 'list.clear(); list.removeLast()', 'list.clear(); i = Collections.max(list).length()', 'list.clear(); i = Collections.min(list).length()',
+  'Collections.swap(list, 0, a)', 'Collections.swap(list, a, 0)', 'Collections.reverse(null)', 'i = Collections.frequency(null, "x")', 'ArrayList<String> more = new ArrayList<>(a); i = more.size()',
+  'ArrayList<String> more = new ArrayList<>(null); i = more.size()', 'HashMap<String, Integer> more = new HashMap<>(a); i = more.size()', 'HashSet<String> more = new HashSet<>(a); i = more.size()',
+  'i = fixed.get(a).length()', 'fixed.set(a, "n")', 'fixed.add("n")', 'fixed.add(0, "n")', 'fixed.remove(a)', 'fixed.remove("p")', 'fixed.remove("zz")', 'fixed.clear()', 'fixed.addAll(list)',
+  'fixed.addAll(new ArrayList<String>())', 'fixed.removeAll(list)', 'fixed.removeAll(fixed)', 'fixed.retainAll(fixed)', 'fixed.retainAll(list)', 'Collections.sort(fixed)', 'Collections.reverse(fixed)',
+  'fixed.set(0, null); Collections.sort(fixed)', 'fixed.removeFirst()', 'fixed.addLast("n")', 'i = fixed.getLast().length()',
+  'i = empty.getFirst()', 'i = empty.getLast()', 'i = empty.removeFirst()', 'i = empty.removeLast()', 'i = empty.pop()', 'i = empty.remove()', 'i = empty.element()', 'i = empty.peek()', 'i = empty.poll()',
+  'i = empty.get(a)', 'i = nums.get(a)', 'nums.add(a, 9)', 'i = nums.remove(a)', 'nums.set(a, 9)', 'nums.push(i / z)', 'nums.add(null); i = nums.getLast()', 'nums.add(null); Collections.sort(nums)',
+  'i = nums.remove() + nums.remove() + nums.remove()', 'i = nums.pop() / z', 'nums.addFirst(nums.get(a))',
+  'map.keySet().add("n")', 'map.values().add(3)', 'map.keySet().remove("k")', 'i = map.get(nul) == null ? 1 : 2', 'map.put(nul, boxed); i = map.get(nul)', 'map.putAll(null)',
+  'set.add(list.get(a))', 'set.addAll(null)', 'set.remove(list.get(a))', 'i = set.contains(nul) ? 1 : 2',
+  'for (String q : list) { if (q.equals("y")) i = 10 / z; sb.append(q); }', 'for (int q : arr) { sb.append(q); i = arr[q + a]; }', 'while (i < 5) { arr[i] = i; i++; }', 'for (String q : fixed) sb.append(q.charAt(a))',
+  'i = Math.floorDiv(i, z)', 'i = Math.floorMod(i, z)', 'i = Math.abs(i / z)', 'i = Math.addExact(2147483647, a)', 'i = Math.toIntExact(5000000000L + a)', 'i = Math.multiplyExact(65536, 65536 + z)',
+  'throw new IllegalStateException("i=" + i++)', 'throw new IndexOutOfBoundsException()', 'RuntimeException held = new ArithmeticException("held"); i++; throw held', 'RuntimeException held = null; i++; throw held',
+  'Object o = sb; i++', 'i = (char) (s.charAt(a) + 1)', 'i = "abc".charAt(i++ + a)',
+];
+
+/** One case per line above: the line run inside a try, with what it threw and what it left behind. */
+export function exceptionSiteCases(sites = SITES) {
+  return sites.map(site => ({
+    methods: [
+      ['m', 'e.toString()'],
+      ['k', '"caught " + (e instanceof NullPointerException) + (e instanceof IndexOutOfBoundsException) + (e instanceof IllegalArgumentException) + (e instanceof ArithmeticException)'],
+    ].map(([name, shown]) => `  String ${name}(int a) {\n    ${SITE_SETUP}\n    String r;\n    try { ${site}; r = "ran"; } catch (RuntimeException e) { r = ${shown}; }\n    return r + " | " + ${SITE_AFTER};\n  }`).join('\n'),
+    calls: [-1, 0, 2, 3, 5, 9].flatMap(a => [`m(${a})`, `k(${a})`]),
+  }));
 }

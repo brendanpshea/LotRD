@@ -783,74 +783,54 @@
   {
     "type": "code_write",
     "language": "java",
-    "question": "Write the class Monster.\nFields (not private):  String name,  int health,  int attackPower.\nA constructor  Monster(String name, int health, int attackPower)  that stores all three.\nA second constructor  Monster(String name)  that gives the monster 50 health and 10 attackPower.\nA method  String roar()  that returns  Dragon roars with power 50!",
+    "question": "Write the class Monster.\nFields (not private):  String name,  int health.\nA constructor  Monster(String name, int health)  that stores both.\nA method  String status()  that returns  Dragon [HP=200]",
     "signature": "public class Monster",
     "tests": [
       {
-        "run": "Monster dragon = new Monster(\"Dragon\", 200, 50);",
-        "check": "dragon.name + \" \" + dragon.health + \" \" + dragon.attackPower",
-        "expect": "Dragon 200 50"
+        "run": "Monster dragon = new Monster(\"Dragon\", 200);",
+        "check": "dragon.name + \" \" + dragon.health",
+        "expect": "Dragon 200"
       },
       {
-        "run": "Monster goblin = new Monster(\"Goblin\");",
-        "check": "goblin.name + \" \" + goblin.health + \" \" + goblin.attackPower",
-        "expect": "Goblin 50 10"
+        "run": "Monster dragon = new Monster(\"Dragon\", 200);",
+        "check": "dragon.status()",
+        "expect": "Dragon [HP=200]"
       },
       {
-        "run": "Monster dragon = new Monster(\"Dragon\", 200, 50);",
-        "check": "dragon.roar()",
-        "expect": "Dragon roars with power 50!"
+        "run": "Monster a = new Monster(\"Orc\", 80);\nMonster b = new Monster(\"Slime\", 10);",
+        "check": "a.status() + \" \" + b.health",
+        "expect": "Orc [HP=80] 10"
       },
       {
-        "run": "Monster goblin = new Monster(\"Goblin\");",
-        "check": "goblin.roar()",
-        "expect": "Goblin roars with power 10!"
-      },
-      {
-        "run": "Monster a = new Monster(\"Orc\", 80, 15);\nMonster b = new Monster(\"Slime\", 10, 2);",
-        "check": "a.roar() + \" \" + b.health",
-        "expect": "Orc roars with power 15! 10"
+        "run": "Monster m = new Monster(\"Imp\", 5);\nm.health = 3;",
+        "check": "m.status()",
+        "expect": "Imp [HP=3]"
       }
     ],
-    "solution": "String name;\nint health;\nint attackPower;\n\nMonster(String name, int health, int attackPower) {\n    this.name = name;\n    this.health = health;\n    this.attackPower = attackPower;\n}\n\nMonster(String name) {\n    this.name = name;\n    this.health = 50;\n    this.attackPower = 10;\n}\n\nString roar() {\n    return name + \" roars with power \" + attackPower + \"!\";\n}",
-    "hint": "A constructor has the class's name and no return type. Two constructors are told apart by what they take in their ( ).",
-    "feedback": "Fields first, then the constructors, then the method. Both constructors have the name of the class and no return type; Java chooses between them by the number of values in new Monster(…). The second can also be written in one line, this(name, 50, 10); which hands the work to the first."
+    "solution": "String name;\nint health;\n\nMonster(String name, int health) {\n    this.name = name;\n    this.health = health;\n}\n\nString status() {\n    return name + \" [HP=\" + health + \"]\";\n}",
+    "hint": "Three parts, in this order: the two fields, the constructor, the method. A constructor has the class's name and no return type.",
+    "feedback": "A whole class in nine lines: what each monster knows (its fields), how one is made (the constructor, which copies its parameters into the fields with this.), and one thing it can do. status() reads the fields as they are now, which is why the last test, which changes health directly, sees the new number."
   },
   {
     "type": "code_write",
     "language": "java",
-    "question": "Write the class Weapon.\nPrivate fields:  String name,  int damage.\nA constructor  Weapon(String name, int damage).\nGetters  getName()  and  getDamage().\nA setter  setDamage(int newDamage).\nA method  String describe()  that returns  Sword deals 25 damage.\nDamage is always kept from 0 to 100: a lower value becomes 0 and a higher one becomes 100, in the constructor as well as in the setter.",
+    "question": "Write the class Weapon, with its data hidden.\nPrivate fields:  String name,  int damage.\nA constructor  Weapon(String name, int damage).\nA getter  getDamage().\nA method  String describe()  that returns  Sword deals 25 damage.",
     "signature": "public class Weapon",
     "tests": [
       {
         "run": "Weapon w = new Weapon(\"Sword\", 25);",
-        "check": "w.getName() + \" \" + w.getDamage()",
-        "expect": "Sword 25"
-      },
-      {
-        "run": "Weapon w = new Weapon(\"Broken Stick\", -50);",
         "check": "w.getDamage()",
-        "expect": 0
+        "expect": 25
       },
       {
-        "run": "Weapon w = new Weapon(\"God Sword\", 999);",
-        "check": "w.getDamage()",
-        "expect": 100
-      },
-      {
-        "run": "Weapon w = new Weapon(\"Axe\", 40);\nw.setDamage(60);",
-        "check": "w.getDamage()",
-        "expect": 60
-      },
-      {
-        "run": "Weapon w = new Weapon(\"Bow\", 20);\nw.setDamage(150);",
-        "check": "w.getDamage()",
-        "expect": 100
-      },
-      {
-        "run": "Weapon w = new Weapon(\"Dagger\", 30);\nw.setDamage(-10);",
+        "run": "Weapon w = new Weapon(\"Sword\", 25);",
         "check": "w.describe()",
-        "expect": "Dagger deals 0 damage."
+        "expect": "Sword deals 25 damage."
+      },
+      {
+        "run": "Weapon a = new Weapon(\"Axe\", 40);\nWeapon b = new Weapon(\"Bow\", 20);",
+        "check": "a.describe() + \" \" + b.getDamage()",
+        "expect": "Axe deals 40 damage. 20"
       },
       {
         "private": "Weapon.name"
@@ -859,98 +839,45 @@
         "private": "Weapon.damage"
       }
     ],
-    "solution": "private String name;\nprivate int damage;\n\nWeapon(String name, int damage) {\n    this.name = name;\n    setDamage(damage);\n}\n\npublic String getName() {\n    return name;\n}\n\npublic int getDamage() {\n    return damage;\n}\n\npublic void setDamage(int newDamage) {\n    if (newDamage < 0) {\n        damage = 0;\n    } else if (newDamage > 100) {\n        damage = 100;\n    } else {\n        damage = newDamage;\n    }\n}\n\npublic String describe() {\n    return name + \" deals \" + damage + \" damage.\";\n}",
-    "hint": "The rule for damage is the same in the constructor and in the setter. The constructor may simply call setDamage(damage).",
-    "feedback": "Encapsulation in one class: the fields are private, so the constructor and the setter are the only ways a damage value gets in, and both apply the same rule. Calling setDamage from the constructor keeps that rule written in one place."
+    "solution": "private String name;\nprivate int damage;\n\nWeapon(String name, int damage) {\n    this.name = name;\n    this.damage = damage;\n}\n\npublic int getDamage() {\n    return damage;\n}\n\npublic String describe() {\n    return name + \" deals \" + damage + \" damage.\";\n}",
+    "hint": "The word private goes in front of each field. Code outside the class then reaches the damage only through getDamage().",
+    "feedback": "Encapsulation in one small class: the fields are private, so nothing outside Weapon can read or change them directly, and the class decides what to offer instead, here a getter and a description. The last two rows of the table only check that the fields really are private."
   },
   {
     "type": "code_write",
     "language": "java",
-    "question": "Write the class Hero. The class Item is given above.\nPrivate fields:  String name,  int gold.\nA constructor  Hero(String name, int gold).\nGetters  getName()  and  getGold().\nboolean canAfford(Item item)  is true when the hero's gold is at least the item's price.\nString buyItem(Item item):  if the hero can afford it, take the price off the gold and return  Aria buys Health Potion for 20 gold.  Otherwise change nothing and return  Aria cannot afford Sword.\nString status()  returns  Aria has 30 gold.",
-    "scaffold": "class Item {\n    private String name;\n    private int price;\n\n    Item(String name, int price) {\n        this.name = name;\n        this.price = price;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public int getPrice() {\n        return price;\n    }\n}",
-    "signature": "public class Hero",
+    "question": "Finish attackAll. It calls takeDamage(damage) on every monster in the list, then removes the defeated ones from the list, and returns how many were removed.",
+    "scaffold": "class Monster {\n    private String name;\n    private int health;\n\n    Monster(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    public int getHealth() {\n        return health;\n    }\n\n    public void takeDamage(int amount) {\n        health = health - amount;\n        if (health < 0) {\n            health = 0;\n        }\n    }\n\n    public boolean isDefeated() {\n        return health == 0;\n    }\n\n    @Override\n    public String toString() {\n        return name + \" [HP=\" + health + \"]\";\n    }\n}\n\npublic class Dungeon {\n    private ArrayList<Monster> monsters = new ArrayList<>();\n\n    public void addMonster(Monster m) {\n        monsters.add(m);\n    }\n\n    public int getMonsterCount() {\n        return monsters.size();\n    }\n",
+    "signature": "public int attackAll(int damage)",
     "tests": [
       {
-        "run": "Hero hero = new Hero(\"Aria\", 50);",
-        "check": "hero.getName() + \" \" + hero.getGold()",
-        "expect": "Aria 50"
-      },
-      {
-        "run": "Hero hero = new Hero(\"Aria\", 20);\nItem potion = new Item(\"Potion\", 20);",
-        "check": "hero.canAfford(potion)",
-        "expect": true
-      },
-      {
-        "run": "Hero hero = new Hero(\"Aria\", 10);\nItem sword = new Item(\"Sword\", 25);",
-        "check": "hero.canAfford(sword)",
-        "expect": false
-      },
-      {
-        "run": "Hero hero = new Hero(\"Aria\", 50);\nItem potion = new Item(\"Health Potion\", 20);",
-        "check": "hero.buyItem(potion)",
-        "expect": "Aria buys Health Potion for 20 gold."
-      },
-      {
-        "run": "Hero hero = new Hero(\"Aria\", 40);\nhero.buyItem(new Item(\"Potion\", 15));",
-        "check": "hero.buyItem(new Item(\"Shield\", 30))",
-        "expect": "Aria cannot afford Shield."
-      },
-      {
-        "run": "Hero hero = new Hero(\"Aria\", 50);\nhero.buyItem(new Item(\"Potion\", 20));\nhero.buyItem(new Item(\"Sword\", 80));",
-        "check": "hero.status()",
-        "expect": "Aria has 30 gold."
-      },
-      {
-        "private": "Hero.gold"
-      }
-    ],
-    "solution": "private String name;\nprivate int gold;\n\nHero(String name, int gold) {\n    this.name = name;\n    this.gold = gold;\n}\n\npublic String getName() {\n    return name;\n}\n\npublic int getGold() {\n    return gold;\n}\n\npublic boolean canAfford(Item item) {\n    return gold >= item.getPrice();\n}\n\npublic String buyItem(Item item) {\n    if (canAfford(item)) {\n        gold -= item.getPrice();\n        return name + \" buys \" + item.getName() + \" for \" + item.getPrice() + \" gold.\";\n    }\n    return name + \" cannot afford \" + item.getName() + \".\";\n}\n\npublic String status() {\n    return name + \" has \" + gold + \" gold.\";\n}",
-    "hint": "buyItem can call canAfford(item) to decide. An Item is asked for its details through item.getName() and item.getPrice().",
-    "feedback": "One class using another through its public methods. Hero never touches Item's private fields; it asks. And buyItem leans on canAfford, a method of the same class, so the rule for “can afford” is written once."
-  },
-  {
-    "type": "code_write",
-    "language": "java",
-    "question": "Write the class Dungeon, which keeps a list of monsters. The class Monster is given above.\nPrivate fields:  String name,  ArrayList<Monster> monsters.\nA constructor  Dungeon(String name)  that starts with an empty list.\nvoid addMonster(Monster m)  adds a monster to the list.\nint getMonsterCount()  returns how many are in it.\nint attackAll(int damage)  calls takeDamage(damage) on every monster, then removes the defeated ones from the list, and returns how many were removed.\ntoString()  returns  Dark Cave (3 monsters)",
-    "scaffold": "class Monster {\n    private String name;\n    private int health;\n\n    Monster(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    public int getHealth() {\n        return health;\n    }\n\n    public void takeDamage(int amount) {\n        health = health - amount;\n        if (health < 0) {\n            health = 0;\n        }\n    }\n\n    public boolean isDefeated() {\n        return health == 0;\n    }\n\n    @Override\n    public String toString() {\n        return name + \" [HP=\" + health + \"]\";\n    }\n}",
-    "signature": "public class Dungeon",
-    "tests": [
-      {
-        "run": "Dungeon d = new Dungeon(\"Dark Cave\");",
-        "check": "d.getMonsterCount()",
-        "expect": 0
-      },
-      {
-        "run": "Dungeon d = new Dungeon(\"Dark Cave\");\nd.addMonster(new Monster(\"Goblin\", 30));\nd.addMonster(new Monster(\"Orc\", 60));",
-        "check": "d.getMonsterCount()",
-        "expect": 2
-      },
-      {
-        "run": "Dungeon d = new Dungeon(\"Dark Cave\");\nd.addMonster(new Monster(\"Goblin\", 30));",
-        "check": "\"\" + d",
-        "expect": "Dark Cave (1 monsters)"
-      },
-      {
-        "run": "Dungeon d = new Dungeon(\"Pit\");\nd.addMonster(new Monster(\"A\", 30));\nd.addMonster(new Monster(\"B\", 60));\nd.addMonster(new Monster(\"C\", 5));",
+        "run": "Dungeon d = new Dungeon();\nd.addMonster(new Monster(\"A\", 30));\nd.addMonster(new Monster(\"B\", 60));\nd.addMonster(new Monster(\"C\", 5));",
         "check": "d.attackAll(30)",
         "expect": 2
       },
       {
-        "run": "Dungeon d = new Dungeon(\"Pit\");\nd.addMonster(new Monster(\"A\", 30));\nd.addMonster(new Monster(\"B\", 60));\nd.attackAll(30);",
-        "check": "d.toString()",
-        "expect": "Pit (1 monsters)"
+        "run": "Dungeon d = new Dungeon();\nd.addMonster(new Monster(\"A\", 30));\nd.addMonster(new Monster(\"B\", 60));\nd.attackAll(30);",
+        "check": "d.getMonsterCount()",
+        "expect": 1
       },
       {
-        "run": "Dungeon d = new Dungeon(\"Pit\");\nMonster orc = new Monster(\"Orc\", 60);\nd.addMonster(orc);\nd.attackAll(10);",
+        "run": "Dungeon d = new Dungeon();\nMonster orc = new Monster(\"Orc\", 60);\nd.addMonster(orc);\nd.attackAll(10);",
         "check": "orc.getHealth() + d.getMonsterCount()",
         "expect": 51
       },
       {
-        "private": "Dungeon.monsters"
+        "run": "Dungeon d = new Dungeon();",
+        "check": "d.attackAll(5)",
+        "expect": 0
+      },
+      {
+        "run": "Dungeon d = new Dungeon();\nd.addMonster(new Monster(\"A\", 3));\nd.addMonster(new Monster(\"B\", 3));",
+        "check": "d.attackAll(9) + d.getMonsterCount()",
+        "expect": 2
       }
     ],
-    "solution": "private String name;\nprivate ArrayList<Monster> monsters;\n\nDungeon(String name) {\n    this.name = name;\n    this.monsters = new ArrayList<>();\n}\n\npublic void addMonster(Monster m) {\n    monsters.add(m);\n}\n\npublic int getMonsterCount() {\n    return monsters.size();\n}\n\npublic int attackAll(int damage) {\n    for (Monster m : monsters) {\n        m.takeDamage(damage);\n    }\n    int removed = 0;\n    for (int i = monsters.size() - 1; i >= 0; i--) {\n        if (monsters.get(i).isDefeated()) {\n            monsters.remove(i);\n            removed++;\n        }\n    }\n    return removed;\n}\n\n@Override\npublic String toString() {\n    return name + \" (\" + monsters.size() + \" monsters)\";\n}",
-    "hint": "The constructor has to MAKE the list: monsters = new ArrayList<>(); For attackAll, do the damage in one loop and the removing in a second loop that counts down by index.",
-    "feedback": "A field can be a whole collection of other objects, as long as the constructor makes the list; a field that is only declared holds no list at all. Removing inside a for-each over the same list is not allowed, which is why attackAll removes in a second loop, by index, from the end back to the start."
+    "solution": "for (Monster m : monsters) {\n    m.takeDamage(damage);\n}\nint removed = 0;\nfor (int i = monsters.size() - 1; i >= 0; i--) {\n    if (monsters.get(i).isDefeated()) {\n        monsters.remove(i);\n        removed++;\n    }\n}\nreturn removed;",
+    "hint": "Two loops: a for-each that does the damage, then a loop by index, counting DOWN from the last position, that removes.",
+    "feedback": "A list of objects, each asked to do its own part: the dungeon does not change a monster's health, it tells the monster to take damage. Removing inside a for-each over the same list is not allowed, which is why the removing is a second loop, by index, from the end back to the start."
   }
 ]
