@@ -183,7 +183,8 @@ describe('error messages', () => {
         assert.match(failure('class A:\n    pass\nclass B:\n    pass\nclass C(A, B):\n    pass\n').message, /only one parent/);
         assert.match(failure('x = [i for i in [1]]\n').message, /comprehensions/);
         assert.match(failure('x = {1, 2}\n').message, /Sets are not/);
-        assert.match(failure('try:\n    pass\n').message, /try \/ except/);
+        // try / except, raise and files are supported (tests/pytiny-exceptions.test.js).
+        assert.match(failure('f = lambda x: x\n').message, /lambda is not supported/);
         assert.match(failure('print(input())').hint, /never read input/);
         assert.match(failure('import random\n').message, /import/);
     });

@@ -18,7 +18,7 @@ export async function loadJSON(url) {
 
 import { shuffle } from "./util.js";
 import {
-    runProblem, isScriptProblem, problemHeader, describeScript,
+    runProblem, isScriptProblem, problemHeader, describeScript, describeRaises,
     describeCall, fromJson, pyRepr, parseSignature,
 } from "./pytiny.js";
 import {
@@ -115,7 +115,7 @@ export function codeWriteExamples(question, limit = 3) {
     if (isScriptProblem(question)) {
         // A class problem's example is the steps taken and what they should leave behind.
         return (question.tests || []).slice(0, limit).map(testCase =>
-            `${describeScript(testCase)} → ${pyRepr(fromJson(testCase.expect))}`);
+            `${describeScript(testCase)} → ${typeof testCase.raises === "string" ? describeRaises(testCase) : pyRepr(fromJson(testCase.expect))}`);
     }
     const { name } = parseSignature(question.signature);
     return (question.tests || []).slice(0, limit).map(testCase =>

@@ -1669,6 +1669,34 @@ export class GameUI {
       examplesEl.hidden = false;
     }
 
+    // A problem about files shows the files it supplies: the name, then exactly
+    // what is in it, one line of the file per line on the screen.
+    const filesEl = $(this.root, "[data-ref=files]");
+    const files = Object.entries(q.files || {});
+    if (filesEl && files.length) {
+      const label = document.createElement("span");
+      label.className = "bold";
+      label.textContent = files.length === 1 ? "The file your code can open:" : "The files your code can open:";
+      filesEl.appendChild(label);
+      files.forEach(([name, text]) => {
+        const figure = document.createElement("figure");
+        figure.className = "code-write-file";
+        const caption = document.createElement("figcaption");
+        caption.textContent = name;
+        const body = document.createElement("pre");
+        if (String(text).length === 0) {
+          body.textContent = "(an empty file)";
+          body.classList.add("code-write-file--empty");
+        } else {
+          body.textContent = String(text).replace(/\n$/, "");
+        }
+        body.setAttribute("aria-label", `Contents of ${name}`);
+        figure.append(caption, body);
+        filesEl.appendChild(figure);
+      });
+      filesEl.hidden = false;
+    }
+
     // A hint stays folded away: it is there for a student who is stuck, and
     // opening it should be their decision rather than the first thing they read.
     const hint = $(this.root, "[data-ref=hint]");

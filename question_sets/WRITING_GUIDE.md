@@ -683,7 +683,46 @@ Ordinary JSON, converted to Python values: whole numbers become ints, fractions 
 
 **Classes are supported** — `class`, `__init__`, `self.` attributes, methods, class attributes and `__str__` — and checked against real Python in `tests/pytiny-classes.test.js`. So is **inheritance from one parent**: `class Wolf(Creature):`, overriding, `super().__init__(...)` and `super().method()`, and `isinstance()` (`tests/pytiny-inheritance.test.js`). Two parents, `super(Child, self)` and inheriting from Python's own types (`list`, `Exception`) are refused by name. See *Class problems* below for how to ask a student to write one.
 
-**Not supported, on purpose:** imports, exceptions, comprehensions, generators, sets, lambdas, `global`. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.
+**Exceptions are supported** — `try` / `except` (one kind, several in parentheses, `as e`, or bare), `else`, `finally`, `raise`, and classes that inherit from `Exception` — and so are **text files**: `open(name)` with the modes `"r"`, `"w"` and `"a"`, `with … as f:`, `f.read()`, `f.readline()`, `f.readlines()`, `f.write()`, `f.close()` and `for line in f:`. Both are checked against real Python in `tests/pytiny-exceptions.test.js`. Three things to know before writing a problem on them:
+
+- **Python's own messages are reproduced only where every Python agrees on them**: `int("abc")`, `float("x")`, a missing dictionary key, a list or string index out of range, an undefined name, a missing attribute, a missing file, and anything the student raised themselves. For the others (a division by zero is the main one) `print(e)` is declined with a sentence saying so, because the wording changed between Python versions. So have a trace print a message of its own for those, never `e`.
+- **A loop that never ends, runaway recursion, and anything this interpreter declines to do cannot be caught**, not even by a bare `except`.
+- **Files live in the problem, not on a disk.** What is written is saved when the file is closed, and opening a file that is still open for writing is declined with advice to use `with` — real Python would quietly read an empty file there.
+
+**Not supported, on purpose:** imports, comprehensions, generators, sets, lambdas, `global`, `raise … from …`, `print(…, file=f)`, binary file modes. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.
+
+### Problems about files and exceptions
+
+Give a problem the files it needs with `files`, a table of name to contents. They are shown above the box, and **every test starts with exactly these files**, whatever the test before it wrote:
+
+```json
+{
+  "type": "code_write",
+  "question": "The file called name holds one whole number on each line. Return the numbers added together. If there is no such file, return 0.",
+  "signature": "def load_total(name):",
+  "files": { "scores.txt": "10\n25\n7\n", "one.txt": "4\n" },
+  "tests": [
+    { "args": ["scores.txt"], "expect": 42 },
+    { "args": ["missing.txt"], "expect": 0 },
+    { "args": ["one.txt"], "expect": 4 }
+  ],
+  "solution": "…"
+}
+```
+
+Up to four files, eight lines each, forty characters a line: the student reads all of them on a phone. Vary the tests by which FILE they name (a full one, an empty one, one that is not there) rather than by giving each test files of its own.
+
+A function that WRITES a file returns nothing worth looking at, so test it as class problems are tested, with steps and then a look: `{ "run": "save(\"out.txt\", [\"ash\", \"bog\"])", "check": "open(\"out.txt\").read()", "expect": "ash\nbog\n" }`. The signature is still the plain `def save(name, items):`.
+
+A test can also expect an error. It passes when its steps END IN the named exception, or a kind of it, and fails with "no error" if they finish:
+
+```json
+{ "run": "check_age(5)", "raises": "ValueError", "message": "too young" }
+```
+
+`message` is optional; when given, it is what `str()` of the exception must be, so the question has to state the message exactly. At least one test in the problem must check a value. To show that a refused operation changed nothing, catch the error in the steps: `"run": "a = Account(50)\ntry:\n    a.withdraw(80)\nexcept ValueError:\n    pass", "check": "a.balance", "expect": 50`.
+
+A `code_trace` that reads a file should show the file in a comment at the top of its `code`, since nothing else on that screen will. It may also carry `"files"`: the game ignores it there, but it lets the trace be run and checked.
 
 ### Class problems
 

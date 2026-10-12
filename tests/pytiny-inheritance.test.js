@@ -732,8 +732,9 @@ describe('inheritance: what a student is told when it goes wrong', () => {
   });
 
   it('inheriting from one of Python\'s own types is refused by name', () => {
+    // (Exception and its family CAN be inherited from: tests/pytiny-exceptions.test.js.)
     assert.match(failure('class Shelf(list):\n    pass\n').message, /cannot inherit from Python's own list/);
-    assert.match(failure('class Oops(Exception):\n    pass\n').message, /cannot inherit from Python's own Exception/);
+    assert.match(failure('class Oops(BaseException):\n    pass\n').message, /cannot inherit from Python's own BaseException/);
   });
 
   it('inheriting from something that is not a class says what it is', () => {

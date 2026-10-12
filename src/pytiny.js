@@ -47,12 +47,41 @@ const syntaxError  = (msg, line, hint) => new PyError(msg, { line, hint, kind: '
 const runtimeError = (msg, line, hint) => new PyError(msg, { line, hint, kind: 'runtime' });
 const limitError   = (msg, hint, line = null) => new PyError(msg, { line, hint, kind: 'limit' });
 
+/**
+ * An error that is one of Python's own exceptions, so that try / except can
+ * catch it. The sentence the student reads is still ours. `args` is what
+ * Python's exception would hold (its str() is what `print(e)` shows) — or null
+ * where Python's wording differs between versions, in which case the error can
+ * be caught but asking for its text is refused rather than guessed.
+ *
+ * An error made with plain runtimeError is NOT catchable: some of those are
+ * this interpreter declining to do something, which no except should swallow.
+ */
+const tagged = (pyType, pyArgs = null) => (msg, line, hint) =>
+    Object.assign(runtimeError(msg, line, hint), { pyType, pyArgs });
+const typeError  = tagged('TypeError');
+const valueError = tagged('ValueError');
+const zeroError  = tagged('ZeroDivisionError');
+
+// Python's exceptions, each with its parent. `except LookupError:` catches a
+// KeyError because of this table, and for no other reason.
+const EXCEPTION_PARENTS = {
+    Exception: null,
+    ArithmeticError: 'Exception', ZeroDivisionError: 'ArithmeticError',
+    LookupError: 'Exception', IndexError: 'LookupError', KeyError: 'LookupError',
+    ValueError: 'Exception', TypeError: 'Exception', AttributeError: 'Exception',
+    NameError: 'Exception', UnboundLocalError: 'NameError',
+    AssertionError: 'Exception',
+    RuntimeError: 'Exception', NotImplementedError: 'RuntimeError',
+    OSError: 'Exception', FileNotFoundError: 'OSError',
+};
+
 // ─── Tokenizer ───────────────────────────────────────────────────────────────
 
 const KEYWORDS = new Set([
     'def', 'return', 'if', 'elif', 'else', 'while', 'for', 'in', 'not', 'and',
     'or', 'True', 'False', 'None', 'break', 'continue', 'pass', 'is', 'class',
-    'assert',
+    'assert', 'try', 'except', 'finally', 'raise', 'with', 'as',
 ]);
 
 // Refused by name, so the student is told what is missing rather than shown a
@@ -60,11 +89,6 @@ const KEYWORDS = new Set([
 const NOT_YET = new Map([
     ['import',   'You do not need to import anything here. Everything these problems need is already built in.'],
     ['from',     'You do not need to import anything here. Everything these problems need is already built in.'],
-    ['try',      'try / except is not supported here yet. Check for the bad case with an if instead.'],
-    ['except',   'try / except is not supported here yet. Check for the bad case with an if instead.'],
-    ['finally',  'try / except is not supported here yet.'],
-    ['raise',    'raise is not supported here yet. Return a value that says what went wrong instead.'],
-    ['with',     'with-blocks are not supported here yet.'],
     ['lambda',   'lambda is not supported here yet. Write a def instead.'],
     ['global',   'global is not supported here yet — these problems only need local variables.'],
     ['nonlocal', 'nonlocal is not supported here yet.'],
@@ -340,6 +364,13 @@ class Parser {
         if (this.atKeyword('if'))     return this.parseIf();
         if (this.atKeyword('while'))  return this.parseWhile();
         if (this.atKeyword('for'))    return this.parseFor();
+        if (this.atKeyword('try'))    return this.parseTry();
+        if (this.atKeyword('with'))   return this.parseWith();
+        if (this.atKeyword('except', 'finally')) {
+            const t = this.peek();
+            throw syntaxError(`This "${t.value}" does not line up with any "try" above it.`, t.line,
+                `${t.value} must be indented to exactly the same column as its try.`);
+        }
         if (this.atKeyword('elif', 'else')) {
             const t = this.peek();
             throw syntaxError(
@@ -492,6 +523,72 @@ class Parser {
     }
 
     /**
+     * try: … except [Kind [as name]]: … [else: …] [finally: …]
+     * Any number of except clauses, tried in the order written.
+     */
+    parseTry() {
+        const line = this.line;
+        this.next();
+        const body = this.parseBlock('try');
+        const handlers = [];
+        while (this.atKeyword('except')) {
+            const at = this.line;
+            this.next();
+            let kind = null, name = null;
+            if (handlers.some(h => h.kind === null)) {
+                throw syntaxError('A bare except catches everything, so it has to be the last except.', at,
+                    'Move the except clauses that name a kind of error above it.');
+            }
+            if (!this.atOp(':')) {
+                kind = this.parseExpression();
+                if (this.atOp(',')) {
+                    throw syntaxError('To catch more than one kind of error, put them in parentheses.', at,
+                        'Write except (ValueError, TypeError):');
+                }
+                if (this.atKeyword('as')) {
+                    this.next();
+                    name = this.expect('name', undefined, 'a name for the error after "as"').value;
+                }
+            }
+            handlers.push({ kind, name, body: this.parseBlock('except'), line: at });
+        }
+        let orelse = [], finalbody = null;
+        if (this.atKeyword('else')) {
+            if (handlers.length === 0) {
+                throw syntaxError('A try needs at least one except before its else.', this.line);
+            }
+            this.next();
+            orelse = this.parseBlock('else');
+        }
+        if (this.atKeyword('finally')) { this.next(); finalbody = this.parseBlock('finally'); }
+        if (handlers.length === 0 && finalbody === null) {
+            throw syntaxError('A try needs an except (or a finally) after it.', line,
+                'try: holds the code that might fail; except: holds what to do when it does. ' +
+                'They are indented to the same column.');
+        }
+        return { type: 'Try', body, handlers, orelse, finalbody, line };
+    }
+
+    /** with open(...) as f: — one thing, and its name. */
+    parseWith() {
+        const line = this.line;
+        this.next();
+        const item = this.parseExpression();
+        if (!this.atKeyword('as')) {
+            throw syntaxError('I expected "as" and a name after what the with opens.', this.line,
+                'Write: with open("notes.txt") as f:');
+        }
+        this.next();
+        const name = this.expect('name', undefined, 'a name after "as"').value;
+        if (this.atOp(',')) {
+            throw syntaxError('A with here opens one file at a time.', line,
+                'Put the second with on its own line, indented inside the first.');
+        }
+        const body = this.parseBlock('with');
+        return { type: 'With', item, name, body, line };
+    }
+
+    /**
      * The condition of an if / elif / while. Parsed separately only so that the
      * single most common beginner slip — `if x = 1:` — can be named exactly.
      */
@@ -528,6 +625,13 @@ class Parser {
             if (this.atOp(',')) { this.next(); message = this.parseExpression(); }
             this.endStatement();
             return { type: 'Assert', test, message, line };
+        }
+        if (this.atKeyword('raise')) {
+            this.next();
+            let exc = null;
+            if (!this.at('newline') && !this.at('eof')) exc = this.parseExpression();
+            this.endStatement();
+            return { type: 'Raise', exc, line };
         }
         if (this.atKeyword('pass'))     { this.next(); this.endStatement(); return { type: 'Pass', line }; }
         if (this.atKeyword('break'))    { this.next(); this.endStatement(); return { type: 'Break', line }; }
@@ -993,7 +1097,12 @@ class Builtin {
 // inheritance, and overriding is nothing more than being found first.
 
 export class PyClass {
-    constructor(name, attrs, base = null) { this.name = name; this.attrs = attrs; this.base = base; }
+    constructor(name, attrs, base = null) {
+        this.name = name; this.attrs = attrs; this.base = base;
+        // A class is a kind of exception when something above it is Python's Exception.
+        this.exception = base ? base.exception : false;
+        this.native = false;
+    }
 
     /** The value of `name` in this class or the nearest ancestor that has it; undefined if none does. */
     find(name) {
@@ -1022,6 +1131,57 @@ export class PySuper {
 
 export class PyInstance {
     constructor(cls) { this.cls = cls; this.attrs = new Map(); }
+}
+
+// ── Exceptions ──
+//
+// An exception is an ordinary object whose class has Python's Exception
+// somewhere above it. What it was made with is kept in `excArgs`, as Python
+// keeps `args`; that is all str(e) and repr(e) are made from.
+
+/** Python's own exception classes, made fresh for each run so one program cannot alter another's. */
+function makeExceptionClasses() {
+    const made = {};
+    for (const [name, parent] of Object.entries(EXCEPTION_PARENTS)) {
+        const cls = new PyClass(name, new Map(), parent ? made[parent] : null);
+        cls.exception = true;
+        cls.native = true;
+        made[name] = cls;
+    }
+    return made;
+}
+
+const isExc = v => v instanceof PyInstance && v.excArgs !== undefined;
+
+function excArgsOf(v, line = null) {
+    if (v.excArgs === null) {
+        throw runtimeError(`Python's own wording for this ${v.cls.name} is not reproduced here.`, line ?? ACTIVE?.line ?? null,
+            'Print a message of your own in the except block, rather than the error itself.');
+    }
+    return v.excArgs;
+}
+
+/** str(e): nothing, the one value it was made with, or all of them as a tuple. A KeyError shows its key in quotes. */
+function excStr(v, line = null) {
+    const args = excArgsOf(v, line);
+    if (args.length === 0) return '';
+    if (args.length > 1) return pyRepr(new PyTuple(args));
+    for (let c = v.cls; c; c = c.base) if (c.native && c.name === 'KeyError') return pyRepr(args[0]);
+    return ACTIVE ? ACTIVE.toText(args[0], line) : pyStr(args[0]);
+}
+
+function excRepr(v) {
+    return `${v.cls.name}(${excArgsOf(v).map(a => pyRepr(a)).join(', ')})`;
+}
+
+/** An open file. What is written stays in `pending` until the file is closed, as on a real disk. */
+export class PyFile {
+    constructor(name, mode, text) {
+        this.name = name; this.mode = mode; this.closed = false;
+        this.text = text;      // reading: the whole file
+        this.pos = 0;          // reading: how far in
+        this.pending = '';     // writing: not yet saved
+    }
 }
 
 /** `obj.method`, not yet called: the function together with the object it will receive as self. */
@@ -1162,6 +1322,7 @@ export function typeName(v) {
     if (isInstance(v)) return `${/^[aeiou]/i.test(v.cls.name) ? 'an' : 'a'} ${v.cls.name} object`;
     if (isClass(v)) return 'a class';
     if (v instanceof PySuper) return 'what super() gives back';
+    if (v instanceof PyFile) return 'a file';
     if (v instanceof PyBoundMethod) return 'a method';
     if (isCallable(v)) return 'a function';
     return 'a value';
@@ -1239,12 +1400,14 @@ function reprValue(v, inside) {
             }
             return text;
         }
+        if (isExc(v)) return excRepr(v);
         // Python shows a memory address here. The class name is the useful part, and
         // leaving the address out keeps output the same from one run to the next.
         return `<${v.cls.name} object>`;
     }
     if (isClass(v)) return `<class '${v.name}'>`;
     if (v instanceof PySuper) return '<super object>';
+    if (v instanceof PyFile) return `<file ${pyRepr(v.name)}>`;
     if (v instanceof PyBoundMethod) return `<method ${v.name} of ${pyRepr(v.self)}>`;
     if (isCallable(v)) return `<function ${v.name}>`;
     return String(v);
@@ -1252,6 +1415,7 @@ function reprValue(v, inside) {
 
 /** str(): like repr, except text is shown as itself. */
 export function pyStr(v) {
+    if (isExc(v) && !specialMethod(v, '__str__')) return excStr(v);
     return isStr(v) ? v : pyRepr(v);
 }
 
@@ -1334,7 +1498,7 @@ function pyLess(a, b, line) {
         }
         return seqA.length < seqB.length;
     }
-    throw runtimeError(
+    throw typeError(
         `You cannot use < or > to compare ${typeName(a)} with ${typeName(b)}.`, line,
         isStr(a) || isStr(b)
             ? 'Text and numbers cannot be ordered against each other. int("5") turns text into a number.'
@@ -1365,15 +1529,15 @@ export function binaryOp(op, a, b, line) {
             return new PyTuple(a.items.concat(b.items));
         }
         if ((isStr(a) && isNumeric(b)) || (isNumeric(a) && isStr(b))) {
-            throw runtimeError('You tried to add text and a number together.', line,
+            throw typeError('You tried to add text and a number together.', line,
                 'Python will not guess which you meant. Use str(n) to make the number into text, ' +
                 'or int(s) to make the text into a number.');
         }
         if (isList(a) && !isList(b)) {
-            throw runtimeError(`You can only add a list to another list, not to ${typeName(b)}.`, line,
+            throw typeError(`You can only add a list to another list, not to ${typeName(b)}.`, line,
                 'To add one item to a list, use items.append(x).');
         }
-        throw runtimeError(`You cannot add ${typeName(a)} to ${typeName(b)}.`, line);
+        throw typeError(`You cannot add ${typeName(a)} to ${typeName(b)}.`, line);
     }
 
     if (op === '*') {
@@ -1395,7 +1559,7 @@ export function binaryOp(op, a, b, line) {
         if (isInt(a) && isStr(b)) return repeat(b, a);
         if (isList(a) && isInt(b)) return repeat(a, b);
         if (isInt(a) && isList(b)) return repeat(b, a);
-        throw runtimeError(`You cannot multiply ${typeName(a)} by ${typeName(b)}.`, line);
+        throw typeError(`You cannot multiply ${typeName(a)} by ${typeName(b)}.`, line);
     }
 
     if (op === '%' && isStr(a)) {
@@ -1405,7 +1569,7 @@ export function binaryOp(op, a, b, line) {
 
     if (!isNumeric(a) || !isNumeric(b)) {
         const verb = { '-': 'subtract', '/': 'divide', '//': 'divide', '%': 'take the remainder of', '**': 'raise to a power' }[op];
-        throw runtimeError(`You can only ${verb} numbers, not ${typeName(a)} and ${typeName(b)}.`, line);
+        throw typeError(`You can only ${verb} numbers, not ${typeName(a)} and ${typeName(b)}.`, line);
     }
     return arith(op, a, b, line);
 }
@@ -1418,7 +1582,7 @@ function arith(op, aRaw, bRaw, line) {
     if (op === '/') {
         const y = toJsNumber(b);
         if (y === 0) {
-            throw runtimeError('You tried to divide by zero.', line,
+            throw zeroError('You tried to divide by zero.', line,
                 'Check the divisor with an if before dividing.');
         }
         return toJsNumber(a) / y;
@@ -1426,13 +1590,13 @@ function arith(op, aRaw, bRaw, line) {
     if (op === '//' || op === '%') {
         if (bothInt) {
             if (b === 0n) {
-                throw runtimeError(op === '%' ? 'You tried to take the remainder after dividing by zero.'
+                throw zeroError(op === '%' ? 'You tried to take the remainder after dividing by zero.'
                     : 'You tried to divide by zero.', line);
             }
             return checkBig(op === '//' ? floorDivBig(a, b) : modBig(a, b), line);
         }
         const y = toJsNumber(b);
-        if (y === 0) throw runtimeError('You tried to divide by zero.', line);
+        if (y === 0) throw zeroError('You tried to divide by zero.', line);
         const x = toJsNumber(a);
         return op === '//' ? Math.floor(x / y) : modFloat(x, y);
     }
@@ -1526,7 +1690,17 @@ export function iterate(value, line) {
             if (value.size !== size) throw changed();
         })();
     }
-    throw runtimeError(`You cannot loop over ${typeName(value)}.`, line,
+    if (value instanceof PyFile) {
+        // One line per pass, each still ending in its "\n", until the file runs out.
+        return (function* () {
+            for (;;) {
+                const next = FILE_METHODS.readline(value, [], line);
+                if (next === '') return;
+                yield next;
+            }
+        })();
+    }
+    throw typeError(`You cannot loop over ${typeName(value)}.`, line,
         'A for loop needs a list, a string, a range, or a dictionary.');
 }
 
@@ -1557,7 +1731,7 @@ const OUTPUT_CHAR_LIMIT = 4000;
 function arity(name, args, min, max, line) {
     if (args.length < min || args.length > max) {
         const expect = min === max ? `${min}` : `${min} to ${max}`;
-        throw runtimeError(
+        throw typeError(
             `${name}() takes ${expect} value${max === 1 ? '' : 's'}, but you gave it ${args.length}.`, line);
     }
 }
@@ -1632,10 +1806,26 @@ const BUILTIN_KINDS = {
 
 const BUILTINS = {
     print: (args, kw, line, interp) => {
+        if (kw.file !== undefined) {
+            throw runtimeError('print(..., file=...) is not supported here.', line,
+                'Write to the file with its own method: f.write(text + "\\n")');
+        }
         const sep = kw.sep !== undefined ? pyStr(kw.sep) : ' ';
         const end = kw.end !== undefined ? pyStr(kw.end) : '\n';
         interp.write(args.map(v => interp.toText(v, line)).join(sep) + end, line);
         return null;
+    },
+
+    repr: (args, kw, line) => { arity('repr', args, 1, 1, line); return pyRepr(args[0]); },
+
+    open: (args, kw, line, interp) => {
+        arity('open', args, 1, 2, line);
+        for (const key of Object.keys(kw)) {
+            if (key !== 'mode' && key !== 'encoding') {
+                throw runtimeError(`open() has no "${key}" setting here.`, line, 'Give it the file name and, if you are writing, the mode: open(name, "w")');
+            }
+        }
+        return interp.openFile(args[0], args.length > 1 ? args[1] : kw.mode ?? 'r', line);
     },
 
     isinstance: (args, kw, line) => {
@@ -1695,7 +1885,7 @@ const BUILTINS = {
         if (isStr(v)) {
             const text = v.trim();
             if (!/^[+-]?\d+$/.test(text)) {
-                throw runtimeError(`int() cannot turn ${pyRepr(v)} into a whole number.`, line,
+                throw tagged("ValueError", ["invalid literal for int() with base 10: " + pyRepr(v)])(`int() cannot turn ${pyRepr(v)} into a whole number.`, line,
                     /^[+-]?\d*\.\d+$/.test(text)
                         ? 'That text holds a decimal. Use float() first, or int(float(s)).'
                         : 'Only text that is entirely digits can become a number.');
@@ -1714,7 +1904,7 @@ const BUILTINS = {
             const text = v.trim();
             const n = Number(text);
             if (text === '' || Number.isNaN(n)) {
-                throw runtimeError(`float() cannot turn ${pyRepr(v)} into a number.`, line);
+                throw tagged("ValueError", ["could not convert string to float: " + pyRepr(v)])(`float() cannot turn ${pyRepr(v)} into a number.`, line);
             }
             return n;
         }
@@ -1836,7 +2026,7 @@ function pickExtreme(name, args, kw, line, interp) {
     if (args.length === 1) {
         items = sequenceOf(args[0], line, `${name}()`);
         if (items.length === 0) {
-            throw runtimeError(`${name}() cannot work on an empty list.`, line,
+            throw valueError(`${name}() cannot work on an empty list.`, line,
                 'Check the list is not empty before calling it.');
         }
     } else {
@@ -1856,7 +2046,6 @@ function pickExtreme(name, args, kw, line, interp) {
 // Names a student may reasonably type that this interpreter does not have.
 const ABSENT = new Map([
     ['input',      'These problems never read input — the values arrive as the function\'s parameters.'],
-    ['open',       'Reading files is not supported in this practice interpreter.'],
     ['set',        'Sets are not supported in this practice interpreter yet. Use a list instead.'],
     ['type',       'type() is not supported here. Compare values directly instead.'],
     ['super',      'super is written with parentheses, inside a method: super().__init__(...)'],
@@ -1973,7 +2162,7 @@ const LIST_METHODS = {
     },
     pop: (l, a, line) => {
         arity('pop', a, 0, 1, line);
-        if (l.length === 0) throw runtimeError('You cannot pop from an empty list.', line);
+        if (l.length === 0) throw tagged("IndexError", ["pop from empty list"])('You cannot pop from an empty list.', line);
         let at = a.length ? asIndex(a[0], line, 'The position for pop()') : l.length - 1;
         if (at < 0) at += l.length;
         if (at < 0 || at >= l.length) throw indexError(at, l.length, line);
@@ -1982,7 +2171,7 @@ const LIST_METHODS = {
     remove: (l, a, line) => {
         arity('remove', a, 1, 1, line);
         const at = l.findIndex(x => pyEquals(x, a[0]));
-        if (at < 0) throw runtimeError(`${pyRepr(a[0])} is not in the list, so it cannot be removed.`, line,
+        if (at < 0) throw tagged("ValueError", ["list.remove(x): x not in list"])(`${pyRepr(a[0])} is not in the list, so it cannot be removed.`, line,
             'Check with "if x in items:" first.');
         l.splice(at, 1);
         return null;
@@ -1990,7 +2179,7 @@ const LIST_METHODS = {
     index: (l, a, line) => {
         arity('index', a, 1, 1, line);
         const at = l.findIndex(x => pyEquals(x, a[0]));
-        if (at < 0) throw runtimeError(`${pyRepr(a[0])} is not in the list.`, line,
+        if (at < 0) throw valueError(`${pyRepr(a[0])} is not in the list.`, line,
             'Check with "if x in items:" before asking for its position.');
         return BigInt(at);
     },
@@ -2025,7 +2214,7 @@ const DICT_METHODS = {
         const k = dictKey(a[0], line);
         if (!d.has(k)) {
             if (a.length > 1) return a[1];
-            throw runtimeError(`The dictionary has no key ${pyRepr(a[0])}.`, line);
+            throw tagged("KeyError", [a[0]])(`The dictionary has no key ${pyRepr(a[0])}.`, line);
         }
         const v = d.get(k);
         d.delete(k);
@@ -2041,8 +2230,70 @@ const DICT_METHODS = {
     copy:  (d, a, line) => { arity('copy', a, 0, 0, line); return new Map(d); },
 };
 
-function indexError(at, length, line) {
-    return runtimeError(
+/** A file that can still be used, and in the right direction, or the error saying why not. */
+function usable(f, wants, method, line) {
+    if (f.closed) {
+        throw tagged('ValueError', ['I/O operation on closed file.'])(
+            `This file has been closed, so .${method}() cannot use it.`, line,
+            'A with block closes its file when the indented lines end. Do the reading or writing inside it.');
+    }
+    if (wants === 'read' && f.mode !== 'r') {
+        throw runtimeError(`This file was opened for writing, so .${method}() cannot read from it.`, line,
+            'Close it, then open it again without a mode to read: open(name)');
+    }
+    if (wants === 'write' && f.mode === 'r') {
+        throw runtimeError(`This file was opened for reading, so .${method}() cannot write to it.`, line,
+            'Open it with "w" to write a new file, or "a" to add to the end: open(name, "w")');
+    }
+}
+
+const FILE_METHODS = {
+    read: (f, a, line) => {
+        arity('read', a, 0, 0, line);
+        usable(f, 'read', 'read', line);
+        const rest = f.text.slice(f.pos);
+        f.pos = f.text.length;
+        return rest;
+    },
+    readline: (f, a, line) => {
+        arity('readline', a, 0, 0, line);
+        usable(f, 'read', 'readline', line);
+        const end = f.text.indexOf('\n', f.pos);
+        const stop = end === -1 ? f.text.length : end + 1;
+        const got = f.text.slice(f.pos, stop);
+        f.pos = stop;
+        return got;
+    },
+    readlines: (f, a, line) => {
+        arity('readlines', a, 0, 0, line);
+        usable(f, 'read', 'readlines', line);
+        const out = [];
+        for (;;) {
+            const next = FILE_METHODS.readline(f, [], line);
+            if (next === '') return out;
+            out.push(next);
+        }
+    },
+    write: (f, a, line) => {
+        arity('write', a, 1, 1, line);
+        usable(f, 'write', 'write', line);
+        if (!isStr(a[0])) {
+            throw typeError(`.write() takes text, and this is ${typeName(a[0])}.`, line,
+                'Turn it into text first: f.write(str(value))');
+        }
+        allowSize(0, f.pending.length + a[0].length, line);
+        f.pending += a[0];
+        return BigInt([...a[0]].length);
+    },
+    close: (f, a, line, interp) => {
+        arity('close', a, 0, 0, line);
+        interp.closeFile(f);
+        return null;
+    },
+};
+
+function indexError(at, length, line, what = null) {
+    return tagged("IndexError", what ? [what + " index out of range"] : null)(
         length === 0
             ? `You asked for position ${at}, but this is empty.`
             : `You asked for position ${at}, but the last position is ${length - 1}.`,
@@ -2095,6 +2346,13 @@ function assignedNames(body, out = new Set()) {
         else if (s.type === 'For') { s.targets.forEach(n => out.add(n)); assignedNames(s.body, out); }
         else if (s.type === 'While') assignedNames(s.body, out);
         else if (s.type === 'If') { assignedNames(s.body, out); assignedNames(s.orelse, out); }
+        else if (s.type === 'Try') {
+            assignedNames(s.body, out);
+            for (const h of s.handlers) { if (h.name) out.add(h.name); assignedNames(h.body, out); }
+            assignedNames(s.orelse, out);
+            if (s.finalbody) assignedNames(s.finalbody, out);
+        }
+        else if (s.type === 'With') { out.add(s.name); assignedNames(s.body, out); }
         else if (s.type === 'FuncDef' || s.type === 'ClassDef') out.add(s.name);
     }
     return out;
@@ -2148,6 +2406,10 @@ export class Interpreter {
         this.steps = 0;
         this.depth = 0;
         this.frames = [];
+        this.exc = makeExceptionClasses();
+        this.handling = [];             // the errors whose except blocks are running, innermost last
+        this.files = new Map();         // name → text: the only "disk" a program can reach
+        this.writers = new Set();       // names open for writing and not yet closed
         this.startedAt = null;
         this.output = [];
         this.outputChars = 0;
@@ -2307,11 +2569,12 @@ export class Interpreter {
                 // to be defined above. (`object` is the parent every class has.)
                 let base = null;
                 if (node.base !== null && node.base !== 'object') {
-                    if (/^(BaseException|Exception|\w+Error|ABC)$/.test(node.base) && !scope.has(node.base)) {
+                    const known = Object.hasOwn(this.exc, node.base);
+                    if (/^(BaseException|\w+Error|\w+Exception|ABC)$/.test(node.base) && !known && !scope.has(node.base)) {
                         throw runtimeError(`A class here cannot inherit from Python's own ${node.base}.`, node.line,
-                            'Inherit from a class you have written yourself.');
+                            'For an error of your own, inherit from Exception: class MyError(Exception):');
                     }
-                    if (scope.lookup(node.base) === undefined && !(node.base in BUILTINS)) {
+                    if (scope.lookup(node.base) === undefined && !(node.base in BUILTINS) && !known) {
                         throw runtimeError(`The parent class "${node.base}" has not been defined yet.`, node.line,
                             `Write class ${node.base}: above class ${node.name}, and check the spelling.`);
                     }
@@ -2357,8 +2620,68 @@ export class Interpreter {
                 // that is the whole of what a test written with assert does.
                 if (truthy(this.evaluate(node.test, scope))) return;
                 const said = node.message ? this.toText(this.evaluate(node.message, scope), node.line) : null;
-                throw runtimeError(said ? `This assert failed: ${said}` : 'This assert failed.', node.line,
+                throw tagged('AssertionError', said === null ? [] : [said])(said ? `This assert failed: ${said}` : 'This assert failed.', node.line,
                     'An assert claims that something is True. Here it was not, so the program stopped on this line.');
+            }
+
+            case 'Raise': {
+                if (node.exc === null) {
+                    // A bare raise passes on the error this except block is handling.
+                    if (this.handling.length === 0) {
+                        throw tagged('RuntimeError', ['No active exception to reraise'])(
+                            'A raise with nothing after it only works inside an except block.', node.line,
+                            'There it passes the caught error on. Anywhere else, say what to raise: raise ValueError("...")');
+                    }
+                    throw this.handling[this.handling.length - 1];
+                }
+                let value = this.evaluate(node.exc, scope);
+                // raise ValueError — the class on its own — makes one with no message.
+                if (value instanceof PyClass && value.exception) value = this.callValue(value, [], node.line);
+                if (!isExc(value)) {
+                    throw typeError(`Only an error can be raised, and this is ${typeName(value)}.`, node.line,
+                        isStr(value) ? 'Wrap the message in a kind of error: raise ValueError("...")'
+                                     : 'Raise one of Python\'s errors, such as ValueError("..."), or a class of your own that inherits from Exception.');
+                }
+                throw this.errorFor(value, node.line);
+            }
+
+            case 'Try': {
+                try {
+                    let finished = false;
+                    try {
+                        this.execBlock(node.body, scope);
+                        finished = true;
+                    } catch (e) {
+                        const handler = this.findHandler(node, e, scope);
+                        if (!handler) throw e;
+                        if (handler.name) scope.set(handler.name, this.excObject(e));
+                        this.handling.push(e);
+                        try {
+                            this.execBlock(handler.body, scope);
+                        } finally {
+                            this.handling.pop();
+                            // As in Python, the name given by `as` is gone once the block ends.
+                            if (handler.name) scope.vars.delete(handler.name);
+                        }
+                    }
+                    if (finished) this.execBlock(node.orelse, scope);
+                } finally {
+                    if (node.finalbody) this.execBlock(node.finalbody, scope);
+                }
+                return;
+            }
+
+            case 'With': {
+                const file = this.evaluate(node.item, scope);
+                if (!(file instanceof PyFile)) {
+                    throw runtimeError(`A with block here works on a file, and this is ${typeName(file)}.`, node.line,
+                        'Write: with open("notes.txt") as f:');
+                }
+                scope.set(node.name, file);
+                // The whole point of with: the file is closed however the block ends.
+                try { this.execBlock(node.body, scope); }
+                finally { this.closeFile(file); }
+                return;
             }
 
             case 'Break':    throw BREAK;
@@ -2367,6 +2690,103 @@ export class Interpreter {
 
             default:
                 throw runtimeError(`I do not know how to run a ${node.type}.`, node.line);
+        }
+    }
+
+    // ── Errors as values ──
+
+    /** The JavaScript error that carries a Python exception object out through the running program. */
+    errorFor(exc, line) {
+        if (exc.error) return exc.error;       // raised before, or made by the interpreter: the same error again
+        let text = '';
+        try { text = exc.cls.find('__str__') instanceof PyFunction ? '' : excStr(exc, line); } catch (_) { /* no wording to show */ }
+        const error = runtimeError(
+            text ? `The program stopped with a ${exc.cls.name}: ${text}` : `The program stopped with a ${exc.cls.name}.`, line,
+            'This error was raised on purpose, on this line, and no try / except caught it.');
+        error.exc = exc;
+        exc.error = error;
+        return error;
+    }
+
+    /** The Python exception object for an error on its way through a try. */
+    excObject(error) {
+        if (!error.exc) {
+            const exc = new PyInstance(this.exc[error.pyType]);
+            exc.excArgs = error.pyArgs;        // null when Python's wording is not reproduced
+            exc.error = error;
+            error.exc = exc;
+        }
+        return error.exc;
+    }
+
+    /**
+     * The except clause that takes this error, or null. Only Python's
+     * exceptions can be caught: never the step and time budgets, and never an
+     * error that is this interpreter declining to do something.
+     */
+    findHandler(node, error, scope) {
+        if (!(error instanceof PyError) || error.kind !== 'runtime') return null;
+        const cls = error.exc ? error.exc.cls : this.exc[error.pyType];
+        if (!cls) {
+            if (node.handlers.length && !error.passedTry) {
+                error.passedTry = true;
+                error.hint = (error.hint ? error.hint + ' ' : '') +
+                    '(This practice interpreter cannot hand this particular error to an except block.)';
+            }
+            return null;
+        }
+        for (const handler of node.handlers) {
+            if (handler.kind === null) return handler;
+            const kind = this.evaluate(handler.kind, scope);
+            const kinds = isTuple(kind) ? kind.items : [kind];
+            for (const k of kinds) {
+                if (!(k instanceof PyClass && k.exception)) {
+                    throw typeError(`except has to name a kind of error, and this is ${typeName(k)}.`, handler.line,
+                        isStr(k) ? 'Write the name without quotes: except ValueError:' : 'For example: except ValueError:');
+                }
+                if (cls.isKindOf(k)) return handler;
+            }
+        }
+        return null;
+    }
+
+    // ── Files ──
+
+    /** open(name, mode): the "disk" is this.files, and nothing else. */
+    openFile(name, mode, line) {
+        if (!isStr(name)) {
+            throw typeError(`open() needs the file's name as text, but this is ${typeName(name)}.`, line);
+        }
+        const kind = isStr(mode) ? mode.replace('t', '') : null;
+        if (kind !== 'r' && kind !== 'w' && kind !== 'a') {
+            throw runtimeError(`The file mode ${pyRepr(mode)} is not supported here.`, line,
+                'Use "r" to read, "w" to write a new file, or "a" to add to the end of one.');
+        }
+        if (this.writers.has(name)) {
+            throw runtimeError(`${name} is still open for writing, so it cannot be opened again yet.`, line,
+                'Close it first, or write to it inside a with block, which closes it for you. Until then nothing has been saved.');
+        }
+        if (kind === 'r') {
+            if (!this.files.has(name)) {
+                throw tagged('FileNotFoundError', [`[Errno 2] No such file or directory: ${pyRepr(name)}`])(
+                    `There is no file called ${pyRepr(name)}.`, line,
+                    'Check the spelling of the name, or catch the error with except FileNotFoundError:');
+            }
+            return new PyFile(name, 'r', this.files.get(name));
+        }
+        // "w" empties the file the moment it is opened; "a" keeps what is there.
+        if (kind === 'w' || !this.files.has(name)) this.files.set(name, '');
+        this.writers.add(name);
+        return new PyFile(name, kind, '');
+    }
+
+    closeFile(file) {
+        if (file.closed) return;
+        file.closed = true;
+        if (file.mode !== 'r') {
+            this.files.set(file.name, (this.files.get(file.name) ?? '') + file.pending);
+            file.pending = '';
+            this.writers.delete(file.name);
         }
     }
 
@@ -2379,7 +2799,7 @@ export class Interpreter {
             if (isList(container)) {
                 let at = asIndex(key, line, 'A list position');
                 if (at < 0) at += container.length;
-                if (at < 0 || at >= container.length) throw indexError(at, container.length, line);
+                if (at < 0 || at >= container.length) throw indexError(at, container.length, line, "list assignment");
                 container[at] = value;
                 return;
             }
@@ -2393,6 +2813,10 @@ export class Interpreter {
 
         if (target.type === 'Attribute') {
             const owner = this.evaluate(target.value, scope);
+            if (isClass(owner) && owner.native) {
+                throw runtimeError(`${owner.name} is Python's own class and cannot be changed.`, line,
+                    `To add to it, write a class of your own that inherits from it: class MyError(${owner.name}):`);
+            }
             if (isInstance(owner) || isClass(owner)) { owner.attrs.set(target.attr, value); return; }
             throw runtimeError(`Only an object can be given an attribute, and this is ${typeName(owner)}.`, line,
                 `".${target.attr} = ..." stores a value ON an object, as in self.${target.attr} = ... inside a class.`);
@@ -2428,13 +2852,14 @@ export class Interpreter {
             case 'Name': {
                 const value = scope.lookup(node.id);
                 if (value === UNBOUND) {
-                    throw runtimeError(`"${node.id}" is used here before this function has given it a value.`, node.line,
+                    throw tagged("UnboundLocalError")(`"${node.id}" is used here before this function has given it a value.`, node.line,
                         `This function assigns to ${node.id} somewhere, and that makes ${node.id} the function's own ` +
                         `variable on every line of it — not the ${node.id} outside. To change an outside value, pass it ` +
                         `in and return the new one: ${node.id} = f(${node.id}, ...).`);
                 }
                 if (value !== undefined) return value;
                 if (node.id in BUILTINS) return new Builtin(node.id, BUILTINS[node.id]);
+                if (Object.hasOwn(this.exc, node.id)) return this.exc[node.id];
                 throw this.nameError(node.id, scope, node.line);
             }
 
@@ -2514,6 +2939,7 @@ export class Interpreter {
             case 'Attribute': {
                 const owner = this.evaluate(node.value, scope);
                 if (isInstance(owner) || isClass(owner) || owner instanceof PySuper) return this.getAttribute(owner, node.attr, node.line);
+                if (owner instanceof PyFile && ['name', 'mode', 'closed'].includes(node.attr)) return owner[node.attr];
                 throw runtimeError(
                     `You wrote ".${node.attr}" without parentheses after it.`, node.line,
                     `A method only runs when you call it: .${node.attr}()`);
@@ -2532,12 +2958,12 @@ export class Interpreter {
         // Inside a method, a bare name that the object DOES have is the forgotten self.
         const me = scope.lookup('self');
         if (isInstance(me) && (me.attrs.has(name) || me.cls.find(name) !== undefined)) {
-            return runtimeError(`The name "${name}" has not been given a value yet.`, line,
+            return tagged("NameError", [`name ${pyRepr(name)} is not defined`])(`The name "${name}" has not been given a value yet.`, line,
                 `This object has a ${name}, but a method reaches it through self: write self.${name}.`);
         }
         const known = [...scope.names(), ...Object.keys(BUILTINS)];
         const guess = suggestName(name, known);
-        return runtimeError(`The name "${name}" has not been given a value yet.`, line,
+        return tagged("NameError", [`name ${pyRepr(name)} is not defined`])(`The name "${name}" has not been given a value yet.`, line,
             guess ? `Did you mean "${guess}"?`
                   : 'Check the spelling, and make sure it is created above the line that uses it.');
     }
@@ -2546,7 +2972,7 @@ export class Interpreter {
         if (isDict(container)) {
             const hit = dictGet(container, key, line);
             if (hit === undefined) {
-                throw runtimeError(`The dictionary has no key ${pyRepr(key)}.`, line,
+                throw tagged("KeyError", [key])(`The dictionary has no key ${pyRepr(key)}.`, line,
                     'Use .get(key) when the key might be missing, or check "if key in d:" first.');
             }
             return hit;
@@ -2560,15 +2986,15 @@ export class Interpreter {
                 let at = asIndex(key, line);
                 const n = Number(container.length);
                 if (at < 0) at += n;
-                if (at < 0 || at >= n) throw indexError(at, n, line);
+                if (at < 0 || at >= n) throw indexError(at, n, line, "range object");
                 return container.at(BigInt(at));
             }
-            throw runtimeError(`You cannot use [ ] on ${typeName(container)}.`, line,
+            throw typeError(`You cannot use [ ] on ${typeName(container)}.`, line,
                 isNumeric(container) ? 'Square brackets pick an item out of a list or a string.' : null);
         }
         let at = asIndex(key, line);
         if (at < 0) at += seq.length;
-        if (at < 0 || at >= seq.length) throw indexError(asIndex(key, line), seq.length, line);
+        if (at < 0 || at >= seq.length) throw indexError(asIndex(key, line), seq.length, line, isStr(container) ? "string" : isList(container) ? "list" : "tuple");
         return seq[at];
     }
 
@@ -2650,13 +3076,14 @@ export class Interpreter {
             if (owner.attrs.has(name)) return owner.attrs.get(name);
             const found = owner.cls.find(name);
             if (found !== undefined) return found instanceof PyFunction ? new PyBoundMethod(owner, found) : found;
+            if (name === 'args' && isExc(owner)) return new PyTuple(excArgsOf(owner, line).slice());
             const known = [...owner.attrs.keys(), ...owner.cls.names()];
             const guess = suggestName(name, known);
             // The __init__ that ran belongs to a class whose parent has one too:
             // the usual reason an inherited attribute is missing.
             const ran = owner.cls.find('__init__');
             const skipped = ran instanceof PyFunction && ran.owner?.base?.find('__init__') instanceof PyFunction;
-            throw runtimeError(`This ${owner.cls.name} object has no attribute called "${name}".`, line,
+            throw tagged("AttributeError", [`${pyRepr(owner.cls.name)} object has no attribute ${pyRepr(name)}`])(`This ${owner.cls.name} object has no attribute called "${name}".`, line,
                 guess ? `Did you mean "${guess}"?`
                 : skipped ? `If the parent class stores ${name} in its __init__, that __init__ has to be run: ` +
                             `call super().__init__(...) inside ${ran.owner.name}'s __init__.`
@@ -2665,7 +3092,7 @@ export class Interpreter {
         const found = owner.find(name);
         if (found !== undefined) return found;
         const guess = suggestName(name, owner.names());
-        throw runtimeError(`The class ${owner.name} has no attribute called "${name}".`, line,
+        throw tagged("AttributeError", [`type object ${pyRepr(owner.name)} has no attribute ${pyRepr(name)}`])(`The class ${owner.name} has no attribute called "${name}".`, line,
             guess ? `Did you mean "${guess}"?` : null);
     }
 
@@ -2674,11 +3101,19 @@ export class Interpreter {
         const parent = sup.owner.base;
         const found = parent ? parent.find(name) : undefined;
         if (found !== undefined) return found instanceof PyFunction ? new PyBoundMethod(sup.self, found) : found;
+        if (name === '__init__' && isExc(sup.self)) {
+            // Python's own Exception.__init__: keep the values as the error's args.
+            return new Builtin('__init__', (args, kw, at) => {
+                if (Object.keys(kw).length) throw typeError(`${sup.self.cls.name}'s parent __init__ takes no keyword arguments.`, at);
+                sup.self.excArgs = args.slice();
+                return null;
+            });
+        }
         if (name === '__init__') {
             // No class above has an __init__, so there is nothing to set up, as in Python.
             return new Builtin('__init__', (args, kw, at) => {
                 if (args.length || Object.keys(kw).length) {
-                    throw runtimeError(parent
+                    throw typeError(parent
                         ? `super().__init__() takes no values here, because ${parent.name} has no __init__ to receive them.`
                         : `super().__init__() takes no values here, because ${sup.owner.name} has no parent class.`, at);
                 }
@@ -2697,8 +3132,9 @@ export class Interpreter {
     /** What print(), str() and f-strings show: an object's own __str__ if its class has one. */
     toText(value, line) {
         if (!isInstance(value)) return pyStr(value);
-        const describe = value.cls.find('__str__') ?? value.cls.find('__repr__');
-        if (!(describe instanceof PyFunction)) return pyRepr(value);
+        // An exception with no __str__ of its own shows what it was made with, never its repr.
+        const describe = value.cls.find('__str__') ?? (isExc(value) ? undefined : value.cls.find('__repr__'));
+        if (!(describe instanceof PyFunction)) return isExc(value) ? excStr(value, line) : pyRepr(value);
         const text = this.callValue(new PyBoundMethod(value, describe), [], line);
         if (!isStr(text)) {
             throw runtimeError(`${describe.name} has to return text, but this one returned ${typeName(text)}.`, line,
@@ -2717,7 +3153,7 @@ export class Interpreter {
             if (!has) {
                 const methods = cls.names().filter(k => cls.find(k) instanceof PyFunction);
                 const guess = suggestName(name, methods);
-                throw runtimeError(`${isInstance(self) ? `This ${cls.name} object` : `The class ${cls.name}`} has no method called ".${name}()".`, line,
+                throw tagged("AttributeError")(`${isInstance(self) ? `This ${cls.name} object` : `The class ${cls.name}`} has no method called ".${name}()".`, line,
                     guess ? `Did you mean ".${guess}()"?` : null);
             }
             const target = this.getAttribute(self, name, line);
@@ -2731,12 +3167,13 @@ export class Interpreter {
         const table = isStr(self) ? STRING_METHODS
             : isList(self) ? LIST_METHODS
             : isDict(self) ? DICT_METHODS
+            : self instanceof PyFile ? FILE_METHODS
             : null;
         if (table && name in table) return table[name](self, args, line, this, kw);
 
         if (table) {
             const guess = suggestName(name, Object.keys(table));
-            throw runtimeError(`${capitalize(typeName(self))} has no method called ".${name}()".`, line,
+            throw tagged("AttributeError")(`${capitalize(typeName(self))} has no method called ".${name}()".`, line,
                 guess ? `Did you mean ".${guess}()"?` : null);
         }
         if (isTuple(self)) {
@@ -2746,10 +3183,10 @@ export class Interpreter {
                 throw runtimeError(`Tuples cannot be changed, so they have no ".${name}()".`, line,
                     'Turn it into a list first with list(...) if you need to change it.');
             }
-            throw runtimeError(`A tuple has no method called ".${name}()".`, line);
+            throw tagged("AttributeError")(`A tuple has no method called ".${name}()".`, line);
         }
         const noun = typeName(self);
-        throw runtimeError(`${capitalize(noun)} has no methods, so ".${name}()" does not exist.`, line,
+        throw tagged("AttributeError")(`${capitalize(noun)} has no methods, so ".${name}()" does not exist.`, line,
             isNumeric(self) && (name in STRING_METHODS)
                 ? `.${name}() is a text method. Turn the number into text first with str(n).`
                 : null);
@@ -2761,6 +3198,8 @@ export class Interpreter {
 
         if (target instanceof PyClass) {
             const object = new PyInstance(target);
+            // An exception remembers what it was made with, whatever its __init__ goes on to do.
+            if (target.exception) object.excArgs = args.slice();
             const init = target.find('__init__');
             if (init instanceof PyFunction) {
                 const result = this.callValue(new PyBoundMethod(object, init), args, line, kw, `${target.name}`);
@@ -2768,8 +3207,10 @@ export class Interpreter {
                     throw runtimeError('__init__ should not return a value.', line,
                         'Its job is to store attributes on self. The new object is handed back for you.');
                 }
+            } else if (target.exception) {
+                if (Object.keys(kw).length) throw typeError(`${target.name}() takes no keyword arguments.`, line);
             } else if (args.length || Object.keys(kw).length) {
-                throw runtimeError(`${target.name}() takes no values, because the class has no __init__ to receive them.`, line,
+                throw typeError(`${target.name}() takes no values, because the class has no __init__ to receive them.`, line,
                     'Add def __init__(self, ...): to the class and store the values on self.');
             }
             return object;
@@ -2814,7 +3255,7 @@ export class Interpreter {
             const params = target.params;
             if (args.length > params.length) {
                 const takes = params.length - hidden;
-                throw runtimeError(
+                throw typeError(
                     `${label}() takes ${takes} value${takes === 1 ? '' : 's'}, ` +
                     `but you gave it ${args.length - hidden}.`, line);
             }
@@ -2822,14 +3263,14 @@ export class Interpreter {
                 if (i < args.length) { scope.set(p.name, args[i]); return; }
                 if (p.name in kw) { scope.set(p.name, kw[p.name]); return; }
                 if (p.default !== null) { scope.set(p.name, p.ready ? p.value : this.evaluate(p.default, target.scope)); return; }
-                throw runtimeError(`${label}() is missing a value for "${p.name}".`, line,
+                throw typeError(`${label}() is missing a value for "${p.name}".`, line,
                     p.name === 'self' && target.owner
                         ? `Call it on an object rather than on the class: thing = ${target.owner.name}(...) and then thing.${target.name}(...)`
                         : null);
             });
             for (const key of Object.keys(kw)) {
                 if (!params.some(p => p.name === key)) {
-                    throw runtimeError(`${label}() has no parameter called "${key}".`, line);
+                    throw typeError(`${label}() has no parameter called "${key}".`, line);
                 }
             }
             try {
@@ -3015,7 +3456,7 @@ const TOTAL_RUN_MS = 5000;
  * missing function). A test that blows up mid-run is reported on its own row,
  * so a student sees which case broke and how far the rest got.
  */
-export function runTestCases({ signature, body, tests, limits = {}, now = () => Date.now() }) {
+export function runTestCases({ signature, body, tests, files = null, limits = {}, now = () => Date.now() }) {
     const cases = Array.isArray(tests) ? tests : [];
     let assembled;
     try {
@@ -3060,6 +3501,7 @@ export function runTestCases({ signature, body, tests, limits = {}, now = () => 
         }
 
         const interp = new Interpreter({ ...limits, lineOffset, now });
+        giveFiles(interp, files);
         try {
             interp.run(ast);
             const fn = interp.globals.lookup(name);
@@ -3116,7 +3558,7 @@ export function runTestCases({ signature, body, tests, limits = {}, now = () => 
 
 /** True for a problem graded by scripts rather than by calling one function. */
 export function isScriptProblem(question) {
-    return Array.isArray(question?.tests) && question.tests.some(t => t && typeof t.check === 'string');
+    return Array.isArray(question?.tests) && question.tests.some(t => t && (typeof t.check === 'string' || typeof t.raises === 'string'));
 }
 
 const indentBy = (lines, base, by) =>
@@ -3192,14 +3634,44 @@ function parseScript(text) {
 /** `p = Purse(); p.add(5)  →  p.coins` — how a script test is written out in the results table. */
 export function describeScript(testCase) {
     const steps = String(testCase.run ?? '').split('\n').map(l => l.trim()).filter(Boolean);
-    return [...steps, testCase.check].join('; ');
+    const all = typeof testCase.check === 'string' ? [...steps, testCase.check] : steps;
+    // A line that opens a block (try:, except ValueError:) reads on into the line under it.
+    return all.map((step, i) => (i === all.length - 1 ? step : step + (step.endsWith(':') ? ' ' : '; '))).join('');
+}
+
+/** `raises ValueError: too young` — what a test that expects an error is looking for. */
+export function describeRaises(testCase) {
+    return `raises ${testCase.raises}${typeof testCase.message === 'string' ? `: ${testCase.message}` : ''}`;
+}
+
+/**
+ * A test that passes when its steps END IN the named error (or a kind of it):
+ *     { "run": "check_age(5)", "raises": "ValueError", "message": "too young" }
+ * `message`, when given, is what str() of the error must be.
+ */
+function runRaisesCase(interp, testCase, row) {
+    row.expectedRepr = describeRaises(testCase);
+    try {
+        interp.execBlock(parseScript(testCase.run).body, interp.globals);
+    } catch (err) {
+        if (!(err instanceof PyError)) throw err;
+        const wanted = interp.globals.lookup(testCase.raises) ?? interp.exc[testCase.raises];
+        const cls = err.kind !== 'runtime' ? null : err.exc ? err.exc.cls : interp.exc[err.pyType] ?? null;
+        if (!cls || !(wanted instanceof PyClass) || !cls.isKindOf(wanted)) throw err;
+        let text = null;
+        try { text = interp.toText(interp.excObject(err), null); } catch (_) { /* wording not reproduced */ }
+        row.actualRepr = `raises ${cls.name}${text ? `: ${text}` : ''}`;
+        row.passed = typeof testCase.message !== 'string' || text === testCase.message;
+        return;
+    }
+    row.actualRepr = 'no error';
 }
 
 /**
  * Run a class problem's tests. Returns the same shape as runTestCases, so the
  * results table and the grading treat the two kinds of problem alike.
  */
-export function runScriptCases({ scaffold = null, signature, body, tests, limits = {}, now = () => Date.now() }) {
+export function runScriptCases({ scaffold = null, signature, body, tests, files = null, limits = {}, now = () => Date.now() }) {
     const cases = Array.isArray(tests) ? tests : [];
     let assembled;
     try {
@@ -3221,7 +3693,7 @@ export function runScriptCases({ scaffold = null, signature, body, tests, limits
     const results = [];
     const startedAt = now();
     for (const testCase of cases) {
-        const expected = fromJson(testCase.expect);
+        const expected = fromJson(testCase.expect ?? null);
         const row = { call: describeScript(testCase), expectedRepr: pyRepr(expected), actualRepr: null, passed: false, output: [], error: null };
         if (now() - startedAt > TOTAL_RUN_MS) {
             row.error = { message: 'This run was stopped — the earlier tests took too long.', hint: null, line: null, kind: 'limit' };
@@ -3229,13 +3701,18 @@ export function runScriptCases({ scaffold = null, signature, body, tests, limits
             continue;
         }
         const interp = new Interpreter({ ...limits, lineOffset, now });
+        giveFiles(interp, files);
         try {
             interp.run(ast);
-            if (testCase.run) interp.execBlock(parseScript(testCase.run).body, interp.globals);
-            const check = parseScript(testCase.check).body[0];
-            const value = interp.evaluate(check.expr, interp.globals);
-            row.actualRepr = pyRepr(value);
-            row.passed = pyEquals(value, expected);
+            if (typeof testCase.raises === 'string') {
+                runRaisesCase(interp, testCase, row);
+            } else {
+                if (testCase.run) interp.execBlock(parseScript(testCase.run).body, interp.globals);
+                const check = parseScript(testCase.check).body[0];
+                const value = interp.evaluate(check.expr, interp.globals);
+                row.actualRepr = pyRepr(value);
+                row.passed = pyEquals(value, expected);
+            }
         } catch (err) {
             if (!(err instanceof PyError)) throw err;
             if (typeof err.line === 'number' && err.line >= SCRIPT_LINE_BASE) {
@@ -3261,12 +3738,17 @@ export function runScriptCases({ scaffold = null, signature, body, tests, limits
     };
 }
 
+/** Every test starts from the same files: the ones the problem supplies, untouched by the test before. */
+function giveFiles(interp, files) {
+    for (const [name, text] of Object.entries(files ?? {})) interp.files.set(name, String(text));
+}
+
 /** Run whichever kind of problem this is. Everything that grades a code_write goes through here. */
 export function runProblem(question, body, options = {}) {
     if (isScriptProblem(question)) {
-        return runScriptCases({ scaffold: question.scaffold ?? null, signature: question.signature, body, tests: question.tests, ...options });
+        return runScriptCases({ scaffold: question.scaffold ?? null, signature: question.signature, body, tests: question.tests, files: question.files ?? null, ...options });
     }
-    return runTestCases({ signature: question.signature, body, tests: question.tests, ...options });
+    return runTestCases({ signature: question.signature, body, tests: question.tests, files: question.files ?? null, ...options });
 }
 
 function failed(error, cases) {

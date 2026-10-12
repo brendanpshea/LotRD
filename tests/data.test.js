@@ -465,6 +465,23 @@ describe('question_sets/catalog.json', () => {
 // ────────────────────────────────────────────────────────────────────────────────
 // A write-the-code problem is review, done in a few minutes: the long builds are in the course notebooks.
 const MAX_SOLUTION_LINES = 15;
+
+// The files a Python problem supplies are shown to the student in full, above
+// the box, on a phone too: a handful of short files, or the screen is all file.
+function checkProblemFiles(q, label) {
+  if (!('files' in q)) return;
+  assert.ok(q.files && typeof q.files === 'object' && !Array.isArray(q.files), `${label}: files must be an object of name: text`);
+  const entries = Object.entries(q.files);
+  assert.ok(entries.length >= 1 && entries.length <= 4, `${label}: a problem supplies 1 to 4 files`);
+  for (const [name, text] of entries) {
+    assert.ok(/^[\w-]+\.[a-z]+$/.test(name), `${label}: file name ${JSON.stringify(name)} should be a plain name such as scores.txt`);
+    assert.ok(typeof text === 'string', `${label}: the contents of ${name} must be text`);
+    const lines = text.split('\n');
+    assert.ok(lines.length <= 9, `${label}: ${name} has more than 8 lines; keep the files a problem shows short`);
+    assert.ok(lines.every(l => l.length <= 40), `${label}: a line of ${name} is longer than 40 characters`);
+  }
+}
+
 const solutionLines = q => String(q.solution ?? '').split('\n').filter(line => line.trim()).length;
 
 describe('Question set file validation', () => {
@@ -675,6 +692,7 @@ describe('Question set file validation', () => {
             }
             if ('starter' in q) assert.ok(typeof q.starter === 'string', `${label}: starter must be a string when present`);
           } else if (type === 'code_write' && isScriptProblem(q)) {
+            checkProblemFiles(q, label);
             // A class problem: graded by short scripts, because what a method does
             // shows only in what the object has become. Either one method inside a
             // supplied class (scaffold + def line) or a whole class (class line).
@@ -687,11 +705,23 @@ describe('Question set file validation', () => {
               assert.ok(/^def\s+\w+\s*\(\s*self\b.*\)\s*:$/.test(sig) || /^class\s+\w+\s*(\(\s*\w*\s*\))?\s*:$/.test(sig),
                 `${label}: with a scaffold, signature is a method's def line (first parameter self) or a class line`);
             } else {
-              assert.ok(/^class\s+\w+\s*(\(\s*\))?\s*:$/.test(sig),
-                `${label}: a class problem with no scaffold needs a signature like "class Stack:"`);
+              // A whole class — or a plain function that is graded by what it leaves
+              // behind (a file it wrote) rather than by what it returns.
+              assert.ok(/^class\s+\w+\s*(\(\s*\))?\s*:$/.test(sig) || (/^def\s+\w+\s*\(.*\)\s*:$/.test(sig) && !/\(\s*self\b/.test(sig)),
+                `${label}: a script-tested problem with no scaffold needs a signature like "class Stack:" or "def save(name, scores):"`);
             }
             assert.ok(q.tests.length >= 3, `${label}: code_write needs at least 3 test cases`);
+            assert.ok(q.tests.some(t => typeof t.check === 'string'), `${label}: at least one test has to check a value, not only expect an error`);
             for (const [ti, t] of q.tests.entries()) {
+              if (typeof t.raises === 'string') {
+                // A row that passes when its steps end in the named error.
+                assert.ok(/^[A-Z]\w*$/.test(t.raises), `${label}: test ${ti + 1} "raises" names a kind of error, such as ValueError`);
+                assert.ok(typeof t.run === 'string' && t.run.trim(), `${label}: test ${ti + 1} needs the "run" steps that should raise`);
+                assert.ok(!('check' in t) && !('expect' in t) && !('args' in t), `${label}: test ${ti + 1} expects an error, so it has no check or expect`);
+                assert.ok(t.message === undefined || typeof t.message === 'string', `${label}: test ${ti + 1} "message" must be text`);
+                assert.ok(`${t.run}${t.message ?? ''}`.length <= 120, `${label}: test ${ti + 1} is too long to read in the results table`);
+                continue;
+              }
               assert.ok(typeof t.check === 'string' && t.check.trim() && !t.check.includes('\n'),
                 `${label}: test ${ti + 1} needs a one-line "check" expression`);
               assert.ok(t.run === undefined || typeof t.run === 'string', `${label}: test ${ti + 1} "run" must be text`);
@@ -708,6 +738,7 @@ describe('Question set file validation', () => {
                 `${label}: hint must be one line of at most 240 characters`);
             }
           } else if (type === 'code_write') {
+            checkProblemFiles(q, label);
             assert.ok(typeof q.signature === 'string' && /^def\s+\w+\s*\(.*\)\s*:$/.test(q.signature.trim()),
               `${label}: code_write needs a signature line like "def add(a, b):"`);
             assert.ok(Array.isArray(q.tests) && q.tests.length >= 3,
@@ -1301,7 +1332,7 @@ describe('code_write problems are solvable', () => {
             ? ['return 0;', 'return 1;', 'return true;', 'return false;', 'return "";', 'return null;', 'return 0.0;', "return 'a';",
               'return new int[0];', 'return new String[0];']
             : isScriptProblem(q)
-              ? (q.scaffold && !/^\s*class\s/.test(q.signature) ? ['pass', 'return None', 'return 0', 'return True'] : ['pass', 'def __init__(self):\n    pass'])
+              ? (/^\s*def\s/.test(q.signature) ? ['pass', 'return None', 'return 0', 'return True'] : ['pass', 'def __init__(self):\n    pass'])
               : ['return None', 'return True', 'return False', 'return 0', 'return ""'];
           for (const lazy of lazyBodies) {
             const outcome = run(q, lazy);
@@ -1486,7 +1517,7 @@ describe('Arithmetic shown in questions is actually correct', () => {
 // that list when it has been brought up to the standard — never remove one.
 describe('Audit checks', () => {
   const index = loadJSON('question_sets/index.json');
-  const MEETS_AUDIT_STANDARD = setId => /^java_|^computing_concepts_(0[456789]|1[01234])_/.test(setId);
+  const MEETS_AUDIT_STANDARD = setId => /^java_|^computing_concepts_(0[456789]|1[012345])_/.test(setId);
   const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write', 'sql_write']);
   const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
 
