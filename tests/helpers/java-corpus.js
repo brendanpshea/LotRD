@@ -1351,6 +1351,129 @@ export const AGREES = {
     calls: ['both(2)', 'both(0)', 'viaFinally(1)', 'breakThroughFinally()', 'catchLeaves(5)', 'catchLeaves(0)', 'tryLeaves(0)', 'tryLeaves(2)', 'allLeave(0)', 'throwInTry(0)', 'throwInTry(3)', 'sameName(0)', 'sameName(5)',
       'recovers()', 'inSwitch(1)', 'inSwitch(2)', 'inSwitch(3)', 'inSwitch(-1)'],
   },
+  // ── lambdas and streams
+  'a lambda stored as an interface of the program\'s own, or as a Predicate, a Function or a Consumer': {
+    classes: J`class Ship { private String name; private int speed; private String type;
+        Ship(String name, int speed, String type) { this.name = name; this.speed = speed; this.type = type; }
+        public String getName() { return name; } public int getSpeed() { return speed; } public String getType() { return type; }
+        @Override public String toString() { return name + "(" + speed + ")"; } }
+      class Treasure { private String name; private int value; Treasure(String name, int value) { this.name = name; this.value = value; }
+        public String getName() { return name; } public int getValue() { return value; } }
+      interface IntTester { boolean test(int value); }
+      interface SpeedConverter { double convert(int knots); }`,
+    methods: J`
+      String own() {
+          IntTester deep = (int depth) -> { return depth > 100; };
+          IntTester shallow = depth -> depth < 50;
+          SpeedConverter kph = knots -> knots * 1.852;
+          return deep.test(150) + " " + shallow.test(30) + " " + deep.test(75) + " " + kph.convert(20) + " " + kph.convert(30);
+      }
+      String builtIn() {
+          Predicate<Ship> isFast = ship -> ship.getSpeed() > 20;
+          Predicate<String> isLongName = name -> name.length() > 10;
+          Function<Ship, String> getName = ship -> ship.getName();
+          Function<Integer, Double> knotsToMph = knots -> knots * 1.15078;
+          Function<Integer, String> depthLabel = depth -> { if (depth > 100) return "deep"; else return "shallow"; };
+          Ship vessel = new Ship("Ocean Queen", 25, "passenger");
+          StringBuilder log = new StringBuilder();
+          Consumer<Ship> note = ship -> log.append(ship.getName()).append('!');
+          note.accept(vessel);
+          return isFast.test(vessel) + " " + isLongName.test("Ocean Queen") + " " + getName.apply(vessel) + " " + knotsToMph.apply(25) + " " + depthLabel.apply(150) + depthLabel.apply(50) + " " + log;
+      }
+      String scope(int limit) {
+          String unit = "kn";
+          Function<Ship, String> show = s -> s.getName() + " " + s.getSpeed() + unit + (s.getSpeed() > limit);
+          return show.apply(new Ship("Sal", 21, "cargo"));
+      }`,
+    calls: ['own()', 'builtIn()', 'scope(20)', 'scope(30)'],
+  },
+  'a pipeline, stage by stage': {
+    classes: J`class Ship { private String name; private int speed; private String type;
+        Ship(String name, int speed, String type) { this.name = name; this.speed = speed; this.type = type; }
+        public String getName() { return name; } public int getSpeed() { return speed; } public String getType() { return type; }
+        @Override public String toString() { return name + "(" + speed + ")"; } }
+      class Treasure { private String name; private int value; Treasure(String name, int value) { this.name = name; this.value = value; }
+        public String getName() { return name; } public int getValue() { return value; } }
+      interface IntTester { boolean test(int value); }
+      interface SpeedConverter { double convert(int knots); }`,
+    methods: J`
+      String names(int over) { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          List<String> out = fleet.stream().filter(ship -> ship.getSpeed() > over).map(ship -> ship.getName()).collect(Collectors.toList());
+          return out + " " + fleet.size();
+      }
+      String printed() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          fleet.stream().filter(ship -> ship.getSpeed() > 15).filter(ship -> ship.getType().equals("passenger")).forEach(ship -> System.out.println("  " + ship.getName()));
+          fleet.stream().map(ship -> ship.getSpeed()).filter(speed -> speed > 20).forEach(speed -> System.out.println(speed + " knots"));
+          fleet.stream().map(ship -> ship.getSpeed() * 0.453592).forEach(kg -> System.out.println(kg + " kg"));
+          return "printed";
+      }
+      String answers() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          long fast = fleet.stream().filter(ship -> ship.getSpeed() > 20).count();
+          Optional<Ship> firstFast = fleet.stream().filter(ship -> ship.getSpeed() > 26).findFirst();
+          Optional<Ship> none = fleet.stream().filter(ship -> ship.getSpeed() > 99).findFirst();
+          return fleet.stream().count() + " " + fast + " " + firstFast.isPresent() + firstFast.get().getName() + none.isPresent() + none + firstFast + " "
+              + fleet.stream().anyMatch(ship -> ship.getSpeed() > 29) + fleet.stream().allMatch(ship -> ship.getSpeed() > 15) + fleet.stream().noneMatch(ship -> ship.getSpeed() > 30);
+      }
+      String ordered() { ArrayList<Treasure> chest = new ArrayList<>(); chest.add(new Treasure("Pearl", 200)); chest.add(new Treasure("Gold Coin", 50)); chest.add(new Treasure("Ruby", 800)); chest.add(new Treasure("Diamond", 1200)); chest.add(new Treasure("Emerald", 600));
+          List<String> top = chest.stream().sorted((a, b) -> b.getValue() - a.getValue()).limit(3).map(t -> t.getName()).collect(Collectors.toList());
+          List<String> rising = chest.stream().filter(t -> t.getValue() > 100).sorted(Comparator.comparing(t -> t.getValue())).map(t -> t.getName()).collect(Collectors.toList());
+          List<String> falling = chest.stream().sorted(Comparator.comparing(Treasure::getValue).reversed()).skip(2).map(Treasure::getName).collect(Collectors.toList());
+          List<String> typed = chest.stream().sorted(Comparator.comparing((Treasure t) -> t.getName()).reversed()).map(t -> t.getName()).collect(Collectors.toList());
+          List<Integer> values = chest.stream().map(t -> t.getValue()).sorted().collect(Collectors.toList());
+          return top + " " + rising + " " + falling + " " + typed + " " + values;
+      }
+      String totals() { ArrayList<Treasure> chest = new ArrayList<>(); chest.add(new Treasure("Pearl", 200)); chest.add(new Treasure("Gold Coin", 50)); chest.add(new Treasure("Ruby", 800)); chest.add(new Treasure("Diamond", 1200)); chest.add(new Treasure("Emerald", 600));
+          int total = chest.stream().mapToInt(t -> t.getValue()).sum();
+          OptionalInt most = chest.stream().mapToInt(t -> t.getValue()).max();
+          OptionalInt least = chest.stream().mapToInt(t -> t.getValue()).min();
+          OptionalDouble mean = chest.stream().mapToInt(t -> t.getValue()).average();
+          OptionalInt nothing = chest.stream().filter(t -> t.getValue() > 5000).mapToInt(t -> t.getValue()).max();
+          return total + " " + most.getAsInt() + " " + least.getAsInt() + " " + mean.getAsDouble() + " " + mean + most + nothing + nothing.isPresent() + " " + chest.stream().mapToDouble(t -> t.getValue() * 0.1).sum();
+      }`,
+    calls: ['names(20)', 'names(99)', 'printed()', 'answers()', 'ordered()', 'totals()'],
+  },
+  'what a stream does and when: nothing until the end, one element at a time, and once only': {
+    classes: J`class Ship { private String name; private int speed; private String type;
+        Ship(String name, int speed, String type) { this.name = name; this.speed = speed; this.type = type; }
+        public String getName() { return name; } public int getSpeed() { return speed; } public String getType() { return type; }
+        @Override public String toString() { return name + "(" + speed + ")"; } }
+      class Treasure { private String name; private int value; Treasure(String name, int value) { this.name = name; this.value = value; }
+        public String getName() { return name; } public int getValue() { return value; } }
+      interface IntTester { boolean test(int value); }
+      interface SpeedConverter { double convert(int knots); }`,
+    methods: J`
+      String lazy() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          fleet.stream().filter(ship -> { System.out.println("never"); return true; }).map(ship -> ship.getName());
+          return "nothing ran";
+      }
+      String oneAtATime() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          return "" + fleet.stream().peek(ship -> System.out.println("in " + ship.getName())).filter(ship -> ship.getSpeed() > 20)
+              .peek(ship -> System.out.println("kept " + ship.getName())).map(ship -> ship.getName()).limit(2).collect(Collectors.toList());
+      }
+      String sortFirst() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          List<String> wrong = fleet.stream().limit(3).sorted((a, b) -> b.getSpeed() - a.getSpeed()).map(s -> s.getName()).collect(Collectors.toList());
+          List<String> right = fleet.stream().sorted((a, b) -> b.getSpeed() - a.getSpeed()).limit(3).map(s -> s.getName()).collect(Collectors.toList());
+          return wrong + " " + right;
+      }
+      String twice() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          Stream<Ship> ships = fleet.stream();
+          ships.forEach(ship -> System.out.println(ship.getName()));
+          try { return "" + ships.count(); } catch (IllegalStateException e) { return e.getMessage(); }
+      }
+      String nulls() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          try { fleet.stream().filter(ship -> ship.getType().equals("fishing")).forEach(ship -> System.out.println(ship.getName())); return "no exception"; }
+          catch (NullPointerException e) { return "caught, then " + fleet.stream().filter(ship -> ship.getType() != null).filter(ship -> ship.getType().equals("fishing")).count(); }
+      }
+      String unchanged() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          List<Ship> fast = fleet.stream().filter(ship -> ship.getSpeed() > 20).collect(Collectors.toList());
+          fast.remove(0);
+          return fleet.size() + " " + fast + " " + (fast.get(0) == fleet.get(2));
+      }
+      String emptyOptional() { ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Sea Breeze", 25, "passenger")); fleet.add(new Ship("Coral Hunter", 15, "fishing")); fleet.add(new Ship("Atlantic Express", 30, "cargo")); fleet.add(new Ship("Wave Rider", 22, "passenger")); fleet.add(new Ship("Old Tub", 15, null));
+          try { return fleet.stream().filter(ship -> ship.getSpeed() > 99).findFirst().get().getName(); } catch (NoSuchElementException e) { return e.getMessage(); }
+      }`,
+    calls: ['lazy()', 'oneAtATime()', 'sortFirst()', 'twice()', 'nulls()', 'unchanged()', 'emptyOptional()'],
+  },
 };
 
 /**
@@ -1930,6 +2053,38 @@ export const REJECTS = {
   'an exception stored in a variable of an unrelated exception type': J`int f() { ArithmeticException e = new IllegalStateException("x"); return 1; }`,
   'a checked exception class extended and thrown undeclared': { classes: 'class Trouble extends Exception { } class Worse extends Trouble { }', methods: J`int f() { throw new Worse(); }` },
   'instanceof between unrelated exception classes': J`boolean f() { ArithmeticException e = new ArithmeticException(); return e instanceof IllegalStateException; }`,
+  // ── lambdas and streams
+  'Comparator.comparing with a plain lambda, then .reversed()': { classes: J`class Ship { int speed; int getSpeed() { return speed; } }`,
+    methods: J`int f(ArrayList<Ship> fleet) { return fleet.stream().sorted(Comparator.comparing(s -> s.getSpeed()).reversed()).collect(Collectors.toList()).size(); }` },
+  'a lambda that changes a variable from outside it': J`int f(ArrayList<Integer> xs) { int total = 0; xs.stream().forEach(x -> total += x); return total; }`,
+  'a lambda that uses a variable changed before it': J`long f(ArrayList<Integer> xs, int limit) { limit++; return xs.stream().filter(x -> x > limit).count(); }`,
+  'a lambda that uses a variable changed after it': J`long f(ArrayList<Integer> xs) { int limit = 3; Predicate<Integer> over = x -> x > limit; limit = 4; return xs.stream().filter(over).count(); }`,
+  'a lambda that uses a loop counter': J`int f(ArrayList<Integer> xs) { int n = 0; for (int i = 0; i < 3; i++) { n += (int) xs.stream().filter(x -> x > i).count(); } return n; }`,
+  'a lambda parameter named like a variable already there': J`long f(ArrayList<Integer> xs, int x) { return xs.stream().filter(x -> x > 2).count(); }`,
+  'filter with a lambda that does not give true or false': J`long f(ArrayList<String> xs) { return xs.stream().filter(s -> s.length()).count(); }`,
+  'mapToInt with a lambda that gives a String': J`int f(ArrayList<String> xs) { return xs.stream().mapToInt(s -> s.toUpperCase()).sum(); }`,
+  'a method of the old element type, after map has changed it': J`long f(ArrayList<String> xs) { return xs.stream().map(s -> s.length()).filter(s -> s.isEmpty()).count(); }`,
+  'a stream stored as if it were a list': J`int f(ArrayList<String> xs) { List<String> out = xs.stream().filter(s -> s.isEmpty()); return out.size(); }`,
+  'sum() without mapToInt first': J`int f(ArrayList<Integer> xs) { return xs.stream().sum(); }`,
+  'get() on an OptionalInt': J`int f(ArrayList<Integer> xs) { return xs.stream().mapToInt(x -> x).max().get(); }`,
+  'max() of an IntStream used as an int': J`int f(ArrayList<Integer> xs) { int most = xs.stream().mapToInt(x -> x).max(); return most; }`,
+  'count() stored in an int': J`int f(ArrayList<Integer> xs) { int n = xs.stream().count(); return n; }`,
+  'a lambda with too many parameters for a Predicate': J`boolean f() { Predicate<Integer> p = (a, b) -> a > b; return p.test(1); }`,
+  'a lambda with a parameter type that is not the one wanted': J`boolean f() { Predicate<Integer> p = (String s) -> s.isEmpty(); return p.test(1); }`,
+  'a lambda for an interface with two methods to write': { classes: 'interface TwoJobs { boolean first(int v); boolean second(int v); }', methods: J`boolean f() { TwoJobs t = v -> v > 1; return t.first(2); }` },
+  'a lambda stored in an Object': J`int f() { Object o = x -> x; return 1; }`,
+  'a lambda stored with var': J`int f() { var g = x -> x; return 1; }`,
+  'a Function whose lambda gives the wrong type back': J`String f() { Function<Integer, String> g = k -> k + 1; return g.apply(1); }`,
+  'an int where a lambda has to give back a Double': J`double f() { Function<Integer, Double> g = k -> k * 2; return g.apply(1); }`,
+  'a Consumer whose lambda only works out a value': J`int f() { Consumer<String> c = s -> s.length() + 1; c.accept("a"); return 1; }`,
+  'a Predicate with a primitive in its angle brackets': J`boolean f() { Predicate<int> p = k -> k > 1; return p.test(2); }`,
+  'apply() on a Predicate': J`boolean f() { Predicate<Integer> p = k -> k > 1; return p.apply(2); }`,
+  'a block lambda that does not return on every path': J`boolean f() { Predicate<Integer> p = k -> { if (k > 1) return true; }; return p.test(2); }`,
+  'a checked exception let out of a lambda': J`boolean f() { Predicate<Integer> p = k -> { if (k < 0) throw new Exception("no"); return true; }; return p.test(2); }`,
+  'a method reference to a method that is not there': { classes: J`class Ship { int getSpeed() { return 1; } }`, methods: J`int f() { Function<Ship, Integer> g = Ship::getWeight; return g.apply(new Ship()); }` },
+  'forEach handed something that is not a lambda': J`int f(ArrayList<String> xs) { xs.stream().forEach("print"); return 1; }`,
+  'a lambda in the middle of arithmetic': J`int f() { return 1 + (x -> x); }`,
+  'an arrow with something other than names on its left': J`boolean f() { Predicate<Integer> p = 5 -> true; return p.test(2); }`,
 };
 
 /**
@@ -2041,6 +2196,29 @@ export const REFUSES = {
   'catching an error of the machine': { methods: J`int f(int n) { try { return f(n + 1); } catch (StackOverflowError e) { return n > 0 ? 1 : 0; } }`, calls: ['f(0)'] },
   'an exception class that writes its own getCause': { classes: 'class Odd extends RuntimeException { public Throwable getCause() { return null; } }', methods: J`boolean f() { return new Odd().getCause() == null; }`, calls: ['f()'] },
   'a field whose starting value may throw a checked exception': { classes: 'class Src { static int get() throws IOException { return 4; } } class Uses { int x = Src.get(); Uses() throws IOException { } }', methods: J`int f() throws IOException { return new Uses().x; }`, calls: ['f()'] },
+  // ── lambdas and streams
+  'an anonymous class': { classes: 'interface IntTester { boolean test(int v); }', methods: J`boolean f() { IntTester t = new IntTester() { public boolean test(int v) { return v > 1; } }; return t.test(2); }`, calls: ['f()'] },
+  'sorted() on objects that have no order of their own': { classes: 'class Ship { }', methods: J`int f() { ArrayList<Ship> xs = new ArrayList<>(); xs.add(new Ship()); return xs.stream().sorted().collect(Collectors.toList()).size(); }`, calls: ['f()'] },
+  'Stream.of': { methods: J`long f() { return Stream.of("a", "b").count(); }`, calls: ['f()'] },
+  'toList() on a stream, which cannot be changed afterwards': { methods: J`int f() { ArrayList<String> xs = new ArrayList<>(); xs.add("a"); return xs.stream().toList().size(); }`, calls: ['f()'] },
+  'a collector other than toList': { methods: J`String f() { ArrayList<String> xs = new ArrayList<>(); xs.add("a"); return xs.stream().collect(Collectors.joining(",")); }`, calls: ['f()'] },
+  'reduce': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(); xs.add(4); return xs.stream().reduce(0, (a, b) -> a + b); }`, calls: ['f()'] },
+  'distinct': { methods: J`long f() { ArrayList<Integer> xs = new ArrayList<>(); xs.add(4); xs.add(4); return xs.stream().distinct().count(); }`, calls: ['f()'] },
+  'filter on an IntStream': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(); xs.add(4); return xs.stream().mapToInt(x -> x).filter(x -> x > 1).sum(); }`, calls: ['f()'] },
+  'negate() on a Predicate': { methods: J`boolean f() { Predicate<Integer> p = k -> k > 1; return p.negate().test(2); }`, calls: ['f()'] },
+  'a lambda joined to text': { methods: J`int f() { Predicate<Integer> p = k -> k > 1; return ("" + p).length(); }`, calls: ['f()'] },
+  'a stream joined to text': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(); return ("" + xs.stream()).length(); }`, calls: ['f()'] },
+  'removeIf with a lambda': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(); xs.add(4); xs.removeIf(x -> x > 1); return xs.size(); }`, calls: ['f()'] },
+  'forEach with a lambda on a map': { methods: J`int f() { HashMap<String, Integer> m = new HashMap<>(); m.put("a", 1); m.forEach((k, v) -> System.out.println(k + v)); return m.size(); }`, calls: ['f()'] },
+  'a method reference to the method of one particular object': { methods: J`int f() { ArrayList<String> seen = new ArrayList<>(); Consumer<String> keep = seen::add; keep.accept("a"); return seen.size(); }`, calls: ['f()'] },
+  'a constructor reference': { classes: 'class Ship { Ship(String n) { } }', methods: J`int f() { Function<String, Ship> make = Ship::new; return make.apply("a") == null ? 0 : 1; }`, calls: ['f()'] },
+  'a Runnable': { methods: J`int f() { Runnable r = () -> System.out.println("run"); r.run(); return 1; }`, calls: ['f()'] },
+  'a Supplier': { methods: J`int f() { Supplier<Integer> s = () -> 4; return s.get(); }`, calls: ['f()'] },
+  'a variable a lambda uses, given its one value on a later line': { methods: J`boolean f(int a) { int once; once = a; Predicate<Integer> p = k -> k > once; return p.test(5); }`, calls: ['f(1)'] },
+  'a comparator of the program\'s own on 32 elements or more': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(); for (int i = 0; i < 40; i++) xs.add(i % 7); return xs.stream().sorted((a, b) -> a - b).collect(Collectors.toList()).get(0); }`, calls: ['f()'] },
+  'a pipeline that changes the list it came from': { methods: J`int f() { ArrayList<Integer> xs = new ArrayList<>(); xs.add(1); xs.add(2); try { xs.stream().forEach(x -> xs.add(x)); } catch (RuntimeException e) { return -1; } return xs.size(); }`, calls: ['f()'] },
+  'a lambda cast to a function type': { methods: J`boolean f() { return ((Predicate<Integer>) k -> k > 1).test(2); }`, calls: ['f()'] },
+  'Comparator.comparing whose lambda works on any Object': { classes: 'class Ship { public String toString() { return "s"; } }', methods: J`int f() { ArrayList<Ship> xs = new ArrayList<>(); xs.add(new Ship()); return xs.stream().sorted(Comparator.comparing(s -> s.toString()).reversed()).collect(Collectors.toList()).size(); }`, calls: ['f()'] },
 };
 
 // ─── generated cases ─────────────────────────────────────────────────────────
@@ -2954,5 +3132,258 @@ export function exceptionSiteCases(sites = SITES) {
       ['k', '"caught " + (e instanceof NullPointerException) + (e instanceof IndexOutOfBoundsException) + (e instanceof IllegalArgumentException) + (e instanceof ArithmeticException)'],
     ].map(([name, shown]) => `  String ${name}(int a) {\n    ${SITE_SETUP}\n    String r;\n    try { ${site}; r = "ran"; } catch (RuntimeException e) { r = ${shown}; }\n    return r + " | " + ${SITE_AFTER};\n  }`).join('\n'),
     calls: [-1, 0, 2, 3, 5, 9].flatMap(a => [`m(${a})`, `k(${a})`]),
+  }));
+}
+
+// ─── generated stream pipelines ──────────────────────────────────────────────
+//
+// A stream does nothing until its last operation pulls on it, and then moves
+// one element at a time through every stage. So what a pipeline prints (every
+// stage here may have a peek that prints) shows exactly which elements each
+// stage saw and in what order: where limit() and findFirst() stopped, what a
+// sort held back, and whether count() ran the pipeline at all. Stages are put
+// together at random, mostly so that the types fit; javac says which compile.
+
+const STREAM_CLASSES = J`class Ship { private String name; private int speed; private String type;
+  Ship(String name, int speed, String type) { this.name = name; this.speed = speed; this.type = type; }
+  public String getName() { return name; } public int getSpeed() { return speed; } public String getType() { return type; }
+  public boolean isFast() { return speed > 20; } public static int twice(int n) { return n * 2; }
+  @Override public String toString() { return name; } }
+interface IntTester { boolean test(int value); }`;
+const STREAM_SETUP = J`ArrayList<Ship> fleet = new ArrayList<>(); fleet.add(new Ship("Ann", 25, "cargo")); fleet.add(new Ship("Bo", 12, "fishing")); fleet.add(new Ship("Cy", 35, "cargo"));
+    fleet.add(new Ship("Di", 25, "passenger")); fleet.add(new Ship("Ed", 8, "fishing")); fleet.add(new Ship("Flo", 30, "passenger"));
+    List<String> words = Arrays.asList("pear", "fig", "apple", "kiwi", "fig", "date"); LinkedList<Integer> nums = new LinkedList<>(Arrays.asList(5, 3, 8, 3, 1, 9, 4));
+    HashSet<String> set = new HashSet<>(words); ArrayList<Ship> none = new ArrayList<>(); int limit = a; String prefix = "f";`;
+const STREAM_SOURCES = [['fleet', 'Ship'], ['fleet', 'Ship'], ['fleet', 'Ship'], ['words', 'String'], ['words', 'String'], ['nums', 'Integer'], ['nums', 'Integer'], ['set', 'String'], ['none', 'Ship']];
+const STREAM_TESTS = {
+  Ship: ['s -> s.getSpeed() > limit', 's -> s.getSpeed() > 20', 's -> s.getType().equals("cargo")', 's -> s.getName().length() > 2', 's -> s.isFast()', '(Ship s) -> { int d = s.getSpeed() * 2; return d > limit; }', 'Ship::isFast', 's -> true', 's -> s.getSpeed()'],
+  String: ['w -> w.length() > 3', 'w -> w.startsWith(prefix)', 'w -> !w.equals("fig")', 'w -> w.compareTo("g") < 0', 'w -> { return w.length() % 2 == 0; }', 'w -> w.length()'],
+  Integer: ['n -> n % 2 == 0', 'n -> n > 3', 'n -> n < limit', '(Integer n) -> n != 3', 'n -> n'],
+  Double: ['d -> d > 10', 'd -> d < limit', 'd -> d > 2.5'],
+};
+const STREAM_MAPS = {
+  Ship: [['s -> s.getName()', 'String'], ['s -> s.getSpeed()', 'Integer'], ['s -> s.getSpeed() * 0.5', 'Double'], ['s -> s.getType()', 'String'], ['Ship::getName', 'String'], ['Ship::getSpeed', 'Integer'],
+    ['s -> s', 'Ship'], ['s -> { String t = s.getType(); return t + s.getSpeed(); }', 'String'], ['s -> s.getSpeed() + limit', 'Integer']],
+  String: [['w -> w.length()', 'Integer'], ['w -> w.toUpperCase()', 'String'], ['String::length', 'Integer'], ['w -> w + w.length()', 'String'], ['w -> w.length() / 2.0', 'Double'], ['String::toUpperCase', 'String']],
+  Integer: [['n -> n * 2', 'Integer'], ['n -> n / 2.0', 'Double'], ['n -> "n" + n', 'String'], ['n -> n + limit', 'Integer'], ['Ship::twice', 'Integer'], ['n -> n * 1.5', 'Double']],
+  Double: [['d -> d * 2', 'Double'], ['d -> "" + d', 'String'], ['d -> (int) (d * 10)', 'Integer']],
+};
+const STREAM_ORDERS = {
+  Ship: ['(x, y) -> x.getSpeed() - y.getSpeed()', '(x, y) -> y.getSpeed() - x.getSpeed()', '(x, y) -> x.getName().compareTo(y.getName())', '(x, y) -> x.getSpeed() > y.getSpeed() ? 1 : -1', '(x, y) -> -1', '(x, y) -> 1',
+    '(x, y) -> 0', 'Comparator.comparing(s -> s.getSpeed())', 'Comparator.comparing(s -> s.getName())', 'Comparator.comparing(Ship::getSpeed).reversed()', 'Comparator.comparing((Ship s) -> s.getType()).reversed()',
+    'Comparator.comparing(s -> s.getSpeed()).reversed()', 'Comparator.comparing(Ship::getType)', '(x, y) -> { System.out.print(x + "" + y + " "); return x.getSpeed() - y.getSpeed(); }', 'Comparator.comparing(s -> s)'],
+  String: ['', '', '(x, y) -> x.length() - y.length()', '(x, y) -> y.compareTo(x)', 'Comparator.comparing(w -> w.length())', 'Comparator.comparing(String::length).reversed()', '(x, y) -> x.length() > y.length() ? 1 : -1'],
+  Integer: ['', '', '(x, y) -> y - x', '(x, y) -> x % 3 - y % 3', 'Comparator.comparing(n -> n % 4)', '(x, y) -> x > y ? -1 : 1'],
+  Double: ['', '(x, y) -> x > y ? 1 : -1'],
+};
+const STREAM_NUMBERS = {
+  Ship: [['mapToInt(s -> s.getSpeed())', 'Int'], ['mapToInt(Ship::getSpeed)', 'Int'], ['mapToDouble(s -> s.getSpeed() / 3.0)', 'Double'], ['mapToLong(s -> s.getSpeed() * 1000000000L)', 'Long'], ['mapToInt(s -> s.getName())', 'Int'], ['mapToDouble(s -> s.getSpeed())', 'Double']],
+  String: [['mapToInt(w -> w.length())', 'Int'], ['mapToInt(String::length)', 'Int'], ['mapToDouble(w -> w.length() * 0.1)', 'Double']],
+  Integer: [['mapToInt(n -> n)', 'Int'], ['mapToDouble(n -> n / 7.0)', 'Double'], ['mapToLong(n -> n)', 'Long'], ['mapToInt(n -> n * 1000000000)', 'Int']],
+  Double: [['mapToDouble(d -> d)', 'Double'], ['mapToInt(d -> d)', 'Int'], ['mapToDouble(d -> d * 0.1)', 'Double']],
+};
+
+function streamPipeline(rng) {
+  let [source, type] = rng.pick(STREAM_SOURCES);
+  let text = `${source}.stream()`;
+  let tag = 0;
+  const peek = () => { if (rng.next() < 0.45) text += `\n        .peek(x -> System.out.print("${String.fromCharCode(97 + tag++)}" + x + " "))`; };
+  const other = () => rng.pick(Object.keys(STREAM_TESTS).filter(t => t !== type));
+  peek();
+  const stages = rng.int(4);
+  for (let i = 0; i < stages; i++) {
+    const from = rng.next() < 0.04 ? other() : type;   // now and then, a stage written for the wrong kind of element
+    switch (rng.int(9)) {
+      case 0: case 1: text += `\n        .filter(${rng.pick(STREAM_TESTS[from])})`; break;
+      case 2: case 3: { const [fn, to] = rng.pick(STREAM_MAPS[from]); text += `\n        .map(${fn})`; if (from === type) type = to; break; }
+      case 4: case 5: text += `\n        .sorted(${rng.pick(STREAM_ORDERS[from])})`; break;
+      case 6: text += `\n        .limit(${rng.pick(['2', '3', '0', '10', 'limit % 4', '1'])})`; break;
+      case 7: text += `\n        .skip(${rng.pick(['1', '2', '0', '10', 'limit % 3'])})`; break;
+      default: text += `\n        .peek(x -> System.out.print("${String.fromCharCode(97 + tag++)}" + x + " "))`; break;
+    }
+    peek();
+  }
+  const end = rng.int(18);
+  const print = 'x -> System.out.print("[" + x + "]")';
+  switch (end) {
+    case 0: case 1: return `${text}\n        .forEach(${rng.next() < 0.25 ? 'System.out::print' : print}); return "done";`;
+    case 2: case 3: return `List<${type}> got = ${text}\n        .collect(Collectors.toList()); got.add(null); return "" + got;`;
+    case 4: case 5: return `long n = ${text}\n        .count(); return "count " + n;`;
+    case 6: return `Optional<${type}> first = ${text}\n        .findFirst(); return first.isPresent() ? "first " + first.get() : "none " + first;`;
+    case 7: return `return "" + ${text}\n        .findFirst();`;
+    case 8: return `return "" + ${text}\n        .${rng.pick(['anyMatch', 'allMatch', 'noneMatch'])}(${rng.pick(STREAM_TESTS[type])});`;
+    case 9: case 10: case 11: case 12: {
+      const [fn, kind] = rng.pick(STREAM_NUMBERS[type]);
+      const last = rng.pick(['sum()', 'sum()', 'max()', 'min()', 'average()', 'count()', `max().getAs${kind}()`, 'average().getAsDouble()', 'min().isPresent()', `max().orElse(${kind === 'Double' ? '-1.5' : kind === 'Long' ? '-1L' : '-1'})`]);
+      return `return "" + ${text}\n        .${fn}.${last};`;
+    }
+    case 13: return `${text}; return "nothing ran";`;
+    case 14: return `Stream<${type}> s = ${text}; s.forEach(${print}); try { return "" + s.count(); } catch (IllegalStateException e) { return e.getMessage(); }`;
+    case 15: return `Stream<${type}> s = ${text}; ${source}.clear(); return "" + s.count() + ${source}.size();`;
+    case 16: return `return "" + ${text}\n        .findFirst().${rng.pick(['get()', 'isPresent()', 'isEmpty()', 'orElse(null)', 'orElseThrow()'])};`;
+    default: return `${source}.forEach(${print}); ${text}\n        .forEach(x -> System.out.print(x)); return "" + ${source}.size();`;
+  }
+}
+
+/** `count` pipelines, each run with three values of the variable its lambdas use from outside. */
+export function streamCases(seed, count) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, () => ({
+    classes: STREAM_CLASSES,
+    methods: `  String m(int a) {\n    ${STREAM_SETUP}\n    ${streamPipeline(rng)}\n  }`,
+    calls: ['m(20)', 'm(9)', 'm(3)'],
+  }));
+}
+
+// ─── generated lambdas ───────────────────────────────────────────────────────
+//
+// What a lambda may be stored as, what it may use from outside itself, and what
+// it may not: a variable that changes, a name already taken, the wrong number
+// of parameters, a value where none is wanted. Small pieces, joined at random.
+
+const LAMBDA_PIECES = [
+  // well-formed
+  'Predicate<Integer> deep = d -> d > 100; out += deep.test(a * 60);',
+  'Predicate<String> longName = (String s) -> { return s.length() > n; }; out += longName.test("Nautilus") + "" + longName.test("Al");',
+  'Function<Integer, String> label = d -> { if (d > n) return "deep"; else return "shallow"; }; out += label.apply(a) + label.apply(100);',
+  'Function<String, Integer> size = s -> s.length(); out += size.apply(word) + size.apply("");',
+  'Function<Integer, Double> half = k -> k / 2.0; out += half.apply(a);',
+  'Consumer<String> shout = s -> System.out.print(s.toUpperCase() + n); shout.accept(word); shout.accept("x");',
+  'Comparator<String> byLength = (x, y) -> x.length() - y.length(); out += byLength.compare(word, "abc") + "" + byLength.reversed().compare(word, "abc");',
+  'IntTester even = v -> v % 2 == 0; out += even.test(a) + "" + even.test(n) + even.twice(a);',
+  'IntTester big = (int v) -> v > n; out += big.test(a) + "" + check(big, 7) + check(v -> v < a, 2);',
+  'Shaper tall = (w, h) -> h > w ? "tall" : "wide"; out += tall.shape(a, n) + tall.shape(n, a);',
+  'Maker fixed = () -> word + n; out += fixed.make() + fixed.make().length();',
+  'Predicate<Integer> p = make(n); Predicate<Integer> q = make(n); out += p.test(a) + "" + (p == q) + (p == p) + (p != null);',
+  'IntTester t1 = same(); IntTester t2 = same(); out += (t1 == t2) + "" + t1.equals(t2) + t1.test(3);',
+  'Function<String, Integer> parse = Integer::parseInt; Function<String, String> up = String::toUpperCase; out += parse.apply("" + a) + up.apply(word);',
+  'Function<Ship, String> nameOf = Ship::getName; Function<Ship, Integer> speedOf = Ship::getSpeed; Ship s = new Ship("Sal", a); out += nameOf.apply(s) + speedOf.apply(s);',
+  'Consumer<Integer> show = System.out::println; show.accept(a); Consumer<String> say = System.out::print; say.accept(word);',
+  'int base = a * 2; Function<Integer, Integer> add = k -> k + base + n; out += add.apply(1) + "" + apply(add, 5) + apply(k -> k * base, 2);',
+  'ArrayList<String> seen = new ArrayList<>(); Consumer<String> keep = s -> seen.add(s); keep.accept(word); keep.accept("z"); out += seen;',
+  'Counter c = new Counter(a); IntTester over = c.over(); c.bump(); out += over.test(a) + "" + over.test(a + 1) + c.under().test(0);',
+  'Predicate<Integer> none = null; try { out += none.test(1); } catch (NullPointerException e) { out += "npe"; }',
+  'Function<Integer, Integer> outer = k -> { Function<Integer, Integer> inner = j -> j + k + n; return inner.apply(k); }; out += outer.apply(a);',
+  'for (int i = 0; i < 3; i++) { int copy = i; IntTester is = v -> v == copy; out += is.test(1); }',
+  'for (String w : Arrays.asList("a", "bb")) { Predicate<String> same = s -> s.equals(w); out += same.test("bb"); }',
+  'Predicate<Ship> fast = s -> s.getSpeed() > n; out += fast.test(new Ship("x", a)) + "" + fast.test(null == null ? new Ship("y", 0) : null);',
+  'Function<Integer, Integer> boom = k -> 10 / k; try { out += boom.apply(a - a); } catch (ArithmeticException e) { out += e.getMessage(); }',
+  // not well-formed, or not something a lambda may do
+  'int total = 0; Consumer<Integer> addUp = k -> total += k; addUp.accept(a);',
+  'int count = a; count++; Predicate<Integer> over = k -> k > count; out += over.test(5);',
+  'int later = a; Predicate<Integer> over = k -> k > later; later = 3; out += over.test(5);',
+  'Predicate<Integer> clash = n -> n > 2; out += clash.test(a);',
+  'Predicate<Integer> clash = k -> { int word = 3; return k > word; }; out += clash.test(a);',
+  'Predicate<Integer> two = (x, y) -> x > y; out += two.test(a);',
+  'Function<Integer, String> wrong = k -> k + 1; out += wrong.apply(a);',
+  'Function<Integer, Double> narrow = k -> k * 2; out += narrow.apply(a);',
+  'Consumer<String> value = s -> s.length() + 1; value.accept(word);',
+  'Predicate<String> noReturn = s -> { s.length(); }; out += noReturn.test(word);',
+  'Predicate<Integer> typed = (String s) -> s.isEmpty(); out += typed.test(a);',
+  'Object o = k -> k; out += o;',
+  'String s = x -> x; out += s;',
+  'Maker m = v -> "made"; out += m.make();',
+  'Shaper one = w -> "w"; out += one.shape(1, 2);',
+  'TwoJobs both = v -> v > 1; out += both.first(a);',
+  'var guess = k -> k + 1; out += guess;',
+  'Predicate<Integer> p = k -> k > 1; out += p.apply(a);',
+  'Function<Integer, Integer> f = k -> k + 1; out += f.test(a);',
+  'Predicate<int> prim = k -> k > 1; out += prim.test(a);',
+  'IntTester late; if (a > 1) { late = v -> v > 0; out += late.test(1); } int unset; IntTester uses = v -> v > unset; out += uses.test(1);',
+  'int once; once = a; IntTester uses = v -> v > once; out += uses.test(1);',
+  'Predicate<Integer> p = k -> k > 1; out += p; ',
+  'Function<String, Integer> missing = Ship::getName; out += missing.apply(word);',
+  'Function<Ship, Integer> gone = Ship::getWeight; out += gone.apply(new Ship("q", 1));',
+  'IntTester thrower = v -> { if (v < 0) throw new Exception("no"); return true; }; out += thrower.test(a);',
+  'IntTester unchecked = v -> { if (v < n) throw new IllegalStateException("low"); return true; }; try { out += unchecked.test(a); } catch (IllegalStateException e) { out += e.getMessage(); }',
+  'Predicate<Integer> p = k -> k > 1; Predicate<Integer> q = p.negate(); out += q.test(a);',
+  'Runnable r = () -> System.out.print("run"); r.run();',
+  'out += check(v -> { return; }, 1);',
+  'IntTester loop = v -> { while (true) { if (v > n) return true; v++; } }; out += loop.test(a);',
+  'IntTester changes = v -> { v = v + 1; return v > n; }; out += changes.test(a);',
+];
+const LAMBDA_CLASSES = J`class Ship { private String name; private int speed; Ship(String name, int speed) { this.name = name; this.speed = speed; }
+  public String getName() { return name; } public int getSpeed() { return speed; } }
+interface IntTester { boolean test(int value); default String twice(int v) { return "" + test(v) + test(v * 2); } }
+interface Shaper { String shape(int w, int h); }
+interface Maker { String make(); }
+interface TwoJobs { boolean first(int v); boolean second(int v); }
+class Counter { private int count; Counter(int count) { this.count = count; } void bump() { count++; }
+  IntTester over() { return v -> v > count; } IntTester under() { int now = count; return v -> v < now; } }`;
+const LAMBDA_HELPERS = J`  boolean check(IntTester t, int v) { return t.test(v); }
+  int apply(Function<Integer, Integer> f, int v) { return f.apply(v); }
+  Predicate<Integer> make(int n) { return k -> k > n; }
+  IntTester same() { return v -> v > 2; }`;
+
+/** `count` methods, each one or two of the pieces above. */
+export function lambdaCases(seed, count) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, (_, i) => {
+    const pieces = [i < LAMBDA_PIECES.length ? LAMBDA_PIECES[i] : rng.pick(LAMBDA_PIECES)];
+    if (i >= LAMBDA_PIECES.length && rng.next() < 0.5) pieces.push(rng.pick(LAMBDA_PIECES.slice(0, 25)));
+    // Each piece in a block of its own, so that the names one declares do not collide with the next one's.
+    return {
+      classes: LAMBDA_CLASSES,
+      methods: `${LAMBDA_HELPERS}\n  String m(int a, int n, String word) {\n    String out = "";\n${pieces.map(piece => `    { ${piece} }`).join('\n')}\n    return out;\n  }`,
+      calls: ['m(3, 2, "coral")', 'm(0, 5, "")', 'm(-4, -9, "Sea Breeze")'],
+    };
+  });
+}
+
+// ─── sorting with a comparator, pair by pair ─────────────────────────────────
+//
+// A comparator a student writes is often not a consistent one: it never answers
+// 0, or it answers by something other than the thing sorted. The order that
+// comes out then depends on exactly which pairs the sort compares, and in what
+// order. Here the comparator is a table of answers chosen at random, and it
+// writes down every pair it is asked about.
+
+const SORT_METHOD = J`  String m(int seed, int n) {
+    ArrayList<Integer> xs = new ArrayList<>();
+    int state = seed;
+    int[] signs = new int[36];
+    for (int i = 0; i < 36; i++) { state = state * 1103515245 + 12345; signs[i] = ((state >>> 16) % 3) - 1; }
+    for (int i = 0; i < n; i++) { state = state * 1103515245 + 12345; xs.add((state >>> 16) % 6); }
+    StringBuilder asked = new StringBuilder();
+    List<Integer> sorted = xs.stream().sorted((x, y) -> { asked.append(x).append(y).append(' '); return signs[x * 6 + y]; }).collect(Collectors.toList());
+    List<Integer> natural = xs.stream().sorted().collect(Collectors.toList());
+    List<Integer> byKey = xs.stream().sorted(Comparator.comparing(x -> signs[x])).collect(Collectors.toList());
+    return sorted + " " + natural + " " + byKey + " " + asked;
+  }`;
+
+export function sortCases(seed, count, perCase = 20) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, () => ({
+    methods: SORT_METHOD,
+    calls: Array.from({ length: perCase }, () => `m(${rng.int(1000000)}, ${rng.int(32)})`),
+  }));
+}
+
+// ─── the sum and the average of a DoubleStream ───────────────────────────────
+//
+// Java does not add a DoubleStream up from left to right: it keeps a running
+// correction for the bits each addition loses. The answers differ in the last
+// digit, which is the digit a student is asked to type.
+
+const DOUBLE_SUM_METHOD = J`  String m(int seed, int n) {
+    ArrayList<Double> xs = new ArrayList<>();
+    int state = seed;
+    for (int i = 0; i < n; i++) {
+      state = state * 1103515245 + 12345;
+      int pick = (state >>> 16) % 12;
+      state = state * 1103515245 + 12345;
+      double unit = ((state >>> 8) % 2001 - 1000) / 10.0;
+      xs.add(pick == 0 ? unit * 1e15 : pick == 1 ? unit * 1e-9 : pick == 2 ? 0.1 : pick == 3 ? -unit * 1e15 : pick == 4 ? unit / 3 : pick == 5 ? 1e308 * (unit > 99 ? 10 : 1) : unit);
+    }
+    double plain = 0; for (double x : xs) plain += x;
+    return xs.stream().mapToDouble(x -> x).sum() + " " + xs.stream().mapToDouble(x -> x).average() + " " + plain + " " + xs.stream().mapToDouble(x -> x).max() + xs.stream().mapToDouble(x -> x / 7).min()
+      + " " + xs.stream().mapToInt(x -> (int) (x * 1000)).sum() + " " + xs.stream().mapToInt(x -> (int) (x * 1000)).average() + " " + xs.stream().mapToLong(x -> (long) (x * 1e6)).sum() + xs.stream().mapToLong(x -> (long) (x * 1e6)).average();
+  }`;
+
+export function doubleSumCases(seed, count, perCase = 20) {
+  const rng = randomSource(seed);
+  return Array.from({ length: count }, () => ({
+    methods: DOUBLE_SUM_METHOD,
+    calls: Array.from({ length: perCase }, () => `m(${rng.int(1000000)}, ${rng.int(14)})`),
   }));
 }

@@ -179,7 +179,7 @@ export function javaClassFor({ methods, calls, classes = '' }, className) {
   // `classes` are the case's own classes. They go beside the test class, not inside it: a class written
   // inside another may read its private fields, which is exactly what these cases are testing.
   const beside = classes.replace(/\bpublic\s+(?=(?:(?:abstract|final)\s+)*(?:class|interface)\b)/g, '');
-  return `package ${className.toLowerCase()};\nimport java.util.*;\nimport java.io.*;\npublic class ${className} {\n${methods}\n${SHOW}\n  void $run() {\n${body}\n  }\n` +
+  return `package ${className.toLowerCase()};\nimport java.util.*;\nimport java.io.*;\nimport java.util.function.*;\nimport java.util.stream.*;\npublic class ${className} {\n${methods}\n${SHOW}\n  void $run() {\n${body}\n  }\n` +
     `  public static void main(String[] args) { new ${className}().$run(); }\n}\n${beside}\n`;
 }
 

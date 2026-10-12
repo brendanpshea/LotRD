@@ -13,7 +13,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runProblemOnJtiny, findJdk, runOnJdk, runOnJtiny, caseForProblem } from './helpers/jdk.js';
-import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, collectionCases, collectionTypeCases, objectCases, inheritanceCases, tryCases, exceptionSiteCases, interestingDoubles } from './helpers/java-corpus.js';
+import { AGREES, PROBLEMS, REJECTS, REFUSES, fuzzCases, flowCases, typeCases, boxCases, formatCases, roundingCases, collectionCases, collectionTypeCases, objectCases, inheritanceCases, tryCases, exceptionSiteCases, streamCases, lambdaCases, sortCases, doubleSumCases, interestingDoubles } from './helpers/java-corpus.js';
 import { javaDouble } from '../src/jtiny.js';
 
 const jdk = findJdk();
@@ -34,6 +34,9 @@ const COLLECTION_TYPE_CASES = 600;   // collection methods called on, and handed
 const OBJECT_CASES = 600;     // two small classes, used with no regard for what is private, static or null
 const INHERITANCE_CASES = 600;   // an abstract class, two interfaces and three classes, used with no regard for type
 const TRY_CASES = 800;     // try, catch and finally around lines that throw: which compile, and the path each takes
+const STREAM_CASES = 700;   // stream pipelines put together at random, every stage printing what reaches it
+const LAMBDA_CASES = 300;   // what a lambda may be stored as, and what it may use from outside
+const SORT_CASES = 8;       // × 20 lists sorted with a comparator that answers at random, pair by pair; and × 20 sums of doubles
 const ROUNDING_CASES = 6;   // × 150 doubles × 9 ways of writing each: where %.2f rounds
 
 // Everything goes to the JDK in one process: starting a JVM costs more than all the cases together.
@@ -43,7 +46,9 @@ const refuse = Object.entries(REFUSES);
 const fuzz = fuzzCases(FUZZ_SEED, FUZZ_CASES);
 const generated = [...flowCases(FUZZ_SEED, FLOW_CASES), ...typeCases(FUZZ_SEED, TYPE_CASES), ...boxCases(FUZZ_SEED, BOX_CASES),
   ...formatCases(FUZZ_SEED, FORMAT_CASES), ...roundingCases(FUZZ_SEED, ROUNDING_CASES),
-  ...collectionTypeCases(FUZZ_SEED, COLLECTION_TYPE_CASES), ...collectionCases(FUZZ_SEED, COLLECTION_CASES), ...objectCases(FUZZ_SEED, OBJECT_CASES), ...inheritanceCases(FUZZ_SEED, INHERITANCE_CASES), ...tryCases(FUZZ_SEED, TRY_CASES)];
+  ...collectionTypeCases(FUZZ_SEED, COLLECTION_TYPE_CASES), ...collectionCases(FUZZ_SEED, COLLECTION_CASES), ...objectCases(FUZZ_SEED, OBJECT_CASES), ...inheritanceCases(FUZZ_SEED, INHERITANCE_CASES), ...tryCases(FUZZ_SEED, TRY_CASES),
+  ...streamCases(FUZZ_SEED, STREAM_CASES), ...lambdaCases(FUZZ_SEED, LAMBDA_CASES), ...sortCases(FUZZ_SEED, SORT_CASES), ...doubleSumCases(FUZZ_SEED, SORT_CASES)];
+const LAST_CASES = STREAM_CASES + LAMBDA_CASES + 2 * SORT_CASES;
 // Every exception the library throws, caught: its message, and what the line had done before it failed.
 const sites = exceptionSiteCases();
 const doubles = interestingDoubles(FUZZ_SEED, 1500);
@@ -198,7 +203,8 @@ describe('generated methods: jtiny and javac agree on which compile, and on what
   for (let from = 0; from < generated.length; from += BATCH) {
     const kind = from < FLOW_CASES ? 'method bodies' : from < FLOW_CASES + TYPE_CASES + BOX_CASES ? 'type puzzles'
       : from < FLOW_CASES + TYPE_CASES + BOX_CASES + FORMAT_CASES + ROUNDING_CASES ? 'formats'
-        : from < generated.length - OBJECT_CASES - INHERITANCE_CASES - TRY_CASES ? 'collections' : from < generated.length - TRY_CASES ? 'objects' : 'try and catch';
+        : from < generated.length - OBJECT_CASES - INHERITANCE_CASES - TRY_CASES - LAST_CASES ? 'collections' : from < generated.length - TRY_CASES - LAST_CASES ? 'objects'
+          : from < generated.length - LAST_CASES ? 'try and catch' : 'lambdas and streams';
     it(`seed ${FUZZ_SEED}, ${kind} ${from + 1}–${Math.min(from + BATCH, generated.length)}`, () => {
       const disagreements = [];
       let bothRan = 0;

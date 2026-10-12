@@ -35,7 +35,14 @@
  * without a name) and casts, abstract classes, and interfaces with default
  * methods; and exceptions: try / catch / finally, throw, throws and Java's rules
  * for checked exceptions, exception classes of the student's own, getMessage(),
- * and Java's own messages, word for word, for the exceptions it throws itself.
+ * and Java's own messages, word for word, for the exceptions it throws itself;
+ * and lambdas and streams: a lambda (or Ship::getSpeed) stored as a Predicate,
+ * a Function, a Consumer, a Comparator or an interface of the student's own
+ * with one method, the rule that a variable a lambda uses may not change, and
+ * list.stream() with filter, map, mapToInt / mapToDouble, sorted, limit, skip,
+ * peek, forEach, collect(Collectors.toList()), count, findFirst, the three
+ * matchers, and sum / max / min / average. A pipeline runs as Java's does: not
+ * until its last operation, and one element at a time.
  *
  * What it refuses, by name: byte / short / float, a collection inside a
  * collection, the other collection classes, changing a collection inside a
@@ -44,7 +51,10 @@
  * static, an Object holding anything but an object of the student's own
  * classes, an object printed with no toString() of its own (Java shows a code that differs from run to run),
  * objects as the elements of a set or the keys of a map, final fields set in
- * a constructor, lambdas, labels, regular expressions; of exceptions, a
+ * a constructor, labels, regular expressions; of lambdas and streams, anonymous
+ * classes, the other function types (Supplier, Runnable …), Stream.of, reduce,
+ * distinct, the other collectors, and sorted() on objects with no order of
+ * their own; of exceptions, a
  * finally that returns or throws, try-with-resources, causes and stack traces,
  * catching Throwable, and the message of a NullPointerException or a
  * ClassCastException, which Java writes at length — and == between two
@@ -1025,6 +1035,13 @@ class Parser {
             if (t.v === '(') {
                 // (int) x — a cast, when a type and ) come next
                 const n = this.peek();
+                // (int depth) -> depth > 100 opens the same way as a cast; what follows its ) tells them apart.
+                let close = this.p + 1;
+                for (let depth = 1; close < this.tokens.length && depth > 0; close++) {
+                    if (this.isOp('(', this.tokens[close])) depth++;
+                    else if (this.isOp(')', this.tokens[close])) depth--;
+                }
+                if (this.isOp('->', this.tokens[close]) && !this.inCaseLabel) return this.parsePostfix();
                 if (n.t === 'kw' && PRIMITIVE_WORDS.has(n.v)) {
                     this.next();
                     const type = this.parseType();
@@ -1099,12 +1116,29 @@ class Parser {
                 this.next();
                 e = { k: 'incdec', op: t.v, prefix: false, target: this.incTarget(e, t), line: t.line };
             } else if (this.isOp('::')) {
-                throw notYet(`${BOX} does not have method references (::).`, t.line);
+                // Ship::getSpeed, System.out::println — a method named, to be used as a lambda
+                this.next();
+                if (this.isKw('new')) throw notYet(`${BOX} does not have constructor references (::new).`, t.line, 'Write a lambda: name -> new Ship(name)');
+                const name = this.expectIdent('the name of a method after ::');
+                e = { k: 'methodref', target: e, name: name.v, line: t.line };
             } else if (this.isOp('->') && !this.inCaseLabel) {
-                throw notYet(`${BOX} does not have lambdas (->).`, t.line);
+                throw compileError('The left side of -> is the parameters of a lambda: one name, or several names in ( ).', t.line, 'ship -> ship.getSpeed() > 20');
             } else break;
         }
         return e;
+    }
+
+    /** After the parameters: the arrow, and then one expression or a block in braces. */
+    parseLambda(params, line) {
+        this.next();   // ->
+        const depth = this.switchExprDepth;
+        this.switchExprDepth = 0;   // a yield in here would not belong to a switch outside
+        let block = null;
+        let expr = null;
+        if (this.isOp('{')) block = this.parseBlock();
+        else expr = this.parseExpr();
+        this.switchExprDepth = depth;
+        return { k: 'lambda', params, block, expr, line };
     }
 
     parseArgs() {
@@ -1140,7 +1174,7 @@ class Parser {
             case 'str': return { k: 'lit', type: 'String', value: t.value, line };
             case 'id':
                 if (this.isOp('(')) return { k: 'call', target: null, name: t.v, args: this.parseArgs(), line };
-                if (this.isOp('->') && !this.inCaseLabel) throw notYet(`${BOX} does not have lambdas (->).`, line);
+                if (this.isOp('->') && !this.inCaseLabel) return this.parseLambda([{ name: t.v, type: null, line }], line);   // ship -> ship.getSpeed() > 20
                 return { k: 'name', name: t.v, line };
             case 'kw':
                 if (t.v === 'true' || t.v === 'false') return { k: 'lit', type: 'boolean', value: t.v === 'true', line };
@@ -1174,7 +1208,24 @@ class Parser {
                         if (this.isOp('(', this.tokens[k])) depth++;
                         else if (this.isOp(')', this.tokens[k])) depth--;
                     }
-                    if (this.isOp('->', this.tokens[k]) && !this.inCaseLabel) throw notYet(`${BOX} does not have lambdas (->).`, line);
+                    if (this.isOp('->', this.tokens[k]) && !this.inCaseLabel) {
+                        // (a, b) -> …   (Ship ship) -> …   () -> …
+                        const params = [];
+                        while (!this.isOp(')')) {
+                            if (params.length) this.expectOp(',', 'between the parameters of a lambda');
+                            this.eatKw('final');
+                            if (this.isId() && (this.isOp(',', this.peek()) || this.isOp(')', this.peek()))) {
+                                const name = this.next();
+                                params.push({ name: name.v, type: null, line: name.line });
+                            } else {
+                                const type = this.parseType();
+                                const name = this.expectIdent('a name for this parameter of the lambda');
+                                params.push({ name: name.v, type, line: name.line });
+                            }
+                        }
+                        this.next();
+                        return this.parseLambda(params, line);
+                    }
                     const e = this.parseExpr();
                     this.expectOp(')', 'to close the (');
                     return { k: 'paren', e, line };
@@ -1205,7 +1256,7 @@ class Parser {
         }
         if (this.isOp('(')) {
             const args = this.parseArgs();
-            if (this.isOp('{')) throw notYet(`${BOX} does not have anonymous classes.`, line);
+            if (this.isOp('{')) throw notYet(`${BOX} does not have anonymous classes: a class written out after new ${base}( ).`, line, 'If the interface has one method, a lambda does the same job in one line.');
             return { k: 'new', base, targs, args, line };
         }
         if (targs) throw notYet(`${BOX} does not have arrays of collections.`, line);
@@ -1260,7 +1311,15 @@ const SUPERTYPES = {
 };
 const INTERFACES = new Set(['List', 'Set', 'Collection', 'Map']);
 const NO_BINDINGS = { t: [], f: [] };
-const isCollection = t => t.endsWith('>');
+// Streams, the Optional a stream may hand back, and the function types a lambda can be. They are written
+// with angle brackets as the collections are, and none of them is a collection.
+const FLOW_ARITY = { Stream: 1, Optional: 1, Predicate: 1, Consumer: 1, Comparator: 1, Function: 2 };
+const FLOW_PLAIN = new Set(['IntStream', 'LongStream', 'DoubleStream', 'OptionalInt', 'OptionalLong', 'OptionalDouble']);
+const LAMBDA = '(lambda)';        // a lambda that nothing has yet said the type of
+const COLLECTOR = '(collector)';  // what Collectors.toList() gives, on its way into collect( )
+const isCollection = t => t.endsWith('>') && !Object.hasOwn(FLOW_ARITY, t.slice(0, t.indexOf('<')));
+const isFlow = t => FLOW_PLAIN.has(t) || t === COLLECTOR || (t.endsWith('>') && Object.hasOwn(FLOW_ARITY, t.slice(0, t.indexOf('<'))));
+const flowBase = t => (t.endsWith('>') ? t.slice(0, t.indexOf('<')) : t);
 /** new ArrayList<>() before anything has said what it holds. */
 const isPending = t => t.endsWith('<>');
 const baseOf = t => t.slice(0, t.indexOf('<'));
@@ -1276,7 +1335,7 @@ const isObjectType = t => t === 'Object' || CLASSES.has(t);
 /** May an object whose class is `from` stand where `to` is wanted? A Toy may, where a PixarCharacter is. */
 const isSubtype = (from, to) => from === to || (isOwnClass(from) && (to === 'Object' || CLASSES.get(from).supers.has(to)));
 
-const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t) || isCollection(t) || isObjectType(t);
+const isReference = t => t === 'String' || t === 'StringBuilder' || t === 'null' || isArray(t) || isWrapper(t) || isCollection(t) || isFlow(t) || isObjectType(t);
 
 const promote = (a, b) => (a === 'double' || b === 'double' ? 'double' : a === 'long' || b === 'long' ? 'long' : 'int');
 
@@ -1290,7 +1349,9 @@ const NOT_YET_TYPES = new Map([
     ['Entry', 'Map.Entry'], ['Iterator', 'iterators'], ['ArrayDeque', 'ArrayDeque (LinkedList is here)'], ['PriorityQueue', 'PriorityQueue'],
     ['Scanner', 'Scanner (there is no keyboard input here)'], ['Random', 'Random (a test needs the same answer every time)'],
     ['StringBuffer', 'StringBuffer'], ['BigInteger', 'BigInteger'], ['BigDecimal', 'BigDecimal'],
-    ['Stack', 'Stack'], ['Queue', 'Queue'], ['Deque', 'Deque'], ['Optional', 'Optional'],
+    ['Stack', 'Stack'], ['Queue', 'Queue'], ['Deque', 'Deque'],
+    ['Supplier', 'Supplier'], ['BiFunction', 'BiFunction'], ['UnaryOperator', 'UnaryOperator'], ['BinaryOperator', 'BinaryOperator'], ['BiPredicate', 'BiPredicate'],
+    ['BiConsumer', 'BiConsumer'], ['Runnable', 'Runnable'], ['Comparable', 'Comparable'], ['Iterable', 'Iterable'], ['Collector', 'Collector'],
 ]);
 const TYPE_HINTS = { byte: 'Use int.', short: 'Use int.', float: 'Use double.', Byte: 'Use Integer.', Short: 'Use Integer.', Float: 'Use Double.', StringBuffer: 'Use StringBuilder.' };
 
@@ -1322,7 +1383,29 @@ function resolveType(node, { allowVoid = false } = {}) {
         }
         return `${base}<${args.join(',')}>`;
     }
+    if (Object.hasOwn(FLOW_ARITY, base)) {
+        const example = base === 'Function' ? 'Ship, String' : 'Ship';
+        if (dims) throw notYet(`${BOX} does not have arrays of ${base}s.`, line);
+        if (!node.targs || node.targs === 'diamond') throw notYet(`${BOX} needs to be told what ${aType(base)} works on, in angle brackets: ${base}<${example}>`, line);
+        if (node.targs.length !== FLOW_ARITY[base]) {
+            throw compileError(`${base} takes ${base === 'Function' ? 'two types in its angle brackets: what goes in, and what comes out' : 'one type in its angle brackets'}: ${base}<${example}>`, line);
+        }
+        const args = node.targs.map(a => {
+            if (a.targs || a.dims) throw notYet(`${BOX} has ${base}s of Strings, of the wrapper types and of your own classes only.`, line);
+            if (PRIMITIVES.has(a.base)) {
+                throw compileError(`The type in the angle brackets of ${aType(base)} has to be an object type, and ${a.base} is not one.`, line, `Use the wrapper type: ${BOXED.get(a.base)}`);
+            }
+            const t = resolveType(a);
+            if (t !== 'String' && !isWrapper(t) && !isOwnClass(t)) throw notYet(`${BOX} has ${base}s of Strings, of the wrapper types and of your own classes, and not of ${t}.`, line);
+            return t;
+        });
+        return `${base}<${args.join(',')}>`;
+    }
     if (node.targs) throw notYet(`${BOX} does not have ${base}<…>.`, line, 'The collections here are ArrayList, LinkedList, HashSet and HashMap.');
+    if (FLOW_PLAIN.has(base)) {
+        if (dims) throw notYet(`${BOX} does not have arrays of ${base}s.`, line);
+        return base;
+    }
     let name;
     if (PRIMITIVES.has(base) || base === 'String' || base === 'StringBuilder' || isWrapper(base)) name = base;
     else if (base === 'void' && allowVoid) name = 'void';
@@ -1468,7 +1551,9 @@ function textOf(type) {
             const inner = textOf(unboxedOf(type));
             return v => (v === null ? 'null' : inner(v));
         }
-        default: return isArray(type) || type === 'void' ? null : objectText;   // arrays are refused where they would be printed
+        default:
+            if (isFlow(type) || type === LAMBDA) return flowText(type);
+            return isArray(type) || type === 'void' ? null : objectText;   // arrays are refused where they would be printed
     }
 }
 
@@ -1509,6 +1594,7 @@ class Machine {
         this.cells = 0;
         this.ret = undefined;
         this.out = '';
+        this.lambdas = new Map();
         this.outputTruncated = false;
         this.printed = false;
     }
@@ -2371,8 +2457,247 @@ function listEnd(list, front, orNull) {
     return list.a[front ? 0 : list.a.length - 1];
 }
 
+// ─── Lambdas and streams ─────────────────────────────────────────────────────
+//
+// A lambda is an object with one method: the checker gives each lambda
+// expression a small class of its own, and running the expression makes an
+// object of it holding whatever variables the lambda uses from outside.
+//
+// A stream is kept the way Java keeps one: as a pipeline that does nothing
+// until a terminal operation runs it, and then pushes ONE element at a time as
+// far through the stages as it gets. That is what makes limit() and findFirst()
+// stop early, and what a peek() or a println inside a lambda shows.
+
+/** Call a lambda (or a comparator built from one) with these values. */
+function callFn(fn, ...args) {
+    if (fn.call) return fn.call(...args);
+    const m = fn.cls.lambda;
+    const frame = new Array(m.frameSize);
+    for (let i = 0; i < args.length; i++) frame[i] = args[i];
+    frame[m.thisSlot] = fn;
+    return invoke(m, frame, null);
+}
+const needFn = fn => notNull(fn, 'The lambda given to this stream operation');
+
+class JStream {
+    /**
+     * `source` is the collection the elements come from. `wrap` turns the sink at the far end of the pipeline into
+     * the sink at its near end, stage by stage. `size` says how many elements there will be, if that can be known
+     * without running anything, and `sorted` whether they are known to be in their natural order.
+     */
+    constructor(source, wrap, size, sorted) { this.source = source; this.wrap = wrap; this.size = size; this.sorted = sorted; this.used = false; }
+}
+class JOptional {
+    constructor(has, v = null) { this.has = has; this.v = v; }
+}
+const EMPTY = () => new JOptional(false);
+
+/** Every stream can be used once: by one further operation, or by one terminal operation. */
+function claim(stream) {
+    if (stream.used) {
+        throw thrown('IllegalStateException', 'stream has already been operated upon or closed', 'A stream can be used only once. Make a fresh one each time: list.stream()');
+    }
+    stream.used = true;
+    return stream;
+}
+
+const streamOf = c => new JStream(c, sink => sink, () => itemsOf(c).length, false);
+
+// A sink is one stage's end of the pipe: accept(v) takes an element, end() is told there are no more, and
+// cancelled() says that nothing further is wanted — which is how limit() and findFirst() stop the source early.
+const through = (down, accept) => ({ accept, end: () => down.end(), cancelled: () => down.cancelled() });
+const last = accept => ({ accept, end() {}, cancelled: () => false });
+const stage = (stream, size, sorted, make) => { claim(stream); return new JStream(stream.source, down => stream.wrap(make(down)), size, sorted); };
+const howMany = n => {
+    if (n < 0n) throw thrown('IllegalArgumentException', String(n), 'The number given to limit() or skip() cannot be negative.');
+    return n;
+};
+
+/** Run the pipeline: each element of the source in turn is pushed as far through the stages as it gets. */
+function run(stream, sink) {
+    const c = claim(stream).source;
+    const head = stream.wrap(sink);
+    // What the collection holds is read now, when the pipeline runs, not when stream() was called.
+    const all = itemsOf(c).slice();
+    const started = modOf(c);
+    const changed = () => refusal('This pipeline added to or removed from the collection its stream came from. Java does not allow that: it stops with a ConcurrentModificationException.',
+        'Collect the results into a new list, and change the original afterwards.');
+    charge(all.length);
+    for (const v of all) {
+        if (head.cancelled()) break;
+        if (modOf(c) !== started) throw changed();
+        tick();
+        head.accept(v);
+    }
+    if (modOf(c) !== started) throw changed();
+    head.end();
+}
+const pullAll = (stream, each) => run(stream, last(each));
+
+/**
+ * Java's own sort (TimSort) for fewer than 32 elements: find the run at the front, then insert the rest by binary
+ * search. Copied step for step, because a comparator that is not consistent (one that never answers 0, say)
+ * gives an order that depends on exactly which pairs are compared, and a println in a comparator shows them.
+ */
+function javaSort(a, compare, consistent) {
+    const n = a.length;
+    if (n < 2) return;
+    if (n >= 32) {
+        if (!consistent) throw refusal(`${BOX} sorts with a comparator of your own only up to 31 elements.`);
+        a.sort(compare);
+        return;
+    }
+    let run = 1;
+    if (compare(a[run++], a[0]) < 0) {
+        while (run < n && compare(a[run], a[run - 1]) < 0) run++;
+        a.splice(0, run, ...a.slice(0, run).reverse());
+    } else {
+        while (run < n && compare(a[run], a[run - 1]) >= 0) run++;
+    }
+    for (let start = run; start < n; start++) {
+        const pivot = a[start];
+        let left = 0;
+        let right = start;
+        while (left < right) {
+            const mid = (left + right) >>> 1;
+            if (compare(pivot, a[mid]) < 0) right = mid;
+            else left = mid + 1;
+        }
+        for (let k = start; k > left; k--) a[k] = a[k - 1];
+        a[left] = pivot;
+    }
+}
+
+/** anyMatch, allMatch and noneMatch: stop at the first element that settles the answer. */
+function match(stream, test, stopOn, answer) {
+    needFn(test);
+    let stopped = false;
+    run(stream, { accept: v => { if (!stopped && callFn(test, v) === stopOn) stopped = true; }, end() {}, cancelled: () => stopped });
+    return stopped ? answer : !answer;
+}
+
+const STREAM = {
+    filter: (s, test) => { needFn(test); return stage(s, () => null, s.sorted, down => through(down, v => { if (callFn(test, v)) down.accept(v); })); },
+    map: (s, fn) => { needFn(fn); return stage(s, s.size, false, down => through(down, v => { down.accept(callFn(fn, v)); })); },
+    peek: (s, fn) => { needFn(fn); return stage(s, s.size, s.sorted, down => through(down, v => { callFn(fn, v); down.accept(v); })); },
+    limit: (s, n) => {
+        howMany(n);
+        return stage(s, () => { const z = s.size(); return z === null ? null : Math.min(z, Number(n)); }, s.sorted, down => {
+            let left = n;
+            return { accept: v => { if (left > 0n) { left--; down.accept(v); } }, end: () => down.end(), cancelled: () => left === 0n || down.cancelled() };
+        });
+    },
+    skip: (s, n) => {
+        howMany(n);
+        return stage(s, () => { const z = s.size(); return z === null ? null : Math.max(0, z - Number(n)); }, s.sorted, down => {
+            let left = n;
+            return through(down, v => { if (left === 0n) down.accept(v); else left--; });
+        });
+    },
+    /**
+     * A sort has to see everything before it lets anything through, so it never tells the source to stop: all that
+     * is upstream of it runs to the end, whatever comes after. And sorting what is already in its natural order is
+     * a step Java leaves out altogether.
+     */
+    sorted: (s, compare, natural) => {
+        if (natural && s.sorted) return stage(s, s.size, true, down => down);
+        return stage(s, s.size, natural, down => {
+            const all = [];
+            return {
+                accept: v => { all.push(v); },
+                cancelled: () => false,
+                end: () => {
+                    work(all.length * 16);
+                    javaSort(all, compare, natural);
+                    for (const v of all) { if (down.cancelled()) break; down.accept(v); }
+                    down.end();
+                },
+            };
+        });
+    },
+    forEach: (s, fn) => { needFn(fn); pullAll(s, v => { callFn(fn, v); }); },
+    toList: s => { const out = []; pullAll(s, v => { out.push(v); }); charge(out.length); return new JList('ArrayList', out); },
+    /** Java does not run the pipeline at all when it can tell the answer from the size of the source. */
+    count: s => {
+        const known = s.size();
+        if (known !== null) { claim(s); return BigInt(known); }
+        let n = 0n;
+        pullAll(s, () => { n++; });
+        return n;
+    },
+    findFirst: s => {
+        let found = false;
+        let first = null;
+        run(s, { accept: v => { if (!found) { found = true; first = v; } }, end() {}, cancelled: () => found });
+        if (!found) return EMPTY();
+        if (first === null) throw nullPointer('The first element of the stream');
+        return new JOptional(true, first);
+    },
+    anyMatch: (s, test) => match(s, test, true, true),
+    allMatch: (s, test) => match(s, test, false, false),
+    noneMatch: (s, test) => match(s, test, true, false),
+    // the numeric streams
+    sumInt: s => { let t = 0; pullAll(s, v => { t = (t + v) | 0; }); return t; },
+    sumLong: s => { let t = 0n; pullAll(s, v => { t = wrap64(t + v); }); return t; },
+    sumDouble: s => kahan(s).sum,
+    best: (s, better) => { let has = false; let best = null; pullAll(s, v => { best = has ? better(best, v) : v; has = true; }); return new JOptional(has, best); },
+    averageInt: s => { let t = 0; let n = 0; pullAll(s, v => { t += v; n++; }); return n ? new JOptional(true, t / n) : EMPTY(); },
+    averageLong: s => { let t = 0n; let n = 0; pullAll(s, v => { t = wrap64(t + v); n++; }); return n ? new JOptional(true, Number(t) / n) : EMPTY(); },
+    averageDouble: s => { const k = kahan(s); return k.count ? new JOptional(true, k.sum / k.count) : EMPTY(); },
+};
+
+/** The sum of a DoubleStream, as Java works it out: with a running correction for the bits each addition loses. */
+function kahan(stream) {
+    let sum = 0;
+    let lost = 0;
+    let simple = 0;
+    let count = 0;
+    pullAll(stream, value => {
+        const tmp = value - lost;
+        const next = sum + tmp;
+        lost = (next - sum) - tmp;
+        sum = next;
+        simple += value;
+        count++;
+    });
+    const total = sum - lost;
+    return { sum: Number.isNaN(total) && !Number.isFinite(simple) && !Number.isNaN(simple) ? simple : total, count };
+}
+
+/** list.forEach(x -> …): each element in turn, handed to the lambda. */
+function forEachElement(c, fn) {
+    notNull(fn, 'The lambda given to forEach');
+    const all = itemsOf(c).slice();
+    const started = modOf(c);
+    for (const v of all) {
+        if (modOf(c) !== started) {
+            throw refusal('This forEach added to or removed from the collection it is walking through. Java does not allow that: it stops with a ConcurrentModificationException.');
+        }
+        tick();
+        callFn(fn, v);
+    }
+    if (modOf(c) !== started) throw refusal('This forEach added to or removed from the collection it is walking through. Java does not allow that: it stops with a ConcurrentModificationException.');
+}
+
+const noValue = () => thrown('NoSuchElementException', 'No value present', 'The Optional is empty. Ask isPresent() before taking its value.');
+const OPTIONAL_NAME = { 'Optional': 'Optional', OptionalInt: 'OptionalInt', OptionalLong: 'OptionalLong', OptionalDouble: 'OptionalDouble' };
+const OPTIONAL_HOLDS = { OptionalInt: 'int', OptionalLong: 'long', OptionalDouble: 'double' };
+
+/** A stream, a lambda or an Optional joined to text. Only an Optional has text worth having: Optional[Sea Breeze]. */
+function flowText(type) {
+    const base = flowBase(type);
+    if (!OPTIONAL_NAME[base]) {
+        return v => {
+            if (v === null) return 'null';
+            throw refusal(`${type === LAMBDA || !FLOW_PLAIN.has(base) && base !== 'Stream' ? 'A lambda' : 'A stream'} has no text of its own: Java would show a code such as Main$$Lambda@1b6d3586.`);
+        };
+    }
+    const inner = textOf(OPTIONAL_HOLDS[base] ?? typeArgs(type)[0]);
+    return v => (v === null ? 'null' : v.has ? `${base}[${inner(v.v)}]` : `${base}.empty`);
+}
+
 const COLLECTION_NOT_YET = {
-    iterator: 'iterator() — walk through it with a for-each loop', stream: 'streams', forEach: 'forEach() with a lambda — use a for-each loop',
+    iterator: 'iterator() — walk through it with a for-each loop', parallelStream: 'parallel streams',
     removeIf: 'removeIf() with a lambda', subList: 'subList()', sort: 'list.sort() — use Collections.sort(list)', hashCode: 'hashCode() on a collection',
     listIterator: 'listIterator()', replaceAll: 'replaceAll() with a lambda', reversed: 'reversed()',
 };
@@ -3085,6 +3410,9 @@ function hasToString(type) {
 /** A conversion Java allows and this box does not make: said as a refusal, never as a Java error. */
 function declinedConversion(from, to) {
     if (typeof from !== 'string' || from === to) return null;
+    if (isFlow(from) && typeof to === 'string' && isFlow(to) && flowBase(from) === flowBase(to)) {
+        return `${BOX} does not use ${aType(from)} where ${aType(to)} is wanted.`;
+    }
     if (to === 'Object' && from !== 'void' && !isObjectType(from) && from !== 'null') {
         return `${BOX} keeps only objects of your own classes in an Object, and this is ${aType(from)}.`;
     }
@@ -3097,15 +3425,16 @@ function declinedConversion(from, to) {
 /** Would a class of the student's own with this name hide one of Java's? */
 function isTakenClassName(name) {
     return name === 'String' || name === 'StringBuilder' || name === 'Object' || name === 'System' || isWrapper(name)
-        || Object.hasOwn(STATICS, name) || Object.hasOwn(GENERIC_ARITY, name) || NOT_YET_TYPES.has(name) || NOT_YET_CLASSES.has(name) || exceptionClasses().has(name) || name === 'Error';
+        || Object.hasOwn(STATICS, name) || Object.hasOwn(GENERIC_ARITY, name) || Object.hasOwn(FLOW_ARITY, name) || FLOW_PLAIN.has(name) || name === 'Collectors' || NOT_YET_TYPES.has(name) || NOT_YET_CLASSES.has(name) || exceptionClasses().has(name) || name === 'Error';
 }
 
 const NOT_YET_CLASSES = new Map([
     ['Scanner', 'Scanner — there is no keyboard input here; the values arrive as the method\'s parameters'],
     ['Random', 'Random — a test needs the same answer every time'],
     ['Collections', 'Collections'], ['List', 'lists'], ['ArrayList', 'lists'], ['Map', 'maps'], ['HashMap', 'maps'],
-    ['Set', 'sets'], ['HashSet', 'sets'], ['Objects', 'Objects'], ['Stream', 'streams'], ['IntStream', 'streams'],
-    ['Thread', 'threads'], ['LocalDate', 'dates'], ['Optional', 'Optional'],
+    ['Set', 'sets'], ['HashSet', 'sets'], ['Objects', 'Objects'], ['Stream', 'Stream.of() and its like — a stream here starts from a collection: list.stream()'],
+    ['IntStream', 'IntStream.range() and its like — a stream here starts from a collection: list.stream()'],
+    ['Thread', 'threads'], ['LocalDate', 'dates'], ['Optional', 'Optional.of() and its like — an Optional here comes from a stream, as from findFirst()'],
 ]);
 
 // ─── Names ───────────────────────────────────────────────────────────────────
@@ -3213,6 +3542,7 @@ class Checker {
         program.host = host;
         CLASSES = new Map(exceptionClasses());   // Java's exception classes are there before the program's own
         this.raised = [];
+        this.capturedSyms = new Set();
         for (const c of classes) {
             if (!c.implicit && isTakenClassName(c.name)) {
                 throw notYet(`${BOX} cannot run ${aType(c.kind)} of your own called ${c.name}, because Java already has a ${c.name}.`, c.line, `Pick another name for it, such as Game${c.name}.`);
@@ -3481,6 +3811,7 @@ class Checker {
             this.initOf = f;
             f.init = f.init.k === 'arrinit' ? this.arrayInit(f.init, f.type) : this.assignable(this.valueFor(f.init, f.type), f.type, f.line, `the field ${f.name}`);
             this.initOf = null;
+            this.finishCaptures();
         }
         for (const k of c.ctors) this.checkMethod(k);
         for (const m of c.methods) if (m.body) this.checkMethod(m);
@@ -3534,7 +3865,12 @@ class Checker {
     /** A value about to be turned into text. An object whose class has no toString() would show as Monster@1b6d3586. */
     shown(type, line) {
         if (typeof type !== 'string') return;
-        const inside = isCollection(type) ? (isPending(type) ? [] : typeArgs(type)) : [type.replace(/(\[\])+$/, '')];
+        if (type === LAMBDA || type === COLLECTOR || (isFlow(type) && !flowBase(type).startsWith('Optional'))) {
+            throw notYet(flowBase(type).endsWith('Stream') ? 'A stream has no text of its own: Java would show a code such as ReferencePipeline@1b6d3586.' : 'A lambda has no text of its own: Java would show a code such as Main$$Lambda@1b6d3586.', line,
+                flowBase(type).endsWith('Stream') ? 'Print what is in it: .forEach(x -> System.out.println(x))' : null);
+        }
+        if (FLOW_PLAIN.has(type)) return;
+        const inside = isCollection(type) ? (isPending(type) ? [] : typeArgs(type)) : type.startsWith('Optional<') ? typeArgs(type) : [type.replace(/(\[\])+$/, '')];
         for (const t of inside) {
             if (!isObjectType(t) || hasToString(t)) continue;
             const c = CLASSES.get(t);
@@ -3664,7 +4000,7 @@ class Checker {
         this.castable(from, to, n.line, 'be');
         n.target = to;
         if (n.bind) {
-            if (this.lookup(n.bind)) throw compileError(`${n.bind} is already the name of a variable here, so it cannot also name the ${to}.`, n.bindLine, 'Pick a different name after the type.');
+            if (this.lookup(n.bind, false)) throw compileError(`${n.bind} is already the name of a variable here, so it cannot also name the ${to}.`, n.bindLine, 'Pick a different name after the type.');
             n.sym = { name: n.bind, type: to, slot: this.method.frameSize++, isFinal: false, constVal: undefined, line: n.bindLine };
             n.binds.t.push(n.sym);
         }
@@ -3711,16 +4047,410 @@ class Checker {
 
     // ── scopes
 
-    lookup(name) {
+    /**
+     * The variable called `name`. If it was declared outside the lambda (or lambdas) the code is in, each of them
+     * takes a copy of it, which is why Java insists that such a variable never changes. `capture` is false for a
+     * look that is only asking whether the name is taken.
+     */
+    lookup(name, capture = true) {
+        const crossed = [];
         for (let i = this.scopes.length - 1; i >= 0; i--) {
-            const sym = this.scopes[i].get(name);
-            if (sym) return sym;
+            const scope = this.scopes[i];
+            let sym = scope.get(name);
+            if (sym) {
+                if (!capture) return sym;
+                for (let k = crossed.length - 1; k >= 0; k--) sym = this.capture(crossed[k], sym);
+                return sym;
+            }
+            if (scope.lambda) crossed.push(scope.lambda);
         }
         return null;
     }
 
+    capture(fn, sym) {
+        let inner = fn.captureMap.get(sym);
+        if (!inner) {
+            inner = { ...sym, slot: fn.frameSize++, capturedFrom: sym, isParam: false };
+            fn.captureMap.set(sym, inner);
+            fn.captures.push([sym.slot, inner.slot, sym]);
+            let root = sym;
+            while (root.capturedFrom) root = root.capturedFrom;
+            this.capturedSyms.add(root);
+        }
+        return inner;
+    }
+
+    /** At the end of a method: a variable that a lambda uses may not have been given a second value anywhere. */
+    finishCaptures() {
+        for (const sym of this.capturedSyms) {
+            if (!sym.writes) continue;
+            if (sym.noInit) {
+                throw notYet(`${BOX} cannot tell whether ${sym.name}, which a lambda uses, is given its value only once.`, sym.line, `Give ${sym.name} its value on the line that declares it.`);
+            }
+            throw compileError(`A lambda uses the variable ${sym.name}, so ${sym.name} may not be given a new value anywhere: Java requires it to be final, or never changed.`, sym.usedInLambda ?? sym.line,
+                `Copy the value into a new variable that never changes, and use that one in the lambda:  int fixed = ${sym.name};`);
+        }
+        this.capturedSyms = new Set();
+    }
+
+    // ── lambdas
+
+    /** What a lambda has to look like to be stored as this type: its parameters and what it gives back. Null if the type is not one a lambda can be. */
+    functionShape(to) {
+        if (typeof to !== 'string') return null;
+        if (to.endsWith('>')) {
+            const [A, B] = typeArgs(to);
+            switch (baseOf(to)) {
+                case 'Predicate': return { params: [A], ret: 'boolean', throws: [] };
+                case 'Function': return { params: [A], ret: B, throws: [] };
+                case 'Consumer': return { params: [A], ret: 'void', throws: [] };
+                case 'Comparator': return { params: [A, A], ret: 'int', throws: [] };
+                default: return null;
+            }
+        }
+        const c = CLASSES.get(to);
+        if (!c || !c.isInterface) return null;
+        // An interface of the student's own will do, if it leaves exactly one method to be written.
+        const open = [...c.vtable.values()].filter(m => m.isAbstract);
+        if (open.length !== 1) return null;
+        return { params: open[0].paramTypes, ret: open[0].retType, throws: open[0].throws || [], iface: c, method: open[0] };
+    }
+
+    /** A lambda, a method reference or Comparator.comparing(…), now that it is known what it is to be. */
+    poly(node, to, line) {
+        const inner = stripParens(node);
+        if (inner.k === 'comparing') return this.comparing(inner, to, line);
+        const shape = this.functionShape(to);
+        if (!shape) {
+            const c = typeof to === 'string' ? CLASSES.get(to) : null;
+            if (c && c.isInterface && [...c.vtable.values()].some(m => m.isAbstract && ['equals(Object)', 'toString()', 'hashCode()'].includes(m.key))) {
+                throw notYet(`${BOX} does not make a lambda for an interface that lists equals, toString or hashCode.`, line ?? inner.line);
+            }
+            throw compileError(`${inner.k === 'methodref' ? 'A method reference' : 'A lambda'} can only go where Java expects a function, and here it expects ${to === 'void' ? 'nothing' : aType(to)}${c && c.isInterface ? ', an interface that does not leave exactly one method to write' : ''}.`,
+                line ?? inner.line, 'A lambda can be stored as a Predicate, a Function or a Consumer, or as an interface of your own that has one method.');
+        }
+        return this.lambda(inner, shape, to);
+    }
+
+    /**
+     * Check a lambda against the shape it has to have. With shape.infer, what it gives back is not laid down
+     * in advance (as for map(…)), and is whatever its body gives.
+     */
+    lambda(node, shape, to) {
+        const n = node.k === 'methodref' ? this.methodRef(node, shape) : node;
+        const count = n.params.length;
+        if (count !== shape.params.length) {
+            throw compileError(`This lambda takes ${count === 0 ? 'nothing' : count === 1 ? 'one value' : `${count} values`}, and here Java wants one that takes ${shape.params.length === 1 ? 'one' : shape.params.length === 0 ? 'none' : shape.params.length}.`, n.line,
+                shape.params.length === 2 ? '(a, b) -> …' : shape.params.length === 1 ? 'x -> …' : '() -> …');
+        }
+        const typed = n.params.filter(q => q.type).length;
+        if (typed && typed !== count) throw compileError('A lambda gives the types of all its parameters or of none of them.', n.line);
+
+        const outerMethod = this.method;
+        const saved = { scopes: this.scopes, ctx: this.ctx, raised: this.raised };
+        const fn = {
+            name: 'This lambda', isLambda: true, isStatic: outerMethod.isStatic, cls: this.cls, frameSize: 0, mods: new Set(['public']),
+            retType: shape.infer ? null : shape.ret, inferReturn: Boolean(shape.infer), returned: [], captureMap: new Map(), captures: [],
+            line: n.line, endLine: n.line, outerThisSlot: undefined,
+        };
+        // `this` inside a lambda is the object of the method around it. It is taken along only if the lambda uses it.
+        let own;
+        Object.defineProperty(fn, 'thisSlot', {
+            enumerable: false,
+            get() {
+                if (fn.isStatic) return undefined;
+                if (own === undefined) { fn.outerThisSlot = outerMethod.thisSlot; own = fn.frameSize++; }
+                return own;
+            },
+        });
+        Object.defineProperty(fn, 'usesThis', { enumerable: false, get: () => own !== undefined });
+
+        this.method = fn;
+        this.scopes = [...saved.scopes, Object.assign(new Map(), { lambda: fn })];
+        this.ctx = [];
+        this.raised = [];
+        let ret = shape.ret;
+        let body;
+        try {
+            n.params.forEach((q, i) => {
+                const want = shape.params[i];
+                if (q.type) {
+                    if (q.type.base === 'var' && !q.type.dims) throw notYet(`${BOX} does not use var for the parameter of a lambda.`, q.line, 'Leave the type off altogether.');
+                    const said = resolveType(q.type);
+                    if (said !== want) {
+                        throw compileError(`This lambda says ${q.name} is ${aType(said)}, and here it has to be ${aType(want)}.`, q.line, `Leave the type off, and Java works it out: ${q.name} -> …`);
+                    }
+                }
+                Object.assign(this.declare(q.name, want, q.line), { isParam: true });
+            });
+            fn.selfSlot = fn.frameSize++;   // the lambda object itself, while it runs
+            if (n.block) {
+                this.block(n.block);
+                body = n.block;
+                if (shape.infer) {
+                    const types = [...new Set(fn.returned.map(r => r.e.type))];
+                    if (types.length !== 1 || types[0] === 'null') throw notYet(`${BOX} cannot tell what this lambda gives back.`, n.line, 'Make every return in it give back the same type of value.');
+                    [ret] = types;
+                }
+            } else if (shape.infer) {
+                const e = this.value(n.expr);
+                if (e.type === 'null') throw notYet(`${BOX} cannot tell what this lambda gives back.`, n.line);
+                ret = e.type;
+                body = { k: 'block', body: [{ k: 'return', e, line: n.line }], line: n.line, endLine: n.line };
+            } else if (ret === 'void') {
+                // Nothing is wanted back, so the body has to DO something: call a method, or store a value.
+                const raw = stripParens(n.expr);
+                if (!['assign', 'incdec', 'call', 'new', 'supermethod'].includes(raw.k)) {
+                    throw compileError('Nothing is wanted back from this lambda, so its body has to do something, and this only works out a value.', n.line, 'For example: ship -> System.out.println(ship.getName())');
+                }
+                body = { k: 'block', body: [{ k: 'expr', e: this.expr(n.expr), line: n.line }], line: n.line, endLine: n.line };
+            } else {
+                const e = this.assignable(this.valueFor(n.expr, ret), ret, n.line, 'what this lambda gives back', 'lambda');
+                body = { k: 'block', body: [{ k: 'return', e, line: n.line }], line: n.line, endLine: n.line };
+            }
+            const unsaid = this.raised.find(r => !shape.throws.some(t => isSubtype(r.type, t)));
+            if (unsaid) {
+                throw compileError(`This line can throw ${aType(unsaid.type)}, which is a checked exception, and a lambda here may not let one out.`, unsaid.line, `Catch it inside the lambda, with a try and catch (${unsaid.type} e).`);
+            }
+        } finally {
+            this.method = outerMethod;
+            this.scopes = saved.scopes;
+            this.ctx = saved.ctx;
+            this.raised = saved.raised;
+        }
+        fn.body = body;
+        fn.retType = ret;
+        fn.endLine = body.endLine ?? n.line;
+        // Each lambda expression gets a class of its own, with the one method that the lambda is.
+        const impl = {
+            name: shape.method ? shape.method.name : 'lambda', key: shape.method ? shape.method.key : null, isStatic: false, isAbstract: false, mods: new Set(['public']),
+            params: n.params, paramTypes: shape.params, retType: ret, throws: [], thisSlot: fn.selfSlot, frameSize: 0, code: null, line: n.line,
+        };
+        const cls = {
+            name: 'lambda', kind: 'class', isLambdaClass: true, lambda: impl, defaults: [], superClass: null, fieldMap: new Map(), methodMap: new Map(), allInterfaces: new Set(),
+            supers: shape.iface ? new Set(shape.iface.supers) : new Set(),
+            vtable: shape.iface ? new Map(shape.iface.vtable).set(impl.key, impl) : new Map(),
+        };
+        impl.cls = cls;
+        return { k: 'lambda', fn, impl, cls, type: to, line: n.line };
+    }
+
+    /** Ship::getSpeed and System.out::println, rewritten as the lambdas they stand for. */
+    methodRef(n, shape) {
+        const names = shape.params.map((_, i) => `$${i}`);
+        const args = from => names.slice(from).map(name => ({ k: 'name', name, line: n.line }));
+        const made = call => ({ k: 'lambda', params: names.map(name => ({ name, type: null, line: n.line })), block: null, expr: call, line: n.line });
+        const t = n.target;
+        if (t.k === 'field' && t.target.k === 'name' && t.target.name === 'System' && !this.lookup('System', false)) {
+            return made({ k: 'call', target: t, name: n.name, args: args(0), line: n.line });   // x -> System.out.println(x)
+        }
+        const type = t.k === 'name' && !this.lookup(t.name, false) && !fieldOf(this.cls, t.name) ? t.name : null;
+        if (!type) {
+            throw notYet(`${BOX} has method references of two kinds: a class and a method (Ship::getSpeed), and System.out::println.`, n.line, `Write a lambda instead: x -> x.${n.name}()`);
+        }
+        const onFirst = () => made({ k: 'call', target: { k: 'name', name: names[0], line: n.line }, name: n.name, args: args(1), line: n.line });   // x -> x.getSpeed()
+        const onClass = () => made({ k: 'call', target: { k: 'name', name: type, line: n.line }, name: n.name, args: args(0), line: n.line });       // x -> Integer.parseInt(x)
+        if (isOwnClass(type)) {
+            const list = methodsNamed(CLASSES.get(type), n.name);
+            if (!list.length) throw compileError(`${type} has no method called ${n.name}().`, n.line);
+            if (list.length > 1) throw notYet(`${BOX} does not choose between the ${n.name}() methods of ${type} for a method reference.`, n.line, 'Write a lambda instead.');
+            const [m] = list;
+            if (m.isStatic ? m.paramTypes.length !== names.length : m.paramTypes.length !== names.length - 1 || !isSubtype(shape.params[0], type)) {
+                throw notYet(`${BOX} cannot fit ${type}::${n.name} to what is wanted here.`, n.line, 'Write a lambda instead.');
+            }
+            return m.isStatic ? onClass() : onFirst();
+        }
+        const instance = names.length >= 1 && shape.params[0] === type && (type === 'String' ? Object.hasOwn(STRING_METHODS, n.name) : isWrapper(type) && Object.hasOwn(wrapperMethods(type), n.name));
+        const fixed = Boolean(STATICS[type] && Object.hasOwn(STATICS[type].methods, n.name));
+        if (instance === fixed) throw notYet(`${BOX} cannot tell what ${type}::${n.name} refers to here.`, n.line, 'Write a lambda instead.');
+        return instance ? onFirst() : onClass();
+    }
+
+    /** Comparator.comparing(ship -> ship.getSpeed()): compare two things by what the lambda takes out of each. */
+    comparing(node, to, line) {
+        if (typeof to !== 'string' || !to.startsWith('Comparator<')) {
+            throw compileError(`Comparator.comparing() makes a Comparator, and here Java wants ${aType(to)}.`, line ?? node.line);
+        }
+        return this.buildComparing(node, typeArgs(to)[0]);
+    }
+
+    buildComparing(node, T) {
+        const arg = stripParens(node.arg);
+        if (arg.type !== LAMBDA || arg.k === 'comparing') {
+            throw notYet(`${BOX} wants a lambda in the ( ) of Comparator.comparing.`, node.line, 'Comparator.comparing(ship -> ship.getSpeed())');
+        }
+        const key = this.lambda(arg, { params: [T], infer: true, throws: [] }, LAMBDA);
+        const U = BOXED.get(key.fn.retType) ?? key.fn.retType;
+        if (U !== 'String' && !isWrapper(U)) {
+            const fail = isObjectType(U) ? compileError : notYet;
+            throw fail(`Comparator.comparing() needs its lambda to give back something Java can put in order by itself, such as a number or a String, and this one gives back ${aType(U)}.`, node.line);
+        }
+        key.type = `Function<${T},${U}>`;
+        const order = U === 'Character' ? (a, b) => { if (a === null || b === null) throw nullPointer('A value being compared'); return a - b; } : comparatorFor(U);
+        return {
+            k: 'builtin', target: null, name: 'comparing', args: [key], type: `Comparator<${T}>`, describe: 'Comparator.comparing()', line: node.line,
+            fn: keyOf => ({ call: (a, b) => order(callFn(keyOf, a), callFn(keyOf, b)) }),
+        };
+    }
+
+    /** Comparator.comparing(…) with something called on it straight away, so that nothing says what is being compared. */
+    comparingAlone(node) {
+        const arg = stripParens(node.arg);
+        let T = null;
+        if (arg.k === 'lambda' && arg.params.length === 1 && arg.params[0].type) T = resolveType(arg.params[0].type);
+        else if (arg.k === 'methodref' && arg.target.k === 'name' && !this.lookup(arg.target.name, false) && (isOwnClass(arg.target.name) || arg.target.name === 'String' || isWrapper(arg.target.name))) T = arg.target.name;
+        if (T) return this.buildComparing(node, T);
+        if (arg.k !== 'lambda' || arg.params.length !== 1) throw notYet(`${BOX} cannot tell what this comparator compares.`, node.line);
+        const { name } = arg.params[0];
+        const hint = `Say what ${name} is: Comparator.comparing((Ship ${name}) -> …).reversed()   — or sort the other way round with a lambda: (a, b) -> b.getSpeed() - a.getSpeed()`;
+        try {
+            // Java gives the parameter the only type it can be sure of: Object. Whatever the body does with it has to be something any Object can do.
+            this.lambda(arg, { params: ['Object'], infer: true, throws: [] }, LAMBDA);
+        } catch (err) {
+            if (!(err instanceof JavaError) || err.unsupported) throw err;
+            throw compileError(`With .reversed() straight after it, nothing tells Java what ${name} is, so it treats ${name} as a plain Object, and: ${err.message}`, err.line ?? node.line, hint);
+        }
+        throw notYet(`${BOX} cannot tell what this comparator compares.`, node.line, hint);
+    }
+
+    /** One of the arguments of a stream operation: a lambda, or a variable that already holds a function of the right type. */
+    fnArg(n, i, type) {
+        const a = n.args[i];
+        if (a.type === LAMBDA) return this.poly(a, type, n.line);
+        if (a.type === type) return a;
+        if (a.type === 'null' || flowBase(a.type) === flowBase(type)) throw notYet(`${BOX} wants ${aType(type)} for ${n.name}(), and this is ${aType(a.type)}.`, n.line);
+        throw compileError(`${n.name}() takes ${aType(type)}, usually written as a lambda, and this is ${aType(a.type)}.`, n.line);
+    }
+
+    /** A method called on a stream, an Optional, or a function held in a variable. */
+    flowCall(n, rt) {
+        const { name, line } = n;
+        const base = flowBase(rt);
+        const count = n.args.length;
+        const done = (type, fn, args = []) => Object.assign(n, { k: 'builtin', fn, args, type, describe: `${base}.${name}()` });
+        const takes = k => {
+            if (count !== k) throw compileError(`${name}() takes ${k === 0 ? 'nothing in its ( )' : k === 1 ? 'one thing in its ( )' : `${k} things in its ( )`}, and this gives it ${count}.`, line);
+        };
+        const plain = (i, to) => {
+            if (n.args[i].type === LAMBDA) throw compileError(`${name}() does not take a lambda.`, line);
+            return this.assignable(n.args[i], to, line, `what ${name}() is given`);
+        };
+        const unknown = (what, list, hint = null) => notYet(`${BOX} does not have ${name}() for ${what}.`, line, hint ?? `It has: ${list}.`);
+
+        if (base === 'Stream') {
+            const [T] = typeArgs(rt);
+            switch (name) {
+                case 'filter': takes(1); return done(rt, STREAM.filter, [this.fnArg(n, 0, `Predicate<${T}>`)]);
+                case 'peek': takes(1); return done(rt, STREAM.peek, [this.fnArg(n, 0, `Consumer<${T}>`)]);
+                case 'forEach': takes(1); return done('void', STREAM.forEach, [this.fnArg(n, 0, `Consumer<${T}>`)]);
+                case 'anyMatch': case 'allMatch': case 'noneMatch': takes(1); return done('boolean', STREAM[name], [this.fnArg(n, 0, `Predicate<${T}>`)]);
+                case 'map': {
+                    takes(1);
+                    const a = n.args[0];
+                    let fn = a;
+                    let R;
+                    if (a.type === LAMBDA) {
+                        if (stripParens(a).k === 'comparing') throw compileError('map() takes a function of one value, and a Comparator compares two.', line);
+                        fn = this.lambda(stripParens(a), { params: [T], infer: true, throws: [] }, LAMBDA);
+                        R = BOXED.get(fn.fn.retType) ?? fn.fn.retType;
+                        fn.type = `Function<${T},${R}>`;
+                    } else if (a.type.startsWith('Function<') && typeArgs(a.type)[0] === T) {
+                        [, R] = typeArgs(a.type);
+                    } else {
+                        throw (flowBase(a.type) === 'Function' || a.type === 'null' ? notYet : compileError)(`map() takes a function from ${aType(T)} to something else, usually written as a lambda, and this is ${aType(a.type)}.`, line);
+                    }
+                    if (R !== 'String' && !isWrapper(R) && !isOwnClass(R)) {
+                        throw notYet(`${BOX} has streams of Strings, of numbers and the other wrapper types, and of your own classes, and this map() would make a stream of ${R} values.`, line);
+                    }
+                    return done(`Stream<${R}>`, STREAM.map, [fn]);
+                }
+                case 'mapToInt': case 'mapToLong': case 'mapToDouble': {
+                    takes(1);
+                    const prim = name.slice(5).toLowerCase();
+                    if (n.args[0].type !== LAMBDA || stripParens(n.args[0]).k === 'comparing') throw notYet(`${BOX} wants a lambda in the ( ) of ${name}.`, line, `${name}(ship -> ship.getSpeed())`);
+                    const fn = this.lambda(stripParens(n.args[0]), { params: [T], ret: prim, throws: [] }, LAMBDA);
+                    return done(`${name.slice(5)}Stream`, STREAM.map, [fn]);
+                }
+                case 'limit': case 'skip': takes(1); return done(rt, STREAM[name], [plain(0, 'long')]);
+                case 'sorted': {
+                    if (count === 0) {
+                        if (T !== 'String' && !isWrapper(T)) {
+                            throw notYet(`sorted() with nothing in its ( ) needs elements that Java can put in order by itself, and it has no order for ${T} objects: it would stop with a ClassCastException.`, line,
+                                'Say how to compare them: sorted((a, b) -> a.getSpeed() - b.getSpeed())');
+                        }
+                        const order = comparatorFor(T);
+                        return done(rt, stream => STREAM.sorted(stream, order, true));
+                    }
+                    takes(1);
+                    return done(rt, (stream, c) => { needFn(c); return STREAM.sorted(stream, (x, y) => callFn(c, x, y), false); }, [this.fnArg(n, 0, `Comparator<${T}>`)]);
+                }
+                case 'collect':
+                    if (count !== 1 || n.args[0].type !== COLLECTOR) throw notYet(`${BOX} collects a stream into a list, and nothing else.`, line, '.collect(Collectors.toList())');
+                    return done(`List<${T}>`, STREAM.toList);
+                case 'count': takes(0); return done('long', STREAM.count);
+                case 'findFirst': takes(0); return done(`Optional<${T}>`, STREAM.findFirst);
+                case 'toList': throw notYet(`${BOX} does not have toList() on a stream, which makes a list that can never be changed.`, line, 'Use .collect(Collectors.toList())');
+                case 'sum': case 'average':
+                    throw notYet(`A stream of ${T} values has no ${name}(): adding up is done on a stream of plain numbers.`, line, `Turn it into one first: .mapToInt(x -> …).${name}()`);
+                default: throw unknown('a stream', 'filter, map, mapToInt, mapToDouble, sorted, limit, skip, peek, forEach, collect, count, findFirst, anyMatch, allMatch and noneMatch');
+            }
+        }
+        if (base === 'IntStream' || base === 'LongStream' || base === 'DoubleStream') {
+            const kind = base.slice(0, -6);
+            const prim = kind.toLowerCase();
+            const larger = prim === 'long' ? (a, b) => (a >= b ? a : b) : Math.max;
+            const smaller = prim === 'long' ? (a, b) => (a <= b ? a : b) : Math.min;
+            switch (name) {
+                case 'sum': takes(0); return done(prim, STREAM[`sum${kind}`]);
+                case 'max': takes(0); return done(`Optional${kind}`, stream => STREAM.best(stream, larger));
+                case 'min': takes(0); return done(`Optional${kind}`, stream => STREAM.best(stream, smaller));
+                case 'average': takes(0); return done('OptionalDouble', STREAM[`average${kind}`]);
+                case 'count': takes(0); return done('long', STREAM.count);
+                default: throw unknown(`${aType(base)}`, 'sum, max, min, average and count', `It has sum(), max(), min(), average() and count(). To filter or sort, do it before ${`mapTo${kind}`}.`);
+            }
+        }
+        if (base.startsWith('Optional')) {
+            const kind = base.slice(8);                       // '', Int, Long or Double
+            const T = kind ? kind.toLowerCase() : typeArgs(rt)[0];
+            const take = o => { if (!o.has) throw noValue(); return o.v; };
+            switch (name) {
+                case 'isPresent': takes(0); return done('boolean', o => o.has);
+                case 'isEmpty': takes(0); return done('boolean', o => !o.has);
+                case 'orElseThrow': takes(0); return done(T, take);
+                case 'orElse': takes(1); return done(T, (o, other) => (o.has ? o.v : other), [plain(0, T)]);
+                case 'get':
+                    if (kind) throw compileError(`${aType(base)[0].toUpperCase() + aType(base).slice(1)} gives its value with getAs${kind}(), not get().`, line);
+                    takes(0);
+                    return done(T, take);
+                case 'getAsInt': case 'getAsLong': case 'getAsDouble':
+                    if (name !== `getAs${kind}`) throw compileError(`${aType(base)[0].toUpperCase() + aType(base).slice(1)} has no ${name}().`, line, kind ? `It gives its value with getAs${kind}().` : 'It gives its value with get().');
+                    takes(0);
+                    return done(T, take);
+                case 'ifPresent':
+                    if (kind) throw unknown(aType(base), 'isPresent, getAs…, orElse');
+                    takes(1);
+                    return done('void', (o, fn) => { needFn(fn); if (o.has) callFn(fn, o.v); }, [this.fnArg(n, 0, `Consumer<${T}>`)]);
+                default: throw unknown(aType(base), kind ? `isPresent(), isEmpty(), getAs${kind}() and orElse()` : 'isPresent(), isEmpty(), get(), orElse() and ifPresent()');
+            }
+        }
+        if (base === COLLECTOR) throw notYet(`${BOX} uses Collectors.toList() only inside collect( ).`, line);
+        // A function held in a variable: its one method, by the name its type gives it.
+        const [A, B] = typeArgs(rt);
+        const method = { Predicate: 'test', Function: 'apply', Consumer: 'accept', Comparator: 'compare' }[base];
+        if (name === method) {
+            if (base === 'Comparator') { takes(2); return done('int', (c, x, y) => callFn(c, x, y), [plain(0, A), plain(1, A)]); }
+            takes(1);
+            return done(base === 'Predicate' ? 'boolean' : base === 'Function' ? B : 'void', (fn, x) => callFn(fn, x), [plain(0, A)]);
+        }
+        if (base === 'Comparator' && name === 'reversed') { takes(0); return done(rt, c => ({ call: (x, y) => callFn(c, y, x) })); }
+        if (['test', 'apply', 'accept', 'compare'].includes(name)) {
+            throw compileError(`${aType(base)[0].toUpperCase() + aType(base).slice(1)} is used by calling ${method}(), not ${name}().`, line);
+        }
+        throw unknown(aType(base), `${method}()${base === 'Comparator' ? ' and reversed()' : ''}`);
+    }
+
     declare(name, type, line, isFinal = false) {
-        const earlier = this.lookup(name);
+        const earlier = this.lookup(name, false);
         if (earlier && !earlier.declined) {
             throw compileError(earlier.isParam ? `${name} is already the name of one of this method's parameters.` : `The variable ${name} is already declared in this method.`, line,
                 earlier.isParam ? `Use ${name} as it is, or pick a different name for the new variable.`
@@ -3800,6 +4530,7 @@ class Checker {
         }
         for (const s of m.body.body) this.stmt(s);
         // A checked exception that can leave the method has to be on its first line, after throws.
+        this.finishCaptures();
         const loose = this.raised.find(r => !m.throws.some(t => isSubtype(r.type, t)));
         if (loose) {
             throw compileError(`This line can throw ${aType(loose.type)}, which is a checked exception: Java will not compile ${m.isCtor ? 'the constructor' : m.name + '()'} unless it either catches it or says it may throw it.`, loose.line,
@@ -3837,7 +4568,7 @@ class Checker {
                 const leaves = x => ['return', 'throw', 'break', 'continue'].includes(x.k) || (x.k === 'block' && x.body.length > 0 && leaves(x.body[x.body.length - 1]));
                 const sure = !s.otherwise && leaves(s.then);
                 for (const sym of [...binds.f, ...(s.otherwise ? binds.t : [])]) {
-                    if (this.lookup(sym.name)) continue;
+                    if (this.lookup(sym.name, false)) continue;
                     // Where it is not plain that Java brings the name into scope here, using it is declined rather than guessed at.
                     this.scopes[this.scopes.length - 1].set(sym.name, sure && binds.f.includes(sym) ? sym
                         : { ...sym, declined: `${BOX} cannot tell whether ${sym.name} may be used here. Use it inside the if that tests instanceof.` });
@@ -3921,6 +4652,7 @@ class Checker {
                 // The name is in scope inside its own starting value, which is how Java
                 // comes to say "might not have been initialized" for int x = x + 1;
                 d.sym = this.declare(d.name, declared, d.line, s.isFinal);
+                if (!d.init) d.sym.noInit = true;
                 if (d.init) {
                     d.init = d.init.k === 'arrinit' ? this.arrayInit(d.init, declared) : this.assignable(this.valueFor(d.init, declared), declared, d.line, `the variable ${d.name}`);
                 }
@@ -3968,8 +4700,16 @@ class Checker {
         if (this.ctx.some(c => c.kind === 'switchexpr')) {
             throw compileError('return cannot be used inside a switch that produces a value.', s.line, 'Give the value with -> or yield, and return the whole switch.');
         }
+        if (this.method.inferReturn) {
+            // A lambda whose result nothing has laid down: whatever it returns is what it gives back.
+            if (!s.e) throw compileError('This lambda has to give back a value, and this return gives nothing back.', s.line);
+            s.e = this.value(s.e);
+            this.method.returned.push(s);
+            return;
+        }
         const ret = this.method.retType;
         if (ret === 'void') {
+            if (s.e && this.method.isLambda) throw compileError('Nothing is wanted back from this lambda, so it cannot return a value.', s.line);
             if (s.e && this.method.isCtor) throw compileError('A constructor sets up the new object, and does not return a value.', s.line);
             if (s.e) throw compileError(`${this.method.name} is declared void, so it cannot return a value.`, s.line);
             return;
@@ -3977,7 +4717,7 @@ class Checker {
         if (!s.e) {
             throw compileError(`${this.method.name} has to return ${aType(ret)}, and this return gives nothing back.`, s.line, 'Write the value after the word return.');
         }
-        s.e = this.assignable(this.valueFor(s.e, ret), ret, s.line, 'the return value', true);
+        s.e = this.assignable(this.valueFor(s.e, ret), ret, s.line, 'the return value', this.method.isLambda ? 'lambda' : true);
     }
 
     throws(s) {
@@ -3990,6 +4730,7 @@ class Checker {
         }
         // An exception caught and thrown on is, to Java, whatever the try could have thrown — which may be less than the catch names.
         const inner = stripParens(s.e);
+        if (inner.k === 'name' && inner.sym.isCatchParam && inner.sym.capturedFrom) throw notYet(`${BOX} does not throw, from inside a lambda, an exception caught outside it.`, s.line);
         if (inner.k === 'name' && inner.sym.isCatchParam) for (const r of inner.sym.rethrows) this.raise(r, s.line);
         else this.raise(t, s.line);
     }
@@ -4082,6 +4823,7 @@ class Checker {
 
     /** Assignment conversion (JLS 5.2): what `T x = value` and `return value` allow. */
     assignable(node, to, line, where, isReturn = false) {
+        if (node.type === LAMBDA) return this.poly(node, to, line);
         const from = node.type;
         if (passableBoxing(from, to)) return convert(node, to);
         if ((to === 'char' || to === 'Character') && fitsChar(node)) return convert(node, to);   // a constant int that fits
@@ -4112,7 +4854,9 @@ class Checker {
         else if (from === 'boolean' || to === 'boolean') hint = 'true/false and numbers do not mix in Java.';
         else if (from === 'null') hint = `null means "no object", and ${to} is not an object type.`;
         else if (from === 'StringBuilder' && to === 'String') hint = 'Turn the StringBuilder into a String with .toString()';
-        const lead = isReturn ? `This method returns ${aType(to)}, but this return gives back ${aType(from)}.` : `${aType(from)[0].toUpperCase() + aType(from).slice(1)} cannot be stored in ${where}, which is ${aType(to)}.`;
+        else if (from.startsWith('Stream<') && isCollection(to)) hint = 'A stream is not a list. End the pipeline by collecting it into one: .collect(Collectors.toList())';
+        else if (from.startsWith('Optional')) hint = `The stream might have been empty, so the answer comes wrapped in an Optional. Take it out with ${from === 'Optional' + from.slice(8) && FLOW_PLAIN.has(from) ? `.getAs${from.slice(8)}()` : '.get()'}`;
+        const lead = isReturn === 'lambda' ? `This lambda has to give back ${aType(to)}, and it gives back ${aType(from)}.` : isReturn ? `This method returns ${aType(to)}, but this return gives back ${aType(from)}.` : `${aType(from)[0].toUpperCase() + aType(from).slice(1)} cannot be stored in ${where}, which is ${aType(to)}.`;
         throw compileError(lead, line, hint);
     }
 
@@ -4140,6 +4884,10 @@ class Checker {
 
     value(node) {
         const e = this.loose(node);
+        if (e.type === LAMBDA) {
+            throw notYet(`${BOX} uses a lambda only where something says what kind of function it is: stored in a variable of a function type, or handed to a method that takes one.`, e.line,
+                'For example: Predicate<Ship> fast = ship -> ship.getSpeed() > 20;');
+        }
         if (typeof e.type === 'string' && isPending(e.type)) {
             throw notYet(`${BOX} cannot tell here what this new ${baseOf(e.type)}<>() is meant to hold.`, e.line,
                 `Say so in the angle brackets: new ${baseOf(e.type)}<${GENERIC_ARITY[baseOf(e.type)] === 2 ? 'String, Integer' : 'String'}>()`);
@@ -4166,6 +4914,7 @@ class Checker {
                 return n;
             }
             case 'instanceof': return this.instanceOf(n);
+            case 'lambda': case 'methodref': n.type = LAMBDA; return n;
             case 'supermethod': return this.superMethod(n);
             case 'supercall':
                 // Since Java 25 a constructor may do some things before its super(…). Here it has to come first.
@@ -4205,7 +4954,7 @@ class Checker {
                 if (f && f.isStatic) fld = f;
             }
             if (fld) return this.fieldAccess(n, fld, null);
-            if (STATICS[n.name] || NOT_YET_CLASSES.has(n.name) || n.name === 'System' || isOwnClass(n.name)) {
+            if (STATICS[n.name] || NOT_YET_CLASSES.has(n.name) || n.name === 'System' || isOwnClass(n.name) || Object.hasOwn(FLOW_ARITY, n.name) || FLOW_PLAIN.has(n.name) || n.name === 'Collectors') {
                 throw compileError(`${n.name} is a class, not a value. It needs a dot and a method after it.`, n.line);
             }
             const near = suggestName(n.name, this.visibleNames());
@@ -4214,6 +4963,11 @@ class Checker {
                     : 'A variable has to be declared, with its type, before it is used — and it only exists inside the { } it was declared in.');
         }
         if (sym.declined) throw notYet(sym.declined, n.line);
+        if (sym.capturedFrom) {
+            let root = sym;
+            while (root.capturedFrom) root = root.capturedFrom;
+            root.usedInLambda ??= n.line;
+        }
         n.sym = sym;
         n.type = sym.type;
         if (sym.constVal !== undefined) n.const = { v: sym.constVal };
@@ -4388,6 +5142,11 @@ class Checker {
     /** The variable or array element on the left of an assignment, or under ++. */
     target(node, verb) {
         const t = this.expr(node);
+        if (t.k === 'name' && t.sym.capturedFrom) {
+            throw compileError(`${t.name} was declared outside this lambda, so the lambda may use it but not change it: Java requires such a variable to be final, or never changed.`, node.line,
+                'To add things up in a stream, use what the stream gives back: .count(), or .mapToInt(…).sum()');
+        }
+        if (t.k === 'name') t.sym.writes = (t.sym.writes || 0) + 1;
         if (t.k === 'name' && t.sym.isCatchParam) {
             if (t.sym.isFinal) throw compileError(`${t.name} is the exception this catch received, and cannot be ${verb}.`, node.line);
             throw notYet(`${BOX} does not let the exception a catch received (${t.name}) be ${verb}.`, node.line, 'Use a new variable.');
@@ -4654,7 +5413,7 @@ class Checker {
             return { fn: chosen.s.fn, ret: chosen.ret, args: args.map((a, i) => convert(a, chosen.concrete[i])) };
         }
         const given = types.length ? `(${types.join(', ')})` : 'nothing in its ( )';
-        if (types.some(t => isCollection(t) || isOwnClass(t.replace(/(\[\])+$/, '')))) throw notYet(`${describe} cannot be given ${given} in ${BOX}.`, line);
+        if (types.some(t => isCollection(t) || isFlow(t) || isOwnClass(t.replace(/(\[\])+$/, '')))) throw notYet(`${describe} cannot be given ${given} in ${BOX}.`, line);
         const forms = sigs.map(s => `(${s.params.join(', ')}${s.variadic ? '…' : ''})`).filter((f, i, all) => all.indexOf(f) === i);
         throw compileError(`${describe} cannot be given ${given}.`, line,
             `It takes ${forms.length === 1 ? forms[0] : 'one of: ' + forms.join('  ')}`);
@@ -4711,7 +5470,7 @@ class Checker {
             if (n.args.length === 1 && isArray(n.args[0].type)) {
                 throw notYet('Printing an array shows a code such as [I@1b6d3586, not the values in it.', n.line, 'Use System.out.println(Arrays.toString(nums));');
             }
-            if (n.args.length === 1 && ((isCollection(n.args[0].type) && !isPending(n.args[0].type)) || isObjectType(n.args[0].type))) {
+            if (n.args.length === 1 && ((isCollection(n.args[0].type) && !isPending(n.args[0].type)) || isObjectType(n.args[0].type) || isFlow(n.args[0].type))) {
                 // A collection prints its elements: [a, b, c]. An object prints what its toString() returns.
                 this.shown(n.args[0].type, n.line);
                 n.target = null;
@@ -4726,6 +5485,14 @@ class Checker {
         if (cls && isOwnClass(cls)) return this.objectCall(n, CLASSES.get(cls), null);
         if (cls) {
             if (cls === 'Collections') return this.collectionsCall(n);
+            if (cls === 'Collectors') {
+                if (n.name !== 'toList' || n.args.length) throw notYet(`${BOX} has one collector: Collectors.toList()`, n.line);
+                return { k: 'lit', type: COLLECTOR, value: null, line: n.line };
+            }
+            if (cls === 'Comparator') {
+                if (n.name !== 'comparing' || n.args.length !== 1) throw notYet(`${BOX} makes a comparator with a lambda, (a, b) -> …, or with Comparator.comparing(x -> …).`, n.line);
+                return { k: 'comparing', arg: n.args[0], type: LAMBDA, line: n.line };
+            }
             if (cls === 'Arrays' && n.name === 'asList') return this.asList(n);
             if (cls === 'List' || cls === 'Set' || cls === 'Map') {
                 throw notYet(`${BOX} does not have ${cls}.${n.name}()${n.name === 'of' || n.name === 'copyOf' ? `, which makes ${aType(cls.toLowerCase())} that can never be changed` : ''}.`, n.line,
@@ -4745,9 +5512,18 @@ class Checker {
         }
 
         // text.length(), sb.append(…), nums.clone()
+        const direct = stripParens(t);
+        if (direct.k === 'call' && direct.target && direct.name === 'comparing' && this.className(direct.target) === 'Comparator') {
+            // Comparator.comparing(…).reversed(): the comparator is made with nothing to say what it compares
+            if (n.name !== 'reversed' || n.args.length || direct.args.length !== 1) throw notYet(`${BOX} follows Comparator.comparing(…) with .reversed() and nothing else.`, n.line);
+            direct.args = direct.args.map(a => this.loose(a));
+            const made = this.comparingAlone({ k: 'comparing', arg: direct.args[0], line: direct.line });
+            return Object.assign(n, { k: 'builtin', target: made, args: [], type: made.type, describe: 'reversed()', fn: c => ({ call: (x, y) => callFn(c, y, x) }) });
+        }
         n.target = this.value(t);
         const rt = n.target.type;
         if (isObjectType(rt)) return this.objectCall(n, CLASSES.get(rt) || null, n.target);
+        if (isFlow(rt)) return this.flowCall(n, rt);
         if (rt === 'String' || rt === 'StringBuilder') {
             if (rt === 'String' && n.name === 'formatted') return this.formatCall(n, 'String', 'The String method formatted()');
             const table = rt === 'String' ? STRING_METHODS : BUILDER_METHODS;
@@ -4771,6 +5547,15 @@ class Checker {
             const sigs = table[n.name];
             const kind = map ? 'map' : isListType(rt) ? 'list' : baseOf(rt) === 'Collection' ? 'collection' : 'set';
             if (n.name === 'toString') this.shown(rt, n.line);
+            if (!map && n.name === 'stream' && n.args.length === 0) {
+                return Object.assign(n, { k: 'builtin', fn: streamOf, type: `Stream<${typeArgs(rt)[0]}>`, describe: `The ${kind} method stream()` });
+            }
+            if (!map && n.name === 'forEach' && n.args.length === 1) {
+                return Object.assign(n, { k: 'builtin', fn: forEachElement, args: [this.fnArg(n, 0, `Consumer<${typeArgs(rt)[0]}>`)], type: 'void', describe: `The ${kind} method forEach()` });
+            }
+            if (n.args.some(a => a.type === LAMBDA)) {
+                throw notYet(`${BOX} does not have ${n.name}() with a lambda for a ${kind}.`, n.line, map ? 'Walk through its keys with a for-each loop: for (String key : map.keySet())' : 'Make a stream of it: list.stream()');
+            }
             if (!sigs) {
                 const declined = (map ? MAP_NOT_YET : COLLECTION_NOT_YET)[n.name];
                 if (declined) throw notYet(`${BOX} does not have ${declined}.`, n.line);
@@ -4825,6 +5610,12 @@ class Checker {
      * arguments fit, the most specific — the one whose parameters could all be passed to each of the others.
      */
     chooseOverload(n, list) {
+        if (n.args.some(a => a.type === LAMBDA)) {
+            // A lambda takes its type from the parameter it is handed to, so the method has to be settled first: by how many values it takes.
+            const sameCount = list.filter(m => m.paramTypes.length === n.args.length);
+            if (sameCount.length > 1) throw notYet(`${BOX} cannot tell which ${n.name}() this lambda is meant for.`, n.line, 'Store the lambda in a variable of the right type first, and pass the variable.');
+            if (sameCount.length === 1) n.args = n.args.map((a, i) => (a.type === LAMBDA ? this.poly(a, sameCount[0].paramTypes[i], n.line) : a));
+        }
         const types = n.args.map(a => a.type);
         const fitting = test => list.filter(m => m.paramTypes.length === types.length && types.every((t, i) => test(t, m.paramTypes[i])));
         let fits = fitting(passable);
@@ -4888,6 +5679,7 @@ class Checker {
     }
 
     builtin(n, sigs, selfType, describe) {
+        if (n.args.some(a => a.type === LAMBDA)) throw notYet(`${describe} does not take a lambda in ${BOX}.`, n.line);
         const found = this.overload(sigs, n.args, selfType, describe, n.line);
         n.k = 'builtin';
         n.fn = found.fn;
@@ -5236,6 +6028,10 @@ class Flow {
             case 'index': return this.expr(e.i, this.expr(e.target, S));
             case 'field': return e.target ? this.expr(e.target, S) : S;
             case 'this': return S;
+            case 'lambda':
+                // A variable the lambda uses from outside has to have its value by the time the lambda is written.
+                for (const [, , sym] of e.fn.captures) if (!sym.capturedFrom) this.read(sym, S, e.line);
+                return S;
             case 'instanceof': case 'refcast': return this.expr(e.e, S);
             case 'call': return this.all(e.args, e.recv ? this.expr(e.recv, S) : S);
             case 'newobj': return this.all(e.args, S);
@@ -5786,6 +6582,42 @@ function cx(n) {
             };
         }
         case 'this': { const slot = n.slot; return f => f[slot]; }
+        case 'lambda': {
+            // The body is checked and compiled like a method's. Running the lambda EXPRESSION only makes the object:
+            // what it holds are the outside variables the body uses, as they are at that moment.
+            const { fn, impl, cls } = n;
+            new Flow(fn);
+            const body = cs(fn.body);
+            const captures = fn.captures.map(([from, to]) => [from, to]);
+            const count = captures.length;
+            const usesThis = fn.usesThis;
+            const innerThis = usesThis ? fn.thisSlot : -1;
+            const outerThis = fn.outerThisSlot;
+            const self = fn.selfSlot;
+            impl.frameSize = fn.frameSize;
+            impl.code = f => {
+                const held = f[self].f;
+                for (let i = 0; i < count; i++) f[captures[i][1]] = held[i];
+                if (usesThis) f[innerThis] = held[count];
+                return body(f);
+            };
+            cls.defaults = new Array(count + (usesThis ? 1 : 0)).fill(null);
+            if (count === 0 && !usesThis) {
+                // A lambda that uses nothing from outside is made once, and is the same object every time the line runs.
+                return () => {
+                    let made = M.lambdas.get(n);
+                    if (!made) { made = new JObject(cls); M.lambdas.set(n, made); }
+                    return made;
+                };
+            }
+            return f => {
+                cells(count + 1);
+                const obj = new JObject(cls);
+                for (let i = 0; i < count; i++) obj.f[i] = f[captures[i][0]];
+                if (usesThis) obj.f[count] = f[outerThis];
+                return obj;
+            };
+        }
         case 'instanceof': {
             const e = cx(n.e);
             const { target } = n;
@@ -6270,6 +7102,8 @@ export function evaluateJava(program, expression, limits = {}) {
         checker.ctx = [];
         checker.raised = [];   // a test may call something that throws a checked exception; nothing here has to declare it
         typed = checker.expr(tree);
+        if (typed.type === LAMBDA) throw compileError('A lambda on its own is not a value: it has to be stored, or handed to something.', 1);
+        checker.finishCaptures();
         run = cx(typed);
     } finally {
         CLASSES = outer;
@@ -6450,7 +7284,7 @@ function looksPasted(raw) {
     }
     while (tokens[p].t === 'kw' && MODIFIERS.has(tokens[p].v)) p++;
     const t = tokens[p];
-    if (t.t === 'kw' && t.v === 'class') return true;
+    if (t.t === 'kw' && (t.v === 'class' || t.v === 'interface')) return true;
     if (!(t.t === 'id' || (t.t === 'kw' && (PRIMITIVE_WORDS.has(t.v) || t.v === 'void')))) return false;
     p++;
     while (isOp('[', tokens[p]) && isOp(']', tokens[p + 1])) p += 2;
@@ -6682,12 +7516,14 @@ function compileJavaScript(program, runText, checkText = null) {
         method.thisSlot = method.frameSize++;
         for (const statement of block.body) checker.stmt(statement);
         if (!check) {
+            checker.finishCaptures();
             new Flow(method);
             method.code = cs(block);
             return { method, type: null, host };
         }
         const typed = checker.value(check);
-        if (isOwnClass(typed.type.replace(/(\[\])+$/, '')) || (isCollection(typed.type) && typeArgs(typed.type).some(isOwnClass))) {
+        checker.finishCaptures();
+        if (isFlow(typed.type) || isOwnClass(typed.type.replace(/(\[\])+$/, '')) || (isCollection(typed.type) && typeArgs(typed.type).some(isOwnClass))) {
             throw new Error(`a test's check has to be a number, text, true/false or a collection of those, and "${checkText}" is ${aType(typed.type)}`);
         }
         block.body.push({ k: 'return', e: typed, line: block.endLine });

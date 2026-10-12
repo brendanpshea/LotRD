@@ -569,6 +569,80 @@ describe('a Java problem: exceptions, caught and thrown', () => {
   });
 });
 
+describe('a Java problem: lambdas and streams', () => {
+  const HARBOR = {
+    type: 'code_write',
+    language: 'java',
+    scaffold: 'class Ship {\n    private String name;\n    private int speed;\n\n    Ship(String name, int speed) {\n        this.name = name;\n        this.speed = speed;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public int getSpeed() {\n        return speed;\n    }\n}\n\npublic class Harbor {\n    private ArrayList<Ship> fleet = new ArrayList<>();\n\n    public void add(String name, int speed) {\n        fleet.add(new Ship(name, speed));\n    }\n',
+    signature: 'public List<String> fastNames(int over)',
+    tests: [
+      { run: 'Harbor h = new Harbor();\nh.add("A", 25);\nh.add("B", 12);\nh.add("C", 30);', check: 'h.fastNames(20)', expect: ['A', 'C'] },
+      { run: 'Harbor h = new Harbor();\nh.add("A", 25);', check: 'h.fastNames(99)', expect: [] },
+    ],
+    solution: 'return fleet.stream()\n    .filter(ship -> ship.getSpeed() > over)\n    .map(ship -> ship.getName())\n    .collect(Collectors.toList());',
+  };
+  const told = body => { const o = run(body, HARBOR); const e = o.error || o.results[0].error; return e ? `${e.message} | ${e.hint} | line ${e.line}` : `ran: ${o.results[0].actualRepr}`; };
+  const LAMBDA = withTests('public boolean isDeep(int depth)', [{ args: [150], expect: true }, { args: [50], expect: false }]);
+
+  it('a pipeline written over several lines is graded like any other answer', () => {
+    const outcome = run(HARBOR.solution, HARBOR);
+    assert.equal(outcome.passed, 2);
+    assert.equal(outcome.results[0].actualRepr, '["A", "C"]');
+  });
+
+  it('a method reference, and forEach on the list itself, are accepted', () => {
+    assert.equal(run('return fleet.stream().filter(s -> s.getSpeed() > over).map(Ship::getName).collect(Collectors.toList());', HARBOR).passed, 2);
+    assert.equal(run('ArrayList<String> out = new ArrayList<>();\nfleet.forEach(s -> {\n    if (s.getSpeed() > over) {\n        out.add(s.getName());\n    }\n});\nreturn out;', HARBOR).passed, 2);
+  });
+
+  it('a lambda can be stored as a Predicate or as an interface, and then called', () => {
+    assert.equal(run('Predicate<Integer> deep = d -> d > 100;\nreturn deep.test(depth);', LAMBDA).passed, 2);
+    assert.equal(run('interface Tester { boolean test(int v); }\npublic boolean isDeep(int depth) {\n    Tester deep = (int v) -> { return v > 100; };\n    return deep.test(depth);\n}', LAMBDA).passed, 2);
+  });
+
+  it('what a peek prints shows the pipeline running one element at a time', () => {
+    const q = withTests('public long firstTwo()', [{ args: [], expect: 2 }]);
+    const outcome = run('ArrayList<Integer> xs = new ArrayList<>(Arrays.asList(5, 6, 7));\nreturn xs.stream()\n    .peek(x -> System.out.println("saw " + x))\n    .filter(x -> x > 0)\n    .limit(2)\n    .count();', q);
+    assert.equal(outcome.passed, 1);
+    assert.deepEqual(outcome.results[0].output, ['saw 5', 'saw 6']);
+  });
+
+  it('a stream left without collect is explained', () => {
+    assert.match(told('return fleet.stream()\n    .filter(ship -> ship.getSpeed() > over)\n    .map(ship -> ship.getName());'), /gives back a Stream<String>.*\.collect\(Collectors\.toList\(\)\)/s);
+  });
+
+  it('a variable changed inside a lambda, or changed anywhere while a lambda uses it', () => {
+    assert.match(told('int n = 0;\nfleet.stream().forEach(s -> n++);\nreturn new ArrayList<>();'), /declared outside this lambda.*may use it but not change it.*line 2/s);
+    assert.match(told('over++;\nreturn fleet.stream().filter(s -> s.getSpeed() > over).map(s -> s.getName()).collect(Collectors.toList());'), /A lambda uses the variable over.*int fixed = over.*line 2/s);
+  });
+
+  it('Comparator.comparing with a plain lambda and then .reversed() does not compile in Java, and the reason is given', () => {
+    const body = 'return fleet.stream()\n    .sorted(Comparator.comparing(s -> s.getSpeed()).reversed())\n    .map(s -> s.getName())\n    .collect(Collectors.toList());';
+    assert.match(told(body), /nothing tells Java what s is.*plain Object.*no method called getSpeed\(\).*\(Ship s\) ->.*line 2/s);
+    for (const fix of ['Comparator.comparing((Ship s) -> s.getSpeed()).reversed()', 'Comparator.comparing(Ship::getSpeed).reversed()', '(a, b) -> b.getSpeed() - a.getSpeed()']) {
+      assert.equal(run(body.replace('Comparator.comparing(s -> s.getSpeed()).reversed()', fix), { ...HARBOR, tests: [{ ...HARBOR.tests[0], check: 'h.fastNames(0)', expect: ['C', 'A', 'B'] }] }).passed, 1, fix);
+    }
+  });
+
+  it('an Optional used as the value it may hold, and an empty one opened', () => {
+    assert.match(told('String first = fleet.stream().map(s -> s.getName()).findFirst();\nreturn new ArrayList<>();'), /Optional<String> cannot be stored.*wrapped in an Optional.*\.get\(\)/s);
+    assert.match(told('int most = fleet.stream().mapToInt(s -> s.getSpeed()).max();\nreturn new ArrayList<>();'), /OptionalInt cannot be stored.*\.getAsInt\(\)/s);
+    assert.match(told('String none = fleet.stream().filter(s -> s.getSpeed() > 99).map(s -> s.getName()).findFirst().get();\nreturn new ArrayList<>();'), /NoSuchElementException: No value present.*isPresent\(\)/s);
+  });
+
+  it('a stream used twice is Java\'s own exception, with Java\'s message', () => {
+    assert.match(told('Stream<Ship> s = fleet.stream();\ns.count();\nreturn s.map(x -> x.getName()).collect(Collectors.toList());'), /IllegalStateException: stream has already been operated upon or closed.*line 3/s);
+  });
+
+  it('what this box does not do with lambdas and streams is declined by name', () => {
+    assert.match(told('return fleet.stream().map(s -> s.getName()).toList();'), /does not have toList\(\) on a stream.*Collectors\.toList\(\)/s);
+    assert.match(told('System.out.println(fleet.stream());\nreturn new ArrayList<>();'), /A stream has no text of its own.*forEach/s);
+    assert.match(told('int t = fleet.stream().map(s -> s.getSpeed()).sum();\nreturn new ArrayList<>();'), /has no sum\(\).*mapToInt/s);
+    assert.match(told('Runnable r = () -> fleet.clear();\nreturn new ArrayList<>();'), /does not have Runnable/);
+    assert.match(told('return fleet.stream().sorted().map(s -> s.getName()).collect(Collectors.toList());'), /no order for Ship objects.*ClassCastException.*sorted\(\(a, b\)/s);
+  });
+});
+
 describe('a Java problem: a run cannot hang or grow without limit', () => {
   it('an endless loop is stopped, test by test', () => {
     const outcome = run('while (a < 100) { b++; }\nreturn b;', SUM, { limits: { steps: 5000 } });
