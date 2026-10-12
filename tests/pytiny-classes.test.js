@@ -590,9 +590,9 @@ describe('classes: what a student is told when it goes wrong', () => {
     assert.match(err.hint, /self\.PRICE|Ticket\.PRICE/);
   });
 
-  it('inheritance is refused by name until it is supported', () => {
-    const err = failure('class A:\n    pass\nclass B(A):\n    pass\n');
-    assert.match(err.message, /inherit/i);
+  it('a second parent is refused by name (one parent is tests/pytiny-inheritance.test.js)', () => {
+    const err = failure('class A:\n    pass\nclass B:\n    pass\nclass C(A, B):\n    pass\n');
+    assert.match(err.message, /only one parent/);
   });
 
   it('an object with no __str__ prints as something recognisable, and says how to improve it', () => {

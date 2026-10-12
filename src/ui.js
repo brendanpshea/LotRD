@@ -1643,7 +1643,9 @@ export class GameUI {
     const kind = codeWriteKind(q);
     $(this.root, "[data-ref=signature]").innerHTML = highlight(codeWriteHeader(q));
     $(this.root, "[data-ref=signature]").setAttribute("aria-label",
-      q.scaffold ? "The class so far, ending in the method you are writing" : `${kind} definition`);
+      !q.scaffold ? `${kind} definition`
+        : kind === "class" ? "The classes you are given, then the line of the class you are writing"
+        : "The class so far, ending in the method you are writing");
     const taskLabel = $(this.root, "[data-ref=taskLabel]");
     if (taskLabel) taskLabel.textContent = `Write the ${kind}:`;
     const bodyLabel = $(this.root, "[data-ref=bodyLabel]");

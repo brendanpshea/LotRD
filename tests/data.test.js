@@ -680,10 +680,12 @@ describe('Question set file validation', () => {
             // supplied class (scaffold + def line) or a whole class (class line).
             const sig = String(q.signature ?? '').trim();
             if (q.scaffold !== undefined) {
-              assert.ok(typeof q.scaffold === 'string' && /^class\s+\w+\s*(\(\s*\))?\s*:/.test(q.scaffold.trim()),
+              assert.ok(typeof q.scaffold === 'string' && /^class\s+\w+\s*(\(\s*\w*\s*\))?\s*:/.test(q.scaffold.trim()),
                 `${label}: scaffold must be the class so far, beginning "class Name:"`);
-              assert.ok(/^def\s+\w+\s*\(\s*self\b.*\)\s*:$/.test(sig),
-                `${label}: with a scaffold, signature is the method's def line and its first parameter is self`);
+              // Either one method of the class the scaffold ends in, or a whole
+              // class (usually a subclass) written below the finished ones.
+              assert.ok(/^def\s+\w+\s*\(\s*self\b.*\)\s*:$/.test(sig) || /^class\s+\w+\s*(\(\s*\w*\s*\))?\s*:$/.test(sig),
+                `${label}: with a scaffold, signature is a method's def line (first parameter self) or a class line`);
             } else {
               assert.ok(/^class\s+\w+\s*(\(\s*\))?\s*:$/.test(sig),
                 `${label}: a class problem with no scaffold needs a signature like "class Stack:"`);
@@ -1299,7 +1301,7 @@ describe('code_write problems are solvable', () => {
             ? ['return 0;', 'return 1;', 'return true;', 'return false;', 'return "";', 'return null;', 'return 0.0;', "return 'a';",
               'return new int[0];', 'return new String[0];']
             : isScriptProblem(q)
-              ? (q.scaffold ? ['pass', 'return None', 'return 0', 'return True'] : ['pass', 'def __init__(self):\n    pass'])
+              ? (q.scaffold && !/^\s*class\s/.test(q.signature) ? ['pass', 'return None', 'return 0', 'return True'] : ['pass', 'def __init__(self):\n    pass'])
               : ['return None', 'return True', 'return False', 'return 0', 'return ""'];
           for (const lazy of lazyBodies) {
             const outcome = run(q, lazy);
@@ -1484,7 +1486,7 @@ describe('Arithmetic shown in questions is actually correct', () => {
 // that list when it has been brought up to the standard — never remove one.
 describe('Audit checks', () => {
   const index = loadJSON('question_sets/index.json');
-  const MEETS_AUDIT_STANDARD = setId => /^java_|^computing_concepts_(0[456789]|1[012])_/.test(setId);
+  const MEETS_AUDIT_STANDARD = setId => /^java_|^computing_concepts_(0[456789]|1[01234])_/.test(setId);
   const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write', 'sql_write']);
   const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
 

@@ -1,0 +1,872 @@
+[
+  {
+    "type": "npc_demo",
+    "question": "NPC: A function that calls itself",
+    "npc": "nia",
+    "intro": "Under the library a narrow stair winds down into the dark. Nia stops on the top step. “You already know that a function can call another function. Today's whole lesson is one small twist on that.”",
+    "steps": [
+      {
+        "say": "Quick review. A function is a named block of code, and it runs when you call it. This one calls print. Nothing in Python limits which functions a function may call, so it may even call ITSELF. A function that calls itself is called a recursive function.",
+        "beats": [
+          { "say": "Quick review. A function is a named block of code, and it runs when you call it. This one calls print:" },
+          { "code": "def greet(name):\n    print(\"Hello\", name)\n\ngreet(\"Nia\")", "language": "python" },
+          { "say": "Nothing in Python limits which functions a function may call. So it may even call ITSELF. A function that calls itself is called a recursive function." }
+        ]
+      },
+      {
+        "say": "Here is one. countdown(3) checks: is n zero? No. So it prints 3, and then it calls countdown(2): the same function, with a smaller number.",
+        "beats": [
+          { "say": "Here is one. Read it slowly." },
+          { "code": "def countdown(n):\n    if n == 0:\n        return\n    print(n)\n    countdown(n - 1)\n\ncountdown(3)", "language": "python" },
+          { "say": "countdown(3) checks: is n zero? No. So it prints 3, and then it calls countdown(2): the same function, with a smaller number." }
+        ],
+        "check": {
+          "prompt": "countdown(2) prints 2. What does it do next?",
+          "answer": "It calls countdown(1)",
+          "wrong": ["It calls countdown(3) again", "It stops, because it has printed"],
+          "why": "Each call hands the next call a number that is one smaller: n - 1."
+        }
+      },
+      {
+        "say": "countdown(1) prints 1 and calls countdown(0). Now n IS zero, so that call returns at once without calling anything, and the chain stops. The screen shows 3, 2, 1. It is like this stair: every step is a smaller copy of the same job, and the bottom step is where you stop going down.",
+        "beats": [
+          { "say": "countdown(1) prints 1 and calls countdown(0). Now n IS zero, so that call returns at once without calling anything, and the chain stops. The screen shows 3, 2, 1." },
+          { "say": "It is like this stair: every step down is a smaller copy of the same job, and the bottom step is where you stop. Each step down is one recursive call." }
+        ]
+      }
+    ],
+    "outro": "“Trace one yourself. Take it one call at a time.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace this recursive function one call at a time. What does the program print?",
+    "code": "def countdown(n):\n    if n == 0:\n        return\n    print(n)\n    countdown(n - 1)\n\ncountdown(4)",
+    "language": "python",
+    "correct": ["4\n3\n2\n1"],
+    "case_sensitive": true,
+    "feedback": "countdown(4) prints 4 and calls countdown(3), which prints 3 and calls countdown(2), and so on. countdown(0) returns without printing, so 0 never appears."
+  },
+  {
+    "question": "What makes a function recursive?",
+    "correct": ["Its body contains a call to the function itself"],
+    "incorrect": [
+      "Its body contains a loop that repeats the work",
+      "It returns a value to the code that called it",
+      "It is called more than once by the main program"
+    ],
+    "feedback": "Recursive means the function calls itself. A loop repeats work too, but that is called iteration; and being called several times from outside is just ordinary use of a function."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A function that calls itself is called a ___ function.",
+    "correct": ["recursive"],
+    "case_sensitive": false,
+    "feedback": "A recursive function solves a problem by calling itself on a smaller version of the same problem."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "countdown(n) prints n and then calls countdown(n - 1). When n is 0 it returns without printing or calling anything. Counting the very first call and the final call with 0, how many times is countdown called during countdown({{n}})?",
+    "variables": {
+      "n": { "min": 5, "max": 30 }
+    },
+    "answer": { "expr": "n + 1", "tolerance_abs": 0 },
+    "allow_expression": false,
+    "feedback_template": "The calls are countdown({{n}}), then one for every smaller number, down to countdown(0). Counting the 0 gives {{expected}} calls. The last one prints nothing, but it is still a call."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The two parts of a recursive function",
+    "npc": "nia",
+    "intro": "Nia holds her lantern up to the wall, where someone has carved the countdown function into the stone. “Every recursive function you will ever read has the same two parts. Find them, and you have understood the function.”",
+    "steps": [
+      {
+        "say": "Look at countdown again. I have marked two parts. The base case is the input so small that the function answers WITHOUT calling itself. Here that is n equal to 0: just return.",
+        "beats": [
+          { "say": "Look at countdown again. I have marked two parts." },
+          { "code": "def countdown(n):\n    if n == 0:          # base case\n        return\n    print(n)            # recursive case\n    countdown(n - 1)", "language": "python" },
+          { "say": "The base case is the input so small that the function answers WITHOUT calling itself. Here that is n equal to 0: just return." }
+        ]
+      },
+      {
+        "say": "The recursive case is everything else: do one small piece of the work, then call yourself on a SMALLER input. Here: print n, then call with n - 1.",
+        "check": {
+          "prompt": "Why must the recursive call use a smaller input, such as n - 1?",
+          "answer": "So each call gets closer to the base case",
+          "wrong": ["So the function runs faster each time", "So Python can reuse the same variable"],
+          "why": "5, 4, 3, 2, 1, 0: every call is one step nearer to the input that stops the chain."
+        }
+      },
+      {
+        "say": "Take the base case away and nothing stops the chain: countdown(0) calls countdown(-1), which calls countdown(-2), and on it goes. Python gives up after about a thousand calls and stops the program with an error named RecursionError. So when you write one: base case first, then the recursive case.",
+        "beats": [
+          { "say": "Take the base case away and nothing stops the chain: countdown(0) calls countdown(-1), which calls countdown(-2), and on it goes." },
+          { "say": "Python gives up after about a thousand calls and stops the program with an error named RecursionError. So when you write one: base case first, then the recursive case." }
+        ]
+      }
+    ],
+    "outro": "“Find the two parts in everything that comes next.”"
+  },
+  {
+    "question": "What is the job of the base case in a recursive function?",
+    "correct": ["To return an answer directly, with no further recursive call"],
+    "incorrect": [
+      "To make the first call that starts the recursion going",
+      "To shrink the input before the next recursive call is made",
+      "To repeat the recursive call until the work is finished"
+    ],
+    "feedback": "The base case is the input simple enough to answer on the spot. It is what ends the chain of calls. Shrinking the input is the recursive case's job."
+  },
+  {
+    "type": "cloze",
+    "question": "Every recursive function has two parts. The {{1}} case answers directly and ends the chain of calls. The {{2}} case does a little work and then calls the function again on a smaller input.",
+    "blanks": [
+      { "accept": ["base"], "hint": "which case?" },
+      { "accept": ["recursive"], "hint": "which case?" }
+    ],
+    "feedback": "Base case: stop and answer. Recursive case: do one piece and hand a smaller problem to yourself. A function with only the second part never stops."
+  },
+  {
+    "question": "This function is missing one of its two parts. What happens on the call shout(3)?\n\ndef shout(n):\n    print(n)\n    shout(n - 1)",
+    "correct": ["It counts down past 0 until Python raises a RecursionError"],
+    "incorrect": [
+      "It prints 3, 2, 1 and then stops by itself once n reaches 0",
+      "It prints 3 one time, since a function may call itself once",
+      "It prints nothing, since Python refuses to define the function"
+    ],
+    "feedback": "There is no base case, so nothing tells the function to stop at 0. It prints 3, 2, 1, 0, -1, -2 and carries on until Python halts it with a RecursionError."
+  },
+  {
+    "question": "This function HAS a base case. What happens on the call wait(5)?\n\ndef wait(n):\n    if n == 0:\n        return\n    wait(n)",
+    "correct": ["The base case is never reached, so it ends in a RecursionError"],
+    "incorrect": [
+      "The base case runs on the sixth call, so it returns normally",
+      "It returns at once, because the if line is checked first",
+      "It runs five times, because n starts out at the value five"
+    ],
+    "feedback": "wait(5) calls wait(5), which calls wait(5): the input never gets smaller, so n never becomes 0. A base case only helps if every recursive call moves TOWARD it. The fix is wait(n - 1)."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A recursion does not have to count down. This one counts UP to its base case:\n\ndef climb(n):\n    if n == {{top}}:\n        return\n    climb(n + 1)\n\nCounting the first call, how many times is climb called during climb({{start}})?",
+    "variables": {
+      "start": { "min": 1, "max": 5 },
+      "gap": { "min": 3, "max": 8 }
+    },
+    "derived": { "top": "start + gap" },
+    "answer": { "expr": "gap + 1", "tolerance_abs": 0 },
+    "feedback_template": "The calls are climb({{start}}), then one more for each number up to and including climb({{top}}), which is the base case: {{expected}} calls. 'Smaller input' really means 'closer to the base case'."
+  },
+  {
+    "type": "matching",
+    "question": "Match each line of this recursive function to the role it plays.\n\ndef fade(n):\n    if n == 0:\n        return\n    print(n)\n    fade(n - 1)",
+    "pairs": [
+      { "term": "if n == 0:", "definition": "Tests whether this is the base case" },
+      { "term": "return", "definition": "Ends this call without calling again" },
+      { "term": "print(n)", "definition": "Does this call's one piece of the work" },
+      { "term": "fade(n - 1)", "definition": "Makes the recursive call on a smaller input" }
+    ],
+    "feedback": "Test for the base case, stop if it is one; otherwise do one piece of work and pass a smaller problem to yourself. Nearly every recursive function has this skeleton."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Trusting the smaller answer",
+    "npc": "nia",
+    "intro": "Nia chalks a column of numbers on the stairwell wall. “So far our functions only printed. The useful ones RETURN an answer, and they build it out of the answer to a smaller problem.”",
+    "steps": [
+      {
+        "say": "I want 1 + 2 + 3 + 4. Notice that it is just 4, plus the sum up to 3. And the sum up to 3 is 3, plus the sum up to 2. The same problem, smaller each time. Base case: the sum up to 0 is 0. Recursive case: n, plus the total of everything below n.",
+        "beats": [
+          { "say": "I want 1 + 2 + 3 + 4. Notice that it is just 4, plus the sum up to 3. And the sum up to 3 is 3, plus the sum up to 2. The same problem, smaller each time." },
+          { "code": "def total(n):\n    if n == 0:\n        return 0\n    return n + total(n - 1)", "language": "python" },
+          { "say": "Base case: the sum up to 0 is 0. Recursive case: n, plus the total of everything below n." }
+        ]
+      },
+      {
+        "say": "Call total(3). It cannot finish yet: it needs total(2) first. total(2) needs total(1), and total(1) needs total(0). Each call WAITS for the one below it. total(0) is the base case, so it returns 0 at once. Now the waiting calls can finish, from the bottom back up.",
+        "beats": [
+          { "say": "Call total(3). It cannot finish yet: it needs total(2) first. total(2) needs total(1), and total(1) needs total(0). Each call WAITS for the one below it." },
+          { "say": "total(0) is the base case, so it returns 0 at once. Now the waiting calls can finish, from the bottom back up." }
+        ],
+        "check": {
+          "prompt": "total(0) has returned 0. So what does total(1) return?",
+          "answer": "1, because 1 + 0 is 1",
+          "wrong": ["0, the same as the base case", "2, because 1 + 1 is 2"],
+          "why": "total(1) works out n + total(n - 1), and that is 1 + 0."
+        }
+      },
+      {
+        "say": "Then total(2) returns 2 + 1, which is 3, and total(3) returns 3 + 3, which is 6. The answers travel back UP the chain, one return at a time. When you write one, do not trace the whole chain in your head. Trust that the call on the smaller input gives the right answer, and ask only: what do I do with it?",
+        "beats": [
+          { "say": "Then total(2) returns 2 + 1, which is 3, and total(3) returns 3 + 3, which is 6. The answers travel back UP the chain, one return at a time." },
+          { "say": "When you write one, do not trace the whole chain in your head. Trust that the call on the smaller input gives the right answer, and ask only: what do I do with it?" }
+        ]
+      }
+    ],
+    "outro": "“Work one out by hand. Bottom first, then back up.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Work from the base case back up. What does the program print?",
+    "code": "def total(n):\n    if n == 0:\n        return 0\n    return n + total(n - 1)\n\nprint(total(5))",
+    "language": "python",
+    "correct": ["15"],
+    "case_sensitive": true,
+    "feedback": "total(0) is 0, total(1) is 1, total(2) is 3, total(3) is 6, total(4) is 10, and total(5) is 5 + 10 = 15. Each answer is built from the one below it."
+  },
+  {
+    "question": "When total(3) reaches the line  return n + total(n - 1) , why can it not return straight away?",
+    "correct": ["It has to wait for total(2) to return before it can add"],
+    "incorrect": [
+      "It has to wait for the base case line to be checked again",
+      "It has to print n before Python allows it to return",
+      "It has to call total(4) first to find the next value up"
+    ],
+    "feedback": "Python must know the value of total(2) before it can add 3 to it. So total(3) pauses on that line, total(2) runs to completion, and only then does total(3) finish the addition and return."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "total(n) returns 0 when n is 0, and otherwise returns n + total(n - 1). What does total({{n}}) return?",
+    "variables": {
+      "n": { "min": 4, "max": 9 }
+    },
+    "answer": { "expr": "n * (n + 1) / 2", "tolerance_abs": 0 },
+    "feedback_template": "total({{n}}) is {{n}} plus everything below it, down to 0. Adding the numbers from 1 to {{n}} gives {{expected}}."
+  },
+  {
+    "type": "ordering",
+    "question": "The factorial of n is n times every whole number below it, down to 1: the factorial of 4 is 4 × 3 × 2 × 1. Arrange these lines, top to bottom, into a recursive function that returns it.",
+    "language": "python",
+    "items": [
+      "def fact(n):",
+      "    if n == 1:",
+      "        return 1",
+      "    return n * fact(n - 1)"
+    ],
+    "feedback": "Base case first: the factorial of 1 is 1. Then the recursive case: n times the factorial of the number below it. It is total() with × in place of +."
+  },
+  {
+    "type": "code_trace",
+    "question": "This is the factorial function. What does the program print?",
+    "code": "def fact(n):\n    if n == 1:\n        return 1\n    return n * fact(n - 1)\n\nprint(fact(4))",
+    "language": "python",
+    "correct": ["24"],
+    "case_sensitive": true,
+    "feedback": "fact(1) is 1, fact(2) is 2 × 1 = 2, fact(3) is 3 × 2 = 6, and fact(4) is 4 × 6 = 24."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the recursive case of fact, the factorial function: one line that returns n times the factorial of n - 1.",
+    "language": "python",
+    "correct": [
+      "return n * fact(n - 1)",
+      "return fact(n - 1) * n"
+    ],
+    "case_sensitive": true,
+    "feedback": "return n * fact(n - 1): this call's one piece of work is a single multiplication, and the rest of the job is handed to fact on a smaller number."
+  },
+  {
+    "type": "code_trace",
+    "question": "The recursive case of this function has lost its return. What does the program print?",
+    "code": "def total(n):\n    if n == 0:\n        return 0\n    n + total(n - 1)\n\nprint(total(1))",
+    "language": "python",
+    "correct": ["None"],
+    "case_sensitive": true,
+    "feedback": "total(1) works out 1 + 0 and then throws the result away, because nothing returns it. A function that ends without a return gives back None. The recursive case needs its return just as much as the base case does."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The stack of waiting calls",
+    "npc": "nia",
+    "intro": "A few turns further down, the stair is lined with slates stacked one on another. “Where do all those waiting calls wait? Python keeps them in a pile, and you met this pile's shape in the chapter on collections.”",
+    "steps": [
+      {
+        "say": "Each time a function is called, Python makes a note: which function, what its variables hold, and where it paused. That note is called a frame. Every call gets its OWN frame, so every call has its own n. The frames go in a pile called the call stack, and a new call's frame goes on top.",
+        "beats": [
+          { "say": "Each time a function is called, Python makes a note: which function, what its variables hold, and where it paused. That note is called a frame." },
+          { "say": "Every call gets its OWN frame, so every call has its own n. The frames go in a pile called the call stack, and a new call's frame goes on top." }
+        ]
+      },
+      {
+        "say": "Here is the call stack at the deepest moment of total(3): four frames. Only the top one is running. The others are paused, each waiting for the call above it.",
+        "beats": [
+          { "say": "Here is the call stack at the deepest moment of total(3): four frames." },
+          { "code": "total(0)    n is 0    running now\ntotal(1)    n is 1    waiting\ntotal(2)    n is 2    waiting\ntotal(3)    n is 3    waiting", "language": "the call stack, top first" },
+          { "say": "Only the top one is running. The others are paused, each waiting for the call above it." }
+        ],
+        "check": {
+          "prompt": "Which of these calls will finish first?",
+          "answer": "total(0), the one on top",
+          "wrong": ["total(3), the one made first", "All four, at the same moment"],
+          "why": "A stack is last in, first out: the most recent call is the first to return."
+        }
+      },
+      {
+        "say": "When total(0) returns, its frame is taken off and total(1) wakes up holding the answer. Then total(2), then total(3). Frames pile up on the way down and come off in reverse on the way back. That is what a RecursionError really means: with no base case, frames pile up until Python refuses to add another. Many languages call it a stack overflow.",
+        "beats": [
+          { "say": "When total(0) returns, its frame is taken off and total(1) wakes up holding the answer. Then total(2), then total(3). Frames pile up on the way down and come off in reverse on the way back." },
+          { "say": "That is what a RecursionError really means: with no base case, frames pile up until Python refuses to add another. Many languages call it a stack overflow." }
+        ]
+      }
+    ],
+    "outro": "“Now watch what a function does AFTER its recursive call comes back.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Here the print comes AFTER the recursive call. What does the program print?",
+    "code": "def show(n):\n    if n == 0:\n        return\n    show(n - 1)\n    print(n)\n\nshow(3)",
+    "language": "python",
+    "correct": ["1\n2\n3"],
+    "case_sensitive": true,
+    "feedback": "show(3) pauses before it prints, and so do show(2) and show(1). Only when show(0) returns do the waiting calls wake up, deepest first: 1, then 2, then 3. Code after the recursive call runs on the way back up."
+  },
+  {
+    "question": "Every call to a recursive function has its own value of n. Where is that value kept?",
+    "correct": ["In that call's own frame on the call stack"],
+    "incorrect": [
+      "In one global variable shared by every call",
+      "In a list that the function builds as it runs",
+      "In the def line, which is rewritten each call"
+    ],
+    "feedback": "Each call gets a frame holding its own parameters and local variables. That is why total(3) still remembers that its n is 3 after total(2), total(1) and total(0) have come and gone."
+  },
+  {
+    "type": "ordering",
+    "question": "total(n) returns 0 when n is 0, and otherwise n + total(n - 1). Arrange what happens during the call total(2), from first to last.",
+    "items": [
+      "total(2) starts, and calls total(1)",
+      "total(1) starts, and calls total(0)",
+      "total(0) returns 0",
+      "total(1) returns 1",
+      "total(2) returns 3"
+    ],
+    "feedback": "The calls go down first (2, then 1, then 0) and the returns come back in reverse (0, then 1, then 2). The first call made is the last to finish."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "countdown(n) prints n, then calls countdown(n - 1). No call has returned yet. During countdown({{n}}), how many countdown frames are on the call stack at the moment the number {{k}} is printed?",
+    "variables": {
+      "n": { "min": 7, "max": 12 },
+      "k": { "min": 1, "max": 4 }
+    },
+    "answer": { "expr": "n - k + 1", "tolerance_abs": 0 },
+    "feedback_template": "The frames on the stack belong to countdown({{n}}) and every call below it, down to countdown({{k}}), which is the one printing. Counting from {{n}} down to {{k}} gives {{expected}} frames."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Python keeps the frames of the calls that are still waiting in a pile called the call ___.",
+    "correct": ["stack"],
+    "case_sensitive": false,
+    "feedback": "The call stack. Each call pushes a frame on top, and each return pops one off, exactly like the stack ADT from the collections chapter."
+  },
+  {
+    "type": "cloze",
+    "question": "The call stack behaves like any other stack: last in, {{1}} out. So when recursive calls pile up, the call that was made {{2}} is the one that returns first.",
+    "blanks": [
+      { "accept": ["first"] },
+      { "accept": ["last", "latest"], "hint": "first or last?" }
+    ],
+    "feedback": "Last in, first out. The deepest call, the one made most recently, finishes first, and the very first call finishes last."
+  },
+  {
+    "question": "What is a RecursionError actually reporting?",
+    "correct": ["Too many unfinished calls have piled up on the call stack"],
+    "incorrect": [
+      "A recursive function has returned a value of the wrong type",
+      "A recursive function was defined twice under the same name",
+      "The base case was reached before any of the work was done"
+    ],
+    "feedback": "Python allows about a thousand unfinished calls. A recursion that never reaches its base case blows through that limit. Java reports the same problem as a StackOverflowError."
+  },
+  {
+    "type": "code_trace",
+    "question": "This function prints both BEFORE and AFTER its recursive call. What does the program print?",
+    "code": "def both(n):\n    if n == 0:\n        print(\"*\")\n        return\n    print(n)\n    both(n - 1)\n    print(n)\n\nboth(2)",
+    "language": "python",
+    "correct": ["2\n1\n*\n1\n2"],
+    "case_sensitive": true,
+    "feedback": "On the way down: 2, then 1. The base case prints the star. On the way back up, each waiting call finishes its second print, deepest first: 1, then 2."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: First item, and the rest",
+    "npc": "nia",
+    "intro": "Nia unrolls a strip of parchment with a single word on it and tears off the first letter. “Numbers shrink by subtracting one. Strings and lists shrink a different way, and you already own the tool.”",
+    "steps": [
+      {
+        "say": "A slicing review. word[0] is the first character. word[1:] is everything AFTER the first, which is a shorter string. That shorter string is our smaller input.",
+        "beats": [
+          { "say": "A slicing review." },
+          { "code": "word = \"torch\"\nprint(word[0])     # t\nprint(word[1:])    # orch", "language": "python" },
+          { "say": "word[0] is the first character. word[1:] is everything AFTER the first, which is a shorter string. That shorter string is our smaller input." }
+        ]
+      },
+      {
+        "say": "So how many characters are in a string? One, for the first character, plus however many are in the rest.",
+        "beats": [
+          { "say": "So how many characters are in a string? One, for the first character, plus however many are in the rest." },
+          { "code": "def size(s):\n    if s == \"\":\n        return 0\n    return 1 + size(s[1:])", "language": "python" }
+        ],
+        "check": {
+          "prompt": "What is the base case of size?",
+          "answer": "The empty string, which has 0 characters",
+          "wrong": ["A string of exactly one character", "The first character, s[0]"],
+          "why": "Slicing off one character at a time always ends at \"\", and its size needs no further call."
+        }
+      },
+      {
+        "say": "size(\"owl\") is 1 + size(\"wl\"), which is 1 + size(\"l\"), which is 1 + size(\"\"). The base case returns 0, and the ones add up on the way back: 3. Lists work the same way: items[0] is the first item, items[1:] is the rest, and the empty list [] is the base case.",
+        "beats": [
+          { "say": "size(\"owl\") is 1 + size(\"wl\"), which is 1 + size(\"l\"), which is 1 + size(\"\"). The base case returns 0, and the ones add up on the way back: 3." },
+          { "say": "Lists work the same way: items[0] is the first item, items[1:] is the rest, and the empty list [] is the base case." }
+        ]
+      }
+    ],
+    "outro": "“Same shape, new function. Follow the string as it shrinks.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Follow the string as it shrinks. What does the program print?",
+    "code": "def rev(s):\n    if s == \"\":\n        return \"\"\n    return rev(s[1:]) + s[0]\n\nprint(rev(\"owl\"))",
+    "language": "python",
+    "correct": ["lwo"],
+    "case_sensitive": true,
+    "feedback": "rev(\"owl\") is rev(\"wl\") + \"o\". rev(\"wl\") is rev(\"l\") + \"w\", and rev(\"l\") is \"\" + \"l\". Putting it back together: \"l\" + \"w\" + \"o\". Each call moves its first character to the END."
+  },
+  {
+    "question": "A recursive function works through a list called items. Which expression is 'the rest', the smaller input for the recursive call?",
+    "correct": ["items[1:]"],
+    "incorrect": ["items[0]", "items[:1]", "items[-1]"],
+    "feedback": "items[1:] is a new list holding everything after the first item, so it is one item shorter. items[0] is the first item itself, items[:1] is a list of just the first item, and items[-1] is the last item."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the blanks so this adds up the numbers in a list.",
+    "question": "def total(items):\n    if items == {{1}}:\n        return 0\n    return items[{{2}}] + total(items[1:])",
+    "language": "python",
+    "blanks": [
+      { "accept": ["[]", "[ ]"], "hint": "base case" },
+      { "accept": ["0"], "hint": "index" }
+    ],
+    "feedback": "The base case is the empty list, [], whose total is 0. The recursive case takes the first item, items[0], and adds the total of the rest."
+  },
+  {
+    "type": "code_trace",
+    "question": "This adds up a list recursively. What does the program print?",
+    "code": "def total(items):\n    if items == []:\n        return 0\n    return items[0] + total(items[1:])\n\nprint(total([4, 1, 5]))",
+    "language": "python",
+    "correct": ["10"],
+    "case_sensitive": true,
+    "feedback": "total([4, 1, 5]) is 4 + total([1, 5]), which is 4 + 1 + total([5]), which is 4 + 1 + 5 + total([]). The empty list gives 0, so the answer is 10."
+  },
+  {
+    "type": "code_trace",
+    "question": "This function has TWO recursive cases: one for when the first character is an \"a\", and one for when it is not. What does the program print?",
+    "code": "def count_a(s):\n    if s == \"\":\n        return 0\n    if s[0] == \"a\":\n        return 1 + count_a(s[1:])\n    return count_a(s[1:])\n\nprint(count_a(\"banana\"))",
+    "language": "python",
+    "correct": ["3"],
+    "case_sensitive": true,
+    "feedback": "Every call passes the rest of the string on, but only a call whose first character is \"a\" adds 1. \"banana\" has three of them. A function can have more than one recursive case, as long as each one shrinks the input."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the recursive case of size(s), which counts the characters in a string: one line that returns 1 plus the size of the rest of s.",
+    "language": "python",
+    "correct": [
+      "return 1 + size(s[1:])",
+      "return size(s[1:]) + 1"
+    ],
+    "case_sensitive": true,
+    "feedback": "return 1 + size(s[1:]): count one for the first character, and let the recursive call count the rest."
+  },
+  {
+    "question": "A student writes the base case of total(items) like this, and keeps the same recursive case as before:\n\nif len(items) == 1:\n    return items[0]\n\nWhich call now fails?",
+    "correct": ["total([]), since an empty list skips past the base case"],
+    "incorrect": [
+      "total([7]), since one item is too few to be added up",
+      "total([7, 2]), since two items would need two base cases",
+      "total([0, 0]), since the items there add up to zero"
+    ],
+    "feedback": "An empty list has length 0, not 1, so it misses the base case and the recursive case tries to read items[0] from a list with nothing in it. Choose the smallest input the function could ever be given, and make THAT the base case."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Loop or recursion?",
+    "npc": "nia",
+    "intro": "Nia sits down on a step. “You have been wondering whether a loop could have done all of this. Good. It could.”",
+    "steps": [
+      {
+        "say": "Here is the sum from 1 to n as a loop, using the accumulator pattern from the loops chapter. It gives exactly the same answers as our recursive total. A solution built on a loop is called iterative.",
+        "beats": [
+          { "say": "Here is the sum from 1 to n as a loop, using the accumulator pattern from the loops chapter." },
+          { "code": "def total_loop(n):\n    result = 0\n    for i in range(1, n + 1):\n        result = result + i\n    return result", "language": "python" },
+          { "say": "It gives exactly the same answers as our recursive total. A solution built on a loop is called iterative." }
+        ]
+      },
+      {
+        "say": "Anything a loop can do, recursion can do, and the other way round. For plain counting the loop is usually the better choice: it needs no pile of frames, and it has no depth limit.",
+        "check": {
+          "prompt": "You must add up a list of 50,000 numbers in Python. Which is the safer choice?",
+          "answer": "A loop, which needs no stack of calls",
+          "wrong": ["Recursion, with one call per item", "Either one; they behave identically"],
+          "why": "50,000 waiting calls is far past Python's limit of about a thousand, so the recursive version would end in a RecursionError."
+        }
+      },
+      {
+        "say": "So why learn recursion? Because some problems are MADE of smaller copies of themselves. A folder holds files and more folders, and each of those folders holds files and more folders. To count the files in a folder: count its own files, then do the same thing to each folder inside it. That sentence is already recursive, and it is surprisingly hard to write as a loop.",
+        "beats": [
+          { "say": "So why learn recursion? Because some problems are MADE of smaller copies of themselves. A folder holds files and more folders, and each of those folders holds files and more folders." },
+          { "say": "To count the files in a folder: count its own files, then do the same thing to each folder inside it. That sentence is already recursive, and it is surprisingly hard to write as a loop." }
+        ]
+      }
+    ],
+    "outro": "“Decide which problems have that shape.”"
+  },
+  {
+    "question": "Which of these tasks has a naturally recursive shape?",
+    "correct": ["Counting the files in a folder that holds more folders"],
+    "incorrect": [
+      "Printing each of the whole numbers from one up to ten",
+      "Adding a fixed sales tax to the price of a single item",
+      "Asking a user for a password until they get it right"
+    ],
+    "feedback": "A folder contains folders, which contain folders: the problem holds smaller copies of itself, so the solution can call itself on each one. The other three are a plain loop, a single calculation, and a while loop."
+  },
+  {
+    "type": "matching",
+    "question": "Match each term to its meaning.",
+    "pairs": [
+      { "term": "iterative", "definition": "Repeats work with a for or while loop" },
+      { "term": "recursive", "definition": "Repeats work by having a function call itself" },
+      { "term": "base case", "definition": "An input answered directly, with no further call" },
+      { "term": "frame", "definition": "One call's record of its variables and its place" },
+      { "term": "RecursionError", "definition": "Python's report that calls have piled up too deep" }
+    ],
+    "feedback": "Iteration and recursion are the two ways to repeat work. Recursion needs a base case to stop, uses one frame per unfinished call, and ends in a RecursionError if the frames pile up too far."
+  },
+  {
+    "question": "Which of the following are true about recursion and loops? (Select all that apply.)",
+    "correct": [
+      "A loop can compute anything a recursive function can",
+      "Each unfinished recursive call holds a frame on the stack",
+      "A recursive function needs a base case in order to stop"
+    ],
+    "incorrect": [
+      "A recursive function runs faster than the matching loop",
+      "A Python loop is limited to about a thousand passes",
+      "A recursive function may call itself just one time"
+    ],
+    "feedback": "Loops and recursion are equally powerful. Recursion costs a frame per unfinished call, which is why it has a depth limit and a loop does not, and it is usually a little slower, not faster. A function may call itself as many times as the problem needs."
+  },
+  {
+    "type": "code_trace",
+    "question": "A loop could build this string. This function builds it recursively instead. What does the program print?",
+    "code": "def stars(n):\n    if n == 0:\n        return \"\"\n    return \"*\" + stars(n - 1)\n\nprint(stars(4))",
+    "language": "python",
+    "correct": ["****"],
+    "case_sensitive": true,
+    "feedback": "Each call contributes one star and asks the next call for the rest. stars(0) returns the empty string, so four stars are joined on the way back up."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Halving, recursively",
+    "npc": "nia",
+    "intro": "The stair opens onto the shelf of sorted ledgers from the library. “You searched this shelf by halving it. Listen to how I describe that search now.”",
+    "steps": [
+      {
+        "say": "Binary search: look at the middle ledger. If it is the target, stop. If the target is smaller, search the LEFT HALF; if larger, search the RIGHT HALF. 'Search the half' is the same job on a smaller shelf, so it is a recursive call. The base cases: I found the target, or the shelf I was handed is empty.",
+        "beats": [
+          { "say": "Binary search: look at the middle ledger. If it is the target, stop. If the target is smaller, search the LEFT HALF; if larger, search the RIGHT HALF." },
+          { "say": "'Search the half' is the same job on a smaller shelf, so it is a recursive call. The base cases: I found the target, or the shelf I was handed is empty." }
+        ]
+      },
+      {
+        "say": "Halving shrinks an input much faster than subtracting one. This function counts how many times a number can be halved before it reaches 1. A reminder: // is whole-number division, so 9 // 2 is 4.",
+        "beats": [
+          { "say": "Halving shrinks an input much faster than subtracting one. This function counts how many times a number can be halved before it reaches 1." },
+          { "code": "def halvings(n):\n    if n <= 1:\n        return 0\n    return 1 + halvings(n // 2)", "language": "python" },
+          { "say": "A reminder: // is whole-number division, so 9 // 2 is 4." }
+        ],
+        "check": {
+          "prompt": "halvings(8) is 1 + halvings(4). What does halvings(8) return?",
+          "answer": "3",
+          "wrong": ["4", "8"],
+          "why": "8 to 4 to 2 to 1 is three halvings. halvings(1) is the base case and adds 0."
+        }
+      },
+      {
+        "say": "A thousand items take about 10 halvings; a million take about 20. That is the O(log n) you met with Big-O, and it is why a halving recursion comes nowhere near the depth limit. Merge sort has the same shape: sort the left half, sort the right half, then merge the two. That is two recursive calls instead of one.",
+        "beats": [
+          { "say": "A thousand items take about 10 halvings; a million take about 20. That is the O(log n) you met with Big-O, and it is why a halving recursion comes nowhere near the depth limit." },
+          { "say": "Merge sort has the same shape: sort the left half, sort the right half, then merge the two. That is two recursive calls instead of one." }
+        ]
+      }
+    ],
+    "outro": "“Count the halvings.”"
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "halvings(n) returns 0 when n <= 1, and otherwise returns 1 + halvings(n // 2). What does halvings({{n}}) return?",
+    "variables": {
+      "k": { "min": 3, "max": 7 }
+    },
+    "derived": { "n": "pow(2, k)" },
+    "answer": { "expr": "k", "tolerance_abs": 0 },
+    "allow_expression": false,
+    "feedback_template": "Keep halving {{n}} until you reach 1, and count the steps: {{expected}}. Each halving is one recursive call that adds 1."
+  },
+  {
+    "type": "code_trace",
+    "question": "Remember that // throws away any remainder. What does the program print?",
+    "code": "def halvings(n):\n    if n <= 1:\n        return 0\n    return 1 + halvings(n // 2)\n\nprint(halvings(20))",
+    "language": "python",
+    "correct": ["4"],
+    "case_sensitive": true,
+    "feedback": "20 to 10 to 5 to 2 to 1. That is four halvings (5 // 2 is 2), and halvings(1) is the base case, which adds 0."
+  },
+  {
+    "question": "A recursive binary search looks at the middle item and does not find the target. What does it make its recursive call on?",
+    "correct": ["The half of the list that could still hold the target"],
+    "incorrect": [
+      "The whole of the list again, but with a new target",
+      "The same list with just its first item sliced away",
+      "Both halves of the list, one half after the other"
+    ],
+    "feedback": "Because the list is sorted, one comparison rules out half of it. The recursive call searches the surviving half: the same job on an input half the size."
+  },
+  {
+    "question": "total(n) calls itself on n - 1. halvings(n) calls itself on n // 2. Starting from n = 1,000, roughly how many calls does each one make?",
+    "correct": ["About 1,000 for total and about 10 for halvings"],
+    "incorrect": [
+      "About 10 for total and about 1,000 for halvings",
+      "About 1,000 for each one, since n is the same",
+      "About 500 for total and about 2 for halvings"
+    ],
+    "feedback": "Subtracting one takes n steps to reach the base case: O(n). Halving takes about log n steps: O(log n). For 1,000 that is roughly 1,000 calls against 10."
+  },
+  {
+    "question": "Merge sort is described as: split the list in half, sort each half, then merge the two sorted halves. How does it 'sort each half'?",
+    "correct": ["By calling merge sort itself on each half"],
+    "incorrect": [
+      "By running selection sort on each half",
+      "By calling sorted() once on each half",
+      "By comparing the halves item by item"
+    ],
+    "feedback": "Sorting a half is the same problem on a smaller list, so merge sort calls itself, twice. Its base case is a list of one item (or none), which is already sorted."
+  },
+  {
+    "type": "fill_blank",
+    "question": "In merge sort, a list holding a single item is already sorted, so it is returned without any further splitting. In the language of recursion, a one-item list is merge sort's ___ case.",
+    "correct": ["base"],
+    "case_sensitive": false,
+    "feedback": "The base case: an input simple enough to answer directly. Every split brings the lists closer to it."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Two calls instead of one",
+    "npc": "nia",
+    "intro": "Near the bottom, the stair forks, and each fork forks again. Nia raises her lantern. “A function may call itself more than once. Here is the most famous example, and a warning that comes with it.”",
+    "steps": [
+      {
+        "say": "The Fibonacci numbers go 0, 1, 1, 2, 3, 5, 8. After the first two, each one is the sum of the two before it. The base case covers two inputs: fib(0) is 0 and fib(1) is 1. The recursive case makes TWO recursive calls and adds their answers.",
+        "beats": [
+          { "say": "The Fibonacci numbers go 0, 1, 1, 2, 3, 5, 8. After the first two, each one is the sum of the two before it." },
+          { "code": "def fib(n):\n    if n < 2:\n        return n\n    return fib(n - 1) + fib(n - 2)", "language": "python" },
+          { "say": "The base case covers two inputs: fib(0) is 0 and fib(1) is 1. The recursive case makes TWO recursive calls and adds their answers." }
+        ]
+      },
+      {
+        "say": "fib(2) is fib(1) + fib(0), which is 1 + 0, so 1. And fib(3) is fib(2) + fib(1).",
+        "check": {
+          "prompt": "So what is fib(3)?",
+          "answer": "2",
+          "wrong": ["3", "1"],
+          "why": "fib(2) is 1 and fib(1) is 1, and 1 + 1 is 2."
+        }
+      },
+      {
+        "say": "Two calls each make two more, so the calls branch like these stairs, and the branches repeat one another: working out fib(5) works out fib(3) twice and fib(2) three times. That makes this fib painfully slow for a large n. It is correct, and it reads just like the definition, but a loop does the same job far faster. Elegant is not always efficient.",
+        "beats": [
+          { "say": "Two calls each make two more, so the calls branch like these stairs, and the branches repeat one another: working out fib(5) works out fib(3) twice and fib(2) three times." },
+          { "say": "That makes this fib painfully slow for a large n. It is correct, and it reads just like the definition, but a loop does the same job far faster. Elegant is not always efficient." }
+        ]
+      }
+    ],
+    "outro": "“One more by hand. Build it up from the bottom: fib(2), fib(3), fib(4)...”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Build the answer up from the base cases: fib(0), fib(1), fib(2), and so on. What does the program print?",
+    "code": "def fib(n):\n    if n < 2:\n        return n\n    return fib(n - 1) + fib(n - 2)\n\nprint(fib(6))",
+    "language": "python",
+    "correct": ["8"],
+    "case_sensitive": true,
+    "feedback": "fib(0) to fib(6) are 0, 1, 1, 2, 3, 5, 8. Each is the sum of the two before it, so fib(6) is fib(5) + fib(4) = 5 + 3 = 8."
+  },
+  {
+    "question": "Why is the two-call recursive fib slow for a large n?",
+    "correct": ["It works out the same smaller values over and over"],
+    "incorrect": [
+      "It reaches the recursion depth limit on every call",
+      "It has two base cases where one would be enough",
+      "It adds its numbers, which is slower than multiplying"
+    ],
+    "feedback": "fib(n - 1) and fib(n - 2) each recompute values the other has already found, and the waste doubles at every level. The depth is small; it is the NUMBER of calls that explodes."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The same idea in Java",
+    "npc": "nia",
+    "intro": "At the foot of the stair is a door with unfamiliar lettering. “Your next course is written in Java. The words on the page change. The idea does not move an inch.”",
+    "steps": [
+      {
+        "say": "This is fact, the factorial function, in Java. The differences are all spelling. Java names the type of every value (int means a whole number), wraps each block in braces instead of relying on indentation, and ends each statement with a semicolon.",
+        "beats": [
+          { "say": "This is fact, the factorial function, in Java." },
+          { "code": "static int fact(int n) {\n    if (n == 1) {\n        return 1;\n    }\n    return n * fact(n - 1);\n}", "language": "java" },
+          { "say": "The differences are all spelling. Java names the type of every value (int means a whole number), wraps each block in braces instead of relying on indentation, and ends each statement with a semicolon." }
+        ]
+      },
+      {
+        "say": "Read it the way you would read the Python: find the two parts.",
+        "check": {
+          "prompt": "Which part of the Java is the base case?",
+          "answer": "if (n == 1) { return 1; }",
+          "wrong": ["return n * fact(n - 1);", "static int fact(int n) {"],
+          "why": "It returns an answer directly, with no call to fact."
+        }
+      },
+      {
+        "say": "Java keeps a call stack too, and a recursion with no base case fills it. Java's name for that error is StackOverflowError. Base case, recursive case, smaller input, call stack: those four ideas are the whole lesson, in any language.",
+        "beats": [
+          { "say": "Java keeps a call stack too, and a recursion with no base case fills it. Java's name for that error is StackOverflowError." },
+          { "say": "Base case, recursive case, smaller input, call stack: those four ideas are the whole lesson, in any language." }
+        ]
+      }
+    ],
+    "outro": "“Read a little Java before you go.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "This is Java, but you can already trace it: find the base case and work back up. What does it print?",
+    "code": "static int total(int n) {\n    if (n == 0) {\n        return 0;\n    }\n    return n + total(n - 1);\n}\n\nSystem.out.println(total(4));",
+    "language": "java",
+    "correct": ["10"],
+    "case_sensitive": true,
+    "feedback": "It is the total function from earlier, with Java's braces, semicolons and types: 4 + 3 + 2 + 1 + 0 = 10. System.out.println is Java's print."
+  },
+  {
+    "type": "matching",
+    "question": "Match each piece of Python to the way Java writes the same thing.",
+    "pairs": [
+      { "term": "def fact(n):", "definition": "static int fact(int n) {" },
+      { "term": "if n == 1:", "definition": "if (n == 1) {" },
+      { "term": "return 1", "definition": "return 1;" },
+      { "term": "print(fact(4))", "definition": "System.out.println(fact(4));" },
+      { "term": "RecursionError", "definition": "StackOverflowError" }
+    ],
+    "feedback": "Java adds types, parentheses around conditions, braces around blocks and a semicolon after each statement. The recursion itself is unchanged."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the sum of the whole numbers from 1 to n, using recursion: the sum up to n is n plus the sum up to n - 1. The sum up to 0 is 0. The base case is written for you; add the recursive case.",
+    "signature": "def sum_to(n):",
+    "starter": "if n == 0:\n    return 0\n",
+    "tests": [
+      { "args": [0], "expect": 0 },
+      { "args": [1], "expect": 1 },
+      { "args": [4], "expect": 10 },
+      { "args": [6], "expect": 21 }
+    ],
+    "solution": "if n == 0:\n    return 0\nreturn n + sum_to(n - 1)",
+    "hint": "One line: return n plus whatever sum_to gives for the number one below n.",
+    "feedback": "The recursive case does one addition and trusts sum_to(n - 1) for the rest. Notice that you never had to think about the whole chain of calls, only about one step."
+  },
+  {
+    "type": "code_write",
+    "question": "Return base raised to the power exp, using recursion rather than **. Anything to the power 0 is 1. Otherwise the answer is base times (base to the power exp - 1). exp is a whole number, 0 or more.",
+    "signature": "def power(base, exp):",
+    "starter": "if exp == 0:\n    return 1\n",
+    "tests": [
+      { "args": [2, 0], "expect": 1 },
+      { "args": [5, 1], "expect": 5 },
+      { "args": [2, 3], "expect": 8 },
+      { "args": [3, 4], "expect": 81 },
+      { "args": [10, 2], "expect": 100 }
+    ],
+    "solution": "if exp == 0:\n    return 1\nreturn base * power(base, exp - 1)",
+    "hint": "The recursive call keeps base the same and makes exp one smaller: power(base, exp - 1).",
+    "feedback": "Only exp shrinks; base rides along unchanged. When a function has two parameters, ask which one is heading for the base case."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the factorial of n: n times every whole number below it, down to 1. The factorial of 1 is 1. This time write both parts yourself: the base case, then the recursive case. n is 1 or more.",
+    "signature": "def fact(n):",
+    "tests": [
+      { "args": [1], "expect": 1 },
+      { "args": [2], "expect": 2 },
+      { "args": [4], "expect": 24 },
+      { "args": [6], "expect": 720 }
+    ],
+    "solution": "if n == 1:\n    return 1\nreturn n * fact(n - 1)",
+    "hint": "Base case first: if n is 1, return 1. Then return n times fact of the number below it.",
+    "feedback": "Base case first, then the recursive case. fact has exactly the shape of sum_to, with multiplication in place of addition and 1 in place of 0."
+  },
+  {
+    "type": "code_write",
+    "question": "Return how many characters are in the string s, using recursion rather than len(). The empty string has 0 characters. Any other string has 1 character, plus however many are in the rest of it, s[1:].",
+    "signature": "def size(s):",
+    "tests": [
+      { "args": [""], "expect": 0 },
+      { "args": ["a"], "expect": 1 },
+      { "args": ["owl"], "expect": 3 },
+      { "args": ["torch"], "expect": 5 }
+    ],
+    "solution": "if s == \"\":\n    return 0\nreturn 1 + size(s[1:])",
+    "hint": "Base case: if s == \"\", return 0. Recursive case: 1 plus size of s[1:].",
+    "feedback": "A string shrinks by slicing off its first character, and the base case is the empty string. Count one, then let the recursive call count the rest."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the sum of the numbers in the list items, using recursion rather than sum() or a loop. The empty list adds up to 0. Any other list adds up to its first item, plus the total of the rest, items[1:].",
+    "signature": "def total(items):",
+    "tests": [
+      { "args": [[]], "expect": 0 },
+      { "args": [[7]], "expect": 7 },
+      { "args": [[4, 1, 5]], "expect": 10 },
+      { "args": [[-2, 2, 9]], "expect": 9 }
+    ],
+    "solution": "if items == []:\n    return 0\nreturn items[0] + total(items[1:])",
+    "hint": "Base case: the empty list, which returns 0. Recursive case: items[0] plus total of items[1:].",
+    "feedback": "First item, plus the total of the rest. The empty list is the base case because it is the smallest list the function could ever be handed."
+  },
+  {
+    "type": "code_write",
+    "question": "Return the string s written backwards, using recursion. The empty string backwards is the empty string. For any other string: reverse the rest, s[1:], and put the first character, s[0], on the END.",
+    "signature": "def rev(s):",
+    "tests": [
+      { "args": [""], "expect": "" },
+      { "args": ["a"], "expect": "a" },
+      { "args": ["ab"], "expect": "ba" },
+      { "args": ["owl"], "expect": "lwo" },
+      { "args": ["torch"], "expect": "hcrot" }
+    ],
+    "solution": "if s == \"\":\n    return \"\"\nreturn rev(s[1:]) + s[0]",
+    "hint": "The order of the + matters: the reversed rest comes first, then s[0].",
+    "feedback": "rev(s[1:]) + s[0]: trust the recursive call to reverse the rest, then decide where this call's one character goes. Writing s[0] + rev(s[1:]) would rebuild the string unchanged."
+  },
+  {
+    "type": "code_write",
+    "question": "Return how many times target appears in the list items, using recursion. The empty list holds it 0 times. Otherwise count the rest of the list, items[1:], and add 1 if the first item equals target.",
+    "signature": "def count_of(items, target):",
+    "tests": [
+      { "args": [[], 3], "expect": 0 },
+      { "args": [[3], 3], "expect": 1 },
+      { "args": [[5], 3], "expect": 0 },
+      { "args": [[3, 5, 3, 3], 3], "expect": 3 },
+      { "args": [["a", "b", "a"], "a"], "expect": 2 }
+    ],
+    "solution": "if items == []:\n    return 0\nif items[0] == target:\n    return 1 + count_of(items[1:], target)\nreturn count_of(items[1:], target)",
+    "hint": "Two recursive cases: when items[0] == target return 1 plus the count of the rest; otherwise return just the count of the rest. Pass target along both times.",
+    "feedback": "One base case and two recursive cases, each of which shrinks the list. target is passed along unchanged on every call, just as base was in power."
+  }
+]

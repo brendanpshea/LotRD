@@ -681,9 +681,9 @@ Ordinary JSON, converted to Python values: whole numbers become ints, fractions 
 
 `assert` works: a claim that is false stops the program on that line, so a body can check its own work. A body may also begin with a helper `def` — a key function for `sorted(items, key=by_score)`, say — and go on to use it. `sorted()` and `.sort()` take `key=` (a named function or a built-in such as `len`; there is no `lambda`) and `reverse=True`.
 
-**Classes are supported** — `class`, `__init__`, `self.` attributes, methods, class attributes and `__str__` — and checked against real Python in `tests/pytiny-classes.test.js`. Inheritance is refused by name. See *Class problems* below for how to ask a student to write one.
+**Classes are supported** — `class`, `__init__`, `self.` attributes, methods, class attributes and `__str__` — and checked against real Python in `tests/pytiny-classes.test.js`. So is **inheritance from one parent**: `class Wolf(Creature):`, overriding, `super().__init__(...)` and `super().method()`, and `isinstance()` (`tests/pytiny-inheritance.test.js`). Two parents, `super(Child, self)` and inheriting from Python's own types (`list`, `Exception`) are refused by name. See *Class problems* below for how to ask a student to write one.
 
-**Not supported, on purpose:** inheritance, imports, exceptions, comprehensions, generators, sets, lambdas, `global`. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.
+**Not supported, on purpose:** imports, exceptions, comprehensions, generators, sets, lambdas, `global`. A student who types one is told it is missing rather than shown a parser error — but do not write a problem whose natural answer needs one.
 
 ### Class problems
 
@@ -715,7 +715,7 @@ a.add(3)", "check": "b.coins", "expect": 0 }
 | Field | Notes |
 |-------|-------|
 | `scaffold` | The class so far, shown read-only above the box. Begins `class Name:`; may hold several classes, as long as it ENDS inside the one the method belongs to. Omit it to ask for a whole class |
-| `signature` | With a scaffold: the method's `def` line, first parameter `self`. Without one: the class line, `class Stack:`, and the student writes every method |
+| `signature` | With a scaffold: the method's `def` line, first parameter `self`. Without one: the class line, `class Stack:`, and the student writes every method. For a **subclass**, give both: the finished parent in `scaffold` and the class line as the signature, `class Wolf(Creature):` — the student writes the body of the child |
 | `tests[].run` | Optional setup script. Each test starts from a fresh program, so build the objects here |
 | `tests[].check` | One expression, evaluated after `run`. `run` plus `check` must fit in 120 characters — the whole row is shown to the student, on a phone too |
 | `tests[].expect` | As for function problems |
@@ -729,6 +729,7 @@ Writing good ones:
 3. **Let the classic bug fail, not crash.** `coins = self.coins + n` should come back as "expected 5, got 0". If your tests would raise instead, the student learns less.
 4. **Say exactly what is stored and what is returned**, including attribute names: the tests look for `lamp.fuel`, so the question has to say "an attribute called fuel".
 5. **End a block on a whole class**, once the single-method problems have built up to it.
+6. **For a subclass, test what it inherits as well as what it changes** — `w.name` beside `w.sound()` — and include a row that uses the parent on its own, so the student sees that overriding left it alone. To ask for one method of the child, end the scaffold on the child's class line: `…\n\nclass Dragon(Creature):` with signature `def __init__(self, name, hp, fire):`.
 
 ### Java problems
 

@@ -56,7 +56,7 @@ export function codeWriteKind(question) {
         const constructor = /^\s*(?:public\s+)?[A-Z]\w*\s*\(/.test(question?.signature || "");
         return wholeClass ? "class" : constructor ? "constructor" : "method";
     }
-    return question?.scaffold ? "method" : wholeClass ? "class" : "function";
+    return wholeClass ? "class" : question?.scaffold ? "method" : "function";
 }
 
 /**
@@ -83,7 +83,7 @@ export function codeWriteSolutionText(question) {
     const header = problemHeader(question);
     if (lines.length === 0) return header;
     const base = Math.min(...lines.map(l => l.length - l.trimStart().length));
-    const pad = question?.scaffold ? "        " : "    ";
+    const pad = codeWriteKind(question) === "method" ? "        " : "    ";
     const indented = body.split("\n")
         .map(l => (l.trim().length === 0 ? "" : pad + l.slice(base)))
         .join("\n");

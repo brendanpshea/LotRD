@@ -13,7 +13,9 @@
  * defaults, and the built-ins and methods listed in BUILTINS / METHODS below.
  * Anything outside that is refused by name rather than misinterpreted.
  *
- * What it deliberately refuses: classes, imports, exceptions, comprehensions,
+ * Classes too, with one parent each: see "Classes and objects" below.
+ *
+ * What it deliberately refuses: imports, exceptions, comprehensions,
  * generators, sets, lambdas, global/nonlocal, `with`, `del`. Each gets its own
  * "not in this practice interpreter yet" message so a student who tries one
  * learns that, instead of reading a parser error.
@@ -405,20 +407,28 @@ class Parser {
     }
 
     /**
-     * `class Name:` with a body of methods and class-level assignments. A parent
-     * in parentheses is refused by name rather than half-supported: inheritance
-     * changes how every attribute is looked up, and a version that is only
-     * nearly right would teach the wrong thing.
+     * `class Name:` or `class Name(Parent):`, with a body of methods and
+     * class-level assignments. ONE parent, given by name: two parents bring in
+     * Python's rules for ordering them, which are refused by name rather than
+     * half-supported.
      */
     parseClassDef() {
         const line = this.line;
         this.next();
         const nameTok = this.expect('name', undefined, 'a class name');
+        let base = null;
         if (this.atOp('(')) {
             this.next();
             if (!this.atOp(')')) {
-                throw syntaxError('Inheritance is not supported here yet — a class cannot name a parent in parentheses.', line,
-                    `Write "class ${nameTok.value}:" on its own, and put everything the class needs inside it.`);
+                base = this.expect('name', undefined, 'the name of the parent class').value;
+                if (this.atOp(',')) {
+                    throw syntaxError('A class here can have only one parent.', line,
+                        `Write "class ${nameTok.value}(${base}):" with a single name in the parentheses.`);
+                }
+                if (!this.atOp(')')) {
+                    throw syntaxError('The parentheses after a class name hold just the name of its parent class.', line,
+                        `Write "class ${nameTok.value}(${base}):"`);
+                }
             }
             this.next();
         }
@@ -427,7 +437,7 @@ class Parser {
         this.funcDepth = 0;
         let body;
         try { body = this.parseBlock('class'); } finally { this.funcDepth = outer; }
-        return { type: 'ClassDef', name: nameTok.value, body, line };
+        return { type: 'ClassDef', name: nameTok.value, base, body, line };
     }
 
     parseIf() {
@@ -977,8 +987,37 @@ class Builtin {
 // a list assigned in the class body lives in the class's table, so every
 // object that reaches it through self finds the same list.
 
+//
+// A class may also name ONE parent. A name the class does not have is then
+// looked for in the parent, and the parent's parent: that walk is the whole of
+// inheritance, and overriding is nothing more than being found first.
+
 export class PyClass {
-    constructor(name, attrs) { this.name = name; this.attrs = attrs; }
+    constructor(name, attrs, base = null) { this.name = name; this.attrs = attrs; this.base = base; }
+
+    /** The value of `name` in this class or the nearest ancestor that has it; undefined if none does. */
+    find(name) {
+        for (let c = this; c; c = c.base) if (c.attrs.has(name)) return c.attrs.get(name);
+        return undefined;
+    }
+
+    /** Every name this class can reach, its own first. */
+    names() {
+        const out = [];
+        for (let c = this; c; c = c.base) out.push(...c.attrs.keys());
+        return out;
+    }
+
+    /** True for the class itself and for every class it inherits from. */
+    isKindOf(other) {
+        for (let c = this; c; c = c.base) if (c === other) return true;
+        return false;
+    }
+}
+
+/** What super() gives back inside a method of `owner`: self, to be looked up starting from owner's parent. */
+export class PySuper {
+    constructor(self, owner) { this.self = self; this.owner = owner; }
 }
 
 export class PyInstance {
@@ -1004,7 +1043,7 @@ let ACTIVE = null;
 
 function specialMethod(value, name) {
     if (!(value instanceof PyInstance) || !ACTIVE) return null;
-    const found = value.cls.attrs.get(name);
+    const found = value.cls.find(name);
     return found instanceof PyFunction ? found : null;
 }
 
@@ -1122,6 +1161,7 @@ export function typeName(v) {
     if (isRange(v)) return 'a range';
     if (isInstance(v)) return `${/^[aeiou]/i.test(v.cls.name) ? 'an' : 'a'} ${v.cls.name} object`;
     if (isClass(v)) return 'a class';
+    if (v instanceof PySuper) return 'what super() gives back';
     if (v instanceof PyBoundMethod) return 'a method';
     if (isCallable(v)) return 'a function';
     return 'a value';
@@ -1204,6 +1244,7 @@ function reprValue(v, inside) {
         return `<${v.cls.name} object>`;
     }
     if (isClass(v)) return `<class '${v.name}'>`;
+    if (v instanceof PySuper) return '<super object>';
     if (v instanceof PyBoundMethod) return `<method ${v.name} of ${pyRepr(v.self)}>`;
     if (isCallable(v)) return `<function ${v.name}>`;
     return String(v);
@@ -1578,12 +1619,38 @@ function sequenceOf(v, line, what) {
     throw runtimeError(`${what} needs a list, text, a range, or a dictionary, not ${typeName(v)}.`, line);
 }
 
+// isinstance(x, int) and friends. In Python a bool IS an int, so True counts as one.
+const BUILTIN_KINDS = {
+    int:   v => isInt(v) || isBool(v),
+    float: v => isFloat(v),
+    bool:  v => isBool(v),
+    str:   v => isStr(v),
+    list:  v => isList(v),
+    tuple: v => isTuple(v),
+    dict:  v => isDict(v),
+};
+
 const BUILTINS = {
     print: (args, kw, line, interp) => {
         const sep = kw.sep !== undefined ? pyStr(kw.sep) : ' ';
         const end = kw.end !== undefined ? pyStr(kw.end) : '\n';
         interp.write(args.map(v => interp.toText(v, line)).join(sep) + end, line);
         return null;
+    },
+
+    isinstance: (args, kw, line) => {
+        arity('isinstance', args, 2, 2, line);
+        const [value, kind] = args;
+        const kinds = isTuple(kind) ? kind.items : [kind];
+        return kinds.some(k => {
+            if (k instanceof PyClass) return isInstance(value) && value.cls.isKindOf(k);
+            const test = k instanceof Builtin ? BUILTIN_KINDS[k.name] : null;
+            if (!test) {
+                throw runtimeError(`The second value given to isinstance() has to be a class, but this is ${typeName(k)}.`, line,
+                    'Write the class name itself, with no quotes and no parentheses: isinstance(pet, Dog)');
+            }
+            return test(value);
+        });
     },
 
     len: (args, kw, line) => {
@@ -1792,7 +1859,8 @@ const ABSENT = new Map([
     ['open',       'Reading files is not supported in this practice interpreter.'],
     ['set',        'Sets are not supported in this practice interpreter yet. Use a list instead.'],
     ['type',       'type() is not supported here. Compare values directly instead.'],
-    ['isinstance', 'isinstance() is not supported here. Compare values directly instead.'],
+    ['super',      'super is written with parentheses, inside a method: super().__init__(...)'],
+    ['issubclass', 'issubclass() is not supported here. Ask about an object instead: isinstance(thing, SomeClass).'],
     ['map',        'map() is not supported here. Use a for loop.'],
     ['filter',     'filter() is not supported here. Use a for loop with an if.'],
     ['zip',        'zip() is not supported here. Loop over range(len(items)) and index both lists.'],
@@ -2079,6 +2147,7 @@ export class Interpreter {
         this.now = now;
         this.steps = 0;
         this.depth = 0;
+        this.frames = [];
         this.startedAt = null;
         this.output = [];
         this.outputChars = 0;
@@ -2234,6 +2303,27 @@ export class Interpreter {
             }
 
             case 'ClassDef': {
+                // The parent is whatever its name means on this line, so it has
+                // to be defined above. (`object` is the parent every class has.)
+                let base = null;
+                if (node.base !== null && node.base !== 'object') {
+                    if (/^(BaseException|Exception|\w+Error|ABC)$/.test(node.base) && !scope.has(node.base)) {
+                        throw runtimeError(`A class here cannot inherit from Python's own ${node.base}.`, node.line,
+                            'Inherit from a class you have written yourself.');
+                    }
+                    if (scope.lookup(node.base) === undefined && !(node.base in BUILTINS)) {
+                        throw runtimeError(`The parent class "${node.base}" has not been defined yet.`, node.line,
+                            `Write class ${node.base}: above class ${node.name}, and check the spelling.`);
+                    }
+                    base = this.evaluate({ type: 'Name', id: node.base, line: node.line }, scope);
+                    if (base instanceof Builtin) {
+                        throw runtimeError(`A class here cannot inherit from Python's own ${node.base}.`, node.line,
+                            'Inherit from a class you have written yourself.');
+                    }
+                    if (!(base instanceof PyClass)) {
+                        throw runtimeError(`"${node.base}" is ${typeName(base)}, not a class, so nothing can inherit from it.`, node.line);
+                    }
+                }
                 // The body runs once, in a scope of its own; whatever it defined
                 // becomes the class's attributes.
                 const bodyScope = new Scope(scope);
@@ -2245,7 +2335,7 @@ export class Interpreter {
                             'would be ignored rather than used as Python uses it, so it is refused instead.');
                     }
                 }
-                const cls = new PyClass(node.name, new Map(bodyScope.vars));
+                const cls = new PyClass(node.name, new Map(bodyScope.vars), base);
                 for (const value of cls.attrs.values()) {
                     if (value instanceof PyFunction) {
                         // As in Python, a method does NOT see class-level names as
@@ -2423,7 +2513,7 @@ export class Interpreter {
 
             case 'Attribute': {
                 const owner = this.evaluate(node.value, scope);
-                if (isInstance(owner) || isClass(owner)) return this.getAttribute(owner, node.attr, node.line);
+                if (isInstance(owner) || isClass(owner) || owner instanceof PySuper) return this.getAttribute(owner, node.attr, node.line);
                 throw runtimeError(
                     `You wrote ".${node.attr}" without parentheses after it.`, node.line,
                     `A method only runs when you call it: .${node.attr}()`);
@@ -2441,7 +2531,7 @@ export class Interpreter {
         if (ABSENT.has(name)) return runtimeError(`"${name}" is not available here.`, line, ABSENT.get(name));
         // Inside a method, a bare name that the object DOES have is the forgotten self.
         const me = scope.lookup('self');
-        if (isInstance(me) && (me.attrs.has(name) || me.cls.attrs.has(name))) {
+        if (isInstance(me) && (me.attrs.has(name) || me.cls.find(name) !== undefined)) {
             return runtimeError(`The name "${name}" has not been given a value yet.`, line,
                 `This object has a ${name}, but a method reaches it through self: write self.${name}.`);
         }
@@ -2521,6 +2611,21 @@ export class Interpreter {
         const kw = {};
         for (const k of node.keywords) kw[k.name] = this.evaluate(k.value, scope);
 
+        // super(): the running method's object, to be looked up from the parent
+        // of the class that method was written in.
+        if (node.func.type === 'Name' && node.func.id === 'super' && !scope.has('super')) {
+            if (args.length || node.keywords.length) {
+                throw runtimeError('Write super() with empty parentheses.', node.line,
+                    'Python works out the class and the object for itself: super().__init__(...)');
+            }
+            const frame = this.frames[this.frames.length - 1];
+            if (!frame || !frame.func.owner || frame.self === undefined) {
+                throw runtimeError('super() only works inside a method of a class.', node.line,
+                    'It means "the parent of the class this method is written in".');
+            }
+            return new PySuper(frame.self, frame.func.owner);
+        }
+
         // Method call: the only place a `.name` is legal.
         if (node.func.type === 'Attribute') {
             const self = this.evaluate(node.func.value, scope);
@@ -2538,30 +2643,61 @@ export class Interpreter {
         return this.callValue(target, args, node.line, kw);
     }
 
-    /** `obj.name`: the object's own attributes first, then its class's. */
+    /** `obj.name`: the object's own attributes first, then its class's, then each parent's in turn. */
     getAttribute(owner, name, line) {
+        if (owner instanceof PySuper) return this.superAttribute(owner, name, line);
         if (isInstance(owner)) {
             if (owner.attrs.has(name)) return owner.attrs.get(name);
-            if (owner.cls.attrs.has(name)) {
-                const found = owner.cls.attrs.get(name);
-                return found instanceof PyFunction ? new PyBoundMethod(owner, found) : found;
-            }
-            const known = [...owner.attrs.keys(), ...owner.cls.attrs.keys()];
+            const found = owner.cls.find(name);
+            if (found !== undefined) return found instanceof PyFunction ? new PyBoundMethod(owner, found) : found;
+            const known = [...owner.attrs.keys(), ...owner.cls.names()];
             const guess = suggestName(name, known);
+            // The __init__ that ran belongs to a class whose parent has one too:
+            // the usual reason an inherited attribute is missing.
+            const ran = owner.cls.find('__init__');
+            const skipped = ran instanceof PyFunction && ran.owner?.base?.find('__init__') instanceof PyFunction;
             throw runtimeError(`This ${owner.cls.name} object has no attribute called "${name}".`, line,
                 guess ? `Did you mean "${guess}"?`
-                      : `An attribute exists only once something has been stored in it, usually in __init__: self.${name} = ...`);
+                : skipped ? `If the parent class stores ${name} in its __init__, that __init__ has to be run: ` +
+                            `call super().__init__(...) inside ${ran.owner.name}'s __init__.`
+                : `An attribute exists only once something has been stored in it, usually in __init__: self.${name} = ...`);
         }
-        if (owner.attrs.has(name)) return owner.attrs.get(name);
-        const guess = suggestName(name, [...owner.attrs.keys()]);
+        const found = owner.find(name);
+        if (found !== undefined) return found;
+        const guess = suggestName(name, owner.names());
         throw runtimeError(`The class ${owner.name} has no attribute called "${name}".`, line,
+            guess ? `Did you mean "${guess}"?` : null);
+    }
+
+    /** `super().name`: the lookup starts at the PARENT of the class the running method was written in. */
+    superAttribute(sup, name, line) {
+        const parent = sup.owner.base;
+        const found = parent ? parent.find(name) : undefined;
+        if (found !== undefined) return found instanceof PyFunction ? new PyBoundMethod(sup.self, found) : found;
+        if (name === '__init__') {
+            // No class above has an __init__, so there is nothing to set up, as in Python.
+            return new Builtin('__init__', (args, kw, at) => {
+                if (args.length || Object.keys(kw).length) {
+                    throw runtimeError(parent
+                        ? `super().__init__() takes no values here, because ${parent.name} has no __init__ to receive them.`
+                        : `super().__init__() takes no values here, because ${sup.owner.name} has no parent class.`, at);
+                }
+                return null;
+            });
+        }
+        if (!parent) {
+            throw runtimeError(`${sup.owner.name} has no parent class, so super() has nowhere to look for "${name}".`, line,
+                `Name a parent on the class line: class ${sup.owner.name}(Parent):`);
+        }
+        const guess = suggestName(name, parent.names());
+        throw runtimeError(`The parent class ${parent.name} has nothing called "${name}".`, line,
             guess ? `Did you mean "${guess}"?` : null);
     }
 
     /** What print(), str() and f-strings show: an object's own __str__ if its class has one. */
     toText(value, line) {
         if (!isInstance(value)) return pyStr(value);
-        const describe = value.cls.attrs.get('__str__') ?? value.cls.attrs.get('__repr__');
+        const describe = value.cls.find('__str__') ?? value.cls.find('__repr__');
         if (!(describe instanceof PyFunction)) return pyRepr(value);
         const text = this.callValue(new PyBoundMethod(value, describe), [], line);
         if (!isStr(text)) {
@@ -2572,11 +2708,14 @@ export class Interpreter {
     }
 
     callMethod(self, name, args, kw, line) {
+        if (self instanceof PySuper) {
+            return this.callValue(this.superAttribute(self, name, line), args, line, kw);
+        }
         if (isInstance(self) || isClass(self)) {
-            const has = self.attrs.has(name) || (isInstance(self) && self.cls.attrs.has(name));
+            const cls = isInstance(self) ? self.cls : self;
+            const has = (isInstance(self) && self.attrs.has(name)) || cls.find(name) !== undefined;
             if (!has) {
-                const cls = isInstance(self) ? self.cls : self;
-                const methods = [...cls.attrs.entries()].filter(([, v]) => v instanceof PyFunction).map(([k]) => k);
+                const methods = cls.names().filter(k => cls.find(k) instanceof PyFunction);
                 const guess = suggestName(name, methods);
                 throw runtimeError(`${isInstance(self) ? `This ${cls.name} object` : `The class ${cls.name}`} has no method called ".${name}()".`, line,
                     guess ? `Did you mean ".${guess}()"?` : null);
@@ -2622,7 +2761,7 @@ export class Interpreter {
 
         if (target instanceof PyClass) {
             const object = new PyInstance(target);
-            const init = target.attrs.get('__init__');
+            const init = target.find('__init__');
             if (init instanceof PyFunction) {
                 const result = this.callValue(new PyBoundMethod(object, init), args, line, kw, `${target.name}`);
                 if (result !== null) {
@@ -2657,12 +2796,19 @@ export class Interpreter {
 
         if (++this.depth > this.depthLimit) {
             this.depth--;
+            // An override that says self.describe() where super().describe() was
+            // meant finds itself again: the commonest way a method never stops.
+            const overrides = target.owner?.base?.find(target.name) instanceof PyFunction;
             throw limitError(`"${target.name}" called itself more than ${this.depthLimit} times without stopping.`,
-                'A function that calls itself needs a base case that returns without calling again.');
+                overrides
+                    ? `Inside ${target.owner.name}, self.${target.name}() runs this same method again. To run the parent's version, write super().${target.name}().`
+                    : 'A function that calls itself needs a base case that returns without calling again.');
         }
         // Test harnesses call functions directly, outside run().
         const previous = ACTIVE;
         ACTIVE = this;
+        // super() asks which method is running, and on which object.
+        this.frames.push({ func: target, self: args.length ? args[0] : undefined });
         try {
             const scope = new Scope(target.scope, target.locals);
             const params = target.params;
@@ -2697,6 +2843,7 @@ export class Interpreter {
             }
             return null;      // fell off the end: Python returns None
         } finally {
+            this.frames.pop();
             this.depth--;
             ACTIVE = previous;
         }
@@ -2993,12 +3140,20 @@ export function assembleProblem({ scaffold, signature, body }) {
     const first = codeLines[0].trimStart();
     const header = String(signature ?? '').trim();
 
+    const top = scaffold ? String(scaffold).replace(/\r\n?/g, '\n').replace(/\n+$/, '') : '';
+    const above = top.split('\n').length;
+
+    // A whole class to write, with finished classes given above it (the parent
+    // of a subclass, say): those come first, then the student's class.
+    if (scaffold && /^class\s/.test(header)) {
+        if (/^class\s/.test(first)) return { source: `${top}\n\n${lines.join('\n')}\n`, lineOffset: above + 1, pasted: true };
+        return { source: `${top}\n\n${header}\n${indentBy(lines, base, 4).join('\n')}\n`, lineOffset: above + 2, pasted: false };
+    }
+
     // A whole class pasted in: run it as written.
     if (/^class\s/.test(first)) return { source: lines.join('\n') + '\n', lineOffset: 0, pasted: true };
 
     if (scaffold) {
-        const top = String(scaffold).replace(/\r\n?/g, '\n').replace(/\n+$/, '');
-        const above = top.split('\n').length;
         if (/^def\s/.test(first)) {
             // The method pasted with its def line: it goes inside the class as it is.
             return { source: `${top}\n${indentBy(lines, base, 4).join('\n')}\n`, lineOffset: above, pasted: true };
@@ -3012,7 +3167,9 @@ export function assembleProblem({ scaffold, signature, body }) {
 export function problemHeader(question) {
     const header = String(question?.signature ?? '').trim();
     if (!question?.scaffold) return header;
-    return `${String(question.scaffold).replace(/\r\n?/g, '\n').replace(/\n+$/, '')}\n    ${header}`;
+    const top = String(question.scaffold).replace(/\r\n?/g, '\n').replace(/\n+$/, '');
+    // A class line stands on its own, below the finished classes it builds on.
+    return /^class\s/.test(header) ? `${top}\n\n${header}` : `${top}\n    ${header}`;
 }
 
 // Lines of a test script are numbered from here, so an error can be told apart

@@ -1,0 +1,861 @@
+[
+  {
+    "type": "npc_demo",
+    "question": "NPC: A class, an object, and self",
+    "npc": "zoya",
+    "intro": "Zoya's kiln yard is crowded with golems, some finished and some still drying. They wipe the clay from their hands. “Before we build anything new, let us be sure of the old words. Three minutes, and then we go further than the workshop upstairs ever did.”",
+    "steps": [
+      {
+        "say": "A class is a design. This one says that every Golem stores two attributes, name and power, and has one method, lift.",
+        "beats": [
+          { "say": "A class is a design. Here is one." },
+          { "code": "class Golem:\n    def __init__(self, name, power):\n        self.name = name\n        self.power = power\n\n    def lift(self):\n        return self.name + \" lifts \" + str(self.power)", "language": "python" },
+          { "say": "It says that every Golem stores two attributes, name and power, and has one method, lift." }
+        ]
+      },
+      {
+        "say": "Calling the class builds an object and runs __init__ on it. self is the object being worked on, so each golem stores its OWN name and its OWN power.",
+        "beats": [
+          { "code": "clay = Golem(\"Clay\", 3)\niron = Golem(\"Iron\", 9)\nprint(iron.lift())", "language": "python" },
+          { "say": "Calling the class builds an object and runs __init__ on it. self is the object being worked on, so each golem stores its OWN name and its OWN power." }
+        ],
+        "check": {
+          "prompt": "What does iron.lift() return?",
+          "answer": "\"Iron lifts 9\"",
+          "wrong": ["\"Clay lifts 3\"", "\"Golem lifts 9\""],
+          "why": "The call is made on iron, so inside lift, self is iron: self.name is \"Iron\" and self.power is 9."
+        }
+      },
+      {
+        "say": "Four words to carry forward. A class is the design. An object, also called an instance, is one thing built from it. An attribute is a value an object stores. A method is a function that belongs to the class. Everything today is built from those four.",
+        "beats": [
+          { "say": "Four words to carry forward. A class is the design. An object, also called an instance, is one thing built from it." },
+          { "say": "An attribute is a value an object stores. A method is a function that belongs to the class. Everything today is built from those four." }
+        ]
+      }
+    ],
+    "outro": "“Show me you still have it.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Two objects are built from one class. What does the program print?",
+    "code": "class Golem:\n    def __init__(self, name, power):\n        self.name = name\n        self.power = power\n\n    def boost(self):\n        self.power = self.power + 2\n\na = Golem(\"Ash\", 4)\nb = Golem(\"Bog\", 7)\na.boost()\na.boost()\nprint(a.power, b.power)",
+    "language": "python",
+    "correct": ["8 7"],
+    "case_sensitive": true,
+    "feedback": "boost was called twice on a and never on b. Each object has its own power, so a goes from 4 to 8 while b stays at 7."
+  },
+  {
+    "type": "matching",
+    "question": "Match each object-oriented term to its meaning.",
+    "pairs": [
+      { "term": "class", "definition": "A design that objects are built from" },
+      { "term": "instance", "definition": "One object built from a class" },
+      { "term": "attribute", "definition": "A value that an object stores" },
+      { "term": "method", "definition": "A function that belongs to a class" },
+      { "term": "__init__", "definition": "The setup code run on each new object" }
+    ],
+    "feedback": "A class is the design; an instance (an object) is one thing built from it. Attributes are what an object knows, methods are what it can do, and __init__ gives a new object its starting attributes."
+  },
+  {
+    "question": "Inside a method, what is self?",
+    "correct": ["The one object that the method was called on"],
+    "incorrect": [
+      "The class that the method is written inside of",
+      "A copy of the object, thrown away afterwards",
+      "The first value typed inside the parentheses"
+    ],
+    "feedback": "In iron.lift(), self is iron. It is the real object, not a copy, which is why self.power = ... changes that object for good. Python passes it in for you; you never type it in the call."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "The __init__ of a class named Golem stores {{k}} attributes on self. A program builds {{n}} Golem objects. How many attribute values are being stored altogether?",
+    "variables": {
+      "k": { "min": 2, "max": 5 },
+      "n": { "min": 3, "max": 9 }
+    },
+    "answer": { "expr": "k * n", "tolerance_abs": 0 },
+    "feedback_template": "Every object gets its own set of attributes, so {{n}} objects with {{k}} attributes each store {{expected}} values. The class is written once; the data is kept once per object."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: An object inside an object",
+    "npc": "zoya",
+    "intro": "Zoya lifts a small clay hammer and presses it into a golem's open hand, where it sticks. “An attribute can hold a number or a string. It can also hold something more interesting.”",
+    "steps": [
+      {
+        "say": "An attribute can hold any value, including another object. Here a Hero HAS a Weapon. Building a class out of other objects like this is called composition.",
+        "beats": [
+          { "code": "class Weapon:\n    def __init__(self, name, damage):\n        self.name = name\n        self.damage = damage\n\nclass Hero:\n    def __init__(self, name, weapon):\n        self.name = name\n        self.weapon = weapon", "language": "python" },
+          { "say": "An attribute can hold any value, including another object. Here a Hero HAS a Weapon. Building a class out of other objects like this is called composition." }
+        ]
+      },
+      {
+        "say": "Read the dots from left to right: ayla, then her weapon, then that weapon's damage. This prints 5.",
+        "beats": [
+          { "code": "bow = Weapon(\"bow\", 5)\nayla = Hero(\"Ayla\", bow)\nprint(ayla.weapon.damage)", "language": "python" },
+          { "say": "Read the dots from left to right: ayla, then her weapon, then that weapon's damage. This prints 5." }
+        ],
+        "check": {
+          "prompt": "What does ayla.weapon.name give?",
+          "answer": "\"bow\"",
+          "wrong": ["\"Ayla\"", "5"],
+          "why": "ayla.weapon is the Weapon object, and that object's name is \"bow\". ayla.name, with no .weapon, would be \"Ayla\"."
+        }
+      },
+      {
+        "say": "An attribute can also hold a LIST of objects: a pack of items, a squad of guards. A loop then visits each object and asks it for something. The test for composition is the phrase 'has a': a hero has a weapon, a pack has items.",
+        "beats": [
+          { "say": "An attribute can also hold a LIST of objects: a pack of items, a squad of guards. A loop then visits each object and asks it for something." },
+          { "say": "The test for composition is the phrase 'has a': a hero has a weapon, a pack has items." }
+        ]
+      }
+    ],
+    "outro": "“Follow the dots.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "A method reaches through one object into another. What does the program print?",
+    "code": "class Weapon:\n    def __init__(self, name, damage):\n        self.name = name\n        self.damage = damage\n\nclass Hero:\n    def __init__(self, name, weapon):\n        self.name = name\n        self.weapon = weapon\n\n    def strike(self):\n        return self.weapon.damage * 2\n\nh = Hero(\"Ayla\", Weapon(\"bow\", 5))\nprint(h.strike())",
+    "language": "python",
+    "correct": ["10"],
+    "case_sensitive": true,
+    "feedback": "Inside strike, self is the hero. self.weapon is her Weapon object, and self.weapon.damage is 5, so strike returns 10."
+  },
+  {
+    "type": "code_line",
+    "question": "ayla is a Hero. Her weapon attribute holds a Weapon object, and every Weapon has a damage attribute. Write the expression that gives the damage of ayla's weapon.",
+    "language": "python",
+    "correct": ["ayla.weapon.damage"],
+    "case_sensitive": true,
+    "feedback": "ayla.weapon.damage: start at the hero, step to her weapon, then read that weapon's damage. Each dot moves one object deeper."
+  },
+  {
+    "type": "code_trace",
+    "question": "A Pack holds a list of Item objects. What does the program print?",
+    "code": "class Item:\n    def __init__(self, weight):\n        self.weight = weight\n\nclass Pack:\n    def __init__(self):\n        self.items = []\n\n    def total(self):\n        result = 0\n        for item in self.items:\n            result = result + item.weight\n        return result\n\np = Pack()\np.items.append(Item(3))\np.items.append(Item(4))\np.items.append(Item(5))\nprint(p.total())",
+    "language": "python",
+    "correct": ["12"],
+    "case_sensitive": true,
+    "feedback": "The loop visits each Item in the pack's list and asks it for its weight: 3 + 4 + 5 = 12. It is the accumulator pattern, with objects in the list instead of numbers."
+  },
+  {
+    "type": "code_trace",
+    "question": "Two heroes are handed the SAME Weapon object. What does the program print?",
+    "code": "class Weapon:\n    def __init__(self, damage):\n        self.damage = damage\n\nclass Hero:\n    def __init__(self, weapon):\n        self.weapon = weapon\n\nbow = Weapon(5)\na = Hero(bow)\nb = Hero(bow)\na.weapon.damage = 9\nprint(b.weapon.damage)",
+    "language": "python",
+    "correct": ["9"],
+    "case_sensitive": true,
+    "feedback": "Only one Weapon was ever built. Both heroes store a reference to that same object, so a change made through a is seen through b. It is the aliasing you met with lists, now with objects."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: A child class starts with everything",
+    "npc": "zoya",
+    "intro": "Zoya takes a finished mould from the shelf and presses a second, smaller mould against it, so that the new one picks up every line of the old. “I am not going to carve all of that again. Neither should you.”",
+    "steps": [
+      {
+        "say": "The parentheses on the class line name a parent. Wolf is a child class, or subclass, of Creature. Creature is its parent class, or superclass. A Wolf starts with everything a Creature has. That is inheritance.",
+        "beats": [
+          { "code": "class Creature:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return self.name + \" has \" + str(self.hp) + \" hp\"\n\nclass Wolf(Creature):\n    def howl(self):\n        return self.name + \" howls\"", "language": "python" },
+          { "say": "The parentheses on the class line name a parent. Wolf is a child class, or subclass, of Creature. Creature is its parent class, or superclass." },
+          { "say": "A Wolf starts with everything a Creature has. That is inheritance." }
+        ]
+      },
+      {
+        "say": "Wolf has no describe of its own. So when you call w.describe(), Python looks in Wolf first, does not find it, and then looks in the parent, Creature, where it does.",
+        "beats": [
+          { "code": "w = Wolf(\"Fang\", 12)\nprint(w.describe())    # Fang has 12 hp\nprint(w.howl())        # Fang howls", "language": "python" },
+          { "say": "Wolf has no describe of its own. So when you call w.describe(), Python looks in Wolf first, does not find it, and then looks in the parent, Creature, where it does." }
+        ],
+        "check": {
+          "prompt": "To build Wolf(\"Fang\", 12), Python needs an __init__. Where does it find one?",
+          "answer": "In Creature, the parent class",
+          "wrong": ["Nowhere, so name and hp are not set", "In Wolf, which copied it earlier"],
+          "why": "It is the same search as for any method: the object's own class first, then its parent."
+        }
+      },
+      {
+        "say": "The search only goes UP. A Wolf can howl, but a plain Creature cannot, because a parent knows nothing about its children. The test for inheritance is the phrase 'is a': a wolf is a creature.",
+        "beats": [
+          { "say": "The search only goes UP. A Wolf can howl, but a plain Creature cannot, because a parent knows nothing about its children." },
+          { "say": "The test for inheritance is the phrase 'is a': a wolf is a creature." }
+        ]
+      }
+    ],
+    "outro": "“Where does Python look? Answer that, and you can trace any of these.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Wolf defines only howl. Everything else comes from its parent. What does the program print?",
+    "code": "class Creature:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\nclass Wolf(Creature):\n    def howl(self):\n        return self.name + \" howls\"\n\nw = Wolf(\"Fang\", 12)\nprint(w.howl())",
+    "language": "python",
+    "correct": ["Fang howls"],
+    "case_sensitive": true,
+    "feedback": "Wolf has no __init__, so Creature's runs and stores the name. howl is Wolf's own method, and it can use self.name because the inherited __init__ put it there."
+  },
+  {
+    "type": "matching",
+    "question": "Match each term to its meaning.",
+    "pairs": [
+      { "term": "parent class", "definition": "The class inherited from; also called the superclass" },
+      { "term": "child class", "definition": "The class that inherits; also called the subclass" },
+      { "term": "inheritance", "definition": "A class starting with another class's methods" },
+      { "term": "composition", "definition": "An object storing other objects as attributes" }
+    ],
+    "feedback": "Parent and child are the everyday words; superclass and subclass are the formal ones, and the ones Java uses. Inheritance is an 'is a' relationship, composition a 'has a' one."
+  },
+  {
+    "question": "Wolf's parent class is Creature, and w is a Wolf. When the program runs w.describe(), where does Python search for describe?",
+    "correct": ["In Wolf first, and then in Creature"],
+    "incorrect": [
+      "In Creature first, and then in Wolf",
+      "In Wolf, and then it gives up",
+      "In every class, from the top of the file"
+    ],
+    "feedback": "The search starts at the object's own class and moves up to the parent only if the name is not found. It stops at the first match."
+  },
+  {
+    "question": "Wolf, a child class of Creature, defines a method named howl. Creature does not. What happens here?\n\nc = Creature(\"Blob\", 5)\nc.howl()",
+    "correct": ["An error: a Creature object has no method named howl"],
+    "incorrect": [
+      "It returns \"Blob howls\", using the method from Wolf",
+      "It returns None, because the method is missing",
+      "It runs describe() instead, as the nearest match"
+    ],
+    "feedback": "Inheritance runs one way. A child gets what its parent has, but a parent gets nothing from its children, so the search for howl starts at Creature and finds nothing."
+  },
+  {
+    "type": "cloze",
+    "question": "Use the two tests. A Hero {{1}} a Weapon, so the Weapon is stored as an attribute: that is composition. A Wolf {{2}} a Creature, so Wolf names Creature as its parent: that is inheritance.",
+    "blanks": [
+      { "accept": ["has"], "hint": "has or is?" },
+      { "accept": ["is"], "hint": "has or is?" }
+    ],
+    "feedback": "'Has a' means store it as an attribute. 'Is a' means inherit from it. Saying the sentence out loud is the quickest way to choose between the two."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the header line that begins a class named Bat whose parent class is Creature. (Just the header line.)",
+    "language": "python",
+    "correct": ["class Bat(Creature):"],
+    "case_sensitive": true,
+    "feedback": "class Bat(Creature): the child's name, then the parent's name in parentheses, then the colon that every header line ends with."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Creature defines {{p}} methods. Wolf, a child class of Creature, defines {{c}} more, all with new names. How many different methods can be called on a Wolf object?",
+    "variables": {
+      "p": { "min": 2, "max": 6 },
+      "c": { "min": 1, "max": 4 }
+    },
+    "answer": { "expr": "p + c", "tolerance_abs": 0 },
+    "feedback_template": "A Wolf has its own {{c}} methods plus the {{p}} it inherits from Creature: {{expected}}. A plain Creature still has only {{p}}."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Replacing what you inherited",
+    "npc": "zoya",
+    "intro": "Zoya takes a knife to the child mould and re-cuts one line of it, leaving the rest alone. “Inheriting everything is a start. Usually you want to change one thing.”",
+    "steps": [
+      {
+        "say": "Wolf defines a method with the SAME name as one in its parent. That is called overriding. For Wolf objects, the child's version replaces the parent's.",
+        "beats": [
+          { "code": "class Creature:\n    def sound(self):\n        return \"...\"\n\nclass Wolf(Creature):\n    def sound(self):\n        return \"Awoo\"\n\nclass Slime(Creature):\n    pass", "language": "python" },
+          { "say": "Wolf defines a method with the SAME name as one in its parent. That is called overriding. For Wolf objects, the child's version replaces the parent's." }
+        ]
+      },
+      {
+        "say": "It works because of the search order. Python looks in the object's own class first, and stops at the first match. So Wolf().sound() finds Wolf's version and never reaches Creature's.",
+        "check": {
+          "prompt": "What does Slime().sound() return?",
+          "answer": "\"...\", found in Creature",
+          "wrong": ["\"Awoo\", found in Wolf", "An error, as Slime has no sound"],
+          "why": "Slime has no sound of its own, so the search moves up to Creature. Wolf is Slime's sibling, not its parent, so it is never searched."
+        }
+      },
+      {
+        "say": "Overriding changes nothing in the parent: Creature().sound() still returns \"...\". Each class simply answers the same call in its own way.",
+        "beats": [
+          { "say": "Overriding changes nothing in the parent: Creature().sound() still returns \"...\"." },
+          { "say": "Each class simply answers the same call in its own way." }
+        ]
+      }
+    ],
+    "outro": "“Same search, every time. Own class first.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "One child overrides sound, and the other does not. What does the program print?",
+    "code": "class Creature:\n    def sound(self):\n        return \"...\"\n\nclass Wolf(Creature):\n    def sound(self):\n        return \"Awoo\"\n\nclass Slime(Creature):\n    pass\n\nprint(Wolf().sound(), Slime().sound())",
+    "language": "python",
+    "correct": ["Awoo ..."],
+    "case_sensitive": true,
+    "feedback": "Wolf has its own sound, so that one is found first. Slime has none, so the search moves up to Creature and finds \"...\"."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What number does the last line produce?\n\nclass Shop:\n    def price(self):\n        return {{base}}\n\nclass Sale(Shop):\n    def price(self):\n        return {{sale}}\n\nclass Stall(Shop):\n    pass\n\nSale().price() + Stall().price()",
+    "variables": {
+      "base": { "min": 20, "max": 60 },
+      "sale": { "min": 5, "max": 15 }
+    },
+    "answer": { "expr": "base + sale", "tolerance_abs": 0 },
+    "feedback_template": "Sale overrides price, so Sale().price() is {{sale}}. Stall does not, so Stall().price() is inherited from Shop: {{base}}. Together: {{expected}}."
+  },
+  {
+    "question": "A student means to override sound, but misspells it. What does Wolf().sound() return?\n\nclass Creature:\n    def sound(self):\n        return \"...\"\n\nclass Wolf(Creature):\n    def sounds(self):\n        return \"Awoo\"",
+    "correct": ["\"...\", because sounds is a new method and overrides nothing"],
+    "incorrect": [
+      "\"Awoo\", because Python matches the closest method name",
+      "An error, because Wolf now has two methods for one job",
+      "None, because the override was left only half finished"
+    ],
+    "feedback": "Overriding happens only when the names match exactly. sounds is simply a second method, so Wolf().sound() is still found in Creature. Python gives no warning about this; Java, as you will see, has a way to catch it."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the blanks so that Owl inherits from Creature and overrides its method. The last line should print Hoo.",
+    "question": "class Creature:\n    def sound(self):\n        return \"...\"\n\nclass Owl({{1}}):\n    def {{2}}(self):\n        return \"Hoo\"\n\nprint(Owl().sound())",
+    "language": "python",
+    "blanks": [
+      { "accept": ["Creature"], "hint": "parent", "case_sensitive": true },
+      { "accept": ["sound"], "hint": "method name", "case_sensitive": true }
+    ],
+    "feedback": "The parent goes in the parentheses on the class line, and the overriding method must have exactly the parent method's name."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Adding an attribute without losing the old ones",
+    "npc": "zoya",
+    "intro": "A golem stands half finished: it has wings, but no name carved on it and no heart-stone. Zoya sighs. “This is the mistake everyone makes once. I made it too.”",
+    "steps": [
+      {
+        "say": "A Dragon needs one more attribute, fire, so it is given an __init__ of its own. But look at what overriding does: Dragon's __init__ REPLACES Creature's. Nothing stores name or hp any more, and d.name is an error.",
+        "beats": [
+          { "code": "class Creature:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\nclass Dragon(Creature):\n    def __init__(self, name, hp, fire):\n        self.fire = fire", "language": "python — with a bug" },
+          { "say": "A Dragon needs one more attribute, fire, so it is given an __init__ of its own." },
+          { "say": "But look at what overriding does: Dragon's __init__ REPLACES Creature's. Nothing stores name or hp any more, and d.name is an error." }
+        ]
+      },
+      {
+        "say": "super() means 'my parent class'. So super().__init__(name, hp) runs Creature's __init__ on this same object, which stores name and hp. Then Dragon adds what is new.",
+        "beats": [
+          { "code": "class Dragon(Creature):\n    def __init__(self, name, hp, fire):\n        super().__init__(name, hp)\n        self.fire = fire", "language": "python — fixed" },
+          { "say": "super() means 'my parent class'. So super().__init__(name, hp) runs Creature's __init__ on this same object, which stores name and hp. Then Dragon adds what is new." }
+        ],
+        "check": {
+          "prompt": "After d = Dragon(\"Ember\", 40, 9) with the fixed class, which attributes does d have?",
+          "answer": "name, hp and fire",
+          "wrong": ["fire, and nothing else", "name and hp, but not fire"],
+          "why": "Creature's __init__ stored name and hp when super().__init__ called it, and Dragon's own line stored fire."
+        }
+      },
+      {
+        "say": "The pattern: the child's __init__ takes ALL the values, passes the parent's share up through super().__init__(...), and then stores its own. Call the parent first, so that the child can adjust anything the parent set.",
+        "beats": [
+          { "say": "The pattern: the child's __init__ takes ALL the values, passes the parent's share up through super().__init__(...), and then stores its own." },
+          { "say": "Call the parent first, so that the child can adjust anything the parent set." }
+        ]
+      }
+    ],
+    "outro": "“Parent's share up, then your own.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Dragon's __init__ calls its parent's. What does the program print?",
+    "code": "class Creature:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\nclass Dragon(Creature):\n    def __init__(self, name, hp, fire):\n        super().__init__(name, hp)\n        self.fire = fire\n\nd = Dragon(\"Ember\", 40, 9)\nprint(d.name, d.hp + d.fire)",
+    "language": "python",
+    "correct": ["Ember 49"],
+    "case_sensitive": true,
+    "feedback": "super().__init__(name, hp) runs Creature's __init__, which stores \"Ember\" and 40. Dragon then stores fire as 9. So d has all three, and 40 + 9 is 49."
+  },
+  {
+    "question": "Dragon's __init__ never calls super().__init__. What happens on the last line?\n\nclass Creature:\n    def __init__(self, name):\n        self.name = name\n\nclass Dragon(Creature):\n    def __init__(self, name, fire):\n        self.fire = fire\n\nd = Dragon(\"Ember\", 9)\nprint(d.name)",
+    "correct": ["An error: this Dragon object has no attribute called name"],
+    "incorrect": [
+      "It prints Ember, because name is inherited from Creature",
+      "It prints None, because name was never given a value",
+      "It prints an empty line, the default for a missing name"
+    ],
+    "feedback": "Methods are inherited, but attributes exist only once some line of code stores them. Dragon's __init__ replaced Creature's, so the line self.name = name never ran. The fix is super().__init__(name) as Dragon's first line."
+  },
+  {
+    "type": "cloze",
+    "prompt": "Fill in the blanks so that Dragon's __init__ runs its parent's __init__ before storing fire.",
+    "question": "class Dragon(Creature):\n    def __init__(self, name, hp, fire):\n        {{1}}().{{2}}(name, hp)\n        self.fire = fire",
+    "language": "python",
+    "blanks": [
+      { "accept": ["super"], "hint": "the parent", "case_sensitive": true },
+      { "accept": ["__init__"], "hint": "which method?", "case_sensitive": true }
+    ],
+    "feedback": "super().__init__(name, hp): super() stands for the parent class, and __init__ is the method of the parent that we want to run. self is not passed; Python supplies it."
+  },
+  {
+    "type": "code_trace",
+    "question": "A child calls its parent's __init__ and then changes one thing the parent set. What does the program print?",
+    "code": "class Creature:\n    def __init__(self, name):\n        self.name = name\n        self.legs = 4\n\nclass Bird(Creature):\n    def __init__(self, name):\n        super().__init__(name)\n        self.legs = 2\n\nprint(Bird(\"Pip\").legs, Creature(\"Ox\").legs)",
+    "language": "python",
+    "correct": ["2 4"],
+    "case_sensitive": true,
+    "feedback": "For the Bird, Creature's __init__ sets legs to 4 and the next line changes it to 2. That is why the parent is called first: the child gets the last word. The plain Creature keeps 4."
+  },
+  {
+    "type": "ordering",
+    "question": "Dragon's __init__ begins with super().__init__(name, hp) and then stores fire. Arrange what happens, first to last, when the program runs Dragon(\"Ember\", 40, 9).",
+    "items": [
+      "Python builds a new, empty Dragon object",
+      "Dragon's __init__ starts running on it",
+      "super().__init__ calls Creature's __init__",
+      "Creature's __init__ stores name and hp",
+      "Dragon's __init__ stores fire"
+    ],
+    "feedback": "The object exists first, and is empty. Dragon's __init__ starts, hands over to Creature's __init__ for the shared attributes, and then finishes with its own."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What number does the last line produce?\n\nclass Chest:\n    def __init__(self, gold):\n        self.gold = gold\n\nclass BigChest(Chest):\n    def __init__(self, gold):\n        super().__init__(gold * {{m}})\n        self.gems = {{g}}\n\nc = BigChest({{gold}})\nc.gold + c.gems",
+    "variables": {
+      "m": { "values": [2, 3] },
+      "g": { "min": 1, "max": 9 },
+      "gold": { "min": 4, "max": 12 }
+    },
+    "answer": { "expr": "gold * m + g", "tolerance_abs": 0 },
+    "feedback_template": "BigChest passes gold * {{m}} up to Chest's __init__, which stores it as gold. Then it stores {{g}} gems. So c.gold + c.gems is {{expected}}."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Extending instead of replacing",
+    "npc": "zoya",
+    "intro": "Zoya adds a strip of fresh clay to an old mould without scraping anything off. “Sometimes the parent's way of doing a thing is nearly right. Then you do not replace it. You add to it.”",
+    "steps": [
+      {
+        "say": "super() is not only for __init__. It reaches any method of the parent. Here Dragon overrides describe, and its new version begins by asking the parent for ITS description.",
+        "beats": [
+          { "code": "class Creature:\n    def __init__(self, name):\n        self.name = name\n\n    def describe(self):\n        return self.name + \" the creature\"\n\nclass Dragon(Creature):\n    def describe(self):\n        return super().describe() + \", breathing fire\"", "language": "python" },
+          { "say": "super() is not only for __init__. It reaches any method of the parent. Here Dragon overrides describe, and its new version begins by asking the parent for ITS description." }
+        ]
+      },
+      {
+        "say": "super().describe() runs Creature's describe on this same dragon and hands back the text. Dragon then joins its own words on the end.",
+        "check": {
+          "prompt": "What does Dragon(\"Ember\").describe() return?",
+          "answer": "\"Ember the creature, breathing fire\"",
+          "wrong": ["\"Ember the creature\"", "\", breathing fire\""],
+          "why": "Creature's describe returns \"Ember the creature\", and Dragon's adds \", breathing fire\" to it."
+        }
+      },
+      {
+        "say": "So there are two ways to override. Replace: write a whole new body. Extend: call super().method() and build on what comes back. When you extend, any later improvement to the parent's method reaches the child for free.",
+        "beats": [
+          { "say": "So there are two ways to override. Replace: write a whole new body. Extend: call super().method() and build on what comes back." },
+          { "say": "When you extend, any later improvement to the parent's method reaches the child for free." }
+        ]
+      }
+    ],
+    "outro": "“Parent's answer first, then yours on top.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "Rare extends cost rather than replacing it. What does the program print?",
+    "code": "class Item:\n    def __init__(self, price):\n        self.price = price\n\n    def cost(self):\n        return self.price\n\nclass Rare(Item):\n    def cost(self):\n        return super().cost() * 2\n\nprint(Rare(15).cost(), Item(15).cost())",
+    "language": "python",
+    "correct": ["30 15"],
+    "case_sensitive": true,
+    "feedback": "Rare's cost asks Item's cost for its answer, 15, and doubles it. A plain Item is untouched by anything its child does, so it still costs 15."
+  },
+  {
+    "question": "Inside Dragon's describe, a student writes self.describe() where super().describe() was meant:\n\nclass Dragon(Creature):\n    def describe(self):\n        return self.describe() + \", breathing fire\"\n\nWhat happens when describe is called on a Dragon?",
+    "correct": ["Dragon's describe calls itself until a RecursionError"],
+    "incorrect": [
+      "Creature's describe runs, exactly as with super()",
+      "Python reports a syntax error on the class line",
+      "The method returns None without running its body"
+    ],
+    "feedback": "self.describe() starts its search at the object's own class, Dragon, and finds the very method that is running. It calls itself with no base case. super() is what tells Python to start the search one level UP."
+  },
+  {
+    "type": "matching",
+    "question": "A parent class has a method named greet. Match what each child class contains to what that does.",
+    "pairs": [
+      { "term": "No greet at all", "definition": "Inherits: the parent's greet runs unchanged" },
+      { "term": "A greet with a new body", "definition": "Replaces: only the child's greet runs" },
+      { "term": "A greet that calls super().greet()", "definition": "Extends: the parent's runs, and the child adds to it" },
+      { "term": "A method named greet2", "definition": "Adds: the child has both greet and greet2" }
+    ],
+    "feedback": "Inherit, replace, extend, add: the four things a child class can do. The first three are all about one name; the last is a method with a new name."
+  },
+  {
+    "type": "code_trace",
+    "question": "A child class can be a parent too. Here C's parent is B, and B's parent is A. What does the program print?",
+    "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(B):\n    def who(self):\n        return \"C\" + super().who()\n\nprint(C().who())",
+    "language": "python",
+    "correct": ["CBA"],
+    "case_sensitive": true,
+    "feedback": "C's who asks its parent, B. B's who asks ITS parent, A, which answers \"A\". The answers come back up the chain: \"B\" + \"A\", then \"C\" + \"BA\"."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: One loop, many kinds of object",
+    "npc": "zoya",
+    "intro": "Zoya claps twice, and every golem in the yard does something different: one bows, one stamps, one lifts a stone. “I gave one order. I did not check who was listening.”",
+    "steps": [
+      {
+        "say": "One line, c.sound(), and each object answers in its own way. The loop never asks what kind of creature it is holding. This is called polymorphism: the same call, different behaviour, decided by each object's class.",
+        "beats": [
+          { "code": "class Creature:\n    def sound(self):\n        return \"...\"\n\nclass Wolf(Creature):\n    def sound(self):\n        return \"Awoo\"\n\nclass Owl(Creature):\n    def sound(self):\n        return \"Hoo\"\n\nfor c in [Wolf(), Owl(), Wolf()]:\n    print(c.sound())", "language": "python" },
+          { "say": "One line, c.sound(), and each object answers in its own way. The loop never asks what kind of creature it is holding." },
+          { "say": "This is called polymorphism: the same call, different behaviour, decided by each object's class." }
+        ]
+      },
+      {
+        "say": "Here is the payoff. Write a Bat class next month, give it a sound method, and this loop needs no change at all.",
+        "check": {
+          "prompt": "The list is changed to [Owl(), Wolf()]. What does the loop print?",
+          "answer": "Hoo, then Awoo",
+          "wrong": ["Awoo, then Hoo", "..., then ..."],
+          "why": "Each object uses its own class's sound, in the order the objects appear in the list."
+        }
+      },
+      {
+        "say": "When you truly must ask what something is, use isinstance(object, Class). It is True for the object's own class AND for every class above it: a Wolf is a Wolf, and a Wolf is a Creature. But reach for it rarely. A chain of if isinstance(...) lines usually means each class should have had its own method.",
+        "beats": [
+          { "code": "w = Wolf()\nprint(isinstance(w, Wolf))        # True\nprint(isinstance(w, Creature))    # True\nprint(isinstance(w, Owl))         # False", "language": "python" },
+          { "say": "When you truly must ask what something is, use isinstance(object, Class). It is True for the object's own class AND for every class above it: a Wolf is a Wolf, and a Wolf is a Creature." },
+          { "say": "But reach for it rarely. A chain of if isinstance(...) lines usually means each class should have had its own method." }
+        ]
+      }
+    ],
+    "outro": "“One order. Let each of them work out what it means.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "One loop calls area() on three shapes of two kinds. What does the program print?",
+    "code": "class Shape:\n    def area(self):\n        return 0\n\nclass Square(Shape):\n    def __init__(self, side):\n        self.side = side\n\n    def area(self):\n        return self.side * self.side\n\nclass Dot(Shape):\n    pass\n\ntotal = 0\nfor s in [Square(2), Dot(), Square(3)]:\n    total = total + s.area()\nprint(total)",
+    "language": "python",
+    "correct": ["13"],
+    "case_sensitive": true,
+    "feedback": "The squares use their own area, 4 and 9. The Dot inherits Shape's, which is 0. The loop adds 4 + 0 + 9 without ever asking which kind of shape it has."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Calling the same method on objects of different classes, and having each one respond in its own way, is called ___.",
+    "correct": ["polymorphism"],
+    "case_sensitive": false,
+    "feedback": "Polymorphism means 'many forms': one call, such as c.sound(), takes a different form for each class of object it meets."
+  },
+  {
+    "type": "code_trace",
+    "question": "isinstance follows the chain of parents upward. What does the program print?",
+    "code": "class Creature:\n    pass\n\nclass Wolf(Creature):\n    pass\n\nw = Wolf()\nc = Creature()\nprint(isinstance(w, Creature), isinstance(c, Wolf))",
+    "language": "python",
+    "correct": ["True False"],
+    "case_sensitive": true,
+    "feedback": "A Wolf is a Creature, so the first is True. But a plain Creature is not a Wolf: 'is a' runs upward only, just as the search for methods does."
+  },
+  {
+    "question": "Wolf and Owl are both child classes of Creature, and w = Wolf(). Which of these are True? (Select all that apply.)",
+    "correct": [
+      "isinstance(w, Wolf)",
+      "isinstance(w, Creature)"
+    ],
+    "incorrect": [
+      "isinstance(w, Owl)",
+      "isinstance(Creature(), Wolf)",
+      "isinstance(Owl(), Wolf)"
+    ],
+    "feedback": "w is a Wolf, and every Wolf is a Creature. It is not an Owl: siblings share a parent, nothing more. And a plain Creature is not a Wolf, because 'is a' does not run downward."
+  },
+  {
+    "question": "A loop picks each creature's sound with a chain of  if isinstance(c, Wolf): ... elif isinstance(c, Owl): ...  lines. Why is giving each class its own sound() method the better design?",
+    "correct": ["A new creature class then needs no change to the loop"],
+    "incorrect": [
+      "isinstance gives wrong answers for a child class",
+      "A method call runs faster than an if statement",
+      "Python limits how many elif lines a loop may hold"
+    ],
+    "feedback": "With the isinstance chain, every new class means finding and editing every such loop. With polymorphism, the new class brings its own sound() and the loops are never touched."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "What number does this program print?\n\nclass Coin:\n    def value(self):\n        return 1\n\nclass Gem(Coin):\n    def value(self):\n        return {{g}}\n\nA list named bag holds {{c}} Coin objects and {{n}} Gem objects.\n\ntotal = 0\nfor item in bag:\n    total = total + item.value()\nprint(total)",
+    "variables": {
+      "g": { "min": 5, "max": 9 },
+      "c": { "min": 2, "max": 8 },
+      "n": { "min": 2, "max": 5 }
+    },
+    "answer": { "expr": "c + n * g", "tolerance_abs": 0 },
+    "feedback_template": "Each Coin answers value() with 1, and each Gem with {{g}}. So the total is {{c}} for the coins plus {{n}} gems at {{g}} each: {{expected}}."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: A parent that leaves a gap",
+    "npc": "zoya",
+    "intro": "On the top shelf sits a mould with a hole in the middle of it. “You could not fire a golem from this one,” Zoya says. “It is not for making golems. It is for making moulds.”",
+    "steps": [
+      {
+        "say": "Square overrides area, but it inherits describe from Shape. Now call Square(3).describe(). Python finds describe in Shape, and that method calls self.area().",
+        "beats": [
+          { "code": "class Shape:\n    def area(self):\n        return 0\n\n    def describe(self):\n        return \"area \" + str(self.area())\n\nclass Square(Shape):\n    def __init__(self, side):\n        self.side = side\n\n    def area(self):\n        return self.side * self.side", "language": "python" },
+          { "say": "Square overrides area, but it inherits describe from Shape. Now call Square(3).describe(). Python finds describe in Shape, and that method calls self.area()." }
+        ]
+      },
+      {
+        "say": "Here is the important part. Inside describe, self is still the Square. So the search for area starts at the object's own class, Square, and finds Square's version.",
+        "check": {
+          "prompt": "So what does Square(3).describe() return?",
+          "answer": "\"area 9\"",
+          "wrong": ["\"area 0\"", "An error"],
+          "why": "self is a Square, so self.area() runs Square's area, which is 3 * 3."
+        }
+      },
+      {
+        "say": "So a parent can write the shared part once and leave a gap for each child to fill in. Nobody would build a plain Shape; it exists only to be inherited from. A class like that is called abstract. Python will let you build one anyway. Java, as you are about to see, can forbid it.",
+        "beats": [
+          { "say": "So a parent can write the shared part once and leave a gap for each child to fill in." },
+          { "say": "Nobody would build a plain Shape; it exists only to be inherited from. A class like that is called abstract. Python will let you build one anyway. Java, as you are about to see, can forbid it." }
+        ]
+      }
+    ],
+    "outro": "“Remember who self is, and the rest follows.”"
+  },
+  {
+    "type": "code_trace",
+    "question": "show is written in Report, and it calls self.title(). What does the program print?",
+    "code": "class Report:\n    def title(self):\n        return \"Report\"\n\n    def show(self):\n        return self.title() + \"!\"\n\nclass Bill(Report):\n    def title(self):\n        return \"Bill\"\n\nprint(Bill().show())",
+    "language": "python",
+    "correct": ["Bill!"],
+    "case_sensitive": true,
+    "feedback": "show is inherited from Report, but self is a Bill. So self.title() starts its search at Bill and finds Bill's title. The parent's method ends up running the child's."
+  },
+  {
+    "question": "show is written in the class Report and calls self.title(). Bill, a child of Report, overrides title. Why does Bill().show() use Bill's title?",
+    "correct": ["self is the Bill object, so the search for title starts at Bill"],
+    "incorrect": [
+      "show is copied into Bill at the moment the class is defined",
+      "Python runs whichever method was defined most recently",
+      "Report's title is deleted as soon as a child overrides it"
+    ],
+    "feedback": "Every self.something() begins its search at the class of the object, whatever class the calling code was written in. Nothing is copied or deleted: Report().show() still uses Report's title."
+  },
+  {
+    "question": "What is an abstract class?",
+    "correct": ["A class meant to be inherited from, not built directly"],
+    "incorrect": [
+      "A class whose attributes are hidden from other code",
+      "A class that has no parent class anywhere above it",
+      "A class that stores other objects as its attributes"
+    ],
+    "feedback": "An abstract class such as Shape holds what its children share, and leaves gaps like area() for them to fill in. Hiding attributes is encapsulation; storing objects is composition."
+  },
+  {
+    "type": "code_trace",
+    "question": "__str__ is a method like any other, so it is inherited too. What does the program print?",
+    "code": "class Item:\n    def __init__(self, name):\n        self.name = name\n\n    def __str__(self):\n        return \"<\" + self.name + \">\"\n\nclass Potion(Item):\n    pass\n\nprint(Potion(\"tonic\"))",
+    "language": "python",
+    "correct": ["<tonic>"],
+    "case_sensitive": true,
+    "feedback": "print asks the object for its __str__. Potion has none of its own, so the search moves up to Item, whose __str__ wraps the name in angle brackets."
+  },
+  {
+    "question": "Which of these pairs should be modelled with inheritance rather than with composition?",
+    "correct": ["Wolf and Creature: every wolf is a creature"],
+    "incorrect": [
+      "Hero and Weapon: every hero carries a weapon",
+      "Pack and Item: every pack holds several items",
+      "Castle and Gate: every castle is built with a gate"
+    ],
+    "feedback": "Only the first passes the 'is a' test. A hero is not a weapon, a pack is not an item, and a castle is not a gate; each of those HAS the other, so it stores it as an attribute."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The same design in Java",
+    "npc": "zoya",
+    "intro": "By the gate of the yard hangs a set of moulds stamped with unfamiliar marks. “Your next course writes its classes in Java,” Zoya says. “Same clay. Different stamps.”",
+    "steps": [
+      {
+        "say": "Here is Creature in Java. Three changes of spelling. The attributes are declared at the top, each with its type, and are called fields. __init__ becomes a constructor, which is named after the class. And self becomes this.",
+        "beats": [
+          { "code": "class Creature {\n    String name;\n\n    Creature(String name) {\n        this.name = name;\n    }\n\n    String sound() {\n        return \"...\";\n    }\n}", "language": "java" },
+          { "say": "Here is Creature in Java. Three changes of spelling. The attributes are declared at the top, each with its type, and are called fields." },
+          { "say": "__init__ becomes a constructor, which is named after the class. And self becomes this." }
+        ]
+      },
+      {
+        "say": "extends names the parent. super(name) runs the parent's constructor. @Override is a note to Java that says 'I mean to replace a parent method', and Java refuses to run the program if there is no such method to replace.",
+        "beats": [
+          { "code": "class Wolf extends Creature {\n    Wolf(String name) {\n        super(name);\n    }\n\n    @Override\n    String sound() {\n        return \"Awoo\";\n    }\n}", "language": "java" },
+          { "say": "extends names the parent. super(name) runs the parent's constructor." },
+          { "say": "@Override is a note to Java that says 'I mean to replace a parent method', and Java refuses to run the program if there is no such method to replace." }
+        ],
+        "check": {
+          "prompt": "Which line of Python does Java's  super(name);  correspond to?",
+          "answer": "super().__init__(name)",
+          "wrong": ["self.name = name", "class Wolf(Creature):"],
+          "why": "Both run the parent's setup code on the new object, handing it the name."
+        }
+      },
+      {
+        "say": "Java also turns two habits into rules. Mark a class abstract, and Java will not let anyone build one directly. And every variable has a declared type, so a variable of type Creature may hold a Wolf or an Owl, but nothing that is not a Creature. Inheritance, overriding, super, polymorphism: the same four ideas.",
+        "beats": [
+          { "say": "Java also turns two habits into rules. Mark a class abstract, and Java will not let anyone build one directly." },
+          { "say": "And every variable has a declared type, so a variable of type Creature may hold a Wolf or an Owl, but nothing that is not a Creature." },
+          { "say": "Inheritance, overriding, super, polymorphism: the same four ideas." }
+        ]
+      }
+    ],
+    "outro": "“Read the stamps. You already know the clay.”"
+  },
+  {
+    "type": "matching",
+    "question": "Match each piece of Python to the way Java writes the same thing.",
+    "pairs": [
+      { "term": "class Wolf(Creature):", "definition": "class Wolf extends Creature {" },
+      { "term": "def __init__(self, name):", "definition": "Wolf(String name) {" },
+      { "term": "super().__init__(name)", "definition": "super(name);" },
+      { "term": "self.name", "definition": "this.name" },
+      { "term": "Wolf(\"Fang\")", "definition": "new Wolf(\"Fang\")" }
+    ],
+    "feedback": "extends for the parent, a constructor named after the class, super(...) for the parent's constructor, this for self, and the word new in front of the class name when building an object."
+  },
+  {
+    "type": "code_trace",
+    "question": "This is Java. The variable c has the type Creature, but the object stored in it is an Owl. What does it print?",
+    "code": "class Creature {\n    String sound() {\n        return \"...\";\n    }\n}\n\nclass Owl extends Creature {\n    @Override\n    String sound() {\n        return \"Hoo\";\n    }\n}\n\nCreature c = new Owl();\nSystem.out.println(c.sound());",
+    "language": "java",
+    "correct": ["Hoo"],
+    "case_sensitive": true,
+    "feedback": "As in Python, the OBJECT's class decides which version runs, not the type written on the variable. The object is an Owl, so Owl's sound runs. That is polymorphism in Java."
+  },
+  {
+    "question": "Earlier, a method misspelled as sounds quietly failed to override sound in Python. In Java, what happens when a method marked @Override matches no method in the parent?",
+    "correct": ["Java refuses to compile, and reports the mismatch"],
+    "incorrect": [
+      "Java runs the parent's method and prints a warning",
+      "Java quietly treats the method as a brand new one",
+      "Java renames the method so that the two names match"
+    ],
+    "feedback": "@Override states your intention, and the compiler checks it before the program ever runs. A bug that Python lets through silently becomes an error message you see straight away."
+  },
+  {
+    "type": "code_write",
+    "question": "A Hero has a Weapon. Write strike so that it returns double the damage of THIS hero's weapon.",
+    "scaffold": "class Weapon:\n    def __init__(self, name, damage):\n        self.name = name\n        self.damage = damage\n\nclass Hero:\n    def __init__(self, name, weapon):\n        self.name = name\n        self.weapon = weapon",
+    "signature": "def strike(self):",
+    "tests": [
+      { "run": "h = Hero(\"Ayla\", Weapon(\"bow\", 5))", "check": "h.strike()", "expect": 10 },
+      { "run": "h = Hero(\"Bren\", Weapon(\"dagger\", 2))", "check": "h.strike()", "expect": 4 },
+      { "run": "a = Hero(\"Ayla\", Weapon(\"bow\", 5))\nb = Hero(\"Cy\", Weapon(\"axe\", 8))", "check": "b.strike()", "expect": 16 },
+      { "run": "h = Hero(\"Dov\", Weapon(\"twig\", 0))", "check": "h.strike()", "expect": 0 }
+    ],
+    "solution": "return self.weapon.damage * 2",
+    "hint": "Follow the dots: self, then .weapon, then .damage.",
+    "feedback": "self.weapon.damage: the method reaches through the hero to the object she holds. That is composition at work; the Hero does not need to know anything about weapons except that they have a damage."
+  },
+  {
+    "type": "code_write",
+    "question": "A Pack keeps Item objects in the list self.items. Write total_weight so that it returns the weights of all the items in THIS pack added together. An empty pack weighs 0.",
+    "scaffold": "class Item:\n    def __init__(self, weight):\n        self.weight = weight\n\nclass Pack:\n    def __init__(self):\n        self.items = []\n\n    def add(self, item):\n        self.items.append(item)",
+    "signature": "def total_weight(self):",
+    "tests": [
+      { "run": "p = Pack()", "check": "p.total_weight()", "expect": 0 },
+      { "run": "p = Pack()\np.add(Item(3))", "check": "p.total_weight()", "expect": 3 },
+      { "run": "p = Pack()\np.add(Item(3))\np.add(Item(4))\np.add(Item(5))", "check": "p.total_weight()", "expect": 12 },
+      { "run": "a = Pack()\nb = Pack()\na.add(Item(7))\nb.add(Item(1))", "check": "b.total_weight()", "expect": 1 }
+    ],
+    "solution": "result = 0\nfor item in self.items:\n    result = result + item.weight\nreturn result",
+    "hint": "The accumulator pattern: start at 0, loop over self.items, and add each item's .weight.",
+    "feedback": "A loop over a list of objects, asking each one for an attribute. It is the accumulator pattern you already know; only the thing being added has changed."
+  },
+  {
+    "type": "code_write",
+    "question": "Write the class Wolf, a child of Creature. Override sound so that a Wolf returns \"Awoo\". Do not write an __init__: Wolf should inherit Creature's.",
+    "scaffold": "class Creature:\n    def __init__(self, name):\n        self.name = name\n\n    def sound(self):\n        return \"...\"",
+    "signature": "class Wolf(Creature):",
+    "tests": [
+      { "run": "w = Wolf(\"Fang\")", "check": "w.sound()", "expect": "Awoo" },
+      { "run": "w = Wolf(\"Fang\")", "check": "w.name", "expect": "Fang" },
+      { "run": "c = Creature(\"Blob\")", "check": "c.sound()", "expect": "..." },
+      { "run": "w = Wolf(\"Grey\")", "check": "isinstance(w, Creature)", "expect": true }
+    ],
+    "solution": "def sound(self):\n    return \"Awoo\"",
+    "hint": "The class line is written for you. Inside it, define sound(self) with exactly that name, returning \"Awoo\".",
+    "feedback": "One method with the parent's exact name is all it takes to override. Everything else, including __init__ and the name attribute it stores, arrives by inheritance."
+  },
+  {
+    "type": "code_write",
+    "question": "Finish Dragon's __init__. Creature's __init__ already stores name and hp, and marks the creature as alive, so pass name and hp up to it with super(). Then store fire in an attribute called fire.",
+    "scaffold": "class Creature:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n        self.alive = True\n\nclass Dragon(Creature):",
+    "signature": "def __init__(self, name, hp, fire):",
+    "tests": [
+      { "run": "d = Dragon(\"Ember\", 40, 9)", "check": "d.fire", "expect": 9 },
+      { "run": "d = Dragon(\"Ember\", 40, 9)", "check": "d.name", "expect": "Ember" },
+      { "run": "d = Dragon(\"Ember\", 40, 9)", "check": "d.hp", "expect": 40 },
+      { "run": "d = Dragon(\"Ember\", 40, 9)", "check": "d.alive", "expect": true },
+      { "run": "a = Dragon(\"Ember\", 40, 9)\nb = Dragon(\"Ash\", 25, 3)", "check": "b.hp + b.fire", "expect": 28 }
+    ],
+    "solution": "super().__init__(name, hp)\nself.fire = fire",
+    "hint": "Two lines. First super().__init__(...) with the two values the parent wants; then self.fire = fire.",
+    "feedback": "The parent's share goes up through super().__init__(name, hp); the child stores only what is new. Dragon never needs to know everything Creature sets up, such as alive."
+  },
+  {
+    "type": "code_write",
+    "question": "Write Dragon's describe so that it EXTENDS the parent's. It should return whatever Creature's describe returns for this dragon, followed by \" (fire)\". Use super().",
+    "scaffold": "class Creature:\n    def __init__(self, name):\n        self.name = name\n\n    def describe(self):\n        return self.name + \" the creature\"\n\nclass Dragon(Creature):",
+    "signature": "def describe(self):",
+    "tests": [
+      { "run": "d = Dragon(\"Ember\")", "check": "d.describe()", "expect": "Ember the creature (fire)" },
+      { "run": "d = Dragon(\"Ash\")", "check": "d.describe()", "expect": "Ash the creature (fire)" },
+      { "run": "c = Creature(\"Blob\")", "check": "c.describe()", "expect": "Blob the creature" }
+    ],
+    "solution": "return super().describe() + \" (fire)\"",
+    "hint": "super().describe() gives you the parent's text. Join \" (fire)\" onto the end of it with +.",
+    "feedback": "super().describe() runs the parent's version on this same object. Writing self.describe() here instead would call this very method again, without end."
+  },
+  {
+    "type": "code_write",
+    "question": "A Canvas keeps Shape objects in the list self.shapes. Some are plain Shapes and some are Squares. Write total_area so that it returns the areas of all the shapes on THIS canvas added together. Call each shape's area() and let the shape decide.",
+    "scaffold": "class Shape:\n    def area(self):\n        return 0\n\nclass Square(Shape):\n    def __init__(self, side):\n        self.side = side\n\n    def area(self):\n        return self.side * self.side\n\nclass Canvas:\n    def __init__(self):\n        self.shapes = []",
+    "signature": "def total_area(self):",
+    "tests": [
+      { "run": "c = Canvas()", "check": "c.total_area()", "expect": 0 },
+      { "run": "c = Canvas()\nc.shapes.append(Square(2))\nc.shapes.append(Square(3))", "check": "c.total_area()", "expect": 13 },
+      { "run": "c = Canvas()\nc.shapes.append(Shape())\nc.shapes.append(Square(5))", "check": "c.total_area()", "expect": 25 },
+      { "run": "a = Canvas()\nb = Canvas()\na.shapes.append(Square(4))", "check": "b.total_area()", "expect": 0 }
+    ],
+    "solution": "result = 0\nfor shape in self.shapes:\n    result = result + shape.area()\nreturn result",
+    "hint": "Start at 0, loop over self.shapes, and add shape.area() for each one. No if is needed.",
+    "feedback": "The loop calls area() and never asks what kind of shape it has. That is polymorphism: add a Circle class tomorrow and this method works on it unchanged."
+  },
+  {
+    "type": "code_write",
+    "question": "A Den keeps creatures in the list self.animals. Write count_wolves so that it returns how many of them are Wolf objects. A Pup is a kind of Wolf, so pups count too. Use isinstance.",
+    "scaffold": "class Creature:\n    pass\n\nclass Wolf(Creature):\n    pass\n\nclass Pup(Wolf):\n    pass\n\nclass Owl(Creature):\n    pass\n\nclass Den:\n    def __init__(self):\n        self.animals = []",
+    "signature": "def count_wolves(self):",
+    "tests": [
+      { "run": "d = Den()", "check": "d.count_wolves()", "expect": 0 },
+      { "run": "d = Den()\nd.animals = [Wolf(), Owl(), Wolf()]", "check": "d.count_wolves()", "expect": 2 },
+      { "run": "d = Den()\nd.animals = [Pup(), Owl(), Wolf(), Creature()]", "check": "d.count_wolves()", "expect": 2 },
+      { "run": "d = Den()\nd.animals = [Owl(), Creature()]", "check": "d.count_wolves()", "expect": 0 }
+    ],
+    "solution": "count = 0\nfor animal in self.animals:\n    if isinstance(animal, Wolf):\n        count = count + 1\nreturn count",
+    "hint": "Count with a loop: add 1 whenever isinstance(animal, Wolf) is True.",
+    "feedback": "isinstance(animal, Wolf) is True for a Wolf and for anything below Wolf, so the Pup is counted without being mentioned. A plain Creature is not a Wolf, and neither is an Owl."
+  },
+  {
+    "type": "code_write",
+    "question": "Write the class Knight, a child of Guard. Its __init__ takes name and horse: pass name up with super(), and store horse in an attribute called horse. Override patrol so that it returns what Guard's patrol returns, followed by \" on \" and then the horse.",
+    "scaffold": "class Guard:\n    def __init__(self, name):\n        self.name = name\n\n    def patrol(self):\n        return self.name + \" walks the wall\"",
+    "signature": "class Knight(Guard):",
+    "tests": [
+      { "run": "k = Knight(\"Bo\", \"Ash\")", "check": "k.patrol()", "expect": "Bo walks the wall on Ash" },
+      { "run": "k = Knight(\"Bo\", \"Ash\")", "check": "k.name", "expect": "Bo" },
+      { "run": "k = Knight(\"Bo\", \"Ash\")", "check": "k.horse", "expect": "Ash" },
+      { "run": "g = Guard(\"Al\")", "check": "g.patrol()", "expect": "Al walks the wall" },
+      { "run": "a = Knight(\"Bo\", \"Ash\")\nb = Knight(\"Cy\", \"Dun\")", "check": "b.patrol()", "expect": "Cy walks the wall on Dun" }
+    ],
+    "solution": "def __init__(self, name, horse):\n    super().__init__(name)\n    self.horse = horse\n\ndef patrol(self):\n    return super().patrol() + \" on \" + self.horse",
+    "hint": "Two methods. __init__(self, name, horse) calls super().__init__(name) and stores horse; patrol(self) returns super().patrol() + \" on \" + self.horse.",
+    "feedback": "The whole lesson in one class: inherit from a parent, pass its share of the setup up through super().__init__, add an attribute, and extend a method by building on super().patrol()."
+  }
+]
