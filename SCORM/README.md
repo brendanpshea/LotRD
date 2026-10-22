@@ -42,6 +42,7 @@ Output: `SCORM/dist/<edition>-scorm.zip`
 ```sh
 python SCORM/build.py SCORM/editions/computing_singles.json    # one zip per chapter, 4-12
 python SCORM/build.py SCORM/editions/java_singles.json         # one zip per Java chapter, 0-12
+python SCORM/build.py SCORM/editions/techplus_singles.json     # one zip per Tech+ set, as they are written
 ```
 
 A config with `"single_sets": true` builds one package per set it lists
