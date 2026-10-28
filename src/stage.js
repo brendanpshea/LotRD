@@ -115,6 +115,20 @@ export function planTurn(d, { boss = false, drop = null, strike = true } = {}) {
   return { beats, end: beats.length ? t + BEAT.settle : 0 };
 }
 
+/** The sound a beat makes: a name in SFX (sound.js), or null. */
+export function sfxFor(beat) {
+  const hero = beat.who === "hero";
+  switch (beat.act) {
+    case "attack": return hero ? (beat.charged ? "charged" : "swing") : "claw";
+    case "hit":    return hero ? "hurt" : "hit";
+    case "vanish": return beat.tone === "item" ? "boom" : "defeat";
+    case "glow":   return beat.tone === "heal" ? "heal" : beat.tone === "gold" ? "gold" : "buff";
+    case "down": case "revive": case "block": case "reflect": case "throw": case "drop":
+      return beat.act;
+    default:       return null;
+  }
+}
+
 /**
  * An item used from the inventory.
  * @param {object} item – from ITEMS

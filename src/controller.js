@@ -1040,7 +1040,6 @@ export class GameController {
         this._resolveBattle(finalResult);
         return;
       }
-      this.sounds.incorrect();
       this.ui.showFillBlankAttempt(result);
       this.saveGame();
       return;
@@ -1081,7 +1080,6 @@ export class GameController {
         this._resolveBattle(finalResult);
         return;
       }
-      this.sounds.incorrect();
       this.ui.showCodeLineAttempt(result);
       this.saveGame();
       return;
@@ -1183,7 +1181,7 @@ export class GameController {
     if (mulliganArmed && !wasPerfect && !monsterDead) {
       this._mulliganRestore(snap);
       this.model.pending_effects.delete('mulligan');
-      this.sounds.incorrect();
+      this.sounds.play("wrong");
       this.ui.showFeedbackInline("🔁 Mulligan! That answer was rolled back. Try again.");
       this.saveGame();
       return;
@@ -1243,16 +1241,7 @@ export class GameController {
     }
 
     this._saveAfterAnswer(battleData);
-
-    const hasErrors = battleData.incorrectSelections.length > 0 || battleData.missedCorrect.length > 0;
-    if (battleData.defeated_monster) this.sounds.monsterDefeated();
-    else if (hasErrors) this.sounds.incorrect();
-    else {
-      this.sounds.correct();
-      if (battleData.streakCount >= 3) {
-        setTimeout(() => this.sounds.streakHit(battleData.streakCount), 250);
-      }
-    }
+    // No sound here: the battle stage gives each blow its own, as it lands.
 
     // What happens next is decided by Continue, exactly once. A double-click, or
     // Enter held down, used to run it twice: the second run advanced past the
@@ -1385,7 +1374,6 @@ export class GameController {
     if (item.kind === "pending") {
       this.model.consumeSlot(slotIdx);
       this.model.pending_effects.add(item.effect);
-      this.sounds.correct();
       this.ui.showFeedbackInline(`${item.emoji} ${item.name} armed.`);
       this.ui.refreshHUD();
       this.ui.animateItem?.(item);
@@ -1405,7 +1393,6 @@ export class GameController {
         const actual = Math.max(0, Math.min(item.amount, room));
         this.model.player.hit_points += actual;
         this.model.consumeSlot(slotIdx);
-        this.sounds.correct();
         this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +${actual} HP.`);
         this.ui.refreshHUD();
         this.ui.animateItem?.(item, { amount: actual });
@@ -1415,7 +1402,6 @@ export class GameController {
         this.model.player.max_hit_points += item.amount;
         this.model.player.hit_points     += item.amount;
         this.model.consumeSlot(slotIdx);
-        this.sounds.levelUp();
         this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +${item.amount} max HP!`);
         this.ui.refreshHUD();
         this.ui.animateItem?.(item);
@@ -1424,7 +1410,6 @@ export class GameController {
       case "add_revive": {
         this.model.player.revive_charges++;
         this.model.consumeSlot(slotIdx);
-        this.sounds.levelUp();
         this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +1 revive charge.`);
         this.ui.refreshHUD();
         this.ui.animateItem?.(item);
@@ -1436,7 +1421,6 @@ export class GameController {
           return;
         }
         this.model.consumeSlot(slotIdx);
-        this.sounds.monsterDefeated();
         this.model.current_monster.hit_points = 0;
         const healed = this.model.healForKill();
         // Re-queue the current question so the player still has to face it later.

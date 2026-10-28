@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound board</title>
+<!--
+  Hear every sound in src/sound.js, alone or as the stage plays it in a round,
+  and change any of them. Not shipped: SCORM/build.py copies src, assets and
+  images only. Serve the repo root over http (ES modules do not load from
+  file://) and open /tools/sound-board.html.
+-->
+<style>
+  :root { --bg: #030903; --panel: #0d120d; --text: #c8ffb0; --border: #00c840; --dim: #5aaa5a; --yellow: #ffe066; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 "Courier New", Courier, monospace; }
+  main { max-width: 980px; margin: 0 auto; padding: 16px; }
+  h1 { color: #00e87a; font-size: 1.4rem; margin: 0 0 4px; }
+  h2 { color: #00e87a; font-size: 1.05rem; margin: 22px 0 8px; }
+  p { margin: 4px 0 10px; color: var(--dim); }
+  a { color: #00d4cc; }
+  button {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    font: inherit; padding: 4px 10px; cursor: pointer;
+  }
+  button:hover, button:focus-visible { background: #133513; outline: none; }
+  .rounds { display: flex; flex-wrap: wrap; gap: 8px; }
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: 4px 6px; border-top: 1px solid #1d3a1d; vertical-align: middle; }
+  td.name { color: var(--yellow); white-space: nowrap; }
+  td.when { color: var(--dim); font-size: 0.85rem; }
+  td.params { width: 50%; }
+  input {
+    width: 100%; box-sizing: border-box; background: #070e07; color: var(--text);
+    border: 1px solid #2f5f2f; font: 13px "Courier New", monospace; padding: 4px;
+  }
+  input.changed { border-color: var(--yellow); }
+  input.bad { border-color: #ff6b6b; }
+  textarea {
+    width: 100%; box-sizing: border-box; min-height: 14rem; background: #070e07; color: var(--text);
+    border: 1px solid #2f5f2f; font: 13px "Courier New", monospace; padding: 8px;
+  }
+  @media (max-width: 640px) {
+    tr { display: grid; grid-template-columns: auto 1fr; }
+    td.when, td.params { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sound board</h1>
+  <p>Every sound effect in the game. Press ▶ to hear one, or play a whole round as the battle stage times it.</p>
+
+  <h2>A round, as the stage plays it</h2>
+  <div class="rounds" id="rounds"></div>
+
+  <h2>Each sound</h2>
+  <p>To change a sound, edit its numbers here (a changed one turns yellow), or copy them into the
+    <a href="https://killedbyapixel.github.io/ZzFX" target="_blank" rel="noopener">ZzFX designer</a>,
+    shape it there, and paste back what it gives you (<code>zzfx(...[…])</code> or just the <code>[…]</code>).</p>
+  <table><tbody id="sounds"></tbody></table>
+
+  <h2>Keep your changes</h2>
+  <p>Copy this into <code>SFX</code> in <code>src/sound.js</code>, or send it to whoever is changing the code.</p>
+  <button type="button" id="copy">Copy the table</button>
+  <textarea id="out" readonly></textarea>
+</main>
+
+<script type="module">
+  import { SFX, SoundSystem } from "../src/sound.js";
+  import { planTurn, planItem, sfxFor } from "../src/stage.js";
+  import { ITEMS } from "../src/items.js";
+
+  const WHEN = {
+    swing: "the hero lunges", charged: "the hero lunges on a streak", hit: "the blow lands on the monster",
+    claw: "the monster strikes back", hurt: "the blow lands on the hero", defeat: "a monster vanishes",
+    boom: "a Logic Bomb goes off", down: "the hero is knocked out", revive: "the hero gets back up",
+    block: "a Firewall Shard takes the blow", reflect: "a Stack Mirror sends it back", heal: "HP comes back",
+    buff: "an item is armed", gold: "a revive charge", throw: "an item is thrown",
+    drop: "a beaten monster drops an item", wrong: "a first miss on a typed answer (it costs nothing)",
+    levelUp: "a level up", victory: "a set won", gameOver: "a run lost",
+  };
+
+  const sounds = new SoundSystem();
+  const current = Object.fromEntries(Object.entries(SFX).map(([name, p]) => [name, [...p]]));
+
+  /** ZzFX's own way of writing parameters: blanks for defaults, no leading zero. */
+  const format = p => `[${Array.from(p, v => v === undefined ? "" : String(v).replace(/^(-?)0\./, "$1.")).join(",")}]`;
+  /** Parameters from what someone typed or pasted: "[...]" or "zzfx(...[...])". */
+  function parse(text) {
+    const inner = text.match(/\[([^\]]*)\]/)?.[1];
+    if (inner === undefined) return null;
+    const p = inner.split(",").map(s => s.trim() === "" ? undefined : Number(s));
+    return p.some(v => v !== undefined && !Number.isFinite(v)) ? null : p;
+  }
+  const play = name => sounds.playParams(current[name]);
+
+  const rows = document.getElementById("sounds");
+  for (const name of Object.keys(SFX)) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><button type="button" aria-label="Play ${name}">▶</button></td>
+      <td class="name">${name}</td><td class="when">${WHEN[name] ?? ""}</td>
+      <td class="params"><input aria-label="${name} parameters" spellcheck="false"></td>`;
+    const input = tr.querySelector("input");
+    input.value = format(SFX[name]);
+    tr.querySelector("button").addEventListener("click", () => play(name));
+    input.addEventListener("input", () => {
+      const p = parse(input.value);
+      input.classList.toggle("bad", !p);
+      if (!p) return;
+      current[name] = p;
+      input.classList.toggle("changed", format(p) !== format(SFX[name]));
+      writeOut();
+    });
+    input.addEventListener("keydown", e => { if (e.key === "Enter") play(name); });
+    rows.appendChild(tr);
+  }
+
+  // Rounds built by the same choreography the game uses, so the timing is the game's.
+  const round = over => ({ effective_player_damage: 0, effective_monster_damage: 0, defeated_monster: false,
+    defeated_player: false, shield_used: false, mirror_used: false, streakMultiplier: 1, ...over });
+  const item = id => ITEMS.find(i => i.id === id);
+  const ROUNDS = {
+    "Right answer": planTurn(round({ effective_player_damage: 6 })),
+    "Right, on a streak": planTurn(round({ effective_player_damage: 8, streakMultiplier: 1.5 })),
+    "Partly right": planTurn(round({ effective_player_damage: 2, effective_monster_damage: 3 })),
+    "Wrong": planTurn(round({ effective_monster_damage: 4 })),
+    "The kill, a drop, a heal": planTurn(round({ effective_player_damage: 9, defeated_monster: true, healed: 5 }),
+      { drop: item("health_potion") ?? ITEMS[0] }),
+    "Knocked out, revived": planTurn(round({ effective_monster_damage: 6, revived: true })),
+    "Shield blocks": planTurn(round({ shield_used: true })),
+    "Mirror": planTurn(round({ mirror_used: true, mirror_damage: 3 })),
+    "Logic Bomb": planItem(item("logic_bomb"), { healed: 5 }),
+    "Potion": planItem(ITEMS.find(i => i.effect === "heal")),
+    "Arm an item": planItem(ITEMS.find(i => i.kind === "pending")),
+  };
+  const roundBox = document.getElementById("rounds");
+  for (const [label, plan] of Object.entries(ROUNDS)) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = `▶ ${label}`;
+    b.addEventListener("click", () => {
+      for (const beat of plan.beats) {
+        const name = sfxFor(beat);
+        if (name) setTimeout(() => play(name), beat.at);
+      }
+    });
+    roundBox.appendChild(b);
+  }
+
+  const out = document.getElementById("out");
+  function writeOut() {
+    const width = Math.max(...Object.keys(current).map(n => n.length)) + 1;
+    out.value = "export const SFX = {\n" + Object.entries(current)
+      .map(([name, p]) => `  ${(name + ":").padEnd(width)} ${format(p)},${WHEN[name] ? `  // ${WHEN[name]}` : ""}`)
+      .join("\n") + "\n};\n";
+  }
+  writeOut();
+  document.getElementById("copy").addEventListener("click", async () => {
+    out.select();
+    try { await navigator.clipboard.writeText(out.value); } catch (_) { document.execCommand?.("copy"); }
+  });
+</script>
+</body>
+</html>

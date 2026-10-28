@@ -301,7 +301,8 @@ src/
   app.js            — Barrel module that re-exports the main runtime classes
   controller.js     — GameController; game flow, persistence, item drops, review-set launch
   ui.js             — GameUI; all screen rendering, keyboard handling, encounter/results screens
-  sound.js          — SoundSystem; Web Audio API effects, woken by every press, kept awake by an inaudible hum, never played late
+  sound.js          — SoundSystem and the SFX table; woken by every press, kept awake by an inaudible hum, never played late
+  zzfx.js           — ZzFX's sample generator (MIT), which turns each SFX entry into a sound
   items.js          — ITEM_DROPS table for post-battle loot
   stage.js          — The battle stage's choreography: a round or an item as timed beats
   heroes.js         — The heroes a student can play as, and which one this browser chose
@@ -436,6 +437,12 @@ matches the number of questions actually in each file.
 | `lotrd_hero` | The hero this browser plays as (an id from `src/heroes.js`) |
 
 ---
+
+## Sounds
+
+Every sound effect is a short list of numbers in `SFX` (`src/sound.js`), turned into audio by [ZzFX](https://github.com/KilledByAPixel/ZzFX) (MIT): no audio files, nothing to license, and nothing extra in a package. The fight's sounds play on the stage beats that show them (`sfxFor` in `src/stage.js`): the swing as the hero lunges, the hit as the blow lands, the monster's counter, a kill, an item's glow, a drop. They still play under reduced motion, which stills the stage but not the sound.
+
+To hear or change them, serve the repo root and open `/tools/sound-board.html`. It plays each sound alone or a whole round with the game's own timing, takes edited numbers or anything pasted from the [ZzFX designer](https://killedbyapixel.github.io/ZzFX), and writes out a new `SFX` table to paste into `src/sound.js`. The board is not shipped in the SCORM packages.
 
 ## Sprites
 

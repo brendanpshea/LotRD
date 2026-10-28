@@ -2,7 +2,8 @@
 // round of combat, or an item, looks like as a sequence of beats.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { planTurn, planItem, BEAT } from '../src/stage.js';
+import { planTurn, planItem, sfxFor, BEAT } from '../src/stage.js';
+import { SFX } from '../src/sound.js';
 import { ITEMS } from '../src/items.js';
 
 /** A round's result with nothing in it; override what happened. */
@@ -137,5 +138,36 @@ describe('using an item', () => {
 
   it('every item has something to show', () => {
     for (const i of ITEMS) assert.ok(planItem(i).end > 0, i.id);
+  });
+});
+
+describe('what the stage sounds like', () => {
+  const sounds = plan => [...plan.beats].sort((a, b) => a.at - b.at).map(sfxFor);
+
+  it('every beat of every kind of round, and every item, makes a sound that exists', () => {
+    const plans = [
+      planTurn(round({ effective_player_damage: 2, effective_monster_damage: 3 })),
+      planTurn(round({ effective_player_damage: 9, streakMultiplier: 1.5, defeated_monster: true, healed: 5 }),
+        { drop: ITEMS[0] }),
+      planTurn(round({ effective_monster_damage: 4, defeated_player: true, revived: true })),
+      planTurn(round({ shield_used: true })),
+      planTurn(round({ mirror_used: true, mirror_damage: 3 })),
+      ...ITEMS.map(i => planItem(i, { healed: 4 })),
+    ];
+    for (const beat of plans.flatMap(p => p.beats)) {
+      assert.ok(sfxFor(beat) in SFX, `${beat.who} ${beat.act} ${beat.tone ?? ''}: ${sfxFor(beat)}`);
+    }
+  });
+
+  it('a partly right answer: the swing, the blow, the counter, the hurt', () => {
+    assert.deepEqual(sounds(planTurn(round({ effective_player_damage: 2, effective_monster_damage: 3 }))),
+      ['swing', 'hit', 'claw', 'hurt']);
+  });
+
+  it('a streak swings harder, a kill sounds its defeat and its drop, and a bomb is a boom', () => {
+    const kill = planTurn(round({ effective_player_damage: 9, streakMultiplier: 1.5, defeated_monster: true }),
+      { drop: ITEMS[0] });
+    assert.deepEqual(sounds(kill), ['charged', 'defeat', 'drop']);
+    assert.deepEqual(sounds(planItem(item('logic_bomb'))), ['throw', 'boom']);
   });
 });

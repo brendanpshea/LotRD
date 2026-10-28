@@ -28,7 +28,7 @@ function stubController(model) {
     showFeedbackInline: msg => c.messages.push(msg),
     refreshHUD: () => {},
   };
-  c.sounds = { correct: () => {}, incorrect: () => {}, levelUp: () => {}, monsterDefeated: () => {} };
+  c.sounds = { play: () => {}, levelUp: () => {}, victory: () => {}, gameOver: () => {} };
   c.saveGame = () => {};
   c._resolveBattle = data => c.resolved.push(data);
   return c;

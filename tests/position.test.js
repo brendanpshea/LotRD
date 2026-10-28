@@ -363,7 +363,7 @@ describe('a session cut off without warning', () => {
   /** Answer the question in play through the controller, as a click would. */
   function submit(c, right) {
     c.ui = { showResults() {}, showFeedbackInline() {}, refreshHUD() {} };   // results screen never dismissed
-    c.sounds = { correct() {}, incorrect() {}, monsterDefeated() {}, streakHit() {} };
+    c.sounds = { play() {}, levelUp() {}, victory() {}, gameOver() {} };
     c.model.current_monster.hit_points = 999;
     c.model.current_monster.defense = 0;
     c.model.player.hit_points = 999;

@@ -7,7 +7,7 @@ import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeW
 import { loadNpcRoster, findNpc } from "./npcs.js";
 import { HEROES, chosenHero, chooseHero, heroChosen } from "./heroes.js";
 import { ITEMS } from "./items.js";
-import { planTurn, planItem, BEAT } from "./stage.js";
+import { planTurn, planItem, sfxFor, BEAT } from "./stage.js";
 
 // Width over height of one pose in a sprite strip (three poses side by side),
 // by URL. Known only once the image has loaded; kept for the session.
@@ -317,7 +317,12 @@ export class GameUI {
   _playBeats(plan, d = {}) {
     const stage = $(this.root, "[data-ref=stage]");
     if (!stage || plan.end === 0 || this._prefersReducedMotion()) {
-      if (stage) { this._renderMonsterHp(this.root); this._renderPlayerHp(this.root); }
+      if (stage) {
+        this._renderMonsterHp(this.root);
+        this._renderPlayerHp(this.root);
+        // Sound is not motion: with the stage still, the fight is still heard.
+        for (const beat of plan.beats) setTimeout(() => this._sfx(beat), beat.at);
+      }
       return 0;
     }
     this._cancelBeats();
@@ -336,6 +341,7 @@ export class GameUI {
     const float = () => { if (beat.text) this._spawnFloatNumber(actor, beat.text, `dmg-float--${beat.tone || "hit"}`); };
     const pose = name => { if (sprite) sprite.dataset.pose = name; };
     const hero = beat.who === "hero";
+    this._sfx(beat);
     switch (beat.act) {
       case "attack":
         this._animate(actor, beat.charged ? ["is-lunging", "is-charged"] : ["is-lunging"], BEAT.attack);
@@ -410,13 +416,22 @@ export class GameUI {
     this._removeAfterAnimation(span, () => span.remove());
   }
 
+  /** The sound a beat makes, if any. */
+  _sfx(beat) {
+    const name = sfxFor(beat);
+    if (name) this.controller?.sounds?.play?.(name);
+  }
+
   /** A wrong guess with tries left: the monster hits back while the question stays up. */
   _playCounter(result) {
     const dmg = result.effective_monster_damage || 0;
     // The header was just redrawn with the HP after the blow; show it from before,
     // so it drops when the blow lands. After a revive, "before" was at most the blow.
     if (dmg > 0) this._renderPlayerHp(this.root, result.revived ? dmg : this.model.player.hit_points + dmg);
-    this._playBeats(planTurn(result, { strike: false }), result);
+    const plan = planTurn(result, { strike: false });
+    // A first miss costs nothing, so there is no blow to hear: say "no" instead.
+    if (plan.beats.length === 0) this.controller?.sounds?.play?.("wrong");
+    this._playBeats(plan, result);
   }
 
   /** An item from the inventory taking effect. Returns how long it plays. */
