@@ -301,7 +301,7 @@ src/
   app.js            — Barrel module that re-exports the main runtime classes
   controller.js     — GameController; game flow, persistence, item drops, review-set launch
   ui.js             — GameUI; all screen rendering, keyboard handling, encounter/results screens
-  sound.js          — SoundSystem; Web Audio API effects and keep-alive logic
+  sound.js          — SoundSystem; Web Audio API effects, woken by every press, kept awake by an inaudible hum, never played late
   items.js          — ITEM_DROPS table for post-battle loot
   stage.js          — The battle stage's choreography: a round or an item as timed beats
   heroes.js         — The heroes a student can play as, and which one this browser chose
