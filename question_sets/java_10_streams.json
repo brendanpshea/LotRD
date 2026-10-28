@@ -1,5 +1,84 @@
 [
   {
+    "type": "npc_demo",
+    "question": "NPC: Before we begin — lambdas and streams in brief",
+    "npc": "zoya",
+    "intro": "Zoya sets a handful of clay tokens beside a bench with three stations. “Two ways to sort these tokens. One tells the golem every step, the other says only what you want.”",
+    "steps": [
+      {
+        "say": "Code is **imperative** when you spell out every step of how. It is **declarative** when you say what result you want and leave the how to Java.",
+        "beats": [
+          {
+            "say": "Code is **imperative** when you spell out every step: make a list, loop, test, add."
+          },
+          {
+            "code": "List<String> big = new ArrayList<>();\nfor (String w : words) {\n    if (w.length() > 4) {\n        big.add(w);\n    }\n}",
+            "language": "java"
+          },
+          {
+            "say": "It is **declarative** when you say what result you want, and Java does the looping. This is a **stream pipeline**."
+          },
+          {
+            "code": "List<String> big = words.stream()\n    .filter(w -> w.length() > 4)\n    .collect(Collectors.toList());",
+            "language": "java"
+          }
+        ]
+      },
+      {
+        "say": "A **stream pipeline** is a row of stations. stream() is the source, **filter** keeps elements, **map** changes each one, and **collect** gathers the result.",
+        "beats": [
+          {
+            "say": "A pipeline is a row of stations. stream() is the source. **filter** keeps only the elements that pass a test."
+          },
+          {
+            "say": "**map** turns each element into something else. **collect** ends the pipeline and gathers what arrives into a new List."
+          },
+          {
+            "code": "// words: ogre, dragon, gnome, wizard\nwords.stream()\n    .filter(w -> w.length() > 4)    // dragon, gnome, wizard\n    .map(w -> w.length())\n    .collect(Collectors.toList());",
+            "language": "java"
+          },
+          {
+            "say": "After filter the tokens are dragon, gnome, wizard. Then map runs its function on each one."
+          }
+        ],
+        "check": {
+          "prompt": "dragon, gnome, wizard reach the station  .map(w -> w.length()).  What does it send on?",
+          "answer": "6, 5, 6",
+          "wrong": [
+            "dragon, gnome, wizard",
+            "3"
+          ],
+          "why": "map replaces every element with the result of its function and drops none, so three words become their three lengths."
+        }
+      },
+      {
+        "say": "The little arrow expression in each station is a **lambda**: parameters -> body. filter takes a lambda that answers true or false, and map takes one that returns a new value.",
+        "beats": [
+          {
+            "say": "The arrow expression in each station is a **lambda**: a small function written as parameters, an arrow, then a body."
+          },
+          {
+            "code": "w -> w.length() > 4        // answers true or false\nw -> w.length()            // returns a number",
+            "language": "java"
+          },
+          {
+            "say": "The first suits filter, which asks a yes-or-no question of each element. The second suits map, which turns each element into a new value."
+          }
+        ],
+        "check": {
+          "prompt": "Which lambda belongs inside  .filter( ... )  to keep only words that start with g?",
+          "answer": "w -> w.startsWith(\"g\")",
+          "wrong": [
+            "w -> w.toUpperCase()",
+            "w -> w.length()"
+          ],
+          "why": "filter needs a yes-or-no answer for every element. startsWith gives true or false, while the other two produce a new value, which is map's job."
+        }
+      }
+    ],
+    "outro": "“Keep the stations in order: source, filter, map, collect. The first question asks which way of writing it is which.”"
+  },
+  {
     "question": "The lecture calls the stream way of finding the fast ships declarative, and the loop imperative. What makes the stream version declarative?",
     "correct": [
       "It says WHAT result is wanted, and leaves the looping to Java"
