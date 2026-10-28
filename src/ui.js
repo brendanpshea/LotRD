@@ -450,6 +450,20 @@ export class GameUI {
   }
 
   /**
+   * A scene's line with its **key terms** in bold. Built from nodes, not HTML,
+   * so nothing else in the text can be read as markup.
+   */
+  _withKeyTerms(text) {
+    return String(text ?? "").split(/\*\*(.+?)\*\*/).map((part, i) => {
+      if (i % 2 === 0) return document.createTextNode(part);
+      const term = document.createElement("strong");
+      term.className = "npc-term";
+      term.textContent = part;
+      return term;
+    });
+  }
+
+  /**
    * Who the student plays as: the current hero, with the others behind a
    * "change" toggle — open until this browser has chosen one, so nobody plays
    * the default without having seen there was a choice.
@@ -1750,7 +1764,7 @@ export class GameUI {
     const addLine = (text, cls = "npc-line npc-say") => {
       const div = document.createElement("div");
       div.className = cls;
-      div.textContent = text;
+      div.append(...this._withKeyTerms(text));
       dialogue.appendChild(div);
       div.scrollIntoView?.({ block: "nearest" });
       return div;
@@ -1783,23 +1797,32 @@ export class GameUI {
     // beat at a time instead of a wall of text. A step's `beats` array is the
     // authored breakdown; a bare `say` string counts as a single beat.
     const queue = [];
-    for (const step of (q.steps || [])) {
+    for (const [s, step] of (q.steps || []).entries()) {
       const beats = Array.isArray(step.beats) && step.beats.length
         ? step.beats
         : [{ say: step.say }];
-      for (const b of beats) queue.push({ kind: b.figure ? "figure" : b.code != null ? "code" : "say", beat: b });
-      if (step.check) queue.push({ kind: "check", check: step.check });
+      beats.forEach((b, i) => queue.push({
+        kind: b.figure ? "figure" : b.code != null ? "code" : "say", beat: b, step: s, first: i === 0,
+      }));
+      if (step.check) queue.push({ kind: "check", check: step.check, step: s });
     }
 
+    // Each step is a frame of its own: it starts on a clear screen instead of
+    // under everything said before it. The scene's opening line stays with the
+    // first step, and the closing line gets a frame to itself.
     let pos = 0;
     const advance = () => {
       controls.innerHTML = "";
       if (pos >= queue.length) {
-        if (q.outro) addLine(q.outro, "npc-line npc-line--scene");
+        if (q.outro) {
+          dialogue.replaceChildren();
+          addLine(q.outro, "npc-line npc-line--scene");
+        }
         makeButton("Continue the adventure ⚔", "action-button", () => onDone()).focus();
         return;
       }
       const item = queue[pos++];
+      if (item.first && item.step > 0) dialogue.replaceChildren();
 
       if (item.kind === "figure") {
         const fig = this._figureElement(item.beat.figure);
@@ -1830,7 +1853,9 @@ export class GameUI {
             addLine(`Not quite — it's "${check.answer}". ${check.why || ""}`.trim(),
               "npc-line npc-line--gentle");
           }
-          advance();
+          // Wait for the student: the next frame would clear this away unread.
+          controls.innerHTML = "";
+          makeButton("Continue ▸", "action-button", advance).focus();
         });
       });
     };

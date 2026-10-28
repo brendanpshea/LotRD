@@ -843,7 +843,18 @@ describe('Question set file validation', () => {
                   `${label}: npc_demo check needs at least one wrong option`);
                 assert.ok(!step.check.wrong.includes(step.check.answer),
                   `${label}: npc_demo check answer must not appear in wrong[]`);
+                for (const opt of [step.check.answer, ...step.check.wrong]) {
+                  assert.ok(!opt.includes('**'), `${label}: ** in a check option, which is shown as plain text`);
+                }
               }
+            }
+            // **term** puts a key term in bold in a mentor's lines; an odd number
+            // of ** would leave asterisks on the screen.
+            const spoken = [q.intro, q.outro, ...q.steps.flatMap(s =>
+              [s.say, ...(s.beats || []).map(b => b.say), s.check?.prompt, s.check?.why])];
+            for (const text of spoken.filter(t => typeof t === 'string')) {
+              assert.equal((text.match(/\*\*/g) || []).length % 2, 0,
+                `${label}: unpaired ** in "${text.slice(0, 60)}"`);
             }
           } else {
             // multiple choice (default)

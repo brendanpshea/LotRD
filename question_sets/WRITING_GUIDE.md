@@ -937,6 +937,10 @@ ADD 5 TO count", "language": "pseudocode" },
 
 Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase describing the artifact (`typed by the attacker`). It is shown as a caption above the panel.
 
+**Key terms in bold.** Write `**term**` in a spoken line (a `say`, the `intro`/`outro`, a check's `prompt` or `why`) to show the term in bold where the mentor first names it: `"A **primary key** is a column whose value is unique for every row."` Bold the defining mention, not every mention, or nothing stands out. Check options are plain button labels, so `**` is not allowed there; `data.test.js` rejects that and an unpaired `**`.
+
+Each step is its own frame: when the next step starts, the screen clears, so a step should make sense on its own rather than leaning on the line just above it from the previous step.
+
 ### Writing Good NPC Scenes
 
 1. **Always pair it.** The very next entry in the array should be a real question using the same technique with different numbers/words (dynamic_numeric pairs beautifully: the scene demos 13 → binary, the monster asks for 22).
