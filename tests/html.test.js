@@ -42,6 +42,16 @@ describe('HTML template integrity', () => {
     assert.deepEqual(dupes, [], `Duplicate template IDs: ${dupes.join(', ')}`);
   });
 
+  it('every question template has a picture slot (data-ref="qFigure")', () => {
+    // A question's `figure` is drawn into this slot; a template without one would
+    // silently drop the picture for every question of its type.
+    const missing = [];
+    for (const m of html.matchAll(/<template id="(tpl-encounter(?:-[a-z-]+)?)">([\s\S]*?)<\/template>/g)) {
+      if (m[1] !== 'tpl-encounter-chrome' && !m[2].includes('data-ref="qFigure"')) missing.push(m[1]);
+    }
+    assert.deepEqual(missing, []);
+  });
+
   it('every template ID referenced in app.js exists in HTML', () => {
     const refs = [...srcJs.matchAll(/["'](tpl-[^"']+)["']/g)].map(m => m[1]);
     for (const ref of refs) {

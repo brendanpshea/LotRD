@@ -1,7 +1,7 @@
 // tests/data.test.js — Validate all JSON data files (questions, monsters, catalog, index)
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
 import { runProblem, isScriptProblem, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
@@ -1676,5 +1676,112 @@ describe('Audit checks', () => {
       }
       assert.deepEqual(bad, []);
     });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Pictures in questions: `figure` on any question, or a figure beat in a scene
+// ────────────────────────────────────────────────────────────────────────────────
+// A figure names a file under figures/ and describes it for anyone who can't see
+// it. Beside each file sits a small JSON file with its license and, unless the work
+// is the author's own, the credit the game shows under the picture. See the
+// writing guide's "Pictures" section.
+describe('Pictures in questions (figure)', () => {
+  const FIGURES = join(ROOT, 'figures');
+  const FORMATS = /\.(webp|svg|png|jpe?g)$/i;
+  const MAX_BYTES = 200 * 1024;
+  const FIGURE_KEYS = new Set(['src', 'alt', 'caption']);
+  const index = loadJSON('question_sets/index.json');
+
+  /** Every figure in every set: on questions, and on scene beats. */
+  const figures = [];
+  for (const setId of index) {
+    loadJSON(`question_sets/${setId}`).forEach((q, i) => {
+      const label = `${setId}[${i}]`;
+      if (q.figure !== undefined) figures.push({ label, q, figure: q.figure, inScene: false });
+      if (q.type === 'npc_demo') {
+        (q.steps || []).forEach((s, si) => (s.beats || []).forEach((b, bi) => {
+          if (b.figure !== undefined) figures.push({ label: `${label} step ${si + 1} beat ${bi + 1}`, q, figure: b.figure, inScene: true });
+        }));
+      }
+    });
+  }
+
+  const sidecarOf = src => src.replace(FORMATS, '.json');
+
+  /** The answers a question must not give away in its picture's alt text or caption. */
+  function answersOf(q) {
+    if (q.type === 'cloze') return (q.blanks || []).flatMap(b => b.accept || []);
+    if (q.type === 'fill_blank' || q.type === undefined || q.type === 'multiple_choice') return q.correct || [];
+    return [];
+  }
+
+  it('each figure has a file, alt text, and nothing unexpected', () => {
+    const bad = [];
+    for (const { label, figure } of figures) {
+      if (!figure || typeof figure !== 'object' || Array.isArray(figure)) { bad.push(`${label}: figure must be an object`); continue; }
+      for (const key of Object.keys(figure)) if (!FIGURE_KEYS.has(key)) bad.push(`${label}: figure has an unexpected field "${key}"`);
+      if (typeof figure.src !== 'string' || !FORMATS.test(figure.src)) bad.push(`${label}: figure.src must name a .webp, .svg, .png, or .jpg file`);
+      else if (figure.src.startsWith('/') || figure.src.includes('..') || figure.src.includes('\\')) bad.push(`${label}: figure.src is a path inside figures/, like "techplus/ports.webp"`);
+      if (typeof figure.alt !== 'string' || figure.alt.trim().length < 20) bad.push(`${label}: figure.alt must describe the picture (at least 20 characters)`);
+      if (figure.caption !== undefined && (typeof figure.caption !== 'string' || !figure.caption.trim())) bad.push(`${label}: figure.caption, when given, is a non-empty string`);
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('each figure file exists and stays under 200 KB', () => {
+    const bad = [];
+    for (const { label, figure } of figures) {
+      if (typeof figure?.src !== 'string') continue;
+      const path = join(FIGURES, figure.src);
+      if (!existsSync(path)) bad.push(`${label}: figures/${figure.src} does not exist`);
+      else if (statSync(path).size > MAX_BYTES) bad.push(`${label}: figures/${figure.src} is ${Math.round(statSync(path).size / 1024)} KB; resize or compress it under 200 KB`);
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('each figure file has a credit file beside it with a license, and a credit unless it is the author\'s own', () => {
+    const bad = [];
+    const seen = new Set();
+    for (const { figure } of figures) {
+      if (typeof figure?.src !== 'string' || seen.has(figure.src)) continue;
+      seen.add(figure.src);
+      const side = sidecarOf(figure.src);
+      if (!existsSync(join(FIGURES, side))) { bad.push(`figures/${side} is missing (the credit file for figures/${figure.src})`); continue; }
+      let meta;
+      try { meta = JSON.parse(readFileSync(join(FIGURES, side), 'utf-8')); } catch (e) { bad.push(`figures/${side} is not valid JSON`); continue; }
+      if (typeof meta.license !== 'string' || !meta.license.trim()) bad.push(`figures/${side}: needs a "license"`);
+      if (meta.own !== true && (typeof meta.credit !== 'string' || !meta.credit.trim())) bad.push(`figures/${side}: needs a "credit" (shown under the picture), or "own": true for the author's own work`);
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('no alt text or caption gives away a correct answer', () => {
+    const bad = [];
+    for (const { label, q, figure, inScene } of figures) {
+      if (inScene || !figure || typeof figure !== 'object') continue;
+      const shown = `${figure.alt || ''} ${figure.caption || ''}`.toLowerCase();
+      for (const answer of answersOf(q)) {
+        const a = String(answer).trim().toLowerCase();
+        if (a.length >= 3 && shown.includes(a)) bad.push(`${label}: the figure's alt text or caption contains the answer "${answer}"`);
+      }
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('every file in figures/ is used by some question (no orphans)', () => {
+    if (!existsSync(FIGURES)) return;
+    const used = new Set();
+    for (const { figure } of figures) if (typeof figure?.src === 'string') { used.add(figure.src); used.add(sidecarOf(figure.src)); }
+    const orphans = [];
+    const walk = dir => {
+      for (const entry of readdirSync(join(FIGURES, dir), { withFileTypes: true })) {
+        const rel = dir ? `${dir}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) walk(rel);
+        else if (rel !== 'README.md' && !used.has(rel)) orphans.push(`figures/${rel}`);
+      }
+    };
+    walk('');
+    assert.deepEqual(orphans, [], 'unused files in figures/: delete them, or use them in a question');
   });
 });

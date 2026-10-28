@@ -916,7 +916,7 @@ Writing good ones — everything said for Python class problems applies, and als
 | `npc` | yes | string | Mentor **id** from [`assets/npcs.json`](../assets/npcs.json) — `ada`, `nia`, `zoya`, `flint`, `kaelen`, `tariq`, `val`, `omu`. The game resolves the display name and portrait from the roster. Pick the mentor whose domain matches the lesson, and write the prose to fit them (Zoya uses they/them) |
 | `intro` / `outro` | no | string | Scene-setting and hand-off lines |
 | `steps` | yes | object[] | 2–4 steps; each needs `say`, may carry `beats` and one `check` |
-| `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is either `{"say": "..."}` (one spoken line) or `{"code": "...", "language": "..."}` (the artifact being examined). Without it the whole `say` string appears in one go |
+| `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is either `{"say": "..."}` (one spoken line), `{"code": "...", "language": "..."}` (the artifact being examined), or `{"figure": {...}}` (a picture; see [Pictures in Questions](#pictures-in-questions-figure)). Without it the whole `say` string appears in one go |
 | `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues |
 
 ### Revealing a scene
@@ -1035,6 +1035,64 @@ One file per database, shared by every problem that uses it — so the schema ca
 ```
 
 At least three datasets; the first is the one shown. Each must satisfy its own foreign keys. Make the hidden ones different in *kind*, not just in names: fewer rows, a tie, a value on a boundary, a row with nothing matching it in the other table.
+
+---
+
+## Pictures in Questions (`figure`)
+
+Any question, of any type, can carry a picture: a photo of a port, a diagram of a
+network, a chart to read. It appears **below the question and above the answers**,
+capped in height so the answers stay on screen; the student can click it to see it
+full size. A scene can show one too, as a beat.
+
+```json
+"figure": {
+  "src": "techplus/graphics-card-ports.webp",
+  "alt": "The metal bracket on the back of a graphics card: a wide port with a grid of pin holes above a row of four smaller slots.",
+  "caption": "The back of a graphics card."
+}
+```
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `src` | yes | A file under `figures/`, by course (`techplus/`, `java/`, `cc/`): `.webp` (photos), `.svg` (diagrams), `.png`, or `.jpg`, at most 200 KB |
+| `alt` | yes | What the picture shows, for a student who can't see it (at least 20 characters) |
+| `caption` | no | A short line under the picture |
+
+**Every file has a credit file beside it**, with the same name ending in `.json`:
+
+```json
+{ "credit": "Photo: MiNe, CC BY 2.0, via Wikimedia Commons (resized)",
+  "license": "CC BY 2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:..." }
+```
+
+The game shows `credit` in small print under the picture, which is how CC BY and BY-SA
+photos get the attribution their license requires. For your own work, write
+`{"own": true, "license": "CC BY-NC 4.0"}` and nothing is shown. A credit is written
+once per file, however many questions use it; alt text goes on each question,
+because what's worth describing depends on what the question asks.
+
+### Rules
+
+1. **The alt text describes; it never answers.** Describe what a student would see
+   ("a slot with two cut corners"), never what it is ("an HDMI port"). A
+   screen-reader user then gets the same question everyone else does: identify it
+   from the description. `data.test.js` rejects alt text or a caption that contains
+   a correct answer.
+2. **Use a picture when seeing is the skill:** identifying a connector, reading a
+   diagram, spotting the problem in a setup. A picture that only decorates a
+   question is a distraction, and a bigger download.
+3. **Labels give answers away.** A diagram whose labels name the answer can't be the
+   picture for that question. Draw an unlabeled version, or ask about something the
+   labels don't say.
+4. **Keep files small.** WebP for photos (about 1200 px on the long side is plenty),
+   SVG for diagrams. A package carries every picture its sets use.
+5. **No unused files.** Every file in `figures/` must be used by a question; the
+   tests flag the rest.
+
+A package built with `SCORM/build.py` includes only the pictures its sets use, each
+with its credit file. A package whose sets have none includes no `figures/` at all.
 
 ---
 

@@ -36,6 +36,25 @@ function renderTemplate(root, id) {
 
 const $ = (root, sel) => root.querySelector(sel);
 
+// ── Pictures in questions ───────────────────────────────────────────────
+// A question's `figure` names a file under figures/. Beside it sits a small JSON
+// file with the picture's license and, unless it is the author's own work, the
+// credit shown under it (CC BY photos require one). Credits are fetched once per
+// file and kept for the session.
+const FIGURE_DIR = "figures/";
+const figureCredits = new Map();
+
+function figureCredit(src) {
+  const sidecar = src.replace(/\.[a-z0-9]+$/i, ".json");
+  if (!figureCredits.has(sidecar)) {
+    figureCredits.set(sidecar, fetch(FIGURE_DIR + sidecar)
+      .then(r => (r.ok ? r.json() : null))
+      .then(meta => (meta && meta.own !== true && typeof meta.credit === "string" ? meta.credit : null))
+      .catch(() => null));
+  }
+  return figureCredits.get(sidecar);
+}
+
 export class GameUI {
   constructor(root, model, controller = null) {
     this.root = root;
@@ -837,10 +856,105 @@ export class GameUI {
     resumeBtn.focus();
   }
 
+  /**
+   * Show the current question's picture in the template's figure slot, below the
+   * question and above the answers. A question without one leaves the slot hidden.
+   */
+  _renderFigure(root, q) {
+    const slot = $(root, "[data-ref=qFigure]");
+    if (!slot) return;
+    slot.replaceChildren();
+    const ok = q && q.figure && typeof q.figure.src === "string";
+    if (ok) slot.appendChild(this._figureElement(q.figure));
+    slot.hidden = !ok;
+  }
+
+  /**
+   * A picture as the game shows it: the image (a button that opens it full size),
+   * its caption, and its credit. If the file can't load, the alt text takes its
+   * place, so the question can still be answered.
+   */
+  _figureElement(figure) {
+    const fig = document.createElement("figure");
+    fig.className = "q-figure";
+
+    const zoom = document.createElement("button");
+    zoom.type = "button";
+    zoom.className = "q-figure-zoom";
+    zoom.setAttribute("aria-label", "Enlarge the picture");
+    const img = document.createElement("img");
+    img.src = FIGURE_DIR + figure.src;
+    img.alt = figure.alt || "";
+    img.decoding = "async";
+    img.addEventListener("error", () => {
+      const missing = document.createElement("div");
+      missing.className = "q-figure-missing";
+      missing.textContent = `[Picture not available] ${figure.alt || ""}`;
+      zoom.replaceWith(missing);
+    }, { once: true });
+    zoom.appendChild(img);
+    zoom.addEventListener("click", () => this._openFigure(figure));
+    fig.appendChild(zoom);
+
+    if (figure.caption) {
+      const cap = document.createElement("figcaption");
+      cap.textContent = figure.caption;
+      fig.appendChild(cap);
+    }
+    const credit = document.createElement("div");
+    credit.className = "q-figure-credit";
+    credit.hidden = true;
+    fig.appendChild(credit);
+    figureCredit(figure.src).then(text => {
+      if (text) { credit.textContent = text; credit.hidden = false; }
+    });
+    return fig;
+  }
+
+  /**
+   * The picture full size, in a modal dialog. Esc, the close button, or a click
+   * outside the picture closes it. Keys pressed while it is open stay inside it,
+   * so they can't answer the question behind it.
+   */
+  _openFigure(figure) {
+    let dialog = document.getElementById("figure-dialog");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "figure-dialog";
+      dialog.className = "figure-dialog";
+      dialog.setAttribute("aria-label", "Picture, full size");
+      dialog.addEventListener("click", e => {
+        if (e.target === dialog || e.target.closest("[data-action=close-figure]")) dialog.close();
+      });
+      dialog.addEventListener("keydown", e => e.stopPropagation());
+      document.body.appendChild(dialog);
+    }
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "action-button action-button--secondary figure-dialog-close";
+    close.dataset.action = "close-figure";
+    close.textContent = "Close ✕";
+    const img = document.createElement("img");
+    img.src = FIGURE_DIR + figure.src;
+    img.alt = figure.alt || "";
+    const parts = [close, img];
+    if (figure.caption) {
+      const cap = document.createElement("p");
+      cap.className = "figure-dialog-caption";
+      cap.textContent = figure.caption;
+      parts.push(cap);
+    }
+    dialog.replaceChildren(...parts);
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    close.focus();
+  }
+
   showEncounter() {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-encounter");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
 
     const qEl = $(this.root, "[data-ref=qText]");
@@ -950,6 +1064,7 @@ export class GameUI {
     const q = this.model.current_question;
     const isDynamicNumeric = q.type === "dynamic_numeric";
     renderTemplate(this.root, "tpl-encounter-fill-blank");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
     // This screen serves two types; "Fill in the blank" is wrong for the one
     // that asks for a computed number.
@@ -1022,6 +1137,7 @@ export class GameUI {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-encounter-code-trace");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
@@ -1101,6 +1217,7 @@ export class GameUI {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-encounter-code-line");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
@@ -1252,6 +1369,7 @@ export class GameUI {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-encounter-matching");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
@@ -1389,7 +1507,7 @@ export class GameUI {
       const beats = Array.isArray(step.beats) && step.beats.length
         ? step.beats
         : [{ say: step.say }];
-      for (const b of beats) queue.push({ kind: b.code != null ? "code" : "say", beat: b });
+      for (const b of beats) queue.push({ kind: b.figure ? "figure" : b.code != null ? "code" : "say", beat: b });
       if (step.check) queue.push({ kind: "check", check: step.check });
     }
 
@@ -1403,6 +1521,14 @@ export class GameUI {
       }
       const item = queue[pos++];
 
+      if (item.kind === "figure") {
+        const fig = this._figureElement(item.beat.figure);
+        fig.classList.add("npc-figure");
+        dialogue.appendChild(fig);
+        fig.scrollIntoView?.({ block: "nearest" });
+        makeButton("Continue ▸", "action-button", advance).focus();
+        return;
+      }
       if (item.kind === "code") {
         addCode(item.beat.code, item.beat.language);
         makeButton("Continue ▸", "action-button", advance).focus();
@@ -1449,6 +1575,7 @@ export class GameUI {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-encounter-cloze");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
 
     const blanks = q.blanks || [];
@@ -1547,6 +1674,7 @@ export class GameUI {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-encounter-ordering");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
@@ -1634,6 +1762,7 @@ export class GameUI {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-encounter-code-write");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
     $(this.root, "[data-ref=qText]").textContent = q.question;
     // A method problem shows the class so far, read-only, ending in the def line
@@ -1952,6 +2081,7 @@ export class GameUI {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-encounter-sql-write");
+    this._renderFigure(this.root, q);
     this._populateEncounterHeader(this.root);
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
@@ -2759,6 +2889,7 @@ export class GameUI {
     if (history.length === 0) {
       list.innerHTML = "<div class='review-item'>No questions answered this session.</div>";
     } else {
+      const figures = new Map((this.model?.questions || []).filter(q => q.figure).map(q => [q.question, q.figure]));
       history.forEach((entry, i) => {
         const item = document.createElement("div");
         item.className = `review-item ${entry.was_perfect ? "review-pass" : "review-fail"}`;
@@ -2774,6 +2905,14 @@ export class GameUI {
           html += `<div class="review-detail review-correct-ans">✔ Correct: ${entry.correct_answers.map(s => this._esc(s)).join(", ")}</div>`;
         }
         item.innerHTML = html;
+        const figure = figures.get(entry.question);
+        if (figure && typeof figure.src === "string") {
+          const thumb = document.createElement("img");
+          thumb.className = "review-figure";
+          thumb.src = FIGURE_DIR + figure.src;
+          thumb.alt = figure.alt || "";
+          item.firstElementChild.after(thumb);
+        }
         list.appendChild(item);
       });
     }

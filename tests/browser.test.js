@@ -275,6 +275,45 @@ describe('in a real browser: writing a query', { skip }, () => {
   });
 });
 
+describe('in a real browser: a question with a picture', { skip }, () => {
+  let server, seen;
+
+  before(async () => {
+    server = await startServer();
+    seen = await visit(browser, server.origin, 'figureQuestion', { set: 'techplus_03_ports_peripherals_troubleshooting.json' }, { realTime: true });
+  });
+
+  after(async () => { await server?.close(); });
+
+  it('draws the picture between the question and the answers, with its alt text', () => {
+    assert.ok(!seen.error, seen.error);
+    assert.ok(seen.width > 0, 'the picture loaded');
+    assert.match(seen.alt, /ports/);
+    assert.equal(seen.order, true, 'question, then picture, then answers');
+  });
+
+  it('shows the caption, and the credit from the file beside the picture', () => {
+    assert.ok(seen.caption, 'a caption');
+    assert.match(seen.credit, /CC BY/);
+  });
+
+  it('opens full size, and a key pressed there does not answer the question behind it', () => {
+    assert.equal(seen.opened, true);
+    assert.equal(seen.fullSize, true);
+    assert.equal(seen.answeredBehind, false);
+    assert.equal(seen.closed, true);
+  });
+
+  it('shows the alt text when the picture is missing, so the question can still be answered', () => {
+    assert.match(seen.missing, /Picture not available/);
+    assert.match(seen.missing, /ports/);
+  });
+
+  it('shows a picture as a beat in a teaching scene', () => {
+    assert.match(seen.sceneFigure || '', /ports/);
+  });
+});
+
 describe('in a real browser: a single-set package', { skip }, () => {
   const SINGLE = 'computing_concepts_04_control_functions.json';
   let server, first, second;

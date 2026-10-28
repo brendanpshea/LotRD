@@ -27,6 +27,7 @@ The build:
 - Filters question_sets/catalog.json and index.json to only the topics named
   in the edition config.
 - Copies only the question_set JSON files referenced by those topics.
+- Copies only the pictures (figures/) those sets use, each with its credit file.
 - Patches index.html: title, intro copy, and a <script> tag for the SCORM
   shim.
 - Generates imsmanifest.xml from the template.
@@ -206,6 +207,49 @@ def ship_sql_engine(build_dir: Path) -> None:
             raise SystemExit(f"A write-the-query problem names the database {name!r}, but {src} is missing.")
         shutil.copy2(src, db_dst / src.name)
     print(f"  SQL engine: shipped, with databases {sorted(wanted)}")
+
+
+def ship_figures(build_dir: Path) -> None:
+    """Add the pictures this edition's questions show, each with its credit file.
+
+    A question's `figure` (or a figure beat in a scene) names a file under
+    figures/; beside it sits a JSON file with its license and credit, which the
+    game shows under the picture. figures/ is not copied wholesale, so an edition
+    carries only its own pictures, and one without any carries none. A missing
+    file stops the build: the question would show "[Picture not available]".
+    """
+    wanted: set[str] = set()
+    for path in (build_dir / "question_sets").glob("*.json"):
+        if path.name in ("catalog.json", "index.json"):
+            continue
+        try:
+            entries = json.loads(path.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        for entry in entries if isinstance(entries, list) else []:
+            if not isinstance(entry, dict):
+                continue
+            figures = [entry.get("figure")]
+            for step in entry.get("steps") or []:
+                figures += [beat.get("figure") for beat in (step.get("beats") or []) if isinstance(beat, dict)]
+            for figure in figures:
+                if isinstance(figure, dict) and isinstance(figure.get("src"), str):
+                    wanted.add(figure["src"])
+    if not wanted:
+        return
+
+    total = 0
+    for src in sorted(wanted):
+        sidecar = re.sub(r"\.[A-Za-z0-9]+$", ".json", src)
+        for rel in (src, sidecar):
+            origin = REPO / "figures" / rel
+            if not origin.exists():
+                raise SystemExit(f"A question shows figures/{src}, but {origin} is missing.")
+            target = build_dir / "figures" / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(origin, target)
+            total += origin.stat().st_size
+    print(f"  Pictures: {len(wanted)} shipped, {total // 1024} KB with their credit files")
 
 
 def prune_npc_portraits(build_dir: Path) -> None:
@@ -433,6 +477,7 @@ def build_one(config: dict, full_catalog: list) -> Path:
 
     prune_npc_portraits(work_dir)
     ship_sql_engine(work_dir)
+    ship_figures(work_dir)
     patch_index_html(work_dir, config)
     write_shim(work_dir)
     write_manifest(work_dir, config)

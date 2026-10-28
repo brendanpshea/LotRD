@@ -29,7 +29,7 @@ export const SHIM_SCRIPT_TAG = '<script src="scorm-shim.js"></script>';
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg',
   '.wasm': 'application/wasm',
 };
 
@@ -246,6 +246,51 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
       await until(() => !doc().querySelector('[data-ref=queryInput]'), 'the results screen');
       report.afterSubmit = doc().getElementById('game-root').innerText;
       report.remaining = gc.model.questions_to_ask.length;
+      return report;
+    },
+    // A question with a picture: drawn between the question and the answers, with its
+    // caption and credit; opened full size; replaced by its alt text when the file is
+    // missing; and shown as a beat in a teaching scene. REAL time: the picture and its
+    // credit file load over the network.
+    async figureQuestion({ set }) {
+      const gc = win().gameController;
+      await gc._launchSet(set, 'new');
+      await until(() => gc.model, 'the set to load');
+      const ask = q => { gc.model.questions_to_ask = [q]; gc.model.current_question = null; gc.continueAdventure(); };
+      const pictured = gc.model.questions.find(q => q.figure && !q.type);
+      ask(pictured);
+      await until(() => doc().querySelector('[data-ref=qFigure] img'), 'the picture');
+      const img = doc().querySelector('[data-ref=qFigure] img');
+      await until(() => img.complete && img.naturalWidth > 0, 'the picture to load');
+      await until(() => !doc().querySelector('.q-figure-credit').hidden, 'the credit');
+      const after = (a, b) => (a.compareDocumentPosition(b) & 4) !== 0;
+      const slot = doc().querySelector('[data-ref=qFigure]');
+      const report = {
+        alt: img.getAttribute('alt'),
+        width: img.naturalWidth,
+        caption: (doc().querySelector('.q-figure figcaption') || {}).textContent || null,
+        credit: doc().querySelector('.q-figure-credit').textContent,
+        order: after(doc().querySelector('[data-ref=qText]'), slot) && after(slot, doc().querySelector('[data-ref=options]')),
+      };
+      doc().querySelector('.q-figure-zoom').click();
+      const dialog = doc().getElementById('figure-dialog');
+      report.opened = !!dialog && dialog.open;
+      report.fullSize = !!dialog.querySelector('img') && dialog.querySelector('img').getAttribute('src') === img.getAttribute('src');
+      dialog.dispatchEvent(new (win().KeyboardEvent)('keydown', { key: '1', bubbles: true }));
+      report.answeredBehind = [...doc().querySelectorAll('[data-ref=options] input')].some(i => i.checked);
+      doc().querySelector('[data-action=close-figure]').click();
+      report.closed = !dialog.open;
+      ask(Object.assign({}, pictured, { question: pictured.question + ' (again)', figure: Object.assign({}, pictured.figure, { src: 'techplus/no-such-picture.webp' }) }));
+      await until(() => doc().querySelector('.q-figure-missing'), 'the alt text in place of a missing picture');
+      report.missing = doc().querySelector('.q-figure-missing').textContent;
+      ask({ type: 'npc_demo', question: 'NPC: A picture in a scene', npc: 'ada',
+            steps: [{ say: 'Look at this.', beats: [{ say: 'Look at this.' }, { figure: pictured.figure }] }, { say: 'That is all.' }] });
+      for (let i = 0; i < 6 && !doc().querySelector('.npc-figure img'); i++) {
+        const next = doc().querySelector('[data-ref=npcControls] button');
+        if (next) next.click();
+        await sleep(150);
+      }
+      report.sceneFigure = (doc().querySelector('.npc-figure img') || { getAttribute: () => null }).getAttribute('alt');
       return report;
     },
     // Device two: a browser that has never seen the game. Just look at the menu.
