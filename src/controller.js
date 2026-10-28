@@ -586,6 +586,9 @@ export class GameController {
         questionCount: entry.question_count ?? null,
         status: entry.status.type,
         remaining: entry.status.remaining ?? 0,
+        // Shared with every other package this LMS serves from the same address.
+        globalStats: this._loadGlobalStats(),
+        levelData: this._loadGlobalLevel(),
       }, {
         resume: () => this._launchSet(setId, "resume"),
         restart: () => this._launchSet(setId, "new"),
@@ -1226,16 +1229,17 @@ export class GameController {
       battleData = { ...battleData, defeated_player: false, revived: true };
     }
 
+    // Every monster beaten drops something. A fight lasts about five answers, so
+    // kills are a third as many as when a third of them dropped: as many items
+    // as before, and a kill that is worth something. Not the dragon: the run is over.
     let itemDrop = null;
-    if (battleData.defeated_monster) {
-      if (Math.random() < 1 / 3) {
-        const tier = this.model.current_monster.hit_dice;
-        const eligible = ITEMS.filter(d => (d.min_tier ?? 1) <= tier);
-        const pool = eligible.length > 0 ? eligible : ITEMS;
-        const drop = pool[Math.floor(Math.random() * pool.length)];
-        const placement = this.model.addItemDrop({ ...drop });
-        itemDrop = { ...drop, placed_slot: placement.placed, displaced: placement.displaced };
-      }
+    if (battleData.defeated_monster && !this.model.current_monster.is_boss) {
+      const tier = this.model.current_monster.hit_dice;
+      const eligible = ITEMS.filter(d => (d.min_tier ?? 1) <= tier);
+      const pool = eligible.length > 0 ? eligible : ITEMS;
+      const drop = pool[Math.floor(Math.random() * pool.length)];
+      const placement = this.model.addItemDrop({ ...drop });
+      itemDrop = { ...drop, placed_slot: placement.placed, displaced: placement.displaced };
     }
 
     this._saveAfterAnswer(battleData);

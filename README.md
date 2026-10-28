@@ -46,6 +46,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Global level** — player level and revive charges persist across all question sets
 - **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat; with none left, a full run goes back to its last checkpoint
 - **Retrieval boss** — when the questions run out, anything missed during the run comes back as the Recursive Dragon's HP bar; each concept only leaves the bar once it's answered cleanly (a flawless run skips the fight)
+- **Monster fights** — a monster has a d10 of HP per level plus eight more, so it takes about five answers to beat (it was about two). Every monster beaten drops an item
 - **Items** — two inventory slots (`Q`/`W`) hold drops from defeated monsters: heals, shields, 2× damage/XP, and a Mulligan that rewinds one wrong answer
 - **Spaced review** — once a set reaches Master rank, it becomes "due" again on an expanding schedule (first ~21 days after mastery, then 60) and offers a short 5-question refresher; below Master, the rank trials are the spaced re-encounters
 

@@ -6,7 +6,7 @@ import { rollDice, Player, Monster, GameModel,
          tokenize, tokenSimilarity, tokenWordleFeedback,
          CL_MAX_ATTEMPTS, pickClozeBlank, parseClozeSegments,
          evaluateDynamicExpression, codeWriteSolutionText, codeWriteExamples, codeWriteHeader,
-         runCodeProblem, isJavaProblem, CHECKPOINT_EVERY } from '../src/model.js';
+         runCodeProblem, isJavaProblem, CHECKPOINT_EVERY, MONSTER_EXTRA_HIT_DICE } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -161,8 +161,9 @@ describe('Player', () => {
 describe('Monster', () => {
   it('initialises from data with correct HP range', () => {
     const m = new Monster(SAMPLE_MONSTERS[0]); // hit_dice=1
+    const dice = 1 + MONSTER_EXTRA_HIT_DICE;
     assert.equal(m.monster_name, 'Test Slime');
-    assert.ok(m.hit_points >= 1 && m.hit_points <= 10, `HP out of range: ${m.hit_points}`);
+    assert.ok(m.hit_points >= dice && m.hit_points <= dice * 10, `HP out of range: ${m.hit_points}`);
     assert.equal(m.max_hit_points, m.hit_points);
     assert.equal(m.xp_value, 10); // hit_dice * 10
   });
@@ -172,10 +173,11 @@ describe('Monster', () => {
     assert.equal(m.xp_value, 50);
   });
 
-  it('HP scales with hit_dice (5d10 = 5–50)', () => {
+  it('HP scales with hit_dice: a d10 per level, plus MONSTER_EXTRA_HIT_DICE', () => {
+    const dice = 5 + MONSTER_EXTRA_HIT_DICE;
     for (let i = 0; i < 50; i++) {
-      const m = new Monster(SAMPLE_MONSTERS[1]);
-      assert.ok(m.hit_points >= 5 && m.hit_points <= 50, `5d10 HP out of range: ${m.hit_points}`);
+      const m = new Monster(SAMPLE_MONSTERS[1]); // hit_dice=5
+      assert.ok(m.hit_points >= dice && m.hit_points <= dice * 10, `${dice}d10 HP out of range: ${m.hit_points}`);
     }
   });
 });

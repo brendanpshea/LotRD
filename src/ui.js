@@ -422,6 +422,31 @@ export class GameUI {
     return this._playBeats(planItem(item, detail));
   }
 
+  /**
+   * The student's level and lifetime totals: what this browser knows of them
+   * across every set, including sets played in other packages served from the
+   * same LMS. `onlyIfAny`: leave it hidden for a student with nothing to show yet.
+   * `titled`: name the level (Apprentice, Journeyman…) — not in a single-set
+   * package, where those words would read as ranks it does not have.
+   */
+  _renderStatsBar(root, globalStats, levelData, { onlyIfAny = false, titled = true } = {}) {
+    const bar = $(root, "[data-ref=globalStats]");
+    if (!bar) return;
+    const level = levelData?.level ?? 1;
+    const answered = globalStats?.total_answered ?? 0;
+    if (onlyIfAny && level <= 1 && !levelData?.xp && answered === 0) return;
+    const totalSel = (globalStats?.total_correct ?? 0) + (globalStats?.total_incorrect ?? 0);
+    const pct = totalSel > 0 ? Math.round((globalStats.total_correct ?? 0) / totalSel * 100) : 0;
+    bar.innerHTML = `
+      <span class="stat-item">⚔ Level: <span class="yellow">${level}</span>${titled ? ` <span class="dim">(${getLevelTitle(level)})</span>` : ""}</span>
+      <span class="stat-item">📋 Answered: <span class="yellow">${answered}</span></span>
+      <span class="stat-item">🎯 Accuracy: <span class="yellow">${pct}%</span></span>
+      <span class="stat-item">🔥 Best streak: <span class="yellow">${globalStats?.best_streak ?? 0}</span></span>
+      <span class="stat-item">🏆 Completed: <span class="yellow">${globalStats?.sets_completed ?? 0}</span></span>
+    `;
+    bar.hidden = false;
+  }
+
   /** Who the student plays as: folded away under its current choice. */
   _renderHeroPicker(root) {
     const slot = $(root, "[data-ref=heroPicker]");
@@ -720,23 +745,8 @@ export class GameUI {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-main-menu");
     this._renderHeroPicker(this.root);
-
-    const level = levelData?.level ?? 1;
-    const title = getLevelTitle(level);
-    const bar = $(this.root, "[data-ref=globalStats]");
-    const totalSel = (globalStats?.total_correct ?? 0) + (globalStats?.total_incorrect ?? 0);
-    const pct = totalSel > 0 ? Math.round((globalStats.total_correct ?? 0) / totalSel * 100) : 0;
-
     this._renderGradePanel(catalog);
-
-    bar.innerHTML = `
-      <span class="stat-item">⚔ Level: <span class="yellow">${level}</span> <span class="dim">(${title})</span></span>
-      <span class="stat-item">📋 Answered: <span class="yellow">${globalStats?.total_answered ?? 0}</span></span>
-      <span class="stat-item">🎯 Accuracy: <span class="yellow">${pct}%</span></span>
-      <span class="stat-item">🔥 Best streak: <span class="yellow">${globalStats?.best_streak ?? 0}</span></span>
-      <span class="stat-item">🏆 Completed: <span class="yellow">${globalStats?.sets_completed ?? 0}</span></span>
-    `;
-    bar.hidden = false;
+    this._renderStatsBar(this.root, globalStats, levelData);
 
     const inProgressEntries = [];
     catalog.forEach(topic => {
@@ -1060,6 +1070,7 @@ export class GameUI {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-set-home");
     this._renderHeroPicker(this.root);
+    this._renderStatsBar(this.root, meta.globalStats, meta.levelData, { onlyIfAny: true, titled: false });
     $(this.root, "[data-ref=homeTitle]").textContent = meta.title || "Problem set";
 
     const story = $(this.root, "[data-ref=homeStory]");

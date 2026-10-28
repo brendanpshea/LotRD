@@ -891,6 +891,11 @@ export const INVENTORY_SIZE = 2;
 // A missed question comes back this many places further down the queue.
 const REQUEUE_GAP = 3;
 
+// A monster rolls this many d10 for HP beyond one per level, so a fight lasts
+// about five answers. With one per level alone it lasted about two, and often one:
+// a perfect answer rolls a die for every right choice and every distractor avoided.
+export const MONSTER_EXTRA_HIT_DICE = 8;
+
 // A stretch this many questions long with no teaching scene in it gets a
 // checkpoint of its own, so a death never costs more than this to redo.
 export const CHECKPOINT_EVERY = 12;
@@ -985,7 +990,7 @@ export class Monster {
         // the stage shows the old single picture.
         this.sprite              = data.sprite || null;
         this.hit_points          = 0;
-        for (let i = 0; i < this.hit_dice; i++) {
+        for (let i = 0; i < this.hit_dice + MONSTER_EXTRA_HIT_DICE; i++) {
             this.hit_points += rollDice(1, 10);
         }
         this.max_hit_points = this.hit_points;
