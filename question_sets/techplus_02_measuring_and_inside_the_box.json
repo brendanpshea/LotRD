@@ -49,7 +49,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "A short text file is {{n}} bytes long. How many bits is that?",
+    "question": "A plain-text note has {{n}} characters, and each character takes one byte. How many bits is the note?",
     "variables": {
       "n": {
         "min": 100,
@@ -61,7 +61,7 @@
       "expr": "n * 8",
       "tolerance_abs": 0
     },
-    "feedback_template": "Every byte is 8 bits, so {{n}} bytes is {{n}} × 8 = {{expected}} bits.",
+    "feedback_template": "One byte per character makes {{n}} bytes, and every byte is 8 bits: {{n}} × 8 = {{expected}} bits.",
     "tech_plus": [
       "1.3/storage/bit",
       "1.3/storage/byte"
@@ -103,7 +103,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "How many megabytes are in {{g}} GB? (Use 1 GB = 1,000 MB.)",
+    "question": "A video site lists uploads in megabytes. Your clip is {{g}} GB, 4 minutes long, filmed at 30 frames per second. How many megabytes is it? (Use 1 GB = 1,000 MB.)",
     "variables": {
       "n": {
         "min": 12,
@@ -117,7 +117,7 @@
       "expr": "n * 100",
       "tolerance_abs": 0
     },
-    "feedback_template": "Going down one step, from GB to MB, multiply by 1,000: {{g}} × 1,000 = {{expected}} MB.",
+    "feedback_template": "Only the size matters here. Going down one step, from GB to MB, multiply by 1,000: {{g}} × 1,000 = {{expected}} MB.",
     "tech_plus": [
       "1.3/storage/mb",
       "1.3/storage/gb"
@@ -125,7 +125,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "A folder holds {{m}} MB of files. How many gigabytes is that? (Use 1 GB = 1,000 MB.)",
+    "question": "Your project folder shows {{m}} MB across 37 files, and the class drive takes uploads up to 10 GB. How many gigabytes is the folder? (Use 1 GB = 1,000 MB.)",
     "variables": {
       "m": {
         "min": 250,
@@ -137,7 +137,7 @@
       "expr": "m / 1000",
       "tolerance_abs": 0.0001
     },
-    "feedback_template": "Going up one step, from MB to GB, divide by 1,000: {{m}} ÷ 1,000 = {{expected}} GB. A bigger unit needs a smaller number.",
+    "feedback_template": "Going up one step, from MB to GB, divide by 1,000: {{m}} ÷ 1,000 = {{expected}} GB, comfortably under the 10 GB limit. The number of files doesn’t change the size.",
     "tech_plus": [
       "1.3/storage/mb",
       "1.3/storage/gb"
@@ -246,15 +246,52 @@
     ]
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: Where did my gigabytes go?",
+    "npc": "ada",
+    "intro": "Ada plugs in a new drive. “The box says 1 TB. Windows says 931 GB. Nobody stole 69 gigabytes: the two are counting in different-sized units.”",
+    "steps": [
+      {
+        "say": "On the box, 1 TB is 1,000 GB, and each GB is a billion bytes: 1,000,000,000,000 bytes in all."
+      },
+      {
+        "say": "Windows counts in a bigger unit, 1,073,741,824 bytes: the binary gigabyte, properly called a gibibyte (GiB). But it still labels it GB.",
+        "check": {
+          "prompt": "Same bytes, bigger unit. What happens to the number?",
+          "answer": "It gets smaller: 1,000,000,000,000 ÷ 1,073,741,824",
+          "wrong": [
+            "It gets bigger: 1,000,000,000,000 × 1,073,741,824",
+            "It stays 1,000; only the label changes"
+          ],
+          "why": "Fewer of the bigger units fit into the same bytes, so you divide, and the count goes down."
+        }
+      },
+      {
+        "say": "1,000,000,000,000 bytes\n÷ 1,073,741,824 bytes per GiB\n= 931.3, so Windows shows 931 GB\nNo space is missing. Bytes first, then divide by the bigger unit.",
+        "beats": [
+          {
+            "code": "1,000,000,000,000 bytes\n÷ 1,073,741,824 bytes per GiB\n= 931.3, so Windows shows 931 GB",
+            "language": "the work"
+          },
+          {
+            "say": "No space is missing. Bytes first, then divide by the bigger unit."
+          }
+        ]
+      }
+    ],
+    "outro": "“Different drive, same puzzle. Bytes first.”"
+  },
+  {
     "type": "dynamic_numeric",
-    "question": "A drive is sold as {{g}} GB, counting 1 GB as 1,000,000,000 bytes. How many gibibytes (GiB, 1,073,741,824 bytes each) is that? Round down to a whole number.",
+    "question": "You buy a {{g}} GB drive, with 1 GB counted as 1,000,000,000 bytes. Windows counts in units of 1,073,741,824 bytes (GiB) but still labels them GB. What number will Windows show? Round down to a whole number.",
     "variables": {
       "g": {
         "values": [
-          250,
+          256,
           500,
-          1000,
-          2000
+          512,
+          2000,
+          4000
         ]
       }
     },
@@ -343,7 +380,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "A connection runs at {{m}} Mbps. How many megabytes per second (MB/s) can it move?",
+    "question": "Your internet plan is advertised at {{m}} Mbps, and your game launcher shows download speed in MB/s. At the plan’s full speed, what should the launcher show?",
     "variables": {
       "m": {
         "values": [
@@ -522,7 +559,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "An older processor runs at {{m}} MHz. How many gigahertz (GHz) is that?",
+    "question": "A spec sheet lists a 4-core processor with 8 MB of cache and a base clock of {{m}} MHz. What is its clock speed in GHz?",
     "variables": {
       "m": {
         "values": [
@@ -539,7 +576,7 @@
       "expr": "m / 1000",
       "tolerance_abs": 0.0001
     },
-    "feedback_template": "A gigahertz is 1,000 megahertz, so divide by 1,000: {{m}} MHz is {{expected}} GHz.",
+    "feedback_template": "Only the clock speed matters here. A gigahertz is 1,000 megahertz, so divide by 1,000: {{m}} MHz is {{expected}} GHz. The cores and cache don’t change the clock.",
     "tech_plus": [
       "1.3/speed/mhz",
       "1.3/speed/ghz"
