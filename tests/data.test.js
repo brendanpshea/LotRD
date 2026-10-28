@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
 import { runProblem, isScriptProblem, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
 import { runJavaProblem, parseJavaSignature, javaFromJson, isJavaClassProblem, javaScriptTypes } from '../src/jtiny.js';
@@ -802,14 +803,15 @@ describe('Question set file validation', () => {
                 `${label}: every npc_demo step needs non-empty say text`);
               if ('beats' in step) {
                 // Beats are the authored breakdown the scene is revealed by —
-                // one spoken line or one code listing at a time.
+                // one spoken line, one code listing, or one picture at a time.
                 assert.ok(Array.isArray(step.beats) && step.beats.length > 0,
                   `${label}: beats must be a non-empty array when present`);
                 for (const [bi, b] of step.beats.entries()) {
                   const hasSay = typeof b.say === 'string' && b.say.length > 0;
                   const hasCode = typeof b.code === 'string' && b.code.length > 0;
-                  assert.ok(hasSay !== hasCode,
-                    `${label}: beat ${bi + 1} must carry exactly one of say or code`);
+                  const hasFigure = b.figure !== undefined;
+                  assert.ok([hasSay, hasCode, hasFigure].filter(Boolean).length === 1,
+                    `${label}: beat ${bi + 1} must carry exactly one of say, code, or figure`);
                   if (hasSay) {
                     assert.ok(b.say.length <= 320,
                       `${label}: beat ${bi + 1} is ${b.say.length} chars — split it so the ` +
@@ -1690,7 +1692,7 @@ describe('Pictures in questions (figure)', () => {
   const FIGURES = join(ROOT, 'figures');
   const FORMATS = /\.(webp|svg|png|jpe?g)$/i;
   const MAX_BYTES = 200 * 1024;
-  const FIGURE_KEYS = new Set(['src', 'alt', 'caption']);
+  const FIGURE_KEYS = new Set(['src', 'alt', 'caption', 'dot']);
   const index = loadJSON('question_sets/index.json');
 
   /** Every figure in every set: on questions, and on scene beats. */
@@ -1709,6 +1711,12 @@ describe('Pictures in questions (figure)', () => {
 
   const sidecarOf = src => src.replace(FORMATS, '.json');
 
+  // A figure written as Graphviz source is drawn by tools/render_figures.py into
+  // figures/_dot/<hash>.svg, named by the style and the source; the same sum here.
+  const styleLines = readFileSync(join(ROOT, 'tools', 'figure-style.gv'), 'utf-8').replace(/\r\n/g, '\n')
+    .split('\n').map(line => line.trim()).filter(line => line && !line.startsWith('//'));
+  const drawnName = dot => `_dot/${createHash('sha256').update(styleLines.join('\n') + '\n' + dot, 'utf8').digest('hex').slice(0, 16)}.svg`;
+
   /** The answers a question must not give away in its picture's alt text or caption. */
   function answersOf(q) {
     if (q.type === 'cloze') return (q.blanks || []).flatMap(b => b.accept || []);
@@ -1725,6 +1733,19 @@ describe('Pictures in questions (figure)', () => {
       else if (figure.src.startsWith('/') || figure.src.includes('..') || figure.src.includes('\\')) bad.push(`${label}: figure.src is a path inside figures/, like "techplus/ports.webp"`);
       if (typeof figure.alt !== 'string' || figure.alt.trim().length < 20) bad.push(`${label}: figure.alt must describe the picture (at least 20 characters)`);
       if (figure.caption !== undefined && (typeof figure.caption !== 'string' || !figure.caption.trim())) bad.push(`${label}: figure.caption, when given, is a non-empty string`);
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('each diagram written as Graphviz source is drawn, and drawn from its current source', () => {
+    const bad = [];
+    for (const { label, figure } of figures) {
+      if (figure?.dot === undefined) continue;
+      if (typeof figure.dot !== 'string' || !/^\s*(strict\s+)?(di)?graph\b[^{]*\{/.test(figure.dot)) {
+        bad.push(`${label}: figure.dot must be Graphviz source, beginning "digraph {" or "graph {"`);
+      } else if (figure.src !== drawnName(figure.dot)) {
+        bad.push(`${label}: the diagram is not drawn from its current source; run python tools/render_figures.py`);
+      }
     }
     assert.deepEqual(bad, []);
   });

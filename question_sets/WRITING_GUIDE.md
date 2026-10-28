@@ -1055,9 +1055,10 @@ full size. A scene can show one too, as a beat.
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `src` | yes | A file under `figures/`, by course (`techplus/`, `java/`, `cc/`): `.webp` (photos), `.svg` (diagrams), `.png`, or `.jpg`, at most 200 KB |
+| `src` | yes, unless `dot` is given | A file under `figures/`, by course (`techplus/`, `java/`, `cc/`): `.webp` (photos), `.svg` (diagrams), `.png`, or `.jpg`, at most 200 KB |
 | `alt` | yes | What the picture shows, for a student who can't see it (at least 20 characters) |
 | `caption` | no | A short line under the picture |
+| `dot` | no | Graphviz source to draw instead of a file (below); `src` is then filled in for you |
 
 **Every file has a credit file beside it**, with the same name ending in `.json`:
 
@@ -1072,6 +1073,32 @@ photos get the attribution their license requires. For your own work, write
 `{"own": true, "license": "CC BY-NC 4.0"}` and nothing is shown. A credit is written
 once per file, however many questions use it; alt text goes on each question,
 because what's worth describing depends on what the question asks.
+
+### Diagrams written as Graphviz source (`dot`)
+
+A diagram can be written in the question itself, as [Graphviz](https://graphviz.org)
+source, instead of drawn as a file:
+
+```json
+"figure": {
+  "dot": "digraph { rankdir=LR; laptop -> dock; dock -> monitor; dock -> drive }",
+  "alt": "A laptop connected to a dock, which connects to a monitor and a drive."
+}
+```
+
+Then run `python tools/render_figures.py`. It draws each new diagram as SVG in the
+game's colors (green on dark, in the game's monospaced font, set by
+`tools/figure-style.gv`), saves it as `figures/_dot/<hash>.svg` with a credit file
+marking it as the set's own work, and writes `"src"` into the figure. Commit those
+files with the set. Change the source and the next run draws a new file and removes
+the old one; `data.test.js` fails if a diagram isn't drawn from its current source.
+Only the author needs Graphviz installed: the game, the tests, and the build use
+the drawn file.
+
+Graphviz suits flowcharts, trees, state machines, networks, call trees, and class
+diagrams. Write only the structure (the style supplies colors and fonts), and keep
+diagrams small enough to read in a phone-sized panel: about six to eight boxes. To
+check one before it goes in a set, `dot -Tpng` draws it on its own.
 
 ### Rules
 
