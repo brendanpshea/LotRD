@@ -170,6 +170,7 @@ export class Session {
       showResults: (_data, _drop, afterResults) => { this._continue = afterResults; },
       showLevelUp: (_n, _rewards, next) => next(),
       showBossIntro: (_count, _line, next) => next(),
+      showRespawn: (_checkpoint, next) => next(),
     }, { get: (target, key) => target[key] ?? noop });
     const real = c.showEncounterStatus.bind(c);
     c.showEncounterStatus = status => { this.lastStatus = status; real(status); };
@@ -252,7 +253,7 @@ export class Session {
     return this;
   }
 
-  /** Let the character die, which ends the run. */
+  /** Let the character die: a full run goes back to its last checkpoint, a trial ends. */
   die() {
     this.takeFatalHit();
     this.next();

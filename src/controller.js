@@ -1262,8 +1262,12 @@ export class GameController {
       results.clicked = true;
       if (battleData.defeated_player) {
         this._closeResults(results);
-        this._endRunByDefeat();
         this.sounds.gameOver();
+        const checkpoint = this._respawnOrEnd();
+        if (checkpoint) {
+          this.ui.showRespawn(checkpoint, () => this.continueAdventure());
+          return;
+        }
         this._setInGame(false);
         this.ui.showGameOver(
           () => this.startReview("game_over"),
@@ -1294,7 +1298,23 @@ export class GameController {
     this.continueAdventure();
   }
 
-  /** The character died: the run is over, and nothing of it is left to resume. */
+  /**
+   * The character died. A full run goes back to its last checkpoint and carries
+   * on from there (see GameModel.respawn), saved at once so leaving now resumes
+   * at the checkpoint. Reviews and rank trials have no checkpoints: a death ends
+   * them. Returns what the respawn reported, or null when the run ended.
+   */
+  _respawnOrEnd() {
+    if (this._isReview) {
+      this._endRunByDefeat();
+      return null;
+    }
+    const checkpoint = this.model.respawn();
+    this.saveGame();
+    return checkpoint;
+  }
+
+  /** The character died in a run with no checkpoints: it is over, and nothing of it is left to resume. */
   _endRunByDefeat() {
     this._clearSave();
     this._recordMisses();
@@ -1325,14 +1345,16 @@ export class GameController {
    * answer's outcome any differently than Continue would. A plain save there was
    * wrong twice over: after the last answer it wrote a run with nothing queued,
    * which reads as nothing to resume (the student replayed the whole set); after
-   * a fatal answer it saved a dead character, skipping the game over.
+   * a fatal answer it saved a dead character, skipping the death — which now
+   * sends a full run back to its checkpoint, and still ends a trial.
    */
   leaveToMenu() {
+    clearTimeout(this._stageWait);
     this._updateGlobalStats();
     const results = this._openResults;
     if (results) {
       this._closeResults(results);
-      if (results.battleData.defeated_player) this._endRunByDefeat();
+      if (results.battleData.defeated_player) this._respawnOrEnd();
       else this._saveAfterAnswer(results.battleData);
     } else {
       this.saveGame();
@@ -1362,6 +1384,7 @@ export class GameController {
       this.sounds.correct();
       this.ui.showFeedbackInline(`${item.emoji} ${item.name} armed.`);
       this.ui.refreshHUD();
+      this.ui.animateItem?.(item);
       this.saveGame();
       return;
     }
@@ -1381,6 +1404,7 @@ export class GameController {
         this.sounds.correct();
         this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +${actual} HP.`);
         this.ui.refreshHUD();
+        this.ui.animateItem?.(item, { amount: actual });
         break;
       }
       case "max_hp": {
@@ -1390,6 +1414,7 @@ export class GameController {
         this.sounds.levelUp();
         this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +${item.amount} max HP!`);
         this.ui.refreshHUD();
+        this.ui.animateItem?.(item);
         break;
       }
       case "add_revive": {
@@ -1398,6 +1423,7 @@ export class GameController {
         this.sounds.levelUp();
         this.ui.showFeedbackInline(`${item.emoji} ${item.name} — +1 revive charge.`);
         this.ui.refreshHUD();
+        this.ui.animateItem?.(item);
         break;
       }
       case "bomb": {
@@ -1413,7 +1439,11 @@ export class GameController {
         const idx = Math.min(3, this.model.questions_to_ask.length);
         this.model.questions_to_ask.splice(idx, 0, this.model.current_question);
         this.model.current_question = null;
-        this.continueAdventure();
+        // Let the monster's fall play out before the next one steps in — unless
+        // the student has left for the menu by then.
+        const wait = this.ui.animateItem?.(item) || 0;
+        if (wait > 0) this._stageWait = setTimeout(() => this.continueAdventure(), wait);
+        else this.continueAdventure();
         break;
       }
       default:

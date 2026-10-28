@@ -373,37 +373,232 @@ select {
     margin-bottom: 6px;
 }
 
-/* Two-column: image (fixed) | monster details */
-.monster-layout {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
+/* ── Battle stage ────────────────────────────────────────────────────────────
+   The hero (left) faces the monster (right), each over its own stats. Each side
+   is an actor, which is what moves (lunges, recoils, falls), holding a sprite,
+   which is what it looks like: one pose of a strip of three (stand, attack,
+   recoil), picked by data-pose. Strips are drawn facing right, so the monster's
+   is mirrored; --dir is the way a side faces, so one set of keyframes moves both.
+   A monster without a strip yet shows its old picture, framed. */
+.battle-stage {
+    --sprite-h: 104px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
     margin-bottom: 4px;
 }
 
-/* The sprites are 128px native, so this is their true size — anything smaller
-   was throwing detail away. Narrow screens step down to keep the question
-   above the fold. */
-.monster-image-container {
-    flex: 0 0 128px;
-    text-align: center;
-}
-
-.monster-image {
-    width: 100%;
-    max-width: 128px;
-    height: auto;
-    border: 2px solid #00c840;
-    border-radius: 4px;
-    image-rendering: pixelated;
-    background: #050c05;
-    box-shadow: 0 0 0 1px #041004, 0 0 10px rgba(0, 200, 64, 0.18);
-}
-
-.monster-details {
-    flex: 1;
+.combatant {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
 }
+.combatant--hero    { --dir: 1; }
+.combatant--monster { --dir: -1; }
+
+/* Room for the tallest monster, over a line of ground. */
+.sprite-slot {
+    height: calc(var(--sprite-h) * 1.15 + 4px);
+    display: flex;
+    align-items: flex-end;
+    border-bottom: 1px solid #1e341e;
+    margin-bottom: 6px;
+}
+
+/* Each stands toward the middle, facing the other. */
+.actor {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    transform-origin: 50% 100%;
+}
+.combatant--hero .actor    { justify-content: flex-end;   padding-right: 8%; }
+.combatant--monster .actor { justify-content: flex-start; padding-left: 8%; }
+
+.sprite {
+    position: relative;             /* for what hangs on it: the shield, armed items */
+    display: block;
+    width: min(100%, calc(var(--sprite-h) * var(--frame-aspect, 1)));
+    aspect-ratio: var(--frame-aspect, 1);
+    background-repeat: no-repeat;
+    background-size: 300% 100%;
+    background-position: 0 0;
+    scale: var(--size, 1);
+    transform-origin: 50% 100%;
+    opacity: 0;                     /* until the strip has loaded and its shape is known */
+}
+.sprite.is-ready              { opacity: 1; }
+.sprite[data-pose="attack"]   { background-position: 50% 0; }
+.sprite[data-pose="recoil"]   { background-position: 100% 0; }
+.combatant--monster .sprite--strip { scale: calc(var(--size, 1) * -1) var(--size, 1); }
+
+.sprite--legacy {
+    background-size: contain;
+    background-position: center;
+    background-color: #050c05;
+    image-rendering: pixelated;
+    border: 2px solid #00c840;
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px #041004, 0 0 10px rgba(0, 200, 64, 0.18);
+}
+.sprite--legacy[data-pose] { background-position: center; }
+
+.combatant--hero .player-hud {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+/* HP and its bar on a line of their own: the separator after the bar breaks the line. */
+.combatant--hero .player-hp-bar-wrap + .hud-sep {
+    flex-basis: 100%;
+    height: 0;
+    overflow: hidden;
+}
+.combatant--monster .monster-details   { text-align: right; }
+.combatant--monster .monster-name-line,
+.combatant--monster .monster-hp-block  { justify-content: flex-end; }
+
+/* Items armed for the next round, over the hero's head. */
+.stage-buffs {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    translate: -50% 0;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    pointer-events: none;
+}
+
+/* A Firewall Shard: a bubble while armed, which bursts when it takes a blow. */
+.stage-shield {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    translate: -50% 0;
+    width: calc(var(--sprite-h) * 0.95);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid rgba(107, 224, 255, 0.75);
+    background: radial-gradient(circle, rgba(107, 224, 255, 0) 55%, rgba(107, 224, 255, 0.25));
+    opacity: 0;
+    pointer-events: none;
+}
+.actor.is-shielded .stage-shield { opacity: 0.5; }
+.actor.is-blocking .stage-shield { animation: stage-block 380ms ease-out forwards; }
+
+@keyframes stage-lunge {
+    0%   { transform: translateX(0); }
+    40%  { transform: translateX(calc(var(--dir) * 42px)); }
+    65%  { transform: translateX(calc(var(--dir) * 36px)); }
+    100% { transform: translateX(0); }
+}
+@keyframes stage-recoil {
+    0%   { transform: translateX(0);                         filter: none; }
+    15%  { transform: translateX(calc(var(--dir) * -12px));  filter: brightness(4) saturate(0); }
+    40%  { transform: translateX(calc(var(--dir) * -9px));   filter: none; }
+    55%  {                                                    filter: brightness(2.5) saturate(0); }
+    100% { transform: translateX(0);                         filter: none; }
+}
+@keyframes stage-vanish {
+    0%   { opacity: 1; transform: none;                                             filter: none; }
+    20%  { opacity: 1; transform: translateX(calc(var(--dir) * -8px));               filter: brightness(5) saturate(0); }
+    100% { opacity: 0; transform: translateX(calc(var(--dir) * -14px)) scaleY(0.3); filter: brightness(2) saturate(0) blur(1px); }
+}
+@keyframes stage-down {
+    0%   { transform: none;                                                                   filter: none; }
+    30%  { transform: translateX(calc(var(--dir) * -10px)) rotate(calc(var(--dir) * -20deg)); }
+    100% { transform: translateX(calc(var(--dir) * -16px)) rotate(calc(var(--dir) * -85deg)); filter: grayscale(1) brightness(0.6); }
+}
+@keyframes stage-revive {
+    0%   { transform: translateX(calc(var(--dir) * -16px)) rotate(calc(var(--dir) * -85deg)); filter: grayscale(1) brightness(0.6); }
+    55%  { transform: none; filter: brightness(1.6) drop-shadow(0 0 10px #ffd86b); }
+    100% { transform: none; filter: none; }
+}
+@keyframes stage-enter {
+    from { opacity: 0; transform: translateX(calc(var(--dir) * -48px)); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes stage-glow {
+    0%, 100% { filter: none; }
+    35%      { filter: brightness(1.4) drop-shadow(0 0 10px var(--glow)); }
+}
+@keyframes stage-block {
+    0%   { opacity: 1; scale: 1; }
+    100% { opacity: 0; scale: 1.35; }
+}
+@keyframes stage-throw {
+    0%   { transform: translate(-50%, -50%) rotate(0); }
+    50%  { transform: translate(calc(-50% + var(--dx) / 2), calc(-50% + var(--dy) / 2 - 36px)) rotate(200deg) scale(1.3); }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(400deg); }
+}
+
+.actor.is-lunging            { animation: stage-lunge 420ms ease-out; }
+.actor.is-lunging.is-charged { animation: stage-lunge 420ms ease-out, stage-glow 420ms ease-out; --glow: #ff8a3a; }
+.actor.is-hit                { animation: stage-recoil 380ms ease-out; }
+.actor.is-vanquished         { animation: stage-vanish 650ms ease-in forwards; }
+.actor.is-down               { animation: stage-down 550ms ease-in forwards; }
+.actor.is-reviving           { animation: stage-revive 700ms ease-out; }
+.actor.is-entering           { animation: stage-enter 400ms ease-out; }
+.actor.is-glowing            { animation: stage-glow 700ms ease-out; }
+.actor[data-tone="heal"]     { --glow: #00e87a; }
+.actor[data-tone="gold"]     { --glow: #ffd86b; }
+.actor[data-tone="buff"]     { --glow: #6be0ff; }
+.actor[data-tone="reflect"]  { --glow: #e8f6ff; }
+
+.stage-projectile {
+    position: fixed;
+    z-index: 999;
+    font-size: 1.6rem;
+    pointer-events: none;
+    animation: stage-throw 350ms ease-in forwards;
+}
+
+/* The hero getting back up, on the screen after a defeat. */
+.respawn-stage {
+    --dir: 1;
+    --sprite-h: 96px;
+    height: calc(var(--sprite-h) + 8px);
+    display: flex;
+    justify-content: center;
+}
+.respawn-stage .actor  { width: auto; }
+.respawn-stage .sprite { width: calc(var(--sprite-h) * var(--frame-aspect, 1)); }
+
+@media (max-width: 600px) {
+    .battle-stage { --sprite-h: 84px; }
+}
+@media (max-width: 400px) {
+    .battle-stage { --sprite-h: 68px; column-gap: 8px; }
+}
+
+/* ── Hero picker (main menu) ─────────────────────────────────────────────── */
+.hero-picker        { margin-top: 8px; }
+.hero-picker-toggle { cursor: pointer; color: #a0d8a0; }
+.hero-picker-grid {
+    --sprite-h: 64px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+.hero-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 6px 8px;
+    font-size: 0.8rem;
+    background: #050c05;
+    border: 1px solid #2a4a2a;
+    border-radius: 4px;
+}
+.hero-choice[aria-pressed="true"] { border-color: #ffd86b; box-shadow: 0 0 0 1px #ffd86b; }
+.hero-choice .sprite              { width: calc(var(--sprite-h) * var(--frame-aspect, 1)); }
 
 .monster-name-line {
     margin-bottom: 4px;
@@ -1393,16 +1588,12 @@ summary.topic-heading:focus-visible {
 
     .checkbox-container label { font-size: 0.9rem; }
     select                    { font-size: 0.9rem; padding: 6px; }
-    .monster-image-container  { flex: 0 0 96px; }
-    .monster-image            { max-width: 96px; }
     .level-up-title           { font-size: 1.75rem; }
     .battle-text              { font-size: 0.95rem; }
     .review-list-container    { max-height: 45vh; }
 }
 
 @media (max-width: 400px) {
-    .monster-image-container  { flex: 0 0 72px; }
-    .monster-image  { max-width: 72px; }
     .title          { font-size: 1.1rem; }
     .level-up-title { font-size: 1.5rem; }
 
@@ -1413,20 +1604,6 @@ summary.topic-heading:focus-visible {
 }
 
 /* ── Combat animations ────────────────────────────────────────────────────── */
-
-/* A — Monster hit: white-flash + horizontal shake */
-@keyframes monster-hit-flash {
-    0%   { filter: brightness(1);               transform: translateX(0);   }
-    15%  { filter: brightness(5) saturate(0);   transform: translateX(-7px); }
-    35%  { filter: brightness(1);               transform: translateX(6px); }
-    55%  { filter: brightness(3) saturate(0);   transform: translateX(-4px); }
-    75%  { filter: brightness(1);               transform: translateX(2px); }
-    100% { filter: brightness(1);               transform: translateX(0);   }
-}
-
-.monster-hit {
-    animation: monster-hit-flash 0.36s ease-out;
-}
 
 /* B — Floating damage number */
 @keyframes dmg-float-up {
@@ -1447,6 +1624,11 @@ summary.topic-heading:focus-visible {
 
 .dmg-float--hit  { color: #00e87a; }   /* player deals damage — spring green */
 .dmg-float--recv { color: #ff6b6b; }   /* player takes damage  — danger red  */
+.dmg-float--heal  { color: #00e87a; }
+.dmg-float--gold  { color: #ffd86b; }
+.dmg-float--block { color: #6be0ff; }
+.dmg-float--item,
+.dmg-float--buff  { font-size: 1.6rem; }
 
 /* D — Screen-edge red flash when player takes damage */
 @keyframes player-hit-flash {
@@ -2189,7 +2371,8 @@ summary.topic-heading:focus-visible {
 @media (prefers-reduced-motion: reduce) {
     .monster-hp-bar  { transition: none; }
     .streak-display  { animation: none; }
-    .monster-hit     { animation: none; }
+    .actor, .stage-shield { animation: none !important; }
+    .stage-projectile { display: none; }
     .dmg-float       { animation: none; display: none; }
     .player-hit      { animation: none; }
     .toolbar-btn,

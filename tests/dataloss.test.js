@@ -669,11 +669,26 @@ describe('the results screen is not a way around the run', () => {
     assert.equal(global.sets_completed, 1);
   });
 
-  it('does not let Back undo a game over', async () => {
+  it('does not let Back undo a death: the run resumes at its checkpoint, not where it fell', async () => {
     const lms = new Lms();
     const phone = await new Device(lms, 'phone').launch();
     phone.open(A).play(2).takeFatalHit().back();
-    assert.notEqual(phone.menu(A).status.type, 'in_progress', 'Back from the death screen resumed the run');
+    const status = phone.menu(A).status;
+    assert.equal(status.type, 'in_progress');
+    // The fixture's only checkpoint is its opening scene: every question is owed again.
+    assert.equal(status.remaining, QUESTIONS_PER_SET + 1, 'Back from the death screen kept the progress');
+    const resumed = phone.open(A).controller.model;
+    assert.equal(resumed.player.hit_points, resumed.player.max_hit_points);
+  });
+
+  it('still ends a rank trial on a death', async () => {
+    const lms = new Lms();
+    const phone = await new Device(lms, 'phone').launch();
+    phone.open(A).finish();
+    daysPass(phone.device, 4);
+    phone.openTrial(A).takeFatalHit().next();
+    assert.ok(phone.controller.model.player.hit_points <= 0, 'the trial carried on past a death');
+    assert.equal(phone.menu(A).status.type, 'complete');
   });
 });
 

@@ -888,6 +888,13 @@ function materializeQuestions(questions, rng = Math.random) {
 
 export const INVENTORY_SIZE = 2;
 
+// A missed question comes back this many places further down the queue.
+const REQUEUE_GAP = 3;
+
+// A stretch this many questions long with no teaching scene in it gets a
+// checkpoint of its own, so a death never costs more than this to redo.
+export const CHECKPOINT_EVERY = 12;
+
 export class Player {
     static maxHpForLevel(level)       { return 20 + (level - 1) * 2; }
     static baseDefenseForLevel(level) { return 1 + Math.floor((level - 1) / 5); }
@@ -974,6 +981,9 @@ export class Monster {
         this.attack_die          = data.attack_die;
         this.defense             = data.defense;
         this.image               = data.image || null;
+        // A strip of poses for the battle stage (images/sprites/); without one
+        // the stage shows the old single picture.
+        this.sprite              = data.sprite || null;
         this.hit_points          = 0;
         for (let i = 0; i < this.hit_dice; i++) {
             this.hit_points += rollDice(1, 10);
@@ -1245,10 +1255,90 @@ export class GameModel {
             attack_die:          8,
             defense:             Infinity,
             image:               "quantum_dragon.png",
+            sprite:              (this.monsters || []).find(m => m.image === "quantum_dragon.png")?.sprite || null,
             hit_points:          queueLen,
             max_hit_points:      queueLen,
             xp_value:            0,
             is_boss:             true,
+        };
+    }
+
+    // ─── Checkpoints ───────────────────────────────────────────────────────────
+    // A full run that dies goes back to its last checkpoint instead of ending.
+    // Nothing about them is saved: where they are follows from the authored
+    // order, and which one was reached follows from the queue and the history,
+    // so a run resumed on another device finds the same one.
+
+    /**
+     * Authored positions a run can go back to: the start, every teaching scene
+     * (a run of scenes back to back counts once, at its first), and the next
+     * question after CHECKPOINT_EVERY without a scene.
+     */
+    _checkpoints() {
+        const out = [0];
+        let since = 0;
+        this.questions.forEach((q, i) => {
+            if (q.type === "npc_demo") {
+                if (i > 0 && this.questions[i - 1].type !== "npc_demo") out.push(i);
+                since = 0;
+                return;
+            }
+            if (since === CHECKPOINT_EVERY) {
+                out.push(i);
+                since = 0;
+            }
+            since++;
+        });
+        return out;
+    }
+
+    /**
+     * The last checkpoint the run has reached. A scene has been reached once it
+     * has left the queue (scenes never come back); a question once it has been
+     * answered, even if a miss has put it back in the queue.
+     */
+    _lastCheckpoint() {
+        const queued = new Set(this.questions_to_ask.map(q => this._sourceIndexOf(q)));
+        const answered = new Set(this.answer_history.map(h => h?.question));
+        const reached = i => this.questions[i].type === "npc_demo"
+            ? !queued.has(i)
+            : answered.has(this.questions[i].question);
+        return this._checkpoints().reverse().find(reached) ?? 0;
+    }
+
+    /**
+     * The character died: go back to the last checkpoint rather than end the run.
+     * Everything from the checkpoint on is asked again in authored order, a scene
+     * first, so its lesson comes before its paired question again. Misses from
+     * before the checkpoint that were still waiting come back as soon as a fresh
+     * miss would. HP is restored and a new monster steps in; level, XP, items and
+     * the history of answers all stay, so the misses still reach the retrieval
+     * boss. In the boss fight, the checkpoint is the start of the fight.
+     * @returns {{scene: object|null, redo: number, boss: boolean}} the scene gone
+     *   back to, if any, and how many answered questions must be answered again
+     */
+    respawn() {
+        this.player.hit_points = this.player.max_hit_points;
+        this.player.streak = 0;
+        this.current_monster = null;
+        this.current_question = null;
+
+        if (this.boss_phase) {
+            this.boss_queue = this._buildBossQueue();
+            return { scene: null, redo: this.boss_queue.length, boss: true };
+        }
+
+        const at = this._lastCheckpoint();
+        const again = this.questions.slice(at);
+        const waiting = this.questions_to_ask.filter(q => this._sourceIndexOf(q) < at);
+        const gap = Math.min(REQUEUE_GAP, again.length);
+        this.questions_to_ask = [...again.slice(0, gap), ...waiting, ...again.slice(gap)];
+
+        const answered = new Set(this.answer_history.map(h => h?.question));
+        return {
+            scene: this.questions[at].type === "npc_demo" ? this.questions[at] : null,
+            redo: again.filter(q => answered.has(q.question)).length,
+            boss: false,
         };
     }
 
@@ -1431,7 +1521,7 @@ export class GameModel {
             // During the boss this targets boss_queue so a fumbled concept must
             // still be mastered before the dragon falls.
             const targetQueue = this.boss_phase ? this.boss_queue : this.questions_to_ask;
-            const idx = Math.min(3, targetQueue.length);
+            const idx = Math.min(REQUEUE_GAP, targetQueue.length);
             targetQueue.splice(idx, 0, this.current_question);
         }
         this.questions_asked++;

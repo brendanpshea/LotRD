@@ -6,7 +6,7 @@ import { rollDice, Player, Monster, GameModel,
          tokenize, tokenSimilarity, tokenWordleFeedback,
          CL_MAX_ATTEMPTS, pickClozeBlank, parseClozeSegments,
          evaluateDynamicExpression, codeWriteSolutionText, codeWriteExamples, codeWriteHeader,
-         runCodeProblem, isJavaProblem } from '../src/model.js';
+         runCodeProblem, isJavaProblem, CHECKPOINT_EVERY } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -1978,6 +1978,118 @@ describe('sequential question order', () => {
       new GameModel(authored, SAMPLE_MONSTERS)
     ).every(gm => gm.questions_to_ask.every((q, i) => q.question === `q${i}`));
     assert.equal(stayedSorted, false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Checkpoints: a full run's death goes back to the last one
+// ────────────────────────────────────────────────────────────────────────────────
+describe('checkpoints', () => {
+  const q = name => mcQuestion({ question: name });
+  const scene = name => ({ type: 'npc_demo', question: `NPC: ${name}`, npc: 'ada', steps: [{ say: 'Watch.' }] });
+  const run = questions => new GameModel(questions, SAMPLE_MONSTERS, null, null, { sequential: true });
+  const queue = gm => gm.questions_to_ask.map(x => x.question);
+
+  /** Answer in queue order until `name` is the question up (scenes just end). */
+  function answerUntil(gm, name, { miss = [] } = {}) {
+    for (let guard = 0; guard < 200; guard++) {
+      gm.nextEncounter();
+      const cur = gm.current_question;
+      if (cur.question === name) return;
+      if (cur.type === 'npc_demo') { gm.current_question = null; continue; }
+      gm.current_monster.hit_points = 999;
+      gm.player.hit_points = 999;
+      gm.evaluateAnswer([miss.includes(cur.question) ? 'B' : 'A']);
+    }
+    throw new Error(`never reached ${name}`);
+  }
+
+  /** Lose to the question up, then respawn. */
+  function die(gm) {
+    gm.player.hit_points = 1;
+    gm.player.base_defense = 0;
+    gm.current_monster.attack_die = 1000;
+    assert.equal(gm.evaluateAnswer(['B']).defeated_player, true);
+    return gm.respawn();
+  }
+
+  it('are the start, each scene (back-to-back scenes once), and a question after CHECKPOINT_EVERY without one', () => {
+    const qs = [q('a'), scene('s1'), scene('s2'), q('b'),
+      ...Array.from({ length: CHECKPOINT_EVERY + 1 }, (_, i) => q(`c${i}`))];
+    // b and c0..c10 are the twelve after the scenes; c11 is where the next one goes.
+    assert.deepEqual(run(qs)._checkpoints(), [0, 1, 3 + CHECKPOINT_EVERY]);
+  });
+
+  it('a death goes back to the last scene reached and asks everything since again', () => {
+    const gm = run([q('a'), q('b'), scene('s'), q('c'), q('d'), q('e')]);
+    answerUntil(gm, 'e');
+    const back = die(gm);
+    assert.equal(back.scene.question, 'NPC: s');
+    assert.equal(back.redo, 3);
+    assert.deepEqual(queue(gm), ['NPC: s', 'c', 'd', 'e']);
+    assert.equal(gm.player.hit_points, gm.player.max_hit_points);
+    assert.equal(gm.current_monster, null, 'a fresh monster steps in');
+    assert.ok(gm.answer_history.some(h => h.question === 'e' && !h.was_perfect), 'the miss stays on record');
+  });
+
+  it('keeps owing the misses from before the checkpoint, where a fresh miss would return', () => {
+    const gm = run([q('a'), q('b'), q('x'), scene('s'), q('c'), q('d'), q('e'), q('f')]);
+    answerUntil(gm, 'd', { miss: ['x'] });
+    die(gm);
+    assert.deepEqual(queue(gm), ['NPC: s', 'c', 'd', 'x', 'e', 'f']);
+  });
+
+  it('gives a set with no scenes one every CHECKPOINT_EVERY questions', () => {
+    const qs = Array.from({ length: CHECKPOINT_EVERY + 3 }, (_, i) => q(`q${i}`));
+    const early = run(qs);
+    answerUntil(early, 'q5');
+    assert.equal(die(early).scene, null);
+    assert.equal(queue(early)[0], 'q0', 'before the first one, back to the start');
+
+    const later = run(qs);
+    answerUntil(later, `q${CHECKPOINT_EVERY + 1}`);
+    assert.equal(die(later).redo, 2);
+    assert.deepEqual(queue(later), qs.slice(CHECKPOINT_EVERY).map(x => x.question));
+  });
+
+  it('counts a checkpoint question as reached when the death comes on it', () => {
+    const qs = Array.from({ length: CHECKPOINT_EVERY + 3 }, (_, i) => q(`q${i}`));
+    const gm = run(qs);
+    answerUntil(gm, `q${CHECKPOINT_EVERY}`);
+    die(gm);
+    assert.equal(queue(gm)[0], `q${CHECKPOINT_EVERY}`);
+  });
+
+  it('in the boss fight, starts the fight over', () => {
+    const gm = run([q('a')]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.player.hit_points = 999;
+    gm.evaluateAnswer(['B']);                       // missed, and requeued
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.evaluateAnswer(['A']);
+    assert.equal(gm.nextEncounter(), 'boss_start');
+
+    assert.equal(die(gm).boss, true);
+    assert.equal(gm.boss_phase, true);
+    assert.deepEqual(gm.boss_queue.map(x => x.question), ['a']);
+    assert.equal(gm.nextEncounter(), 'continue');
+    assert.ok(gm.current_monster.is_boss);
+    assert.equal(gm.current_question.question, 'a');
+  });
+
+  it('finds the same checkpoint in a run carried to another device', () => {
+    const qs = [q('a'), scene('s'), q('c'), q('d')];
+    const gm = run(qs);
+    answerUntil(gm, 'd');
+    die(gm);
+
+    const elsewhere = new GameModel(qs, SAMPLE_MONSTERS, null, null, { sequential: true, position: gm.toPosition() });
+    assert.deepEqual(queue(elsewhere), queue(gm));
+    answerUntil(elsewhere, 'c');
+    die(elsewhere);
+    assert.deepEqual(queue(elsewhere), ['NPC: s', 'c', 'd']);
   });
 });
 

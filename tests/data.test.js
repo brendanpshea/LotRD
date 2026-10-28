@@ -5,6 +5,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
+import { HEROES } from '../src/heroes.js';
 import { runProblem, isScriptProblem, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
 import { runJavaProblem, parseJavaSignature, javaFromJson, isJavaClassProblem, javaScriptTypes } from '../src/jtiny.js';
 
@@ -278,6 +279,20 @@ describe('monsters.json', () => {
     for (const m of monsters) {
       const imgPath = join(imgDir, m.image);
       assert.ok(existsSync(imgPath), `Missing image file: images/monsters/${m.image} (${m.monster_name})`);
+    }
+  });
+
+  it('every battle-stage sprite a monster names exists on disk', () => {
+    for (const m of monsters.filter(m => m.sprite)) {
+      assert.ok(existsSync(join(ROOT, 'images', 'sprites', m.sprite)),
+        `Missing sprite: images/sprites/${m.sprite} (${m.monster_name})`);
+    }
+  });
+
+  it('every hero\'s sprite exists on disk', () => {
+    assert.ok(HEROES.length > 0);
+    for (const h of HEROES) {
+      assert.ok(existsSync(join(ROOT, 'images', 'sprites', h.sprite)), `Missing sprite: images/sprites/${h.sprite} (${h.name})`);
     }
   });
 

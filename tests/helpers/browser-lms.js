@@ -107,7 +107,7 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
     // worth full credit; and the landing page says so afterwards.
     async singleSet({ single }) {
       const home = () => doc().getElementById('game-root').innerText;
-      const report = { landing: home(), bannerBefore: banner().text, menuButtons: doc().querySelectorAll('details').length };
+      const report = { landing: home(), bannerBefore: banner().text, menuButtons: doc().querySelectorAll('details.topic-section').length };
       doc().querySelector('[data-action=home-primary]').click();
       const gc = win().gameController;
       await until(() => gc.model && gc.model.current_question, 'the set to start');

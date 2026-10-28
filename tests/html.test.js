@@ -30,7 +30,7 @@ describe('HTML template integrity', () => {
       'tpl-encounter-code-write',
       'tpl-npc-scene', 'tpl-encounter-chrome',
       'tpl-results', 'tpl-levelup', 'tpl-victory',
-      'tpl-no-questions', 'tpl-gameover', 'tpl-review',
+      'tpl-no-questions', 'tpl-gameover', 'tpl-respawn', 'tpl-review',
     ];
     for (const id of expected) {
       assert.ok(templateIds.includes(id), `Missing template: ${id}`);
@@ -197,8 +197,19 @@ describe('The hidden attribute actually hides', () => {
 describe('CSS animation classes', () => {
   const css = readFileSync(join(ROOT, 'styles.css'), 'utf-8');
 
-  it('monster-hit class exists in CSS', () => {
-    assert.ok(css.includes('.monster-hit'), 'CSS missing .monster-hit');
+  it('every state class the UI puts on the stage has a rule', () => {
+    // An is-* class with no rule is an animation that silently never plays.
+    const ui = readFileSync(join(ROOT, 'src', 'ui.js'), 'utf-8');
+    const used = new Set([...ui.matchAll(/["'](is-[a-z-]+)["']/g)].map(m => m[1]));
+    assert.ok(used.size > 0);
+    for (const cls of used) assert.ok(css.includes(`.${cls}`), `CSS missing .${cls}`);
+  });
+
+  it('every tone a stage beat floats text in has a colour', () => {
+    const stage = readFileSync(join(ROOT, 'src', 'stage.js'), 'utf-8');
+    const tones = new Set([...stage.matchAll(/tone: "([a-z]+)"|glow\("([a-z]+)"/g)].map(m => m[1] || m[2]));
+    assert.ok(tones.size > 0);
+    for (const tone of tones) assert.ok(css.includes(`.dmg-float--${tone}`), `CSS missing .dmg-float--${tone}`);
   });
 
   it('dmg-float class exists in CSS', () => {
@@ -215,7 +226,7 @@ describe('Shared encounter chrome', () => {
     .map(m => m[1]).filter(id => id !== 'tpl-encounter-chrome');
 
   it('the monster header is defined exactly once', () => {
-    assert.equal((html.match(/class="monster-layout"/g) || []).length, 1,
+    assert.equal((html.match(/class="battle-stage"/g) || []).length, 1,
       'monster header markup should live only in tpl-encounter-chrome');
     assert.equal((html.match(/class="bbs-container progress-section"/g) || []).length, 1,
       'journey progress markup should live only in tpl-encounter-chrome');

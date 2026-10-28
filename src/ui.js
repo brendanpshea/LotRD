@@ -5,6 +5,28 @@ import {
 import { highlightJava, highlightPython } from "./highlight.js";
 import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
+import { HEROES, chosenHero, chooseHero } from "./heroes.js";
+import { ITEMS } from "./items.js";
+import { planTurn, planItem, BEAT } from "./stage.js";
+
+// Width over height of one pose in a sprite strip (three poses side by side),
+// by URL. Known only once the image has loaded; kept for the session.
+const frameAspects = new Map();
+
+function frameAspect(url) {
+  if (!frameAspects.has(url)) {
+    const loading = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth / 3 / img.naturalHeight);
+      img.onerror = reject;
+      img.src = url;
+    });
+    // A failed load must not be remembered as the answer.
+    loading.catch(() => frameAspects.delete(url));
+    frameAspects.set(url, loading);
+  }
+  return frameAspects.get(url);
+}
 
 const LEVEL_TITLES = [
   { minLevel: 1,  title: "Apprentice" },
@@ -152,23 +174,8 @@ export class GameUI {
       }
     }
 
-    $(root, "[data-ref=mHP]").textContent = m.hit_points;
-    const hpBar = $(root, "[data-ref=mHPBar]");
-    if (hpBar) {
-      const pct = m.max_hit_points > 0 ? m.hit_points / m.max_hit_points : 1;
-      hpBar.style.width = `${Math.max(0, Math.round(pct * 100))}%`;
-      hpBar.className = "monster-hp-bar " + (pct > 0.6 ? "hp-high" : pct > 0.25 ? "hp-mid" : "hp-low");
-    }
-
-    $(root, "[data-ref=pHP]").textContent = `${p.hit_points}/${p.max_hit_points}`;
-    // Mirror the monster's bar, so a fight reads as two combatants rather than
-    // a sprite with a stat list underneath it.
-    const pBar = $(root, "[data-ref=pHPBar]");
-    if (pBar) {
-      const pct = p.max_hit_points > 0 ? Math.max(0, p.hit_points) / p.max_hit_points : 1;
-      pBar.style.width = `${Math.max(0, Math.round(pct * 100))}%`;
-      pBar.className = "player-hp-bar " + (pct > 0.6 ? "hp-high" : pct > 0.25 ? "hp-mid" : "hp-low");
-    }
+    this._renderMonsterHp(root);
+    this._renderPlayerHp(root);
     $(root, "[data-ref=pLvl]").textContent = p.level;
     $(root, "[data-ref=pXP]").textContent = `${p.xp}/${p.xp_to_next_level}`;
     $(root, "[data-ref=pRevive]").textContent = p.revive_charges;
@@ -187,15 +194,270 @@ export class GameUI {
       }
     }
 
-    if (m.image) {
-      const wrap = $(root, "[data-ref=imgWrap]");
-      const img = $(root, "[data-ref=img]");
-      img.src = `images/monsters/${m.image}`;
-      img.alt = m.monster_name;
-      wrap.hidden = false;
-    }
-
+    this._renderStage(root);
     this._renderInventory(root);
+  }
+
+  /** The monster's HP, as a number and a bar. */
+  _renderMonsterHp(root) {
+    const m = this.model.current_monster;
+    const hp = $(root, "[data-ref=mHP]");
+    if (!m || !hp) return;
+    hp.textContent = Math.max(0, m.hit_points);
+    const bar = $(root, "[data-ref=mHPBar]");
+    if (bar) {
+      const pct = m.max_hit_points > 0 ? Math.max(0, m.hit_points) / m.max_hit_points : 1;
+      bar.style.width = `${Math.round(pct * 100)}%`;
+      bar.className = "monster-hp-bar " + (pct > 0.6 ? "hp-high" : pct > 0.25 ? "hp-mid" : "hp-low");
+    }
+  }
+
+  /**
+   * The hero's HP, mirroring the monster's bar. `shown` overrides the number for
+   * the moment: a blow that hasn't landed on the stage yet, or a fall before a revive.
+   */
+  _renderPlayerHp(root, shown = this.model.player.hit_points) {
+    const p = this.model.player;
+    const hp = $(root, "[data-ref=pHP]");
+    if (!hp) return;
+    hp.textContent = `${Math.max(0, shown)}/${p.max_hit_points}`;
+    const bar = $(root, "[data-ref=pHPBar]");
+    if (bar) {
+      const pct = p.max_hit_points > 0 ? Math.max(0, shown) / p.max_hit_points : 1;
+      bar.style.width = `${Math.round(Math.min(1, pct) * 100)}%`;
+      bar.className = "player-hp-bar " + (pct > 0.6 ? "hp-high" : pct > 0.25 ? "hp-mid" : "hp-low");
+    }
+  }
+
+  /**
+   * Show one sprite: a strip of poses (images/sprites/), or a monster's old single
+   * picture until it has one. A strip stays hidden until it has loaded, since its
+   * frame's shape is only known then.
+   */
+  _setSprite(el, url, strip) {
+    if (!el || el.dataset.src === url) return;
+    el.dataset.src = url;
+    el.classList.toggle("sprite--strip", strip);
+    el.classList.toggle("sprite--legacy", !strip);
+    el.style.backgroundImage = `url("${url}")`;
+    if (!strip) {
+      el.style.setProperty("--frame-aspect", "1");
+      el.classList.add("is-ready");
+      return;
+    }
+    el.classList.remove("is-ready");
+    frameAspect(url).then(aspect => {
+      if (el.dataset.src !== url) return;
+      el.style.setProperty("--frame-aspect", aspect.toFixed(4));
+      el.classList.add("is-ready");
+    }).catch(() => {});   // a missing file leaves an empty spot; the name and HP still say who is there
+  }
+
+  /** The hero and the monster, facing off. */
+  _renderStage(root) {
+    const heroSprite = $(root, "[data-ref=heroSprite]");
+    if (!heroSprite) return;
+    const hero = chosenHero();
+    this._setSprite(heroSprite, `images/sprites/${hero.sprite}`, true);
+    heroSprite.setAttribute("aria-label", `You, the ${hero.name}`);
+
+    // Items armed for the next round hang over the hero; a shield shows as a bubble.
+    const armed = [...(this.model.pending_effects || [])]
+      .map(effect => ITEMS.find(i => i.effect === effect)).filter(Boolean);
+    const buffs = $(root, "[data-ref=heroBuffs]");
+    buffs.textContent = armed.map(i => i.emoji).join("");
+    buffs.title = armed.map(i => i.name).join(", ");
+    $(root, "[data-ref=heroActor]").classList.toggle("is-shielded", !!this.model.pending_effects?.has("shield"));
+
+    const m = this.model.current_monster;
+    const sprite = $(root, "[data-ref=monsterSprite]");
+    const actor = $(root, "[data-ref=monsterActor]");
+    if (!m || !sprite) return;
+    if (m.sprite) this._setSprite(sprite, `images/sprites/${m.sprite}`, true);
+    else if (m.image) this._setSprite(sprite, `images/monsters/${m.image}`, false);
+    sprite.setAttribute("aria-label", m.monster_name);
+    // Tougher monsters stand taller: a level-1 kobold is small, the dragon looms.
+    const size = m.is_boss ? 1.15 : Math.min(1.15, 0.85 + 0.035 * ((m.hit_dice || 1) - 1));
+    actor.style.setProperty("--size", size.toFixed(3));
+
+    // A monster that wasn't here a moment ago steps in.
+    if (m !== this._stageMonster) {
+      this._stageMonster = m;
+      this._animate(actor, ["is-entering"], 400);
+    }
+  }
+
+  /** Restart a CSS animation on `el` by class, and take the classes off when it is done. */
+  _animate(el, classes, ms) {
+    if (!el) return;
+    el.classList.remove(...classes);
+    void el.offsetWidth;                 // so re-adding the class starts it over
+    el.classList.add(...classes);
+    setTimeout(() => el.classList.remove(...classes), ms);
+  }
+
+  /** Hold a sprite in a pose for a while, then back to standing. */
+  _pose(sprite, pose, ms) {
+    if (!sprite) return;
+    sprite.dataset.pose = pose;
+    setTimeout(() => { if (sprite.dataset.pose === pose) sprite.dataset.pose = "stand"; }, ms);
+  }
+
+  _cancelBeats() {
+    (this._beatTimers || []).forEach(clearTimeout);
+    this._beatTimers = [];
+  }
+
+  /**
+   * Play a plan from stage.js on the battle stage. Returns how long it runs: 0
+   * when nothing will play (reduced motion, no stage on screen), in which case
+   * the HP shown is brought straight up to date instead.
+   * @param {object} d – the round's result, for what the beats can't carry
+   */
+  _playBeats(plan, d = {}) {
+    const stage = $(this.root, "[data-ref=stage]");
+    if (!stage || plan.end === 0 || this._prefersReducedMotion()) {
+      if (stage) { this._renderMonsterHp(this.root); this._renderPlayerHp(this.root); }
+      return 0;
+    }
+    this._cancelBeats();
+    for (const beat of plan.beats) {
+      this._beatTimers.push(setTimeout(() => {
+        if (stage.isConnected) this._playBeat(stage, beat, d);
+      }, beat.at));
+    }
+    return plan.end;
+  }
+
+  _playBeat(stage, beat, d) {
+    const actor = $(stage, beat.who === "hero" ? "[data-ref=heroActor]" : "[data-ref=monsterActor]");
+    const sprite = actor && $(actor, ".sprite");
+    if (!actor) return;
+    const float = () => { if (beat.text) this._spawnFloatNumber(actor, beat.text, `dmg-float--${beat.tone || "hit"}`); };
+    const pose = name => { if (sprite) sprite.dataset.pose = name; };
+    const hero = beat.who === "hero";
+    switch (beat.act) {
+      case "attack":
+        this._animate(actor, beat.charged ? ["is-lunging", "is-charged"] : ["is-lunging"], BEAT.attack);
+        this._pose(sprite, "attack", BEAT.attack - 60);
+        break;
+      case "hit":
+        this._animate(actor, ["is-hit"], BEAT.hit);
+        this._pose(sprite, "recoil", BEAT.hit);
+        float();
+        if (hero) {
+          // A revive brings the hero back to 10; the blow itself took them to 0.
+          this._renderPlayerHp(this.root, d.revived ? 0 : this.model.player.hit_points);
+          const container = document.querySelector(".game-container");
+          if (container) this._animate(container, ["player-hit"], 450);
+        } else {
+          this._renderMonsterHp(this.root);
+        }
+        break;
+      case "vanish":
+        pose("recoil");
+        actor.classList.add("is-vanquished");       // and it stays gone
+        float();
+        this._renderMonsterHp(this.root);
+        break;
+      case "down":
+        pose("recoil");
+        actor.classList.add("is-down");             // and stays down, unless revived
+        this._renderPlayerHp(this.root, 0);
+        break;
+      case "revive":
+        actor.classList.remove("is-down");
+        pose("stand");
+        this._animate(actor, ["is-reviving"], BEAT.revive);
+        float();
+        this._renderPlayerHp(this.root);
+        break;
+      case "block":
+        this._animate(actor, ["is-blocking"], BEAT.hit);
+        float();
+        break;
+      case "reflect":
+      case "glow":
+        actor.dataset.tone = beat.act === "reflect" ? "reflect" : beat.tone;
+        this._animate(actor, ["is-glowing"], beat.act === "reflect" ? BEAT.hit : BEAT.glow);
+        float();
+        break;
+      case "throw":
+        this._throw(actor, $(stage, "[data-ref=monsterActor]"), beat.text, BEAT.throw);
+        break;
+      case "drop":
+        float();
+        break;
+    }
+  }
+
+  /** Something thrown from one actor to the other, on an arc. */
+  _throw(fromEl, toEl, text, ms) {
+    if (!fromEl || !toEl) return;
+    const a = fromEl.getBoundingClientRect();
+    const b = toEl.getBoundingClientRect();
+    const span = document.createElement("span");
+    span.className = "stage-projectile";
+    span.textContent = text;
+    span.style.left = `${a.left + a.width / 2}px`;
+    span.style.top = `${a.top + a.height / 2}px`;
+    span.style.setProperty("--dx", `${b.left + b.width / 2 - (a.left + a.width / 2)}px`);
+    span.style.setProperty("--dy", `${b.top + b.height / 2 - (a.top + a.height / 2)}px`);
+    span.style.animationDuration = `${ms}ms`;
+    document.body.appendChild(span);
+    this._removeAfterAnimation(span, () => span.remove());
+  }
+
+  /** A wrong guess with tries left: the monster hits back while the question stays up. */
+  _playCounter(result) {
+    const dmg = result.effective_monster_damage || 0;
+    // The header was just redrawn with the HP after the blow; show it from before,
+    // so it drops when the blow lands. After a revive, "before" was at most the blow.
+    if (dmg > 0) this._renderPlayerHp(this.root, result.revived ? dmg : this.model.player.hit_points + dmg);
+    this._playBeats(planTurn(result, { strike: false }), result);
+  }
+
+  /** An item from the inventory taking effect. Returns how long it plays. */
+  animateItem(item, detail = {}) {
+    return this._playBeats(planItem(item, detail));
+  }
+
+  /** Who the student plays as: folded away under its current choice. */
+  _renderHeroPicker(root) {
+    const slot = $(root, "[data-ref=heroPicker]");
+    if (!slot) return;
+    const details = document.createElement("details");
+    details.className = "hero-picker";
+    const summary = document.createElement("summary");
+    summary.className = "hero-picker-toggle";
+    const grid = document.createElement("div");
+    grid.className = "hero-picker-grid";
+    grid.setAttribute("role", "group");
+    grid.setAttribute("aria-label", "Choose your hero");
+
+    const show = hero => {
+      summary.textContent = `Your hero: ${hero.name}`;
+      for (const b of grid.children) b.setAttribute("aria-pressed", String(b.dataset.hero === hero.id));
+    };
+    for (const hero of HEROES) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "hero-choice";
+      b.dataset.hero = hero.id;
+      const sprite = document.createElement("span");
+      sprite.className = "sprite";
+      sprite.setAttribute("aria-hidden", "true");
+      this._setSprite(sprite, `images/sprites/${hero.sprite}`, true);
+      const name = document.createElement("span");
+      name.className = "hero-choice-name";
+      name.textContent = hero.name;
+      b.append(sprite, name);
+      b.addEventListener("click", () => { chooseHero(hero.id); show(hero); });
+      grid.appendChild(b);
+    }
+    details.append(summary, grid);
+    slot.replaceChildren(details);
+    show(chosenHero());
   }
 
   /** Refresh just the per-encounter HUD (HP/XP/inventory) without rerendering the question. */
@@ -299,10 +561,14 @@ export class GameUI {
     // NPC teaching scenes never enter answer_history, so they'd read as
     // permanently "unseen" — count only real questions.
     const total = this.model.questions.filter(q => q.type !== "npc_demo").length;
+    // A question back in the queue isn't done, whatever an earlier answer said:
+    // a death sends the questions since the last checkpoint round again.
+    const m = this.model;
+    const queued = new Set(m.boss_phase ? [] : [m.current_question, ...m.questions_to_ask].map(q => q?.question));
     const status = new Map();
     this.model.answer_history.forEach(h => {
       if (h.was_perfect) {
-        status.set(h.question, true);
+        if (!queued.has(h.question)) status.set(h.question, true);
       } else if (!status.get(h.question)) {
         status.set(h.question, false);
       }
@@ -453,6 +719,7 @@ export class GameUI {
   showMainMenu(catalog, globalStats, levelData, launchCallback) {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-main-menu");
+    this._renderHeroPicker(this.root);
 
     const level = levelData?.level ?? 1;
     const title = getLevelTitle(level);
@@ -792,6 +1059,7 @@ export class GameUI {
   showSetHome(meta, actions) {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-set-home");
+    this._renderHeroPicker(this.root);
     $(this.root, "[data-ref=homeTitle]").textContent = meta.title || "Problem set";
 
     const story = $(this.root, "[data-ref=homeStory]");
@@ -1251,15 +1519,7 @@ export class GameUI {
     this._appendWordleRow(result.feedback);
     this._updateWordleStatus(result.attemptsUsed);
 
-    if (result.effective_monster_damage > 0) {
-      const hud = this.root.querySelector(".player-hud");
-      this._spawnFloatNumber(hud, `-${result.effective_monster_damage}`, "dmg-float--recv");
-      const container = document.querySelector(".game-container");
-      if (container) {
-        container.classList.add("player-hit");
-        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
-      }
-    }
+    this._playCounter(result);
     if (result.shield_used) {
       this.showFeedbackInline("🛡 Firewall Shard absorbed the hit.");
     }
@@ -1339,15 +1599,7 @@ export class GameUI {
     }
     this._updateWordleStatus(result.attemptsUsed);
 
-    if (result.effective_monster_damage > 0) {
-      const hud = this.root.querySelector(".player-hud");
-      this._spawnFloatNumber(hud, `-${result.effective_monster_damage}`, "dmg-float--recv");
-      const container = document.querySelector(".game-container");
-      if (container) {
-        container.classList.add("player-hit");
-        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
-      }
-    }
+    this._playCounter(result);
     if (result.shield_used) {
       notices.push("🛡 Firewall Shard absorbed the hit.");
     }
@@ -2481,37 +2733,6 @@ export class GameUI {
     }
   }
 
-  _triggerCombatAnimations(battleData) {
-    const dealingDamage = battleData.effective_player_damage > 0;
-    const takingDamage = battleData.effective_monster_damage > 0;
-    if (!dealingDamage && !takingDamage) return 0;
-    // Nothing animates under reduced motion, so don't hold the results screen
-    // back waiting for animations that will never play.
-    if (this._prefersReducedMotion()) return 0;
-
-    if (dealingDamage) {
-      const img = this.root.querySelector(".monster-image");
-      if (img) {
-        img.classList.add("monster-hit");
-        this._removeAfterAnimation(img, () => img.classList.remove("monster-hit"));
-      }
-      const imgWrap = this.root.querySelector(".monster-image-container") || this.root.querySelector(".monster-details");
-      this._spawnFloatNumber(imgWrap, `-${battleData.effective_player_damage}`, "dmg-float--hit");
-    }
-
-    if (takingDamage) {
-      const container = document.querySelector(".game-container");
-      if (container) {
-        container.classList.add("player-hit");
-        this._removeAfterAnimation(container, () => container.classList.remove("player-hit"));
-      }
-      const hud = this.root.querySelector(".player-hud");
-      this._spawnFloatNumber(hud, `-${battleData.effective_monster_damage}`, "dmg-float--recv");
-    }
-
-    return 760;
-  }
-
   /**
    * One line of combat outcome for the results screen. The floating damage
    * numbers are gone in under a second, and the results screen is where a
@@ -2545,10 +2766,37 @@ export class GameUI {
     return parts.join("  ·  ");
   }
 
+  /**
+   * Play the round out on the battle stage, then show the results. A click or a
+   * keypress skips to the results; leaving for the menu meanwhile cancels them,
+   * so they are never drawn over whatever came next.
+   */
   showResults(battleData, itemDrop, continueCallback) {
     this._clearKeyboard();
-    const animDelay = this._triggerCombatAnimations(battleData);
-    setTimeout(() => this._renderResults(battleData, itemDrop, continueCallback), animDelay);
+    const stage = $(this.root, "[data-ref=stage]");
+    const plan = planTurn(battleData, { boss: !!this.model?.boss_phase, drop: itemDrop });
+    const wait = this._playBeats(plan, battleData);
+
+    let shown = false;
+    const skip = new AbortController();
+    const show = () => {
+      if (shown) return;
+      shown = true;
+      skip.abort();
+      this._cancelBeats();
+      if (stage && !stage.isConnected) return;
+      this._renderResults(battleData, itemDrop, continueCallback);
+    };
+    setTimeout(show, wait);
+    if (wait > 0) {
+      // Listening from the next tick, so the click or Enter that submitted the
+      // answer doesn't skip its own fight. A held key's repeats don't count.
+      setTimeout(() => {
+        if (shown) return;
+        document.addEventListener("click", show, { signal: skip.signal });
+        document.addEventListener("keydown", e => { if (!e.repeat) show(); }, { signal: skip.signal });
+      }, 0);
+    }
   }
 
   _renderResults(battleData, itemDrop, continueCallback) {
@@ -2858,6 +3106,51 @@ export class GameUI {
     const restartBtn = $(this.root, "[data-action=restart]");
     if (restartBtn) restartBtn.addEventListener("click", () => restartCallback());
     if (reviewBtn) reviewBtn.focus();
+  }
+
+  /**
+   * A full run's death: the character goes back to the last checkpoint and the
+   * run carries on. `checkpoint` is what GameModel.respawn reports.
+   */
+  showRespawn({ scene, redo, boss }, onContinue) {
+    this._clearKeyboard();
+    renderTemplate(this.root, "tpl-respawn");
+    this._setSprite($(this.root, "[data-ref=heroSprite]"), `images/sprites/${chosenHero().sprite}`, true);
+    const text = $(this.root, "[data-ref=respawnText]");
+    const again = redo > 0 ? ` ${redo} question${redo === 1 ? "" : "s"} to answer again.` : "";
+    if (boss) {
+      text.textContent = "The dragon's fight starts over.";
+    } else if (scene) {
+      const name = document.createElement("span");
+      name.className = "bold";
+      name.textContent = "Your mentor";
+      text.append(name, ` hauls you back to the lesson.${again}`);
+      loadNpcRoster().then(roster => {
+        const npc = findNpc(roster, scene.npc);
+        if (npc && name.isConnected) name.textContent = npc.short || npc.name;
+      }).catch(() => {});
+    } else {
+      text.textContent = `You wake at your last checkpoint.${again}`;
+    }
+
+    // Enter on the focused button is both a keydown and a click: go once.
+    let gone = false;
+    const go = () => {
+      if (gone) return;
+      gone = true;
+      this._clearKeyboard();
+      onContinue();
+    };
+    const cont = $(this.root, "[data-action=continue]");
+    cont.addEventListener("click", go);
+    cont.focus();
+    this._kbAbort = new AbortController();
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        go();
+      }
+    }, { signal: this._kbAbort.signal });
   }
 
   showReview(history, player, outcomeType, setName, mainMenuCallback) {

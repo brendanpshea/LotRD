@@ -13,7 +13,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 1. Open `index.html` in a browser (or serve the folder with any static file server).
 2. From the main menu, choose a topic and question set.
 3. Each encounter presents a question. Answer correctly to damage the monster; wrong answers let the monster hit back.
-4. Defeat monsters to earn XP and level up. Each level grants a **revive charge** (⚗️) — when your HP hits 0, a charge is consumed to restore 10 HP.
+4. Defeat monsters to earn XP and level up. Each level grants a **revive charge** (⚗️) — when your HP hits 0, a charge is consumed to restore 10 HP. With none left, you go back to the last **checkpoint** and redo the questions since then.
 5. Your **player level persists globally** across all question sets. Finishing a set by defeating the last monster or exhausting all remaining questions counts as clearing it. Progress auto-saves to `localStorage`.
 
 ### Keyboard Shortcuts
@@ -38,11 +38,13 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Global stats** — `lotrd_global` accumulates lifetime totals across all sets
 - **Session review** — question-by-question pass/fail breakdown with export to `.txt`
 - **Direct-link support** — instructors can share `?set=filename.json` URLs
-- **Encounter screen** — the monster sprite is shown at its native 128px, with its level and an HP bar; the player's HP mirrors it. Flavour text sits behind an **Examine** toggle that opens itself the first time you meet a monster in a run and stays folded away after, so the description is something you read once rather than on every question. The retrieval boss keeps its line always visible, since there it reports concepts remaining rather than flavour
+- **Battle stage** — your hero (chosen on the main menu, from six) faces the monster, each over its own HP bar. The fight plays out instead of being described: the hero lunges and the monster reels, the monster counters, a defeated monster flashes and vanishes, a knocked-out hero falls (and gets back up on a revive), and items show their effect — a heal glows, an armed Firewall Shard is a bubble that bursts when it blocks, a Stack Mirror sends the blow back, a Logic Bomb is thrown. A click or keypress skips to the results; nothing moves under reduced motion. Sprites are three-pose strips (stand, attack, recoil) in `images/sprites/`, cut from generated sheets — see [Sprites](#sprites)
+- **Checkpoints** — dying in a full run sends you back to the last checkpoint, not the start: every teaching scene, and every 12 questions where there is none. HP is restored and the questions since the checkpoint are asked again; level, XP, items, and the record of what you missed are kept. In the retrieval boss, the fight starts over. Rank trials and reviews have no checkpoints — a death still ends them
+- **Encounter screen** — flavour text sits behind an **Examine** toggle that opens itself the first time you meet a monster in a run and stays folded away after, so the description is something you read once rather than on every question. The retrieval boss keeps its line always visible, since there it reports concepts remaining rather than flavour
 - **Sound effects** — Web Audio API; toggle with 🔊 button in toolbar
 - **Streak bonuses** — consecutive perfect answers multiply player damage (1.25×, 1.5×, 2×)
 - **Global level** — player level and revive charges persist across all question sets
-- **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat
+- **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat; with none left, a full run goes back to its last checkpoint
 - **Retrieval boss** — when the questions run out, anything missed during the run comes back as the Recursive Dragon's HP bar; each concept only leaves the bar once it's answered cleanly (a flawless run skips the fight)
 - **Items** — two inventory slots (`Q`/`W`) hold drops from defeated monsters: heals, shields, 2× damage/XP, and a Mulligan that rewinds one wrong answer
 - **Spaced review** — once a set reaches Master rank, it becomes "due" again on an expanding schedule (first ~21 days after mastery, then 60) and offers a short 5-question refresher; below Master, the rank trials are the spaced re-encounters
@@ -296,7 +298,9 @@ src/
   ui.js             — GameUI; all screen rendering, keyboard handling, encounter/results screens
   sound.js          — SoundSystem; Web Audio API effects and keep-alive logic
   items.js          — ITEM_DROPS table for post-battle loot
-  model.js          — Player, Monster, GameModel; game logic, battle math, save/load state
+  stage.js          — The battle stage's choreography: a round or an item as timed beats
+  heroes.js         — The heroes a student can play as, and which one this browser chose
+  model.js          — Player, Monster, GameModel; game logic, battle math, checkpoints, save/load state
   pytiny.js         — A small Python interpreter; runs student code for code_write questions
   jtiny.js          — A small Java, type-checked the way javac does; runs Java code_write questions
   sqlgrade.js       — Grades a student's query against a reference query, on every dataset
@@ -304,9 +308,10 @@ src/
   highlight.js      — Minimal Java and Python syntax highlighters
   util.js           — Shared helpers such as shuffle()
 assets/
-  monsters.json     — Monster definitions (name, hit_dice, attack_die, defense, image)
+  monsters.json     — Monster definitions (name, hit_dice, attack_die, defense, image, sprite)
   questions.json    — Legacy; not used by the main app
-images/monsters/    — Monster artwork
+images/monsters/    — Monster artwork (single pictures; the battle stage uses images/sprites/)
+images/sprites/     — Battle-stage sprite strips, plus roster.json and prompts.md that make them
 question_sets/
   catalog.json      — Topic groupings and metadata for the main menu
   index.json        — Flat list of available set filenames (for direct-link validation)
@@ -423,6 +428,19 @@ matches the number of questions actually in each file.
 | `lotrd_global` | Lifetime totals: answered, correct, incorrect, best streak, sets completed |
 | `lotrd_player_level` | Global player level data (level, XP, revive charges) |
 | `lotrd_sound` | Sound preference: `"1"` on, `"0"` off |
+| `lotrd_hero` | The hero this browser plays as (an id from `src/heroes.js`) |
+
+---
+
+## Sprites
+
+Every hero and monster on the battle stage is a strip of three poses (stand, attack, recoil) in `images/sprites/<id>.webp`, all facing right; the stage mirrors the monster. They are made in batches of three characters:
+
+1. `images/sprites/roster.json` describes each character, three to a sheet. `python tools/sprite_prompts.py` writes `images/sprites/prompts.md` from it: one prompt per sheet, ready to paste into an image generator, with a table of which sheets are done.
+2. Save each generated image as `images/sprites/sheets/<sheet>.png` (or `.jpg`/`.webp`). The sheets are source material and stay out of git and out of SCORM packages.
+3. `python tools/sprite_sheets.py [<sheet> ...]` keys out the magenta background, cuts each row into a strip, and points that monster's entry in `assets/monsters.json` at it with `"sprite"`. It needs Pillow, NumPy, and SciPy.
+
+A monster without a `"sprite"` still works: the stage shows its old picture, framed. Heroes are listed in `src/heroes.js`.
 
 ---
 

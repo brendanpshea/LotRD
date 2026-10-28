@@ -43,6 +43,7 @@
           <p>Keys: <span class="yellow">1–9</span> toggle answer options &nbsp;·&nbsp; <span class="yellow">Enter</span> submits</p>
         </div>
       </details>
+      <div data-ref="heroPicker"></div>
     </div>
 
     <!-- Search / filter -->
@@ -123,6 +124,7 @@
         <ul class="intro-objectives" data-ref="homeObjectives"></ul>
       </div>
       <div class="section intro-note dim" data-ref="homeNote"></div>
+      <div data-ref="heroPicker"></div>
       <div class="button-container">
         <button class="action-button" data-action="home-primary"></button>
         <button class="action-button action-button--secondary" data-action="home-secondary" hidden></button>
@@ -201,18 +203,17 @@
     <div class="bbs-container" role="region" aria-label="Monster encounter">
       <div class="encounter-breadcrumb" data-ref="breadcrumb"></div>
       <div class="streak-display" data-ref="streak" hidden aria-live="polite"></div>
-      <div class="monster-layout">
-        <div class="monster-image-container" data-ref="imgWrap" hidden>
-          <img class="monster-image" data-ref="img" alt="">
-        </div>
-        <div class="monster-details">
-          <div class="monster-name-line">
-            <span class="bold underline" data-ref="mName"></span>
-            <span class="monster-tier dim" data-ref="mTier"></span>
-          </div>
-          <div class="monster-hp-block">
-            HP: <span class="yellow" data-ref="mHP"></span>
-            <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
+      <!-- The battle stage: the hero on the left faces the monster on the right.
+           Each side's actor is what moves; its sprite is what it looks like. -->
+      <div class="battle-stage" data-ref="stage">
+        <div class="combatant combatant--hero">
+          <div class="sprite-slot">
+            <div class="actor" data-ref="heroActor">
+              <div class="sprite" data-ref="heroSprite" role="img">
+                <div class="stage-shield" aria-hidden="true"></div>
+                <div class="stage-buffs" data-ref="heroBuffs" aria-hidden="true"></div>
+              </div>
+            </div>
           </div>
           <div class="player-hud" role="group" aria-label="Player stats">
             <span class="hud-item"><span aria-hidden="true">❤</span><span class="sr-only">HP:</span> <span data-ref="pHP"></span></span>
@@ -223,6 +224,23 @@
             <span class="hud-item"><span aria-hidden="true">✦</span><span class="sr-only">XP:</span> <span data-ref="pXP"></span></span>
             <span class="hud-sep" aria-hidden="true">·</span>
             <span class="hud-item"><span aria-hidden="true">⚗️</span><span class="sr-only">Revives:</span> <span data-ref="pRevive"></span></span>
+          </div>
+        </div>
+        <div class="combatant combatant--monster">
+          <div class="sprite-slot">
+            <div class="actor" data-ref="monsterActor">
+              <div class="sprite" data-ref="monsterSprite" role="img"></div>
+            </div>
+          </div>
+          <div class="monster-details">
+            <div class="monster-name-line">
+              <span class="bold underline" data-ref="mName"></span>
+              <span class="monster-tier dim" data-ref="mTier"></span>
+            </div>
+            <div class="monster-hp-block">
+              HP: <span class="yellow" data-ref="mHP"></span>
+              <span class="monster-hp-bar-wrap" aria-hidden="true"><span class="monster-hp-bar" data-ref="mHPBar"></span></span>
+            </div>
           </div>
         </div>
       </div>
@@ -588,6 +606,24 @@
               aria-label="Restart the same question set from the beginning">Restart Same Set</button>
       <button class="action-button action-button--secondary" data-action="review"
               aria-label="View session review and export results">Session Review</button>
+    </div>
+  </template>
+
+  <!-- ── Respawn: a full run's death goes back to its last checkpoint ── -->
+  <template id="tpl-respawn">
+    <div class="bbs-container" role="region" aria-label="Defeated">
+      <h1 class="title">💀 Defeated</h1>
+      <div class="respawn-stage" aria-hidden="true">
+        <div class="actor is-reviving" data-ref="heroActor">
+          <div class="sprite" data-ref="heroSprite"></div>
+        </div>
+      </div>
+      <div class="section" data-ref="respawnText" aria-live="assertive"></div>
+      <div class="section dim">❤ HP restored · level, XP and items kept</div>
+    </div>
+    <div class="button-container">
+      <button class="action-button" data-action="continue"
+              aria-label="Continue from the checkpoint">Continue</button>
     </div>
   </template>
 
