@@ -6,7 +6,8 @@ import { rollDice, Player, Monster, GameModel,
          tokenize, tokenSimilarity, tokenWordleFeedback,
          CL_MAX_ATTEMPTS, pickClozeBlank, parseClozeSegments,
          evaluateDynamicExpression, codeWriteSolutionText, codeWriteExamples, codeWriteHeader,
-         runCodeProblem, isJavaProblem, CHECKPOINT_EVERY, MONSTER_EXTRA_HIT_DICE } from '../src/model.js';
+         runCodeProblem, isJavaProblem, CHECKPOINT_EVERY, MONSTER_EXTRA_HIT_DICE,
+         MAX_MONSTER_DICE, KILL_HEAL_SHARE } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -1499,6 +1500,74 @@ describe('Player defeat', () => {
     const r = gm.evaluateAnswer(['B']); // wrong
     assert.equal(r.defeated_player, true);
     assert.ok(gm.player.hit_points <= 0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// What an answer is worth in dice (each die rolls 1 here, so damage = dice)
+// ────────────────────────────────────────────────────────────────────────────────
+describe('Damage from a multiple-choice answer', () => {
+  function onDice(question) {
+    const gm = freshModel([question]);
+    gm.nextEncounter();
+    gm._rollDamage = n => n;
+    gm.current_monster.defense = 0;
+    gm.current_monster.hit_points = gm.current_monster.max_hit_points = 999;
+    gm.player.base_defense = 0;
+    gm.player.hit_points = gm.player.max_hit_points = 50;
+    return gm;
+  }
+  const single = mcQuestion({ correct: ['A'], incorrect: ['B', 'C', 'D'] });
+  const multi = mcQuestion({ correct: ['A', 'B'], incorrect: ['C', 'D', 'E'] });
+
+  it('a right single answer strikes for the choice and every distractor avoided', () => {
+    assert.equal(onDice(single).evaluateAnswer(['A']).effective_player_damage, 4);
+  });
+
+  it('a wrong single answer deals nothing, and costs one die, not two', () => {
+    const r = onDice(single).evaluateAnswer(['B']);
+    assert.equal(r.effective_player_damage, 0);
+    assert.equal(r.effective_monster_damage, 1);
+  });
+
+  it('a partly right select-all still counts the distractors it avoided', () => {
+    const r = onDice(multi).evaluateAnswer(['A']);      // A right, B missed, C D E avoided
+    assert.equal(r.effective_player_damage, 4);
+    assert.equal(r.effective_monster_damage, 1);
+  });
+
+  it('however wrong an answer, the monster rolls at most MAX_MONSTER_DICE', () => {
+    const r = onDice(multi).evaluateAnswer(['C', 'D', 'E']);   // three wrong picks, two misses
+    assert.equal(r.effective_monster_damage, MAX_MONSTER_DICE);
+  });
+});
+
+describe('Healing on a kill', () => {
+  it('beating a monster restores KILL_HEAL_SHARE of max HP, never past max', () => {
+    const gm = freshModel([mcQuestion(), mcQuestion({ question: 'Q2' })]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 1;
+    gm.player.max_hit_points = 20;
+    gm.player.hit_points = 6;
+    const r = gm.evaluateAnswer(['A']);
+    assert.equal(r.defeated_monster, true);
+    assert.equal(r.healed, Math.round(20 * KILL_HEAL_SHARE));
+    assert.equal(gm.player.hit_points, 6 + r.healed);
+
+    gm.player.hit_points = 19;
+    gm.current_monster = { ...gm.current_monster, hit_points: 0, is_boss: false };
+    assert.equal(gm.healForKill(), 1, 'capped at max HP');
+  });
+
+  it('not for the dragon, and not for a hero who fell in the same round', () => {
+    const gm = freshModel([mcQuestion()]);
+    gm.nextEncounter();
+    gm.player.hit_points = 5;
+    gm.current_monster = { ...gm.current_monster, is_boss: true };
+    assert.equal(gm.healForKill(), 0);
+    gm.current_monster = { ...gm.current_monster, is_boss: false };
+    gm.player.hit_points = 0;
+    assert.equal(gm.healForKill(), 0);
   });
 });
 

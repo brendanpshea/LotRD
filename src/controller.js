@@ -1438,6 +1438,7 @@ export class GameController {
         this.model.consumeSlot(slotIdx);
         this.sounds.monsterDefeated();
         this.model.current_monster.hit_points = 0;
+        const healed = this.model.healForKill();
         // Re-queue the current question so the player still has to face it later.
         // Bomb buys time without letting the player skip the question.
         const idx = Math.min(3, this.model.questions_to_ask.length);
@@ -1445,7 +1446,7 @@ export class GameController {
         this.model.current_question = null;
         // Let the monster's fall play out before the next one steps in — unless
         // the student has left for the menu by then.
-        const wait = this.ui.animateItem?.(item) || 0;
+        const wait = this.ui.animateItem?.(item, { healed }) || 0;
         if (wait > 0) this._stageWait = setTimeout(() => this.continueAdventure(), wait);
         else this.continueAdventure();
         break;

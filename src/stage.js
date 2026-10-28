@@ -106,15 +106,22 @@ export function planTurn(d, { boss = false, drop = null, strike = true } = {}) {
   if (drop && fellAt !== null) {
     beats.push({ at: fellAt + BEAT.vanish / 2, who: "monster", act: "drop", text: drop.emoji, tone: "item" });
   }
+  // The win restores some HP, once the monster is gone.
+  if (d.healed > 0 && fellAt !== null) {
+    const at = fellAt + BEAT.vanish / 2 + BEAT.gap;
+    beats.push({ at, who: "hero", act: "glow", tone: "heal", text: `+${d.healed}` });
+    t = Math.max(t, at + BEAT.glow);
+  }
   return { beats, end: beats.length ? t + BEAT.settle : 0 };
 }
 
 /**
  * An item used from the inventory.
  * @param {object} item – from ITEMS
- * @param {{amount?: number}} detail – amount: the HP a heal actually restored
+ * @param {{amount?: number, healed?: number}} detail – amount: the HP a heal
+ *   actually restored; healed: the HP a monster's fall gave back (Logic Bomb)
  */
-export function planItem(item, { amount = item.amount } = {}) {
+export function planItem(item, { amount = item.amount, healed = 0 } = {}) {
   const glow = (tone, text) => ({
     beats: [{ at: 0, who: "hero", act: "glow", tone, text }],
     end: BEAT.glow,
@@ -123,14 +130,19 @@ export function planItem(item, { amount = item.amount } = {}) {
     case "heal":       return glow("heal", `+${amount}`);
     case "max_hp":     return glow("heal", `❤ +${amount}`);
     case "add_revive": return glow("gold", item.emoji);
-    case "bomb":
-      return {
-        beats: [
-          { at: 0, who: "hero", act: "throw", text: item.emoji },
-          { at: BEAT.throw, who: "monster", act: "vanish", text: "💥", tone: "item" },
-        ],
-        end: BEAT.throw + BEAT.vanish + BEAT.settle,
-      };
+    case "bomb": {
+      const beats = [
+        { at: 0, who: "hero", act: "throw", text: item.emoji },
+        { at: BEAT.throw, who: "monster", act: "vanish", text: "💥", tone: "item" },
+      ];
+      let end = BEAT.throw + BEAT.vanish;
+      if (healed > 0) {
+        const at = BEAT.throw + BEAT.vanish / 2 + BEAT.gap;
+        beats.push({ at, who: "hero", act: "glow", tone: "heal", text: `+${healed}` });
+        end = Math.max(end, at + BEAT.glow);
+      }
+      return { beats, end: end + BEAT.settle };
+    }
     default:           // armed for the next round
       return glow("buff", item.emoji);
   }

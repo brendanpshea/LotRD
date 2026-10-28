@@ -46,7 +46,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Global level** — player level and revive charges persist across all question sets
 - **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat; with none left, a full run goes back to its last checkpoint
 - **Retrieval boss** — when the questions run out, anything missed during the run comes back as the Recursive Dragon's HP bar; each concept only leaves the bar once it's answered cleanly (a flawless run skips the fight)
-- **Monster fights** — a monster has a d10 of HP per level plus eight more, so it takes about five answers to beat (it was about two). Every monster beaten drops an item
+- **Monster fights** — a monster has a d10 of HP per level plus eight more, so it takes about five answers to beat (it was about two). Every monster beaten drops an item and gives back a quarter of your max HP
 - **Items** — two inventory slots (`Q`/`W`) hold drops from defeated monsters: heals, shields, 2× damage/XP, and a Mulligan that rewinds one wrong answer
 - **Spaced review** — once a set reaches Master rank, it becomes "due" again on an expanding schedule (first ~21 days after mastery, then 60) and offers a short 5-question refresher; below Master, the rank trials are the spaced re-encounters
 
@@ -275,13 +275,16 @@ Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a work
 | Situation | Player damage | Monster damage |
 |-----------|--------------|----------------|
 | Multiple-choice: each correct selection | +1 attack roll (d6) | — |
-| Multiple-choice: each wrong / missed selection | — | +1 monster roll |
+| Multiple-choice: each distractor left unselected | +1 attack roll (d6) — on a single-answer question, only when the answer is right | — |
+| Multiple-choice: each wrong / missed selection | — | +1 monster roll (a wrong pick on a single-answer question is one mistake, not two) |
 | Fill-blank / dynamic numeric / code-trace: correct within 3 tries | 1 attack roll (d6) × streak multiplier | — |
 | Fill-blank / dynamic numeric / code-trace: wrong intermediate guess | — | 1 monster roll, scaled by attempt (0%, 50%, 100%) |
 | Code-line: correct within 3 tries | 1 attack roll (d6) × streak multiplier | — |
 | Code-line: wrong intermediate guess | — | 1 monster roll |
 | Matching: each correct pair | 1 attack roll (d6) × streak multiplier | — |
 | Matching: each wrong pair | — | 1 monster roll |
+
+However wrong one answer is, the monster rolls at most **2** dice for it (`MAX_MONSTER_DICE`), so no single answer can take a fresh 20-HP hero to zero. Beating a monster restores **25%** of max HP (`KILL_HEAL_SHARE`), not after the dragon.
 
 Final failure on fill-blank, dynamic numeric, code-trace, and code-line keeps partial credit based on best similarity or numeric closeness and re-queues the question. Streak multipliers (consecutive perfect answers): 3–4 = 1.25×, 5–9 = 1.5×, 10+ = 2×. Monster defense reduces player damage; player base defense (1) reduces monster damage (minimum 0 net). Player stats are fixed: attack die = d6, base defense = 1, max HP = 20. Level-ups grant revive charges only.
 

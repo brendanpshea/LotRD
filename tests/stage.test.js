@@ -83,6 +83,15 @@ describe('a round of combat', () => {
     assert.ok(!planTurn(round({ effective_player_damage: 2 }), { drop }).beats.some(b => b.act === 'drop'));
   });
 
+  it('a win gives HP back once the monster is gone', () => {
+    const plan = planTurn(round({ effective_player_damage: 9, defeated_monster: true, healed: 5 }));
+    assert.deepEqual(story(plan), ['hero attack', 'monster vanish', 'hero glow']);
+    const heal = plan.beats.find(b => b.act === 'glow');
+    assert.equal(heal.text, '+5');
+    assert.ok(heal.at > plan.beats.find(b => b.act === 'vanish').at);
+    assert.ok(plan.end > heal.at);
+  });
+
   it('the dragon takes a blow when a concept is mastered, not from dice', () => {
     // Its defense is Infinity, so damage is always 0; and its HP is a count, not a number to float.
     const mastered = planTurn(round({ question_repeated: false }), { boss: true });
@@ -116,6 +125,7 @@ describe('using an item', () => {
     const plan = planItem(item('logic_bomb'));
     assert.deepEqual(story(plan), ['hero throw', 'monster vanish']);
     assert.ok(plan.end > BEAT.throw + BEAT.vanish - 1, 'the next monster waits for this one to fall');
+    assert.deepEqual(story(planItem(item('logic_bomb'), { healed: 5 })), ['hero throw', 'monster vanish', 'hero glow']);
   });
 
   it('an item armed for later glows with its own icon', () => {

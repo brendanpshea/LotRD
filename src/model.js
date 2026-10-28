@@ -896,6 +896,16 @@ const REQUEUE_GAP = 3;
 // a perfect answer rolls a die for every right choice and every distractor avoided.
 export const MONSTER_EXTRA_HIT_DICE = 8;
 
+// However wrong one answer is, the monster rolls at most this many dice for it.
+// Uncapped, a badly missed matching or select-all question (five dice) could
+// take a 20-HP hero from full to nothing in one answer.
+export const MAX_MONSTER_DICE = 2;
+
+// Beating a monster gives back this share of the hero's max HP. HP otherwise
+// only comes back from items and revives, and nearly every run lost it all;
+// with this, a student answering 80% right usually makes it through a set.
+export const KILL_HEAL_SHARE = 0.25;
+
 // A stretch this many questions long with no teaching scene in it gets a
 // checkpoint of its own, so a death never costs more than this to redo.
 export const CHECKPOINT_EVERY = 12;
@@ -1537,9 +1547,12 @@ export class GameModel {
             this.current_monster.hit_points = this.boss_queue.length;
         }
         this.current_question = null;
+        const defeated_monster = !!this.current_monster && this.current_monster.hit_points <= 0;
+        const healed = defeated_monster ? this.healForKill() : 0;
         return {
-            defeated_monster:  this.current_monster ? this.current_monster.hit_points <= 0 : false,
+            defeated_monster,
             defeated_player:   this.player.hit_points <= 0,
+            healed,
             xp_gained:         xpGained,
             xp_doubled,
             question_repeated: !!requeue,
@@ -1547,6 +1560,19 @@ export class GameModel {
             levelsGained,
             levelUpRewards,
         };
+    }
+
+    /**
+     * HP back for beating a monster (KILL_HEAL_SHARE of max). Not for the
+     * dragon, whose fall ends the run, nor for a hero who went down in the same
+     * round. Returns how much was restored.
+     */
+    healForKill() {
+        const p = this.player;
+        if (this.current_monster?.is_boss || p.hit_points <= 0) return 0;
+        const healed = Math.min(Math.round(p.max_hit_points * KILL_HEAL_SHARE), p.max_hit_points - p.hit_points);
+        p.hit_points += healed;
+        return healed;
     }
 
     _buildHistoryEntry({ correctAnswers, selected, correctSelections, incorrectSelections, missedCorrect, isPerfect }) {
@@ -1574,7 +1600,7 @@ export class GameModel {
         const streakState = this._updateStreak(isPerfect, partialFraction);
         const streakMultiplier = this._streakMultiplier();
         const rawPlayerDamage = this._rollDamage(playerHits, this.player.attack_die);
-        const rawMonsterDamage = this._rollDamage(monsterHits, this.current_monster.attack_die);
+        const rawMonsterDamage = this._rollDamage(Math.min(monsterHits, MAX_MONSTER_DICE), this.current_monster.attack_die);
         const dmg = this._applyDamage(rawPlayerDamage, rawMonsterDamage, streakMultiplier, isPerfect);
         const turn = this._finalizeTurn({ xpGained, requeue, historyEntry, isPerfect });
 
@@ -1650,9 +1676,17 @@ export class GameModel {
         const accuracyDenom = correctSelections.length + incorrectSelections.length + missedCorrect.length;
         const accuracy = accuracyDenom > 0 ? correctSelections.length / accuracyDenom : 0;
 
-        const player_hits = correctSelections.length
-            + [...incorrectSet].filter(i => !selectedSet.has(i)).length;
-        const monster_hits = incorrectSelections.length + missedCorrect.length;
+        // A die for each right choice made and each wrong one avoided. On a
+        // single-answer question, though, a wrong answer avoided nothing worth
+        // a blow: it is simply wrong, and the hero deals nothing.
+        const singleAnswer = correctSet.size === 1;
+        const avoided = [...incorrectSet].filter(i => !selectedSet.has(i)).length;
+        const player_hits = correctSelections.length + (singleAnswer && !isPerfect ? 0 : avoided);
+        // A die for each mistake. On a single-answer question a wrong pick and
+        // the right answer it passed over are one mistake, not two.
+        const monster_hits = singleAnswer
+            ? Math.max(incorrectSelections.length, missedCorrect.length)
+            : incorrectSelections.length + missedCorrect.length;
 
         const turn = this._resolveDamage({
             playerHits: player_hits,

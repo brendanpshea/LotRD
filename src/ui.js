@@ -5,7 +5,7 @@ import {
 import { highlightJava, highlightPython } from "./highlight.js";
 import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
-import { HEROES, chosenHero, chooseHero } from "./heroes.js";
+import { HEROES, chosenHero, chooseHero, heroChosen } from "./heroes.js";
 import { ITEMS } from "./items.js";
 import { planTurn, planItem, BEAT } from "./stage.js";
 
@@ -346,8 +346,9 @@ export class GameUI {
         this._pose(sprite, "recoil", BEAT.hit);
         float();
         if (hero) {
-          // A revive brings the hero back to 10; the blow itself took them to 0.
-          this._renderPlayerHp(this.root, d.revived ? 0 : this.model.player.hit_points);
+          // What the blow left, before anything after it: a revive brings the
+          // hero back to 10 from 0, and a win gives some HP back.
+          this._renderPlayerHp(this.root, d.revived ? 0 : this.model.player.hit_points - (d.healed || 0));
           const container = document.querySelector(".game-container");
           if (container) this._animate(container, ["player-hit"], 450);
         } else {
@@ -381,6 +382,7 @@ export class GameUI {
         actor.dataset.tone = beat.act === "reflect" ? "reflect" : beat.tone;
         this._animate(actor, ["is-glowing"], beat.act === "reflect" ? BEAT.hit : BEAT.glow);
         float();
+        if (hero && beat.tone === "heal") this._renderPlayerHp(this.root);
         break;
       case "throw":
         this._throw(actor, $(stage, "[data-ref=monsterActor]"), beat.text, BEAT.throw);
@@ -447,21 +449,35 @@ export class GameUI {
     bar.hidden = false;
   }
 
-  /** Who the student plays as: folded away under its current choice. */
+  /**
+   * Who the student plays as: the current hero, with the others behind a
+   * "change" toggle — open until this browser has chosen one, so nobody plays
+   * the default without having seen there was a choice.
+   */
   _renderHeroPicker(root) {
     const slot = $(root, "[data-ref=heroPicker]");
     if (!slot) return;
     const details = document.createElement("details");
     details.className = "hero-picker";
+    details.open = !heroChosen();
     const summary = document.createElement("summary");
     summary.className = "hero-picker-toggle";
+    const face = document.createElement("span");
+    face.className = "sprite hero-picker-face";
+    face.setAttribute("aria-hidden", "true");
+    const label = document.createElement("span");
+    const change = document.createElement("span");
+    change.className = "hero-picker-change";
+    change.textContent = "change";
+    summary.append(face, label, change);
     const grid = document.createElement("div");
     grid.className = "hero-picker-grid";
     grid.setAttribute("role", "group");
     grid.setAttribute("aria-label", "Choose your hero");
 
     const show = hero => {
-      summary.textContent = `Your hero: ${hero.name}`;
+      label.textContent = `Your hero: ${hero.name}`;
+      this._setSprite(face, `images/sprites/${hero.sprite}`, true);
       for (const b of grid.children) b.setAttribute("aria-pressed", String(b.dataset.hero === hero.id));
     };
     for (const hero of HEROES) {
@@ -1003,6 +1019,7 @@ export class GameUI {
   showInitialScreen(meta, startCallback) {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-initial");
+    this._renderHeroPicker(this.root);
 
     const titleEl   = $(this.root, "[data-ref=introTitle]");
     const genericEl = $(this.root, "[data-ref=introGeneric]");

@@ -23,6 +23,11 @@ export function chosenHero() {
   return HEROES.find(h => h.id === id) || HEROES[0];
 }
 
+/** Whether this browser has ever picked a hero, rather than playing the default. */
+export function heroChosen() {
+  try { return HEROES.some(h => h.id === localStorage.getItem(HERO_KEY)); } catch (_) { return false; }
+}
+
 export function chooseHero(id) {
   if (!HEROES.some(h => h.id === id)) return;
   try { localStorage.setItem(HERO_KEY, id); } catch (_) {}
