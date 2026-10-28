@@ -1,13 +1,51 @@
 #!/bin/sh
-# Refuse to push if the test suite is red. Takes a few seconds.
+# Refuse to push if the tests are red.
+#
+# A push that changes only content (question sets, pictures, the tools that draw
+# them, Markdown) runs the checks that read content: about 1,300 tests in under ten
+# seconds, plus the comparison with real Java when a Java set changed. Anything else
+# (the game, the SCORM shim and build, the tests themselves) runs the whole suite,
+# which takes several minutes. Either way GitHub runs the whole suite on every push
+# (.github/workflows/tests.yml), so a content push still gets the real-browser and
+# data-loss checks there; a red X arrives by email.
+#
 # Enable once per clone:   git config core.hooksPath .githooks
+# Run everything anyway:   LOTRD_FULL_TESTS=1 git push
 # Bypass in an emergency:  git push --no-verify   (CI will still run)
-echo "pre-push: running the test suite..."
 if ! command -v node >/dev/null 2>&1; then
   echo "pre-push: Node.js not found, so the tests could not run. Push refused." >&2
   exit 1
 fi
-out=$(node --test "tests/*.test.js" 2>&1)
+
+# Git hands the hook one line per ref being pushed: what to send, and what is there.
+zero=0000000000000000000000000000000000000000
+full=${LOTRD_FULL_TESTS:-}
+changed=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue                      # deleting a branch
+  if [ "$remote_sha" = "$zero" ]; then full=1; continue; fi   # a new branch: test it all
+  files=$(git diff --name-only "$remote_sha" "$local_sha" 2>/dev/null) || { full=1; continue; }
+  changed="$changed
+$files"
+done
+
+# Content only, unless some changed file is outside these.
+if printf '%s\n' "$changed" | grep -v -E '^(question_sets/|figures/|tools/)|\.md$|^$' >/dev/null; then
+  full=1
+fi
+
+if [ -n "$full" ]; then
+  echo "pre-push: running the whole test suite (a few minutes)..."
+  set -- "tests/*.test.js"
+else
+  set -- tests/data.test.js tests/finishable.test.js tests/html.test.js tests/util.test.js tests/sql-problems.test.js
+  if printf '%s\n' "$changed" | grep -q '^question_sets/java_'; then
+    set -- "$@" tests/jtiny-differential.test.js
+  fi
+  echo "pre-push: content only, so running the content checks (seconds); GitHub runs the rest..."
+fi
+
+out=$(node --test "$@" 2>&1)
 status=$?
 if [ $status -ne 0 ]; then
   echo "$out" | grep -E "✖" | tail -40
