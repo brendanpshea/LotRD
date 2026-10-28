@@ -8,8 +8,15 @@ import { SoundSystem, SFX } from '../src/sound.js';
 import { buildSamples, ZZFX_SAMPLE_RATE } from '../src/zzfx.js';
 
 /**
- * A stand-in AudioContext that records what was started, and resumes after
- * `wakeMs`: an oscillator as its frequency (the hum), a sound as its length.
+ * A clock that only moves when the audio wakes, so how long waking "took" is
+ * set by the test, not by how busy the machine running it is.
+ */
+let now = 0;
+Object.defineProperty(performance, 'now', { value: () => now, configurable: true });
+
+/**
+ * A stand-in AudioContext that records what was started, an oscillator as its
+ * frequency (the hum) and a sound as its length, and wakes taking `wakeMs`.
  */
 class FakeContext {
   static made = [];
@@ -23,7 +30,7 @@ class FakeContext {
     FakeContext.made.push(this);
   }
   resume() {
-    return new Promise(done => setTimeout(() => { this.state = 'running'; done(); }, FakeContext.wakeMs));
+    return Promise.resolve().then(() => { now += FakeContext.wakeMs; this.state = 'running'; });
   }
   suspend() { this.state = 'suspended'; this.suspended++; return Promise.resolve(); }
   createOscillator() {
@@ -80,14 +87,14 @@ describe('when sound effects play', () => {
   it('a sound waits for audio that is waking quickly', async () => {
     FakeContext.wakeMs = 20;
     sounds.play('claw');
-    await until(60);
+    await until(1);
     assert.deepEqual(FakeContext.made[0].started, [30, `sound of ${lengthOf('claw')}`]);
   });
 
   it('a sound is dropped, not played late, when the audio takes too long to wake', async () => {
     FakeContext.wakeMs = 250;
     sounds.play('claw');
-    await until(300);
+    await until(1);
     assert.equal(FakeContext.made[0].state, 'running');
     assert.deepEqual(FakeContext.made[0].started, [30], 'only the hum');
   });
