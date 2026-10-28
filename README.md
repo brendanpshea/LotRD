@@ -38,7 +38,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Global stats** — `lotrd_global` accumulates lifetime totals across all sets
 - **Session review** — question-by-question pass/fail breakdown with export to `.txt`
 - **Direct-link support** — instructors can share `?set=filename.json` URLs
-- **Battle stage** — your hero (chosen on the main menu, from six) faces the monster, each over its own HP bar. The fight plays out instead of being described: the hero lunges and the monster reels, the monster counters, a defeated monster flashes and vanishes, a knocked-out hero falls (and gets back up on a revive), and items show their effect — a heal glows, an armed Firewall Shard is a bubble that bursts when it blocks, a Stack Mirror sends the blow back, a Logic Bomb is thrown. A click or keypress skips to the results; nothing moves under reduced motion. Sprites are three-pose strips (stand, attack, recoil) in `images/sprites/`, cut from generated sheets — see [Sprites](#sprites)
+- **Battle stage** — your hero (chosen on the main menu, from six) faces the monster, each over its own HP bar. The fight plays out instead of being described: the hero lunges and the monster reels, the monster counters, a defeated monster flashes and vanishes, a knocked-out hero falls (and gets back up on a revive), and items show their effect — a heal glows, an armed Firewall Shard is a bubble that bursts when it blocks, a Stack Mirror sends the blow back, a Logic Bomb is thrown. A click or keypress skips to the results; nothing moves under reduced motion. An answer right the first time gets no results screen: a short note over the fight says what it did, and the next question follows by itself (a click or key moves on sooner). Anything with a mistake in it, and every write-the-code answer, still gets the full screen with its explanation. Sprites are three-pose strips (stand, attack, recoil) in `images/sprites/`, cut from generated sheets — see [Sprites](#sprites)
 - **Checkpoints** — dying in a full run sends you back to the last checkpoint, not the start: every teaching scene, and every 12 questions where there is none. HP is restored and the questions since the checkpoint are asked again; level, XP, items, and the record of what you missed are kept. In the retrieval boss, the fight starts over. Rank trials and reviews have no checkpoints — a death still ends them
 - **Encounter screen** — flavour text sits behind an **Examine** toggle that opens itself the first time you meet a monster in a run and stays folded away after, so the description is something you read once rather than on every question. The retrieval boss keeps its line always visible, since there it reports concepts remaining rather than flavour
 - **Sound effects** — Web Audio API; toggle with 🔊 button in toolbar
@@ -278,15 +278,16 @@ Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a work
 | Multiple-choice: each distractor left unselected | +1 attack roll (d6) — on a single-answer question, only when the answer is right | — |
 | Multiple-choice: each wrong / missed selection | — | +1 monster roll (a wrong pick on a single-answer question is one mistake, not two) |
 | Fill-blank / dynamic numeric / code-trace: correct within 3 tries | 1 attack roll (d6) × streak multiplier | — |
-| Fill-blank / dynamic numeric / code-trace: wrong intermediate guess | — | 1 monster roll, scaled by attempt (0%, 50%, 100%) |
+| Fill-blank / dynamic numeric / code-trace: wrong intermediate guess | — | 1 monster roll, scaled by attempt (first miss free, second 50%) |
 | Code-line: correct within 3 tries | 1 attack roll (d6) × streak multiplier | — |
 | Code-line: wrong intermediate guess | — | 1 monster roll |
-| Matching: each correct pair | 1 attack roll (d6) × streak multiplier | — |
-| Matching: each wrong pair | — | 1 monster roll |
+| Any typed answer: out of tries, or given up | — | 1 monster roll |
+| Matching / ordering / cloze: each correct pair, position or blank | 1 attack roll (d6) × streak multiplier | — |
+| Matching / ordering / cloze: each wrong one | — | 1 monster roll |
 
 However wrong one answer is, the monster rolls at most **2** dice for it (`MAX_MONSTER_DICE`), so no single answer can take a fresh 20-HP hero to zero. Beating a monster restores **25%** of max HP (`KILL_HEAL_SHARE`), not after the dragon.
 
-Final failure on fill-blank, dynamic numeric, code-trace, and code-line keeps partial credit based on best similarity or numeric closeness and re-queues the question. Streak multipliers (consecutive perfect answers): 3–4 = 1.25×, 5–9 = 1.5×, 10+ = 2×. Monster defense reduces player damage; player base defense (1) reduces monster damage (minimum 0 net). Player stats are fixed: attack die = d6, base defense = 1, max HP = 20. Level-ups grant revive charges only.
+Final failure on fill-blank, dynamic numeric, code-trace, and code-line keeps partial credit based on best similarity or numeric closeness and re-queues the question. Streak multipliers (consecutive perfect answers): 3–4 = 1.25×, 5–9 = 1.5×, 10+ = 2×. Monster defense reduces player damage and player base defense reduces monster damage, but a blow that was earned always lands for at least 1 (`landed`): a wrong answer always draws a counterattack, and a partly right one shows both fighters striking. Dice never hurt the dragon. The hero's attack die is a fixed d6; max HP starts at 20 and base defense at 1. Each level-up grants a revive charge and +2 max HP, plus +1 base defense at every 5th level.
 
 ---
 

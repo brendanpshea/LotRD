@@ -7,7 +7,7 @@ import { rollDice, Player, Monster, GameModel,
          CL_MAX_ATTEMPTS, pickClozeBlank, parseClozeSegments,
          evaluateDynamicExpression, codeWriteSolutionText, codeWriteExamples, codeWriteHeader,
          runCodeProblem, isJavaProblem, CHECKPOINT_EVERY, MONSTER_EXTRA_HIT_DICE,
-         MAX_MONSTER_DICE, KILL_HEAL_SHARE } from '../src/model.js';
+         MAX_MONSTER_DICE, KILL_HEAL_SHARE, landed } from '../src/model.js';
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -1539,6 +1539,58 @@ describe('Damage from a multiple-choice answer', () => {
   it('however wrong an answer, the monster rolls at most MAX_MONSTER_DICE', () => {
     const r = onDice(multi).evaluateAnswer(['C', 'D', 'E']);   // three wrong picks, two misses
     assert.equal(r.effective_monster_damage, MAX_MONSTER_DICE);
+  });
+});
+
+describe('Armor softens a blow but never erases it', () => {
+  function armored(question) {
+    const gm = freshModel([question]);
+    gm.nextEncounter();
+    gm.current_monster.defense = 50;
+    gm.current_monster.hit_points = gm.current_monster.max_hit_points = 999;
+    gm.player.base_defense = 50;
+    gm.player.hit_points = gm.player.max_hit_points = 50;
+    return gm;
+  }
+  const cloze = {
+    type: 'cloze',
+    question: 'An {{1}} is the idea; a {{2}} is the idea written down.',
+    blanks: [{ accept: ['algorithm'] }, { accept: ['program'] }],
+  };
+
+  it('landed: an earned blow does at least 1, and no blow does nothing', () => {
+    assert.equal(landed(7, 3), 4);
+    assert.equal(landed(2, 3), 1);
+    assert.equal(landed(0, 3), 0);
+  });
+
+  it('a partly right answer shows both fighters striking, whatever the armor', () => {
+    const gm = armored(cloze);
+    const r = gm.evaluateCloze(['algorithm', 'doctor']);
+    assert.equal(r.effective_player_damage, 1);
+    assert.equal(r.effective_monster_damage, 1);
+    assert.equal(gm.player.hit_points, 49);
+    assert.equal(gm.current_monster.hit_points, 998);
+  });
+
+  it('a fully right answer still draws no counterattack', () => {
+    const r = armored(cloze).evaluateCloze(['algorithm', 'program']);
+    assert.equal(r.effective_monster_damage, 0);
+  });
+
+  it('dice still never hurt the dragon', () => {
+    const gm = armored(mcQuestion());
+    gm.current_monster = { ...gm.current_monster, is_boss: true, defense: Infinity };
+    assert.equal(gm._applyDamage(12, 0, 1).effective_player_damage, 0);
+  });
+
+  it('a typed answer: the first miss is free, the second and the last both land', () => {
+    const gm = armored(fillBlankQuestion());
+    assert.equal(gm.submitFillBlankGuess('zzzz').effective_monster_damage, 0);
+    assert.equal(gm.submitFillBlankGuess('yyyy').effective_monster_damage, 1);
+    const last = gm.submitFillBlankGuess('xxxx');
+    assert.equal(last.status, 'failed');
+    assert.equal(last.effective_monster_damage, 1, 'running out of tries draws a full strike');
   });
 });
 

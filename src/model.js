@@ -910,6 +910,13 @@ export const KILL_HEAL_SHARE = 0.25;
 // checkpoint of its own, so a death never costs more than this to redo.
 export const CHECKPOINT_EVERY = 12;
 
+// Damage left after armor. A blow that was earned always lands for at least 1:
+// defense softens it but never erases it, so a wrong answer always draws a
+// counterattack, and a partly right one shows both fighters striking.
+export function landed(damage, defense) {
+    return damage > 0 ? Math.max(damage - defense, 1) : 0;
+}
+
 export class Player {
     static maxHpForLevel(level)       { return 20 + (level - 1) * 2; }
     static baseDefenseForLevel(level) { return 1 + Math.floor((level - 1) / 5); }
@@ -1480,8 +1487,10 @@ export class GameModel {
             this.pending_effects.delete('double_damage');
         }
 
-        const effective_player_damage  = Math.max(player_damage    - this.current_monster.defense, 0);
-        let   effective_monster_damage = Math.max(rawMonsterDamage - this.player.base_defense,   0);
+        // No dice hurt the boss: a mastered concept is the blow (see _spawnBoss).
+        const effective_player_damage  = this.current_monster.is_boss ? 0
+            : landed(player_damage, this.current_monster.defense);
+        let   effective_monster_damage = landed(rawMonsterDamage, this.player.base_defense);
 
         // Mirror: incoming damage is redirected to the monster instead.
         if (this.pending_effects.has('mirror') && effective_monster_damage > 0) {
@@ -1606,6 +1615,7 @@ export class GameModel {
 
         return {
             ...turn,
+            perfect:                  isPerfect,
             effective_player_damage:  dmg.effective_player_damage,
             effective_monster_damage: dmg.effective_monster_damage,
             shield_used:              dmg.shield_used,
@@ -1895,8 +1905,7 @@ export class GameModel {
         const FB_DAMAGE_SCALE = [0, 0.5, 1.0];
         const scale = FB_DAMAGE_SCALE[this._dnAttempts - 1] ?? 1.0;
         const monsterRoll = rollDice(1, this.current_monster.attack_die);
-        let effective_monster_damage = Math.max(
-            Math.round(monsterRoll * scale) - this.player.base_defense, 0);
+        let effective_monster_damage = landed(Math.round(monsterRoll * scale), this.player.base_defense);
 
         let shield_used = false;
         if (this.pending_effects.has('shield') && effective_monster_damage > 0) {
@@ -1974,7 +1983,7 @@ export class GameModel {
 
         const turn = this._resolveDamage({
             playerHits: won ? (FB_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
-            monsterHits: 0,
+            monsterHits: won ? 0 : 1,
             isPerfect,
             partialFraction: won ? 0.9 : similarity,
             xpGained: this.current_monster.hit_dice * 2,
@@ -2062,13 +2071,12 @@ export class GameModel {
         // Damage scales with attempt number so a blind first guess doesn't
         // gut the player: attempts 1/2/3 deal 0% / 50% / 100% of the roll.
         // (Attempt 3 here means "you used your last shot and missed," which
-        // is the failure path and uses _finalizeFillBlank — so live wrong
-        // attempts are only ever 1 or 2.)
+        // is the failure path: _finalizeFillBlank strikes with one full die,
+        // so live wrong attempts are only ever 1 or 2.)
         const FB_DAMAGE_SCALE = [0, 0.5, 1.0];
         const scale = FB_DAMAGE_SCALE[this._fbAttempts - 1] ?? 1.0;
         const monsterRoll = rollDice(1, this.current_monster.attack_die);
-        let effective_monster_damage = Math.max(
-            Math.round(monsterRoll * scale) - this.player.base_defense, 0);
+        let effective_monster_damage = landed(Math.round(monsterRoll * scale), this.player.base_defense);
 
         let shield_used = false;
         if (this.pending_effects.has('shield') && effective_monster_damage > 0) {
@@ -2142,7 +2150,7 @@ export class GameModel {
 
         const turn = this._resolveDamage({
             playerHits: won ? (FB_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
-            monsterHits: 0,
+            monsterHits: won ? 0 : 1,
             isPerfect,
             partialFraction: won ? 0.9 : sim,
             xpGained: this.current_monster.hit_dice * 2,
@@ -2268,7 +2276,7 @@ export class GameModel {
 
         // Wrong, but more attempts remain — apply monster attack only.
         const monsterRoll = rollDice(1, this.current_monster.attack_die);
-        let effective_monster_damage = Math.max(monsterRoll - this.player.base_defense, 0);
+        let effective_monster_damage = landed(monsterRoll, this.player.base_defense);
         let shield_used = false;
         if (this.pending_effects.has('shield') && effective_monster_damage > 0) {
             shield_used = true;
@@ -2332,7 +2340,7 @@ export class GameModel {
 
         const turn = this._resolveDamage({
             playerHits:  won ? (CL_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
-            monsterHits: 0,
+            monsterHits: won ? 0 : 1,
             isPerfect,
             partialFraction: won ? 0.9 : sim,
             xpGained: this.current_monster.hit_dice * 2,

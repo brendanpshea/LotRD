@@ -2822,13 +2822,16 @@ export class GameUI {
   /**
    * Play the round out on the battle stage, then show the results. A click or a
    * keypress skips to the results; leaving for the menu meanwhile cancels them,
-   * so they are never drawn over whatever came next.
+   * so they are never drawn over whatever came next. An answer right the first
+   * time gets a short note instead of the results screen (see _showQuickResult).
+   * A write-the-code answer always gets the screen, for its worked solution.
    */
   showResults(battleData, itemDrop, continueCallback) {
     this._clearKeyboard();
     const stage = $(this.root, "[data-ref=stage]");
     const plan = planTurn(battleData, { boss: !!this.model?.boss_phase, drop: itemDrop });
     const wait = this._playBeats(plan, battleData);
+    const quick = battleData.perfect === true && !battleData.referenceSolution;
 
     let shown = false;
     const skip = new AbortController();
@@ -2838,7 +2841,8 @@ export class GameUI {
       skip.abort();
       this._cancelBeats();
       if (stage && !stage.isConnected) return;
-      this._renderResults(battleData, itemDrop, continueCallback);
+      if (quick) this._showQuickResult(battleData, itemDrop, continueCallback);
+      else this._renderResults(battleData, itemDrop, continueCallback);
     };
     setTimeout(show, wait);
     if (wait > 0) {
@@ -2850,6 +2854,61 @@ export class GameUI {
         document.addEventListener("keydown", e => { if (!e.repeat) show(); }, { signal: skip.signal });
       }, 0);
     }
+  }
+
+  /**
+   * A right answer needs no screen of its own: a short note over the fight
+   * says what it did, and the next question follows by itself. A click or a
+   * key moves on sooner. The explanation stays in the session review.
+   */
+  _showQuickResult(battleData, itemDrop, continueCallback) {
+    const note = document.createElement("div");
+    note.className = "quick-result";
+    note.setAttribute("role", "status");
+    const line = (text, cls) => {
+      if (!text) return;
+      const div = document.createElement("div");
+      if (cls) div.className = cls;
+      div.textContent = text;
+      note.appendChild(div);
+    };
+
+    const boss = this.model.boss_phase;
+    line(boss ? "✔ Concept re-mastered — the dragon recedes." : "✔ Correct!", "quick-result-head");
+    line(this._battleSummary(battleData));
+    const extras = [];
+    if (!boss && battleData.streakMultiplier > 1) extras.push(`🔥 Streak ×${battleData.streakMultiplier}`);
+    if (battleData.adrenaline_used) extras.push("⚡ Adrenaline Rush doubled your hit");
+    if (battleData.xp_doubled) extras.push("✨ XP Magnet doubled your XP");
+    line(extras.join("  ·  "), "streak-bonus-note");
+    if (itemDrop) {
+      const slot = itemDrop.placed_slot === 0 ? "Q" : "W";
+      const gone = itemDrop.displaced ? ` (${itemDrop.displaced.emoji} ${itemDrop.displaced.name} discarded)` : "";
+      line(`🎁 Found ${itemDrop.emoji} ${itemDrop.name}, in slot ${slot}${gone}`, "loot-name");
+    }
+    this.root.appendChild(note);
+
+    // Long enough to read a line or two; a kill, with its drop, has more to say.
+    const linger = itemDrop || battleData.defeated_monster ? 2800 : 1600;
+    let gone = false;
+    const next = () => {
+      if (gone) return;
+      gone = true;
+      clearTimeout(timer);
+      this._clearKeyboard();
+      if (!note.isConnected) return;         // left for the menu meanwhile
+      note.remove();
+      continueCallback();
+    };
+    const timer = setTimeout(next, linger);
+    this._kbAbort = new AbortController();
+    const { signal } = this._kbAbort;
+    // From the next tick, so the click or key that showed the note doesn't also dismiss it.
+    setTimeout(() => {
+      if (gone || signal.aborted) return;
+      document.addEventListener("click", next, { signal });
+      document.addEventListener("keydown", e => { if (!e.repeat) next(); }, { signal });
+    }, 0);
   }
 
   _renderResults(battleData, itemDrop, continueCallback) {
