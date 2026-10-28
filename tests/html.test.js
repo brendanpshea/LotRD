@@ -259,7 +259,9 @@ describe('SCORM package wiring', () => {
   // index.html and putting the shim in front of it. If the two ever disagree the
   // package still builds and the game still runs — it just never speaks to the
   // LMS, and every student's work stays in whatever browser they happened to use.
-  const build = readFileSync(join(ROOT, 'SCORM/build.py'), 'utf-8');
+  // As LF whatever the checkout wrote: the patterns below look for blank lines,
+  // and a Windows checkout (core.autocrlf) writes CRLF.
+  const build = readFileSync(join(ROOT, 'SCORM/build.py'), 'utf-8').replace(/\r\n/g, '\n');
   const tag = /MAIN_SCRIPT_TAG = '([^']+)'/.exec(build)?.[1];
 
   it('build.py names the tag it injects the shim in front of', () => {
