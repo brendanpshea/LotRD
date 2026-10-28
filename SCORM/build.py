@@ -61,6 +61,16 @@ SHIM_SCRIPT_TAG = '<script src="scorm-shim.js"></script>'
 GAME_DIRS = ["src", "assets", "images"]
 GAME_FILES = ["index.html", "styles.css"]
 
+# What sits beside the battle-stage sprites only to make them, and is never
+# fetched by the game: the generated sheets they are cut from (kept locally, and
+# tens of megabytes), the roster, and the prompts written from it.
+SPRITES = REPO / "images" / "sprites"
+SPRITE_SOURCES = {"sheets", "roster.json", "prompts.md"}
+
+
+def skip_sprite_sources(directory: str, names: list[str]) -> set[str]:
+    return SPRITE_SOURCES & set(names) if Path(directory) == SPRITES else set()
+
 
 def load_config(path: Path) -> dict:
     with open(path, "r", encoding="utf-8") as fh:
@@ -130,7 +140,7 @@ def copy_game(build_dir: Path) -> None:
         if src.exists():
             dst = build_dir / d
             remove_tree(dst)
-            shutil.copytree(src, dst, dirs_exist_ok=True)
+            shutil.copytree(src, dst, dirs_exist_ok=True, ignore=skip_sprite_sources)
     for f in GAME_FILES:
         src = REPO / f
         if src.exists():
