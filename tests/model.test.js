@@ -418,17 +418,18 @@ describe('evaluateAnswer', () => {
     assert.equal(gm.player.streak, 1);
   });
 
-  it('flags a one-correct-answer question so the UI can skip the three-list layout', () => {
+  it('a one-correct-answer question reports the pick and the right answer, not three lists', () => {
     const r = gm.evaluateAnswer(['B']);
-    assert.equal(r.singleAnswer, true);
+    assert.deepEqual(r.answer, { given: 'B', correct: 'A', right: false });
+    assert.deepEqual(gm.answer_history.at(-1).answer, r.answer, 'and so does the review');
   });
 
-  it('does not flag a select-all question as single-answer', () => {
+  it('a select-all question keeps its lists', () => {
     const gm2 = freshModel([mcQuestion({ correct: ['A', 'B'], incorrect: ['C'] })]);
     gm2.nextEncounter();
     gm2.current_monster.hit_points = 999;
     const r = gm2.evaluateAnswer(['A']);
-    assert.equal(r.singleAnswer, false);
+    assert.equal(r.answer, null);
   });
 
   it('supports select-all questions where every option is correct', () => {
@@ -653,6 +654,82 @@ describe('tokenWordleFeedback', () => {
   it('marks absent tokens', () => {
     const fb = tokenWordleFeedback(['foo'], ['bar']);
     assert.equal(fb[0].status, 'absent');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// A typed answer: one answer, so what was given and what was right
+// ────────────────────────────────────────────────────────────────────────────────
+describe('A typed answer reports what was given and what was right', () => {
+  const facing = q => {
+    const gm = freshModel([q]);
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    gm.player.hit_points = 999;
+    return gm;
+  };
+
+  it('fill in the blank, missed: the closest try and the answer wanted', () => {
+    const gm = facing(fillBlankQuestion({ correct: ['extends', 'extend'] }));
+    gm.submitFillBlankGuess('zzz');
+    gm.submitFillBlankGuess('exteXXs');      // two letters off: closest, but no typo pass
+    const r = gm.submitFillBlankGuess('qqq');
+    assert.equal(r.status, 'failed');
+    assert.deepEqual(r.answer, { given: 'exteXXs', correct: 'extends', right: false, tries: 3 });
+    assert.deepEqual(gm.answer_history.at(-1).answer, r.answer, 'and so does the review');
+  });
+
+  it('three tries all nowhere near: the last one, not "no answer"', () => {
+    const gm = facing(fillBlankQuestion());
+    gm.submitFillBlankGuess('zzz');
+    gm.submitFillBlankGuess('qqq');
+    assert.equal(gm.submitFillBlankGuess('www').answer.given, 'www');
+
+    const line = facing(codeLineQuestion());
+    line.submitCodeLineGuess('@');
+    line.submitCodeLineGuess('#');
+    assert.equal(line.submitCodeLineGuess('%').answer.given, '%');
+  });
+
+  it('fill in the blank, right on a later try', () => {
+    const gm = facing(fillBlankQuestion());
+    gm.submitFillBlankGuess('zzz');
+    const r = gm.submitFillBlankGuess('Extends');
+    assert.deepEqual(r.answer, { given: 'Extends', correct: 'extends', right: true, tries: 2 });
+  });
+
+  it('under an auto-cloze, the answer wanted is the word blanked out', () => {
+    const gm = facing(fillBlankQuestion({ correct: ['random access memory'] }));
+    const { words, blankIndex } = gm.getFillBlankCloze();
+    const r = gm.forceFillBlankFail();
+    assert.equal(r.answer.correct, words[blankIndex]);
+    assert.equal(r.answer.given, '', 'nothing typed');
+  });
+
+  it('predict the output: the program output, marked as code', () => {
+    const gm = facing({ type: 'code_trace', question: 'What prints?', code: 'print(1)\nprint(2)', correct: ['1\n2'] });
+    const r = gm.forceFillBlankFail();
+    assert.deepEqual(r.answer, { given: '', correct: '1\n2', right: false, tries: 3, code: true });
+  });
+
+  it('complete the line: the form the author prefers, marked as code', () => {
+    const gm = facing(codeLineQuestion());
+    gm.submitCodeLineGuess('var x = 1;');
+    const r = gm.forceCodeLineFail();
+    assert.equal(r.answer.correct, 'List<String> names = new ArrayList<>();');
+    assert.equal(r.answer.given, 'var x = 1;');
+    assert.equal(r.answer.code, true);
+  });
+
+  it('a number: the closest try, and the tolerance only when there is one', () => {
+    const exact = facing(dynamicNumericQuestion());
+    exact.submitFillBlankGuess('20');
+    exact.submitFillBlankGuess('14');
+    const r = exact.submitFillBlankGuess('99');
+    assert.deepEqual(r.answer, { given: '14', correct: '13', right: false, tries: 3 });
+
+    const near = facing(dynamicNumericQuestion({ answer: { expr: 'n', tolerance_abs: 0.5 } }));
+    assert.equal(near.forceFillBlankFail().answer.correct, '13 (± 0.5)');
   });
 });
 

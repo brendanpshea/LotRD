@@ -2975,28 +2975,29 @@ export class GameUI {
       body.insertBefore(qLine, fbWrap);
     }
 
-    const addVerdictLine = (container, cls, label, text) => {
+    const addVerdictLine = (container, cls, label, text, code = false) => {
       const row = document.createElement("div");
       row.className = `verdict-line ${cls}`;
       const lab = document.createElement("span");
       lab.className = "verdict-label";
       lab.textContent = label;
-      row.appendChild(lab);
-      row.appendChild(document.createTextNode(` ${text}`));
+      const value = document.createElement(code ? "code" : "span");
+      value.className = "verdict-text" + (text.includes("\n") ? " verdict-text--block" : "");
+      value.textContent = text;
+      row.append(lab, " ", value);
       container.appendChild(row);
     };
 
-    if (battleData.singleAnswer) {
-      // One right option, so three lists (one of them reading "None.") only
-      // obscures the result. Say what was picked and what was right.
-      const gotIt = battleData.correctSelections.length > 0;
-      if (gotIt) {
-        addVerdictLine(fbWrap, "correct", "✔ Correct:", battleData.correctSelections[0]);
+    if (battleData.answer) {
+      // One right answer, picked or typed, so lists of what was "selected" only
+      // obscure the result. Say what was given and what was right.
+      const a = battleData.answer;
+      if (a.right) {
+        addVerdictLine(fbWrap, "correct", a.tries > 1 ? `✔ Correct, on try ${a.tries}:` : "✔ Correct:", a.given, a.code);
       } else {
-        addVerdictLine(fbWrap, "incorrect", "✖ Your answer:",
-          battleData.incorrectSelections[0] ?? "(nothing selected)");
-        addVerdictLine(fbWrap, "missed", "✔ Correct answer:",
-          battleData.missedCorrect[0] ?? "");
+        addVerdictLine(fbWrap, "incorrect", a.tries > 1 ? "✖ Your closest try:" : "✖ Your answer:",
+          a.given || "(no answer)", a.code);
+        addVerdictLine(fbWrap, "missed", "✔ Correct answer:", a.correct, a.code);
       }
     } else if (battleData.perItemScoring) {
       // Matching, ordering and cloze grade N independent items, so every item
@@ -3330,7 +3331,13 @@ export class GameUI {
         item.className = `review-item ${entry.was_perfect ? "review-pass" : "review-fail"}`;
         item.setAttribute("role", "listitem");
         let html = `<div><span class="review-num">${i + 1}.</span> <span class="${entry.was_perfect ? "review-badge-pass" : "review-badge-fail"}">[${entry.was_perfect ? "✔ PASS" : "✖ FAIL"}]</span> <span class="review-q">${this._esc(entry.question)}</span></div>`;
-        if (!entry.was_perfect) {
+        if (!entry.was_perfect && entry.answer) {
+          // One right answer: what was given, then what was right.
+          if (!entry.answer.right) {
+            html += `<div class="review-detail review-wrong">✖ Your answer: ${this._esc(entry.answer.given || "(no answer)")}</div>`;
+          }
+          html += `<div class="review-detail review-correct-ans">✔ Correct: ${this._esc(entry.answer.correct)}</div>`;
+        } else if (!entry.was_perfect) {
           if (entry.incorrect_selections.length > 0) {
             html += `<div class="review-detail review-wrong">✖ Wrong: ${entry.incorrect_selections.map(s => this._esc(s)).join(", ")}</div>`;
           }

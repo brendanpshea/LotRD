@@ -1584,7 +1584,7 @@ export class GameModel {
         return healed;
     }
 
-    _buildHistoryEntry({ correctAnswers, selected, correctSelections, incorrectSelections, missedCorrect, isPerfect }) {
+    _buildHistoryEntry({ correctAnswers, selected, correctSelections, incorrectSelections, missedCorrect, isPerfect, answer = null }) {
         const q = this.current_question;
         return {
             question: q.question,
@@ -1596,6 +1596,7 @@ export class GameModel {
             incorrect_selections: incorrectSelections,
             missed_correct: missedCorrect,
             was_perfect: isPerfect,
+            ...(answer ? { answer } : {}),
         };
     }
 
@@ -1698,6 +1699,12 @@ export class GameModel {
             ? Math.max(incorrectSelections.length, missedCorrect.length)
             : incorrectSelections.length + missedCorrect.length;
 
+        // One right option: the UI says what was picked and what was right,
+        // instead of three lists, one of which reads "None."
+        const answer = singleAnswer
+            ? { given: selectedOptions[0] ?? "", correct: q.correct[0], right: isPerfect }
+            : null;
+
         const turn = this._resolveDamage({
             playerHits: player_hits,
             monsterHits: monster_hits,
@@ -1712,6 +1719,7 @@ export class GameModel {
                 incorrectSelections,
                 missedCorrect,
                 isPerfect,
+                answer,
             }),
         });
 
@@ -1721,9 +1729,7 @@ export class GameModel {
             incorrectSelections,
             missedCorrect,
             feedback:         q.feedback || null,
-            // Lets the UI show "your answer / correct answer" for a radio-button
-            // question instead of three lists, one of which reads "None."
-            singleAnswer:     correctSet.size === 1,
+            answer,
         };
     }
 
@@ -1980,6 +1986,15 @@ export class GameModel {
             ? `${finalInput} (won in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'})`
             : `closest: "${bestGuessText || bestGuessDisplay}" — off by ${bestErrorDisplay}`;
         const correctAnswerLabel = `${expectedDisplay} (+/- ${this._dynamicNumericDisplay(meta.tolerance_abs)})`;
+        // One answer typed: what was given (the closest try, after several) and what was wanted.
+        const answer = {
+            given: won ? finalInput : this._dnBestGuessText,
+            correct: meta.tolerance_abs > 0
+                ? `${expectedDisplay} (± ${this._dynamicNumericDisplay(meta.tolerance_abs)})`
+                : expectedDisplay,
+            right: won,
+            tries: attemptsUsed,
+        };
 
         const turn = this._resolveDamage({
             playerHits: won ? (FB_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
@@ -1995,6 +2010,7 @@ export class GameModel {
                 incorrectSelections: !won ? [scoreLabel] : [],
                 missedCorrect: won ? [] : [correctAnswerLabel],
                 isPerfect,
+                answer,
             }),
         });
 
@@ -2006,6 +2022,7 @@ export class GameModel {
             correctSelections: (won || similarity > 0) ? [scoreLabel] : [],
             incorrectSelections: !won ? [scoreLabel] : [],
             missedCorrect: won ? [] : [correctAnswerLabel],
+            answer,
             feedback: q.feedback || null,
             attemptsUsed,
             bestAnswer: expectedDisplay,
@@ -2055,7 +2072,9 @@ export class GameModel {
         const feedback  = wordleFeedback(input, bestAnswer);
         this._fbAttempts++;
 
-        if (bestSim > this._fbBestSimilarity) {
+        // A tie goes to the later try: when nothing typed was any closer than
+        // anything else, the answer to show is the last one, not none.
+        if (bestSim >= this._fbBestSimilarity) {
             this._fbBestSimilarity = bestSim;
             this._fbBestGuess      = inputText;
         }
@@ -2147,6 +2166,15 @@ export class GameModel {
         const scoreLabel = won
             ? `${finalInput} (won in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'})`
             : `closest: "${this._fbBestGuess}" — ${Math.round(sim * 100)}% match`;
+        // One answer typed: what was given (the closest try, after several) and
+        // what was wanted, which under an auto-cloze is the one word blanked out.
+        const answer = {
+            given: finalInput || '',
+            correct: this._fbCloze ? this._fbCloze.words[this._fbCloze.blankIndex] : (q.correct?.[0] ?? ''),
+            right: won,
+            tries: attemptsUsed,
+            ...(q.type === 'code_trace' ? { code: true } : {}),
+        };
 
         const turn = this._resolveDamage({
             playerHits: won ? (FB_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
@@ -2162,6 +2190,7 @@ export class GameModel {
                 incorrectSelections: !won ? [scoreLabel] : [],
                 missedCorrect: won ? [] : (q.correct || []),
                 isPerfect,
+                answer,
             }),
         });
 
@@ -2174,6 +2203,7 @@ export class GameModel {
             correctSelections:   (won || sim > 0) ? [scoreLabel] : [],
             incorrectSelections: !won ? [scoreLabel] : [],
             missedCorrect:       won  ? [] : (q.correct || []),
+            answer,
             feedback:         q.feedback || null,
             attemptsUsed,
             bestAnswer,
@@ -2252,7 +2282,8 @@ export class GameModel {
         const feedback = tokenWordleFeedback(inputTokens, bestAnswerTokens);
         this._clAttempts++;
 
-        if (bestTokenSim > this._clBestSimilarity) {
+        // A tie goes to the later try, as in fill-blank: never "no answer" after three.
+        if (bestTokenSim >= this._clBestSimilarity) {
             this._clBestSimilarity   = bestTokenSim;
             this._clBestGuess        = inputText;
             this._clBestAnswer       = bestAnswer;
@@ -2337,6 +2368,9 @@ export class GameModel {
         const scoreLabel = won
             ? `${finalInput} (won in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'})`
             : `closest: "${this._clBestGuess}" — ${Math.round(sim * 100)}% match`;
+        // One line of code typed: what was given (the closest try, after several)
+        // and the form the author prefers.
+        const answer = { given: finalInput || '', correct: q.correct?.[0] ?? '', right: won, tries: attemptsUsed, code: true };
 
         const turn = this._resolveDamage({
             playerHits:  won ? (CL_MAX_ATTEMPTS - attemptsUsed) + 1 : 0,
@@ -2352,6 +2386,7 @@ export class GameModel {
                 incorrectSelections: !won ? [scoreLabel] : [],
                 missedCorrect: won ? [] : (q.correct || []),
                 isPerfect,
+                answer,
             }),
         });
 
@@ -2363,6 +2398,7 @@ export class GameModel {
             correctSelections:   (won || sim > 0) ? [scoreLabel] : [],
             incorrectSelections: !won ? [scoreLabel] : [],
             missedCorrect:       won  ? [] : (q.correct || []),
+            answer,
             feedback:         q.feedback || null,
             attemptsUsed,
             bestAnswer,
