@@ -180,22 +180,41 @@
     "intro": "Val stops at a gatehouse where a clerk — think of the clerk as a login program — copies every visitor's name into a database query. “This gate has stood for years. I am going to walk through it, and then show you the only fix that actually works.”",
     "steps": [
       {
-        "say": "The clerk builds the lookup by pasting text together:\nquery = f\"SELECT * FROM users WHERE name = '{username}'\"\nI give the name mina, and the database receives WHERE name = 'mina'. Perfectly fine — which is exactly why nobody notices the flaw.",
+        "say": "The clerk builds the lookup by **pasting text together**: I give the name mina, and the database receives: Perfectly fine, which is exactly why nobody notices the flaw.",
         "beats": [
           {
-            "say": "The clerk builds the lookup by pasting text together:"
+            "say": "The clerk builds the lookup by **pasting text together**:"
           },
           {
             "code": "query = f\"SELECT * FROM users WHERE name = '{username}'\"",
             "language": "python"
           },
           {
-            "say": "I give the name mina, and the database receives WHERE name = 'mina'. Perfectly fine — which is exactly why nobody notices the flaw."
+            "say": "I give the name mina, and the database receives:"
+          },
+          {
+            "code": "SELECT * FROM users\nWHERE name = 'mina'",
+            "language": "sql"
+          },
+          {
+            "say": "Perfectly fine, which is exactly why nobody notices the flaw."
           }
         ]
       },
       {
-        "say": "Now I hand over a stranger name: ' OR '1'='1\nThe clerk pastes it in as always, and the database receives WHERE name = '' OR '1'='1'.",
+        "say": "Now I hand over a stranger name. The clerk pastes it in as always:",
+        "beats": [
+          {
+            "say": "Now I hand over a stranger name. The clerk pastes it in as always:"
+          },
+          {
+            "code": "' OR '1'='1"
+          },
+          {
+            "code": "SELECT * FROM users\nWHERE name = '' OR '1'='1'",
+            "language": "sql"
+          }
+        ],
         "check": {
           "prompt": "What does the database do with that condition?",
           "answer": "It is true for every row, so every user matches",
@@ -204,35 +223,31 @@
             "It reports a syntax error and runs nothing"
           ],
           "why": "My quote closed the name string early, so everything after it was read as SQL code rather than as a name. '1'='1' is always true."
-        },
-        "beats": [
-          {
-            "say": "Now I hand over a stranger name:"
-          },
-          {
-            "code": "' OR '1'='1",
-            "language": "typed by the attacker"
-          },
-          {
-            "say": "The clerk pastes it in as always, and the database receives WHERE name = '' OR '1'='1'."
-          }
-        ]
+        }
       },
       {
-        "say": "That attack has a name: SQL injection. The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all. A parameterized query sends the two separately: the query text travels with a ? standing where the value belongs, and the value travels on its own behind it:\ncursor.execute(\"SELECT * FROM users WHERE name = ?\", (username,))\nThe database works out what the query means before the value ever arrives, so whatever is in the value slot can only be looked up as a name. That same input now matches nobody and returns nothing.",
+        "say": "That attack is **SQL injection**. Hunting for dangerous characters fails; attackers find another spelling. The fix is to stop mixing **code** and **data**. A **parameterized query** sends the query text with a ? where the value goes, and the value on its own. The database settles what the query means before the value arrives, so that input is only ever looked up as a name. It matches nobody.",
         "beats": [
           {
-            "say": "That attack has a name: SQL injection. The fix is not to hunt for dangerous characters — attackers always find another spelling. The fix is to stop mixing code and data at all."
+            "say": "That attack is **SQL injection**. Hunting for dangerous characters fails; attackers find another spelling. The fix is to stop mixing **code** and **data**."
           },
           {
-            "say": "A parameterized query sends the two separately: the query text travels with a ? standing where the value belongs, and the value travels on its own behind it."
+            "say": "A **parameterized query** sends the query text with a ? where the value goes, and the value on its own."
           },
           {
-            "code": "cursor.execute(\"SELECT * FROM users WHERE name = ?\", (username,))",
+            "code": "cursor.execute(\n    \"SELECT * FROM users WHERE name = ?\",\n    (username,))",
             "language": "python"
           },
           {
-            "say": "The database works out what the query means before the value ever arrives, so whatever is in the value slot can only be looked up as a name. That same input now matches nobody and returns nothing."
+            "figure": {
+              "dot": "digraph { q [label=\"query text\nWHERE name = ?\"]; v [label=\"value\n' OR '1'='1\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; d [label=\"database\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; q -> d [label=\" sent first\"]; v -> d [label=\" sent apart\"]; }",
+              "alt": "The query text with a question mark and the typed value travel to the database separately, so the value is never read as SQL.",
+              "caption": "code and data travel apart",
+              "src": "_dot/7f09cbac121b6f48.svg"
+            }
+          },
+          {
+            "say": "The database settles what the query means before the value arrives, so that input is only ever looked up as a name. It matches nobody."
           }
         ]
       }
@@ -489,26 +504,28 @@
     "intro": "Val writes three names on the wall, each with a number beside it. “A hash hides a password. It does not hide the fact that two people chose the same one.”",
     "steps": [
       {
-        "say": "Here is a toy hash — far too weak for real use, but it behaves the way real ones do. It is deterministic: the same text always gives the same number.",
+        "say": "Here is a toy **hash**: far too weak for real use, but it behaves the way real ones do. It is **deterministic**: the same text always gives the same number.",
         "beats": [
+          {
+            "say": "Here is a toy **hash**: far too weak for real use, but it behaves the way real ones do."
+          },
           {
             "code": "def toy_hash(text):\n    total = 0\n    for ch in text:\n        total = total + ord(ch)\n    return total % 100",
             "language": "python"
           },
           {
-            "say": "Here is a toy hash — far too weak for real use, but it behaves the way real ones do. It is deterministic: the same text always gives the same number."
+            "say": "It is **deterministic**: the same text always gives the same number."
           }
         ]
       },
       {
-        "say": "So if two users pick the same password, their stored hashes match.",
+        "say": "This is the stored table. If two users pick the same password, their stored hashes match.",
         "beats": [
           {
-            "code": "ada   toy_hash(\"cat\")  ->  12\nbo    toy_hash(\"sun\")  ->  42\ncy    toy_hash(\"cat\")  ->  12",
-            "language": "the stored table"
+            "say": "This is the stored table. If two users pick the same password, their stored hashes match."
           },
           {
-            "say": "So if two users pick the same password, their stored hashes match."
+            "code": "ada   toy_hash(\"cat\")  ->  12\nbo    toy_hash(\"sun\")  ->  42\ncy    toy_hash(\"cat\")  ->  12"
           }
         ],
         "check": {
@@ -518,18 +535,28 @@
             "That the shared password is \"cat\"",
             "Nothing, because hashes cannot be reversed"
           ],
-          "why": "The hash still hides WHAT the password is, but matching hashes give away that it is shared — and cracking one cracks both."
+          "why": "The hash still hides **what** the password is, but matching hashes give away that it is shared — and cracking one cracks both."
         }
       },
       {
-        "say": "A salt fixes that. Each user gets their own random text, mixed into the password before hashing and stored beside the result. Same password, different salts, different hashes.",
+        "say": "A **salt** fixes that. Each user gets their own random text, mixed into the password before hashing and stored beside the result. Same password, different salts, different hashes.",
         "beats": [
           {
-            "code": "ada   toy_hash(\"k9\" + \"cat\")  ->  76\ncy    toy_hash(\"x2\" + \"cat\")  ->  82",
-            "language": "with a salt each"
+            "say": "A **salt** fixes that. Each user gets their own random text, mixed into the password before hashing and stored beside the result."
           },
           {
-            "say": "A salt fixes that. Each user gets their own random text, mixed into the password before hashing and stored beside the result. Same password, different salts, different hashes."
+            "figure": {
+              "dot": "digraph { s [label=\"salt\nk9\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; p [label=\"password\ncat\"]; m [label=\"\\\"k9cat\\\"\"]; h [label=\"toy_hash\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; r [label=\"76\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; s -> m; p -> m; m -> h; h -> r; }",
+              "alt": "Flow from the salt k9 and the password cat joined into the text k9cat, which goes through toy_hash and gives 76.",
+              "caption": "salt + password, then hash",
+              "src": "_dot/d13c042b8cf73eee.svg"
+            }
+          },
+          {
+            "code": "ada   toy_hash(\"k9\" + \"cat\")  ->  76\ncy    toy_hash(\"x2\" + \"cat\")  ->  82"
+          },
+          {
+            "say": "Same password, different salts, different hashes."
           }
         ]
       }
@@ -628,28 +655,36 @@
     "intro": "Val chalks two padlocks on the wall of the gatehouse. “Everyone argues about whether guessing a password is 'hard'. Hard is not a feeling. It is a number, and you can work it out in your head.”",
     "steps": [
       {
-        "say": "Take a PIN.",
+        "say": "Take a 4-digit PIN. Each position holds one of ten digits, and the positions are **independent**: the first digit tells you nothing about the second. Independent choices **multiply**. That total is the **keyspace**: every PIN an attacker might have to try. The real PIN is the needle in this haystack.",
         "beats": [
           {
-            "say": "Take a 4-digit PIN. Each position holds one of ten digits, and the positions are independent — the first digit tells you nothing about the second."
+            "say": "Take a 4-digit PIN. Each position holds one of ten digits, and the positions are **independent**: the first digit tells you nothing about the second. Independent choices **multiply**."
           },
           {
-            "say": "Independent choices multiply, so the count is ten multiplied by itself once per position."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; r [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">choices</FONT></TD><TD WIDTH=\"36\" COLOR=\"#00c840\">10</TD><TD WIDTH=\"36\" COLOR=\"#00c840\">10</TD><TD WIDTH=\"36\" COLOR=\"#00c840\">10</TD><TD WIDTH=\"36\" COLOR=\"#00c840\">10</TD></TR></TABLE>>]; t [shape=box, style=rounded, color=\"#7CFC00\", fontcolor=\"#7CFC00\", label=\"10,000 PINs\"]; r -> t [label=\" multiply\"]; }",
+              "alt": "Four boxes, each marked 10 choices, multiplied together to give 10,000 possible PINs.",
+              "caption": "10 x 10 x 10 x 10",
+              "src": "_dot/313d2b7ec94d445e.svg"
+            }
           },
           {
-            "code": "10 × 10 × 10 × 10  =  10,000 possible PINs",
-            "language": "the keyspace"
-          },
-          {
-            "say": "That total is the keyspace: every PIN an attacker would have to work through. It is the haystack, and the real PIN is the needle in it."
+            "say": "That total is the **keyspace**: every PIN an attacker might have to try. The real PIN is the needle in this haystack."
           }
         ]
       },
       {
-        "say": "Now stretch it.",
+        "say": "Now make it a 6-digit PIN.",
         "beats": [
           {
-            "say": "Now make it a 6-digit PIN. Two more positions, ten choices each."
+            "say": "Now make it a 6-digit PIN."
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; r [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">choices</FONT></TD><TD WIDTH=\"30\" COLOR=\"#00c840\">10</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">10</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">10</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">10</TD><TD WIDTH=\"30\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>10</B></FONT></TD><TD WIDTH=\"30\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>10</B></FONT></TD></TR></TABLE>>]; }",
+              "alt": "Six boxes, each marked 10 choices; the last two, highlighted, are the positions added to the four-digit PIN.",
+              "src": "_dot/a73d9f0651683cf5.svg"
+            }
           }
         ],
         "check": {
@@ -663,13 +698,13 @@
         }
       },
       {
-        "say": "Why this decides policy.",
+        "say": "This is the argument for length over cleverness. Adding one character multiplies the search; swapping an o for a zero does not. Trying every possibility in turn is a **brute-force attack**, and the keyspace is how long it takes. A short PIN falls in moments unless something else, like a **lockout** after a few wrong guesses, gets in the way.",
         "beats": [
           {
-            "say": "This is the whole argument for length over cleverness. Adding one character multiplies the search; swapping an o for a zero does not."
+            "say": "This is the argument for length over cleverness. Adding one character multiplies the search; swapping an o for a zero does not."
           },
           {
-            "say": "Trying every possibility in turn is called a brute-force attack, and the keyspace is how long it takes. A short PIN falls to it in moments unless something else — a lockout after a few wrong guesses — gets in the way."
+            "say": "Trying every possibility in turn is a **brute-force attack**, and the keyspace is how long it takes. A short PIN falls in moments unless something else, like a **lockout** after a few wrong guesses, gets in the way."
           }
         ]
       }
@@ -826,19 +861,31 @@
     "intro": "Val opens a bound history to its last two pages. “Someone left a key in here last week. They noticed, and took it out again. They think that is the end of the story.”",
     "steps": [
       {
-        "say": "A secret is anything that grants access: a password, an API key. Here is the history, newest first. One commit added the key by mistake; the next one removed it.",
+        "say": "A **secret** is anything that grants access: a password, an **API key**. Here is the history, newest first. One commit added the key by mistake; the next removed it.",
         "beats": [
           {
-            "code": "b72e1c0  Remove API key from config.py\n4a9f3d8  Add payment settings",
-            "language": "git log, newest first"
+            "say": "A **secret** is anything that grants access: a password, an **API key**. Here is the history, newest first. One commit added the key by mistake; the next removed it."
           },
           {
-            "say": "A secret is anything that grants access: a password, an API key. Here is the history, newest first. One commit added the key by mistake; the next one removed it."
+            "code": "b72e1c0  Remove API key from config.py\n4a9f3d8  Add payment settings"
           }
         ]
       },
       {
-        "say": "The file as it stands today is clean. But a commit is a snapshot, and git keeps every snapshot.",
+        "say": "The file as it stands today is clean. But a **commit** is a snapshot, and git keeps every snapshot.",
+        "beats": [
+          {
+            "say": "The file as it stands today is clean. But a **commit** is a snapshot, and git keeps every snapshot."
+          },
+          {
+            "figure": {
+              "dot": "digraph { a [label=\"b72e1c0 Remove API key\nconfig.py: clean\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; b [label=\"4a9f3d8 Add payment settings\nconfig.py: holds the key\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; head [label=\"HEAD\", shape=plaintext, fontcolor=\"#6be0ff\"]; head -> a [color=\"#6be0ff\"]; a -> b [label=\" parent\"]; }",
+              "alt": "Two commits in a chain: the newest, b72e1c0, has a clean config.py; its parent 4a9f3d8 still holds the key. HEAD points at the newest.",
+              "caption": "the old snapshot is still there",
+              "src": "_dot/aa5f2c4932a52cab.svg"
+            }
+          }
+        ],
         "check": {
           "prompt": "Can someone with a copy of the repository still read the key?",
           "answer": "Yes: the older commit still contains it",
@@ -846,11 +893,19 @@
             "No: the newer commit removed it",
             "Only until the next commit replaces it"
           ],
-          "why": "Removing a line makes a NEW snapshot without it. The old snapshot, key and all, is still in the history for anyone to open."
+          "why": "Removing a line makes a **new** snapshot without it. The old snapshot, key and all, is still in the history for anyone to open."
         }
       },
       {
-        "say": "So the key is burned. The first move is to revoke it where it was issued and get a new one. The new one lives in an environment variable — a value the operating system holds, outside the code — and any file of secrets is listed in .gitignore before it is ever committed. .gitignore only stops git picking a file up; it does nothing for one already in the history."
+        "say": "So the key is burned. First **revoke** it where it was issued and get a new one. The new one lives in an **environment variable**, a value the operating system holds outside the code. Any file of secrets goes in **.gitignore** before it is ever committed. .gitignore only stops git picking a file up; it does nothing for one already in the history.",
+        "beats": [
+          {
+            "say": "So the key is burned. First **revoke** it where it was issued and get a new one."
+          },
+          {
+            "say": "The new one lives in an **environment variable**, a value the operating system holds outside the code. Any file of secrets goes in **.gitignore** before it is ever committed. .gitignore only stops git picking a file up; it does nothing for one already in the history."
+          }
+        ]
       }
     ],
     "outro": "“The same mistake, a different secret. What has to happen first?”"
