@@ -131,21 +131,6 @@ export class GameUI {
   }
 
   /**
-   * True only the very first time a monster of this name is drawn in this run.
-   * Every later encounter — including the next question against the same
-   * monster — starts folded away, which is the whole point: the description is
-   * worth reading once, not once per question. Tracked on the UI rather than in
-   * the save, so resuming a run re-introduces the cast, which is a feature.
-   */
-  _firstSighting(name) {
-    if (!name) return false;
-    this._seenMonsters ||= new Set();
-    if (this._seenMonsters.has(name)) return false;
-    this._seenMonsters.add(name);
-    return true;
-  }
-
-  /**
    * @param {boolean} preserveExamine – true when re-drawing the HUD of an
    *   encounter already on screen (using an item). The student may have opened
    *   the description themselves; a HUD refresh must not slam it shut.
@@ -161,7 +146,8 @@ export class GameUI {
       crumb.textContent = title ? `▶ ${title}` : "▶ Loop of the Recursive Dragon";
     }
 
-    $(root, "[data-ref=mName]").textContent = m.is_boss ? "🐉 The Recursive Dragon" : m.monster_name;
+    const name = $(root, "[data-ref=mName]");
+    name.textContent = m.is_boss ? "🐉 The Recursive Dragon" : m.monster_name;
 
     const examine = $(root, "[data-ref=mExamine]");
     const desc = $(root, "[data-ref=mDesc]");
@@ -172,20 +158,26 @@ export class GameUI {
       // are left. It must never be tucked behind a toggle.
       const left = m.hit_points;
       desc.textContent = `${left} concept${left === 1 ? "" : "s"} left to master`;
-      if (examine) { examine.open = true; examine.classList.add("monster-examine--pinned"); }
+      examine.hidden = false;
+      examine.classList.add("monster-examine--pinned");
+      name.disabled = true;
+      name.removeAttribute("title");
       if (tier) tier.textContent = "";
     } else {
+      // Flavour, on demand: the name shows it on hover, and unfolds it on a tap.
+      // Always on screen, it pushed the question below a short window.
       desc.textContent = m.initial_description || "";
       if (tier) tier.textContent = m.hit_dice ? `Lv ${m.hit_dice}` : "";
-      if (examine) {
-        const wasOpen = examine.open;
-        examine.classList.remove("monster-examine--pinned");
-        examine.hidden = !m.initial_description;
-        // Introduce a monster in full the first time it turns up this run;
-        // after that the description is wallpaper, so leave it folded away.
-        examine.open = preserveExamine ? wasOpen : this._firstSighting(m.monster_name);
-      }
+      examine.classList.remove("monster-examine--pinned");
+      name.disabled = !m.initial_description;
+      name.title = m.initial_description || "";
+      if (!preserveExamine || !m.initial_description) examine.hidden = true;
+      name.onclick = () => {
+        examine.hidden = !examine.hidden;
+        name.setAttribute("aria-expanded", String(!examine.hidden));
+      };
     }
+    name.setAttribute("aria-expanded", String(!examine.hidden));
 
     this._renderMonsterHp(root);
     this._renderPlayerHp(root);
@@ -197,10 +189,10 @@ export class GameUI {
     if (streakEl) {
       if (p.streak >= 3) {
         const bonus = p.streak >= 10 ? "2×" : p.streak >= 5 ? "1.5×" : "1.25×";
-        streakEl.textContent = `🔥 Streak: ${p.streak}  (${bonus} damage bonus active)`;
+        streakEl.textContent = `🔥 Streak ${p.streak} · ${bonus} damage`;
         streakEl.hidden = false;
       } else if (p.streak > 0) {
-        streakEl.textContent = `🔥 Streak: ${p.streak}`;
+        streakEl.textContent = `🔥 Streak ${p.streak}`;
         streakEl.hidden = false;
       } else {
         streakEl.hidden = true;

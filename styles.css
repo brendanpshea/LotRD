@@ -314,12 +314,12 @@ select {
 
 /* ── Streak display ───────────────────────────────────────────────────────── */
 .streak-display {
-    text-align: center;
+    flex-shrink: 0;
     color: #ffb300;
     font-weight: bold;
-    font-size: 0.95rem;
-    padding: 4px 0 2px;
+    font-size: 0.85rem;
     letter-spacing: 0.03em;
+    white-space: nowrap;
     animation: streak-pulse 0.4s ease-out;
 }
 
@@ -410,11 +410,27 @@ code.verdict-text {
 }
 
 /* ── Monster layout (compact two-column) ──────────────────────────────────── */
+/* The set's name, and the streak at the right. A long name is cut short for the
+   streak, down to a dozen characters; on a screen narrower than that, the streak
+   takes a line of its own. */
+.encounter-topline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 2px 10px;
+    margin-bottom: 4px;
+}
+
 .encounter-breadcrumb {
+    flex: 1 1 12em;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 0.78rem;
     color: #5aaa5a;
     letter-spacing: 0.05em;
-    margin-bottom: 6px;
 }
 
 /* ── Battle stage ────────────────────────────────────────────────────────────
@@ -610,6 +626,16 @@ code.verdict-text {
 .respawn-stage .actor  { width: auto; }
 .respawn-stage .sprite { width: calc(var(--sprite-h) * var(--frame-aspect, 1)); }
 
+/* A short window (D2L's embedded view, a phone with its browser bars) has no
+   height to spare above the question: a smaller stage, and less frame around
+   the game. Before the width rules, so a narrow screen's smaller stage wins. */
+@media (max-height: 720px) {
+    body            { margin: 8px; }
+    .game-container { padding: 10px 14px; }
+    .game-toolbar   { min-height: 30px; margin-bottom: 2px; }
+    .battle-stage   { --sprite-h: 80px; }
+}
+
 @media (max-width: 600px) {
     .battle-stage { --sprite-h: 84px; }
 }
@@ -675,65 +701,46 @@ code.verdict-text {
     white-space: nowrap;
 }
 
+/* The monster's name: hover for its description, or tap to unfold it. A button
+   in function only, so it undoes every button style, the phone ones included. */
+.monster-name {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: bold;
+    text-align: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: help;
+}
+.monster-name:hover          { background: none; color: #7CFC00; }
+.monster-name:disabled       { cursor: default; color: inherit; }
+.monster-name:focus-visible  { outline: 2px solid #7CFC00; outline-offset: 2px; }
+
 /* ── Examine: flavour on demand ───────────────────────────────────────────── */
 
 .monster-examine {
     margin-top: 5px;
 }
 
-.monster-examine-toggle {
-    cursor: pointer;
-    list-style: none;
-    display: inline-block;
-    font-size: 0.76rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #5c9c5c;
-    border: 1px solid #2a4a2a;
-    border-radius: 3px;
-    padding: 1px 8px;
-    user-select: none;
-}
-
-.monster-examine-toggle::-webkit-details-marker { display: none; }
-.monster-examine-toggle::marker { content: ""; }
-
-.monster-examine-toggle::before {
-    content: "\25B8 ";       /* right-pointing triangle, turns down when open */
-    display: inline-block;
-    transition: transform 0.12s ease;
-}
-
-.monster-examine[open] > .monster-examine-toggle::before {
-    transform: rotate(90deg);
-}
-
-.monster-examine-toggle:hover,
-.monster-examine-toggle:focus-visible {
-    color: #7CFC00;
-    border-color: #3a6a3a;
-}
-
 .monster-examine-body {
-    margin-top: 5px;
     padding-left: 9px;
     border-left: 2px solid #2a4a2a;
     font-style: italic;
     color: #8fd48f;
 }
 
-/* The boss's line is live state, so it is always open and needs no toggle. */
-.monster-examine--pinned > .monster-examine-toggle { display: none; }
-
+/* The boss's line is live state, so it always shows. */
 .monster-examine--pinned > .monster-examine-body {
-    margin-top: 0;
     font-style: normal;
     color: #ffd86b;
     border-left-color: #6a5a1a;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .monster-examine-toggle::before { transition: none; }
 }
 
 /* HP row: label, number, colour bar */
@@ -808,18 +815,21 @@ code.verdict-text {
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed #2a4a2a;
+    margin-top: 6px;
 }
 
+/* Two slots side by side at any width: a long item name gives way, not the row. */
 .inv-slot {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    min-height: 32px;
-    min-width: 140px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 220px;
+    width: auto;
+    margin: 0;
+    padding: 2px 8px;
+    min-height: 28px;
     background: #0a1a0a;
     border: 1px solid #2a4a2a;
     border-radius: 4px;
@@ -873,6 +883,10 @@ code.verdict-text {
 
 .inv-slot-name {
     font-weight: bold;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .inv-pending {
@@ -1529,15 +1543,18 @@ summary.topic-heading:focus-visible {
 }
 
 /* ── Journey progress visualization ──────────────────────────────────────── */
+/* The foot of the encounter card, ruled off from the fight above it. */
 .progress-section {
-    padding: 8px 15px 10px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px dashed #2a4a2a;
 }
 
 .prog-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .prog-label {
@@ -1545,11 +1562,13 @@ summary.topic-heading:focus-visible {
     color: #5aaa5a;
     font-weight: bold;
     letter-spacing: 0.08em;
+    white-space: nowrap;
 }
 
 .prog-stats {
     font-size: 0.76rem;
     color: #5c9c5c;
+    text-align: right;
 }
 
 /* The corridor row: blocks + dragon at the end */
@@ -1559,21 +1578,23 @@ summary.topic-heading:focus-visible {
     gap: 6px;
 }
 
-/* Block containers — flex-wrap so they flow into multiple rows naturally */
+/* Block containers — one row: a long set narrows its blocks rather than
+   taking a second line */
 .prog-blocks {
     display: flex;
-    flex-wrap: wrap;
     gap: 2px;
     flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
 }
 
 /* Individual blocks */
 .prog-block {
     display: inline-block;
-    width: 10px;
-    height: 10px;
+    flex: 0 1 10px;
+    min-width: 2px;
+    height: 9px;
     border-radius: 1px;
-    flex-shrink: 0;
 }
 
 /* Colour scheme */
@@ -1607,7 +1628,7 @@ summary.topic-heading:focus-visible {
 
 /* Smaller blocks for the retry row */
 .prog-blocks--sm .prog-block {
-    width: 8px;
+    flex-basis: 8px;
     height: 8px;
 }
 

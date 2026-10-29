@@ -228,7 +228,7 @@ describe('Shared encounter chrome', () => {
   it('the monster header is defined exactly once', () => {
     assert.equal((html.match(/class="battle-stage"/g) || []).length, 1,
       'monster header markup should live only in tpl-encounter-chrome');
-    assert.equal((html.match(/class="bbs-container progress-section"/g) || []).length, 1,
+    assert.equal((html.match(/class="progress-section"/g) || []).length, 1,
       'journey progress markup should live only in tpl-encounter-chrome');
   });
 
