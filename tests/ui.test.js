@@ -9,8 +9,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { GameUI } from '../src/ui.js';
+import { GameUI, pressSound } from '../src/ui.js';
 import { highlightPython } from '../src/highlight.js';
+import { SFX } from '../src/sound.js';
 
 const shift = (textarea, opts) => GameUI.prototype._shiftCodeLines(textarea, opts);
 
@@ -33,6 +34,42 @@ function marked(ta) {
     ? value.slice(0, a) + '|' + value.slice(a)
     : value.slice(0, a) + '|' + value.slice(a, b) + '|' + value.slice(b);
 }
+
+/** What a press landed on: inside a button with these classes and this data-sound, or (with no classes) not on a button. */
+function pressOn(classes, sound) {
+  if (classes === undefined) return { closest: () => null };
+  const button = {
+    matches: sel => sel.split(', ').some(s => classes.split(' ').includes(s.slice(1))),
+    dataset: sound === undefined ? {} : { sound },
+  };
+  return { closest: sel => (sel === 'button' ? button : null) };
+}
+
+describe('the sound a press makes', () => {
+  it('a button clicks, unless it names its own sound', () => {
+    assert.equal(pressSound(pressOn('action-button')), 'click');
+    assert.equal(pressSound(pressOn('action-button', 'blip')), 'blip');
+    assert.equal(pressSound(pressOn('action-button', 'none')), null);
+  });
+
+  it('an answer or an item makes no click: the fight that follows has its own sounds', () => {
+    assert.equal(pressSound(pressOn('action-button submit-btn')), null);
+    assert.equal(pressSound(pressOn('inv-slot inv-slot--empty')), null);
+  });
+
+  it('a press that is not on a button is silent', () => {
+    assert.equal(pressSound(pressOn()), null);
+    assert.equal(pressSound(null), null);
+  });
+
+  it('every sound a button names is one there is', () => {
+    const named = [...readFileSync(join(import.meta.dirname, '../src/ui.js'), 'utf8')
+      .matchAll(/(?:dataset\.sound = |sound = |check\.answer \? )"(\w+)"(?: : "(\w+)")?/g)]
+      .flatMap(m => [m[1], m[2]]).filter(n => n && n !== 'none');
+    assert.deepEqual([...new Set(named)].sort(), ['blip', 'checkNo', 'checkYes']);
+    for (const name of [...named, 'click']) assert.ok(SFX[name], `no sound called ${name}`);
+  });
+});
 
 describe('code editor indentation (the touch path)', () => {
   it('indents the caret line and carries the caret with it', () => {

@@ -440,7 +440,7 @@ matches the number of questions actually in each file.
 
 ## Sounds
 
-Every sound effect is a short list of numbers in `SFX` (`src/sound.js`), turned into audio by [ZzFX](https://github.com/KilledByAPixel/ZzFX) (MIT): no audio files, nothing to license, and nothing extra in a package. The fight's sounds play on the stage beats that show them (`sfxFor` in `src/stage.js`): the swing as the hero lunges, the hit as the blow lands, the monster's counter, a kill, an item's glow, a drop. They still play under reduced motion, which stills the stage but not the sound.
+Every sound effect is a short list of numbers in `SFX` (`src/sound.js`), turned into audio by [ZzFX](https://github.com/KilledByAPixel/ZzFX) (MIT): no audio files, nothing to license, and nothing extra in a package. The fight's sounds play on the stage beats that show them (`sfxFor` in `src/stage.js`): the swing as the hero lunges, the hit as the blow lands, the monster's counter, a kill, an item's glow, a drop. They still play under reduced motion, which stills the stage but not the sound. Outside the fight, every button press makes a quiet click (`pressSound` in `src/ui.js`), except an answer or an item, which the fight answers instead; a button can name its own sound with `data-sound`, which is how a mentor's Continue blips and a mentor's check chimes right or not quite.
 
 To hear or change them, serve the repo root and open `/tools/sound-board.html`. It plays each sound alone or a whole round with the game's own timing, takes edited numbers or anything pasted from the [ZzFX designer](https://killedbyapixel.github.io/ZzFX), and writes out a new `SFX` table to paste into `src/sound.js`. The board is not shipped in the SCORM packages.
 

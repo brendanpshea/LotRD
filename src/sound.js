@@ -37,6 +37,11 @@ export const SFX = {
   levelUp:  [.8, 0, 392, .01, .36, .2, 1, 1, , , 98, .09, .09],
   victory:  [1, 0, 330, .02, .5, .2, 1, 1, , , 165, .15, .15, , , , .12],
   gameOver: [1, 0, 300, .05, .5, .4, 2, 1, , , -40, .2, .2],
+  // Presses, kept well under the fight (pressSound, ui.js).
+  click:    [.2, .05, 1500, .002, .004, .02, 0, 1],                               // a button
+  blip:     [.25, .03, 760, .004, .012, .045, 0, 1, 1.5],                         // Continue, in a mentor's scene
+  checkYes: [.4, 0, 660, .01, .05, .14, 0, 1, , , 330, .06],                      // a mentor's check, answered right
+  checkNo:  [.35, 0, 330, .01, .06, .16, 0, 1, , , -66, .07],                     // ...or not quite
 };
 
 const MASTER = 0.3;      // ZzFX's own master volume

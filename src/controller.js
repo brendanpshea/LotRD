@@ -1,7 +1,7 @@
 import { loadJSON, GameModel, Player } from "./model.js";
 import { ITEMS } from "./items.js";
 import { SoundSystem } from "./sound.js";
-import { GameUI } from "./ui.js";
+import { GameUI, pressSound } from "./ui.js";
 import {
   shuffle, reviewDue, advanceReviewStage,
   TIER_APPRENTICE, TIER_MASTER, nextTierInfo, sampleTrialQuestions,
@@ -73,6 +73,13 @@ export class GameController {
         try { localStorage.setItem("lotrd_sound", on ? "1" : "0"); } catch (_) {}
       });
     }
+
+    // Every press of a button is heard. Listening after the button's own handler
+    // means switching sound on is confirmed by a click, and switching it off isn't.
+    document.addEventListener("click", e => {
+      const name = pressSound(e.target);
+      if (name) this.sounds.play(name);
+    });
 
     const backBtn = document.getElementById("back-btn");
     if (backBtn) {

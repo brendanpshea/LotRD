@@ -58,6 +58,19 @@ function renderTemplate(root, id) {
 
 const $ = (root, sel) => root.querySelector(sel);
 
+/**
+ * The sound a press makes, as a name in SFX (sound.js), or null: a button's
+ * data-sound if it has one ("none" for silence), otherwise a soft click.
+ * Submitting an answer or using an item makes no click, since the fight that
+ * follows has sounds of its own.
+ */
+export function pressSound(target) {
+  const button = target?.closest?.("button");
+  if (!button || button.matches(".submit-btn, .inv-slot")) return null;
+  const name = button.dataset.sound ?? "click";
+  return name === "none" ? null : name;
+}
+
 // ── Pictures in questions ───────────────────────────────────────────────
 // A question's `figure` names a file under figures/. Beside it sits a small JSON
 // file with the picture's license and, unless it is the author's own work, the
@@ -1614,6 +1627,7 @@ export class GameUI {
     yes.type = "button";
     yes.className = "action-button";
     yes.textContent = "Yes, submit";
+    yes.dataset.sound = "none";          // the answer it submits brings its own
     yes.addEventListener("click", () => { this._clearTypoPrompt(); onConfirm(); });
     const no = document.createElement("button");
     no.type = "button";
@@ -1798,11 +1812,12 @@ export class GameUI {
 
     if (q.intro) addLine(q.intro, "npc-line npc-line--scene");
 
-    const makeButton = (label, cls, onClick) => {
+    const makeButton = (label, cls, onClick, sound = "blip") => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = cls;
       b.textContent = label;
+      b.dataset.sound = sound;
       b.addEventListener("click", onClick);
       controls.appendChild(b);
       return b;
@@ -1871,7 +1886,7 @@ export class GameUI {
           // Wait for the student: the next frame would clear this away unread.
           controls.innerHTML = "";
           makeButton("Continue ▸", "action-button", advance).focus();
-        });
+        }, opt === check.answer ? "checkYes" : "checkNo");
       });
     };
 
@@ -3111,7 +3126,7 @@ export class GameUI {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        continueCallback();
+        cont.click();                   // a press, like the mouse's: it is heard the same
       }
     }, { signal: this._kbAbort.signal });
   }
@@ -3139,7 +3154,7 @@ export class GameUI {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        continueCallback();
+        cont.click();
       }
     }, { signal: this._kbAbort.signal });
   }
@@ -3275,7 +3290,7 @@ export class GameUI {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        go();
+        cont.click();
       }
     }, { signal: this._kbAbort.signal });
   }
