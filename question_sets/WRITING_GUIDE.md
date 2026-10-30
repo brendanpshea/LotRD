@@ -890,7 +890,7 @@ Writing good ones — everything said for Python class problems applies, and als
   "type": "npc_demo",
   "question": "NPC: Turning 13 into binary",
   "npc": "Ada the Artificer",
-  "intro": "Scene-setting text shown in italics before the first step.",
+  "intro": "I'm Nia, the Logic-Weaver. Here is a number, and a row of empty boxes to fill.",
   "steps": [
     { "say": "First teaching beat — one idea per step." },
     { "say": "Second beat, ending just before a decision point.",
@@ -903,7 +903,7 @@ Writing good ones — everything said for Python class problems applies, and als
     },
     { "say": "Final beat: complete the example and state the takeaway pattern." }
   ],
-  "outro": "Hand-off line pointing at the paired question that follows."
+  "outro": "Your turn. A new number, the same boxes."
 }
 ```
 
@@ -914,7 +914,7 @@ Writing good ones — everything said for Python class problems applies, and als
 | `type` | yes | `"npc_demo"` | Must be exactly this string |
 | `question` | yes | string | The scene's title (shown as a caption; also its identity — must be unique). Prefix with `NPC:` by convention |
 | `npc` | yes | string | Mentor **id** from [`assets/npcs.json`](../assets/npcs.json) — `ada`, `nia`, `zoya`, `flint`, `kaelen`, `tariq`, `val`, `omu`. The game resolves the display name and portrait from the roster. Pick the mentor whose domain matches the lesson, and write the prose to fit them (Zoya uses they/them) |
-| `intro` / `outro` | no | string | Scene-setting and hand-off lines |
+| `intro` / `outro` | no | string | The mentor's opening and closing words, spoken to the student (see *Opening and closing lines*) |
 | `steps` | yes | object[] | 2–4 steps; each needs `say`, may carry `beats` and one `check` |
 | `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is either `{"say": "..."}` (one spoken line), `{"code": "...", "language": "..."}` (the artifact being examined), or `{"figure": {...}}` (a picture; see [Pictures in Questions](#pictures-in-questions-figure)). Without it the whole `say` string appears in one go |
 | `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues |
@@ -941,6 +941,45 @@ Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase descr
 
 Each step is its own frame: when the next step starts, the screen clears, so a step should make sense on its own rather than leaning on the line just above it from the previous step.
 
+### Opening and closing lines
+
+The `intro` and `outro` are the mentor talking, shown like every other line the mentor says: first person, to the student. They are not stage directions. A line like "Kaelen lays out five index cards…" or "“Words in hand,” Zoya says." is narration about the mentor, and `data.test.js` rejects it.
+
+- **A mentor introduces themselves once per set**, very briefly, at the start of their first scene in it: "I'm Kaelen, the Grand Archivist." Later scenes in the same set go straight to the point. The name and portrait are already in the scene's header.
+- **The setup is spoken.** A prop the scene uses is introduced in the mentor's words: "Here are five index cards, one for each candy." A prop that is never used again is left out.
+- **Brief:** one or two short sentences after the introduction, 45 words at most. The intro sits right above the first beat, so it leads into that beat rather than repeating it.
+- **No quotation marks around the speech, and no dialogue tags.** Quotation marks for in-world text inside it are fine (a sign reading "ENTER YOUR AGE").
+
+### Narration (a mentor's voice)
+
+A scene can be narrated. Then a **🎙 Narrate** button appears beside the mentor's name. When the student turns it on, the mentor speaks each beat as it appears. Narration is off until a student turns it on, and the browser remembers the choice; a speed button (1×, 1.25×, 1.5×, 0.75×) comes with it. Narration is in pilot: Java 00 and Java 07 are narrated.
+
+A narrated scene has a spoken line for everything it shows:
+
+| Field | Where | What it says |
+|-------|-------|--------------|
+| `intro_narrate` | the scene | The intro, spoken: the same self-introduction, if there is one, then a somewhat fuller greeting |
+| `narrate` | every beat | A say beat: its point, in speech, somewhat fuller. A code beat: what to look at, never the code read out. A figure beat: where to look |
+| `narrate` | each `check` | The question, spoken. Not the options, and no hint |
+| `why_narrate` | each `check` | The explanation, heard after the student answers, right or wrong; so not "Right!" or "Not quite" |
+| `outro_narrate` | the scene | The closing line |
+
+The point of the voice is that the eyes can stay on the code or the diagram while the mentor explains it. Reading the screen aloud word for word is the weakest use of it. Write instead:
+
+1. **To the student.** "I" for the mentor, "you" for the student, with contractions: it is speech.
+2. **Somewhat fuller.** A line may add a clause of explanation, a link back, or a "notice that…": about one to two times its screen text, at most 60 words. It adds **no fact** the scene doesn't teach, since a student with the sound off must miss nothing.
+3. **For the ear.** The voice reads exactly what is written. Say code in words ("i plus plus", "nums at index i"). `data.test.js` rejects `{ } [ ] ; = < > * _`, backticks, backslashes and `()` in a spoken line, along with a narrated scene with a silent beat.
+4. **In the mentor's own voice**, and without giving away the check or the question that follows.
+
+Each line is an MP3 in `narration/`, in the voice of the scene's mentor: the `voice` in [`assets/npcs.json`](../assets/npcs.json), a Gemini TTS voice id. A clip is named by a hash of voice and line, so editing a line can never play the old audio. Render the clips with:
+
+```bash
+python tools/narrate.py --dry-run     # list the lines still to render, with time and cost
+python tools/narrate.py --batch       # render them (needs a Gemini key in api_keys.env)
+```
+
+It renders only new or changed lines and deletes clips nothing uses. Commit the clips with the set. `data.test.js` fails if a narrated line has no clip, and a SCORM package carries only the clips its scenes speak. Names the voice says wrongly can be respelled for the voice alone in `tools/pronunciations.json`.
+
 ### Writing Good NPC Scenes
 
 1. **Always pair it.** The very next entry in the array should be a real question using the same technique with different numbers/words (dynamic_numeric pairs beautifully: the scene demos 13 → binary, the monster asks for 22).
@@ -956,7 +995,7 @@ Each step is its own frame: when the next step starts, the screen clears, so a s
      array. If its options or feedback say *attribute*, *local variable* or *object*, the scene has to have
      said those words too — a student who followed the demonstration perfectly should not meet a monster
      speaking a language the demonstration avoided.
-   Scene-setting is fine and welcome, but a prop introduced in the `intro` and never used again is noise;
+   An image is welcome, but a prop the mentor introduces in the `intro` and never uses again is noise;
    either give it something to do or leave it out.
 4. **One idea per step.** If a `say` needs three sentences of new content, split it.
 5. **Don't re-teach what the set already tested** — scenes introduce technique for the questions that follow, not summaries of earlier material.

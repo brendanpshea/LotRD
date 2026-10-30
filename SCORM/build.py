@@ -28,6 +28,7 @@ The build:
   in the edition config.
 - Copies only the question_set JSON files referenced by those topics.
 - Copies only the pictures (figures/) those sets use, each with its credit file.
+- Copies only the narration clips (narration/) those sets' scenes speak.
 - Patches index.html: title, intro copy, and a <script> tag for the SCORM
   shim.
 - Generates imsmanifest.xml from the template.
@@ -262,6 +263,50 @@ def ship_figures(build_dir: Path) -> None:
     print(f"  Pictures: {len(wanted)} shipped, {total // 1024} KB with their credit files")
 
 
+def ship_narration(build_dir: Path) -> None:
+    """Add the mentors' narration clips this edition's scenes speak.
+
+    A narrated scene's lines are MP3s in narration/, named by a hash of the
+    mentor's voice and the line (tools/narrate.py renders them; the game
+    computes the same names). Only the clips of this edition's scenes go in,
+    and an edition with no narrated scene carries none. A missing clip stops
+    the build: the line would be silent.
+    """
+    if str(REPO / "tools") not in sys.path:
+        sys.path.insert(0, str(REPO / "tools"))
+    from narrate import clip_name, scene_lines   # the tool's own naming, so the two cannot drift
+    voices = {n["id"].lower(): n.get("voice")
+              for n in json.loads((REPO / "assets" / "npcs.json").read_text(encoding="utf-8"))}
+    wanted: set[str] = set()
+    for path in (build_dir / "question_sets").glob("*.json"):
+        if path.name in ("catalog.json", "index.json"):
+            continue
+        try:
+            entries = json.loads(path.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        for entry in entries if isinstance(entries, list) else []:
+            if not isinstance(entry, dict) or entry.get("type") != "npc_demo":
+                continue
+            lines = scene_lines(entry)
+            voice = voices.get(str(entry.get("npc", "")).lower())
+            if lines and not voice:
+                raise SystemExit(f"{path.name}: {entry.get('question')!r} is narrated, but its mentor has no voice.")
+            wanted.update(f"{clip_name(voice, line)}.mp3" for line in lines)
+    if not wanted:
+        return
+
+    total = 0
+    (build_dir / "narration").mkdir(exist_ok=True)
+    for name in sorted(wanted):
+        origin = REPO / "narration" / name
+        if not origin.exists():
+            raise SystemExit(f"A narrated line has no clip (narration/{name}). Run: python tools/narrate.py --batch")
+        shutil.copy2(origin, build_dir / "narration" / name)
+        total += origin.stat().st_size
+    print(f"  Narration: {len(wanted)} clips shipped, {total // 1024} KB")
+
+
 def prune_npc_portraits(build_dir: Path) -> None:
     """Ship only the mentor portraits this edition's scenes actually use.
 
@@ -488,6 +533,7 @@ def build_one(config: dict, full_catalog: list) -> Path:
     prune_npc_portraits(work_dir)
     ship_sql_engine(work_dir)
     ship_figures(work_dir)
+    ship_narration(work_dir)
     patch_index_html(work_dir, config)
     write_shim(work_dir)
     write_manifest(work_dir, config)

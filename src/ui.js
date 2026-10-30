@@ -5,6 +5,7 @@ import {
 import { highlightJava, highlightPython } from "./highlight.js";
 import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
+import { Narrator, sceneHasNarration, stopNarration } from "./narration.js";
 import { HEROES, chosenHero, chooseHero, heroChosen } from "./heroes.js";
 import { ITEMS } from "./items.js";
 import { planTurn, planItem, sfxFor, BEAT } from "./stage.js";
@@ -49,6 +50,7 @@ function getLevelTitle(level) {
 }
 
 function renderTemplate(root, id) {
+  stopNarration();                    // a new screen: whatever a mentor was saying stops
   root.innerHTML = "";
   const tpl = document.getElementById(id);
   if (!tpl) throw new Error(`Missing template: ${id}`);
@@ -1760,10 +1762,44 @@ export class GameUI {
     // with the raw value as a name and the placeholder glyph.
     const nameEl = $(this.root, "[data-ref=npcName]");
     nameEl.textContent = q.npc || "Your mentor";
+
+    // Narration: the mentor's voice comes from the roster too, so until it
+    // resolves there is no narrator, and the lines of the frame on screen wait
+    // in `spoken` to be said once there is one.
+    let narrator = null;
+    let spoken = [];
+    const speak = lines => {
+      spoken = lines.filter(Boolean);
+      narrator?.say(spoken);
+    };
+    const narrateBtn = $(this.root, "[data-action=npc-narrate]");
+    const rateBtn = $(this.root, "[data-action=npc-rate]");
+    const showNarration = () => {
+      const on = narrator.on;
+      narrateBtn.setAttribute("aria-pressed", String(on));
+      narrateBtn.textContent = on ? "🎙️ Narrating" : "🎙️ Narrate";
+      rateBtn.hidden = !on;
+      rateBtn.textContent = `${narrator.rate}×`;
+    };
+
     loadNpcRoster().then(roster => {
       const npc = findNpc(roster, q.npc);
       if (!npc || !nameEl.isConnected) return;
       nameEl.textContent = npc.name;
+      if (npc.voice && sceneHasNarration(q)) {
+        narrator = new Narrator(npc.voice);
+        narrateBtn.hidden = false;
+        narrateBtn.addEventListener("click", () => {
+          narrator.on = !narrator.on;
+          showNarration();
+          // Turned on: say the frame that is showing, from this press, which
+          // is what lets the browser play sound at all.
+          if (narrator.on) narrator.say(spoken);
+        });
+        rateBtn.addEventListener("click", () => { narrator.cycleRate(); showNarration(); });
+        showNarration();
+        narrator.say(spoken);
+      }
       const slot = $(this.root, "[data-ref=npcPortrait]");
       if (!slot) return;
       const img = document.createElement("img");
@@ -1802,7 +1838,8 @@ export class GameUI {
       return wrap;
     };
 
-    if (q.intro) addLine(q.intro, "npc-line npc-line--scene");
+    // The mentor's opening and closing words are speech like every other line.
+    if (q.intro) addLine(q.intro);
 
     const makeButton = (label, cls, onClick, sound = "blip") => {
       const b = document.createElement("button");
@@ -1838,13 +1875,16 @@ export class GameUI {
       if (pos >= queue.length) {
         if (q.outro) {
           dialogue.replaceChildren();
-          addLine(q.outro, "npc-line npc-line--scene");
+          addLine(q.outro);
         }
+        speak([q.outro_narrate]);
         makeButton("Continue the adventure ⚔", "action-button", () => onDone()).focus();
         return;
       }
       const item = queue[pos++];
       if (item.first && item.step > 0) dialogue.replaceChildren();
+      // The opening line is said with the scene's first beat.
+      speak([pos === 1 ? q.intro_narrate : null, item.kind === "check" ? item.check.narrate : item.beat.narrate]);
 
       if (item.kind === "figure") {
         const fig = this._figureElement(item.beat.figure);
@@ -1875,6 +1915,7 @@ export class GameUI {
             addLine(`Not quite — it's "${check.answer}". ${check.why || ""}`.trim(),
               "npc-line npc-line--gentle");
           }
+          speak([check.why_narrate]);
           // Wait for the student: the next frame would clear this away unread.
           controls.innerHTML = "";
           makeButton("Continue ▸", "action-button", advance).focus();

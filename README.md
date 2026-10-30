@@ -268,6 +268,8 @@ The SQL counterpart of write-the-code. The student writes a whole `SELECT`, and 
 
 Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a worked example step by step, with optional low-stakes `check` prompts ("what comes next?") that get a gentle correction when wrong. Scenes deal no damage, award no XP, never requeue, are skippable, don't count toward `question_count`, and are excluded from reviews and rank trials. Author each scene **immediately before a paired question** that uses the same technique with different surface features. See the [WRITING_GUIDE](question_sets/WRITING_GUIDE.md) for the schema.
 
+A scene can also be **narrated** (a pilot, in Java 00 and Java 07): a 🎙 button beside the mentor's name. With it on, the mentor speaks each beat as it appears, in their own voice, a little more fully than the screen. Narration is off until the student turns it on, and the browser remembers the choice. The clips are MP3s in `narration/`, rendered with Gemini TTS by `tools/narrate.py`. See *Narration* in the writing guide.
+
 ---
 
 ## Damage Formula
@@ -302,6 +304,7 @@ src/
   controller.js     — GameController; game flow, persistence, item drops, review-set launch
   ui.js             — GameUI; all screen rendering, keyboard handling, encounter/results screens
   sound.js          — SoundSystem and the SFX table; woken by every press, kept awake by an inaudible hum, never played late
+  narration.js      — A mentor's voice in a scene: clip names, the 🎙 switch and speed, one shared <audio>
   zzfx.js           — ZzFX's sample generator (MIT), which turns each SFX entry into a sound
   items.js          — ITEM_DROPS table for post-battle loot
   stage.js          — The battle stage's choreography: a round or an item as timed beats
@@ -318,6 +321,7 @@ assets/
   questions.json    — Legacy; not used by the main app
 images/monsters/    — Monster artwork (single pictures; the battle stage uses images/sprites/)
 images/sprites/     — Battle-stage sprite strips, plus roster.json and prompts.md that make them
+narration/          — The mentors' narration clips (MP3), named by voice and line; tools/narrate.py renders them
 question_sets/
   catalog.json      — Topic groupings and metadata for the main menu
   index.json        — Flat list of available set filenames (for direct-link validation)
@@ -444,6 +448,8 @@ Every sound effect is a short list of numbers in `SFX` (`src/sound.js`), turned 
 
 To hear or change them, serve the repo root and open `/tools/sound-board.html`. It plays each sound alone or a whole round with the game's own timing, takes edited numbers or anything pasted from the [ZzFX designer](https://killedbyapixel.github.io/ZzFX), and writes out a new `SFX` table to paste into `src/sound.js`. The board is not shipped in the SCORM packages.
 
+A mentor's narration is not a sound effect: it has its own 🎙 switch in the scene, so turning the 🔊 effects off leaves it alone (see *NPC Teaching Scene* above).
+
 ## Sprites
 
 Every hero and monster on the battle stage is a strip of three poses (stand, attack, recoil) in `images/sprites/<id>.webp`, all facing right; the stage mirrors the monster. They are made in batches of three characters:
@@ -526,6 +532,7 @@ activity there — is written down as a test as well, so that it stays the only 
 | `jtiny.test.js` | The Java subset used by Java write-the-code questions — the results table, error wording and line numbers, pasted methods and classes, and the runaway-program limits |
 | `jtiny-differential.test.js` | The same Java against `javac` and the JVM: hand-written cases, programs that must not compile, and generated arithmetic, method bodies and type puzzles. Skipped, loudly, without a JDK 25 (`LOTRD_JAVA` names one); CI requires it |
 | `ui.test.js` | UI logic reachable without a DOM — code-editor indentation (the only route on a phone) and the editor's markup |
+| `narration.test.js` | A mentor's narration: which lines a scene speaks and in what order, the clip names shared with `tools/narrate.py`, and the switch, speed and silence when a clip is missing |
 | `finishable.test.js` | Every set can be finished — no question can lock a run |
 | `scorm.test.js` | The SCORM wrapper — completion, scoring and suspend data |
 

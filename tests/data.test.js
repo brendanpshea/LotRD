@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
 import { HEROES } from '../src/heroes.js';
+import { clipName, sceneLines } from '../src/narration.js';
 import { runProblem, isScriptProblem, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
 import { runJavaProblem, parseJavaSignature, javaFromJson, isJavaClassProblem, javaScriptTypes } from '../src/jtiny.js';
 
@@ -1832,5 +1833,134 @@ describe('Pictures in questions (figure)', () => {
     };
     walk('');
     assert.deepEqual(orphans, [], 'unused files in figures/: delete them, or use them in a question');
+  });
+});
+
+describe('Teaching scenes: the mentor speaks for themselves', () => {
+  const index = loadJSON('question_sets/index.json');
+  const npcs = loadJSON('assets/npcs.json');
+  const SHORT = npcs.map(n => n.short).join('|');
+  // Narration about the mentor rather than the mentor talking.
+  const DESCRIBED = new RegExp(`^(?:Professor |Prof\\. |Elder |Master )?(?:${SHORT})\\b(?: the [A-Z][\\w-]+)?,?\\s+[a-z]`);
+  const TAGGED = new RegExp(`\\b(?:${SHORT}|she|he|they)\\s+(?:says|said|adds|asks|tells|replies|whispers|murmurs)\\b`, 'i');
+  const QUOTED = /^\s*[“"]/;
+  const intro = n => new RegExp(`\\bI'm (?:Professor |Elder |Master )?${n.short}\\b`);
+
+  it('an intro or outro is the mentor talking: no stage directions, tags or quotation marks around it', () => {
+    const bad = [];
+    for (const setId of index) {
+      loadJSON(`question_sets/${setId}`).forEach((q, i) => {
+        if (q.type !== 'npc_demo') return;
+        for (const part of ['intro', 'outro']) {
+          const text = q[part];
+          if (typeof text !== 'string') continue;
+          if (QUOTED.test(text)) bad.push(`${setId}[${i}] ${part}: speech in quotation marks: ${text.slice(0, 60)}`);
+          if (TAGGED.test(text)) bad.push(`${setId}[${i}] ${part}: a dialogue tag: ${text.slice(0, 60)}`);
+          if (DESCRIBED.test(text)) bad.push(`${setId}[${i}] ${part}: describes the mentor instead of letting them speak: ${text.slice(0, 60)}`);
+        }
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('a mentor introduces themselves once in a set, in their first scene there', () => {
+    const bad = [];
+    for (const setId of index) {
+      const met = new Set();
+      loadJSON(`question_sets/${setId}`).forEach((q, i) => {
+        if (q.type !== 'npc_demo') return;
+        const n = npcs.find(m => m.id === String(q.npc).toLowerCase());
+        if (!n) return;
+        const says = intro(n).test(q.intro || '');
+        if (!met.has(n.id) && !says) bad.push(`${setId}[${i}]: ${n.short}'s first scene in the set should open "I'm ${n.short}, …"`);
+        if (met.has(n.id) && says) bad.push(`${setId}[${i}]: ${n.short} has already introduced themselves in this set`);
+        met.add(n.id);
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+});
+
+describe('Narration in teaching scenes', () => {
+  const NARRATION = join(ROOT, 'narration');
+  const index = loadJSON('question_sets/index.json');
+  const voices = new Map(loadJSON('assets/npcs.json').map(n => [n.id, n.voice]));
+  // What the voice reads must be words: code symbols are said, not written
+  // ("i plus plus"), and ** is bold markup on the screen only.
+  const NOT_SPOKEN = /[{}[\];=<>*_`\\]|\(\)/;
+  const MAX_WORDS = 60;
+
+  /** Every narrated scene, with the place of each line it should have. */
+  const scenes = [];
+  for (const setId of index) {
+    loadJSON(`question_sets/${setId}`).forEach((q, i) => {
+      if (q.type === 'npc_demo' && sceneLines(q).length) scenes.push({ label: `${setId}[${i}]`, q });
+    });
+  }
+
+  it('the game and tools/narrate.py name a clip the same way', () => {
+    // The value tools/narrate.py's clip_name gives for the same voice and line.
+    assert.equal(clipName('en-us-tutor-18', 'Watch the counter,  i, climb — one pass at a time.'), 'e116ed3b598bb8fa');
+  });
+
+  it("a mentor's voice, when given, is a voice id", () => {
+    for (const [id, voice] of voices) {
+      if (voice !== undefined) assert.ok(typeof voice === 'string' && /^[a-z0-9-]+$/.test(voice), `${id}: bad voice ${JSON.stringify(voice)}`);
+    }
+  });
+
+  it('a narrated scene has a voice, and a line for everything it shows', () => {
+    const bad = [];
+    for (const { label, q } of scenes) {
+      if (!voices.get(String(q.npc).toLowerCase())) bad.push(`${label}: narrated, but mentor ${q.npc} has no voice in assets/npcs.json`);
+      if (q.intro && !q.intro_narrate) bad.push(`${label}: intro has no intro_narrate`);
+      if (q.outro && !q.outro_narrate) bad.push(`${label}: outro has no outro_narrate`);
+      q.steps.forEach((s, si) => {
+        (s.beats || []).forEach((b, bi) => {
+          if (!b.narrate) bad.push(`${label} step ${si + 1} beat ${bi + 1}: no narrate (a silent beat in a narrated scene)`);
+        });
+        if (!s.beats) bad.push(`${label} step ${si + 1}: a narrated step needs beats`);
+        if (s.check && !(s.check.narrate && s.check.why_narrate)) bad.push(`${label} step ${si + 1}: the check needs narrate and why_narrate`);
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('every spoken line is plain words, at most 60 of them', () => {
+    const bad = [];
+    for (const { label, q } of scenes) {
+      for (const line of sceneLines(q)) {
+        const n = line.split(/\s+/).filter(Boolean).length;
+        if (n > MAX_WORDS) bad.push(`${label}: ${n} words, over ${MAX_WORDS}: "${line.slice(0, 50)}…"`);
+        const sym = line.match(NOT_SPOKEN);
+        if (sym) bad.push(`${label}: "${sym[0]}" would be read out or mangled; say it in words: "${line.slice(0, 60)}…"`);
+      }
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('every spoken line has its clip (run python tools/narrate.py --batch)', () => {
+    const bad = [];
+    for (const { label, q } of scenes) {
+      const voice = voices.get(String(q.npc).toLowerCase());
+      if (!voice) continue;
+      for (const line of sceneLines(q)) {
+        const path = join(NARRATION, `${clipName(voice, line)}.mp3`);
+        if (!existsSync(path)) bad.push(`${label}: no clip yet for "${line.slice(0, 50)}…"`);
+        else if (statSync(path).size < 2048) bad.push(`${label}: narration/${clipName(voice, line)}.mp3 is too small to hold speech`);
+      }
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  it('every clip in narration/ is spoken by some scene (no orphans)', () => {
+    if (!existsSync(NARRATION)) return;
+    const used = new Set(['manifest.json']);
+    for (const { q } of scenes) {
+      const voice = voices.get(String(q.npc).toLowerCase());
+      for (const line of sceneLines(q)) used.add(`${clipName(voice, line)}.mp3`);
+    }
+    const orphans = readdirSync(NARRATION).filter(f => !used.has(f));
+    assert.deepEqual(orphans, [], 'unused files in narration/: run python tools/narrate.py, which deletes them');
   });
 });
