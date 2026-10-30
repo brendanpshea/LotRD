@@ -6,17 +6,17 @@
     "intro": "Nia the Logic-Weaver holds up two scrolls, one in plain script and one in tight columns of symbols. “You write the first,” she says. “The machine runs the second. Something has to stand in between.”",
     "steps": [
       {
-        "say": "Your source code is never run as it stands. The compiler, javac, translates it into bytecode and stores that in a .class file.",
+        "say": "Your **source code** is never run as it stands. The **compiler**, javac, reads BankAccount.java and translates it into **bytecode**, which it stores in BankAccount.class. Bytecode is not the language of any one computer. It is written for the **Java Virtual Machine**, the JVM: a program that every kind of computer has its own copy of.",
         "beats": [
           {
-            "say": "Your source code is never run as it stands. The compiler, javac, reads BankAccount.java and translates it into bytecode, which it stores in BankAccount.class."
+            "say": "Your **source code** is never run as it stands. The **compiler**, javac, reads BankAccount.java and translates it into **bytecode**, which it stores in BankAccount.class."
           },
           {
-            "code": "javac BankAccount.java     // makes BankAccount.class\njava BankAccount           // the JVM loads and runs it",
+            "code": "javac BankAccount.java\n    → makes BankAccount.class\njava BankAccount\n    → the JVM loads and runs it",
             "language": "two commands"
           },
           {
-            "say": "Bytecode is not the language of any one computer. It is written for the Java Virtual Machine, the JVM: a program that every kind of computer has its own copy of."
+            "say": "Bytecode is not the language of any one computer. It is written for the **Java Virtual Machine**, the JVM: a program that every kind of computer has its own copy of."
           }
         ],
         "check": {
@@ -30,34 +30,57 @@
         }
       },
       {
-        "say": "While the program runs, the JVM keeps its data in separate areas. Objects live on the heap. Method calls and their local variables live on the stack.",
+        "say": "While this runs, the JVM keeps its data in separate areas of memory. The call gets a **frame** on the **stack**, holding its parameters and local variables: rate, and acct. The object that new makes lives on the **heap**. acct holds only a **reference** to it. When openAccount returns, its frame is removed at once, and rate and acct go with it.",
         "beats": [
           {
-            "say": "While the program runs, the JVM keeps its data in separate areas of memory."
-          },
-          {
-            "code": "public static void main(String[] args) {\n    int count = 3;\n    BankAccount gru = new BankAccount(\"V001\", \"Gru\");\n}",
+            "code": "static void openAccount() {\n    double rate = 0.05;\n    BankAccount acct =\n        new BankAccount(\"V002\", \"Vector\");\n}",
             "language": "java"
           },
           {
-            "say": "Each method call gets a frame on the stack holding its parameters and local variables: here count, and the reference gru. The frame is removed the moment the method ends."
+            "say": "While this runs, the JVM keeps its data in separate areas of memory. The call gets a **frame** on the **stack**, holding its parameters and local variables: rate, and acct."
           },
           {
-            "say": "The object that new makes lives on the heap. It stays there until nothing refers to it, and then the garbage collector removes it."
+            "say": "The object that new makes lives on the **heap**. acct holds only a **reference** to it."
+          },
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.3; ranksep=0.35; node [shape=plain];\n  subgraph cluster_stack { label=\"stack\"; labeljust=l; fontcolor=\"#5aaa5a\"; color=\"#2a4a2a\"; style=rounded; margin=8;\n    f [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD COLSPAN=\"2\" COLOR=\"#00c840\"><B><FONT COLOR=\"#7CFC00\">openAccount()</FONT></B></TD></TR><TR><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">rate</FONT></TD><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">0.05</FONT></TD></TR><TR><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">acct</FONT></TD><TD COLOR=\"#00c840\" PORT=\"r\"><B><FONT COLOR=\"#6be0ff\">●</FONT></B></TD></TR></TABLE>>]; }\n  subgraph cluster_heap { label=\"heap\"; labeljust=l; fontcolor=\"#5aaa5a\"; color=\"#2a4a2a\"; style=rounded; margin=8;\n    o [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD COLSPAN=\"2\" COLOR=\"#00c840\" PORT=\"t\"><B><FONT COLOR=\"#7CFC00\">BankAccount</FONT></B></TD></TR><TR><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">id</FONT></TD><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">&quot;V002&quot;</FONT></TD></TR><TR><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">owner</FONT></TD><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">&quot;Vector&quot;</FONT></TD></TR></TABLE>>]; }\n  f:r:s -> o:t:n [color=\"#6be0ff\"];\n}",
+              "alt": "Two areas. On the stack, a frame for openAccount holds rate, 0.05, and acct. An arrow leads from acct to a BankAccount object on the heap, with id V002 and owner Vector.",
+              "caption": "The frame on the stack; the object on the heap.",
+              "src": "_dot/7ecc1ffa81dd9597.svg"
+            }
+          },
+          {
+            "say": "When openAccount returns, its frame is removed at once, and rate and acct go with it."
           }
         ],
         "check": {
-          "prompt": "new BankAccount(\"V001\", \"Gru\") makes an object. Where does that object live?",
-          "answer": "On the heap",
+          "prompt": "openAccount returns, and its frame is removed. What happens to the BankAccount object?",
+          "answer": "It stays on the heap until the garbage collector removes it",
           "wrong": [
-            "On the stack",
-            "In the .class file"
+            "It is removed along with the frame, at once"
           ],
-          "why": "Every object lives on the heap. Only the reference to it, the local variable gru, is in main's frame on the stack."
+          "why": "Objects are never kept in a frame, so they do not go with one. Once nothing refers to an object, the **garbage collector** is free to remove it from the heap."
         }
       },
       {
-        "say": "Some mistakes javac catches before the program ever runs. Others can only show themselves while it runs, and those are what the second half of this chapter is about."
+        "say": "A mistake can show up at two moments. javac checks the text, and a **compile error** stops it there: no .class file is made, so there is nothing to run. Other mistakes depend on values that exist only while the program runs. Java reports those by throwing an **exception**, and exceptions are the second half of this chapter.",
+        "beats": [
+          {
+            "say": "A mistake can show up at two moments. javac checks the text, and a **compile error** stops it there: no .class file is made, so there is nothing to run."
+          },
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.3; ranksep=0.3; src [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"BankAccount.java\"];\njavac [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"javac compiles it\"];\ncerr [shape=box, color=\"#ffb300\", fontcolor=\"#ffd86b\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=\"compile\nerror\"];\ncls [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"BankAccount.class\"];\nrun [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"JVM runs it\"];\nexc [shape=box, color=\"#ffb300\", fontcolor=\"#ffd86b\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=\"exception\nthrown\"];\nok [shape=ellipse, color=\"#00c840\", fontcolor=\"#7CFC00\", style=\"filled\", fillcolor=\"#0f2a0f\", label=\"finished\"];\nsrc -> javac [color=\"#5aaa5a\"];\njavac -> cls [color=\"#5aaa5a\"];\njavac -> cerr [color=\"#ffb300\"];\ncls -> run [color=\"#5aaa5a\"];\nrun -> ok [color=\"#5aaa5a\"];\nrun -> exc [color=\"#ffb300\"];\n{ rank=same; javac; cerr; }\n{ rank=same; run; exc; } }",
+              "alt": "Flow down the page: BankAccount.java, javac compiles it, BankAccount.class, JVM runs it, finished. A side arrow from javac leads to compile error, and a side arrow from JVM runs it leads to exception thrown.",
+              "caption": "Two places a program can be stopped.",
+              "src": "_dot/522979dec3dd27e9.svg"
+            }
+          },
+          {
+            "say": "Other mistakes depend on values that exist only while the program runs. Java reports those by throwing an **exception**, and exceptions are the second half of this chapter."
+          }
+        ]
       }
     ],
     "outro": "“First, the journey from source to running program. Then, what Java does when a running program goes wrong.”"
@@ -346,13 +369,13 @@
     "type": "npc_demo",
     "question": "NPC: The line that never runs",
     "npc": "nia",
-    "intro": "Nia the Logic-Weaver chalks a short block on the wall. “An exception does not have to end a program,” she says. “You can set a net under the risky lines.”",
+    "intro": "Nia the Logic-Weaver chalks a short block on the wall. “An exception does not have to end a program,” she says. “You can set a net under the risky lines. In Java, the net is a try and a catch.”",
     "steps": [
       {
-        "say": "A try block says: attempt these lines. A catch block says: if an exception of this type is thrown in there, run these lines instead.",
+        "say": "A **try block** says: attempt these lines. The **catch block** after it says: if an exception of this type is thrown in there, run these lines instead. Trace it like the machine. The first line of the try prints start. Nothing has gone wrong yet.",
         "beats": [
           {
-            "say": "A try block says: attempt these lines. The catch block after it says: if an exception of this type is thrown in there, run these lines instead."
+            "say": "A **try block** says: attempt these lines. The **catch block** after it says: if an exception of this type is thrown in there, run these lines instead."
           },
           {
             "code": "try {\n    System.out.println(\"start\");\n    int n = Integer.parseInt(\"7x\");\n    System.out.println(\"parsed\");\n} catch (NumberFormatException e) {\n    System.out.println(\"oops\");\n}\nSystem.out.println(\"after\");",
@@ -364,7 +387,16 @@
         ]
       },
       {
-        "say": "parseInt cannot read \"7x\", so it throws a NumberFormatException. The instant an exception is thrown, Java abandons the rest of the try block and jumps to the catch whose type matches.",
+        "say": "parseInt cannot read \"7x\", so it **throws** a NumberFormatException. The instant an exception is thrown, Java abandons the rest of the try block and jumps to the catch whose type matches.",
+        "beats": [
+          {
+            "code": "try {\n    System.out.println(\"start\");\n    int n = Integer.parseInt(\"7x\"); // throws\n    System.out.println(\"parsed\");\n} catch (NumberFormatException e) {\n    System.out.println(\"oops\");\n}\nSystem.out.println(\"after\");",
+            "language": "java"
+          },
+          {
+            "say": "parseInt cannot read \"7x\", so it **throws** a NumberFormatException. The instant an exception is thrown, Java abandons the rest of the try block and jumps to the catch whose type matches."
+          }
+        ],
         "check": {
           "prompt": "Which line never runs?",
           "answer": "println(\"parsed\")",
@@ -376,7 +408,27 @@
         }
       },
       {
-        "say": "The catch prints oops. Now the exception is handled, so the program simply carries on below the try statement and prints after. Output: start, oops, after. If nothing had been thrown, the catch would have been skipped."
+        "say": "The catch prints oops. The exception is now **handled**, so the program carries on below the try statement. Had nothing been thrown, the catch would have been skipped instead: start, parsed, after.",
+        "beats": [
+          {
+            "say": "The catch prints oops. The exception is now **handled**, so the program carries on below the try statement."
+          },
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.3; ranksep=0.3; start [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"print start\"];\nparse [shape=box, color=\"#ffb300\", fontcolor=\"#ffd86b\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=\"parseInt(\\\"7x\\\")\"];\nparsed [shape=box, color=\"#2a4a2a\", fontcolor=\"#4f6f4f\", label=\"print parsed\"];\noops [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"catch:\nprint oops\"];\nafter [shape=box, color=\"#00c840\", fontcolor=\"#7CFC00\", style=\"rounded,filled\", fillcolor=\"#0f2a0f\", label=\"print after\"];\nstart -> parse [color=\"#5aaa5a\"];\nparse -> oops [label=\" throws\", color=\"#ffb300\", fontcolor=\"#ffd86b\"];\nparse -> parsed [label=\" no exception\", color=\"#2a4a2a\", fontcolor=\"#4f6f4f\"];\noops -> after [color=\"#ffb300\"];\nparsed -> after [color=\"#2a4a2a\"];\n{ rank=same; oops; parsed; } }",
+              "alt": "Flow: print start, then parseInt of 7x, which throws. The thrown route goes to the catch, which prints oops, and on to print after. The other route, through print parsed, is dimmed.",
+              "caption": "The dim route is the one taken when nothing is thrown.",
+              "src": "_dot/813a587cde7d5875.svg"
+            }
+          },
+          {
+            "code": "start\noops\nafter",
+            "language": "output"
+          },
+          {
+            "say": "Had nothing been thrown, the catch would have been skipped instead: start, parsed, after."
+          }
+        ]
       }
     ],
     "outro": "“The next monster throws a different exception. Find the line that never runs.”"
@@ -580,38 +632,42 @@
     "intro": "Nia unrolls a scroll with a four-line method on it. “This one never even gets to run,” she says. “The compiler stops it at the gate.”",
     "steps": [
       {
-        "say": "new FileReader(…) opens a file for reading. Its own first line says throws FileNotFoundException: a warning that the file might not be there.",
+        "say": "new FileReader(…) opens a file for reading. Its header in the Java library ends with  throws FileNotFoundException:  a warning that the file might not be there. So javac refuses to compile load: FileNotFoundException is a **checked exception**. Checked means the compiler checks that you have a plan for it. There are exactly two plans.",
         "beats": [
           {
-            "say": "new FileReader(…) opens a file for reading. Its own first line says throws FileNotFoundException: a warning that the file might not be there."
-          },
-          {
-            "code": "static void load() {\n    FileReader reader = new FileReader(\"map.txt\");\n    System.out.println(\"opened\");\n}",
+            "code": "static void load() {\n    FileReader in = new FileReader(\"map.txt\");\n    System.out.println(\"opened\");\n}",
             "language": "java"
           },
           {
-            "say": "The compiler refuses this method: unreported exception FileNotFoundException; must be caught or declared to be thrown."
+            "say": "new FileReader(…) opens a file for reading. Its header in the Java library ends with  throws FileNotFoundException:  a warning that the file might not be there."
           },
           {
-            "say": "FileNotFoundException is a checked exception. Checked means the compiler checks that you have a plan for it. There are exactly two plans."
+            "say": "So javac refuses to compile load:"
+          },
+          {
+            "code": "error: unreported exception\nFileNotFoundException; must be caught\nor declared to be thrown",
+            "language": "javac"
+          },
+          {
+            "say": "FileNotFoundException is a **checked exception**. Checked means the compiler checks that you have a plan for it. There are exactly two plans."
           }
         ]
       },
       {
-        "say": "Plan one: catch it here. Plan two: declare it, by adding throws FileNotFoundException to your own first line, which hands the problem to your caller.",
+        "say": "Plan one: **catch** the FileNotFoundException right here, and decide what load should do when the file is missing. Plan two: **declare** it. Add  throws FileNotFoundException  to the method's **header**, its first line, and the exception is allowed to pass through.",
         "beats": [
           {
-            "say": "Plan one: catch it right here, and decide what load should do when the file is missing."
+            "say": "Plan one: **catch** the FileNotFoundException right here, and decide what load should do when the file is missing."
           },
           {
-            "code": "static void load() {\n    try {\n        FileReader reader = new FileReader(\"map.txt\");\n        System.out.println(\"opened\");\n    } catch (FileNotFoundException e) {\n        System.out.println(\"no map\");\n    }\n}",
+            "code": "static void load() {\n    try {\n        FileReader in = new FileReader(\"map.txt\");\n        System.out.println(\"opened\");\n    } catch (FileNotFoundException e) {\n        System.out.println(\"no map\");\n    }\n}",
             "language": "java (plan one: catch)"
           },
           {
-            "say": "Plan two: declare it. Add throws FileNotFoundException to your own first line, and the exception is allowed to pass through."
+            "say": "Plan two: **declare** it. Add  throws FileNotFoundException  to the method's **header**, its first line, and the exception is allowed to pass through."
           },
           {
-            "code": "static void load() throws FileNotFoundException {\n    FileReader reader = new FileReader(\"map.txt\");\n    System.out.println(\"opened\");\n}",
+            "code": "static void load() throws FileNotFoundException {\n    FileReader in = new FileReader(\"map.txt\");\n    System.out.println(\"opened\");\n}",
             "language": "java (plan two: declare)"
           }
         ],
@@ -626,7 +682,23 @@
         }
       },
       {
-        "say": "Unchecked exceptions, meaning RuntimeException and its subclasses such as NumberFormatException, get no such check. Catch where you can do something useful; declare where your caller is better placed to decide."
+        "say": "Whether an exception is checked depends on its place in the family tree of exception classes. RuntimeException and every class below it are **unchecked**: the compiler asks for no plan. For a checked one, choose the plan that fits: catch where you can do something useful, declare where your caller is better placed to decide.",
+        "beats": [
+          {
+            "say": "Whether an exception is checked depends on its place in the family tree of exception classes. RuntimeException and every class below it are **unchecked**: the compiler asks for no plan."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=BT; nodesep=0.35; ranksep=0.45; node [shape=plain]; node [fontsize=10.5]; nodesep=0.15; ranksep=0.35; pad=0.1;ex [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">checked</FONT><BR/><B><FONT COLOR=\"#7CFC00\">Exception</FONT></B></TD></TR></TABLE>>];\nio [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">checked</FONT><BR/><B><FONT COLOR=\"#7CFC00\">IOException</FONT></B></TD></TR></TABLE>>];\nfnf [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">checked</FONT><BR/><B><FONT COLOR=\"#7CFC00\">FileNotFoundException</FONT></B></TD></TR></TABLE>>];\nrt [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><TR><TD><FONT POINT-SIZE=\"10\" COLOR=\"#ffd86b\">unchecked</FONT><BR/><B><FONT COLOR=\"#ffd86b\">RuntimeException</FONT></B></TD></TR></TABLE>>];\nar [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><TR><TD><FONT POINT-SIZE=\"10\" COLOR=\"#ffd86b\">unchecked</FONT><BR/><B><FONT COLOR=\"#ffd86b\">ArithmeticException</FONT></B></TD></TR></TABLE>>];\nio -> ex [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"];\nrt -> ex [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"];\nfnf -> io [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"];\nar -> rt [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"]; }",
+              "alt": "A class tree. Exception is at the top, marked checked. Below it, IOException, marked checked, with FileNotFoundException, checked, below that. Also below Exception, RuntimeException, marked unchecked, with ArithmeticException, unchecked, below it.",
+              "caption": "Below RuntimeException, nothing is checked.",
+              "src": "_dot/48b253f84fac54bb.svg"
+            }
+          },
+          {
+            "say": "For a checked one, choose the plan that fits: catch where you can do something useful, declare where your caller is better placed to decide."
+          }
+        ]
       }
     ],
     "outro": "“The next monster has the same compile error from a different method. Pick every repair that works.”"
@@ -665,14 +737,22 @@
     "intro": "Nia draws three boxes stacked on top of each other and labels them a, b and c. “An exception that nobody catches does not vanish,” she says. “It climbs.”",
     "steps": [
       {
-        "say": "a calls b, and b calls c. While c runs, b and a are paused, waiting. That pile of waiting calls is the call stack.",
+        "say": "a calls b, and b calls c. While c runs, a and b are paused, each waiting for its call to return. That chain of waiting calls is the **call stack**. c divides by zero, so an ArithmeticException is thrown. c has no try around that line, so c ends on the spot and \"c done\" never prints.",
         "beats": [
           {
             "code": "static void c() {\n    int x = 1 / 0;\n    System.out.println(\"c done\");\n}\nstatic void b() {\n    c();\n    System.out.println(\"b done\");\n}\nstatic void a() {\n    try {\n        b();\n    } catch (ArithmeticException e) {\n        System.out.println(\"a caught it\");\n    }\n}",
             "language": "java"
           },
           {
-            "say": "a calls b, and b calls c. While c runs, b and a are paused, waiting. That pile of waiting calls is the call stack."
+            "say": "a calls b, and b calls c. While c runs, a and b are paused, each waiting for its call to return. That chain of waiting calls is the **call stack**."
+          },
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.3; ranksep=0.35;\n  a [shape=plain, label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLPADDING=\"5\" COLOR=\"#00c840\"><TR><TD WIDTH=\"130\"><B><FONT COLOR=\"#7CFC00\">a()</FONT></B><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">waiting for b</FONT></TD></TR></TABLE>>];\n  b [shape=plain, label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLPADDING=\"5\" COLOR=\"#00c840\"><TR><TD WIDTH=\"130\"><B><FONT COLOR=\"#7CFC00\">b()</FONT></B><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">waiting for c</FONT></TD></TR></TABLE>>];\n  c [shape=plain, label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLPADDING=\"5\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><TR><TD WIDTH=\"130\"><B><FONT COLOR=\"#ffd86b\">c()</FONT></B><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#ffd86b\">running: 1 / 0</FONT></TD></TR></TABLE>>];\n  a -> b [label=\" calls\", color=\"#5aaa5a\", fontcolor=\"#5aaa5a\"]; b -> c [label=\" calls\", color=\"#5aaa5a\", fontcolor=\"#5aaa5a\"];\n}",
+              "alt": "Three boxes in a column: a, waiting for b; below it b, waiting for c; below that c, running and highlighted, at the line 1 / 0. Arrows labelled calls lead from a to b and from b to c.",
+              "caption": "The call stack while c runs.",
+              "src": "_dot/53b5dc65620d8296.svg"
+            }
           },
           {
             "say": "c divides by zero, so an ArithmeticException is thrown. c has no try around that line, so c ends on the spot and \"c done\" never prints."
@@ -680,7 +760,16 @@
         ]
       },
       {
-        "say": "The exception now arrives in b, at the line that called c, exactly as if that line had thrown it. Moving up to the caller like this is called propagation.",
+        "say": "The exception now arrives in b, at the line that called c, exactly as if that line had thrown it. Moving up to the caller like this is called **propagation**.",
+        "beats": [
+          {
+            "code": "static void b() {\n    c();   // the exception arrives here\n    System.out.println(\"b done\");\n}",
+            "language": "java"
+          },
+          {
+            "say": "The exception now arrives in b, at the line that called c, exactly as if that line had thrown it. Moving up to the caller like this is called **propagation**."
+          }
+        ],
         "check": {
           "prompt": "b has no try/catch either. What happens in b?",
           "answer": "b ends at once; \"b done\" never prints",
@@ -692,7 +781,23 @@
         }
       },
       {
-        "say": "In a, the call b() sits inside a try with a matching catch, so the climb stops there and a prints \"a caught it\". Had no method caught it, the exception would have left main, and the program would end with a stack trace: the list of those waiting calls."
+        "say": "In a, the call b() sits inside a try with a matching catch, so the climb stops there and a prints \"a caught it\". Had no method caught it, the exception would have climbed out of main too, and the program would end with a **stack trace**: a list of the calls it climbed through.",
+        "beats": [
+          {
+            "say": "In a, the call b() sits inside a try with a matching catch, so the climb stops there and a prints \"a caught it\"."
+          },
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.3; ranksep=0.45;\n  a [shape=plain, label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLPADDING=\"5\" COLOR=\"#7CFC00\" BGCOLOR=\"#0f3a0f\"><TR><TD WIDTH=\"130\"><B><FONT COLOR=\"#7CFC00\">a()</FONT></B><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#7CFC00\">catch matches:</FONT><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#7CFC00\">prints &quot;a caught it&quot;</FONT></TD></TR></TABLE>>];\n  b [shape=plain, label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLPADDING=\"5\" COLOR=\"#2a4a2a\"><TR><TD WIDTH=\"130\"><B><FONT COLOR=\"#4f6f4f\">b()</FONT></B><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">no catch:</FONT><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">abandoned</FONT></TD></TR></TABLE>>];\n  c [shape=plain, label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLPADDING=\"5\" COLOR=\"#2a4a2a\"><TR><TD WIDTH=\"130\"><B><FONT COLOR=\"#4f6f4f\">c()</FONT></B><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">threw at 1 / 0:</FONT><BR/><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">abandoned</FONT></TD></TR></TABLE>>];\n  a -> b [dir=back, label=\" ArithmeticException\", color=\"#ffb300\", fontcolor=\"#ffd86b\"];\n  b -> c [dir=back, label=\" ArithmeticException\", color=\"#ffb300\", fontcolor=\"#ffd86b\"];\n}",
+              "alt": "The same three boxes. Arrows labelled ArithmeticException climb from c up to b and from b up to a. c and b are dimmed and marked abandoned; a is marked catch, and prints a caught it.",
+              "caption": "The exception climbs until a catch fits.",
+              "src": "_dot/8089a72d11249a76.svg"
+            }
+          },
+          {
+            "say": "Had no method caught it, the exception would have climbed out of main too, and the program would end with a **stack trace**: a list of the calls it climbed through."
+          }
+        ]
       }
     ],
     "outro": "“Now trace one yourself. Watch which lines get abandoned on the way up.”"
@@ -863,17 +968,21 @@
     "intro": "Nia taps a row of the results table with her chalk. Where the others show a value, this one shows two words. “Sometimes the right answer is to refuse,” she says.",
     "steps": [
       {
-        "say": "In the problems that follow, some rows of the table expect a value back. Others expect your code to throw.",
+        "say": "In the problems that follow, most rows of the table expect a value back, as before. But a row can also expect your code to **throw**. For the second row, returning any value at all is wrong. The row passes only if the call ends with that exception, thrown by a line like this one:",
         "beats": [
           {
-            "say": "In the problems that follow, most rows of the table expect a value back, as before. But a row can also expect your code to throw."
+            "say": "In the problems that follow, most rows of the table expect a value back, as before. But a row can also expect your code to **throw**."
           },
           {
-            "code": "withdraw(100.0, 30.0)  →  70.0\nwithdraw(20.0, 30.0)   →  throws IllegalArgumentException",
+            "code": "deposit(50.0, 20.0)\n    expected: 70.0\ndeposit(50.0, -5.0)\n    expected: throws IllegalArgumentException",
             "language": "two rows of a table"
           },
           {
-            "say": "For the second row, returning any value at all is wrong. The row passes only if the call ends with that exception: throw new IllegalArgumentException(\"Insufficient funds\");"
+            "say": "For the second row, returning any value at all is wrong. The row passes only if the call ends with that exception, thrown by a line like this one:"
+          },
+          {
+            "code": "throw new IllegalArgumentException(\n        \"Negative deposit\");",
+            "language": "java"
           }
         ],
         "check": {
@@ -887,13 +996,20 @@
         }
       },
       {
-        "say": "The practice Java here follows the real compiler's rules. A checked exception that you neither catch nor declare will not compile, and neither will a catch that can never run.",
+        "say": "The practice Java here follows the real compiler's rules for exceptions. A **checked exception** that you neither catch nor declare will not compile, and it will say so. It leaves out two things. There is no printStackTrace here, so show an exception's message instead: And it will not run a finally block that returns or throws. Keep finally for clean-up.",
         "beats": [
           {
-            "say": "The practice Java here follows the real compiler's rules for exceptions. A checked exception that you neither catch nor declare will not compile, and it will say so."
+            "say": "The practice Java here follows the real compiler's rules for exceptions. A **checked exception** that you neither catch nor declare will not compile, and it will say so."
           },
           {
-            "say": "Two things it does not do: e.printStackTrace(), and a finally block that returns or throws. Print e.getMessage() instead, and keep finally for clean-up."
+            "say": "It leaves out two things. There is no printStackTrace here, so show an exception's message instead:"
+          },
+          {
+            "code": "System.out.println(e.getMessage());",
+            "language": "java"
+          },
+          {
+            "say": "And it will not run a finally block that returns or throws. Keep finally for clean-up."
           }
         ]
       }

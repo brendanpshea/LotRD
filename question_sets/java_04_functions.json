@@ -416,57 +416,65 @@
     "intro": "Nia tears a blank slip from her ledger and holds it up. “Every apprentice believes a method can reach back and change their variables. Watch what actually crosses the counter.”",
     "steps": [
       {
-        "say": "Here is a method with one parameter, and a call that hands it one argument:\nstatic void heal(int hp) { hp = hp + 10; }\nint health = 50;\nheal(health);\nhp is the parameter: a local variable that belongs to heal. health is the argument: what the call hands over.",
+        "say": "Here is a method with one parameter, and a call that hands it one argument. hp is the **parameter**: a local variable that belongs to heal. health is the **argument**: the call hands over its value.",
         "beats": [
           {
             "say": "Here is a method with one parameter, and a call that hands it one argument."
           },
           {
-            "code": "static void heal(int hp) {\n    hp = hp + 10;\n}\n\nint health = 50;\nheal(health);",
+            "code": "static void heal(int hp) {\n    hp = hp + 10;\n}\n\n// in main:\nint health = 50;\nheal(health);",
             "language": "java"
           },
           {
-            "say": "hp is the parameter: a local variable that belongs to heal. health is the argument: what the call hands over."
+            "say": "hp is the **parameter**: a local variable that belongs to heal. health is the **argument**: the call hands over its value."
           }
         ]
       },
       {
-        "say": "At the call, Java copies the argument's value into the parameter. I write 50 on a fresh slip and pass it across: that slip is hp. My own slip, health, never leaves my desk. Inside heal, hp becomes 60. That is heal's copy changing.",
+        "say": "At the call, Java **copies** the argument's value into the parameter. I write 50 on a fresh slip and pass it across: that slip is hp, heal's own variable. Then  hp = hp + 10  runs, and hp becomes 60. That is heal's copy changing.",
         "beats": [
           {
-            "say": "At the call, Java copies the argument's value into the parameter. I write 50 on a fresh slip and pass it across: that slip is hp."
+            "say": "At the call, Java **copies** the argument's value into the parameter. I write 50 on a fresh slip and pass it across: that slip is hp, heal's own variable."
           },
           {
-            "say": "My own slip, health, never leaves my desk. Inside heal, hp becomes 60. That is heal's copy changing."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; ranksep=0.45;\n    m [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD COLSPAN=\"2\" COLOR=\"#00c840\"><B><FONT COLOR=\"#7CFC00\">main</FONT></B></TD></TR><TR><TD COLOR=\"#00c840\" WIDTH=\"60\"><FONT COLOR=\"#c8ffb0\">health</FONT></TD><TD COLOR=\"#00c840\" WIDTH=\"40\" PORT=\"v\"><FONT COLOR=\"#c8ffb0\">50</FONT></TD></TR></TABLE>>];\n    h [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD COLSPAN=\"2\" COLOR=\"#00c840\"><B><FONT COLOR=\"#7CFC00\">heal</FONT></B></TD></TR><TR><TD COLOR=\"#00c840\" WIDTH=\"60\"><FONT COLOR=\"#c8ffb0\">hp</FONT></TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\" WIDTH=\"40\" PORT=\"v\"><B><FONT COLOR=\"#ffd86b\">50</FONT></B></TD></TR></TABLE>>];\n    m:v:s -> h:v:n [label=\" copy of 50\", color=\"#ffb300\", fontcolor=\"#ffd86b\"];\n  }",
+              "alt": "Two boxes, one above the other. The top box, main, holds the variable health with 50. The lower box, heal, holds its own variable hp, also 50, highlighted. An arrow labelled copy of 50 runs from health's 50 down to hp's 50.",
+              "caption": "Two methods, two variables.",
+              "src": "_dot/5490231ac705370d.svg"
+            }
+          },
+          {
+            "say": "Then  hp = hp + 10  runs, and hp becomes 60. That is heal's copy changing."
           }
         ],
         "check": {
-          "prompt": "heal has finished. What does health hold back in the caller?",
+          "prompt": "heal has finished. What does health hold back in main?",
           "answer": "50",
           "wrong": [
             "60",
             "0"
           ],
-          "why": "heal changed only hp, its own copy. The caller's variable, health, was never touched. This is called pass by value."
+          "why": "heal changed only hp, its own copy. health was never touched. Handing a method a copy of the value like this is called **pass by value**."
         }
       },
       {
-        "say": "To get the 60 out, the method has to return it and the caller has to store it:\nstatic int heal(int hp) { return hp + 10; }\nhealth = heal(health);\nThe pattern: a parameter is a copy. A change travels back to the caller only through return.",
+        "say": "To get heal's new value back to main, the method has to **return** it, and the caller has to store it. The pattern: a parameter holds a copy. A change to the parameter reaches the caller only through return.",
         "beats": [
           {
-            "say": "To get the 60 out, the method has to return it, and the caller has to store it."
+            "say": "To get heal's new value back to main, the method has to **return** it, and the caller has to store it."
           },
           {
-            "code": "static int heal(int hp) {\n    return hp + 10;\n}\n\nhealth = heal(health);",
+            "code": "static int heal(int hp) {\n    return hp + 10;\n}\n\n// in main:\nhealth = heal(health);",
             "language": "java"
           },
           {
-            "say": "The pattern: a parameter is a copy. A change travels back to the caller only through return."
+            "say": "The pattern: a parameter holds a copy. A change to the parameter reaches the caller only through return."
           }
         ]
       }
     ],
-    "outro": "“The next monster carries a different method and different numbers. Ask yourself whose slip is being changed.”"
+    "outro": "“The next monster brings a different method and different numbers. Ask yourself whose slip, whose variable, is being changed.”"
   },
   {
     "type": "dynamic_numeric",
@@ -679,28 +687,39 @@
     "intro": "Nia stands between two mirrors, her reflection repeating into the distance. “A method may call any method, including itself. The craft lies in making sure the reflections stop.”",
     "steps": [
       {
-        "say": "static int factorial(int n) { if (n == 1) return 1; return n * factorial(n - 1); }\nA recursive method calls itself on a smaller version of the problem. It needs a base case: a branch that answers without calling again. Here the base case is n == 1.",
+        "say": "A **recursive** method calls itself, on a smaller version of the same problem. factorial(n) multiplies every whole number from n down to 1. The **base case** answers at once, without calling again. The **recursive case** calls factorial again, with a smaller n. Leave out the base case and the calls never stop, until Java gives up with a **StackOverflowError**.",
         "beats": [
           {
-            "code": "static int factorial(int n) {\n    if (n == 1) return 1;\n    return n * factorial(n - 1);\n}",
+            "say": "A **recursive** method calls itself, on a smaller version of the same problem. factorial(n) multiplies every whole number from n down to 1."
+          },
+          {
+            "code": "static int factorial(int n) {\n    // base case\n    if (n == 1) {\n        return 1;\n    }\n    // recursive case\n    return n * factorial(n - 1);\n}",
             "language": "java"
           },
           {
-            "say": "A recursive method calls itself on a smaller version of the problem."
+            "say": "The **base case** answers at once, without calling again. The **recursive case** calls factorial again, with a smaller n."
           },
           {
-            "say": "It needs a base case: a branch that answers without calling again. Here the base case is n == 1."
+            "say": "Leave out the base case and the calls never stop, until Java gives up with a **StackOverflowError**."
           }
         ]
       },
       {
-        "say": "Trace factorial(3). It cannot finish yet: it needs 3 * factorial(2), so it waits. That call needs 2 * factorial(1), so it waits too. Every call has its own separate n, and three calls are now open.",
+        "say": "Trace factorial(3). It cannot finish yet: it needs 3 * factorial(2), so it **waits**. factorial(2) needs 2 * factorial(1), so it waits too. Every call has its own n. Java keeps the open calls on the **call stack** until each one finishes.",
         "beats": [
           {
-            "say": "Trace factorial(3). It cannot finish yet: it needs 3 * factorial(2), so it waits."
+            "say": "Trace factorial(3). It cannot finish yet: it needs 3 * factorial(2), so it **waits**. factorial(2) needs 2 * factorial(1), so it waits too."
           },
           {
-            "say": "That call needs 2 * factorial(1), so it waits too. Every call has its own separate n, and three calls are now open."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; s [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\" COLSPAN=\"3\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">the first call</FONT></TD></TR><TR><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">factorial(3)</FONT></TD><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">n is 3</FONT></TD><TD COLOR=\"#2a4a2a\"><FONT COLOR=\"#4f6f4f\">waiting</FONT></TD></TR><TR><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">factorial(2)</FONT></TD><TD COLOR=\"#00c840\"><FONT COLOR=\"#c8ffb0\">n is 2</FONT></TD><TD COLOR=\"#2a4a2a\"><FONT COLOR=\"#4f6f4f\">waiting</FONT></TD></TR><TR><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><B><FONT COLOR=\"#ffd86b\">factorial(1)</FONT></B></TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><B><FONT COLOR=\"#ffd86b\">n is 1</FONT></B></TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><B><FONT COLOR=\"#ffd86b\">running</FONT></B></TD></TR><TR><TD BORDER=\"0\" COLSPAN=\"3\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">the newest call</FONT></TD></TR></TABLE>>]; }",
+              "alt": "A table of three open calls, the first call at the top: factorial(3) with n 3, waiting; factorial(2) with n 2, waiting; and at the bottom the newest call, factorial(1) with n 1, running, highlighted.",
+              "caption": "Three calls open at once.",
+              "src": "_dot/33c8cc3ac8a12e56.svg"
+            }
+          },
+          {
+            "say": "Every call has its own n. Java keeps the open calls on the **call stack** until each one finishes."
           }
         ],
         "check": {
@@ -710,22 +729,30 @@
             "0",
             "It calls factorial(0)"
           ],
-          "why": "n == 1 is true, so return 1; runs and no further call is made. The base case is what stops the chain."
+          "why": "n is 1, so the base case returns 1 at once and makes no further call. The base case is what stops the chain."
         }
       },
       {
-        "say": "Now the answers travel back up. factorial(2) was waiting for that 1, so it returns 2. factorial(3) was waiting for that 2, so it returns 6. The pattern: go down until the base case, then combine the results on the way back.",
+        "say": "Now the answers travel back up. Each waiting call takes the answer it was waiting for and finishes its own multiplication. The pattern: call deeper until the base case, then combine the answers on the way back.",
         "beats": [
           {
-            "say": "Now the answers travel back up. factorial(2) was waiting for that 1, so it returns 2. factorial(3) was waiting for that 2, so it returns 6."
+            "say": "Now the answers travel back up. Each waiting call takes the answer it was waiting for and finishes its own multiplication."
           },
           {
-            "say": "The pattern: go down until the base case, then combine the results on the way back."
+            "figure": {
+              "dot": "digraph { ranksep=0.4;\n    f3 [label=\"factorial(3)\\n3 * 2 = 6\", color=\"#7CFC00\", fontcolor=\"#7CFC00\", style=\"rounded,filled\", fillcolor=\"#0f3a0f\"];\n    f2 [label=\"factorial(2)\\n2 * 1 = 2\", color=\"#00c840\", fontcolor=\"#c8ffb0\"];\n    f1 [label=\"factorial(1)\\nbase case: 1\", color=\"#00c840\", fontcolor=\"#c8ffb0\"];\n    f3 -> f2 [dir=back, label=\" returns 2\", color=\"#ffb300\", fontcolor=\"#ffd86b\"];\n    f2 -> f1 [dir=back, label=\" returns 1\", color=\"#ffb300\", fontcolor=\"#ffd86b\"];\n  }",
+              "alt": "Three boxes top to bottom. factorial(1), the base case, gives 1, and an arrow labelled returns 1 rises to factorial(2), which works out 2 * 1 = 2. An arrow labelled returns 2 rises to factorial(3), which works out 3 * 2 = 6, highlighted as the result.",
+              "caption": "Each answer goes to the call that waited for it.",
+              "src": "_dot/7ba7abcc51ca2776.svg"
+            }
+          },
+          {
+            "say": "The pattern: call deeper until the base case, then combine the answers on the way back."
           }
         ]
       }
     ],
-    "outro": "“The next monster adds where I multiplied, and starts from a different number. Write the waiting calls down the page, then fill them in from the bottom.”"
+    "outro": "“The monsters ahead name these parts, then hand you calls of their own. Write the waiting calls down the page, then fill them in from the bottom.”"
   },
   {
     "type": "cloze",
@@ -863,41 +890,56 @@
     "intro": "Nia chalks one line across the top of the wall. “You have been handed lines like this since your first hour. Now you can read every word of one — which means you know exactly what you owe it.”",
     "steps": [
       {
-        "say": "The type before the name is a promise: whatever you return has to be of that type. The parameter arrives already holding a value.",
+        "say": "Here is a method line, with the body left for you to write. The **return type**, double, is a promise: whatever addTax returns must be a double. The **parameter**, price, arrives already holding a value. So the body has one job: work out the price with tax from price, and return it.",
         "beats": [
           {
-            "code": "public static double calculateTip(double billAmount) {\n    // you write this part\n}",
+            "say": "Here is a method line, with the body left for you to write."
+          },
+          {
+            "code": "public static double addTax(double price) {\n    // you write this part\n}",
             "language": "java"
           },
           {
-            "say": "The double before the name is a promise: whatever this method returns has to be a double. billAmount is a parameter, and it arrives already holding the bill."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; w [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD COLOR=\"#00c840\" ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">public</FONT></TD><TD COLOR=\"#00c840\" ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">any class may call</FONT></TD></TR><TR><TD COLOR=\"#00c840\" ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">static</FONT></TD><TD COLOR=\"#00c840\" ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">no object needed</FONT></TD></TR><TR><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\" ALIGN=\"LEFT\"><B><FONT COLOR=\"#ffd86b\">double</FONT></B></TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\" ALIGN=\"LEFT\"><B><FONT COLOR=\"#ffd86b\">what it returns</FONT></B></TD></TR><TR><TD COLOR=\"#00c840\" ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">addTax</FONT></TD><TD COLOR=\"#00c840\" ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">the name to call</FONT></TD></TR><TR><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\" ALIGN=\"LEFT\"><B><FONT COLOR=\"#ffd86b\">double price</FONT></B></TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\" ALIGN=\"LEFT\"><B><FONT COLOR=\"#ffd86b\">what it is given</FONT></B></TD></TR></TABLE>>]; }",
+              "alt": "The method line split into its five parts, each beside its job: public, any class may call; static, no object needed; double, what it returns; addTax, the name to call; double price, what it is given. The double return type and the parameter are highlighted.",
+              "caption": "Read the line left to right.",
+              "src": "_dot/e1416cff3d8d2eda.svg"
+            }
           },
           {
-            "say": "So the body has one job: work out the tip from billAmount and return it."
+            "say": "The **return type**, double, is a promise: whatever addTax returns must be a double. The **parameter**, price, arrives already holding a value."
+          },
+          {
+            "say": "So the body has one job: work out the price with tax from price, and return it."
           }
         ],
         "check": {
-          "prompt": "A method line begins  public static boolean isLargeOrder(int itemCount)  What does the body have to hand back?",
+          "prompt": "A method line begins  public static boolean isSoldOut(int stock)  What does the body have to hand back?",
           "answer": "true or false",
           "wrong": [
             "A whole number",
             "Nothing at all"
           ],
-          "why": "The return type is boolean, so every path through the body has to end by returning true or false. The int is the type of what comes IN."
+          "why": "The return type is boolean, so every path through the body has to end by returning true or false. The int is the parameter's type: what comes in."
         }
       },
       {
-        "say": "A comparison already IS a boolean, so a yes-or-no method can return it directly. No if is needed.",
+        "say": "A method that answers yes or no returns a **boolean**. Written the long way, isSoldOut looks like this. But a **comparison** is already a boolean:  stock == 0  is true or false all by itself. So return it directly.",
         "beats": [
           {
-            "say": "A method that answers yes or no returns a boolean. And a comparison already IS a boolean, so it can be returned directly."
+            "say": "A method that answers yes or no returns a **boolean**. Written the long way, isSoldOut looks like this."
           },
           {
-            "code": "return itemCount >= 5;",
+            "code": "public static boolean isSoldOut(int stock) {\n    if (stock == 0) {\n        return true;\n    } else {\n        return false;\n    }\n}",
             "language": "java"
           },
           {
-            "say": "No if, no “== true”. The rest is as before: Run costs nothing, and only Submit counts."
+            "say": "But a **comparison** is already a boolean:  stock == 0  is true or false all by itself. So return it directly."
+          },
+          {
+            "code": "public static boolean isSoldOut(int stock) {\n    return stock == 0;\n}",
+            "language": "java"
           }
         ],
         "check": {
@@ -905,13 +947,13 @@
           "answer": "return hour >= 6 && hour <= 23;",
           "wrong": [
             "if (hour >= 6 && hour <= 23);",
-            "print(hour >= 6 && hour <= 23);"
+            "System.out.println(hour >= 6 && hour <= 23);"
           ],
-          "why": "The two comparisons joined by && give true or false, and return hands that straight back. An if with nothing after it returns nothing, and printing is not returning."
+          "why": "The two comparisons joined by && give true or false, and return hands that straight back. An if followed by a semicolon does nothing, and printing is not returning."
         }
       }
     ],
-    "outro": "“These come from the order system at the burger counter. One method each: read the line, keep its promise.”"
+    "outro": "“These come from the order system at the burger counter. One method each: read the line, keep its promise. Run costs nothing, and only Submit counts.”"
   },
   {
     "type": "code_write",

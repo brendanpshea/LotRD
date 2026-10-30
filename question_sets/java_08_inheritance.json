@@ -6,7 +6,7 @@
     "intro": "Zoya holds up an old clay mould and a newer one cast from it. “Every golem in this foundry begins from an older mould. Learn the words for that.”",
     "steps": [
       {
-        "say": "**Inheritance** lets one class start from another. The new class is the **subclass**, the old one is its **superclass**, and the keyword **extends** joins them.",
+        "say": "**Inheritance** lets one class start from another and add to it. The older class is the **superclass**, or parent. The new one is the **subclass**. The keyword **extends** joins them: Kayak extends Boat. A subclass should pass the **is-a** test, and a kayak is a boat.",
         "beats": [
           {
             "say": "**Inheritance** lets one class start from another and add to it. The older class is the **superclass**, or parent. The new one is the **subclass**."
@@ -30,13 +30,21 @@
         }
       },
       {
-        "say": "A subclass **inherits** the accessible fields and methods of its superclass. Anything marked private stays out of its reach, and constructors are not inherited.",
+        "say": "A subclass **inherits** its superclass's accessible fields and methods: it starts with them, then adds its own. A private member belongs to its own class alone, so a subclass cannot touch it directly. Constructors are not inherited either.",
         "beats": [
           {
             "say": "A subclass **inherits** its superclass's accessible fields and methods: it starts with them, then adds its own."
           },
           {
-            "code": "Kayak k = new Kayak();\nk.paddle();                      // Kayak's own method\nSystem.out.println(k.name());    // inherited from Boat: boat",
+            "figure": {
+              "dot": "digraph { rankdir=BT; nodesep=0.35; ranksep=0.45; node [shape=plain]; b [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Boat</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">name() : String</FONT></TD></TR></TABLE>>];\nk [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Kayak</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>paddle() : void</B></FONT></TD></TR></TABLE>>];\nr [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Raft</FONT></B></TD></TR></TABLE>>];\nk -> b [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"];\nr -> b [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"]; }",
+              "alt": "A class diagram. Boat, with the method name() : String, is at the top. Below it are Kayak, with its own method paddle() : void highlighted, and Raft, with no members of its own. A hollow-triangle arrow points from each of them up to Boat.",
+              "caption": "Each arrow points up to the superclass.",
+              "src": "_dot/87916f5acd878599.svg"
+            }
+          },
+          {
+            "code": "Kayak k = new Kayak();\nk.paddle();   // Kayak's own method\n// name() is inherited from Boat:\nSystem.out.println(k.name());  // boat",
             "language": "java"
           },
           {
@@ -45,7 +53,7 @@
         ]
       },
       {
-        "say": "A subclass can **override** a method: write one with the same name and the same parameters but a new body. Objects of the subclass use the new version.",
+        "say": "To **override** a method, the subclass writes one with the same name and the same parameters, but a new body. **@Override** asks the compiler to check that the method really replaces an inherited one.",
         "beats": [
           {
             "say": "To **override** a method, the subclass writes one with the same name and the same parameters, but a new body."
@@ -55,7 +63,7 @@
             "language": "java"
           },
           {
-            "say": "@Override asks the compiler to check that the method really replaces an inherited one. A new Kayak now answers name() with its own version."
+            "say": "**@Override** asks the compiler to check that the method really replaces an inherited one."
           }
         ],
         "check": {
@@ -69,7 +77,7 @@
         }
       },
       {
-        "say": "Inside a subclass, **super** means the superclass. super(...) calls its constructor, and super.method() calls its version of a method.",
+        "say": "Inside a subclass, **super** means the superclass part of the object. super.name()  runs Boat's version, so  new Kayak().name()  now returns \"fast boat\". In a constructor,  super(...)  runs the superclass's constructor.",
         "beats": [
           {
             "say": "Inside a subclass, **super** means the superclass part of the object."
@@ -79,7 +87,10 @@
             "language": "java"
           },
           {
-            "say": "super.name() runs Boat's version, so new Kayak().name() is \"fast boat\". In a constructor, super(...) runs the superclass's constructor."
+            "say": "super.name()  runs Boat's version, so  new Kayak().name()  now returns \"fast boat\"."
+          },
+          {
+            "say": "In a constructor,  super(...)  runs the superclass's constructor."
           }
         ]
       }
@@ -142,7 +153,12 @@
       "Code inside Dog can read the private field by writing super.hp",
       "Dog could gain a second parent class with extends Animal, Robot"
     ],
-    "feedback": "Methods are inherited, so eat() works on a Dog. Constructors are NOT inherited: an empty Dog gets only a no-argument constructor, so new Dog(\"Rex\") is a compile error. Private fields are still part of every Dog object (Animal's own methods use them) but are not accessible from Dog's code, with or without super. And a class may extend just one class."
+    "feedback": "Methods are inherited, so eat() works on a Dog. Constructors are NOT inherited: an empty Dog gets only a no-argument constructor, so new Dog(\"Rex\") is a compile error. Private fields are still part of every Dog object (Animal's own methods use them) but are not accessible from Dog's code, with or without super. And a class may extend just one class.",
+    "figure": {
+      "dot": "digraph { rankdir=BT; nodesep=0.35; ranksep=0.45; node [shape=plain]; a [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Animal</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">- hp : int</FONT></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">+ Animal()</FONT></TD></TR><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">+ Animal(name : String)</FONT></TD></TR><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">+ eat() : void</FONT></TD></TR></TABLE>>];\nd [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Dog</FONT></B></TD></TR></TABLE>>];\nd -> a [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"]; }",
+      "alt": "A class diagram. Animal lists the field - hp : int, then + Animal(), + Animal(name : String) and + eat() : void. Below it, Dog has no members of its own, with a hollow-triangle arrow up to Animal.",
+      "src": "_dot/2c33e5abbc8671af.svg"
+    }
   },
   {
     "question": "name is a private field of PixarCharacter, which also has a public getName(). Inside a method of  class Toy extends PixarCharacter,  which line compiles?",
@@ -197,7 +213,7 @@
     "intro": "Zoya sets two clay moulds on the bench, a plain one stamped Animal and a finer one stamped Dog. \"A Dog is an Animal with extras,\" they say. \"So when I ask for a new Dog, which constructor do you think finishes first?\"",
     "steps": [
       {
-        "say": "Here are two classes. Each constructor prints one letter, so we can watch the order.\nclass Animal {\n    Animal() { System.out.print(\"A\"); }\n}\nclass Dog extends Animal {\n    Dog() { System.out.print(\"D\"); }\n}\n\nnew Dog();\nNotice that Dog's constructor never mentions super.",
+        "say": "Here are two classes. Each constructor prints one letter, so we can watch the order. Notice that Dog's constructor never mentions super.",
         "beats": [
           {
             "say": "Here are two classes. Each constructor prints one letter, so we can watch the order."
@@ -212,7 +228,19 @@
         ]
       },
       {
-        "say": "When a constructor has no super(...) call, the compiler quietly adds super(); at the top. So Dog's constructor really begins by running Animal's constructor, and only then prints its own letter.",
+        "say": "When a constructor has no **super(...)** call, the compiler quietly adds  super();  as its first line. So the Dog constructor that really runs is this one: super();  runs Animal's constructor, all of it, before the line below.",
+        "beats": [
+          {
+            "say": "When a constructor has no **super(...)** call, the compiler quietly adds  super();  as its first line. So the Dog constructor that really runs is this one:"
+          },
+          {
+            "code": "Dog() {\n    super();    // added by the compiler\n    System.out.print(\"D\");\n}",
+            "language": "java"
+          },
+          {
+            "say": "super();  runs Animal's constructor, all of it, before the line below."
+          }
+        ],
         "check": {
           "prompt": "So what does new Dog(); print?",
           "answer": "AD",
@@ -224,7 +252,23 @@
         }
       },
       {
-        "say": "This is called constructor chaining: each constructor hands control to its parent's constructor before finishing its own work. The parent part of the object is ready before the subclass part builds on it - foundations first, then the extras."
+        "say": "This is **constructor chaining**: each constructor first hands control to its parent's, up to Object at the top. Then the bodies run on the way back down. So the parent part of the object is ready before the subclass part builds on it: foundations first, then the extras.",
+        "beats": [
+          {
+            "say": "This is **constructor chaining**: each constructor first hands control to its parent's, up to Object at the top. Then the bodies run on the way back down."
+          },
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.3; ranksep=0.3; nodesep=0.35; ranksep=0.4;s [shape=ellipse, color=\"#00c840\", fontcolor=\"#c8ffb0\", style=solid, label=\"new Dog()\"];\ncD [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"Dog()\"];\ncA [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"Animal()\"];\ncO [shape=box, color=\"#2a4a2a\", fontcolor=\"#4f6f4f\", label=\"Object()\nprints nothing\"];\nbA [shape=box, color=\"#ffb300\", fontcolor=\"#ffd86b\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=\"Animal's body:\nprint A\"];\nbD [shape=box, color=\"#ffb300\", fontcolor=\"#ffd86b\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=\"Dog's body:\nprint D\"];\ne [shape=ellipse, color=\"#00c840\", fontcolor=\"#7CFC00\", style=\"filled\", fillcolor=\"#0f2a0f\", label=\"done\"];\n{ rank=same; cA; bA; } { rank=same; cD; bD; } { rank=same; s; e; }\ncO -> cA [dir=back, color=\"#5aaa5a\", label=\" super()\"];\ncA -> cD [dir=back, color=\"#5aaa5a\", label=\" super()\"];\ncD -> s [dir=back, color=\"#5aaa5a\"];\ncO -> bA [color=\"#5aaa5a\"];\nbA -> bD [color=\"#5aaa5a\"];\nbD -> e [color=\"#5aaa5a\"]; }",
+              "alt": "Two columns. On the left, new Dog() leads up to Dog(), and arrows labelled super() climb to Animal() and then to Object(), which prints nothing. From there the right column runs down: Animal's body prints A, Dog's body prints D, and then the chain is done.",
+              "caption": "Up the chain first, then back down.",
+              "src": "_dot/4427fad9cc1183b7.svg"
+            }
+          },
+          {
+            "say": "So the parent part of the object is ready before the subclass part builds on it: foundations first, then the extras."
+          }
+        ]
       }
     ],
     "outro": "\"The next monster has three generations in its family, not two. Same rule - follow the chain to the top, then come back down.\""
@@ -407,7 +451,7 @@
     "intro": "Zoya hangs a wooden tag reading Golem around the neck of a hulking stone figure. \"The tag is the variable's type. The thing wearing it is the object. They are allowed to disagree - a little.\"",
     "steps": [
       {
-        "say": "Two classes. StoneGolem overrides greet() and adds a method of its own, smash().\nclass Golem {\n    String greet() { return \"hum\"; }\n}\nclass StoneGolem extends Golem {\n    @Override String greet() { return \"GRIND\"; }\n    void smash() { }\n}\n\nGolem g = new StoneGolem();\nThe variable g has the declared type Golem. The object it refers to has the runtime type StoneGolem. That is legal because a StoneGolem is a Golem.",
+        "say": "Two classes. StoneGolem overrides greet() and adds a method of its own, smash(). The tag is g's **declared type**, Golem. The golem wearing it is the object, whose **runtime type** is StoneGolem. That is legal because a StoneGolem is a Golem.",
         "beats": [
           {
             "say": "Two classes. StoneGolem overrides greet() and adds a method of its own, smash()."
@@ -417,15 +461,43 @@
             "language": "java"
           },
           {
-            "say": "The variable g has the declared type Golem. The object it refers to has the runtime type StoneGolem. That is legal because a StoneGolem is a Golem."
+            "say": "The tag is g's **declared type**, Golem. The golem wearing it is the object, whose **runtime type** is StoneGolem. That is legal because a StoneGolem is a Golem."
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; rankdir=LR; nodesep=0.4;\n    g [label=<<TABLE BORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"2\"><TR><TD><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">declared type</FONT></TD></TR><TR><TD><FONT COLOR=\"#c8ffb0\">Golem</FONT> <B><FONT COLOR=\"#6be0ff\">g</FONT></B></TD></TR></TABLE>>];\n    o [label=<<TABLE BORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"0\"><TR><TD><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">runtime type</FONT></TD></TR><TR><TD><TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD COLSPAN=\"2\" COLOR=\"#00c840\" PORT=\"t\"><B><FONT COLOR=\"#7CFC00\">StoneGolem</FONT></B></TD></TR></TABLE></TD></TR></TABLE>>];\n    g -> o [color=\"#6be0ff\"]; }",
+              "alt": "On the left, the variable g with its declared type, Golem. An arrow leads from it to an object on the right whose runtime type is StoneGolem.",
+              "caption": "The tag says Golem; the object is a StoneGolem.",
+              "src": "_dot/1a33ecc47223d14e.svg"
+            }
           }
         ]
       },
       {
-        "say": "Rule one: when the program RUNS, the object decides which version of an overridden method you get. g.greet() returns GRIND, because the object is a StoneGolem. That is dynamic dispatch - and using one variable type for many kinds of object is polymorphism."
+        "say": "Rule one, at **run time**: the object decides which version of an overridden method runs. Java starts looking in the object's own class, StoneGolem, and finds its override there. That is **dynamic dispatch**. Using one variable type for many kinds of object is **polymorphism**.",
+        "beats": [
+          {
+            "say": "Rule one, at **run time**: the object decides which version of an overridden method runs."
+          },
+          {
+            "code": "Golem g = new StoneGolem();\nSystem.out.println(g.greet());   // GRIND",
+            "language": "java"
+          },
+          {
+            "say": "Java starts looking in the object's own class, StoneGolem, and finds its override there. That is **dynamic dispatch**."
+          },
+          {
+            "say": "Using one variable type for many kinds of object is **polymorphism**."
+          }
+        ]
       },
       {
-        "say": "Rule two: when the program COMPILES, the compiler sees only the tag. It checks each call against the declared type, Golem, and nothing else.",
+        "say": "Rule two, at **compile time**: the compiler sees only the tag. It checks each call against the declared type, Golem, and nothing else.",
+        "beats": [
+          {
+            "say": "Rule two, at **compile time**: the compiler sees only the tag. It checks each call against the declared type, Golem, and nothing else."
+          }
+        ],
         "check": {
           "prompt": "So what happens with g.smash(); ?",
           "answer": "Compile error: Golem has no smash()",
@@ -437,7 +509,20 @@
         }
       },
       {
-        "say": "So: the declared type decides what you are ALLOWED to call; the runtime type decides WHICH VERSION runs. Two questions, two different answers."
+        "say": "So the declared type decides what you may call, and the runtime type decides which version runs.",
+        "beats": [
+          {
+            "say": "So the declared type decides what you may call, and the runtime type decides which version runs."
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; nodesep=0.25; ranksep=0.2;\n    q1 [label=<<FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">compile time: look in</FONT><BR/><FONT COLOR=\"#c8ffb0\">the declared type</FONT>>];\n    q2 [label=<<FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">run time: look in</FONT><BR/><FONT COLOR=\"#c8ffb0\">the object's class</FONT>>];\n    c1 [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Golem</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\" BGCOLOR=\"#0f3a0f\"><FONT COLOR=\"#7CFC00\"><B>greet() : String</B></FONT></TD></TR></TABLE>>];\n    c2 [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">StoneGolem</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>greet() : String</B></FONT></TD></TR><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">smash() : void</FONT></TD></TR></TABLE>>];\n    q1 -> c1 [color=\"#5aaa5a\"];\n    q2 -> c2 [color=\"#5aaa5a\"]; }",
+              "alt": "Two class boxes side by side. On the left, under the heading compile time: look in the declared type, is Golem, with greet() : String highlighted and nothing else. On the right, under run time: look in the object's class, is StoneGolem, with its own greet() : String highlighted, and smash() : void.",
+              "caption": "Two questions, two classes to look in.",
+              "src": "_dot/9c6b67a5c133e9fd.svg"
+            }
+          }
+        ]
       }
     ],
     "outro": "\"Animals next, not golems. Ask both questions of every line: what does the tag allow, and who is really wearing it?\""
@@ -498,7 +583,12 @@
         "definition": "Compile error: incompatible types"
       }
     ],
-    "feedback": "Going up (Dog to Animal to Object) is automatic. Going down needs an explicit cast, because the compiler knows only that a is some Animal; without the cast, Dog d = a; is rejected. With a cast the compiler trusts you and the check moves to run time: a really holds a Dog, so it succeeds, while c holds a Cat, so the JVM throws ClassCastException."
+    "feedback": "Going up (Dog to Animal to Object) is automatic. Going down needs an explicit cast, because the compiler knows only that a is some Animal; without the cast, Dog d = a; is rejected. With a cast the compiler trusts you and the check moves to run time: a really holds a Dog, so it succeeds, while c holds a Cat, so the JVM throws ClassCastException.",
+    "figure": {
+      "dot": "digraph { rankdir=BT; nodesep=0.35; ranksep=0.45; node [shape=plain]; o [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Object</FONT></B></TD></TR></TABLE>>];\na [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Animal</FONT></B></TD></TR></TABLE>>];\nd [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Dog</FONT></B></TD></TR></TABLE>>];\nc [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Cat</FONT></B></TD></TR></TABLE>>];\na -> o [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"];\nd -> a [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"];\nc -> a [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"]; }",
+      "alt": "A class diagram of a family tree. Object is at the top. Animal is below it, with a hollow-triangle arrow up to Object. Dog and Cat are side by side below Animal, each with a hollow-triangle arrow up to Animal.",
+      "src": "_dot/7dc0f0ce2b1d0de8.svg"
+    }
   },
   {
     "type": "dynamic_numeric",
@@ -526,32 +616,40 @@
     "intro": "A clay golem shuffles past wearing the plain Golem tag. Zoya lowers their voice. \"Suppose I am sure that one is stone. Watch what my certainty is worth.\"",
     "steps": [
       {
-        "say": "StoneGolem and ClayGolem both extend Golem; only StoneGolem has smash().\nGolem g = new ClayGolem();\nStoneGolem s = (StoneGolem) g;\ns.smash();\nThe cast is my promise to the compiler that g holds a StoneGolem. It compiles. But at run time the object is clay, the promise is false, and the program dies with a ClassCastException.",
+        "say": "The **cast**  (StoneGolem)  is my promise to the compiler that g holds a StoneGolem. So it compiles. But at run time the object is clay, the promise is false, and the program dies with a **ClassCastException**.",
         "beats": [
           {
-            "say": "StoneGolem and ClayGolem both extend Golem; only StoneGolem has smash()."
+            "figure": {
+              "dot": "digraph { rankdir=BT; nodesep=0.35; ranksep=0.45; node [shape=plain]; g [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Golem</FONT></B></TD></TR></TABLE>>];\ns [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">StoneGolem</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">smash() : void</FONT></TD></TR></TABLE>>];\nc [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">ClayGolem</FONT></B></TD></TR></TABLE>>];\ns -> g [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"];\nc -> g [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"]; }",
+              "alt": "A class diagram. Golem is at the top. Below it are StoneGolem, which has the method smash() : void, and ClayGolem, which has no members. A hollow-triangle arrow points from each up to Golem.",
+              "caption": "Only StoneGolem has smash().",
+              "src": "_dot/9c33f5f60e175209.svg"
+            }
           },
           {
             "code": "Golem g = new ClayGolem();\nStoneGolem s = (StoneGolem) g;\ns.smash();",
             "language": "java"
           },
           {
-            "say": "The cast is my promise to the compiler that g holds a StoneGolem. It compiles. But at run time the object is clay, the promise is false, and the program dies with a ClassCastException."
+            "say": "The **cast**  (StoneGolem)  is my promise to the compiler that g holds a StoneGolem. So it compiles."
+          },
+          {
+            "say": "But at run time the object is clay, the promise is false, and the program dies with a **ClassCastException**."
           }
         ]
       },
       {
-        "say": "So ask first. The instanceof operator tests an object's runtime type, and modern Java lets you name a new variable right inside the test.\nif (g instanceof StoneGolem s) {\n    s.smash();\n}\nIf g holds a StoneGolem, then s is that same object, already typed as StoneGolem - no cast to write. This form is called a type pattern.",
+        "say": "So ask first. The **instanceof** operator tests an object's runtime type, and modern Java lets you name a new variable right inside the test. If g holds a StoneGolem, then s is that same object, already typed as StoneGolem, with no cast to write. This form is called a **type pattern**.",
         "beats": [
           {
-            "say": "So ask first. The instanceof operator tests an object's runtime type, and modern Java lets you name a new variable right inside the test."
+            "say": "So ask first. The **instanceof** operator tests an object's runtime type, and modern Java lets you name a new variable right inside the test."
           },
           {
             "code": "if (g instanceof StoneGolem s) {\n    s.smash();\n}",
             "language": "java"
           },
           {
-            "say": "If g holds a StoneGolem, then s is that same object, already typed as StoneGolem - no cast to write. This form is called a type pattern."
+            "say": "If g holds a StoneGolem, then s is that same object, already typed as StoneGolem, with no cast to write. This form is called a **type pattern**."
           }
         ],
         "check": {
@@ -565,7 +663,27 @@
         }
       },
       {
-        "say": "Older code does it in two steps - test with instanceof, then cast on the next line. You will still read that, but the pattern form says the same thing once, and cannot get the cast wrong."
+        "say": "Older code does the same in two steps: test with instanceof, then cast on the next line. You will still read that. The pattern form says it once, and cannot get the cast wrong.",
+        "beats": [
+          {
+            "say": "Older code does the same in two steps: test with instanceof, then cast on the next line."
+          },
+          {
+            "code": "if (g instanceof StoneGolem) {\n    StoneGolem s = (StoneGolem) g;\n    s.smash();\n}",
+            "language": "java"
+          },
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.3; ranksep=0.3; t [shape=diamond, color=\"#00c840\", fontcolor=\"#c8ffb0\", style=solid, margin=\"0.04,0.02\", label=\"g instanceof\nStoneGolem?\"];\ny [shape=box, color=\"#ffb300\", fontcolor=\"#ffd86b\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=\"cast safely,\nthen s.smash()\"];\nn [shape=box, color=\"#2a4a2a\", fontcolor=\"#4f6f4f\", label=\"skip the block\"];\nt -> y [label=\" true\", color=\"#5aaa5a\"];\nt -> n [label=\" false\", color=\"#5aaa5a\"];\n{ rank=same; y; n; } }",
+              "alt": "A flowchart. A diamond asks: g instanceof StoneGolem? Its true branch leads to cast safely, then s.smash(), highlighted. Its false branch leads to skip the block, dimmed.",
+              "caption": "Ask first; cast only on true.",
+              "src": "_dot/d0325f371ad006fb.svg"
+            }
+          },
+          {
+            "say": "You will still read that. The pattern form says it once, and cannot get the cast wrong."
+          }
+        ]
       }
     ],
     "outro": "\"Your turn to write one. Different creature, same shape: variable, instanceof, type, new name.\""
@@ -798,17 +916,30 @@
     "intro": "Zoya sets a finished clay figure on the bench and a lump of fresh clay beside it. \"The finished one is the superclass. It is not yours to change. The lump is your subclass: everything the first one has, and whatever you add.\"",
     "steps": [
       {
-        "say": "The superclass is shown above the box. Read what it offers before you write: its constructor, and its public methods.",
+        "say": "Its only **constructor** takes a name, so your subclass's constructor has to hand one up. Begin it with  super(name);  and this one runs first.",
         "beats": [
           {
             "code": "public class PixarCharacter {\n    private String name;\n\n    public PixarCharacter(String name) {\n        this.name = name;\n    }\n\n    public String getName() {\n        return name;\n    }\n}",
             "language": "java"
           },
           {
-            "say": "Two things to notice. Its only constructor takes a name, so your constructor has to hand one up: super(name); on its first line."
+            "say": "Its only **constructor** takes a name, so your subclass's constructor has to hand one up. Begin it with  super(name);  and this one runs first."
+          }
+        ]
+      },
+      {
+        "say": "name is **private**: only PixarCharacter's own code may touch it. A Toy object still has a name, but Toy's code cannot use the field.",
+        "beats": [
+          {
+            "figure": {
+              "dot": "digraph { rankdir=BT; nodesep=0.35; ranksep=0.45; node [shape=plain]; p [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">PixarCharacter</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">- name : String</FONT></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">+ PixarCharacter(name : String)</FONT></TD></TR><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">+ getName() : String</FONT></TD></TR></TABLE>>];\nt [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#ffb300\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Toy</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">+ Toy(name : String)</FONT></TD></TR></TABLE>>];\nt -> p [arrowhead=empty, arrowsize=1.1, color=\"#00c840\"]; }",
+              "alt": "A class diagram. PixarCharacter, the given class, lists - name : String, + PixarCharacter(name : String) and + getName() : String. Below it, the subclass Toy, outlined in amber, lists + Toy(name : String), with a hollow-triangle arrow up to PixarCharacter.",
+              "caption": "In UML, - marks private and + marks public.",
+              "src": "_dot/595ca295c0d0af85.svg"
+            }
           },
           {
-            "say": "And name is private. Your subclass has a name, but cannot touch the field. It asks, like everyone else: getName()."
+            "say": "name is **private**: only PixarCharacter's own code may touch it. A Toy object still has a name, but Toy's code cannot use the field."
           }
         ],
         "check": {
@@ -822,13 +953,20 @@
         }
       },
       {
-        "say": "A method that replaces one from above must match it exactly, and be at least as easy to reach.",
+        "say": "When you **override** a method, or write one that an interface or an abstract class asks for, copy its first line exactly: the same name, the same parameters, the same return type. Every class inherits  public String toString()  from Object. So Toy's override starts with that same line: If the one above is public, yours has to be public too. Leave public off and the compiler stops you: a method that replaces another cannot be harder to reach.",
         "beats": [
           {
-            "say": "When you override a method, or write one that an interface or an abstract class asks for, copy its first line exactly: the same name, the same parameters, the same return type."
+            "say": "When you **override** a method, or write one that an interface or an abstract class asks for, copy its first line exactly: the same name, the same parameters, the same return type."
           },
           {
-            "say": "If the one above is public, yours has to be public too. The practice Java will tell you, in the words the real compiler uses, when a method is “harder to reach” than the one it replaces."
+            "say": "Every class inherits  public String toString()  from Object. So Toy's override starts with that same line:"
+          },
+          {
+            "code": "@Override\npublic String toString() {\n    return \"Toy \" + getName();\n}",
+            "language": "java"
+          },
+          {
+            "say": "If the one above is public, yours has to be public too. Leave public off and the compiler stops you: a method that replaces another cannot be harder to reach."
           }
         ]
       }

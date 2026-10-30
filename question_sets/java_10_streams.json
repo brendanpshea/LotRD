@@ -3,10 +3,10 @@
     "type": "npc_demo",
     "question": "NPC: Before we begin — lambdas and streams in brief",
     "npc": "zoya",
-    "intro": "Zoya sets a handful of clay tokens beside a bench with three stations. “Two ways to sort these tokens. One tells the golem every step, the other says only what you want.”",
+    "intro": "Zoya sets four clay tokens, each stamped with a word, beside a bench with three stations. “Two ways to pick out the long words. One tells Java every step; the other says only what you want.”",
     "steps": [
       {
-        "say": "Code is **imperative** when you spell out every step of how. It is **declarative** when you say what result you want and leave the how to Java.",
+        "say": "Code is **imperative** when you spell out every step: make a list, loop, test, add. It is **declarative** when you say what result you want, and Java does the looping. This is a **stream pipeline**.",
         "beats": [
           {
             "say": "Code is **imperative** when you spell out every step: make a list, loop, test, add."
@@ -25,20 +25,25 @@
         ]
       },
       {
-        "say": "A **stream pipeline** is a row of stations. stream() is the source, **filter** keeps elements, **map** changes each one, and **collect** gathers the result.",
+        "say": "A pipeline is a row of stations, one per operation, and my tokens are the list's elements. stream() is the **source**: it sends the elements down the row. **filter** keeps only the elements that pass a test. **map** turns each element into something else. **collect** ends the pipeline and gathers what arrives into a new List.",
         "beats": [
           {
-            "say": "A pipeline is a row of stations. stream() is the source. **filter** keeps only the elements that pass a test."
+            "say": "A pipeline is a row of stations, one per operation, and my tokens are the list's elements. stream() is the **source**: it sends the elements down the row."
           },
           {
-            "say": "**map** turns each element into something else. **collect** ends the pipeline and gathers what arrives into a new List."
+            "say": "**filter** keeps only the elements that pass a test. **map** turns each element into something else. **collect** ends the pipeline and gathers what arrives into a new List."
           },
           {
-            "code": "// words: ogre, dragon, gnome, wizard\nwords.stream()\n    .filter(w -> w.length() > 4)    // dragon, gnome, wizard\n    .map(w -> w.length())\n    .collect(Collectors.toList());",
+            "code": "words.stream()\n    .filter(w -> w.length() > 4)\n    .map(w -> w.length())\n    .collect(Collectors.toList());",
             "language": "java"
           },
           {
-            "say": "After filter the tokens are dragon, gnome, wizard. Then map runs its function on each one."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; ranksep=0.12; nodesep=0.2; n0 [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD BORDER=\"0\" COLSPAN=\"4\" CELLPADDING=\"0\"><FONT POINT-SIZE=\"10\" COLOR=\"#6be0ff\">words</FONT></TD></TR><TR><TD WIDTH=\"56\" COLOR=\"#00c840\">ogre</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">dragon</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">gnome</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">wizard</TD></TR></TABLE>>]; n1 [shape=box, style=\"rounded\", color=\"#00c840\", fontcolor=\"#c8ffb0\", margin=\"0.12,0.03\", label=<.filter(w -&gt; w.length() &gt; 4)>]; n2 [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD WIDTH=\"56\" COLOR=\"#2a4a2a\"><FONT COLOR=\"#4f6f4f\">ogre</FONT></TD><TD WIDTH=\"56\" COLOR=\"#00c840\">dragon</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">gnome</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">wizard</TD></TR></TABLE>>]; n3 [shape=box, style=\"rounded,filled\", color=\"#ffb300\", fontcolor=\"#ffd86b\", fillcolor=\"#3a2c00\", margin=\"0.12,0.03\", label=<.map(w -&gt; w.length())>]; n4 [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD BORDER=\"0\" WIDTH=\"56\"></TD><TD WIDTH=\"56\" COLOR=\"#00c840\">?</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">?</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">?</TD></TR></TABLE>>]; n0 -> n1 [color=\"#5aaa5a\", arrowsize=0.6]; n1 -> n2 [color=\"#5aaa5a\", arrowsize=0.6]; n2 -> n3 [color=\"#5aaa5a\", arrowsize=0.6]; n3 -> n4 [color=\"#5aaa5a\", arrowsize=0.6]; }",
+              "alt": "A pipeline drawn top to bottom. The list words, holding ogre, dragon, gnome and wizard, enters the filter station; below it, ogre is dimmed as dropped and dragon, gnome and wizard go on. They enter the map station, highlighted, and what comes out is three question marks.",
+              "caption": "What gets past each station.",
+              "src": "_dot/9cbf91f8fc573c09.svg"
+            }
           }
         ],
         "check": {
@@ -52,13 +57,13 @@
         }
       },
       {
-        "say": "The little arrow expression in each station is a **lambda**: parameters -> body. filter takes a lambda that answers true or false, and map takes one that returns a new value.",
+        "say": "The arrow expression in each station is a **lambda**: a small function written as parameters, an arrow, then a body. The first suits filter, which asks a yes-or-no question of each element. The second suits map, which turns each element into a new value.",
         "beats": [
           {
             "say": "The arrow expression in each station is a **lambda**: a small function written as parameters, an arrow, then a body."
           },
           {
-            "code": "w -> w.length() > 4        // answers true or false\nw -> w.length()            // returns a number",
+            "code": "w -> w.length() > 4   // true or false\nw -> w.length()       // a number",
             "language": "java"
           },
           {
@@ -335,25 +340,41 @@
     "type": "npc_demo",
     "question": "NPC: Following one list down the pipeline",
     "npc": "zoya",
-    "intro": "Zoya sets four numbered clay tokens on a long workbench and chalks three lines across it. “A stream pipeline looks like one long sentence. I read it as a row of stations, and I walk the tokens through one station at a time.”",
+    "intro": "Zoya sets four numbered clay tokens on a long workbench and chalks three lines across it. “A stream pipeline looks like one long sentence. I read it as a row of stations, and I note which tokens get past each one.”",
     "steps": [
       {
-        "say": "Here is the pipeline. The list is the source: stream() sends its elements down the line one after another.",
+        "say": "Here is the whole pipeline. The list is the **source**: stream() sends its elements down the line, one after another. Each token is one element, and each station one operation. I never trace it in my head: I write down what is still on the bench after each station.",
         "beats": [
           {
-            "say": "Here is the whole pipeline. The list is the source: stream() sends its elements down the line, one after another."
+            "say": "Here is the whole pipeline. The list is the **source**: stream() sends its elements down the line, one after another."
           },
           {
-            "code": "ArrayList<Integer> costs = new ArrayList<>(Arrays.asList(4, 9, 6, 15));\nList<Integer> out = costs.stream()\n    .filter(c -> c > 5)\n    .map(c -> c * 2)\n    .collect(Collectors.toList());",
+            "code": "ArrayList<Integer> costs =\n    new ArrayList<>(Arrays.asList(4, 9, 6, 15));\nList<Integer> out = costs.stream()\n    .filter(c -> c > 5)\n    .map(c -> c * 2)\n    .collect(Collectors.toList());",
             "language": "java"
           },
           {
-            "say": "I never trace it in my head. I write down what is still on the bench after each station."
+            "say": "Each token is one element, and each station one operation. I never trace it in my head: I write down what is still on the bench after each station."
           }
         ]
       },
       {
-        "say": "filter is a gate. It asks its question, c > 5, of every element, and lets through the ones that answer true. It never changes an element; it only keeps it or drops it.",
+        "say": "**filter** is a gate. It asks its question, c > 5, of every element of costs, and lets through the ones that answer true. It never changes an element; it only keeps it or drops it.",
+        "beats": [
+          {
+            "say": "**filter** is a gate. It asks its question, c > 5, of every element of costs, and lets through the ones that answer true."
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; ranksep=0.12; nodesep=0.2; n0 [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD BORDER=\"0\" WIDTH=\"40\" ALIGN=\"RIGHT\"><FONT POINT-SIZE=\"10\" COLOR=\"#6be0ff\">costs</FONT></TD><TD WIDTH=\"30\" COLOR=\"#00c840\">4</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">9</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">6</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">15</TD><TD BORDER=\"0\" WIDTH=\"40\"></TD></TR></TABLE>>]; n1 [shape=box, style=\"rounded,filled\", color=\"#ffb300\", fontcolor=\"#ffd86b\", fillcolor=\"#3a2c00\", margin=\"0.12,0.03\", label=<.filter(c -&gt; c &gt; 5)>]; n2 [label=<<B><FONT COLOR=\"#ffd86b\">?</FONT></B>>]; n0 -> n1 [color=\"#5aaa5a\", arrowsize=0.6]; n1 -> n2 [color=\"#5aaa5a\", arrowsize=0.6]; }",
+              "alt": "The list costs, holding 4, 9, 6 and 15, flows into a highlighted filter station that tests c > 5. What comes out of it is a question mark.",
+              "caption": "Which tokens get through?",
+              "src": "_dot/6025af2d10a80f82.svg"
+            }
+          },
+          {
+            "say": "It never changes an element; it only keeps it or drops it."
+          }
+        ],
         "check": {
           "prompt": "What is left after  .filter(c -> c > 5) ?",
           "answer": "9, 6, 15",
@@ -365,13 +386,21 @@
         }
       },
       {
-        "say": "map is a stamp. It runs its function on every element and sends on the results, so 9, 6, 15 becomes 18, 12, 30. It never drops anything.",
+        "say": "**map** is a stamp. It runs its function, c * 2, on every element and sends on the results. It never drops anything. **collect** ends the pipeline and gathers what arrives into a new List: out is [18, 12, 30]. costs is exactly as it was. Gate, then stamp, then collect. Write the survivors down after every station and a pipeline cannot fool you.",
         "beats": [
           {
-            "say": "map is a stamp. It runs its function, c * 2, on every element and sends on the results: 9, 6, 15 becomes 18, 12, 30. It never drops anything."
+            "say": "**map** is a stamp. It runs its function, c * 2, on every element and sends on the results. It never drops anything."
           },
           {
-            "say": "collect(Collectors.toList()) is the last station. It ends the pipeline and gathers what arrives into a new List, so out is [18, 12, 30]. The list costs is exactly as it was."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; ranksep=0.12; nodesep=0.2; n0 [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD BORDER=\"0\" WIDTH=\"40\" ALIGN=\"RIGHT\"><FONT POINT-SIZE=\"10\" COLOR=\"#6be0ff\">costs</FONT></TD><TD WIDTH=\"30\" COLOR=\"#00c840\">4</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">9</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">6</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">15</TD><TD BORDER=\"0\" WIDTH=\"40\"></TD></TR></TABLE>>]; n1 [shape=box, style=\"rounded\", color=\"#00c840\", fontcolor=\"#c8ffb0\", margin=\"0.12,0.03\", label=<.filter(c -&gt; c &gt; 5)>]; n2 [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD BORDER=\"0\" WIDTH=\"40\" ALIGN=\"RIGHT\"></TD><TD WIDTH=\"30\" COLOR=\"#2a4a2a\"><FONT COLOR=\"#4f6f4f\">4</FONT></TD><TD WIDTH=\"30\" COLOR=\"#00c840\">9</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">6</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">15</TD><TD BORDER=\"0\" WIDTH=\"40\"></TD></TR></TABLE>>]; n3 [shape=box, style=\"rounded,filled\", color=\"#ffb300\", fontcolor=\"#ffd86b\", fillcolor=\"#3a2c00\", margin=\"0.12,0.03\", label=<.map(c -&gt; c * 2)>]; n4 [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD BORDER=\"0\" WIDTH=\"40\" ALIGN=\"RIGHT\"></TD><TD BORDER=\"0\" WIDTH=\"30\"></TD><TD WIDTH=\"30\" COLOR=\"#00c840\">18</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">12</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">30</TD><TD BORDER=\"0\" WIDTH=\"40\"></TD></TR></TABLE>>]; n5 [shape=box, style=\"rounded\", color=\"#00c840\", fontcolor=\"#c8ffb0\", margin=\"0.12,0.03\", label=<.collect(Collectors.toList())>]; n6 [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"4\"><TR><TD BORDER=\"0\" WIDTH=\"40\" ALIGN=\"RIGHT\"><FONT POINT-SIZE=\"10\" COLOR=\"#6be0ff\">out</FONT></TD><TD BORDER=\"0\" WIDTH=\"30\"></TD><TD WIDTH=\"30\" COLOR=\"#7CFC00\" BGCOLOR=\"#0f3a0f\"><FONT COLOR=\"#7CFC00\"><B>18</B></FONT></TD><TD WIDTH=\"30\" COLOR=\"#7CFC00\" BGCOLOR=\"#0f3a0f\"><FONT COLOR=\"#7CFC00\"><B>12</B></FONT></TD><TD WIDTH=\"30\" COLOR=\"#7CFC00\" BGCOLOR=\"#0f3a0f\"><FONT COLOR=\"#7CFC00\"><B>30</B></FONT></TD><TD BORDER=\"0\" WIDTH=\"40\"></TD></TR></TABLE>>]; n0 -> n1 [color=\"#5aaa5a\", arrowsize=0.6]; n1 -> n2 [color=\"#5aaa5a\", arrowsize=0.6]; n2 -> n3 [color=\"#5aaa5a\", arrowsize=0.6]; n3 -> n4 [color=\"#5aaa5a\", arrowsize=0.6]; n4 -> n5 [color=\"#5aaa5a\", arrowsize=0.6]; n5 -> n6 [color=\"#5aaa5a\", arrowsize=0.6]; }",
+              "alt": "The whole pipeline, top to bottom. costs holds 4, 9, 6, 15. After the filter station, 4 is dimmed as dropped. The map station is highlighted, and below it 9, 6 and 15 have become 18, 12 and 30. After the collect station, out holds 18, 12 and 30.",
+              "caption": "What gets past each station.",
+              "src": "_dot/4d4c4557664a3466.svg"
+            }
+          },
+          {
+            "say": "**collect** ends the pipeline and gathers what arrives into a new List: out is [18, 12, 30]. costs is exactly as it was."
           },
           {
             "say": "Gate, then stamp, then collect. Write the survivors down after every station and a pipeline cannot fool you."
@@ -483,39 +512,53 @@
     "type": "npc_demo",
     "question": "NPC: The box that might be empty",
     "npc": "zoya",
-    "intro": "Zoya slides a small lidded box across the bench. “Some questions have no answer. Which ship does more than forty knots? Perhaps none of them. Java needs a way to say so that is more honest than null.”",
+    "intro": "Zoya slides a small lidded box across the bench. “Some questions have no answer. Which golem weighs over a hundred stone? Perhaps none of them. Java needs a way to say so that is more honest than null.”",
     "steps": [
       {
-        "say": "findFirst cannot promise a result, so it does not return a Ship. It returns an Optional: an object that holds either one value or nothing.",
+        "say": "**findFirst** cannot promise there is a first element, because the filter may have dropped everything. So it does not return an Integer. It returns an **Optional**<Integer>. An Optional is this box: it holds one value, or it is empty. heavy holds 75, the first weight past the filter. The 75 is inside the box, and you still have to take it out.",
         "beats": [
           {
-            "say": "findFirst cannot promise there IS a first element, because the filter may have dropped everything. So it does not return an Integer. It returns an Optional<Integer>."
+            "say": "**findFirst** cannot promise there is a first element, because the filter may have dropped everything. So it does not return an Integer. It returns an **Optional**<Integer>."
           },
           {
-            "code": "ArrayList<Integer> speeds = new ArrayList<>(Arrays.asList(12, 25, 18, 30));\nOptional<Integer> fast = speeds.stream()\n    .filter(s -> s > 20)\n    .findFirst();",
+            "code": "ArrayList<Integer> weights =\n    new ArrayList<>(Arrays.asList(40, 75, 35, 90));\nOptional<Integer> heavy = weights.stream()\n    .filter(w -> w > 50)\n    .findFirst();",
             "language": "java"
           },
           {
-            "say": "An Optional is this box: it holds one value, or it is empty. Here it holds 25, the first speed that passed the filter. The value is inside the box, and you still have to take it out."
+            "say": "An Optional is this box: it holds one value, or it is empty."
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; ranksep=0.15;\n  heavy [label=<<B><FONT COLOR=\"#6be0ff\">heavy</FONT></B>>];\n  full [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD COLSPAN=\"2\" COLOR=\"#00c840\" PORT=\"t\"><B><FONT COLOR=\"#7CFC00\">Optional&lt;Integer&gt;</FONT></B></TD></TR><TR><TD COLOR=\"#7CFC00\" BGCOLOR=\"#0f3a0f\" COLSPAN=\"2\"><B><FONT COLOR=\"#7CFC00\">75</FONT></B></TD></TR></TABLE>>];\n  or [label=<<FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">or, if nothing passed:</FONT>>];\n  empty [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD COLSPAN=\"2\" COLOR=\"#00c840\" PORT=\"t\"><B><FONT COLOR=\"#7CFC00\">Optional&lt;Integer&gt;</FONT></B></TD></TR><TR><TD COLOR=\"#2a4a2a\" COLSPAN=\"2\"><FONT COLOR=\"#4f6f4f\">(empty)</FONT></TD></TR></TABLE>>];\n  heavy -> full:t [color=\"#6be0ff\"];\n  full -> or -> empty [style=invis];\n}",
+              "alt": "Two boxes, each titled Optional<Integer>. The variable heavy points at the first, which holds 75. The second holds nothing and is marked empty.",
+              "caption": "Full, or empty.",
+              "src": "_dot/0a94b5da4b08ff31.svg"
+            }
+          },
+          {
+            "say": "heavy holds 75, the first weight past the filter. The 75 is inside the box, and you still have to take it out."
           }
         ]
       },
       {
-        "say": "Ask the box before you open it. isPresent() says whether there is a value inside; get() takes it out.",
+        "say": "Ask the box before you open it. **isPresent()** answers true or false: is there a value inside? **get()** takes the value out. There is a value, so this prints:",
         "beats": [
           {
-            "say": "Ask the box before you open it. isPresent() answers true or false: is there a value inside? get() takes the value out."
+            "say": "Ask the box before you open it. **isPresent()** answers true or false: is there a value inside? **get()** takes the value out."
           },
           {
-            "code": "if (fast.isPresent()) {\n    System.out.println(\"First fast speed: \" + fast.get());\n}",
+            "code": "if (heavy.isPresent()) {\n    System.out.println(\"Found: \" + heavy.get());\n}",
             "language": "java"
           },
           {
-            "say": "There is a value, so this prints  First fast speed: 25."
+            "say": "There is a value, so this prints:"
+          },
+          {
+            "code": "Found: 75"
           }
         ],
         "check": {
-          "prompt": "I change the filter to  s -> s > 40.  Nothing passes. What does fast.isPresent() answer now?",
+          "prompt": "I change the filter to  w -> w > 100.  Nothing passes. What does heavy.isPresent() answer now?",
           "answer": "false",
           "wrong": [
             "null",
@@ -525,7 +568,19 @@
         }
       },
       {
-        "say": "The number streams have boxes of their own: max() and min() give an OptionalInt, opened with getAsInt(), and average() gives an OptionalDouble, opened with getAsDouble()."
+        "say": "The number streams have boxes of their own. mapToInt turns a stream into an IntStream, a stream of plain ints. Its max() and min() give an **OptionalInt**, opened with getAsInt(). average() gives an **OptionalDouble**, opened with getAsDouble().",
+        "beats": [
+          {
+            "say": "The number streams have boxes of their own. mapToInt turns a stream into an IntStream, a stream of plain ints. Its max() and min() give an **OptionalInt**, opened with getAsInt()."
+          },
+          {
+            "code": "OptionalInt top = weights.stream()\n    .mapToInt(w -> w)\n    .max();\nSystem.out.println(top.getAsInt());    // 90",
+            "language": "java"
+          },
+          {
+            "say": "average() gives an **OptionalDouble**, opened with getAsDouble()."
+          }
+        ]
       }
     ],
     "outro": "“The next monster runs two searches, one that finds something and one that does not. Ask each box before you open it.”"
@@ -681,45 +736,67 @@
     "type": "npc_demo",
     "question": "NPC: The pipeline that did nothing",
     "npc": "nia",
-    "intro": "Nia holds up a slate with three lines of code and a small, wicked smile. “Tell me what this prints. Every apprentice gets it wrong the first time, so get it wrong here, with me, and not in front of the dragon.”",
+    "intro": "Nia holds up a slate with a few lines of code and a small, wicked smile. “Tell me what this prints. Every apprentice gets it wrong the first time, so get it wrong here, with me, and not in front of the dragon.”",
     "steps": [
       {
-        "say": "peek is a spy-hole: an intermediate operation that runs a small action on each element as it passes and sends the element on unchanged.",
+        "say": "One tool first. **peek** is a spy-hole: an **intermediate operation** that runs a small action on each element as it goes by, and sends the element on unchanged. The lecture uses it for debugging. Most people expect saw orc, saw elf, ready. Run it, and the screen shows one word:",
         "beats": [
           {
-            "say": "One tool first. peek is a spy-hole: an intermediate operation that runs a small action on each element as it goes by, and sends the element on unchanged. The lecture uses it for debugging."
+            "say": "One tool first. **peek** is a spy-hole: an **intermediate operation** that runs a small action on each element as it goes by, and sends the element on unchanged. The lecture uses it for debugging."
           },
           {
-            "code": "ArrayList<String> crew = new ArrayList<>(Arrays.asList(\"orc\", \"elf\"));\nStream<String> s = crew.stream()\n    .peek(w -> System.out.println(\"saw \" + w));\nSystem.out.println(\"ready\");",
+            "code": "ArrayList<String> crew =\n    new ArrayList<>(Arrays.asList(\"orc\", \"elf\"));\nStream<String> s = crew.stream()\n    .peek(w -> System.out.println(\"saw \" + w));\nSystem.out.println(\"ready\");",
             "language": "java"
           },
           {
-            "say": "Most people expect saw orc, saw elf, ready. Run it and the screen shows one word: ready."
+            "say": "Most people expect saw orc, saw elf, ready. Run it, and the screen shows one word:"
+          },
+          {
+            "code": "ready"
           }
         ]
       },
       {
-        "say": "Intermediate operations are lazy. filter, map, peek and the rest only describe work; they do none of it. Elements move only when a terminal operation asks for them.",
+        "say": "Here is why. Intermediate operations are **lazy**: filter, map, peek and the rest only describe the work. Writing them builds the pipeline and moves nothing through it. Elements start to move only when a **terminal operation** asks for them. My slate has none, so nothing ever flowed.",
         "beats": [
           {
-            "say": "Here is why. Intermediate operations are lazy: filter, map, peek and the rest only DESCRIBE the work. Writing them builds the pipeline and moves nothing through it."
+            "say": "Here is why. Intermediate operations are **lazy**: filter, map, peek and the rest only describe the work. Writing them builds the pipeline and moves nothing through it."
           },
           {
-            "say": "Elements start to move only when a terminal operation asks for them. My slate has no terminal operation, so nothing ever flowed."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; ranksep=0.2;\n  a [shape=box, style=\"rounded\", color=\"#2a4a2a\", fontcolor=\"#4f6f4f\", margin=\"0.12,0.1\", label=<crew.stream()<BR/><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">source</FONT>>];\n  b [shape=box, style=\"rounded\", color=\"#2a4a2a\", fontcolor=\"#4f6f4f\", margin=\"0.12,0.1\", label=<.peek(...)<BR/><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">intermediate</FONT>>];\n  c [shape=box, style=\"dashed,rounded,filled\", color=\"#ffb300\", fontcolor=\"#ffd86b\", fillcolor=\"#3a2c00\", margin=\"0.12,0.03\", label=<no terminal operation>];\n  a -> b [color=\"#2a4a2a\", arrowsize=0.6]; b -> c [color=\"#2a4a2a\", arrowsize=0.6];\n}",
+              "alt": "Three stations top to bottom: crew.stream(), the source, then .peek, an intermediate operation, both dimmed. Below them, a dashed and highlighted slot reads no terminal operation.",
+              "caption": "Built, and never run.",
+              "src": "_dot/0a532c23dd36e9e0.svg"
+            }
+          },
+          {
+            "say": "Elements start to move only when a **terminal operation** asks for them. My slate has none, so nothing ever flowed."
           }
         ],
         "check": {
-          "prompt": "I add a fourth line:  s.forEach(w -> System.out.println(w));  What appears on the screen after ready?",
+          "prompt": "I add a line at the end:  s.forEach(w -> System.out.println(w));  What appears on the screen after ready?",
           "answer": "saw orc, orc, saw elf, elf",
           "wrong": [
             "saw orc, saw elf, orc, elf",
             "orc, elf, and nothing else"
           ],
-          "why": "forEach is a terminal operation, so now the pipeline runs: and it runs ONE element at a time. orc goes past the spy-hole and on to forEach before elf has even started."
+          "why": "forEach is a terminal operation, so now the pipeline runs, one element at a time. orc goes past the spy-hole and on to forEach before elf has even started."
         }
       },
       {
-        "say": "The rule: no terminal operation, no work. A pipeline is a plan, and the terminal operation is the order to carry it out."
+        "say": "With forEach added at the end, the program prints: The rule: **no terminal operation, no work**. A pipeline is a plan, and the terminal operation is the order to carry it out.",
+        "beats": [
+          {
+            "say": "With forEach added at the end, the program prints:"
+          },
+          {
+            "code": "ready\nsaw orc\norc\nsaw elf\nelf"
+          },
+          {
+            "say": "The rule: **no terminal operation, no work**. A pipeline is a plan, and the terminal operation is the order to carry it out."
+          }
+        ]
       }
     ],
     "outro": "“The next monster hides its spy-hole inside a filter and keeps a tally. Ask yourself, at every line: has anything been told to run yet?”"
@@ -787,20 +864,46 @@
     "type": "npc_demo",
     "question": "NPC: A whole answer in one sentence",
     "npc": "zoya",
-    "intro": "Zoya wipes the bench clean. “The answers here are short. Most are a single pipeline, and the method hands back whatever comes out of its last station.”",
+    "intro": "Zoya wipes the bench clean. “The answers here are short. Most are a single return statement: a lambda, or a pipeline whose last station gives the answer.”",
     "steps": [
       {
-        "say": "The class above the box holds a list. Your method starts a stream from it, and returns what the pipeline produces.",
+        "say": "In the first few, the answer is a **lambda** itself. A lambda is a value, so a method can return one, just as it returns a number. So greet(\"Hail\") hands back a Function, and its apply(\"Zoya\") gives \"Hail, Zoya\". The lambda uses the method's own parameter. That is allowed only because nothing ever changes it: give it a new value anywhere, and Java will not compile.",
         "beats": [
           {
-            "say": "In the problems that follow, the class above the box holds a list. Your method starts a stream from it, and returns what the pipeline produces."
+            "say": "In the first few, the answer is a **lambda** itself. A lambda is a value, so a method can return one, just as it returns a number."
+          },
+          {
+            "code": "public Function<String, String> greet(String hi) {\n    return name -> hi + \", \" + name;\n}",
+            "language": "java"
+          },
+          {
+            "say": "So greet(\"Hail\") hands back a Function, and its apply(\"Zoya\") gives \"Hail, Zoya\"."
+          },
+          {
+            "say": "The lambda uses the method's own parameter. That is allowed only because nothing ever changes it: give it a new value anywhere, and Java will not compile."
+          }
+        ]
+      },
+      {
+        "say": "Later, the class above the answer box holds a list. Your method starts a stream from it, and returns what the pipeline produces. One statement over three lines, with one semicolon at the very end. return comes first, because the result of the whole pipeline is the answer.",
+        "beats": [
+          {
+            "say": "Later, the class above the answer box holds a list. Your method starts a stream from it, and returns what the pipeline produces."
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain, fontsize=11]; ranksep=0.3;\n  l [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Lagoon</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>- mermaids : ArrayList&lt;Mermaid&gt;</B></FONT></TD></TR></TABLE>>];\n  m [label=<<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#00c840\"><TR><TD><B><FONT COLOR=\"#7CFC00\">Mermaid</FONT></B></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">- name : String</FONT></TD></TR><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">- age : int</FONT></TD></TR><HR/><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">+ getName() : String</FONT></TD></TR><TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"#c8ffb0\">+ getAge() : int</FONT></TD></TR></TABLE>>];\n  l -> m [arrowhead=vee, color=\"#5aaa5a\"];\n}",
+              "alt": "A class diagram. Lagoon has one field, mermaids, an ArrayList of Mermaid, highlighted. An arrow leads down to the Mermaid class, which has name and age fields and the methods getName and getAge.",
+              "caption": "The list your pipeline starts from.",
+              "src": "_dot/ee77cd7ca745611b.svg"
+            }
           },
           {
             "code": "return mermaids.stream()\n    .filter(m -> m.getAge() > 100)\n    .count();",
             "language": "java"
           },
           {
-            "say": "One statement, written over three lines, with one semicolon at the very end. The word return comes first, because the result of the whole pipeline is the answer."
+            "say": "One statement over three lines, with one semicolon at the very end. return comes first, because the result of the whole pipeline is the answer."
           }
         ],
         "check": {
@@ -814,13 +917,13 @@
         }
       },
       {
-        "say": "Two things the practice Java will tell you, as the real compiler would. A lambda may use a variable from outside it, but may not change it. And to sort largest-first, compare the other way round.",
+        "say": "Two last tips. A lambda cannot add to a total of yours, since that changes a variable of the method. Let the stream do the adding up: count(), or mapToInt(…).sum(). And to sort with the largest first, hand sorted a lambda that compares the other way round:",
         "beats": [
           {
-            "say": "Two things the practice Java will tell you, in the words of the real compiler. First: a lambda may USE a variable from the method around it, but may not change it. Let the stream do the adding up: count(), or mapToInt(…).sum()."
+            "say": "Two last tips. A lambda cannot add to a total of yours, since that changes a variable of the method. Let the stream do the adding up: count(), or mapToInt(…).sum()."
           },
           {
-            "say": "Second: to sort with the largest first, hand sorted a lambda that compares the other way round."
+            "say": "And to sort with the largest first, hand sorted a lambda that compares the other way round:"
           },
           {
             "code": ".sorted((a, b) -> b.getAge() - a.getAge())",
@@ -829,7 +932,7 @@
         ]
       }
     ],
-    "outro": "“Read each one as a row of stations: where it starts, what each station keeps or changes, and what the last one hands back.”"
+    "outro": "“For a lambda, ask what it takes and what it gives back. For a pipeline, ask where it starts, what each station keeps or changes, and what the last one hands back.”"
   },
   {
     "type": "code_write",

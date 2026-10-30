@@ -38,6 +38,14 @@
           {
             "code": "int count = 3;\ndouble wide = count;       // widening, automatic\n\ndouble price = 7.5;\nint whole = (int) price;   // narrowing, needs a cast",
             "language": "java"
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; types [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\"></TD><TD WIDTH=\"56\" COLOR=\"#00c840\">int</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">long</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">float</TD><TD WIDTH=\"56\" COLOR=\"#00c840\">double</TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\"></TD><TD BORDER=\"0\" COLSPAN=\"4\"><FONT POINT-SIZE=\"10\" COLOR=\"#7CFC00\">widening: automatic  →</FONT></TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\"></TD><TD BORDER=\"0\" COLSPAN=\"4\"><FONT POINT-SIZE=\"10\" COLOR=\"#ffd86b\">←  narrowing: needs a cast</FONT></TD></TR></TABLE>>]; }",
+              "alt": "Four number types in a row, from smallest range to biggest: int, long, float, double. Beneath them, an arrow pointing right is labelled widening, automatic, and an arrow pointing left is labelled narrowing, needs a cast.",
+              "caption": "From smallest range to biggest.",
+              "src": "_dot/6a33ec14fea077e3.svg"
+            }
           }
         ],
         "check": {
@@ -75,17 +83,17 @@
         }
       },
       {
-        "say": "**null** is a value for a reference variable that refers to no object at all. Asking a null variable for a method, as in name.length(), crashes with a **NullPointerException**.",
+        "say": "**null** is a value for a reference variable that refers to no object at all. Asking a null variable for a method, as in  name.length(),  crashes with a **NullPointerException**.",
         "beats": [
           {
             "say": "**null** is a value for a reference variable that refers to no object at all."
           },
           {
-            "code": "String name = null;      // no String exists\nString blank = \"\";       // a real String, zero characters",
+            "code": "String name = null;  // no String exists\nString blank = \"\";   // a real String, zero characters",
             "language": "java"
           },
           {
-            "say": "Asking a null variable for a method, as in name.length(), crashes with a **NullPointerException**."
+            "say": "Asking a null variable for a method, as in  name.length(),  crashes with a **NullPointerException**."
           }
         ],
         "check": {
@@ -249,7 +257,7 @@
     "intro": "Nia has chalked two numbers on the workshop floor: a sum of 9 and a count of 2. “The average is four and a half. Watch Java refuse to say so, twice.”",
     "steps": [
       {
-        "say": "Both variables are ints, so / does integer division and the half is thrown away.",
+        "say": "Here is the honest first attempt. Both are ints, so / does **integer division**: it keeps only the whole part. The .5 is gone before anything is printed.",
         "beats": [
           {
             "say": "Here is the honest first attempt."
@@ -259,37 +267,45 @@
             "language": "java"
           },
           {
-            "say": "Both variables are ints, so / does integer division. The .5 is gone before anything is printed."
+            "say": "Both are ints, so / does **integer division**: it keeps only the whole part. The .5 is gone before anything is printed."
           }
         ]
       },
       {
-        "say": "Casting the finished quotient is too late.",
+        "say": "So we reach for a **cast**. Most people's first try: The parentheses run first, so the cast is handed 4. It cannot bring back a half that is already gone.",
         "beats": [
           {
-            "say": "So we reach for a cast. Most people's first try:"
+            "say": "So we reach for a **cast**. Most people's first try:"
           },
           {
             "code": "System.out.println((double) (sum / count));   // 4.0",
             "language": "java"
           },
           {
-            "say": "Parentheses run first. 9 / 2 has already become 4 by the time the cast sees it, and casting 4 gives 4.0. The cast cannot bring back a half that no longer exists."
+            "figure": {
+              "dot": "digraph { nodesep=0.35; ranksep=0.3; edge [arrowhead=none, color=\"#5aaa5a\"]; c [shape=box, style=rounded, color=\"#00c840\", label=<<B><FONT COLOR=\"#c8ffb0\">(double)</FONT></B><BR/><FONT POINT-SIZE=\"11\" COLOR=\"#5aaa5a\">4.0</FONT>>];\nd [shape=box, style=rounded, color=\"#ffb300\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=<<B><FONT COLOR=\"#ffd86b\">/</FONT></B><BR/><FONT POINT-SIZE=\"11\" COLOR=\"#ffd86b\">4</FONT>>];\ns [shape=box, style=rounded, color=\"#00c840\", label=<<B><FONT COLOR=\"#c8ffb0\">sum</FONT></B><BR/><FONT POINT-SIZE=\"11\" COLOR=\"#5aaa5a\">9</FONT>>];\nn [shape=box, style=rounded, color=\"#00c840\", label=<<B><FONT COLOR=\"#c8ffb0\">count</FONT></B><BR/><FONT POINT-SIZE=\"11\" COLOR=\"#5aaa5a\">2</FONT>>];\nc -> d; d -> s; d -> n; }",
+              "alt": "An expression tree for (double) (sum / count). At the top, the cast gives 4.0. Below it, the division, highlighted, gives 4. Below that, sum is 9 and count is 2.",
+              "caption": "Each box shows the value it hands up.",
+              "src": "_dot/9e8d59de26a19c87.svg"
+            }
+          },
+          {
+            "say": "The parentheses run first, so the cast is handed 4. It cannot bring back a half that is already gone."
           }
         ]
       },
       {
-        "say": "A cast binds tighter than division: it grabs only the one thing directly to its right.",
+        "say": "Now the same cast, without the parentheses around sum / count. A cast binds tighter than / does. It applies only to the one value directly to its right.",
         "beats": [
           {
-            "say": "Now remove those parentheses."
+            "say": "Now the same cast, without the parentheses around sum / count."
           },
           {
             "code": "System.out.println((double) sum / count);",
             "language": "java"
           },
           {
-            "say": "A cast binds tighter than / does. It grabs only the ONE thing directly to its right."
+            "say": "A cast binds tighter than / does. It applies only to the one value directly to its right."
           }
         ],
         "check": {
@@ -303,7 +319,23 @@
         }
       },
       {
-        "say": "When one side of / is a double, Java widens the other side too and does real division: 9.0 / 2 is 4.5. The pattern: cast ONE operand before you divide, never the finished quotient."
+        "say": "When one side of / is a double, Java **widens** the other side too and does real division: 9.0 / 2 is 4.5. The pattern: cast one operand before you divide, never the finished quotient.",
+        "beats": [
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.35; ranksep=0.3; edge [arrowhead=none, color=\"#5aaa5a\"]; d [shape=box, style=rounded, color=\"#7CFC00\", style=\"rounded,filled\", fillcolor=\"#0f3a0f\", label=<<B><FONT COLOR=\"#7CFC00\">/</FONT></B><BR/><FONT POINT-SIZE=\"11\" COLOR=\"#7CFC00\">4.5</FONT>>];\nc [shape=box, style=rounded, color=\"#ffb300\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=<<B><FONT COLOR=\"#ffd86b\">(double)</FONT></B><BR/><FONT POINT-SIZE=\"11\" COLOR=\"#ffd86b\">9.0</FONT>>];\ns [shape=box, style=rounded, color=\"#00c840\", label=<<B><FONT COLOR=\"#c8ffb0\">sum</FONT></B><BR/><FONT POINT-SIZE=\"11\" COLOR=\"#5aaa5a\">9</FONT>>];\nn [shape=box, style=rounded, color=\"#00c840\", label=<<B><FONT COLOR=\"#c8ffb0\">count</FONT></B><BR/><FONT POINT-SIZE=\"11\" COLOR=\"#5aaa5a\">2</FONT>>];\nd -> c; d -> n; c -> s; }",
+              "alt": "An expression tree for (double) sum / count. At the top, the division gives 4.5. Its left branch is the cast, highlighted, which turns sum, 9, into 9.0. Its right branch is count, 2.",
+              "caption": "(double) sum / count",
+              "src": "_dot/7de59754d671a33a.svg"
+            }
+          },
+          {
+            "say": "When one side of / is a double, Java **widens** the other side too and does real division: 9.0 / 2 is 4.5."
+          },
+          {
+            "say": "The pattern: cast one operand before you divide, never the finished quotient."
+          }
+        ]
       }
     ],
     "outro": "“Two monsters ahead use the same trick with other numbers. One casts before dividing, one after. Read the parentheses before you answer.”"
@@ -448,35 +480,43 @@
     "type": "npc_demo",
     "question": "NPC: The counter that rolls over",
     "npc": "ada",
-    "intro": "Ada sets a brass counter on the bench, the kind with numbered wheels. Every wheel shows a 9. “Push the lever once more,” she says, “and tell me what you expect to see.”",
+    "intro": "Ada sets a brass counter on the bench, the kind with three numbered wheels. Every wheel shows a 9. “Push the lever once more,” she says, “and tell me what you expect to see.”",
     "steps": [
       {
-        "say": "An int has a largest value, Integer.MAX_VALUE. Add 1 to it and it wraps around to the smallest int, with no error.",
+        "say": "My counter rolls from 999 back to 000, with no wheel for a fourth digit. Java's whole-number types have a fixed number of bits, so they roll over too: that is **overflow**. A **byte** has 8 bits and holds -128 to 127. Nothing was thrown and nothing was reported: overflow is silent.",
         "beats": [
           {
-            "say": "An int is 32 bits, so it has a largest value: 2,147,483,647. Java keeps that number in Integer.MAX_VALUE."
+            "say": "My counter rolls from 999 back to 000, with no wheel for a fourth digit. Java's whole-number types have a fixed number of bits, so they roll over too: that is **overflow**."
           },
           {
-            "code": "int max = Integer.MAX_VALUE;\nSystem.out.println(max);       // 2147483647\nSystem.out.println(max + 1);   // -2147483648",
+            "code": "byte level = 127;   // the largest byte\nlevel++;\nSystem.out.println(level);   // -128",
             "language": "java"
           },
           {
-            "say": "One more than the largest int is the SMALLEST int. The wheels rolled over. Nothing was thrown and nothing was reported: this is overflow, and it is silent."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; r [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\"></TD><TD BORDER=\"0\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">bottom</FONT></TD><TD BORDER=\"0\"></TD><TD BORDER=\"0\"></TD><TD BORDER=\"0\"></TD><TD BORDER=\"0\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">top</FONT></TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\"></TD><TD WIDTH=\"44\" PORT=\"p0\" COLOR=\"#7CFC00\" BGCOLOR=\"#0f3a0f\"><FONT COLOR=\"#7CFC00\"><B>-128</B></FONT></TD><TD WIDTH=\"44\" PORT=\"p1\" COLOR=\"#00c840\">-127</TD><TD WIDTH=\"44\" PORT=\"p2\" COLOR=\"#00c840\">…</TD><TD WIDTH=\"44\" PORT=\"p3\" COLOR=\"#00c840\">126</TD><TD WIDTH=\"44\" PORT=\"p4\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>127</B></FONT></TD></TR></TABLE>>];\nr:p4:s -> r:p0:s [label=\" +1\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
+              "alt": "The range of a byte as a row: -128, -127, a gap, 126, 127. -128 is marked bottom and 127 top. An arrow labelled +1 runs from 127 back round to -128.",
+              "caption": "One past the top comes back in at the bottom.",
+              "src": "_dot/0d6a2048fc0c2ce7.svg"
+            }
+          },
+          {
+            "say": "A **byte** has 8 bits and holds -128 to 127. Nothing was thrown and nothing was reported: overflow is silent."
           }
         ]
       },
       {
-        "say": "Two ordinary-looking numbers can overflow when they are added or multiplied.",
+        "say": "An int has 32 bits, enough for about 2.1 billion either side of zero. Its top value,  Integer.MAX_VALUE,  is 2,147,483,647. The underscores are only for your eyes: Java ignores them.",
         "beats": [
           {
-            "say": "It does not take a constant with a grand name. Two populations will do."
+            "say": "An int has 32 bits, enough for about 2.1 billion either side of zero. Its top value,  Integer.MAX_VALUE,  is 2,147,483,647."
           },
           {
             "code": "int a = 2_000_000_000;\nint b = 1_000_000_000;\nint total = a + b;",
             "language": "java"
           },
           {
-            "say": "(The underscores are legal. Java ignores them; they are there for your eyes.)"
+            "say": "The underscores are only for your eyes: Java ignores them."
           }
         ],
         "check": {
@@ -490,22 +530,22 @@
         }
       },
       {
-        "say": "The cure is to do the arithmetic in long. Cast ONE operand before the operation runs, as you did for division.",
+        "say": "A **long** has 64 bits, with room for about nine quintillion. But the arithmetic itself has to happen in long. As in  (double) sum / count,  a cast applies to the one value to its right. Make one operand a long before the + or * runs, and Java **widens** the other to match.",
         "beats": [
           {
-            "say": "A long has 64 bits, with room for about nine quintillion. But the arithmetic itself has to happen in long."
+            "say": "A **long** has 64 bits, with room for about nine quintillion. But the arithmetic itself has to happen in long."
           },
           {
-            "code": "long wrong = a + b;          // int + int overflows, THEN is widened\nlong right = (long) a + b;   // long + int: worked out in long",
+            "code": "// int + int overflows, then is widened:\nlong wrong = a + b;\n\n// long + int is worked out in long:\nlong right = (long) a + b;",
             "language": "java"
           },
           {
-            "say": "Same rule as the average: a cast grabs the one thing to its right. Make one operand a long before the + or the * runs, and Java widens the other to match."
+            "say": "As in  (double) sum / count,  a cast applies to the one value to its right. Make one operand a long before the + or * runs, and Java **widens** the other to match."
           }
         ]
       }
     ],
-    "outro": "“The next few have this trap in them. Before you answer, ask what type the arithmetic was DONE in, not what type the answer was stored in.”"
+    "outro": "“The next few have this trap in them. Before you answer, ask which type the arithmetic was done in, not which type the answer is stored in.”"
   },
   {
     "question": "What does this print?\nint max = Integer.MAX_VALUE;   // 2147483647\nSystem.out.println(max + 1);",
@@ -682,31 +722,39 @@
     "type": "npc_demo",
     "question": "NPC: An arrow that points nowhere",
     "npc": "ada",
-    "intro": "Ada draws two small boxes on the slate, one labelled e and one labelled s. From e she draws an arrow to a larger, empty box. From s she draws nothing.",
+    "intro": "Ada draws two small boxes on the slate, one labelled empty and one labelled missing. From empty she draws an arrow to a larger box with nothing written inside it. From missing she draws an arrow that ends at no box at all, only the word null.",
     "steps": [
       {
-        "say": "A String variable holds a reference to a String object, not the text itself.",
+        "say": "A String variable does not hold the text itself. It holds a **reference**: an arrow to a String object somewhere in memory. empty refers to a real String that happens to hold zero characters. missing refers to no object at all. That is what **null** means.",
         "beats": [
           {
-            "say": "A String variable does not hold the text itself. It holds a reference: an arrow to a String object somewhere in memory."
+            "say": "A String variable does not hold the text itself. It holds a **reference**: an arrow to a String object somewhere in memory."
           },
           {
-            "code": "String e = \"\";\nString s = null;",
+            "code": "String empty = \"\";\nString missing = null;",
             "language": "java"
           },
           {
-            "say": "e refers to a real String object that happens to contain zero characters. s refers to no object at all. That is what null means."
+            "figure": {
+              "dot": "digraph { node [shape=plain]; rankdir=LR;{ rank=same; empty [label=<<B><FONT COLOR=\"#6be0ff\">empty</FONT></B>>]; missing [label=<<B><FONT COLOR=\"#6be0ff\">missing</FONT></B>>]; empty -> missing [style=invis]; }\no [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD COLSPAN=\"2\" COLOR=\"#00c840\" PORT=\"t\"><B><FONT COLOR=\"#7CFC00\">String</FONT></B></TD></TR><TR><TD COLOR=\"#00c840\" COLSPAN=\"2\"><FONT COLOR=\"#c8ffb0\">&quot;&quot;</FONT></TD></TR></TABLE>>];\nn [shape=plaintext, label=\"null\", fontcolor=\"#4f6f4f\"];\nempty -> o:t [color=\"#6be0ff\"];\nmissing -> n [color=\"#6be0ff\"]; }",
+              "alt": "The variable empty has an arrow to a String object holding no characters. The variable missing has an arrow to the word null, with no object.",
+              "caption": "One arrow to an object, one to nothing.",
+              "src": "_dot/a45e9196c052ff75.svg"
+            }
+          },
+          {
+            "say": "empty refers to a real String that happens to hold zero characters. missing refers to no object at all. That is what **null** means."
           }
         ]
       },
       {
-        "say": "Calling a method follows the reference: that is dereferencing.",
+        "say": "Calling a method means following the arrow to the object and asking it something. That is called **dereferencing**. The empty String is an object, so it can answer: zero characters.",
         "beats": [
           {
-            "say": "Calling a method means following the arrow to the object and asking it something. That is called dereferencing."
+            "say": "Calling a method means following the arrow to the object and asking it something. That is called **dereferencing**."
           },
           {
-            "code": "System.out.println(e.length());   // 0",
+            "code": "System.out.println(empty.length());   // 0",
             "language": "java"
           },
           {
@@ -714,35 +762,47 @@
           }
         ],
         "check": {
-          "prompt": "What happens at s.length()?",
+          "prompt": "What happens at missing.length()?",
           "answer": "It throws NullPointerException: there is no object to ask",
           "wrong": [
             "It gives 0, just like the empty String",
             "It does not compile"
           ],
-          "why": "The compiler checks only that s is a String variable. When the line runs, the reference leads nowhere, so Java throws NullPointerException."
+          "why": "The compiler checks only that missing is a String variable. When the line runs, the reference leads nowhere, so Java throws a **NullPointerException**."
         }
       },
       {
-        "say": "Modern Java says exactly what it was trying to do.",
+        "say": "Java's error names the method it tried to call, and the variable that was null: Run from a plain command line, the variable may show as a label such as <local2> instead of its name. It is the same variable.",
         "beats": [
           {
-            "say": "Modern Java tells you exactly what it was trying to do when it fell over:"
+            "say": "Java's error names the method it tried to call, and the variable that was null:"
           },
           {
-            "code": "Exception in thread \"main\" java.lang.NullPointerException:\n  Cannot invoke \"String.length()\" because \"s\" is null",
+            "code": "Exception in thread \"main\"\njava.lang.NullPointerException:\n  Cannot invoke \"String.length()\"\n  because \"missing\" is null",
             "language": "error message"
           },
           {
-            "say": "Your editor shows the variable's name like this. Run from a bare command line you may see a label such as <local2> in its place; it means the same variable."
+            "say": "Run from a plain command line, the variable may show as a label such as <local2> instead of its name. It is the same variable."
           }
         ]
       },
       {
-        "say": "Looking at the reference is always safe. s == null compares the arrows and never follows one, so it gives true or false and cannot crash."
+        "say": "Looking at the reference itself is always safe. The == test compares arrows and never follows one, so it gives true or false and cannot crash.",
+        "beats": [
+          {
+            "say": "Looking at the reference itself is always safe."
+          },
+          {
+            "code": "System.out.println(missing == null);   // true",
+            "language": "java"
+          },
+          {
+            "say": "The == test compares arrows and never follows one, so it gives true or false and cannot crash."
+          }
+        ]
       }
     ],
-    "outro": "“Next you get both variables and six expressions. For each one, ask: does this follow the arrow from s, or just look at it?”"
+    "outro": "“Next come two variables just like these, and six expressions. For each one, ask: does it follow the arrow from the null variable, or only look at it?”"
   },
   {
     "type": "matching",
@@ -900,29 +960,37 @@
     "intro": "Nia has pinned a sign to the workshop door: ENTER YOUR AGE. Underneath, in three different hands, visitors have written “Wookiee”, “-5” and “9999”.",
     "steps": [
       {
-        "say": "hasNextInt() looks at the next thing typed and reports whether it is an int. It does not take it.",
+        "say": "scanner.nextInt() reads a whole number. If the next thing typed is a word, it throws an **InputMismatchException** instead. So before we read, we look. Scanner splits what is typed into **tokens**: the pieces of text between spaces and line breaks. hasNextInt() answers a question about the next token and leaves it exactly where it was.",
         "beats": [
           {
-            "say": "scanner.nextInt() crashes if the next thing typed is not a whole number. So before we read, we look."
+            "say": "scanner.nextInt() reads a whole number. If the next thing typed is a word, it throws an **InputMismatchException** instead. So before we read, we look."
           },
           {
             "code": "scanner.hasNextInt()   // true or false; reads nothing",
             "language": "java"
           },
           {
-            "say": "hasNextInt() answers a question about the next token and leaves it exactly where it was."
+            "say": "Scanner splits what is typed into **tokens**: the pieces of text between spaces and line breaks. hasNextInt() answers a question about the next token and leaves it exactly where it was."
           }
         ]
       },
       {
-        "say": "Loop while the next token is NOT an int, and throw each bad token away with scanner.next().",
+        "say": "Each pass throws one bad token away, then asks again.",
         "beats": [
           {
-            "code": "System.out.print(\"Enter your age: \");\nwhile (!scanner.hasNextInt()) {\n    String bad = scanner.next();   // take the bad token away\n    System.out.print(bad + \" is not a number. Try again: \");\n}\nint age = scanner.nextInt();       // safe: we looked first",
+            "code": "System.out.print(\"Enter your age: \");\nwhile (!scanner.hasNextInt()) {\n    String bad = scanner.next();   // take it away\n    System.out.print(bad + \"? Try again: \");\n}\nint age = scanner.nextInt();   // safe: we looked",
             "language": "java"
           },
           {
-            "say": "The loop runs only while the next token is not an int. Each pass removes that token and asks again."
+            "figure": {
+              "dot": "digraph { nodesep=0.3; ranksep=0.3; ordering=out;p [shape=box, color=\"#00c840\", fontcolor=\"#c8ffb0\", label=\"print the prompt\"];\nt [shape=diamond, color=\"#00c840\", fontcolor=\"#c8ffb0\", style=solid, margin=\"0.04,0.02\", label=\"hasNextInt()?\"];\nok [shape=box, color=\"#7CFC00\", fontcolor=\"#7CFC00\", style=\"rounded,filled\", fillcolor=\"#0f3a0f\", label=\"age = nextInt()\"];\nbad [shape=box, color=\"#ffb300\", fontcolor=\"#ffd86b\", style=\"rounded,filled\", fillcolor=\"#3a2c00\", label=\"bad = next()\nprint \\\"Try again\\\"\"];\np -> t [color=\"#5aaa5a\"];\nt -> ok [label=\" yes\", color=\"#5aaa5a\"];\nt -> bad [label=\" no\", color=\"#5aaa5a\"];\nbad -> t [constraint=false, color=\"#5aaa5a\"]; }",
+              "alt": "A flowchart. After the prompt, a diamond asks hasNextInt()? If no, a highlighted box reads bad = next() and prints Try again, then the arrow returns to the diamond. If yes, age = nextInt().",
+              "caption": "The same loop, as a flowchart.",
+              "src": "_dot/4adddc5bd5434555.svg"
+            }
+          },
+          {
+            "say": "Each pass throws one bad token away, then asks again."
           }
         ],
         "check": {
@@ -936,13 +1004,13 @@
         }
       },
       {
-        "say": "A value of the right type can still be out of range. Check that too before you accept it.",
+        "say": "“-5” and “9999” get through that loop: both are ints. Being the right type is not the same as being sensible, so next comes a **range check**. Type first, then range. For text, the matching check is one you already know: not null, and not blank.",
         "beats": [
           {
-            "say": "“-5” and “9999” get through that loop: both are ints. Being the right type is not the same as being sensible."
+            "say": "“-5” and “9999” get through that loop: both are ints. Being the right type is not the same as being sensible, so next comes a **range check**."
           },
           {
-            "code": "if (age >= 0 && age <= 120) {\n    valid = true;\n}",
+            "code": "boolean valid = age >= 0 && age <= 120;",
             "language": "java"
           },
           {
@@ -951,7 +1019,7 @@
         ]
       }
     ],
-    "outro": "“Three checks, then: is it the right type, is it in range, is there anything there at all. Each of the next monsters leaves one out.”"
+    "outro": "“Three checks, then: is it the right type, is it in range, is there anything there at all? Ask all three of every input.”"
   },
   {
     "question": "What does scanner.hasNextInt() do?",
@@ -1076,14 +1144,22 @@
     "intro": "Nia unrolls a strip of graph parchment and boxes off a small rectangle of squares: two across the side, three along the top.",
     "steps": [
       {
-        "say": "A 2D array is an array of arrays: each row is an int[] of its own.",
+        "say": "A **2D array** is an array of arrays. Each **row** is an int[] array of its own, and the outer array holds the rows. First number: how many rows. Second number: how many slots in each row. 2 rows of 3 is 6 ints, every one starting at 0.",
         "beats": [
           {
-            "say": "A 2D array is an array of arrays. Each row is an int[] array of its own, and the outer array holds the rows."
+            "say": "A **2D array** is an array of arrays. Each **row** is an int[] array of its own, and the outer array holds the rows."
           },
           {
             "code": "int[][] grid = new int[2][3];   // 2 rows, 3 columns",
             "language": "java"
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; rankdir=LR; nodesep=0.2; ranksep=0.3;g [label=<<B><FONT COLOR=\"#6be0ff\">grid</FONT></B>>];\no [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\"> </FONT></TD></TR><TR><TD WIDTH=\"22\" PORT=\"r0\" COLOR=\"#00c840\"><FONT COLOR=\"#6be0ff\">•</FONT></TD></TR><TR><TD WIDTH=\"22\" PORT=\"r1\" COLOR=\"#00c840\"><FONT COLOR=\"#6be0ff\">•</FONT></TD></TR></TABLE>>];\nm [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">0</FONT></TD><TD BORDER=\"0\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">1</FONT></TD><TD BORDER=\"0\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">2</FONT></TD></TR><TR><TD WIDTH=\"30\" PORT=\"a0\" COLOR=\"#00c840\">0</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">0</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">0</TD></TR><TR><TD WIDTH=\"30\" PORT=\"a1\" COLOR=\"#00c840\">0</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">0</TD><TD WIDTH=\"30\" COLOR=\"#00c840\">0</TD></TR></TABLE>>];\ng -> o [color=\"#6be0ff\"];\no:r0:c -> m:a0:w [color=\"#6be0ff\", arrowsize=0.6, label=\"grid[0]\", fontcolor=\"#6be0ff\", fontsize=10];\no:r1:c -> m:a1:w [color=\"#6be0ff\", arrowsize=0.6, label=\"grid[1]\", fontcolor=\"#6be0ff\", fontsize=10]; }",
+              "alt": "The variable grid points at an outer array with two slots. An arrow labelled grid[0] runs from the first slot to a row of three ints, and one labelled grid[1] from the second slot to another row of three. Every int is 0, and the columns are numbered 0, 1 and 2 along the top.",
+              "caption": "An outer array of 2 rows, each an int[] of 3.",
+              "src": "_dot/6828254721961865.svg"
+            }
           },
           {
             "say": "First number: how many rows. Second number: how many slots in each row. 2 rows of 3 is 6 ints, every one starting at 0."
@@ -1091,10 +1167,10 @@
         ]
       },
       {
-        "say": "grid.length counts rows; grid[0].length counts the columns in row 0.",
+        "say": "grid.length counts the rows: 2. grid[0] is the whole first row, an array, so  grid[0].length  counts its **columns**: 3. To reach one cell, give the row index and then the column index, each in its own brackets, each counting from 0.",
         "beats": [
           {
-            "say": "grid.length counts the rows: 2. grid[0] is the whole first row, an array, so grid[0].length counts its columns: 3."
+            "say": "grid.length counts the rows: 2. grid[0] is the whole first row, an array, so  grid[0].length  counts its **columns**: 3."
           },
           {
             "code": "grid[0][1] = 9;   // row 0, column 1",
@@ -1115,7 +1191,16 @@
         }
       },
       {
-        "say": "grid[2][3] names no cell at all. There is no row 2, so Java throws ArrayIndexOutOfBoundsException, just as it does for a plain array."
+        "say": "grid[2][3] names no cell. grid has only rows 0 and 1, so Java stops at the row index and throws, just as it does for a plain array.",
+        "beats": [
+          {
+            "code": "grid[2][3] = 1;\n// ArrayIndexOutOfBoundsException:\n// Index 2 out of bounds for length 2",
+            "language": "java"
+          },
+          {
+            "say": "grid[2][3] names no cell. grid has only rows 0 and 1, so Java stops at the row index and throws, just as it does for a plain array."
+          }
+        ]
       }
     ],
     "outro": "“Same picture, different numbers. Count the rows, count the columns, and mind the zero.”"
@@ -1207,14 +1292,18 @@
     "intro": "Nia taps a method line on the wall. “You have written methods that take an int and return an int. Give one of those types a capital letter, and the method can be handed nothing — or hand nothing back.”",
     "steps": [
       {
-        "say": "A parameter of a reference type, such as String or Integer, may arrive as null. Check before you use it.",
+        "say": "A String parameter may be **null**, and the tests will try it. So the null check comes first and returns early, before any method is called on shipName.",
         "beats": [
           {
             "code": "public static int getShipNameLength(String shipName) {\n    if (shipName == null) {\n        return 0;\n    }\n    return shipName.length();\n}",
             "language": "java"
           },
           {
-            "say": "The tests WILL call this with null. The check comes first and returns early; only after it is it safe to call a method on shipName."
+            "code": "Call                       Expected\ngetShipNameLength(\"Rey\")   3\ngetShipNameLength(null)    0",
+            "language": "the tests"
+          },
+          {
+            "say": "A String parameter may be **null**, and the tests will try it. So the null check comes first and returns early, before any method is called on shipName."
           }
         ],
         "check": {
@@ -1228,17 +1317,21 @@
         }
       },
       {
-        "say": "A return type of Integer or Double lets a method return null to mean “no answer”. An int or a double could not.",
+        "say": "Double, with a capital D, is the **wrapper class** for double, so it can be null. n / 2.0 **unboxes** n and divides, and Java boxes the result on its way out. The rest is as before: Run costs nothing, and only Submit counts.",
         "beats": [
           {
             "code": "public static Double half(Integer n) {\n    if (n == null) {\n        return null;\n    }\n    return n / 2.0;\n}",
             "language": "java"
           },
           {
-            "say": "Double with a capital D is the wrapper class, so null is allowed. n / 2.0 unboxes n and divides, and Java boxes the result on its way out."
+            "say": "Double, with a capital D, is the **wrapper class** for double, so it can be null. n / 2.0 **unboxes** n and divides, and Java boxes the result on its way out."
           },
           {
-            "say": "The table shows such a result as the word null. The rest is as before: Run costs nothing, and only Submit counts."
+            "code": "Call         Expected\nhalf(7)      3.5\nhalf(null)   null",
+            "language": "the tests"
+          },
+          {
+            "say": "The rest is as before: Run costs nothing, and only Submit counts."
           }
         ]
       }
