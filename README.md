@@ -29,7 +29,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 ## Features
 
 - **Ten question formats** plus NPC teaching scenes (described below)
-- **Main menu** with topic groupings, per-set progress badges, and a global stats bar
+- **Main menu**, built to get a newcomer started: a two-line welcome; **Continue** for anything under way; progress in one line (level, accuracy, sets cleared, and the score once there is one, with how it is worked out folded beneath); and one **Courses** panel, a row per course with a one-line description (`description` on a topic in `catalog.json`), how far along it is, and one button for where to go next (`▶ Start`, `▶ Next` or `▶ Resume`). Each course's full set list, with every set's rank and trial, folds away beneath it, and a search box finds a set by name. How to play and the hero picker are folded at the foot.
 - **Lesson intros** — sets can declare an `intro` (story + learning objectives) in `catalog.json`, shown before the run starts
 - **Sequential first pass** — full runs present questions in authored order (the set is written as a progression, and NPC scenes precede their paired questions); missed questions still requeue, and reviews/trials shuffle their samples
 - **Mastery tiers** — the first full clear earns **Apprentice** rank (80% of the set's gradebook credit). A **Journeyman trial** unlocks 3 days later (90%), and a **Master trial** 7 days after completing Journeyman (100%). Trials are half the set (capped at 18 questions), weighted toward historically missed questions; finishing the run (retrieval boss included) earns the rank. Credit only ever rises. Sets cleared before tiers existed are grandfathered at Master

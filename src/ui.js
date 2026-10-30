@@ -498,14 +498,15 @@ export class GameUI {
   /**
    * Who the student plays as: the current hero, with the others behind a
    * "change" toggle — open until this browser has chosen one, so nobody plays
-   * the default without having seen there was a choice.
+   * the default without having seen there was a choice. `open: false` keeps it
+   * folded where it is not the point of the screen.
    */
-  _renderHeroPicker(root) {
+  _renderHeroPicker(root, { open = !heroChosen() } = {}) {
     const slot = $(root, "[data-ref=heroPicker]");
     if (!slot) return;
     const details = document.createElement("details");
     details.className = "hero-picker";
-    details.open = !heroChosen();
+    details.open = open;
     const summary = document.createElement("summary");
     summary.className = "hero-picker-toggle";
     const face = document.createElement("span");
@@ -698,11 +699,13 @@ export class GameUI {
   }
 
   /**
-   * The headline grade, plus an expandable derivation. Students are being graded
-   * on this number, so it has to be inspectable: the panel shows every set's rank,
-   * what each rank is worth, and what the next trial would add.
+   * Progress, in one line: level, answers, accuracy and sets cleared, with the
+   * score beside it once there is one. Opening the line shows the score's bar
+   * and an inspectable derivation (every set's rank, what each rank is worth,
+   * what the next trial would add), since in an LMS package students are graded
+   * on this number. A newcomer with nothing to show yet gets no line at all.
    */
-  _renderGradePanel(catalog) {
+  _renderProgressLine(catalog, globalStats, levelData) {
     const panel = $(this.root, "[data-ref=gradePanel]");
     if (!panel) return;
     const grade = computeCourseGrade(catalog);
@@ -713,9 +716,23 @@ export class GameUI {
     const hasLms = (() => {
       try { return !!window.LotrdScorm?.hasLms?.(); } catch (_) { return false; }
     })();
+    const answered = globalStats?.total_answered ?? 0;
+    if (!hasLms && answered === 0 && grade.clearedSets === 0) return;
 
-    $(this.root, "[data-ref=gradeLabel]").textContent =
-      hasLms ? "Course score (sent to your gradebook)" : "Overall progress score";
+    const level = levelData?.level ?? 1;
+    const chosen = (globalStats?.total_correct ?? 0) + (globalStats?.total_incorrect ?? 0);
+    const accuracy = chosen > 0 ? Math.round((globalStats.total_correct ?? 0) / chosen * 100) : 0;
+    $(this.root, "[data-ref=globalStats]").textContent = [
+      `⚔ Level ${level}`, `${answered} answered`, `${accuracy}% right`,
+      `🏆 ${grade.clearedSets} of ${grade.totalSets} cleared`,
+    ].join("  ·  ");
+
+    // The score is shown once it means something: always in a gradebook, and on
+    // the open web once a set has been cleared.
+    if (hasLms || grade.clearedSets > 0) {
+      $(this.root, "[data-ref=gradeInline]").hidden = false;
+      $(this.root, "[data-ref=gradeLabel]").textContent = hasLms ? "Course score" : "Score";
+    }
     $(this.root, "[data-ref=gradeValue]").textContent = `${grade.percent}%`;
 
     const fill = $(this.root, "[data-ref=gradeBarFill]");
@@ -806,9 +823,10 @@ export class GameUI {
   showMainMenu(catalog, globalStats, levelData, launchCallback) {
     this._clearKeyboard();
     renderTemplate(this.root, "tpl-main-menu");
-    this._renderHeroPicker(this.root);
-    this._renderGradePanel(catalog);
-    this._renderStatsBar(this.root, globalStats, levelData);
+    // Chosen on the screen before a run, where it opens for a first-timer; here
+    // it is one folded line at the foot of the page.
+    this._renderHeroPicker(this.root, { open: false });
+    this._renderProgressLine(catalog, globalStats, levelData);
 
     const inProgressEntries = [];
     catalog.forEach(topic => {
@@ -838,206 +856,95 @@ export class GameUI {
       section.hidden = false;
     }
 
+    // One row per course: what it is, how far along, and one button for where to
+    // go next. Its full list of sets folds away beneath it.
     const topicContainer = $(this.root, "[data-ref=topicSections]");
     catalog.forEach(topic => {
       const playableSets = (topic.sets || []).filter(e => !e.review);
-      const hasInProgress = playableSets.some(e => e.status?.type === "in_progress");
       const completedCount = playableSets.filter(e => e.status?.type === "complete").length;
 
-      const section = document.createElement("details");
-      section.className = `bbs-container topic-section${topic.coming_soon ? " topic-coming-soon" : ""}`;
-      if (hasInProgress) section.open = true;
+      const course = document.createElement("div");
+      course.className = `course${topic.coming_soon ? " topic-coming-soon" : ""}`;
 
-      const heading = document.createElement("summary");
-      heading.className = "topic-heading";
-
-      const label = document.createElement("span");
-      label.className = "topic-heading-label";
-      label.textContent = topic.topic.toUpperCase();
-      heading.appendChild(label);
-
+      const head = document.createElement("div");
+      head.className = "course-head";
+      const title = document.createElement("h3");
+      title.className = "course-title";
+      title.textContent = topic.topic;
+      head.appendChild(title);
+      const meta = document.createElement("span");
+      meta.className = "course-meta";
       if (topic.coming_soon) {
-        const badge = document.createElement("span");
-        badge.className = "coming-soon-badge";
-        badge.textContent = "Coming Soon";
-        heading.appendChild(badge);
+        meta.classList.add("coming-soon-badge");
+        meta.textContent = "Coming Soon";
       } else if (playableSets.length > 0) {
-        const meta = document.createElement("span");
-        meta.className = "topic-heading-meta";
         meta.textContent = completedCount > 0
-          ? `${playableSets.length} sets · ${completedCount} cleared`
+          ? `${completedCount} of ${playableSets.length} cleared`
           : `${playableSets.length} sets`;
-        heading.appendChild(meta);
       }
+      head.appendChild(meta);
+      course.appendChild(head);
 
-      section.appendChild(heading);
+      if (topic.description) {
+        const blurb = document.createElement("p");
+        blurb.className = "course-blurb";
+        blurb.textContent = topic.description;
+        course.appendChild(blurb);
+      }
       if (topic.coming_soon || !topic.sets?.length) {
-        topicContainer.appendChild(section);
+        topicContainer.appendChild(course);
         return;
       }
 
+      // Where to go next: the set under way, else the first not yet cleared.
+      const resume = playableSets.find(e => e.status?.type === "in_progress");
+      const next = resume || playableSets.find(e => e.status?.type !== "complete");
+      const go = document.createElement("div");
+      go.className = "course-go";
+      if (next) {
+        const begun = playableSets.some(e => e.status && e.status.type !== "not_started");
+        const verb = resume ? "Resume" : begun ? "Next" : "Start";
+        const btn = document.createElement("button");
+        btn.className = "action-button action-button--secondary course-go-btn";
+        btn.textContent = `▶ ${verb}: ${next.title}`;
+        btn.setAttribute("aria-label", `${verb} ${next.title}, in ${topic.topic}`);
+        btn.addEventListener("click", () => launchCallback(next.id, resume ? "resume" : "new"));
+        go.appendChild(btn);
+      } else {
+        const done = document.createElement("span");
+        done.className = "course-done";
+        done.textContent = "✓ Every set cleared";
+        go.appendChild(done);
+      }
+
+      const sets = document.createElement("details");
+      sets.className = "course-sets";
+      const toggle = document.createElement("summary");
+      toggle.className = "course-sets-toggle";
+      toggle.textContent = `All ${playableSets.length} sets`;
+      sets.appendChild(toggle);
       const setList = document.createElement("div");
       setList.className = "set-list";
-      const ordered = [
-        ...topic.sets.filter(e => e.review),
-        ...topic.sets.filter(e => !e.review),
-      ];
-
-      ordered.forEach(entry => {
-        const row = document.createElement("div");
-        row.className = "set-row" + (entry.review ? " set-row--review" : "");
-
-        const info = document.createElement("div");
-        info.className = "set-info";
-        if (entry.review) {
-          info.innerHTML = `
-            <span class="set-title">🔀 ${this._esc(entry.title)}</span>
-            <span class="set-desc">${this._esc(entry.description)}</span>
-            <span class="set-count">${entry.sample_size} random questions</span>
-          `;
-        } else {
-          info.innerHTML = `
-            <span class="set-title">${this._esc(entry.title)}</span>
-            <span class="set-desc">${this._esc(entry.description)}</span>
-            <span class="set-count">${entry.question_count} questions</span>
-          `;
-        }
-
-        const actions = document.createElement("div");
-        actions.className = "set-actions";
-
-        if (entry.review) {
-          const badge = document.createElement("span");
-          badge.className = "status-badge status-new";
-          badge.textContent = "🔀 Review";
-          actions.appendChild(badge);
-
-          const btn = document.createElement("button");
-          btn.className = "action-button set-btn";
-          btn.textContent = "New Mix";
-          btn.setAttribute("aria-label", `Start a new ${entry.title} mix`);
-          btn.addEventListener("click", () => launchCallback(entry.id, "new"));
-          actions.appendChild(btn);
-
-          row.appendChild(info);
-          row.appendChild(actions);
-          setList.appendChild(row);
-          return;
-        }
-
-        const status = entry.status ?? { type: "not_started" };
-        const badge = document.createElement("span");
-        if (status.type === "complete") {
-          const tier = entry.tier ?? TIER_MASTER;
-          badge.className = `status-badge status-complete status-tier-${tier}`;
-          badge.textContent = `${TIER_BADGES[tier]} ${TIER_NAMES[tier]}`;
-          badge.title = `Cleared — current rank: ${TIER_NAMES[tier]}`;
-        } else if (status.type === "in_progress") {
-          badge.className = "status-badge status-progress";
-          badge.textContent = `▶ ${status.remaining} left`;
-        } else if (status.type === "attempted") {
-          badge.className = "status-badge status-attempted";
-          badge.textContent = "◉ Attempted";
-        } else {
-          badge.className = "status-badge status-new";
-          badge.textContent = "○ New";
-        }
-        actions.appendChild(badge);
-
-        if (status.type === "complete" && entry.reviewDue) {
-          const due = document.createElement("span");
-          due.className = "status-badge status-review-due";
-          due.textContent = "🔁 Review due";
-          actions.appendChild(due);
-        }
-
-        const btn = document.createElement("button");
-        btn.className = "action-button set-btn";
-        if (status.type === "in_progress") {
-          btn.textContent = "Resume";
-          btn.setAttribute("aria-label", `Resume ${entry.title}`);
-          btn.addEventListener("click", () => launchCallback(entry.id, "resume"));
-
-          const newLink = document.createElement("button");
-          newLink.className = "action-button action-button--secondary set-btn-sm";
-          newLink.textContent = "New Game";
-          newLink.setAttribute("aria-label", `Start a new game of ${entry.title}`);
-          newLink.addEventListener("click", () => launchCallback(entry.id, "new"));
-          actions.appendChild(btn);
-          actions.appendChild(newLink);
-        } else if (status.type === "complete" && entry.tierNext?.due) {
-          const trialName = TIER_NAMES[entry.tierNext.nextTier];
-          btn.textContent = `⚒ ${trialName} Trial`;
-          btn.setAttribute("aria-label",
-            `Take the ${trialName} trial for ${entry.title} — a short review that raises your rank and credit`);
-          btn.addEventListener("click", () => launchCallback(entry.id, "trial"));
-          actions.appendChild(btn);
-
-          const again = document.createElement("button");
-          again.className = "action-button action-button--secondary set-btn-sm";
-          again.textContent = "Play Again";
-          again.setAttribute("aria-label", `Play ${entry.title} again`);
-          again.addEventListener("click", () => launchCallback(entry.id, "new"));
-          actions.appendChild(again);
-        } else if (status.type === "complete" && entry.tierNext && !entry.tierNext.due) {
-          const trialName = TIER_NAMES[entry.tierNext.nextTier];
-          const when = new Date(entry.tierNext.availableAt)
-            .toLocaleDateString(undefined, { month: "short", day: "numeric" });
-          const lock = document.createElement("span");
-          lock.className = "tier-lock dim";
-          lock.textContent = `🔒 ${trialName} trial ${when}`;
-          lock.title = `The ${trialName} trial unlocks ${when} — spacing out reviews is what makes them work.`;
-          actions.appendChild(lock);
-
-          btn.textContent = "Play Again";
-          btn.className = "action-button action-button--secondary set-btn-sm";
-          btn.setAttribute("aria-label", `Play ${entry.title} again`);
-          btn.addEventListener("click", () => launchCallback(entry.id, "new"));
-          actions.appendChild(btn);
-        } else if (status.type === "complete" && entry.reviewDue) {
-          btn.textContent = "🔁 Review";
-          btn.setAttribute("aria-label", `Spaced review of ${entry.title} — a few questions`);
-          btn.addEventListener("click", () => launchCallback(entry.id, "review"));
-          actions.appendChild(btn);
-
-          const again = document.createElement("button");
-          again.className = "action-button action-button--secondary set-btn-sm";
-          again.textContent = "Play Again";
-          again.setAttribute("aria-label", `Play ${entry.title} again`);
-          again.addEventListener("click", () => launchCallback(entry.id, "new"));
-          actions.appendChild(again);
-        } else if (status.type === "complete" || status.type === "attempted") {
-          btn.textContent = "Play Again";
-          btn.setAttribute("aria-label", `Play ${entry.title} again`);
-          btn.addEventListener("click", () => launchCallback(entry.id, "new"));
-          actions.appendChild(btn);
-        } else {
-          btn.textContent = "Start";
-          btn.setAttribute("aria-label", `Start ${entry.title}`);
-          btn.addEventListener("click", () => launchCallback(entry.id, "new"));
-          actions.appendChild(btn);
-        }
-
-        row.appendChild(info);
-        row.appendChild(actions);
-        setList.appendChild(row);
-      });
-
-      section.appendChild(setList);
-      topicContainer.appendChild(section);
+      [...topic.sets.filter(e => e.review), ...topic.sets.filter(e => !e.review)]
+        .forEach(entry => setList.appendChild(this._setRow(entry, launchCallback)));
+      sets.appendChild(setList);
+      go.appendChild(sets);
+      course.appendChild(go);
+      topicContainer.appendChild(course);
     });
 
+    // Finding a set: show only the matching rows, with their courses opened.
     const searchInput = $(this.root, "[data-ref=setSearch]");
     if (searchInput) {
       searchInput.addEventListener("input", () => {
         const q = searchInput.value.trim().toLowerCase();
-        const sections = topicContainer.querySelectorAll(".topic-section");
-        sections.forEach(sec => {
-          const rows = sec.querySelectorAll(".set-row");
+        topicContainer.querySelectorAll(".course").forEach(course => {
+          const sets = course.querySelector(".course-sets");
+          const rows = course.querySelectorAll(".set-row");
           if (!q) {
             rows.forEach(r => { r.hidden = false; });
-            sec.hidden = false;
-            sec.open = sec.querySelector(".status-progress") !== null;
+            course.hidden = false;
+            if (sets) sets.open = false;
             return;
           }
           let anyVisible = false;
@@ -1048,11 +955,151 @@ export class GameUI {
             r.hidden = !match;
             if (match) anyVisible = true;
           });
-          sec.hidden = !anyVisible;
-          if (anyVisible) sec.open = true;
+          course.hidden = !anyVisible;
+          if (sets && anyVisible) sets.open = true;
         });
       });
     }
+  }
+
+  /** One set in a course's list: what it is, its status, and what can be done with it. */
+  _setRow(entry, launchCallback) {
+    const row = document.createElement("div");
+    row.className = "set-row" + (entry.review ? " set-row--review" : "");
+
+    const info = document.createElement("div");
+    info.className = "set-info";
+    if (entry.review) {
+      info.innerHTML = `
+        <span class="set-title">🔀 ${this._esc(entry.title)}</span>
+        <span class="set-desc">${this._esc(entry.description)}</span>
+        <span class="set-count">${entry.sample_size} random questions</span>
+      `;
+    } else {
+      info.innerHTML = `
+        <span class="set-title">${this._esc(entry.title)}</span>
+        <span class="set-desc" title="${this._esc(entry.description)}">${this._esc(entry.description)}</span>
+        <span class="set-count">${entry.question_count} questions</span>
+      `;
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "set-actions";
+
+    if (entry.review) {
+      const badge = document.createElement("span");
+      badge.className = "status-badge status-new";
+      badge.textContent = "🔀 Review";
+      actions.appendChild(badge);
+
+      const btn = document.createElement("button");
+      btn.className = "action-button set-btn";
+      btn.textContent = "New Mix";
+      btn.setAttribute("aria-label", `Start a new ${entry.title} mix`);
+      btn.addEventListener("click", () => launchCallback(entry.id, "new"));
+      actions.appendChild(btn);
+
+      row.appendChild(info);
+      row.appendChild(actions);
+      return row;
+    }
+
+    const status = entry.status ?? { type: "not_started" };
+    const badge = document.createElement("span");
+    if (status.type === "complete") {
+      const tier = entry.tier ?? TIER_MASTER;
+      badge.className = `status-badge status-complete status-tier-${tier}`;
+      badge.textContent = `${TIER_BADGES[tier]} ${TIER_NAMES[tier]}`;
+      badge.title = `Cleared — current rank: ${TIER_NAMES[tier]}`;
+    } else if (status.type === "in_progress") {
+      badge.className = "status-badge status-progress";
+      badge.textContent = `▶ ${status.remaining} left`;
+    } else if (status.type === "attempted") {
+      badge.className = "status-badge status-attempted";
+      badge.textContent = "◉ Attempted";
+    } else {
+      badge.className = "status-badge status-new";
+      badge.textContent = "○ New";
+    }
+    actions.appendChild(badge);
+
+    if (status.type === "complete" && entry.reviewDue) {
+      const due = document.createElement("span");
+      due.className = "status-badge status-review-due";
+      due.textContent = "🔁 Review due";
+      actions.appendChild(due);
+    }
+
+    const btn = document.createElement("button");
+    btn.className = "action-button set-btn";
+    if (status.type === "in_progress") {
+      btn.textContent = "Resume";
+      btn.setAttribute("aria-label", `Resume ${entry.title}`);
+      btn.addEventListener("click", () => launchCallback(entry.id, "resume"));
+
+      const newLink = document.createElement("button");
+      newLink.className = "action-button action-button--secondary set-btn-sm";
+      newLink.textContent = "New Game";
+      newLink.setAttribute("aria-label", `Start a new game of ${entry.title}`);
+      newLink.addEventListener("click", () => launchCallback(entry.id, "new"));
+      actions.appendChild(btn);
+      actions.appendChild(newLink);
+    } else if (status.type === "complete" && entry.tierNext?.due) {
+      const trialName = TIER_NAMES[entry.tierNext.nextTier];
+      btn.textContent = `⚒ ${trialName} Trial`;
+      btn.setAttribute("aria-label",
+        `Take the ${trialName} trial for ${entry.title} — a short review that raises your rank and credit`);
+      btn.addEventListener("click", () => launchCallback(entry.id, "trial"));
+      actions.appendChild(btn);
+
+      const again = document.createElement("button");
+      again.className = "action-button action-button--secondary set-btn-sm";
+      again.textContent = "Play Again";
+      again.setAttribute("aria-label", `Play ${entry.title} again`);
+      again.addEventListener("click", () => launchCallback(entry.id, "new"));
+      actions.appendChild(again);
+    } else if (status.type === "complete" && entry.tierNext && !entry.tierNext.due) {
+      const trialName = TIER_NAMES[entry.tierNext.nextTier];
+      const when = new Date(entry.tierNext.availableAt)
+        .toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const lock = document.createElement("span");
+      lock.className = "tier-lock dim";
+      lock.textContent = `🔒 ${trialName} trial ${when}`;
+      lock.title = `The ${trialName} trial unlocks ${when} — spacing out reviews is what makes them work.`;
+      actions.appendChild(lock);
+
+      btn.textContent = "Play Again";
+      btn.className = "action-button action-button--secondary set-btn-sm";
+      btn.setAttribute("aria-label", `Play ${entry.title} again`);
+      btn.addEventListener("click", () => launchCallback(entry.id, "new"));
+      actions.appendChild(btn);
+    } else if (status.type === "complete" && entry.reviewDue) {
+      btn.textContent = "🔁 Review";
+      btn.setAttribute("aria-label", `Spaced review of ${entry.title} — a few questions`);
+      btn.addEventListener("click", () => launchCallback(entry.id, "review"));
+      actions.appendChild(btn);
+
+      const again = document.createElement("button");
+      again.className = "action-button action-button--secondary set-btn-sm";
+      again.textContent = "Play Again";
+      again.setAttribute("aria-label", `Play ${entry.title} again`);
+      again.addEventListener("click", () => launchCallback(entry.id, "new"));
+      actions.appendChild(again);
+    } else if (status.type === "complete" || status.type === "attempted") {
+      btn.textContent = "Play Again";
+      btn.setAttribute("aria-label", `Play ${entry.title} again`);
+      btn.addEventListener("click", () => launchCallback(entry.id, "new"));
+      actions.appendChild(btn);
+    } else {
+      btn.textContent = "Start";
+      btn.setAttribute("aria-label", `Start ${entry.title}`);
+      btn.addEventListener("click", () => launchCallback(entry.id, "new"));
+      actions.appendChild(btn);
+    }
+
+    row.appendChild(info);
+    row.appendChild(actions);
+    return row;
   }
 
   /**
