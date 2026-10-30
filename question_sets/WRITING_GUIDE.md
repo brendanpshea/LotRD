@@ -954,7 +954,7 @@ The `intro` and `outro` are the mentor talking, shown like every other line the 
 
 ### Narration (a mentor's voice)
 
-A scene can be narrated. Then a **▶ Listen** button appears at the end of the scene's title line. Pressed, the mentor speaks each beat as it appears, and the line being said is lit; the button becomes **❚❚ Pause**, and beside it come **↻** (say this frame again) and a speed button (1×, 1.25×, 1.5×, 0.75×). Narration is off until a student turns it on, and the browser remembers the choice. Narration is in pilot: Java 00 and Java 07 are narrated.
+A scene can be narrated. Then a **▶ Listen** button appears at the end of the scene's title line. Pressed, the mentor speaks each beat as it appears, and the line being said is lit; the button becomes **❚❚ Pause**, and beside it come **↻** (say this frame again) and a speed button (1×, 1.25×, 1.5×, 0.75×). Narration is off until a student turns it on, and the browser remembers the choice. Narrated so far: every scene in Computing Concepts 6 to 15, Java 00 and Java 07.
 
 A narrated scene has a spoken line for everything it shows:
 

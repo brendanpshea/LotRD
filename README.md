@@ -268,7 +268,7 @@ The SQL counterpart of write-the-code. The student writes a whole `SELECT`, and 
 
 Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a worked example step by step, with optional low-stakes `check` prompts ("what comes next?") that get a gentle correction when wrong. Scenes deal no damage, award no XP, never requeue, are skippable, don't count toward `question_count`, and are excluded from reviews and rank trials. Author each scene **immediately before a paired question** that uses the same technique with different surface features. See the [WRITING_GUIDE](question_sets/WRITING_GUIDE.md) for the schema.
 
-A scene can also be **narrated** (a pilot, in Java 00 and Java 07): a ▶ Listen button on its title line. With it on, the mentor speaks each beat as it appears, in their own voice, a little more fully than the screen, and the line being said is lit; ❚❚ Pause stops it and ↻ says the frame again. Narration is off until the student turns it on, and the browser remembers the choice. The clips are MP3s in `narration/`, rendered with Gemini TTS by `tools/narrate.py`. See *Narration* in the writing guide.
+A scene can also be **narrated** (so far: every scene in Computing Concepts 6 to 15, Java 00 and Java 07): a ▶ Listen button on its title line. With it on, the mentor speaks each beat as it appears, in their own voice, a little more fully than the screen, and the line being said is lit; ❚❚ Pause stops it and ↻ says the frame again. Narration is off until the student turns it on, and the browser remembers the choice. The clips are MP3s in `narration/`, rendered with Gemini TTS by `tools/narrate.py`. See *Narration* in the writing guide.
 
 ---
 
