@@ -1863,6 +1863,32 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
     assert.deepEqual(bad, []);
   });
 
+  /**
+   * Everything a scene shows as words: the mentor's lines, a check, its options.
+   * A step with beats is shown beat by beat, so its combined `say` never is.
+   */
+  const shownText = q => [q.intro, q.outro, ...(q.steps || []).flatMap(s => [
+    ...(s.beats?.length ? s.beats.map(b => b.say) : [s.say]),
+    s.check?.prompt, s.check?.why, s.check?.answer, ...(s.check?.wrong || [])])].filter(t => typeof t === 'string');
+
+  it('`code` in a scene is marked with paired backticks, not set off by extra spaces', () => {
+    const bad = [];
+    for (const setId of index) {
+      loadJSON(`question_sets/${setId}`).forEach((q, i) => {
+        if (q.type !== 'npc_demo') return;
+        for (const text of shownText(q)) {
+          if ((text.match(/`/g) || []).length % 2) bad.push(`${setId}[${i}]: an unpaired backtick in "${text.slice(0, 60)}"`);
+          for (const [, chip] of text.matchAll(/`([^`]*)`/g)) {
+            if (!chip.trim() || chip !== chip.trim()) bad.push(`${setId}[${i}]: an empty chip, or one with a space at its edge: "\`${chip}\`"`);
+          }
+          // Outside the chips, a run of spaces between words was the old way of marking code.
+          if (/\S {2,}\S/.test(text.replace(/`[^`]*`/g, '`x`'))) bad.push(`${setId}[${i}]: code set off by spaces; mark it \`like this\`: "${text.slice(0, 60)}"`);
+        }
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+
   it('a mentor introduces themselves once in a set, in their first scene there', () => {
     const bad = [];
     for (const setId of index) {

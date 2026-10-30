@@ -73,6 +73,20 @@ describe('narration: the player', () => {
     assert.equal(a.played.length, 2);
   });
 
+  it('says which line is being spoken, and when the voice stops', () => {
+    const n = new Narrator('v');
+    n.on = true;
+    const seen = [];
+    n.say(['One.', '', 'Three.'], i => seen.push(i));   // the empty line is skipped, the others keep their places
+    const a = FakeAudio.last;
+    a.fire('ended');
+    a.fire('ended');
+    assert.deepEqual(seen, [0, 2, null]);
+    n.say(['Four.'], i => seen.push(i));
+    stopNarration();
+    assert.deepEqual(seen.slice(3), [0, null]);
+  });
+
   it('goes on to the next line when a clip is missing', () => {
     const n = new Narrator('v');
     n.on = true;

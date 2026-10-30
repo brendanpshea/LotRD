@@ -472,16 +472,26 @@ export class GameUI {
   }
 
   /**
-   * A scene's line with its **key terms** in bold. Built from nodes, not HTML,
-   * so nothing else in the text can be read as markup.
+   * A scene's line: **key terms** in bold, and `code` (something typed, or
+   * printed) as a small monospaced chip, so it can't be read as part of the
+   * sentence. Built from nodes, not HTML, so nothing else in the text can be
+   * read as markup.
    */
-  _withKeyTerms(text) {
-    return String(text ?? "").split(/\*\*(.+?)\*\*/).map((part, i) => {
-      if (i % 2 === 0) return document.createTextNode(part);
-      const term = document.createElement("strong");
-      term.className = "npc-term";
-      term.textContent = part;
-      return term;
+  _withMarkup(text) {
+    return String(text ?? "").split(/(\*\*.+?\*\*|`[^`]+`)/).map(part => {
+      if (part.length > 4 && part.startsWith("**") && part.endsWith("**")) {
+        const term = document.createElement("strong");
+        term.className = "npc-term";
+        term.textContent = part.slice(2, -2);
+        return term;
+      }
+      if (part.length > 2 && part.startsWith("`") && part.endsWith("`")) {
+        const code = document.createElement("code");
+        code.className = "npc-inline";
+        code.textContent = part.slice(1, -1);
+        return code;
+      }
+      return document.createTextNode(part);
     });
   }
 
@@ -1763,21 +1773,30 @@ export class GameUI {
     const nameEl = $(this.root, "[data-ref=npcName]");
     nameEl.textContent = q.npc || "Your mentor";
 
-    // Narration: the mentor's voice comes from the roster too, so until it
-    // resolves there is no narrator, and the lines of the frame on screen wait
-    // in `spoken` to be said once there is one.
+    // Narration. The mentor's voice comes from the roster too, so until it
+    // resolves there is no narrator. The frame on screen keeps its lines in
+    // `spoken`, each with the element it belongs to, which is lit while its
+    // line is being said.
     let narrator = null;
     let spoken = [];
-    const speak = lines => {
-      spoken = lines.filter(Boolean);
-      narrator?.say(spoken);
+    const light = i => {
+      for (const el of this.root.querySelectorAll(".npc-speaking")) el.classList.remove("npc-speaking");
+      if (i !== null) spoken[i]?.[1]?.classList.add("npc-speaking");
+    };
+    const sayFrame = () => narrator?.say(spoken.map(([line]) => line), light);
+    const speak = pairs => {
+      spoken = pairs.filter(([line]) => line);
+      sayFrame();
     };
     const narrateBtn = $(this.root, "[data-action=npc-narrate]");
+    const replayBtn = $(this.root, "[data-action=npc-replay]");
     const rateBtn = $(this.root, "[data-action=npc-rate]");
     const showNarration = () => {
       const on = narrator.on;
-      narrateBtn.setAttribute("aria-pressed", String(on));
-      narrateBtn.textContent = on ? "🎙️ Narrating" : "🎙️ Narrate";
+      narrateBtn.textContent = on ? "❚❚ Pause" : "▶ Listen";
+      narrateBtn.setAttribute("aria-label", on ? "Pause your mentor's voice" : "Listen to your mentor");
+      narrateBtn.classList.toggle("npc-narrate--listen", !on);
+      replayBtn.hidden = !on;
       rateBtn.hidden = !on;
       rateBtn.textContent = `${narrator.rate}×`;
     };
@@ -1794,11 +1813,12 @@ export class GameUI {
           showNarration();
           // Turned on: say the frame that is showing, from this press, which
           // is what lets the browser play sound at all.
-          if (narrator.on) narrator.say(spoken);
+          if (narrator.on) sayFrame();
         });
+        replayBtn.addEventListener("click", sayFrame);
         rateBtn.addEventListener("click", () => { narrator.cycleRate(); showNarration(); });
         showNarration();
-        narrator.say(spoken);
+        sayFrame();
       }
       const slot = $(this.root, "[data-ref=npcPortrait]");
       if (!slot) return;
@@ -1821,31 +1841,39 @@ export class GameUI {
     const addLine = (text, cls = "npc-line npc-say") => {
       const div = document.createElement("div");
       div.className = cls;
-      div.append(...this._withKeyTerms(text));
+      div.append(...this._withMarkup(text));
       dialogue.appendChild(div);
       div.scrollIntoView?.({ block: "nearest" });
       return div;
     };
 
-    /** The artifact under discussion — set apart from what the mentor is saying. */
+    /**
+     * The artifact under discussion — set apart from what the mentor is saying.
+     * Java and Python are coloured as code in the questions is; output, SQL and
+     * the rest stay plain.
+     */
     const addCode = (text, language) => {
       const wrap = document.createElement("pre");
       wrap.className = "npc-code";
       if (language) wrap.dataset.lang = language;
-      wrap.textContent = text;
+      const lang = String(language || "").toLowerCase();
+      if (/^java\b/.test(lang)) wrap.innerHTML = highlightJava(text);
+      else if (/^python\b/.test(lang)) wrap.innerHTML = highlightPython(text);
+      else wrap.textContent = text;
       dialogue.appendChild(wrap);
       wrap.scrollIntoView?.({ block: "nearest" });
       return wrap;
     };
 
     // The mentor's opening and closing words are speech like every other line.
-    if (q.intro) addLine(q.intro);
+    const introEl = q.intro ? addLine(q.intro) : null;
 
+    // A check's options may hold `code` too, so they are built like a line.
     const makeButton = (label, cls, onClick, sound = "blip") => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = cls;
-      b.textContent = label;
+      b.append(...this._withMarkup(label));
       b.dataset.sound = sound;
       b.addEventListener("click", onClick);
       controls.appendChild(b);
@@ -1873,49 +1901,54 @@ export class GameUI {
     const advance = () => {
       controls.innerHTML = "";
       if (pos >= queue.length) {
+        let outroEl = null;
         if (q.outro) {
           dialogue.replaceChildren();
-          addLine(q.outro);
+          outroEl = addLine(q.outro);
         }
-        speak([q.outro_narrate]);
+        speak([[q.outro_narrate, outroEl]]);
         makeButton("Continue the adventure ⚔", "action-button", () => onDone()).focus();
         return;
       }
       const item = queue[pos++];
       if (item.first && item.step > 0) dialogue.replaceChildren();
       // The opening line is said with the scene's first beat.
-      speak([pos === 1 ? q.intro_narrate : null, item.kind === "check" ? item.check.narrate : item.beat.narrate]);
+      const opening = pos === 1 ? [[q.intro_narrate, introEl]] : [];
 
       if (item.kind === "figure") {
         const fig = this._figureElement(item.beat.figure);
         fig.classList.add("npc-figure");
         dialogue.appendChild(fig);
         fig.scrollIntoView?.({ block: "nearest" });
+        speak([...opening, [item.beat.narrate, fig]]);
         makeButton("Continue ▸", "action-button", advance).focus();
         return;
       }
       if (item.kind === "code") {
-        addCode(item.beat.code, item.beat.language);
+        speak([...opening, [item.beat.narrate, addCode(item.beat.code, item.beat.language)]]);
         makeButton("Continue ▸", "action-button", advance).focus();
         return;
       }
       if (item.kind === "say") {
-        addLine(item.beat.say);
+        speak([...opening, [item.beat.narrate, addLine(item.beat.say)]]);
         makeButton("Continue ▸", "action-button", advance).focus();
         return;
       }
 
       const check = item.check;
-      addLine(check.prompt, "npc-line npc-check-prompt");
+      speak([...opening, [check.narrate, addLine(check.prompt, "npc-line npc-check-prompt")]]);
       shuffle([check.answer, ...(check.wrong || [])]).forEach(opt => {
         makeButton(opt, "action-button action-button--secondary npc-check-option", () => {
+          let whyEl;
           if (opt === check.answer) {
-            addLine(`✓ ${check.why || "Exactly right."}`, "npc-line npc-line--good");
+            whyEl = addLine(`✓ ${check.why || "Exactly right."}`, "npc-line npc-line--good");
           } else {
-            addLine(`Not quite — it's "${check.answer}". ${check.why || ""}`.trim(),
+            // An answer that is code shows as code; one in words, in quotation marks.
+            const answer = check.answer.includes("`") ? check.answer : `"${check.answer}"`;
+            whyEl = addLine(`Not quite — it's ${answer}. ${check.why || ""}`.trim(),
               "npc-line npc-line--gentle");
           }
-          speak([check.why_narrate]);
+          speak([[check.why_narrate, whyEl]]);
           // Wait for the student: the next frame would clear this away unread.
           controls.innerHTML = "";
           makeButton("Continue ▸", "action-button", advance).focus();

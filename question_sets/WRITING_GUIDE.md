@@ -924,7 +924,7 @@ Writing good ones — everything said for Python class problems applies, and als
 The screen shows **one beat at a time** — a click reveals the next. Two rules follow from that:
 
 1. **Keep each spoken beat short.** One or two sentences. `data.test.js` rejects a beat over 320 characters, but the target is far shorter: a student who is handed a paragraph will skim it, which defeats the point of the scene.
-2. **Put code in its own `code` beat, never inside `say`.** Code beats render as a bordered monospace panel with a small label, visibly different from the mentor's speech. When code is embedded in a spoken line it renders in the same font and colour as the prose around it, and the student cannot tell the lesson from the narration.
+2. **Put code in its own `code` beat, and mark code in a sentence.** A code beat renders as a bordered monospace panel with a small label, visibly different from the mentor's speech, and a `java` or `python` panel is coloured the way code in the questions is. A whole line of code, or a run of output, belongs there. A short fragment inside a sentence goes in backticks (see *Code in a line* below); unmarked, it renders in the same font as the prose around it, and the student cannot tell the code from the words.
 
 ```json
 "beats": [
@@ -939,6 +939,8 @@ Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase descr
 
 **Key terms in bold.** Write `**term**` in a spoken line (a `say`, the `intro`/`outro`, a check's `prompt` or `why`) to show the term in bold where the mentor first names it: `"A **primary key** is a column whose value is unique for every row."` Bold the defining mention, not every mention, or nothing stands out. Check options are plain button labels, so `**` is not allowed there; `data.test.js` rejects that and an unpaired `**`.
 
+**Code in a line.** Write `` `code` `` to show code, or output, inside a line as a small monospaced chip: ``"It shows `Forge lit`, and then `Anvil ready`."`` Mark what a program prints or a user types, a code fragment (`` `name.length()` ``, `` `i++` ``, `` `return -1;` ``), a command or file name, and a name from the code where the sentence could read it as an ordinary word (`` `count` ``, `` `max` ``). Class names written as names (Bird, Golem) stay plain, and so does a term in bold. Check options may use it too. Be sparing: the point is that code can be told from prose at a glance. `data.test.js` rejects an unpaired backtick, and code set off by extra spaces (`So  power = power;  copies`), the old way.
+
 Each step is its own frame: when the next step starts, the screen clears, so a step should make sense on its own rather than leaning on the line just above it from the previous step.
 
 ### Opening and closing lines
@@ -946,13 +948,13 @@ Each step is its own frame: when the next step starts, the screen clears, so a s
 The `intro` and `outro` are the mentor talking, shown like every other line the mentor says: first person, to the student. They are not stage directions. A line like "Kaelen lays out five index cards…" or "“Words in hand,” Zoya says." is narration about the mentor, and `data.test.js` rejects it.
 
 - **A mentor introduces themselves once per set**, very briefly, at the start of their first scene in it: "I'm Kaelen, the Grand Archivist." Later scenes in the same set go straight to the point. The name and portrait are already in the scene's header.
-- **The setup is spoken.** A prop the scene uses is introduced in the mentor's words: "Here are five index cards, one for each candy." A prop that is never used again is left out.
+- **Say what the scene is about, plainly.** "This chapter is about two things that are easy to mix up: a class, which is a design, and the objects built from it." Don't announce props or images here; if the scene uses one, it is introduced where it is explained (rule 3 below).
 - **Brief:** one or two short sentences after the introduction, 45 words at most. The intro sits right above the first beat, so it leads into that beat rather than repeating it.
 - **No quotation marks around the speech, and no dialogue tags.** Quotation marks for in-world text inside it are fine (a sign reading "ENTER YOUR AGE").
 
 ### Narration (a mentor's voice)
 
-A scene can be narrated. Then a **🎙 Narrate** button appears beside the mentor's name. When the student turns it on, the mentor speaks each beat as it appears. Narration is off until a student turns it on, and the browser remembers the choice; a speed button (1×, 1.25×, 1.5×, 0.75×) comes with it. Narration is in pilot: Java 00 and Java 07 are narrated.
+A scene can be narrated. Then a **▶ Listen** button appears at the end of the scene's title line. Pressed, the mentor speaks each beat as it appears, and the line being said is lit; the button becomes **❚❚ Pause**, and beside it come **↻** (say this frame again) and a speed button (1×, 1.25×, 1.5×, 0.75×). Narration is off until a student turns it on, and the browser remembers the choice. Narration is in pilot: Java 00 and Java 07 are narrated.
 
 A narrated scene has a spoken line for everything it shows:
 
@@ -984,19 +986,21 @@ It renders only new or changed lines and deletes clips nothing uses. Commit the 
 
 1. **Always pair it.** The very next entry in the array should be a real question using the same technique with different numbers/words (dynamic_numeric pairs beautifully: the scene demos 13 → binary, the monster asks for 22).
 2. **Make at least one step a `check`** — a faded worked example beats a passive one. Put the check where the learner can predict the next move from what was just shown.
-3. **Explain it like the student is twelve, and never hide behind the analogy.** A mentor may reach for a
-   concrete image — a chest with two tags, three desks in a scriptorium, a row of clay golems — but the image
-   is a way in, not the lesson. Every time one is used, bind it to the real word in the same breath: *each
-   golem is one object*, *the tray is the staging area*, *the foreign key is the thread*. Two failures to
-   watch for:
-   - **An unexplained metaphor.** If a student has to work out what the image stands for before the
-     explanation makes sense, the scene has taught them a riddle instead of the material.
+3. **Plain words first; an image only if it earns its place.** Say what a thing is in plain words.
+   Reach for an image (a labelled box for a variable, two tags on one chest for two names on one object)
+   only when it makes a mechanism clearer than plain words would, and then explain it fully where it first
+   appears, in one sentence that maps each part to the real thing: *think of a variable as a labelled box:
+   the label is its name, and what is inside is its value*. Never announce an image before explaining it
+   (an intro that sets out "a clay mould and a row of clay birds" and leaves the student to guess what they
+   are for), and never leave the student to decode one. Props that teach nothing (a forge, a slate, a
+   lantern) are left out. Two failures to watch for:
+   - **A barely explained metaphor.** If a student has to work out what the image stands for before the
+     explanation makes sense, the scene has taught them a riddle instead of the material. Explain it
+     well, or drop it.
    - **Vocabulary the paired question needs but the scene never says.** Read the very next entry in the
      array. If its options or feedback say *attribute*, *local variable* or *object*, the scene has to have
      said those words too — a student who followed the demonstration perfectly should not meet a monster
      speaking a language the demonstration avoided.
-   An image is welcome, but a prop the mentor introduces in the `intro` and never uses again is noise;
-   either give it something to do or leave it out.
 4. **One idea per step.** If a `say` needs three sentences of new content, split it.
 5. **Don't re-teach what the set already tested** — scenes introduce technique for the questions that follow, not summaries of earlier material.
 6. Sets present in **array order** on a first full run, so the scene/question adjacency is preserved; reviews and trials skip scenes automatically.

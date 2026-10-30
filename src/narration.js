@@ -96,17 +96,25 @@ export class Narrator {
     return r;
   }
 
-  /** Speak these lines in order, cutting off anything still being said. */
-  say(lines) {
+  /**
+   * Speak these lines in order, cutting off anything still being said.
+   * onLine(i) is told as line i starts, and onLine(null) when the voice stops,
+   * so the line being said can be shown.
+   */
+  say(lines, onLine = null) {
     this.stop();
     if (!this.on) return;
-    this._queue = (lines || []).filter(line => typeof line === "string" && squash(line));
+    this._queue = (lines || []).map((line, i) => [line, i]).filter(([line]) => typeof line === "string" && squash(line));
+    this._onLine = onLine;
     _active = this;
     this._next();
   }
 
   stop() {
     this._queue = [];
+    const onLine = this._onLine;
+    this._onLine = null;
+    onLine?.(null);
     if (_active === this) {
       _active = null;
       if (_audio) { _audio.pause(); _audio.removeAttribute("src"); }
@@ -115,8 +123,11 @@ export class Narrator {
 
   _next() {
     const audio = sharedAudio();
-    const line = this._queue.shift();
-    if (!audio || line === undefined || _active !== this) return;
+    if (!audio || _active !== this) return;
+    const next = this._queue.shift();
+    if (next === undefined) { this.stop(); return; }   // all said
+    const [line, i] = next;
+    this._onLine?.(i);
     audio.src = `${NARRATION_DIR}${clipName(this.voice, line)}.mp3`;
     audio.playbackRate = this.rate;
     audio.play().catch(err => {
