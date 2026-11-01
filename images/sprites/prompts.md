@@ -15,7 +15,7 @@ Everything faces right; the game mirrors monsters so they face the hero.
 
 Redrawn in new colors so the background keys out cleanly: Crawling Claw, Pixie, Stirge, Flumph, Pseudodragon, Origami Dragon, Yarn Elemental, Soap Golem, Mosaic Guardian, Prism Beast, Crystaline Warrior, Vampire, Coral Colossus, Beholder, Quantum Dragon.
 
-**Done: 22 of 22 sheets.**
+**Done: 28 of 28 sheets.**
 
 | Sheet | Characters | Status |
 | --- | --- | --- |
@@ -41,6 +41,12 @@ Redrawn in new colors so the background keys out cleanly: Crawling Claw, Pixie, 
 | 20-monsters | Dozing Drake, Library Leviathan, Bureaucracy Demon | ✅ done |
 | 21-monsters | Storm Sovereign, Beholder, Quantum Dragon | ✅ done |
 | 22-monsters | Recursion Wyrm | ✅ done |
+| 23-animals | Cat Ninja, Raven Thief, Tiger Assassin | ✅ done |
+| 24-animals | Rabbit Samurai, Bear Monk, Fox Swashbuckler | ✅ done |
+| 25-animals | Lion Barbarian, Badger Paladin, Ram Berserker | ✅ done |
+| 26-animals | Owl Wizard, Tortoise Cleric, Hedgehog Druid | ✅ done |
+| 27-animals | Wolf Ranger, Mouse Musketeer, Beaver Artificer | ✅ done |
+| 28-animals | Otter Corsair, Monkey Trickster, Rooster Champion | ✅ done |
 
 ## 01-heroes: Sword Knight, Star Mage, Gauntlet Brawler ✅ done
 
@@ -578,6 +584,156 @@ Each row is one character, drawn three times. Every character faces RIGHT, towar
 3. RECOIL: knocked back to the left, leaning away from the opponent, eyes squeezed shut, weapon held loosely.
 
 Row 1, Recursion Wyrm: a brown-and-gold dragon with copper wings and green wing tips, small dragon heads sprouting from its body, and huge claws. Attack: lunges forward, claws out. Recoil: reels back, wings drooping.
+
+Style: 16-bit pixel art like SNES-era JRPG battle sprites. Chibi proportions: big heads, small bodies, expressive faces and oversized weapons. A thick, dark outline around every character, flat cel shading with few colors, and high contrast, so each sprite still reads when shrunk to 96 pixels tall.
+
+Rules:
+- Each character looks identical in all three of its poses: same colors, outfit, proportions and weapon. Only the pose changes.
+- Each row is a different character. Don't let their colors or features blend.
+- Each sprite is centered in its own cell with clear magenta space all around it. Nothing crosses into a neighboring cell.
+- In each row, the three sprites are the same size and stand on the same baseline.
+- No magenta, pink or purple anywhere on the characters.
+- No text, labels, numbers, grid lines, borders, shadows, motion lines, or effects that float free of the character.
+```
+
+## 23-animals: Cat Ninja, Raven Thief, Tiger Assassin ✅ done
+
+```text
+A square sprite sheet: 3 rows by 3 columns of chibi JRPG battle sprites on one flat, solid magenta (#FF00FF) background. No gradient, floor, shadows or texture anywhere in the background.
+
+Each row is one character, drawn three times. Every character faces RIGHT, toward an unseen opponent, in a side three-quarter view. The columns are the same three poses in every row:
+1. STAND: idle battle stance, weapon ready.
+2. ATTACK: lunging to the right mid-strike, weapon fully extended toward the opponent, body leaning into the blow.
+3. RECOIL: knocked back to the left, leaning away from the opponent, eyes squeezed shut, weapon held loosely.
+
+Row 1, Cat Ninja: a bipedal calico cat with orange, white and black fur, wearing a charcoal-black shinobi outfit with a jade-green sash, gripping an oversized ninjato with both paws. Attack: a quick diagonal diving slash, tail trailing behind. Recoil: arches back with fur puffed up, sword shaking.
+Row 2, Raven Thief: a glossy black-feathered bipedal raven in a hooded olive-green vest and leather pouches, brandishing a hooked lockpick dagger as long as its wing. Attack: a low gliding thrust with dagger out, wings flared for balance. Recoil: tumbles back, feathers ruffled, clutching an overflowing sack of shiny coins.
+Row 3, Tiger Assassin: a bipedal white tiger with charcoal stripes in deep navy wrap armor, wielding twin hooked silver katars. Attack: a dual-fisted forward thrust with both katars biting forward. Recoil: skids back in a low crouch, claws gouging sparks.
+
+Style: 16-bit pixel art like SNES-era JRPG battle sprites. Chibi proportions: big heads, small bodies, expressive faces and oversized weapons. A thick, dark outline around every character, flat cel shading with few colors, and high contrast, so each sprite still reads when shrunk to 96 pixels tall.
+
+Rules:
+- Each character looks identical in all three of its poses: same colors, outfit, proportions and weapon. Only the pose changes.
+- Each row is a different character. Don't let their colors or features blend.
+- Each sprite is centered in its own cell with clear magenta space all around it. Nothing crosses into a neighboring cell.
+- In each row, the three sprites are the same size and stand on the same baseline.
+- No magenta, pink or purple anywhere on the characters.
+- No text, labels, numbers, grid lines, borders, shadows, motion lines, or effects that float free of the character.
+```
+
+## 24-animals: Rabbit Samurai, Bear Monk, Fox Swashbuckler ✅ done
+
+```text
+A square sprite sheet: 3 rows by 3 columns of chibi JRPG battle sprites on one flat, solid magenta (#FF00FF) background. No gradient, floor, shadows or texture anywhere in the background.
+
+Each row is one character, drawn three times. Every character faces RIGHT, toward an unseen opponent, in a side three-quarter view. The columns are the same three poses in every row:
+1. STAND: idle battle stance, weapon ready.
+2. ATTACK: lunging to the right mid-strike, weapon fully extended toward the opponent, body leaning into the blow.
+3. RECOIL: knocked back to the left, leaning away from the opponent, eyes squeezed shut, weapon held loosely.
+
+Row 1, Rabbit Samurai: a sandy-furred lop-eared bipedal hare in lacquered bamboo-green and gold armor, wielding a curved nodachi sword taller than its upright ears. Attack: a lightning-fast downward two-pawed overhead slash. Recoil: flopped back onto its fluffy tail, long ears whipped forward over its face.
+Row 2, Bear Monk: a stocky bipedal black sun bear with a golden crescent mark on its chest, saffron-orange sash, taped wrists, and giant wooden prayer beads. Attack: a powerful open-palm lunge forward. Recoil: absorbs the blow, belly jiggling, paws raised in a bewildered blocking posture.
+Row 3, Fox Swashbuckler: a clever bipedal red fox with a white chest, wearing an azure doublet, buckled leather boots, and a wide-brimmed teal-feathered hat, holding a slender silver rapier. Attack: an elegant, theatrical forward lunging thrust. Recoil: skids backward, one paw holding its feathered hat before it tumbles off.
+
+Style: 16-bit pixel art like SNES-era JRPG battle sprites. Chibi proportions: big heads, small bodies, expressive faces and oversized weapons. A thick, dark outline around every character, flat cel shading with few colors, and high contrast, so each sprite still reads when shrunk to 96 pixels tall.
+
+Rules:
+- Each character looks identical in all three of its poses: same colors, outfit, proportions and weapon. Only the pose changes.
+- Each row is a different character. Don't let their colors or features blend.
+- Each sprite is centered in its own cell with clear magenta space all around it. Nothing crosses into a neighboring cell.
+- In each row, the three sprites are the same size and stand on the same baseline.
+- No magenta, pink or purple anywhere on the characters.
+- No text, labels, numbers, grid lines, borders, shadows, motion lines, or effects that float free of the character.
+```
+
+## 25-animals: Lion Barbarian, Badger Paladin, Ram Berserker ✅ done
+
+```text
+A square sprite sheet: 3 rows by 3 columns of chibi JRPG battle sprites on one flat, solid magenta (#FF00FF) background. No gradient, floor, shadows or texture anywhere in the background.
+
+Each row is one character, drawn three times. Every character faces RIGHT, toward an unseen opponent, in a side three-quarter view. The columns are the same three poses in every row:
+1. STAND: idle battle stance, weapon ready.
+2. ATTACK: lunging to the right mid-strike, weapon fully extended toward the opponent, body leaning into the blow.
+3. RECOIL: knocked back to the left, leaning away from the opponent, eyes squeezed shut, weapon held loosely.
+
+Row 1, Lion Barbarian: a bipedal lion with a colossal tawny-gold mane and studded leather harness, heaving a colossal double-bitted battleaxe. Attack: a roaring horizontal sweep with the axe, mane flaring wide. Recoil: knocked back on one knee, shaking a dizzy head with mane disheveled.
+Row 2, Badger Paladin: a gruff bipedal European badger with black-and-white face stripes, encased in silver plate armor over an emerald-green surcoat, carrying a hefty spiked warhammer. Attack: a heavy two-handed overhead hammer crush straight down. Recoil: steps back into a squat, planting the hammer head firmly into the ground.
+Row 3, Ram Berserker: a muscular bipedal mountain ram with huge curled ridged horns, wearing spiked brass knuckledusters and a fur-trimmed bronze cuirass. Attack: lowers its head and charges forward with horns levelled. Recoil: bounced backward on its hooves, horns rattling with spiral dizzy eyes.
+
+Style: 16-bit pixel art like SNES-era JRPG battle sprites. Chibi proportions: big heads, small bodies, expressive faces and oversized weapons. A thick, dark outline around every character, flat cel shading with few colors, and high contrast, so each sprite still reads when shrunk to 96 pixels tall.
+
+Rules:
+- Each character looks identical in all three of its poses: same colors, outfit, proportions and weapon. Only the pose changes.
+- Each row is a different character. Don't let their colors or features blend.
+- Each sprite is centered in its own cell with clear magenta space all around it. Nothing crosses into a neighboring cell.
+- In each row, the three sprites are the same size and stand on the same baseline.
+- No magenta, pink or purple anywhere on the characters.
+- No text, labels, numbers, grid lines, borders, shadows, motion lines, or effects that float free of the character.
+```
+
+## 26-animals: Owl Wizard, Tortoise Cleric, Hedgehog Druid ✅ done
+
+```text
+A square sprite sheet: 3 rows by 3 columns of chibi JRPG battle sprites on one flat, solid magenta (#FF00FF) background. No gradient, floor, shadows or texture anywhere in the background.
+
+Each row is one character, drawn three times. Every character faces RIGHT, toward an unseen opponent, in a side three-quarter view. The columns are the same three poses in every row:
+1. STAND: idle battle stance, weapon ready.
+2. ATTACK: lunging to the right mid-strike, weapon fully extended toward the opponent, body leaning into the blow.
+3. RECOIL: knocked back to the left, leaning away from the opponent, eyes squeezed shut, weapon held loosely.
+
+Row 1, Owl Wizard: a great horned owl standing on sturdy talons, draped in starry navy-and-gold wizard robes, clutching a gnarled oak wand and an oversized glowing blue tome. Attack: thrusts the wand forward as the open spellbook illuminates with cyan sparks. Recoil: tumbles back, wings flapping, round spectacles slipping down its beak.
+Row 2, Tortoise Cleric: a wise, wrinkled bipedal green tortoise whose shell is adorned with brass reliquary lamps and runic moss, holding a sacred bronze sun-mace. Attack: a methodical, grounded forward swing of the radiant mace. Recoil: pulls head and arms partially into the shell as sparks glance off.
+Row 3, Hedgehog Druid: a roly-poly bipedal hedgehog in a leaf-weave green tunic and bark bracers, gripping a gnarled bramble staff tipped with an amber pinecone crystal. Attack: swings the staff forward, flinging sharp green thorn-needles. Recoil: curls into an angry bristling spike ball rocking on its back.
+
+Style: 16-bit pixel art like SNES-era JRPG battle sprites. Chibi proportions: big heads, small bodies, expressive faces and oversized weapons. A thick, dark outline around every character, flat cel shading with few colors, and high contrast, so each sprite still reads when shrunk to 96 pixels tall.
+
+Rules:
+- Each character looks identical in all three of its poses: same colors, outfit, proportions and weapon. Only the pose changes.
+- Each row is a different character. Don't let their colors or features blend.
+- Each sprite is centered in its own cell with clear magenta space all around it. Nothing crosses into a neighboring cell.
+- In each row, the three sprites are the same size and stand on the same baseline.
+- No magenta, pink or purple anywhere on the characters.
+- No text, labels, numbers, grid lines, borders, shadows, motion lines, or effects that float free of the character.
+```
+
+## 27-animals: Wolf Ranger, Mouse Musketeer, Beaver Artificer ✅ done
+
+```text
+A square sprite sheet: 3 rows by 3 columns of chibi JRPG battle sprites on one flat, solid magenta (#FF00FF) background. No gradient, floor, shadows or texture anywhere in the background.
+
+Each row is one character, drawn three times. Every character faces RIGHT, toward an unseen opponent, in a side three-quarter view. The columns are the same three poses in every row:
+1. STAND: idle battle stance, weapon ready.
+2. ATTACK: lunging to the right mid-strike, weapon fully extended toward the opponent, body leaning into the blow.
+3. RECOIL: knocked back to the left, leaning away from the opponent, eyes squeezed shut, weapon held loosely.
+
+Row 1, Wolf Ranger: a lean bipedal gray timber wolf in forest-green hooded leathers, carrying a massive recurve hunting bow notched with a leaf-fletched arrow. Attack: steps into a full draw and releases a glowing green arrow. Recoil: leaps backward into an evasive slide, bow raised to parry.
+Row 2, Mouse Musketeer: a brave little bipedal field mouse wearing a jaunty blue cavalier hat with a golden cockade, wielding a needle-rapier nearly three times its height. Attack: a lightning series of forward lunges with the needle-rapier. Recoil: blows back from the impact, small paws struggling to keep the enormous hat on.
+Row 3, Beaver Artificer: a stout bipedal brown beaver with a broad flat tail, thick leather work apron, brass goggles, and a giant two-handed steam-pipe wrench. Attack: heaves the giant wrench up and clangs it down onto the ground. Recoil: slapped backward, flat tail slapping the ground for balance.
+
+Style: 16-bit pixel art like SNES-era JRPG battle sprites. Chibi proportions: big heads, small bodies, expressive faces and oversized weapons. A thick, dark outline around every character, flat cel shading with few colors, and high contrast, so each sprite still reads when shrunk to 96 pixels tall.
+
+Rules:
+- Each character looks identical in all three of its poses: same colors, outfit, proportions and weapon. Only the pose changes.
+- Each row is a different character. Don't let their colors or features blend.
+- Each sprite is centered in its own cell with clear magenta space all around it. Nothing crosses into a neighboring cell.
+- In each row, the three sprites are the same size and stand on the same baseline.
+- No magenta, pink or purple anywhere on the characters.
+- No text, labels, numbers, grid lines, borders, shadows, motion lines, or effects that float free of the character.
+```
+
+## 28-animals: Otter Corsair, Monkey Trickster, Rooster Champion ✅ done
+
+```text
+A square sprite sheet: 3 rows by 3 columns of chibi JRPG battle sprites on one flat, solid magenta (#FF00FF) background. No gradient, floor, shadows or texture anywhere in the background.
+
+Each row is one character, drawn three times. Every character faces RIGHT, toward an unseen opponent, in a side three-quarter view. The columns are the same three poses in every row:
+1. STAND: idle battle stance, weapon ready.
+2. ATTACK: lunging to the right mid-strike, weapon fully extended toward the opponent, body leaning into the blow.
+3. RECOIL: knocked back to the left, leaning away from the opponent, eyes squeezed shut, weapon held loosely.
+
+Row 1, Otter Corsair: a sleek bipedal river otter with a weathered eye-patch and teal-and-white striped deck tunic, wielding an oversized iron boat-hook and sea-shell buckler. Attack: a vicious upward hook snag with the boat-hook. Recoil: slips back as if across wet deck timbers, tail out for balance.
+Row 2, Monkey Trickster: a golden-furred bipedal macaque in loose white-and-red martial robes with a flying yellow ribbon sash, holding an extendable iron bo staff. Attack: vaults off the ground on the staff and delivers a flying double kick. Recoil: flips backward mid-air with a grimacing squeak, landing on one paw.
+Row 3, Rooster Champion: a proud bipedal barnyard rooster with an emerald-and-gold iridescent tail, bright crimson comb, polished brass spur-boots, and a shining brass lance. Attack: a chest-puffed lunge forward, jabbing the brass lance with wings beating. Recoil: squawks backward, tail feathers splayed in disarray.
 
 Style: 16-bit pixel art like SNES-era JRPG battle sprites. Chibi proportions: big heads, small bodies, expressive faces and oversized weapons. A thick, dark outline around every character, flat cel shading with few colors, and high contrast, so each sprite still reads when shrunk to 96 pixels tall.
 

@@ -12,6 +12,12 @@ export const HEROES = [
   { id: "brawler", name: "Gauntlet Brawler", sprite: "brawler.webp" },
   { id: "tinker",  name: "Hammer Tinker",    sprite: "tinker.webp" },
   { id: "lancer",  name: "Wind Lancer",      sprite: "lancer.webp" },
+  { id: "cat_ninja", name: "Cat Ninja", sprite: "cat_ninja.webp" },
+  { id: "rabbit_samurai", name: "Rabbit Samurai", sprite: "rabbit_samurai.webp" },
+  { id: "raven_thief", name: "Raven Thief", sprite: "raven_thief.webp" },
+  { id: "owl_wizard", name: "Owl Wizard", sprite: "owl_wizard.webp" },
+  { id: "lion_barbarian", name: "Lion Barbarian", sprite: "lion_barbarian.webp" },
+  { id: "tiger_assassin", name: "Tiger Assassin", sprite: "tiger_assassin.webp" },
 ];
 
 const HERO_KEY = "lotrd_hero";
