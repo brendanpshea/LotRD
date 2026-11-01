@@ -129,7 +129,7 @@
   {
     "question": "Iolen confirms that the private key of Highrook Conclave's offline root CA was copied during a botched ceremony. Which actions does recovery require?",
     "correct": [
-      "Distribute a new root certificate to every relying party's trust store",
+      "Swap the old root for a new one in every relying party's trust store",
       "Re-issue every intermediate and leaf certificate under the new root"
     ],
     "incorrect": [
@@ -137,7 +137,7 @@
       "Revoke only the issuing CAs and keep the root, since it was offline",
       "Re-key the leaf certificates but keep the existing intermediates"
     ],
-    "feedback": "Nothing sits above a root to revoke it, and a self-revocation signed with a stolen key proves nothing, so recovery means pushing a new trust anchor to every relying party and re-issuing everything beneath it. Revoking the issuing CAs is the answer to an intermediate compromise, not a root compromise: the thief can simply sign new intermediates. Re-keying leaves under intermediates that still chain to the stolen root leaves the whole hierarchy forgeable."
+    "feedback": "Nothing sits above a root to revoke it, and a self-revocation signed with a stolen key proves nothing, so recovery means removing the stolen root from every relying party's trust store, adding a new trust anchor in its place, and re-issuing everything beneath it. Revoking the issuing CAs is the answer to an intermediate compromise, not a root compromise: the thief can simply sign new intermediates. Re-keying leaves under intermediates that still chain to the stolen root leaves the whole hierarchy forgeable."
   },
   {
     "type": "fill_blank",
@@ -291,7 +291,7 @@
     "feedback": "A template presets the fields for a role so every certificate of that kind comes out the same and auditable. For release signing that means an EKU of Code Signing alone, CA:FALSE so the certificate cannot mint others, and a hardware-bound, non-exportable key, because a copied signing key lets an attacker sign malware as Cinderpost. Adding server authentication or build-server SANs widens a signing certificate into a TLS one, and CA:TRUE would make every team a certificate authority."
   },
   {
-    "question": "On 1 November 2026 every client of Thornwood Civic Trust's permit portal starts failing TLS validation, although the portal's own certificate was renewed last week. The diagram shows the chain behind it. Which fix restores service?",
+    "question": "On 1 November 2026 every client of Thornwood Civic Trust's permit portal starts failing TLS validation, although the portal's own certificate was renewed last week. The diagram shows the chain behind it. Which fix restores service soonest?",
     "correct": [
       "Install the issuing CA's renewed certificate in the server's chain bundle"
     ],
@@ -300,7 +300,7 @@
       "Push the root CA certificate into every client's trust store again",
       "Generate a new issuing CA key, then re-issue every leaf certificate under it"
     ],
-    "feedback": "Every certificate in a chain has its own dates, and the issuing CA's expired on 31 October 2026, so every leaf beneath it fails however fresh the leaf is. Installing the renewed intermediate in the chain the server sends fixes them all at once. Re-issuing the leaf changes nothing, because it still chains through the expired intermediate; the root is valid and already trusted; and a new issuing key with mass re-issuance treats an expiry as a compromise, which it is not. Expiry monitoring has to cover intermediates, not only leaves.",
+    "feedback": "Every certificate in a chain has its own dates, and the issuing CA's expired on 31 October 2026, so every leaf beneath it fails however fresh the leaf is. Installing the renewed intermediate in the chain the server sends fixes them all at once. Re-issuing the leaf changes nothing, because it still chains through the expired intermediate; the root is valid and already trusted; and a new issuing key would work only after every leaf had been re-issued, treating an expiry as a compromise, which it is not. Expiry monitoring has to cover intermediates, not only leaves.",
     "figure": {
       "dot": "digraph { rankdir=TB; nodesep=0.4; ranksep=0.4; r [label=\"Thornwood Root CA\\nexpires 2041-06-30\"]; i [label=\"Issuing CA 1\\nexpires 2026-10-31\"]; l [label=\"portal leaf\\nexpires 2027-04-20\"]; r -> i [label=\" signs\"]; i -> l [label=\" signs\"]; }",
       "alt": "Three certificates stacked top to bottom: Thornwood Root CA, expiring 2041-06-30, signs Issuing CA 1, expiring 2026-10-31, which signs the portal leaf, expiring 2027-04-20.",
@@ -344,13 +344,13 @@
           }
         ],
         "check": {
-          "prompt": "The server hands the client a stapled response. Why can the client trust it?",
-          "answer": "The CA signed it, so the server cannot alter it",
+          "prompt": "The response the server staples was fetched yesterday. How can the client tell it is still current?",
+          "answer": "The CA signed a validity window into the response",
           "wrong": [
-            "The server signed it with its own private key",
-            "The client re-checks it with the CA first"
+            "The server's certificate dates also cover the response",
+            "The client asks the CA's responder to confirm it"
           ],
-          "why": "The response carries the CA's signature and a validity window. The server only relays it, so the client gets fresh status with no extra round trip and without telling the CA where it browses."
+          "why": "Every OCSP response states when it was produced and when it stops being valid, under the CA's signature, so the server cannot stretch those times. A staple past its window is rejected; one inside it gives fresh status with no extra round trip."
         }
       },
       {
@@ -766,11 +766,11 @@
       "Carry each signed event in a standard format such as JOSE or COSE"
     ],
     "incorrect": [
-      "Base64-encode each event so its bytes survive transport unchanged",
+      "Switch every partner's signatures from RSA to ECDSA keys",
       "Publish each event's SHA-256 digest beside it so partners can compare",
       "Obfuscate the field names so partners cannot quietly alter the events"
     ],
-    "feedback": "Cryptographic serialization formats exist so that signed and encrypted blobs mean the same bytes everywhere: JOSE (the family behind JWT) for JSON, COSE for compact binary messages, CMS for S/MIME and code signing. Base64 is an encoding that protects transport, not the meaning of the fields that were signed. A published digest has the same serialization problem and proves nothing about who produced the event. Obfuscation is not cryptography and stops no one from altering anything."
+    "feedback": "Cryptographic serialization formats exist so that signed and encrypted blobs mean the same bytes everywhere: JOSE (the family behind JWT) for JSON, COSE for compact binary messages, CMS for S/MIME and code signing. Changing the signature algorithm leaves the mismatch where it was: each side still signs or verifies its own serialization of the fields. A published digest has the same serialization problem and proves nothing about who produced the event. Obfuscation is not cryptography and stops no one from altering anything."
   },
   {
     "question": "Magister Vale is assigning keys at Highrook Conclave to central or device-held storage. Which placements follow the usual hybrid model?",

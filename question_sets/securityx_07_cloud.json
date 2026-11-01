@@ -322,7 +322,7 @@
         ]
       },
       {
-        "say": "**Orchestrator**: Kubernetes ships permissive. Lock its **API server** with RBAC, so each pod's **service account** may ask for only what it needs, and encrypt **etcd**, the datastore holding the cluster's secrets. **Network policies** say which pods may talk to which; the safe start is **default-deny**, then allow each flow an app needs. With none, the cluster network is flat: **Admission controllers** inspect each request to the API server and can reject a privileged pod, or, through a policy engine such as Kyverno, an unsigned image, before it is stored. And each pod gets its own cloud identity, **workload identity**, instead of borrowing the credentials of the node it runs on.",
+        "say": "**Orchestrator**: Kubernetes ships permissive. Lock its **API server** with RBAC, so each pod's **service account** may ask for only what it needs, and encrypt **etcd**, the datastore holding the cluster's secrets. **Network policies** say which pods may talk to which; the safe start is **default-deny**, then allow each flow an app needs. With none, the cluster network is flat: The `-n` flag names one namespace; `-A` widens the same check to every namespace in the cluster. **Admission controllers** inspect each request to the API server and can reject a privileged pod, or, through a policy engine such as Kyverno, an unsigned image, before it is stored. And each pod gets its own cloud identity, **workload identity**, instead of borrowing the credentials of the node it runs on.",
         "beats": [
           {
             "say": "**Orchestrator**: Kubernetes ships permissive. Lock its **API server** with RBAC, so each pod's **service account** may ask for only what it needs, and encrypt **etcd**, the datastore holding the cluster's secrets."
@@ -333,6 +333,9 @@
           {
             "code": "$ kubectl get networkpolicy -n payments\nNo resources found in payments namespace.",
             "language": "cluster audit"
+          },
+          {
+            "say": "The `-n` flag names one namespace; `-A` widens the same check to every namespace in the cluster."
           },
           {
             "say": "**Admission controllers** inspect each request to the API server and can reject a privileged pod, or, through a policy engine such as Kyverno, an unsigned image, before it is stored."
@@ -381,7 +384,7 @@
     "feedback": "trivy image shop:1.4 pulls the image's package list and checks it against vulnerability databases, reporting findings by severity. Run in the pipeline, a HIGH or CRITICAL result can fail the build before the image is ever signed or pushed. Trivy can also scan IaC files (trivy config), which comes up when we reach pipelines."
   },
   {
-    "question": "Highrook's new managed Kubernetes cluster was built with defaults: a flat pod network, pods using the node's cloud credentials, broad service-account permissions, and etcd unencrypted. Which changes shrink the damage one compromised pod can do?",
+    "question": "Highrook's new managed Kubernetes cluster was built with defaults: a flat pod network, pods using the node's cloud credentials, broad service-account permissions, and etcd unencrypted. Which changes limit what an attacker in one compromised pod can reach?",
     "correct": [
       "Default-deny network policies, then allow only the flows each app needs",
       "Workload identity, so each pod gets its own narrowly scoped cloud role",
@@ -765,13 +768,13 @@
           }
         ],
         "check": {
-          "prompt": "A key is limited to 100 requests per minute. Its owner sends 250 in one minute. How many reach the backend?",
-          "answer": "100",
+          "prompt": "Keys A and B are each limited to 100 requests per minute. In one minute A sends 250 and B sends 40. How many reach the backend?",
+          "answer": "140",
           "wrong": [
-            "250",
-            "150"
+            "100",
+            "290"
           ],
-          "why": "The gateway passes the first 100 and throttles the other 150, usually answering HTTP 429 Too Many Requests."
+          "why": "Each key has its own allowance. A's first 100 pass and its other 150 are throttled, usually with HTTP 429 Too Many Requests, while all 40 of B's pass."
         }
       },
       {
@@ -1085,7 +1088,7 @@
         ]
       },
       {
-        "say": "Adopting a cloud service is a process. First assess the vendor: a SOC 2 Type II report, ISO 27001 certification, a Cloud Security Alliance STAR entry, and where your data will be stored. Then check compliance, plan how it signs users in through your identity provider, send its logs to your SIEM, and plan how you would leave. Contracts matter as much as certificates: HIPAA requires a signed **business associate agreement** (BAA) before a provider handles protected health information. For U.S. federal agencies, **FedRAMP** is usually a prerequisite: one standardized assessment of a cloud offering against NIST SP 800-53 controls, reusable by many agencies. It does not replace an agency's own risk decision. Australia's IRAP and Germany's C5 play similar roles abroad. FedRAMP is mid-overhaul. Its 2026 rules rename authorization **FedRAMP Certification** and relabel the baselines as classes A to D, mandatory from January 1, 2027; older paperwork still says Authorized and Moderate.",
+        "say": "Adopting a cloud service is a process. First assess the vendor: a SOC 2 Type II report, ISO 27001 certification, a Cloud Security Alliance STAR entry, and where your data will be stored. Then check compliance, plan how it signs users in through your identity provider, send its logs to your SIEM, and plan how you would leave. Contracts matter as much as certificates: HIPAA requires a signed **business associate agreement** (BAA) before a provider handles protected health information. For U.S. federal agencies, **FedRAMP** is usually a prerequisite: one standardized assessment of a cloud offering against NIST SP 800-53 controls, reusable by many agencies. It does not replace an agency's own risk decision. Australia's IRAP and Germany's C5 play similar roles abroad. FedRAMP is mid-overhaul. Its 2026 rules rename authorization **FedRAMP Certification** and relabel the baselines as classes A to D; older paperwork still says Authorized and Moderate.",
         "beats": [
           {
             "say": "Adopting a cloud service is a process. First assess the vendor: a SOC 2 Type II report, ISO 27001 certification, a Cloud Security Alliance STAR entry, and where your data will be stored."
@@ -1103,7 +1106,7 @@
             "say": "It does not replace an agency's own risk decision. Australia's IRAP and Germany's C5 play similar roles abroad."
           },
           {
-            "say": "FedRAMP is mid-overhaul. Its 2026 rules rename authorization **FedRAMP Certification** and relabel the baselines as classes A to D, mandatory from January 1, 2027; older paperwork still says Authorized and Moderate."
+            "say": "FedRAMP is mid-overhaul. Its 2026 rules rename authorization **FedRAMP Certification** and relabel the baselines as classes A to D; older paperwork still says Authorized and Moderate."
           }
         ]
       }

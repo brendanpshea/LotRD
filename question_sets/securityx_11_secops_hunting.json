@@ -102,7 +102,7 @@
       "A parser maps its fields to the shared schema",
       "GeoIP and DC01's asset criticality are attached",
       "The record is written to the hot-tier index",
-      "A rule joins it with 40 other failures from one IP"
+      "A rule searching the index joins it with 40 other failures"
     ],
     "feedback": "That is collection, normalization, enrichment, storage, then correlation. Parsing must come before enrichment, because GeoIP can only be looked up once the source address sits in a known field. Correlation runs over the stored, normalized events, which is why a normalization fault upstream quietly breaks every rule downstream."
   },
@@ -120,7 +120,7 @@
   },
   {
     "type": "dynamic_numeric",
-    "question": "Highrook's SIEM ingests {{g}} GB of logs a day. Kaeli adds forwarder filters that drop {{p}}% of events at the source, all of them records with no detection or forensic value. The hot tier keeps {{d}} days of data. How many GB will the hot tier hold once the filters are running?",
+    "question": "Highrook's SIEM ingests {{g}} GB of logs a day. Kaeli adds forwarder filters that drop {{p}}% of that volume at the source, all of it records with no detection or forensic value. The hot tier keeps {{d}} days of data. How many GB will the hot tier hold once the filters are running?",
     "variables": {
       "g": {
         "values": [
@@ -256,7 +256,9 @@
       "grep -wc 4720 dc02.log",
       "grep -cw 4720 dc02.log",
       "grep -c -w 4720 dc02.log",
-      "grep 4720 dc02.log | wc -l"
+      "grep 4720 dc02.log | wc -l",
+      "grep --count 4720 dc02.log",
+      "cat dc02.log | grep -c 4720"
     ],
     "case_sensitive": true,
     "feedback": "grep -c 4720 dc02.log prints a count of the matching lines instead of the lines themselves; grep 4720 dc02.log | wc -l gets the same number the long way. In a real export, match the field (EventID=4720) rather than the bare number, so a 4720 inside a timestamp or a byte count is not counted too."
@@ -965,7 +967,8 @@
         "accept": [
           "token",
           "credential",
-          "tokens"
+          "tokens",
+          "credentials"
         ]
       }
     ],
@@ -1038,7 +1041,8 @@
           "stale",
           "out of date",
           "old",
-          "obsolete"
+          "obsolete",
+          "outdated"
         ]
       },
       {
@@ -1237,7 +1241,8 @@
       {
         "accept": [
           "TIP",
-          "threat intel platform"
+          "threat intel platform",
+          "threat intelligence platform"
         ]
       }
     ],
@@ -1320,7 +1325,8 @@
     "type": "fill_blank",
     "question": "Hesper Quill's write-up of a closed incident has been approved for Greycloak Apothecary's public blog. Under the Traffic Light Protocol, the write-up should be marked TLP:___.",
     "correct": [
-      "CLEAR"
+      "CLEAR",
+      "TLP:CLEAR"
     ],
     "case_sensitive": false,
     "feedback": "TLP:CLEAR carries no sharing limit; it replaced the older TLP:WHITE. TLP:GREEN allows sharing within a community but not publicly, TLP:AMBER limits it to the recipient's organization and its clients on a need-to-know basis (AMBER+STRICT to the organization alone), and TLP:RED to the named recipients only."

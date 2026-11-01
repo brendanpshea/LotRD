@@ -276,7 +276,7 @@
     "feedback": "Point A is in the inbound path after the CDN and before the load balancer, so every public request is inspected, and can be blocked, before any web server sees it. Point B carries internal calls from the web tier to the API tier, so a WAF there would only see requests the web tier had already accepted. Point C carries database queries, not HTTP from the public. Point D is on the staff's outbound path, which is a forward proxy's job, and it never sees a customer's request.",
     "figure": {
       "dot": "digraph { rankdir=TB; nodesep=0.28; ranksep=0.4; st [label=\"staff\\nlaptops\"]; D [label=\"D\", shape=circle, color=\"#ffb300\", fontcolor=\"#ffd86b\"]; in [label=\"internet\"]; cdn [label=\"CDN edge\"]; A [label=\"A\", shape=circle, color=\"#ffb300\", fontcolor=\"#ffd86b\"]; lb [label=\"load\\nbalancer\"]; web [label=\"web tier\"]; B [label=\"B\", shape=circle, color=\"#ffb300\", fontcolor=\"#ffd86b\"]; api [label=\"API tier\"]; C [label=\"C\", shape=circle, color=\"#ffb300\", fontcolor=\"#ffd86b\"]; db [label=\"database\"]; {rank=same; st; D;} {rank=same; in; cdn; A; lb;} {rank=same; db; C; api; B; web;} st -> D; D -> in; in -> cdn -> A -> lb; lb -> web; B -> web [dir=back]; api -> B [dir=back]; C -> api [dir=back]; db -> C [dir=back]; }",
-      "alt": "A diagram in three rows. Top: staff laptops connect through a circle marked D to the internet. Middle: the internet leads to a CDN edge, then a circle marked A, then a load balancer. Bottom: the load balancer feeds the web tier, which leads through a circle marked B to the API tier, and through a circle marked C to the database.",
+      "alt": "A diagram in three rows. Top: staff laptops connect through a circle marked D to the internet. Middle: the internet leads to a CDN edge, then a circle marked A, then a load balancer. Bottom: the load balancer feeds the web tier, which leads through a circle marked B to the API tier; the API tier leads through a circle marked C to the database.",
       "caption": "Marketstone's trading portal",
       "src": "_dot/9fbc657ff40a3fe0.svg"
     }
@@ -478,7 +478,12 @@
           "reserve",
           "surplus",
           "headroom",
-          "excess"
+          "excess",
+          "additional",
+          "more",
+          "redundant",
+          "enough",
+          "sufficient"
         ]
       },
       {
@@ -663,13 +668,13 @@
         ]
       },
       {
-        "say": "Now the consequence. A resource with no PEP in front of it never consults the PDP, however healthy the PDP is: it cannot rule on a request it never sees. NIST calls an area where entities are trusted by default after one initial check an **implicit trust zone**, and advises keeping it as small as possible.",
+        "say": "NIST calls an area where entities are trusted by default after one initial check an **implicit trust zone**, and advises keeping it as small as possible. The PEP's place in the path has a consequence. A resource with no PEP in front of it never consults the PDP, however healthy the PDP is: it cannot rule on a request it never sees.",
         "beats": [
           {
-            "say": "Now the consequence. A resource with no PEP in front of it never consults the PDP, however healthy the PDP is: it cannot rule on a request it never sees."
+            "say": "NIST calls an area where entities are trusted by default after one initial check an **implicit trust zone**, and advises keeping it as small as possible."
           },
           {
-            "say": "NIST calls an area where entities are trusted by default after one initial check an **implicit trust zone**, and advises keeping it as small as possible."
+            "say": "The PEP's place in the path has a consequence. A resource with no PEP in front of it never consults the PDP, however healthy the PDP is: it cannot rule on a request it never sees."
           }
         ],
         "check": {
@@ -874,16 +879,16 @@
         ]
       },
       {
-        "say": "Zero Trust treats a VPN as transport, not trust. An **always-on VPN** connects automatically whenever a managed device is online, so users cannot forget or skip it. That suits devices that must receive policy and send telemetry while off-network. It still has to sit alongside segmentation and per-application authorization. **Zero Trust Network Access (ZTNA)** is the alternative to broad VPN access: a broker authenticates the user and device, then connects them to one specific application, never to the network.",
+        "say": "Zero Trust treats a VPN as transport, not trust. **Zero Trust Network Access (ZTNA)** is the alternative to broad VPN access: a broker authenticates the user and device, then connects them to one specific application, never to the network. An **always-on VPN** connects automatically whenever a managed device is online, so users cannot forget or skip it. That suits devices that must receive policy and send telemetry while off-network. It still has to sit alongside segmentation and per-application authorization.",
         "beats": [
           {
-            "say": "Zero Trust treats a VPN as transport, not trust. An **always-on VPN** connects automatically whenever a managed device is online, so users cannot forget or skip it."
+            "say": "Zero Trust treats a VPN as transport, not trust. **Zero Trust Network Access (ZTNA)** is the alternative to broad VPN access: a broker authenticates the user and device, then connects them to one specific application, never to the network."
+          },
+          {
+            "say": "An **always-on VPN** connects automatically whenever a managed device is online, so users cannot forget or skip it."
           },
           {
             "say": "That suits devices that must receive policy and send telemetry while off-network. It still has to sit alongside segmentation and per-application authorization."
-          },
-          {
-            "say": "**Zero Trust Network Access (ZTNA)** is the alternative to broad VPN access: a broker authenticates the user and device, then connects them to one specific application, never to the network."
           }
         ],
         "check": {
@@ -990,13 +995,16 @@
       },
       {
         "accept": [
-          "SASE"
+          "SASE",
+          "secure access service edge"
         ],
         "hint": "acronym"
       },
       {
         "accept": [
-          "SDN"
+          "SDN",
+          "software-defined networking",
+          "software defined networking"
         ],
         "hint": "acronym"
       }
@@ -1224,7 +1232,7 @@
     "question": "A crafted payload slips past the WAF in front of Cinderpost's checkout API. Which existing layers still provide defense-in-depth, because each one covers a different failure mode?",
     "correct": [
       "Input validation in the API rejects the malformed field",
-      "Microsegmentation keeps the API node from reaching the payment database",
+      "Microsegmentation lets the API node reach only the services it needs",
       "Centralized logging and anomaly detection flag the unusual queries"
     ],
     "incorrect": [
@@ -1273,16 +1281,16 @@
         ]
       },
       {
-        "say": "**Data loss prevention (DLP)** works best spread across the architecture, not as one box. **DLP at rest** protects known stored data on shares, buckets, databases, and endpoints. **DLP in transit** inspects data moving through email, web traffic, APIs, chat, and sync channels, using gateways, proxies, and a CASB for SaaS. Endpoint agents cover data **in use**: copying, printing, screenshots. **Data discovery** continuously scans repositories for sensitive patterns, such as card numbers or national ID numbers, that nobody knew were there. You cannot protect data you do not know you have.",
+        "say": "**Data loss prevention (DLP)** works best spread across the architecture, not as one box. **DLP at rest** protects known stored data on shares, buckets, databases, and endpoints. **Data discovery** continuously scans repositories for sensitive patterns, such as card numbers or national ID numbers, that nobody knew were there. You cannot protect data you do not know you have. **DLP in transit** inspects data moving through email, web traffic, APIs, chat, and sync channels, using gateways, proxies, and a CASB for SaaS. Endpoint agents cover data **in use**: copying, printing, screenshots.",
         "beats": [
           {
             "say": "**Data loss prevention (DLP)** works best spread across the architecture, not as one box. **DLP at rest** protects known stored data on shares, buckets, databases, and endpoints."
           },
           {
-            "say": "**DLP in transit** inspects data moving through email, web traffic, APIs, chat, and sync channels, using gateways, proxies, and a CASB for SaaS. Endpoint agents cover data **in use**: copying, printing, screenshots."
+            "say": "**Data discovery** continuously scans repositories for sensitive patterns, such as card numbers or national ID numbers, that nobody knew were there. You cannot protect data you do not know you have."
           },
           {
-            "say": "**Data discovery** continuously scans repositories for sensitive patterns, such as card numbers or national ID numbers, that nobody knew were there. You cannot protect data you do not know you have."
+            "say": "**DLP in transit** inspects data moving through email, web traffic, APIs, chat, and sync channels, using gateways, proxies, and a CASB for SaaS. Endpoint agents cover data **in use**: copying, printing, screenshots."
           },
           {
             "figure": {
@@ -1298,7 +1306,7 @@
           "answer": "Data discovery",
           "wrong": [
             "DLP in transit",
-            "DLP in use"
+            "DLP at rest"
           ],
           "why": "The files were sitting still in a place nobody knew about, and a scan found them. That is discovery; protecting them from now on is the job of DLP at rest."
         }

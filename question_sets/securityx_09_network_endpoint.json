@@ -45,23 +45,23 @@
           }
         ],
         "check": {
-          "prompt": "A VM appears in the cloud inventory and the EDR console, but not in the CMDB. What does that gap most directly reveal?",
-          "answer": "CMDB drift: a real, monitored asset with no recorded owner or scope",
+          "prompt": "An auditor asks who owns a server and which compliance scope it is in. The inventory lists the server. Is that enough?",
+          "answer": "No: owner and scope live in the CMDB, not the inventory",
           "wrong": [
-            "A false positive in the EDR console that should be ignored",
-            "A duplicate record that automated discovery created by mistake"
+            "Yes: an inventory records every attribute of an asset",
+            "Yes, as long as the server also appears in the EDR console"
           ],
-          "why": "The VM is real and watched, but its owner, patch group, and compliance scope are unrecorded - reconciliation should have caught it."
+          "why": "An inventory only says the server exists. The CMDB holds it as a configuration item with an owner, relationships and compliance scope, which is why the two are reconciled against each other."
         },
         "say": "The system of record for all of it is the **CMDB**: every asset is a configuration item with attributes and links to other items. An **inventory** is only the raw list of what exists; the CMDB adds owner, VLAN, patch group, and compliance scope. Neither stays honest by hand, so mature teams reconcile it automatically against cloud APIs, Active Directory, the EDR console, and MDM enrollment. A good record answers, six months later, why a rule exists in one click."
       }
     ],
-    "outro": "Now a different kind of gap in the record, and what it tells you."
+    "outro": "Now a gap between the record and reality, and what it tells you."
   },
   {
     "question": "Doctor Quill is scoping a ransomware response at Greycloak Apothecary and finds three Linux servers that the cloud provider's inventory API and the EDR console both report, but that do not exist in the CMDB. Which conclusion is BEST supported?",
     "correct": [
-      "The CMDB has drifted: these are real, monitored assets whose owner, patch group, and compliance scope are unrecorded, so they may be unmanaged shadow IT"
+      "The CMDB has drifted: these are real, monitored assets with no recorded owner, patch group, or scope"
     ],
     "incorrect": [
       "The servers are decommissioned and the cloud API is returning stale cached records that should be deleted",
@@ -98,7 +98,7 @@
     "correct": [
       "CMDB"
     ],
-    "case_sensitive": true,
+    "case_sensitive": false,
     "feedback": "The CMDB (Configuration Management Database) is the substrate every other control depends on - a firewall rule, an EDR agent, or a scan is useless on a host you do not know exists. An inventory is only the raw list; the CMDB adds ownership and relationships."
   },
   {
@@ -169,7 +169,7 @@
       {
         "beats": [
           {
-            "say": "Signature AV cannot express 'a document spawned PowerShell that then fetched code', because there is no file to match. A behaviour-based backend fingerprints the whole chain - and a renamed or repacked tool trips the same fingerprint."
+            "say": "Signature AV cannot express 'a document spawned PowerShell that then fetched code': a sequence is not a file it can hash. A behaviour-based backend fingerprints the whole chain instead."
           }
         ],
         "check": {
@@ -181,7 +181,7 @@
           ],
           "why": "A new hash defeats hash matching, but the suspicious process lineage and network behaviour are identical, so the behaviour-based model still catches it."
         },
-        "say": "Signature AV cannot express 'a document spawned PowerShell that then fetched code', because there is no file to match. A behaviour-based backend fingerprints the whole chain - and a renamed or repacked tool trips the same fingerprint."
+        "say": "Signature AV cannot express 'a document spawned PowerShell that then fetched code': a sequence is not a file it can hash. A behaviour-based backend fingerprints the whole chain instead."
       },
       {
         "beats": [
@@ -190,9 +190,12 @@
           },
           {
             "say": "A **host firewall** does something different again: it filters packets per host, so a workstation can refuse SMB or RDP from a peer workstation even when the network's internal policy is permissive."
+          },
+          {
+            "say": "Three more host controls shrink what an attacker can do: **endpoint privilege management** removes standing admin rights, **application allowlisting** runs only approved programs, and **browser isolation** renders web pages away from the device."
           }
         ],
-        "say": "Two older host terms still turn up in audits. A **HIDS** only detects and alerts on host activity; a **HIPS** can also block it - the host-level echo of network IDS versus IPS. Modern EDR folds both in. A **host firewall** does something different again: it filters packets per host, so a workstation can refuse SMB or RDP from a peer workstation even when the network's internal policy is permissive."
+        "say": "Two older host terms still turn up in audits. A **HIDS** only detects and alerts on host activity; a **HIPS** can also block it - the host-level echo of network IDS versus IPS. Modern EDR folds both in. A **host firewall** does something different again: it filters packets per host, so a workstation can refuse SMB or RDP from a peer workstation even when the network's internal policy is permissive. Three more host controls shrink what an attacker can do: **endpoint privilege management** removes standing admin rights, **application allowlisting** runs only approved programs, and **browser isolation** renders web pages away from the device."
       }
     ],
     "outro": "Your turn: a tool that never touches disk, and which defence sees it."
@@ -203,7 +206,7 @@
       "Behaviour-based EDR correlating the process lineage and outbound connection as a suspicious sequence"
     ],
     "incorrect": [
-      "A larger, more frequently updated antivirus signature database that even adds hashes for the certutil.exe and PowerShell binaries so their use is flagged",
+      "A larger antivirus signature database that also flags the certutil.exe and PowerShell hashes",
       "A host firewall rule that blocks all inbound connections to the workstation",
       "Full-disk encryption on the endpoint to protect the files at rest"
     ],
@@ -321,7 +324,7 @@
       {
         "beats": [
           {
-            "say": "The classic mistake: an application breaks, a denial shows in the log, and someone runs `setenforce 0` to 'fix' it. That silences the whole system's enforcement to paper over one missing rule."
+            "say": "The classic mistake comes when an application breaks, a denial shows in the log, and someone reaches for `setenforce 0`."
           }
         ],
         "check": {
@@ -331,9 +334,9 @@
             "Adds the one missing rule the service needs, leaving all other confinement intact",
             "Permanently disables SELinux so it stays off after the next reboot"
           ],
-          "why": "setenforce 0 is system-wide and temporary: it blocks nothing until the next reboot. The right fix is a targeted policy rule, not turning enforcement off."
+          "why": "`setenforce 0` is host-wide and temporary: every confined process stops being blocked, not only the failing one, until enforcement is switched back on or the host reboots."
         },
-        "say": "The classic mistake: an application breaks, a denial shows in the log, and someone runs `setenforce 0` to 'fix' it. That silences the whole system's enforcement to paper over one missing rule."
+        "say": "The classic mistake comes when an application breaks, a denial shows in the log, and someone reaches for `setenforce 0`."
       },
       {
         "beats": [
@@ -349,7 +352,7 @@
   {
     "question": "A RHEL application server on Forgeworks' network throws errors that trace to SELinux denials in the audit log. A junior admin wants to set SELinux to permissive mode across the host to clear the errors before a demo. Which response BEST preserves security while resolving the problem?",
     "correct": [
-      "Keep enforcing and add a targeted policy rule (or correct the file labels) for the specific access the application needs"
+      "Keep enforcing and add a targeted policy rule or label fix for the access the app needs"
     ],
     "incorrect": [
       "Set the host to permissive, since the denials will still be logged for later review",
@@ -364,7 +367,9 @@
     "language": "bash",
     "correct": [
       "setenforce 1",
-      "setenforce Enforcing"
+      "setenforce Enforcing",
+      "setenforce enforcing",
+      "sudo setenforce 1"
     ],
     "case_sensitive": true,
     "feedback": "setenforce 1 (or setenforce Enforcing) flips the running system to enforcing at once; the 0 argument would go the other way, to permissive. It is a runtime change - the mode in /etc/selinux/config governs what happens after a reboot."
@@ -417,13 +422,13 @@
           }
         ],
         "check": {
-          "prompt": "An authorized internal scanner floods the IPS with alerts every night. Which suppression keeps the most real signal?",
-          "answer": "Suppress only the specific scan-triggered rules for the scanner's IP",
+          "prompt": "An attack crosses the IPS inside a TLS session it cannot decrypt, and no alert fires. What kind of failure is that?",
+          "answer": "A false negative: a real attack the sensor missed",
           "wrong": [
-            "Suppress every alert originating from the scanner's IP",
-            "Disable the triggered rules globally for all hosts"
+            "A false positive: an alert on harmless traffic",
+            "A true negative: no attack, so no alert"
           ],
-          "why": "Scoping to the expected rules and that one IP silences the noise while still catching anything unexpected from the scanner, or those same rules firing elsewhere."
+          "why": "A false negative is a real attack with no alert, the worse failure because nothing prompts anyone to look. A sensor misses what it cannot read, cannot see, or has no rule for."
         },
         "say": "An **IDS** inspects a copy of traffic and alerts; an **IPS** sits inline and can drop. A **false positive** is legitimate traffic that matches an attack signature - an internal vulnerability scanner trips dozens of rules. The fix is scoped: suppress the *specific expected rules* for the scanner's address. Suppressing *all* alerts from that host blinds you to a real attacker who later lands on it."
       },
@@ -431,9 +436,15 @@
         "beats": [
           {
             "say": "**Placement** matters as much as rules. An IPS at the internet edge sees north-south traffic but cannot see two servers talking inside one VLAN. East-west visibility needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point."
+          },
+          {
+            "say": "Switches fail quietly too. **VLAN hopping** abuses loose trunk settings: **switch spoofing** negotiates a trunk through **DTP**, the auto-trunking protocol, and **double tagging** abuses the **native VLAN**, the one a trunk carries untagged."
+          },
+          {
+            "say": "Routers that believe any neighbour invite **insecure routing**: unauthenticated OSPF or RIP, BGP with no prefix filters or **RPKI** origin checks, and IP source routing, which lets the sender pick the path. Each lets an attacker pull traffic through a device they control."
           }
         ],
-        "say": "**Placement** matters as much as rules. An IPS at the internet edge sees north-south traffic but cannot see two servers talking inside one VLAN. East-west visibility needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point."
+        "say": "**Placement** matters as much as rules. An IPS at the internet edge sees north-south traffic but cannot see two servers talking inside one VLAN. East-west visibility needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point. Switches fail quietly too. **VLAN hopping** abuses loose trunk settings: **switch spoofing** negotiates a trunk through **DTP**, the auto-trunking protocol, and **double tagging** abuses the **native VLAN**, the one a trunk carries untagged. Routers that believe any neighbour invite **insecure routing**: unauthenticated OSPF or RIP, BGP with no prefix filters or **RPKI** origin checks, and IP source routing, which lets the sender pick the path. Each lets an attacker pull traffic through a device they control."
       },
       {
         "beats": [
@@ -453,19 +464,19 @@
             }
           },
           {
-            "say": "Rule 10 permits the whole `/24` to port 443. Rule 20 tries to block host `10.0.0.9`. Because 10 is above 20, the host is still allowed - the match stops at 10 and 20 never runs."
+            "say": "Rule 10 permits the whole `/24` to port 443. Rule 20 tries to block host `10.0.0.9`. Because 10 is above 20, the host is still allowed to 443 - the match stops at rule 10, and rule 20 never runs for that traffic."
           }
         ],
         "check": {
-          "prompt": "As written, is host 10.0.0.9 blocked from reaching port 443?",
-          "answer": "No - rule 10 matches first and permits it, so rule 20 is never reached",
+          "prompt": "Host 10.0.0.9 now tries SSH, port 22, to a server. Which rule decides what happens?",
+          "answer": "Rule 20: rule 10 covers only port 443, so 20 matches first",
           "wrong": [
-            "Yes - an explicit deny always overrides a permit",
-            "Yes - the more specific host rule is evaluated before the subnet rule"
+            "Rule 10: the host sits inside its /24",
+            "Rule 30: the catch-all handles every non-443 packet"
           ],
-          "why": "First-match stops at the first rule that matches. The specific deny has to sit above the broad permit to take effect, and every list should end in an explicit, logged deny."
+          "why": "First match means the first rule whose every condition fits. Port 22 fails rule 10's port condition, so evaluation moves on, and rule 20's deny for the host fits."
         },
-        "say": "Access lists are evaluated top-down, **first match wins**. Here is a short list: Rule 10 permits the whole `/24` to port 443. Rule 20 tries to block host `10.0.0.9`. Because 10 is above 20, the host is still allowed - the match stops at 10 and 20 never runs."
+        "say": "Access lists are evaluated top-down, **first match wins**. Here is a short list: Rule 10 permits the whole `/24` to port 443. Rule 20 tries to block host `10.0.0.9`. Because 10 is above 20, the host is still allowed to 443 - the match stops at rule 10, and rule 20 never runs for that traffic."
       }
     ],
     "outro": "Now arrange a short access list so it does what its author intended."
@@ -483,11 +494,11 @@
   {
     "question": "An authorized internal vulnerability scanner at Marketstone Exchange trips hundreds of IPS alerts every scan window, burying real signal. The SOC must cut the noise without losing detection of a genuine attacker who might later compromise that scanner host. Which tuning is BEST?",
     "correct": [
-      "Suppress only the specific scan-related rules for the scanner's IP address, leaving all other rules active for that host"
+      "Suppress only the scan-related rules for the scanner's IP, leaving all other rules active for it"
     ],
     "incorrect": [
       "Suppress every alert that originates from the scanner's IP address",
-      "Disable every rule the scanner triggers across all hosts on the network, on the grounds that any rule a trusted internal scanner sets off must be too noisy to keep",
+      "Disable every rule the scanner triggers, across all hosts, since those rules are too noisy to keep",
       "Raise the IPS alert threshold so only the single highest-severity rule can fire"
     ],
     "feedback": "Scoping to the expected rules and that one address removes the known-benign noise while still catching anything unexpected from the scanner. Suppressing all alerts from the IP blinds the SOC if that host is compromised, disabling the rules globally removes detection everywhere, and raising the threshold hides valid medium-severity detections across the board."
@@ -511,7 +522,7 @@
       "Asymmetric routing: each firewall sees only half the flow, so the return packets look invalid and are dropped"
     ],
     "incorrect": [
-      "An MTU or MSS mismatch that silently fragments only the largest packets, so small requests complete while large transfers stall partway through the flow",
+      "An MTU or MSS mismatch that drops only the largest packets, so large transfers stall partway",
       "A DNS resolution failure that intermittently returns the wrong server address",
       "A certificate hostname mismatch that aborts the TLS handshake after it starts"
     ],
@@ -545,7 +556,7 @@
   {
     "question": "After a new IPsec site-to-site tunnel is cut over at Wyrmkeep Logistics, users report that 'small pages load, but large pages and file downloads hang.' Pings and small requests succeed. Which problem fits this symptom BEST?",
     "correct": [
-      "An MTU/MSS mismatch: the tunnel's overhead makes full-size packets too large, and they are being dropped instead of fragmented"
+      "An MTU/MSS mismatch: tunnel overhead makes full-size packets too big to pass"
     ],
     "incorrect": [
       "An expired certificate on the VPN gateway that blocks only large sessions",
@@ -654,15 +665,18 @@
             "language": "shell"
           },
           {
-            "say": "The `@ns1.example` part picks which server to ask. Without protection, any answer along the path can be forged - that is **DNS cache poisoning**, which modern resolvers fight by randomizing query IDs and source ports, and which `DNSSEC` validation rejects outright."
+            "say": "The `@ns1.example` part picks which server to ask. Without protection, any answer along the path can be forged: that is **DNS cache poisoning**."
+          },
+          {
+            "say": "Resolvers fight it by randomizing query IDs, source ports and even the letter case of the name, and DNSSEC validation rejects forged answers outright."
           }
         ],
-        "say": "A client asks a resolver, which asks an authoritative nameserver. A normal query is for one record: The `@ns1.example` part picks which server to ask. Without protection, any answer along the path can be forged - that is **DNS cache poisoning**, which modern resolvers fight by randomizing query IDs and source ports, and which `DNSSEC` validation rejects outright."
+        "say": "A client asks a resolver, which asks an authoritative nameserver. A normal query is for one record: The `@ns1.example` part picks which server to ask. Without protection, any answer along the path can be forged: that is **DNS cache poisoning**. Resolvers fight it by randomizing query IDs, source ports and even the letter case of the name, and DNSSEC validation rejects forged answers outright."
       },
       {
         "beats": [
           {
-            "say": "**DNSSEC** signs records so a validating resolver rejects forged answers. It gives authenticity and integrity, not confidentiality - the queries stay readable. `DoH` and `DoT` encrypt the query itself for privacy, a different goal."
+            "say": "**DNSSEC** signs records so a validating resolver rejects forged answers. It gives authenticity and integrity, not confidentiality - the queries stay readable. **DoH** and **DoT** (DNS over HTTPS and over TLS) encrypt the query itself for privacy, a different goal."
           },
           {
             "figure": {
@@ -673,27 +687,27 @@
             }
           }
         ],
-        "say": "**DNSSEC** signs records so a validating resolver rejects forged answers. It gives authenticity and integrity, not confidentiality - the queries stay readable. `DoH` and `DoT` encrypt the query itself for privacy, a different goal."
+        "say": "**DNSSEC** signs records so a validating resolver rejects forged answers. It gives authenticity and integrity, not confidentiality - the queries stay readable. **DoH** and **DoT** (DNS over HTTPS and over TLS) encrypt the query itself for privacy, a different goal."
       },
       {
         "beats": [
           {
-            "say": "A **zone transfer** (AXFR) is the bulk replication of an entire zone between authoritative servers. It should be restricted by IP or TSIG to the real secondaries."
+            "say": "A **zone transfer** (AXFR) is the bulk replication of an entire zone between authoritative servers."
           },
           {
             "say": "Left open to anyone, an AXFR hands an attacker every record in the zone - the whole internal naming map and host inventory. It is a recurring penetration-test finding."
           }
         ],
         "check": {
-          "prompt": "A public authoritative nameserver answers an AXFR request from any client on the internet. What does the requester receive?",
-          "answer": "Every record in the zone - the organization's full naming map",
+          "prompt": "Which machines should a nameserver accept AXFR requests from?",
+          "answer": "Only its real secondary servers, checked by IP or TSIG key",
           "wrong": [
-            "Only the single record the requester most recently queried",
-            "A DNSSEC-signed refusal that reveals nothing"
+            "Any resolver that looks up names on users' behalf",
+            "Anyone: the zone's records are published in DNS anyway"
           ],
-          "why": "AXFR replicates the entire zone. Open to the world, it is free reconnaissance; restrict it to the real secondary servers."
+          "why": "Secondaries need the whole zone to replicate it, and nobody else does. Restrict transfers by source IP or a shared **TSIG** key: single records may be public, but the complete list is free reconnaissance."
         },
-        "say": "A **zone transfer** (AXFR) is the bulk replication of an entire zone between authoritative servers. It should be restricted by IP or TSIG to the real secondaries. Left open to anyone, an AXFR hands an attacker every record in the zone - the whole internal naming map and host inventory. It is a recurring penetration-test finding."
+        "say": "A **zone transfer** (AXFR) is the bulk replication of an entire zone between authoritative servers. Left open to anyone, an AXFR hands an attacker every record in the zone - the whole internal naming map and host inventory. It is a recurring penetration-test finding."
       }
     ],
     "outro": "Your turn to make the request that pulls an entire zone."
@@ -705,7 +719,13 @@
     "correct": [
       "dig axfr db @ns",
       "dig @ns axfr db",
-      "dig axfr @ns db"
+      "dig axfr @ns db",
+      "dig @ns db axfr",
+      "dig db axfr @ns",
+      "dig -t axfr db @ns",
+      "dig @ns -t axfr db",
+      "dig AXFR db @ns",
+      "dig @ns AXFR db"
     ],
     "case_sensitive": true,
     "feedback": "dig axfr db @ns requests the whole zone db from the server ns; the @ns picks the server to ask. Against a correctly configured nameserver this is refused, but against one that allows AXFR from anyone it dumps every record in the zone."
@@ -729,7 +749,7 @@
     "incorrect": [
       "Answering AXFR zone-transfer requests from any client",
       "Disabling the resolver's logging to improve performance",
-      "Lowering record TTLs so cached entries expire sooner only"
+      "Lowering record TTLs so that cached entries expire sooner"
     ],
     "feedback": "Query-ID and source-port randomization raise the work needed to spoof a response (the Kaminsky-era defense), DNSSEC validation rejects forgeries outright, and case randomization adds entropy. Open AXFR and disabling logs make things worse, and shorter TTLs alone do not stop a correctly guessed forged answer."
   },
@@ -739,7 +759,7 @@
       "DNS sinkholing: redirecting queries for known-bad domains to a controlled address and logging the attempt"
     ],
     "incorrect": [
-      "DNSSEC validation: cryptographically signing the zone and rejecting any forged DNS response, so poisoned answers from a compromised upstream resolver are refused",
+      "DNSSEC validation: checking each answer's signature and rejecting any forged DNS response",
       "A zone transfer: replicating the bad-domain list to secondary nameservers",
       "DNS over HTTPS: encrypting the resolver conversation to hide the queries"
     ],
@@ -795,7 +815,7 @@
   {
     "question": "Iolen debugs a failing TLS connection to an internal API and runs openssl s_client against it. The output shows:\n\n  Verify return code: 21 (unable to verify the first certificate)\n\nThe leaf certificate itself is valid and the hostname matches. Which cause is MOST consistent with this evidence?",
     "correct": [
-      "The server is not sending its intermediate certificate, so the client cannot build a chain to a trusted root"
+      "The server is not sending its intermediate, so no chain to a trusted root can be built"
     ],
     "incorrect": [
       "The server's clock is skewed by several hours, so the certificate looks not-yet-valid",
@@ -889,7 +909,7 @@
       "They are rejected: the passes are not aligned, because neither authenticated domain matches the From domain"
     ],
     "incorrect": [
-      "They are delivered, because any SPF or DKIM pass satisfies DMARC on its own, no matter which sending domain the passing check actually authenticated",
+      "They are delivered, because any SPF or DKIM pass satisfies DMARC, whichever domain it authenticated",
       "They are delivered: the vendor is a legitimate sender, so alignment is waived",
       "They are quarantined: a vendor mismatch downgrades reject to quarantine"
     ],
@@ -921,7 +941,7 @@
   {
     "question": "Wren is asked how S/MIME differs from the SPF, DKIM, and DMARC controls Highrook already deploys. Which statement is correct?",
     "correct": [
-      "S/MIME signs and encrypts an individual message between specific people using X.509 certificates, authenticating a person rather than the sending domain"
+      "S/MIME uses personal X.509 certificates to sign and encrypt mail, proving a person, not a domain"
     ],
     "incorrect": [
       "S/MIME is a DNS record that replaces DMARC for aligning the visible From domain",
@@ -1037,27 +1057,24 @@
             }
           }
         ],
-        "say": "On a personal device the company uses **app containerization**: work mail and files live in a sandbox (an Android work profile, Apple User Enrollment, or Intune App Protection), separated from personal photos and contacts."
+        "say": "On a personal device the company uses **app containerization**: work mail and files live in a sandbox (an Android work profile, Apple User Enrollment, or Intune App Protection), separated from personal photos and contacts.",
+        "check": {
+          "prompt": "A clinician copies a patient note from work mail and tries to paste it into a personal chat app. What should happen?",
+          "answer": "The paste is blocked: work data may not leave the container",
+          "wrong": [
+            "It pastes: the container only protects stored files",
+            "It pastes, but the chat app encrypts the note"
+          ],
+          "why": "Containerization controls what crosses the boundary: copy, paste, screenshots and 'save to' from work apps into personal apps are blocked, while personal apps stay out of IT's reach."
+        }
       },
       {
         "beats": [
           {
             "say": "**Selective wipe** removes only the work container on demand - not the user's personal data. That one capability is what makes BYOD acceptable to legal and to employees."
-          },
-          {
-            "say": "A wipe to a device that is off or out of coverage waits until it next reaches a network, which is why BYOD policy demands a lost-phone report within a set window."
           }
         ],
-        "check": {
-          "prompt": "A clinician reports an enrolled personal phone lost. IT issues a selective wipe. What is removed?",
-          "answer": "Only the corporate container - work mail, files, and app data",
-          "wrong": [
-            "The entire device, including personal photos and contacts",
-            "Nothing, because the company cannot act on a personal device"
-          ],
-          "why": "Selective wipe clears corporate data only and leaves personal data untouched - the whole point of containerized BYOD."
-        },
-        "say": "**Selective wipe** removes only the work container on demand - not the user's personal data. That one capability is what makes BYOD acceptable to legal and to employees. A wipe to a device that is off or out of coverage waits until it next reaches a network, which is why BYOD policy demands a lost-phone report within a set window."
+        "say": "**Selective wipe** removes only the work container on demand - not the user's personal data. That one capability is what makes BYOD acceptable to legal and to employees."
       }
     ],
     "outro": "Now a lost phone that will not answer right away."
@@ -1068,7 +1085,7 @@
       "The wipe command queues and executes when the device next connects to a network, removing only the corporate container"
     ],
     "incorrect": [
-      "The entire device, including the user's personal photos and contacts, is erased immediately the moment the wipe command is dispatched from the Intune console",
+      "The whole device, personal photos and contacts included, is erased the moment Intune sends the command",
       "The wipe runs instantly over the cellular network even while the phone is powered off",
       "No wipe is possible on a personal BYOD device, so only the account password can be reset"
     ],

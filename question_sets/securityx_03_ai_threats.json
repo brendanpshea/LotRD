@@ -125,7 +125,8 @@
       },
       {
         "accept": [
-          "neural"
+          "neural",
+          "learning"
         ]
       },
       {
@@ -454,7 +455,7 @@
         ]
       },
       {
-        "say": "No filter stops prompt injection for certain; OWASP concedes foolproof prevention may not be possible. So treat the model as untrusted and defend the boundary around it, with layers sometimes called a **semantic firewall**. **Privilege separation**: the model gets least privilege, read-only where possible, and any action it wants becomes a structured request that a human or a deterministic tool must approve. A **dual-LLM** design routes input through a small screening model trained to spot jailbreaks, dropping flagged requests before the main model sees them. **Structured prompting** fences user data inside delimiters. Those two are speed bumps, not walls: a screener can be evaded, and the model still reads fenced data as text. Privilege separation is what limits a successful injection.",
+        "say": "No filter stops prompt injection for certain; OWASP concedes foolproof prevention may not be possible. So treat the model as untrusted and defend the boundary around it, with layers sometimes called a **semantic firewall**. **Privilege separation**: the model gets least privilege, read-only where possible, and any action it wants becomes a structured request that a human or a deterministic tool must approve. A **guard model** is a small second model that screens input for jailbreaks, dropping flagged requests before the main model sees them. **Structured prompting** fences user data inside delimiters. Those two are speed bumps, not walls: a screener can be evaded, and the model still reads fenced data as text. Privilege separation is what limits a successful injection.",
         "beats": [
           {
             "say": "No filter stops prompt injection for certain; OWASP concedes foolproof prevention may not be possible. So treat the model as untrusted and defend the boundary around it, with layers sometimes called a **semantic firewall**."
@@ -463,7 +464,7 @@
             "say": "**Privilege separation**: the model gets least privilege, read-only where possible, and any action it wants becomes a structured request that a human or a deterministic tool must approve."
           },
           {
-            "say": "A **dual-LLM** design routes input through a small screening model trained to spot jailbreaks, dropping flagged requests before the main model sees them. **Structured prompting** fences user data inside delimiters."
+            "say": "A **guard model** is a small second model that screens input for jailbreaks, dropping flagged requests before the main model sees them. **Structured prompting** fences user data inside delimiters."
           },
           {
             "say": "Those two are speed bumps, not walls: a screener can be evaded, and the model still reads fenced data as text. Privilege separation is what limits a successful injection."
@@ -517,10 +518,10 @@
       "Fence untrusted email text inside delimiters the model is told to treat as data"
     ],
     "incorrect": [
-      "Add a system-prompt rule telling the model to ignore instructions found in emails",
+      "Switch to a larger model, since larger models cannot be prompt-injected",
       "Treat text from internal mailboxes as trusted instructions, since insiders wrote it"
     ],
-    "feedback": "Privilege separation limits what a successful injection can do: the model may draft, but a human or deterministic check decides. A screening model and delimiters lower the odds of an injection working, though both can be evaded, which is why they sit in front of privilege separation rather than replacing it. A system-prompt rule is just more text that the attacker's text can override, and an internal mailbox can still hold an outsider's payload, for example in a forwarded message."
+    "feedback": "Privilege separation limits what a successful injection can do: the model may draft, but a human or deterministic check decides. A screening model and delimiters lower the odds of an injection working, though both can be evaded, which is why they sit in front of privilege separation rather than replacing it. No model is too large to be injected, since OWASP concedes foolproof prevention may not be possible, and an internal mailbox can still hold an outsider's payload, for example in a forwarded message."
   },
   {
     "question": "Highrook's HR assistant runs with the system prompt 'You must never discuss employee salaries' and can query the full payroll table. An employee role-played it into printing executive pay. Selene wants a fix that holds even against jailbreaks nobody has seen yet. Which change BEST meets that bar?",
@@ -1036,13 +1037,13 @@
         }
       },
       {
-        "say": "Three tools fit the AI era. A **cloud access security broker (CASB)** sits between users and cloud services, shows who uses which AI tools, and can allow queries while blocking pastes over, say, 100 characters. A **context-aware DLP agent** on the endpoint uses a small local model to judge what pasted text means. If it looks like source code or a contract, the agent blocks the paste and points the user to the sanctioned tool. The most effective is that sanctioned tool: an **enterprise-tenant AI**, whose vendor contracts not to train on your prompts and isolates your data, with SSO, retention settings and audit logs. A contract is a promise, not a technical control, so verify it in vendor risk review. Where data must not leave the building at all, the sanctioned tool can be an open-weight model on your own servers with no internet route. Even that needs role-based access, MFA, query logging and a **data protection impact assessment (DPIA)**, because an internal model can still leak to the wrong insider.",
+        "say": "Three tools fit the AI era. A **cloud access security broker (CASB)** sits between users and cloud services, shows who uses which AI tools, and can allow queries while blocking pastes over, say, 100 characters. A **context-aware DLP agent** on the endpoint uses a small local model to judge what pasted text means. If it looks like source code or a board report, the agent blocks the paste and points the user to the sanctioned tool. The most effective is that sanctioned tool: an **enterprise-tenant AI**, whose vendor contracts not to train on your prompts and isolates your data, with SSO, retention settings and audit logs. A contract is a promise, not a technical control, so verify it in vendor risk review. Where data must not leave the building at all, the sanctioned tool can be an open-weight model on your own servers with no internet route. Even that needs role-based access, MFA, query logging and a **data protection impact assessment (DPIA)**, because an internal model can still leak to the wrong insider.",
         "beats": [
           {
             "say": "Three tools fit the AI era. A **cloud access security broker (CASB)** sits between users and cloud services, shows who uses which AI tools, and can allow queries while blocking pastes over, say, 100 characters."
           },
           {
-            "say": "A **context-aware DLP agent** on the endpoint uses a small local model to judge what pasted text means. If it looks like source code or a contract, the agent blocks the paste and points the user to the sanctioned tool."
+            "say": "A **context-aware DLP agent** on the endpoint uses a small local model to judge what pasted text means. If it looks like source code or a board report, the agent blocks the paste and points the user to the sanctioned tool."
           },
           {
             "say": "The most effective is that sanctioned tool: an **enterprise-tenant AI**, whose vendor contracts not to train on your prompts and isolates your data, with SSO, retention settings and audit logs."

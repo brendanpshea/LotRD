@@ -133,7 +133,10 @@
           "SSO",
           "single sign-on",
           "single sign on",
-          "federation"
+          "federation",
+          "SAML",
+          "OIDC",
+          "OpenID Connect"
         ],
         "hint": "acronym"
       },
@@ -149,7 +152,7 @@
         ]
       }
     ],
-    "feedback": "SSO handles sign-in: the IdP authenticates the user once and the app accepts it. SCIM handles the account's lifecycle inside the app, which is why disabling a leaver at the IdP stops new sign-ins but does not, on its own, remove the app's account. Access that only ever accumulates as people change roles is privilege creep, and the mover workflow exists to stop it."
+    "feedback": "SSO, carried by SAML or OIDC, handles sign-in: the IdP authenticates the user once and the app accepts it. SCIM handles the account's lifecycle inside the app, which is why disabling a leaver at the IdP stops new sign-ins but does not, on its own, remove the app's account. Access that only ever accumulates as people change roles is privilege creep, and the mover workflow exists to stop it."
   },
   {
     "question": "Highrook lets new hires self-provision: an enrolment link, device registration and MFA setup. Attackers have begun phoning the helpdesk as new hires who 'lost the link'. Which controls BEST harden this enrolment path?",
@@ -891,10 +894,10 @@
       "Vault one shared DB-Admin password, checked out per window and rotated after each window ends",
       "Grant DB-Admin when each engineer joins the team, and remove it when they move on"
     ],
-    "feedback": "Just-in-time elevation meets all three requirements: the role is eligible rather than permanent, approval opens it for the window, it lapses on its own, and each activation is logged against a named person. Quarterly reviews leave standing privilege in place between reviews. A vaulted shared password rotates, but it hides who used it, failing the record requirement. Granting at join and removing at departure is ordinary provisioning, still standing privilege for every day in between."
+    "feedback": "Just-in-time elevation meets all three requirements: the role is eligible rather than permanent, approval opens it for the window, it lapses on its own, and each activation is logged against a named person. Quarterly reviews leave standing privilege in place between reviews. A vaulted shared password is gated and rotated, but the shared account holds DB-Admin all year, so the rights themselves never stop existing, and actions in the database are logged against a shared account rather than a person. Granting at join and removing at departure is ordinary provisioning, still standing privilege for every day in between."
   },
   {
-    "question": "Highrook is buying a PAM platform for its domain and cloud administrators. Which capabilities should the design include?",
+    "question": "Highrook is buying a PAM platform for its domain and cloud administrators and its staff workstations. Which capabilities should the design include?",
     "correct": [
       "Vaulted admin passwords, checked out per window and rotated after each use",
       "Brokered sessions through a jump host that records commands and screens",
@@ -939,7 +942,7 @@
   },
   {
     "type": "cloze",
-    "question": "Highrook's new secrets standard reads: a person's password changes only when {{1}} is suspected, because calendar changes teach predictable tweaks. A service account's secret gets {{2}} rotation, and where possible is replaced by short-lived {{3}} credentials minted per workload. A secret nobody needs any more, such as a retired server's certificate, is revoked and then {{4}}.",
+    "question": "Highrook's new secrets standard reads: a person's password changes only when {{1}} is suspected, because calendar changes teach predictable tweaks. A service account's secret gets {{2}} rotation, not a manual checklist, and where possible is replaced by short-lived {{3}} credentials minted per workload. A secret nobody needs any more, such as a retired server's certificate, is revoked and then {{4}}.",
     "blanks": [
       {
         "accept": [
@@ -1131,7 +1134,7 @@
       "Dump cached credentials from LSASS memory on a phished workstation",
       "Pass a captured admin hash to add the account to a privileged group",
       "Use the new group's rights to request tokens for the cloud admin console",
-      "Register an attacker-owned MFA device to keep access after a reset"
+      "Register an attacker-owned MFA device in that console to keep access"
     ],
     "feedback": "Each step needs the one before it: dumping gives reusable material, pass-the-hash turns it into privilege escalation, the new privilege lets the attacker obtain tokens for a wider target, and a registered MFA device is persistence and defensive evasion that survives a password reset. The earlier the architecture forces vault-mediated access, reauthentication or attestation, the sooner this chain breaks."
   },
@@ -1365,7 +1368,8 @@
       },
       {
         "accept": [
-          "PKCE"
+          "PKCE",
+          "Proof Key for Code Exchange"
         ],
         "hint": "acronym"
       }
