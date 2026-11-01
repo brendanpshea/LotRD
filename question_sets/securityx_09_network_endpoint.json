@@ -1,0 +1,1091 @@
+[
+  {
+    "type": "npc_demo",
+    "question": "NPC: What we have, and changing it safely",
+    "npc": "val",
+    "intro": "I'm Val, the Guild's Ward-Smith. Before any defence, you have to know what you are defending and change it without breaking it. This scene is change management, configuration baselines, and the asset record every other control leans on.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A **change** is any edit to production: a firewall rule, a patch, a route. **Change management** is the formal path a change takes before it is made."
+          },
+          {
+            "say": "Four steps: request and impact assessment, approval by a **Change Advisory Board** (CAB), a scheduled implementation window, and a post-implementation review recorded against the ticket."
+          }
+        ],
+        "say": "A **change** is any edit to production: a firewall rule, a patch, a route. **Change management** is the formal path a change takes before it is made. Four steps: request and impact assessment, approval by a **Change Advisory Board** (CAB), a scheduled implementation window, and a post-implementation review recorded against the ticket."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Configuration management** is the data side: each system has a declared desired state from a hardened **baseline**, such as a CIS Benchmark, and any unapproved departure from it is **configuration drift**."
+          }
+        ],
+        "say": "**Configuration management** is the data side: each system has a declared desired state from a hardened **baseline**, such as a CIS Benchmark, and any unapproved departure from it is **configuration drift**."
+      },
+      {
+        "beats": [
+          {
+            "say": "The system of record for all of it is the **CMDB**: every asset is a configuration item with attributes and links to other items."
+          },
+          {
+            "say": "An **inventory** is only the raw list of what exists; the CMDB adds owner, VLAN, patch group, and compliance scope. Neither stays honest by hand, so mature teams reconcile it automatically against cloud APIs, Active Directory, the EDR console, and MDM enrollment."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; ci[label=\"server CI\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; app[label=\"app\"]; vlan[label=\"VLAN\"]; owner[label=\"owner\"]; scope[label=\"PCI\\nscope\"]; ci->app; ci->vlan; ci->owner; ci->scope; }",
+              "alt": "A central server box with arrows out to an application box, a VLAN box, an owner box, and a compliance-scope box.",
+              "caption": "one asset, its attributes and links",
+              "src": "_dot/ac44316694c9187a.svg"
+            }
+          },
+          {
+            "say": "A good record answers, six months later, why a rule exists in one click."
+          }
+        ],
+        "check": {
+          "prompt": "A VM appears in the cloud inventory and the EDR console, but not in the CMDB. What does that gap most directly reveal?",
+          "answer": "CMDB drift: a real, monitored asset with no recorded owner or scope",
+          "wrong": [
+            "A false positive in the EDR console that should be ignored",
+            "A duplicate record that automated discovery created by mistake"
+          ],
+          "why": "The VM is real and watched, but its owner, patch group, and compliance scope are unrecorded - reconciliation should have caught it."
+        },
+        "say": "The system of record for all of it is the **CMDB**: every asset is a configuration item with attributes and links to other items. An **inventory** is only the raw list of what exists; the CMDB adds owner, VLAN, patch group, and compliance scope. Neither stays honest by hand, so mature teams reconcile it automatically against cloud APIs, Active Directory, the EDR console, and MDM enrollment. A good record answers, six months later, why a rule exists in one click."
+      }
+    ],
+    "outro": "Now a different kind of gap in the record, and what it tells you."
+  },
+  {
+    "question": "Doctor Quill is scoping a ransomware response at Greycloak Apothecary and finds three Linux servers that the cloud provider's inventory API and the EDR console both report, but that do not exist in the CMDB. Which conclusion is BEST supported?",
+    "correct": [
+      "The CMDB has drifted: these are real, monitored assets whose owner, patch group, and compliance scope are unrecorded, so they may be unmanaged shadow IT"
+    ],
+    "incorrect": [
+      "The servers are decommissioned and the cloud API is returning stale cached records that should be deleted",
+      "The EDR agents are misreporting and the servers do not actually exist on the network",
+      "The CMDB is correct and the cloud and EDR systems have both been compromised to inject fake hosts"
+    ],
+    "feedback": "Two independent discovery sources agreeing that the hosts exist makes them real, not phantom; the problem is the CMDB missing them, which hides ownership and scope during a response. Stale-cache and misreporting both require ignoring two agreeing sources, and a dual-source compromise injecting identical fake hosts is far less likely than an un-reconciled inventory."
+  },
+  {
+    "type": "ordering",
+    "question": "Magister Vale's team must push a firewall change through Highrook's formal change process. Arrange the four stages in the order they occur.",
+    "items": [
+      "Request and impact assessment: document the change, its risk, and the rollback plan",
+      "Approval: the Change Advisory Board reviews and accepts, defers, or rejects it",
+      "Implementation in a scheduled maintenance window by a named implementer and verifier",
+      "Post-implementation review recorded against the original change ticket"
+    ],
+    "feedback": "The workflow is request and impact assessment, then CAB approval, then a scheduled implementation, then a post-implementation review tied back to the ticket - so months later an auditor can correlate a symptom with the exact change that caused it."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the asset management lifecycle for a new server, from first acquisition to final removal.",
+    "items": [
+      "Procurement and onboarding: the asset is tagged, registered in the CMDB, and given an owner",
+      "Operation: it is patched, monitored, and checked against its baseline, with agents confirmed enrolled",
+      "Maintenance and reassignment: the CMDB record is updated when its role or owner changes",
+      "End-of-life and decommissioning: it is sanitized and its DNS, rules, certs, and service accounts are removed"
+    ],
+    "feedback": "Procurement and onboarding comes first, then operation, then maintenance and reassignment, then end-of-life. Forgetting the last stage leaves 'disconnected' hosts still on the network, still vulnerable, and still trusted by their neighbors."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The single system of record that stores every hardware, virtual, software, and cloud asset as a configuration item, with its attributes and its relationships to other items, is abbreviated ___.",
+    "correct": [
+      "CMDB"
+    ],
+    "case_sensitive": true,
+    "feedback": "The CMDB (Configuration Management Database) is the substrate every other control depends on - a firewall rule, an EDR agent, or a scan is useless on a host you do not know exists. An inventory is only the raw list; the CMDB adds ownership and relationships."
+  },
+  {
+    "type": "cloze",
+    "question": "An {{1}} is the raw list of which assets exist, while the {{2}} adds each asset's owner, relationships, and compliance scope on top of that list.",
+    "blanks": [
+      {
+        "accept": [
+          "inventory"
+        ],
+        "hint": "the raw list"
+      },
+      {
+        "accept": [
+          "CMDB"
+        ],
+        "hint": "system of record"
+      }
+    ],
+    "feedback": "Inventory answers 'what exists'; the CMDB answers 'what exists, who owns it, what it connects to, and which compliance scope it falls under.' You can have an inventory without a CMDB, but not the reverse."
+  },
+  {
+    "question": "A mature team keeps its CMDB accurate by reconciling it automatically against several authoritative sources each week. Which of the following are such automated discovery sources?",
+    "correct": [
+      "The cloud provider's inventory APIs",
+      "The Active Directory computer list"
+    ],
+    "incorrect": [
+      "A quarterly spreadsheet that staff update by hand when they remember",
+      "The purchase orders filed with the finance department",
+      "A printed floor map of where equipment was installed"
+    ],
+    "feedback": "Cloud inventory APIs and the AD computer list are machine-readable sources that can be diffed against the CMDB continuously (the EDR and MDM consoles are two more). A hand-updated spreadsheet, filed purchase orders, and a printed map are all manual artifacts that drift the moment reality changes - they are exactly what automated reconciliation replaces."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: A better question than 'have I seen this file?'",
+    "npc": "val",
+    "intro": "Signature antivirus asks one question: have I seen this exact file before? This scene is why that fails against new tools, and how behaviour-based detection answers a better question.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Traditional antivirus** matches files against a database of known-bad hashes. Fast and quiet, but blind to anything new: a freshly compiled implant, a fileless payload, an attack using only built-in tools."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; subgraph cluster_av{label=\"AV\"; f[label=\"file\"]; sig[label=\"signature\\nDB\"]; f->sig[label=\" seen?\"];} subgraph cluster_edr{label=\"EDR\"; a[label=\"agent\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; c[label=\"cloud\\nanalytics\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; a->c[label=\" behavior?\"];}}",
+              "alt": "Two panels: on the left a file checked against a signature database, on the right an agent streaming to a cloud analytics box.",
+              "caption": "two different questions",
+              "src": "_dot/248dbda04d3a3a3f.svg"
+            }
+          }
+        ],
+        "say": "**Traditional antivirus** matches files against a database of known-bad hashes. Fast and quiet, but blind to anything new: a freshly compiled implant, a fileless payload, an attack using only built-in tools."
+      },
+      {
+        "beats": [
+          {
+            "say": "**EDR** streams continuous telemetry from every endpoint - process creations, network connections, file and registry operations - to a cloud backend that looks for suspicious *sequences*, not just bad files."
+          },
+          {
+            "say": "Watch a real sequence. A macro-enabled document spawns `powershell.exe`; that PowerShell reaches out to an external IP; it downloads and runs a payload. No single step is damning."
+          }
+        ],
+        "say": "**EDR** streams continuous telemetry from every endpoint - process creations, network connections, file and registry operations - to a cloud backend that looks for suspicious *sequences*, not just bad files. Watch a real sequence. A macro-enabled document spawns `powershell.exe`; that PowerShell reaches out to an external IP; it downloads and runs a payload. No single step is damning."
+      },
+      {
+        "beats": [
+          {
+            "say": "Signature AV cannot express 'a document spawned PowerShell that then fetched code', because there is no file to match. A behaviour-based backend fingerprints the whole chain - and a renamed or repacked tool trips the same fingerprint."
+          }
+        ],
+        "check": {
+          "prompt": "An attacker runs the exact same download-and-execute chain but recompiles the payload so its hash is brand new. Which detection still fires?",
+          "answer": "EDR: the behaviour sequence is unchanged even though the file hash is new",
+          "wrong": [
+            "Signature antivirus: it recognizes the recompiled file by its new hash",
+            "Neither: a new hash defeats every endpoint control equally"
+          ],
+          "why": "A new hash defeats hash matching, but the suspicious process lineage and network behaviour are identical, so the behaviour-based model still catches it."
+        },
+        "say": "Signature AV cannot express 'a document spawned PowerShell that then fetched code', because there is no file to match. A behaviour-based backend fingerprints the whole chain - and a renamed or repacked tool trips the same fingerprint."
+      },
+      {
+        "beats": [
+          {
+            "say": "Two older host terms still turn up in audits. A **HIDS** only detects and alerts on host activity; a **HIPS** can also block it - the host-level echo of network IDS versus IPS. Modern EDR folds both in."
+          },
+          {
+            "say": "A **host firewall** does something different again: it filters packets per host, so a workstation can refuse SMB or RDP from a peer workstation even when the network's internal policy is permissive."
+          }
+        ],
+        "say": "Two older host terms still turn up in audits. A **HIDS** only detects and alerts on host activity; a **HIPS** can also block it - the host-level echo of network IDS versus IPS. Modern EDR folds both in. A **host firewall** does something different again: it filters packets per host, so a workstation can refuse SMB or RDP from a peer workstation even when the network's internal policy is permissive."
+      }
+    ],
+    "outro": "Your turn: a tool that never touches disk, and which defence sees it."
+  },
+  {
+    "question": "Kaeli investigates a host where the attacker used only certutil.exe and PowerShell, built into Windows, to download and run code - no new executable was ever written to disk, and the installed signature antivirus flagged nothing. Which capability would MOST likely have detected this activity?",
+    "correct": [
+      "Behaviour-based EDR correlating the process lineage and outbound connection as a suspicious sequence"
+    ],
+    "incorrect": [
+      "A larger, more frequently updated antivirus signature database that even adds hashes for the certutil.exe and PowerShell binaries so their use is flagged",
+      "A host firewall rule that blocks all inbound connections to the workstation",
+      "Full-disk encryption on the endpoint to protect the files at rest"
+    ],
+    "feedback": "Living-off-the-land abuse of signed built-in tools leaves no new file to hash, so no signature set catches it, however large; behaviour-based EDR watches the sequence of actions instead. A host firewall limits inbound traffic but not this outbound, locally initiated chain, and disk encryption protects data at rest, not running behaviour."
+  },
+  {
+    "type": "matching",
+    "question": "Match each host-based control to the function it performs.",
+    "pairs": [
+      {
+        "term": "EDR",
+        "definition": "Streams process, network, and file telemetry to a cloud backend to detect suspicious behaviour sequences"
+      },
+      {
+        "term": "Host firewall",
+        "definition": "Filters packets per host, so a workstation can refuse SMB or RDP coming from a peer workstation"
+      },
+      {
+        "term": "Endpoint privilege management",
+        "definition": "Removes standing local administrator rights and elevates only approved applications on demand"
+      },
+      {
+        "term": "Application allowlisting",
+        "definition": "Permits only approved executables to run and blocks everything else by default"
+      },
+      {
+        "term": "Browser isolation",
+        "definition": "Renders web pages in a disposable remote container so a page exploit never reaches the endpoint"
+      }
+    ],
+    "feedback": "EDR detects by behaviour; a host firewall limits lateral reach at the host; endpoint privilege management strips admin rights; allowlisting blocks unapproved binaries; browser isolation keeps renderer exploits off the endpoint. They are complementary, not interchangeable."
+  },
+  {
+    "question": "Which of the following are capabilities a modern EDR or XDR platform provides that traditional signature antivirus generally does not?",
+    "correct": [
+      "Weeks-to-months of searchable telemetry retained in the cloud for threat hunting",
+      "Active response such as isolating a host or killing a whole process tree",
+      "Detection of fileless and never-before-seen attacks from behaviour"
+    ],
+    "incorrect": [
+      "Protection of data at rest through full-disk encryption of the endpoint",
+      "Elimination of the need for any network segmentation or host firewalls"
+    ],
+    "feedback": "EDR adds retained searchable telemetry, active response, and behaviour-based detection of unknown threats - the things signature matching cannot do. Full-disk encryption is a separate control EDR does not provide, and EDR complements segmentation and host firewalls rather than removing the need for them."
+  },
+  {
+    "type": "matching",
+    "question": "Match each endpoint attacker technique to its description.",
+    "pairs": [
+      {
+        "term": "Credential dumping",
+        "definition": "Reading a privileged process's memory, such as LSASS, to steal password hashes and Kerberos tickets"
+      },
+      {
+        "term": "Process injection",
+        "definition": "Running malicious code inside a legitimate process to borrow its privileges and trusted name"
+      },
+      {
+        "term": "Privilege escalation",
+        "definition": "Exploiting a kernel flaw or a weak service permission to gain higher rights than were granted"
+      },
+      {
+        "term": "Unauthorized execution",
+        "definition": "Abusing built-in signed tools such as certutil or mshta to download and run code without dropping a new file"
+      },
+      {
+        "term": "Defensive evasion",
+        "definition": "Disabling a security agent, clearing event logs, or loading a vulnerable driver to avoid being detected"
+      }
+    ],
+    "feedback": "These map onto MITRE ATT&CK: credential dumping (T1003) reads LSASS; process injection (T1055) hides in another process; privilege escalation raises rights; unauthorized execution uses LOLBins; defensive evasion blinds the defenders. Each has distinct detections and defenses."
+  },
+  {
+    "type": "ordering",
+    "question": "An EDR backend flags a renamed binary performing the classic credential-dumping pattern against LSASS. Arrange the three observed actions in the order the EDR sees them.",
+    "items": [
+      "A non-system process opens a handle to lsass.exe with memory-read access",
+      "It issues large ReadProcessMemory calls over the ranges where credentials live",
+      "It writes the captured memory to a dump file on disk or sends it to an external host"
+    ],
+    "feedback": "Open the handle, read the memory, exfiltrate the dump. No single step proves an attack, but the ordered sequence is a fingerprint a behaviour-based backend recognizes even when the tool is renamed or repacked - something signature matching cannot express."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Shrinking what an attacker can do",
+    "npc": "val",
+    "intro": "Detection tells you an attacker acted. This scene is the controls that shrink what they can do at all, and the one Linux control teams keep breaking on purpose under pressure.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Least privilege, allowlisting, and mandatory access control all cut the attacker's options after they land. The Linux one worth drilling is **SELinux**."
+          },
+          {
+            "say": "SELinux is **mandatory access control**: each process runs under a policy that limits the files, sockets, and capabilities it may touch, so a compromised service cannot freely read `/etc/shadow` even as root."
+          }
+        ],
+        "say": "Least privilege, allowlisting, and mandatory access control all cut the attacker's options after they land. The Linux one worth drilling is **SELinux**. SELinux is **mandatory access control**: each process runs under a policy that limits the files, sockets, and capabilities it may touch, so a compromised service cannot freely read `/etc/shadow` even as root."
+      },
+      {
+        "beats": [
+          {
+            "say": "SELinux has three modes. `getenforce` prints the current one."
+          },
+          {
+            "code": "$ getenforce\nEnforcing",
+            "language": "shell"
+          },
+          {
+            "say": "**Enforcing** blocks and logs denials. **Permissive** only logs them, blocking nothing. **Disabled** turns it off entirely. `setenforce` flips between enforcing and permissive at runtime."
+          }
+        ],
+        "say": "SELinux has three modes. `getenforce` prints the current one. **Enforcing** blocks and logs denials. **Permissive** only logs them, blocking nothing. **Disabled** turns it off entirely. `setenforce` flips between enforcing and permissive at runtime."
+      },
+      {
+        "beats": [
+          {
+            "say": "The classic mistake: an application breaks, a denial shows in the log, and someone runs `setenforce 0` to 'fix' it. That silences the whole system's enforcement to paper over one missing rule."
+          }
+        ],
+        "check": {
+          "prompt": "A service is denied access it legitimately needs, and a teammate proposes setenforce 0 to make the error go away. What does that command actually do?",
+          "answer": "Drops the entire host to permissive, so SELinux logs denials but blocks nothing",
+          "wrong": [
+            "Adds the one missing rule the service needs, leaving all other confinement intact",
+            "Permanently disables SELinux so it stays off after the next reboot"
+          ],
+          "why": "setenforce 0 is system-wide and temporary: it blocks nothing until the next reboot. The right fix is a targeted policy rule, not turning enforcement off."
+        },
+        "say": "The classic mistake: an application breaks, a denial shows in the log, and someone runs `setenforce 0` to 'fix' it. That silences the whole system's enforcement to paper over one missing rule."
+      },
+      {
+        "beats": [
+          {
+            "say": "The same idea on Windows is **Attack Surface Reduction**: Defender **ASR rules** block risky behaviours like Office spawning child processes or credential theft from LSASS. Cheap, broad, and often disabled because they break a vendor tool - so test new rules in audit mode first."
+          }
+        ],
+        "say": "The same idea on Windows is **Attack Surface Reduction**: Defender **ASR rules** block risky behaviours like Office spawning child processes or credential theft from LSASS. Cheap, broad, and often disabled because they break a vendor tool - so test new rules in audit mode first."
+      }
+    ],
+    "outro": "Now a teammate reaches for the wrong fix under pressure."
+  },
+  {
+    "question": "A RHEL application server on Forgeworks' network throws errors that trace to SELinux denials in the audit log. A junior admin wants to set SELinux to permissive mode across the host to clear the errors before a demo. Which response BEST preserves security while resolving the problem?",
+    "correct": [
+      "Keep enforcing and add a targeted policy rule (or correct the file labels) for the specific access the application needs"
+    ],
+    "incorrect": [
+      "Set the host to permissive, since the denials will still be logged for later review",
+      "Disable SELinux entirely and rely on the host firewall to make up the difference",
+      "Leave SELinux enforcing and simply stop the application that is generating the denials"
+    ],
+    "feedback": "Confinement should stay on; only the missing permission should be granted, through a scoped policy rule or label fix. Permissive mode blocks nothing host-wide (logging is not enforcement), disabling SELinux removes mandatory access control a host firewall cannot replace, and killing the app defeats the purpose of running the server."
+  },
+  {
+    "type": "code_line",
+    "question": "A RHEL host is currently in permissive mode. Write the command that switches SELinux to enforcing mode immediately, without a reboot.",
+    "language": "bash",
+    "correct": [
+      "setenforce 1",
+      "setenforce Enforcing"
+    ],
+    "case_sensitive": true,
+    "feedback": "setenforce 1 (or setenforce Enforcing) flips the running system to enforcing at once; the 0 argument would go the other way, to permissive. It is a runtime change - the mode in /etc/selinux/config governs what happens after a reboot."
+  },
+  {
+    "type": "cloze",
+    "question": "A host-based {{1}} only detects suspicious host activity and raises an alert, while a host-based {{2}} can actively block that activity before it completes.",
+    "blanks": [
+      {
+        "accept": [
+          "HIDS"
+        ],
+        "hint": "detection"
+      },
+      {
+        "accept": [
+          "HIPS"
+        ],
+        "hint": "prevention"
+      }
+    ],
+    "feedback": "The split mirrors network IDS versus IPS: detection systems watch and alert; prevention systems sit in the path and stop the action. Modern EDR platforms perform both, but the HIDS/HIPS terms persist in audits and exams."
+  },
+  {
+    "question": "Microsoft Defender Attack Surface Reduction rules block specific risky behaviours at the OS level. Which of the following are behaviours ASR rules are designed to block?",
+    "correct": [
+      "An Office application launching a child process",
+      "Credential theft reading from the LSASS process"
+    ],
+    "incorrect": [
+      "A user connecting to the corporate VPN from home",
+      "A signed Windows update installing from Microsoft",
+      "An administrator logging in over RDP from a jump host"
+    ],
+    "feedback": "ASR targets attacker behaviours: Office spawning children and LSASS credential theft are canonical examples (untrusted USB executables and obfuscated scripts are others). Legitimate VPN use, signed updates, and sanctioned jump-host RDP are normal operations ASR should not break - which is why new rules are tested in audit mode first."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: When rules and sensors are in the wrong place",
+    "npc": "tariq",
+    "intro": "I'm Tariq, the Beacon-Courier. Network defences fail quietly: a rule in the wrong order, a sensor in the wrong segment. This scene is reading intrusion alerts and access lists so they fail loudly instead.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "An **IDS** inspects a copy of traffic and alerts; an **IPS** sits inline and can drop. A **false positive** is legitimate traffic that matches an attack signature - an internal vulnerability scanner trips dozens of rules."
+          },
+          {
+            "say": "The fix is scoped: suppress the *specific expected rules* for the scanner's address. Suppressing *all* alerts from that host blinds you to a real attacker who later lands on it."
+          }
+        ],
+        "check": {
+          "prompt": "An authorized internal scanner floods the IPS with alerts every night. Which suppression keeps the most real signal?",
+          "answer": "Suppress only the specific scan-triggered rules for the scanner's IP",
+          "wrong": [
+            "Suppress every alert originating from the scanner's IP",
+            "Disable the triggered rules globally for all hosts"
+          ],
+          "why": "Scoping to the expected rules and that one IP silences the noise while still catching anything unexpected from the scanner, or those same rules firing elsewhere."
+        },
+        "say": "An **IDS** inspects a copy of traffic and alerts; an **IPS** sits inline and can drop. A **false positive** is legitimate traffic that matches an attack signature - an internal vulnerability scanner trips dozens of rules. The fix is scoped: suppress the *specific expected rules* for the scanner's address. Suppressing *all* alerts from that host blinds you to a real attacker who later lands on it."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Placement** matters as much as rules. An IPS at the internet edge sees north-south traffic but cannot see two servers talking inside one VLAN. East-west visibility needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point."
+          }
+        ],
+        "say": "**Placement** matters as much as rules. An IPS at the internet edge sees north-south traffic but cannot see two servers talking inside one VLAN. East-west visibility needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point."
+      },
+      {
+        "beats": [
+          {
+            "say": "Access lists are evaluated top-down, **first match wins**. Here is a short list:"
+          },
+          {
+            "code": "10 permit tcp 10.0.0.0/24 any eq 443\n20 deny   ip host 10.0.0.9 any\n30 deny   ip any any log",
+            "language": "access list"
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; node[shape=box]; p[label=\"packet from\\n10.0.0.9:443\"]; r1[label=\"rule 10\\npermit /24\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r2[label=\"rule 20\\ndeny host .9\"]; r3[label=\"rule 30\\ndeny any\"]; p->r1[label=\" matches!\"]; r1->r2[style=dashed,label=\" never\"]; r2->r3[style=dashed]; }",
+              "alt": "A packet entering a top-to-bottom list of three rules; it matches the first rule, and dashed arrows show the lower two rules are never reached.",
+              "caption": "first match wins",
+              "src": "_dot/b84e414b48be2aab.svg"
+            }
+          },
+          {
+            "say": "Rule 10 permits the whole `/24` to port 443. Rule 20 tries to block host `10.0.0.9`. Because 10 is above 20, the host is still allowed - the match stops at 10 and 20 never runs."
+          }
+        ],
+        "check": {
+          "prompt": "As written, is host 10.0.0.9 blocked from reaching port 443?",
+          "answer": "No - rule 10 matches first and permits it, so rule 20 is never reached",
+          "wrong": [
+            "Yes - an explicit deny always overrides a permit",
+            "Yes - the more specific host rule is evaluated before the subnet rule"
+          ],
+          "why": "First-match stops at the first rule that matches. The specific deny has to sit above the broad permit to take effect, and every list should end in an explicit, logged deny."
+        },
+        "say": "Access lists are evaluated top-down, **first match wins**. Here is a short list: Rule 10 permits the whole `/24` to port 443. Rule 20 tries to block host `10.0.0.9`. Because 10 is above 20, the host is still allowed - the match stops at 10 and 20 never runs."
+      }
+    ],
+    "outro": "Now arrange a short access list so it does what its author intended."
+  },
+  {
+    "type": "ordering",
+    "question": "A firewall evaluates rules top-down, first-match. Order these three rules so a single compromised host is blocked while the rest of its subnet keeps its web access, ending with the catch-all.",
+    "items": [
+      "deny ip host 10.1.1.50 any   (the compromised host)",
+      "permit tcp 10.1.1.0/24 any eq 443   (the rest of the subnet to web)",
+      "deny ip any any log   (explicit, logged catch-all)"
+    ],
+    "feedback": "The specific host deny must come first, or the broad subnet permit below it would match the host and allow it. The permit comes next, and an explicit logged deny ends the list so nothing falls through silently."
+  },
+  {
+    "question": "An authorized internal vulnerability scanner at Marketstone Exchange trips hundreds of IPS alerts every scan window, burying real signal. The SOC must cut the noise without losing detection of a genuine attacker who might later compromise that scanner host. Which tuning is BEST?",
+    "correct": [
+      "Suppress only the specific scan-related rules for the scanner's IP address, leaving all other rules active for that host"
+    ],
+    "incorrect": [
+      "Suppress every alert that originates from the scanner's IP address",
+      "Disable every rule the scanner triggers across all hosts on the network, on the grounds that any rule a trusted internal scanner sets off must be too noisy to keep",
+      "Raise the IPS alert threshold so only the single highest-severity rule can fire"
+    ],
+    "feedback": "Scoping to the expected rules and that one address removes the known-benign noise while still catching anything unexpected from the scanner. Suppressing all alerts from the IP blinds the SOC if that host is compromised, disabling the rules globally removes detection everywhere, and raising the threshold hides valid medium-severity detections across the board."
+  },
+  {
+    "question": "A network IPS failed to flag an intrusion that later proved real - a false negative. Which of the following are recognized causes of IPS false negatives?",
+    "correct": [
+      "Encrypted traffic the IPS cannot inspect",
+      "Asymmetric routing where the sensor sees only one direction of the flow",
+      "An outdated rule set, or no rule for the technique at all"
+    ],
+    "incorrect": [
+      "An internal scanner matching legitimate-looking attack signatures",
+      "An inline device configured to fail-closed when it loses power"
+    ],
+    "feedback": "False negatives come from the IPS not seeing or not matching the attack: encryption, asymmetric routing, and stale or missing rules all cause misses. A scanner tripping signatures is a false positive, not a negative, and fail-closed behaviour is a deliberate availability choice, not a detection gap."
+  },
+  {
+    "question": "Users report that TCP connections through a pair of stateful firewalls either never complete or stall midstream. Investigation shows outbound packets leave through one firewall while return packets arrive through the other. What is the MOST likely root cause?",
+    "correct": [
+      "Asymmetric routing: each firewall sees only half the flow, so the return packets look invalid and are dropped"
+    ],
+    "incorrect": [
+      "An MTU or MSS mismatch that silently fragments only the largest packets, so small requests complete while large transfers stall partway through the flow",
+      "A DNS resolution failure that intermittently returns the wrong server address",
+      "A certificate hostname mismatch that aborts the TLS handshake after it starts"
+    ],
+    "feedback": "A stateful firewall that sees only one direction treats the other direction's packets as not belonging to any known connection and drops them - the signature of asymmetric routing. An MTU problem hits only large packets, a DNS failure prevents connecting at all rather than stalling midstream, and a cert mismatch is a TLS-layer error, not a routing one."
+  },
+  {
+    "question": "A penetration tester at Forgeworks demonstrates VLAN hopping, reaching a segment that should be unreachable from the user access port. Which combination of switch settings BEST prevents both switch-spoofing and double-tagging VLAN hopping?",
+    "correct": [
+      "Set access ports to a fixed access mode, turn DTP off, and use an unused, dedicated native VLAN on trunks"
+    ],
+    "incorrect": [
+      "Enable DTP auto-negotiation on every port so the switch chooses the correct mode automatically",
+      "Place all user ports in the native VLAN and allow trunk negotiation only on uplinks",
+      "Increase the VLAN ID range so attacker-chosen tags fall outside the valid set"
+    ],
+    "feedback": "Explicit access mode with DTP disabled stops switch-spoofing (no trunk to negotiate), and an unused native VLAN defeats double-tagging. Leaving DTP on invites switch-spoofing, putting users in the native VLAN makes double-tagging easier, and widening the VLAN range does nothing about tag abuse."
+  },
+  {
+    "question": "Which of the following are insecure-routing conditions an attacker can abuse to inject routes or hijack traffic?",
+    "correct": [
+      "Unauthenticated OSPF or RIP adjacencies on user-facing ports",
+      "BGP sessions with no prefix filters and no RPKI validation",
+      "IP source routing left enabled on routers"
+    ],
+    "incorrect": [
+      "OSPF adjacencies authenticated with a per-link key",
+      "BGP sessions that drop prefixes failing RPKI origin validation"
+    ],
+    "feedback": "Unauthenticated interior routing, unfiltered BGP, and enabled source routing all let an attacker steer traffic through a device they control - the mechanism behind many route leaks and hijacks. Authenticated adjacencies and RPKI-validated BGP are the hardened versions, which is why they are not abusable here."
+  },
+  {
+    "question": "After a new IPsec site-to-site tunnel is cut over at Wyrmkeep Logistics, users report that 'small pages load, but large pages and file downloads hang.' Pings and small requests succeed. Which problem fits this symptom BEST?",
+    "correct": [
+      "An MTU/MSS mismatch: the tunnel's overhead makes full-size packets too large, and they are being dropped instead of fragmented"
+    ],
+    "incorrect": [
+      "An expired certificate on the VPN gateway that blocks only large sessions",
+      "Asymmetric routing that drops exactly half of every connection's packets",
+      "A DNS zone-transfer failure preventing resolution of large hostnames"
+    ],
+    "feedback": "Small packets fit and large ones vanish is the classic MTU/MSS fingerprint - the tunnel adds overhead, Path MTU Discovery is blocked, and oversized packets silently drop; MSS clamping is the fix. An expired cert would break the whole tunnel, asymmetric routing stalls all sizes, and DNS has nothing to do with packet size."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An IPsec tunnel is dropping large packets. The path MTU is {{mtu}} bytes, the IPsec encapsulation adds {{oh}} bytes of overhead, and the inner IP and TCP headers together total 40 bytes. To what value should you clamp the TCP MSS so a full segment plus its headers fits inside the tunnel?",
+    "variables": {
+      "mtu": {
+        "values": [
+          1500,
+          1400,
+          1492
+        ]
+      },
+      "oh": {
+        "values": [
+          56,
+          60,
+          73
+        ]
+      }
+    },
+    "answer": {
+      "expr": "mtu - oh - 40",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The MSS must leave room for the overhead and the 40-byte inner headers: {{mtu}} minus {{oh}} minus 40 equals {{expected}} bytes. Roughly 1350 to 1400 bytes is typical for IPsec, which is why MSS clamping is the standard fix for these tunnels."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Lowering the TCP maximum segment size that a VPN tunnel advertises, so full-size packets stop silently vanishing across the smaller tunnel MTU, is called MSS ___.",
+    "correct": [
+      "clamping"
+    ],
+    "case_sensitive": false,
+    "feedback": "MSS clamping rewrites the segment size announced in the TCP handshake so endpoints never send packets too large for the tunnel. It is the standard fix when Path MTU Discovery is broken because a firewall drops the ICMP 'fragmentation needed' messages."
+  },
+  {
+    "question": "Which of the following controls most directly limit an attacker's lateral movement from one compromised endpoint to the rest of the environment?",
+    "correct": [
+      "Network segmentation that forces inter-VLAN traffic across a firewall",
+      "Microsegmentation with default-deny per-workload policy",
+      "Host firewalls that refuse workstation-to-workstation SMB and RDP",
+      "Just-in-time, time-boxed PAM credentials for RDP and SSH through logged jump hosts"
+    ],
+    "incorrect": [
+      "A single flat VLAN shared by workstations, servers, and IoT devices",
+      "Disabling all endpoint and server logging to reduce performance overhead"
+    ],
+    "feedback": "Segmentation, microsegmentation, host firewalls, and just-in-time admin access all shrink what a single compromised host can reach. A flat VLAN does the opposite - it is the condition that lets a worm spread anywhere - and disabling logging removes the visibility needed to even detect the movement."
+  },
+  {
+    "question": "Kaeli must place one sensor to capture lateral movement between the two database hosts, which both connect to the same server access switch. The diagram marks four candidate monitoring points, A through D. Which point gives that visibility?",
+    "correct": [
+      "C"
+    ],
+    "incorrect": [
+      "A",
+      "B",
+      "D"
+    ],
+    "feedback": "Traffic between two hosts on the same access switch never leaves that switch, so only a span/tap on the server access switch (C) sees it. The edge firewall link (A) and the core uplink (B) carry only north-south and inter-VLAN traffic, and the workstation switch (D) is the wrong segment entirely.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; node[shape=box]; net[label=\"Internet\"]; fw[label=\"edge firewall (A)\"]; core[label=\"core switch (B)\"]; ssw[label=\"server switch (C)\"]; wsw[label=\"wkstn switch (D)\"]; db1[label=\"DB-1\"]; db2[label=\"DB-2\"]; net->fw; fw->core; core->ssw; core->wsw; ssw->db1; ssw->db2; }",
+      "alt": "A top-down network: Internet to an edge firewall marked A, to a core switch marked B, which connects to a server switch marked C serving two database hosts and to a workstation switch marked D.",
+      "caption": "four candidate monitoring points",
+      "src": "_dot/84a8ddbb0dc11a19.svg"
+    }
+  },
+  {
+    "question": "A quarterly review of Highrook's network finds a link that was patched in 'temporarily' two years ago. Inter-zone traffic is supposed to cross the firewall for inspection. In the diagram, which lettered link is the infrastructure drift that lets a compromised workstation reach the HR server without passing the firewall?",
+    "correct": [
+      "C"
+    ],
+    "incorrect": [
+      "A",
+      "B",
+      "D"
+    ],
+    "feedback": "Link C connects the workstation directly to the HR server, bypassing the firewall that A and B route through - a textbook piece of drift that opens a lateral-movement path. Link D only reaches the backup behind the server, and A and B are the intended, inspected paths.",
+    "figure": {
+      "dot": "digraph { rankdir=LR; node[shape=box]; ws[label=\"workstation\"]; fw[label=\"firewall\"]; srv[label=\"HR server\"]; bak[label=\"backup\"]; ws->fw[label=\" A\"]; fw->srv[label=\" B\"]; ws->srv[label=\" C\"]; srv->bak[label=\" D\"]; }",
+      "alt": "Four labeled links: a workstation to a firewall is A, the firewall to an HR server is B, the workstation straight to the HR server is C, and the HR server to a backup is D.",
+      "caption": "which link was not meant to exist?",
+      "src": "_dot/985d1752bb589cfc.svg"
+    }
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Names, and who may ask for all of them",
+    "npc": "tariq",
+    "intro": "DNS turns names into addresses, and almost nothing checks the answer. This scene is how that is forged, how it is defended, and the one request that leaks a whole company's map.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A client asks a resolver, which asks an authoritative nameserver. A normal query is for one record:"
+          },
+          {
+            "code": "$ dig A web.example @ns1.example",
+            "language": "shell"
+          },
+          {
+            "say": "The `@ns1.example` part picks which server to ask. Without protection, any answer along the path can be forged - that is **DNS cache poisoning**, which modern resolvers fight by randomizing query IDs and source ports, and which `DNSSEC` validation rejects outright."
+          }
+        ],
+        "say": "A client asks a resolver, which asks an authoritative nameserver. A normal query is for one record: The `@ns1.example` part picks which server to ask. Without protection, any answer along the path can be forged - that is **DNS cache poisoning**, which modern resolvers fight by randomizing query IDs and source ports, and which `DNSSEC` validation rejects outright."
+      },
+      {
+        "beats": [
+          {
+            "say": "**DNSSEC** signs records so a validating resolver rejects forged answers. It gives authenticity and integrity, not confidentiality - the queries stay readable. `DoH` and `DoT` encrypt the query itself for privacy, a different goal."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; cl[label=\"client\"]; rec[label=\"resolver\"]; auth[label=\"authoritative\\nnameserver\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; atk[label=\"attacker\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; cl->rec[label=\" query\"]; rec->auth[label=\" lookup\"]; atk->auth[label=\" AXFR?\"]; }",
+              "alt": "A client querying a resolver, the resolver querying an authoritative nameserver, and an attacker separately sending a request to that same nameserver.",
+              "caption": "who is allowed to ask the nameserver?",
+              "src": "_dot/7d69ddf75beb8e68.svg"
+            }
+          }
+        ],
+        "say": "**DNSSEC** signs records so a validating resolver rejects forged answers. It gives authenticity and integrity, not confidentiality - the queries stay readable. `DoH` and `DoT` encrypt the query itself for privacy, a different goal."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **zone transfer** (AXFR) is the bulk replication of an entire zone between authoritative servers. It should be restricted by IP or TSIG to the real secondaries."
+          },
+          {
+            "say": "Left open to anyone, an AXFR hands an attacker every record in the zone - the whole internal naming map and host inventory. It is a recurring penetration-test finding."
+          }
+        ],
+        "check": {
+          "prompt": "A public authoritative nameserver answers an AXFR request from any client on the internet. What does the requester receive?",
+          "answer": "Every record in the zone - the organization's full naming map",
+          "wrong": [
+            "Only the single record the requester most recently queried",
+            "A DNSSEC-signed refusal that reveals nothing"
+          ],
+          "why": "AXFR replicates the entire zone. Open to the world, it is free reconnaissance; restrict it to the real secondary servers."
+        },
+        "say": "A **zone transfer** (AXFR) is the bulk replication of an entire zone between authoritative servers. It should be restricted by IP or TSIG to the real secondaries. Left open to anyone, an AXFR hands an attacker every record in the zone - the whole internal naming map and host inventory. It is a recurring penetration-test finding."
+      }
+    ],
+    "outro": "Your turn to make the request that pulls an entire zone."
+  },
+  {
+    "type": "code_line",
+    "question": "Using dig, attempt a full DNS zone transfer (AXFR) of the zone named db from the authoritative nameserver named ns.",
+    "language": "bash",
+    "correct": [
+      "dig axfr db @ns",
+      "dig @ns axfr db",
+      "dig axfr @ns db"
+    ],
+    "case_sensitive": true,
+    "feedback": "dig axfr db @ns requests the whole zone db from the server ns; the @ns picks the server to ask. Against a correctly configured nameserver this is refused, but against one that allows AXFR from anyone it dumps every record in the zone."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The bulk DNS request that replicates an entire zone between authoritative servers - and that, if left open to anyone, leaks a company's whole naming map - is abbreviated ___.",
+    "correct": [
+      "AXFR"
+    ],
+    "case_sensitive": true,
+    "feedback": "AXFR is a full zone transfer; IXFR is the incremental form. Both should be restricted by source IP and/or TSIG keys to the legitimate secondary nameservers, or they become free reconnaissance for an attacker."
+  },
+  {
+    "question": "Which of the following measures reduce the risk of DNS cache poisoning against a recursive resolver?",
+    "correct": [
+      "Randomizing the query ID and the source port on outbound lookups",
+      "Validating DNSSEC signatures so forged answers are rejected",
+      "Randomizing the case of the queried name as an extra entropy source"
+    ],
+    "incorrect": [
+      "Answering AXFR zone-transfer requests from any client",
+      "Disabling the resolver's logging to improve performance",
+      "Lowering record TTLs so cached entries expire sooner only"
+    ],
+    "feedback": "Query-ID and source-port randomization raise the work needed to spoof a response (the Kaminsky-era defense), DNSSEC validation rejects forgeries outright, and case randomization adds entropy. Open AXFR and disabling logs make things worse, and shorter TTLs alone do not stop a correctly guessed forged answer."
+  },
+  {
+    "question": "A security team configures its corporate resolver, using DNS Response Policy Zones, to return a controlled address for a list of known command-and-control domains and to alert when an internal host asks for one. What technique is this?",
+    "correct": [
+      "DNS sinkholing: redirecting queries for known-bad domains to a controlled address and logging the attempt"
+    ],
+    "incorrect": [
+      "DNSSEC validation: cryptographically signing the zone and rejecting any forged DNS response, so poisoned answers from a compromised upstream resolver are refused",
+      "A zone transfer: replicating the bad-domain list to secondary nameservers",
+      "DNS over HTTPS: encrypting the resolver conversation to hide the queries"
+    ],
+    "feedback": "Returning a controlled answer for malicious names and alerting on the lookup is DNS sinkholing, commonly built with RPZ and aimed at C2, malvertising, and DGA domains. DNSSEC validates authenticity, a zone transfer replicates zones, and DoH encrypts queries - none of them redirect known-bad names."
+  },
+  {
+    "type": "cloze",
+    "question": "{{1}} signs DNS records so a validating resolver rejects forged answers, but the queries themselves stay readable; {{2}} instead encrypts the query between client and resolver for privacy.",
+    "blanks": [
+      {
+        "accept": [
+          "DNSSEC"
+        ],
+        "hint": "signs records"
+      },
+      {
+        "accept": [
+          "DoH",
+          "DoT"
+        ],
+        "hint": "encrypts the query"
+      }
+    ],
+    "feedback": "DNSSEC provides authenticity and integrity, not confidentiality - it stops forgery but does not hide the lookup. DoH/DoT provide confidentiality but not record authenticity, and they complicate corporate DNS logging. They solve different problems."
+  },
+  {
+    "type": "matching",
+    "question": "Match each TLS handshake failure to its root cause.",
+    "pairs": [
+      {
+        "term": "Cipher or version mismatch",
+        "definition": "The client offers only suites or protocol versions the server has disabled"
+      },
+      {
+        "term": "Untrusted issuer",
+        "definition": "The certificate chains to a CA the client does not trust, or an intermediate is missing"
+      },
+      {
+        "term": "Hostname mismatch",
+        "definition": "The requested name is not listed among the certificate's subject alternative names"
+      },
+      {
+        "term": "Expired certificate",
+        "definition": "The certificate's validity window has ended and automated renewal did not run"
+      },
+      {
+        "term": "Cryptographic implementation flaw",
+        "definition": "The protocol is fine, but the code disabled validation or carries a library bug such as Heartbleed"
+      }
+    ],
+    "feedback": "Each failure has a distinct fix: align versions and suites, trust or supply the full chain, correct the SAN list, renew (ideally with ACME), and patch or rewrite the vulnerable code. Reaching for 're-enable the weak cipher' or 'disable validation' trades a visible error for a silent exposure."
+  },
+  {
+    "question": "Iolen debugs a failing TLS connection to an internal API and runs openssl s_client against it. The output shows:\n\n  Verify return code: 21 (unable to verify the first certificate)\n\nThe leaf certificate itself is valid and the hostname matches. Which cause is MOST consistent with this evidence?",
+    "correct": [
+      "The server is not sending its intermediate certificate, so the client cannot build a chain to a trusted root"
+    ],
+    "incorrect": [
+      "The server's clock is skewed by several hours, so the certificate looks not-yet-valid",
+      "The client offered only TLS 1.2 while the server requires TLS 1.3",
+      "The certificate's SAN list does not include the requested hostname"
+    ],
+    "feedback": "'Unable to verify the first certificate' means the chain cannot be completed - typically a missing intermediate the server failed to present. Clock skew produces an expired/not-yet-valid error, a version mismatch fails before certificate verification, and a SAN problem reports a hostname mismatch, not an incomplete chain."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Three checks that only work together",
+    "npc": "tariq",
+    "intro": "Email was built with no way to prove who sent a message. This scene is the three DNS-published checks bolted on since, and why the visible From line is what really matters.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Three DNS records protect a domain. **SPF** lists the IPs allowed to send, checked against the envelope sender. **DKIM** signs the message with a key whose public half is in DNS. **DMARC** ties both to the visible `From:` domain and sets the policy."
+          },
+          {
+            "code": "acme.test                   TXT \"v=spf1 ip4:203.0.113.20 -all\"\nsel._domainkey.acme.test    TXT \"v=DKIM1; k=rsa; p=MIIB...\"\n_dmarc.acme.test            TXT \"v=DMARC1; p=reject; rua=mailto:dmarc@acme.test\"",
+            "language": "DNS records"
+          }
+        ],
+        "say": "Three DNS records protect a domain. **SPF** lists the IPs allowed to send, checked against the envelope sender. **DKIM** signs the message with a key whose public half is in DNS. **DMARC** ties both to the visible `From:` domain and sets the policy."
+      },
+      {
+        "beats": [
+          {
+            "say": "The key word is **alignment**. A message passes DMARC only if SPF *or* DKIM passes *and* the domain it authenticated matches the visible `From:` domain."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; m[label=\"message\"]; spf[label=\"SPF\\nsending IP\"]; dkim[label=\"DKIM\\nsignature\"]; dmarc[label=\"DMARC\\nalign to From\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; pol[label=\"policy\\nnone/quar/reject\"]; m->spf; m->dkim; spf->dmarc; dkim->dmarc; dmarc->pol; }",
+              "alt": "A message checked by an SPF box and a DKIM box, both feeding a DMARC box that aligns to the From domain and then points to a policy box.",
+              "caption": "both checks feed the From-domain decision",
+              "src": "_dot/7d5ba5eeda08d8fc.svg"
+            }
+          },
+          {
+            "say": "The `-all` in SPF is a hard fail for any other IP. The DMARC `p=reject` tells receivers to refuse a message with no aligned pass; domains usually start at `p=none` to read reports first."
+          }
+        ],
+        "check": {
+          "prompt": "A VPS sends mail with From: cfo@acme.test, but its envelope sender is the attacker's own domain, which passes that domain's SPF. Under acme.test's p=reject, is it delivered?",
+          "answer": "No - the SPF pass is for the attacker's domain, so it is not aligned with the From domain",
+          "wrong": [
+            "Yes - SPF passed, so DMARC is satisfied",
+            "Yes - the From header is correctly formatted"
+          ],
+          "why": "DMARC requires the authenticated domain to match the visible From domain. A pass for the wrong domain is not aligned, so p=reject applies."
+        },
+        "say": "The key word is **alignment**. A message passes DMARC only if SPF *or* DKIM passes *and* the domain it authenticated matches the visible `From:` domain. The `-all` in SPF is a hard fail for any other IP. The DMARC `p=reject` tells receivers to refuse a message with no aligned pass; domains usually start at `p=none` to read reports first."
+      }
+    ],
+    "outro": "Now walk the checks in the order a receiver runs them."
+  },
+  {
+    "type": "ordering",
+    "question": "A receiving mail server applies DMARC to an inbound message. Arrange the evaluation in the order the receiver performs it.",
+    "items": [
+      "Check SPF against the envelope sender and verify any DKIM signature",
+      "Test alignment: does an authenticated domain match the visible From domain?",
+      "If no aligned pass, apply the From domain's DMARC policy (none, quarantine, or reject)",
+      "Send the result to the domain's aggregate reporting address"
+    ],
+    "feedback": "DMARC runs SPF and DKIM first, then tests whether a pass is aligned to the From domain, then applies the published policy on failure, and finally feeds the aggregate report. A domain uses those reports to find forgotten legitimate senders before tightening from none to reject."
+  },
+  {
+    "type": "cloze",
+    "question": "{{1}} authenticates the sending server by checking its IP against a DNS list, while {{2}} authenticates the message itself with a cryptographic signature that normally survives forwarding.",
+    "blanks": [
+      {
+        "accept": [
+          "SPF"
+        ],
+        "hint": "sending IP"
+      },
+      {
+        "accept": [
+          "DKIM"
+        ],
+        "hint": "message signature"
+      }
+    ],
+    "feedback": "SPF checks the connecting server and breaks when mail is forwarded; DKIM signs the message and its key is published in DNS, so it survives forwarding unless the content is altered. DMARC ties whichever one passes back to the visible From domain."
+  },
+  {
+    "question": "A bulk-mail vendor sends campaigns whose visible From address is @verona-health.org. The messages pass SPF and DKIM, but for the vendor's own sending domain, not for verona-health.org. Under verona-health.org's DMARC policy of p=reject, what happens, and why?",
+    "correct": [
+      "They are rejected: the passes are not aligned, because neither authenticated domain matches the From domain"
+    ],
+    "incorrect": [
+      "They are delivered, because any SPF or DKIM pass satisfies DMARC on its own, no matter which sending domain the passing check actually authenticated",
+      "They are delivered: the vendor is a legitimate sender, so alignment is waived",
+      "They are quarantined: a vendor mismatch downgrades reject to quarantine"
+    ],
+    "feedback": "DMARC needs an aligned pass - the authenticated domain must match the visible From domain. The vendor's own-domain passes do not align with verona-health.org, so p=reject refuses them. The fix is to give the vendor a DKIM key for verona-health.org (or a delegated subdomain), not to weaken the policy."
+  },
+  {
+    "type": "matching",
+    "question": "Match each email attack to the control that most directly reduces it.",
+    "pairs": [
+      {
+        "term": "Direct domain spoofing",
+        "definition": "DMARC set to reject, with an aligned SPF or DKIM pass"
+      },
+      {
+        "term": "Display-name spoofing",
+        "definition": "An external-sender banner combined with user awareness training"
+      },
+      {
+        "term": "Lookalike domain",
+        "definition": "Domain monitoring and secure-gateway lookalike detection"
+      },
+      {
+        "term": "Malicious attachment",
+        "definition": "Attachment sandboxing, ASR rules, and Mark-of-the-Web enforcement"
+      }
+    ],
+    "feedback": "No single control stops all of these. DMARC blocks forgery of your own domain but not a display name or a lookalike domain, which need banners, training, and monitoring; malicious attachments need sandboxing and execution controls. Most real attacks combine two or three at once."
+  },
+  {
+    "question": "Wren is asked how S/MIME differs from the SPF, DKIM, and DMARC controls Highrook already deploys. Which statement is correct?",
+    "correct": [
+      "S/MIME signs and encrypts an individual message between specific people using X.509 certificates, authenticating a person rather than the sending domain"
+    ],
+    "incorrect": [
+      "S/MIME is a DNS record that replaces DMARC for aligning the visible From domain",
+      "S/MIME lists the IP addresses authorized to send mail for a domain, like a stronger SPF",
+      "S/MIME publishes a public key in DNS so any receiver can verify every outbound message"
+    ],
+    "feedback": "S/MIME operates at the person-to-person layer with certificates, providing end-to-end signing and optional encryption; SPF, DKIM, and DMARC authenticate the sending domain instead. The distractors describe DMARC alignment, SPF, and DKIM respectively - the domain-level controls S/MIME complements rather than replaces."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "SPF permits at most 10 DNS lookups when it is evaluated, or it returns a PermError. A domain's SPF record triggers {{inc}} include: lookups plus {{other}} other mechanism lookups (such as mx and a), each counting as one. How many of the 10 permitted lookups remain unused?",
+    "variables": {
+      "inc": {
+        "min": 3,
+        "max": 6
+      },
+      "other": {
+        "min": 1,
+        "max": 3
+      }
+    },
+    "answer": {
+      "expr": "10 - inc - other",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "SPF allows 10 lookups; this record uses {{inc}} plus {{other}}, which is {{used}}, leaving {{expected}}. Stacking too many include: entries is a classic way to exceed the limit and have SPF silently stop authenticating a domain's mail.",
+    "derived": {
+      "used": "inc + other"
+    }
+  },
+  {
+    "type": "matching",
+    "question": "Match each denial-of-service category to its description and primary mitigation.",
+    "pairs": [
+      {
+        "term": "Volumetric",
+        "definition": "Saturates raw bandwidth with floods or amplified reflections, absorbed upstream at a scrubbing center"
+      },
+      {
+        "term": "Protocol",
+        "definition": "Exhausts connection-state tables with SYN or ACK floods, countered by SYN cookies and connection limits"
+      },
+      {
+        "term": "Application-layer",
+        "definition": "Sends requests that look legitimate but drain app resources, like Slowloris, countered by a WAF and rate limits"
+      },
+      {
+        "term": "Resource exhaustion",
+        "definition": "A memory leak, full log volume, or drained DHCP scope with no attacker, countered by quotas and capacity alerts"
+      }
+    ],
+    "feedback": "Volumetric attacks fill the pipe, protocol attacks fill the state tables, application-layer attacks fill the app, and plain resource exhaustion happens with no adversary at all - each needs a different control, which is why layered absorption beats any single defense."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A reflection-amplification DDoS bounces small spoofed queries off open servers. In the captured traffic, each spoofed request is {{req}} bytes and each reflected response is {{resp}} bytes. What is the amplification factor (response size divided by request size)?",
+    "variables": {
+      "factor": {
+        "values": [
+          20,
+          30,
+          50,
+          70,
+          100
+        ]
+      },
+      "req": {
+        "values": [
+          40,
+          50,
+          60
+        ]
+      }
+    },
+    "answer": {
+      "expr": "factor",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The amplification factor is response divided by request: {{resp}} / {{req}} = {{expected}}. A factor well above one is why volumetric floods are absorbed upstream at the ISP or a scrubbing center rather than at the target.",
+    "derived": {
+      "resp": "req * factor"
+    },
+    "allow_expression": false
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Managing a device you only half own",
+    "npc": "val",
+    "intro": "A phone in a clinician's pocket holds patient data and walks out the door every night. This scene is managing that device without touching the personal half, so BYOD stays legal and workable.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**MDM** - and the broader **UEM** - is a central control plane over enrolled devices: it pushes Wi-Fi, VPN, and certificate profiles, manages apps, and enforces compliance."
+          },
+          {
+            "say": "**Conditional access** consumes that posture at sign-in: encryption on, current OS, no jailbreak, a threat-defense agent reporting. A non-compliant device is blocked before it authenticates."
+          }
+        ],
+        "say": "**MDM** - and the broader **UEM** - is a central control plane over enrolled devices: it pushes Wi-Fi, VPN, and certificate profiles, manages apps, and enforces compliance. **Conditional access** consumes that posture at sign-in: encryption on, current OS, no jailbreak, a threat-defense agent reporting. A non-compliant device is blocked before it authenticates."
+      },
+      {
+        "beats": [
+          {
+            "say": "On a personal device the company uses **app containerization**: work mail and files live in a sandbox (an Android work profile, Apple User Enrollment, or Intune App Protection), separated from personal photos and contacts."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; subgraph cluster_w{label=\"work container\"; style=\"rounded,dashed\"; mail[label=\"work mail\"]; files[label=\"work files\"];} subgraph cluster_p{label=\"personal\"; photos[label=\"photos\"]; contacts[label=\"contacts\"];} }",
+              "alt": "A phone split into a dashed work container holding work mail and work files, and a separate personal area holding photos and contacts.",
+              "caption": "two zones on one device",
+              "src": "_dot/e3eb759e8a7191f9.svg"
+            }
+          }
+        ],
+        "say": "On a personal device the company uses **app containerization**: work mail and files live in a sandbox (an Android work profile, Apple User Enrollment, or Intune App Protection), separated from personal photos and contacts."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Selective wipe** removes only the work container on demand - not the user's personal data. That one capability is what makes BYOD acceptable to legal and to employees."
+          },
+          {
+            "say": "A wipe to a device that is off or out of coverage waits until it next reaches a network, which is why BYOD policy demands a lost-phone report within a set window."
+          }
+        ],
+        "check": {
+          "prompt": "A clinician reports an enrolled personal phone lost. IT issues a selective wipe. What is removed?",
+          "answer": "Only the corporate container - work mail, files, and app data",
+          "wrong": [
+            "The entire device, including personal photos and contacts",
+            "Nothing, because the company cannot act on a personal device"
+          ],
+          "why": "Selective wipe clears corporate data only and leaves personal data untouched - the whole point of containerized BYOD."
+        },
+        "say": "**Selective wipe** removes only the work container on demand - not the user's personal data. That one capability is what makes BYOD acceptable to legal and to employees. A wipe to a device that is off or out of coverage waits until it next reaches a network, which is why BYOD policy demands a lost-phone report within a set window."
+      }
+    ],
+    "outro": "Now a lost phone that will not answer right away."
+  },
+  {
+    "question": "A nurse at Greycloak Apothecary reports a lost enrolled BYOD phone that is currently powered off. The security team issues a selective-wipe command through Intune. What is the MOST accurate expectation?",
+    "correct": [
+      "The wipe command queues and executes when the device next connects to a network, removing only the corporate container"
+    ],
+    "incorrect": [
+      "The entire device, including the user's personal photos and contacts, is erased immediately the moment the wipe command is dispatched from the Intune console",
+      "The wipe runs instantly over the cellular network even while the phone is powered off",
+      "No wipe is possible on a personal BYOD device, so only the account password can be reset"
+    ],
+    "feedback": "An offline device cannot receive the command until it reconnects, so the wipe waits - which is exactly why policy requires a prompt lost-phone report. When it runs it is selective, clearing only corporate data, and BYOD enrollment does make a selective wipe possible on a personal device."
+  },
+  {
+    "question": "Greycloak Apothecary gates EHR access so that only compliant mobile devices pass conditional access. Which of the following are appropriate device-posture conditions for that check?",
+    "correct": [
+      "Disk encryption is enabled and the OS is within a current supported version",
+      "The device is not jailbroken or rooted and a mobile threat-defense agent is reporting"
+    ],
+    "incorrect": [
+      "The device's case is a company-approved color and model",
+      "The user has logged in at least once in the past hour",
+      "The device is connected to a 5G rather than a 4G network",
+      "The phone's battery level is above fifty percent"
+    ],
+    "feedback": "Encryption, a current OS, no jailbreak, and a reporting security agent are real security posture signals conditional access evaluates. Case color, recent login timing, cellular generation, and battery level say nothing about the device's security state and would block or admit devices for irrelevant reasons."
+  }
+]

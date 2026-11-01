@@ -1,444 +1,1315 @@
 [
   {
-    "question": "Under the cloud shared responsibility model for IaaS, which layer is the customer typically responsible for securing?",
-    "correct": [
-      "Guest operating system, applications, and data on the provisioned virtual machines"
-    ],
-    "incorrect": [
-      "Hypervisor patching and physical access control for the data center racks hosting the instances",
-      "Underlying network fabric and the provider's storage hardware controllers",
-      "Power conditioning, fire suppression, and physical perimeter monitoring"
-    ],
-    "feedback": "In IaaS the provider secures the underlying hardware, hypervisor, and facilities while the customer secures the guest OS, applications, and data they place on the VMs. The other options describe responsibilities that stay with the provider."
-  },
-  {
-    "question": "A SaaS vendor manages the application code, runtime, and infrastructure. Which security task remains the customer's responsibility?",
-    "correct": [
-      "Identity, access policies, and the data they place into the SaaS tenant"
-    ],
-    "incorrect": [
-      "Patching the underlying application server and database engine versions",
-      "Hardening the load balancers that front the multi-tenant service",
-      "Rotating the platform's TLS certificates used for the public endpoint"
-    ],
-    "feedback": "Even in SaaS, customers retain responsibility for who can log in, what roles they hold, and the data they upload. Patching, load balancers, and platform certificates sit with the provider."
-  },
-  {
-    "question": "Dorothy is comparing customer-managed keys (CMK) and provider-managed keys for an IaaS database. Which statement BEST describes a benefit of CMK?",
-    "correct": [
-      "The customer controls key rotation policy and can revoke access independently of the provider"
-    ],
-    "incorrect": [
-      "The provider handles every rotation event, so the customer no longer needs its own key lifecycle plan",
-      "Encryption is automatically extended to data already deleted from the storage tier",
-      "Application code does not need any reference to the key for envelope decryption"
-    ],
-    "feedback": "Customer-managed keys give the customer authority over rotation and revocation, which is useful for compliance and exit scenarios. Provider-managed keys hand that control back to the cloud vendor."
-  },
-  {
-    "question": "Which of the following are typical functions of a Cloud Access Security Broker (CASB)? (Select all that apply.)",
-    "correct": [
-      "Discovering shadow IT cloud services in use across the enterprise",
-      "Enforcing data loss prevention policies on traffic to sanctioned SaaS apps",
-      "Applying access policies based on user, device posture, and risk signals"
-    ],
-    "incorrect": [
-      "Replacing the enterprise identity provider with a built-in user directory",
-      "Patching guest operating systems inside customer-managed virtual machines"
-    ],
-    "feedback": "CASBs sit between users and cloud services to discover usage, enforce DLP, and apply contextual access policies. They do not replace the IdP and do not patch guest VMs."
-  },
-  {
-    "question": "Highrook needs visibility into SaaS usage without changing user network paths. Which CASB deployment mode BEST fits?",
-    "correct": [
-      "API-based CASB integration with sanctioned SaaS providers"
-    ],
-    "incorrect": [
-      "Forward proxy CASB requiring agent installation on every endpoint",
-      "Reverse proxy CASB inserted in front of unmanaged personal devices",
-      "Inline IPS sensor configured on the upstream internet edge router"
-    ],
-    "feedback": "API-mode CASBs query SaaS provider APIs to inspect activity and content out-of-band, so user traffic paths are unchanged. Forward and reverse proxies insert themselves into the data path."
-  },
-  {
-    "question": "Which controls help reduce the blast radius of a compromised container in a Kubernetes cluster? (Select all that apply.)",
-    "correct": [
-      "Running containers as non-root users with read-only root filesystems",
-      "Applying network policies that restrict pod-to-pod traffic by namespace",
-      "Using admission controllers to reject images without signed provenance",
-      "Setting CPU and memory limits to prevent noisy-neighbor exhaustion"
-    ],
-    "incorrect": [
-      "Granting the default service account cluster-admin to simplify rollout",
-      "Disabling image scanning so deployments do not stall on warnings"
-    ],
-    "feedback": "Non-root execution, network policies, signed-image admission, and resource limits all narrow what a compromised pod can do or reach. Granting cluster-admin or skipping scans does the opposite."
-  },
-  {
-    "question": "A serverless function reads from a queue and writes to an object store. Which IAM design BEST follows least privilege?",
-    "correct": [
-      "A function-specific role granting only ReceiveMessage on the queue and PutObject on the bucket prefix"
-    ],
-    "incorrect": [
-      "A shared role reused by every function in the account, with broad service wildcards to simplify onboarding",
-      "The account root credentials referenced from an environment variable at runtime",
-      "A managed policy giving full administrator rights to simplify future changes"
-    ],
-    "feedback": "Each serverless function should have its own role scoped to the exact actions and resources it touches. Shared, root, or admin credentials violate least privilege."
-  },
-  {
-    "question": "Which of the following are valid concerns specific to serverless workloads? (Select all that apply.)",
-    "correct": [
-      "Event-injection attacks via untrusted event sources triggering the function",
-      "Over-permissioned execution roles granting access to unrelated resources",
-      "Dependency vulnerabilities pulled in through the function's package layer"
-    ],
-    "incorrect": [
-      "Hypervisor patching cadence on the underlying compute hosts",
-      "Physical cable runs between the function and customer storage arrays"
-    ],
-    "feedback": "Serverless shifts host patching to the provider, but customers still own the function's permissions, dependencies, and how it handles event input. Hypervisor and physical-cabling concerns belong to the provider."
-  },
-  {
-    "question": "Which API gateway feature MOST directly mitigates credential-stuffing attempts against a public login endpoint?",
-    "correct": [
-      "Per-client rate limiting with throttling and lockout on repeated failures"
-    ],
-    "incorrect": [
-      "Adding a TLS 1.3 cipher to the listener's negotiated suite list",
-      "Enabling gzip response compression for authenticated JSON payloads",
-      "Increasing the gateway's request timeout to accommodate slower clients"
-    ],
-    "feedback": "Rate limiting and throttling slow brute-force and credential-stuffing patterns at the edge. TLS ciphers, compression, and timeouts do not address abusive request volume."
-  },
-  {
-    "question": "An external API uses OAuth 2.0. Which design choice BEST supports scoped, auditable third-party access?",
-    "correct": [
-      "Issue short-lived access tokens bound to specific scopes and client IDs"
-    ],
-    "incorrect": [
-      "Share the master administrator API key with every approved partner",
-      "Embed long-lived bearer tokens directly in client-side JavaScript",
-      "Authenticate with HTTP Basic over plaintext for backward compatibility"
-    ],
-    "feedback": "Short-lived, scoped tokens limit blast radius and produce audit-friendly client identifiers. Shared admin keys, embedded long-lived tokens, and plaintext Basic auth all break those properties."
-  },
-  {
-    "question": "The 2019 Capital One breach involved a misconfigured cloud component that allowed a server-side request forgery to retrieve credentials. Which component was MOST directly involved?",
-    "correct": [
-      "A misconfigured web application firewall and an over-privileged instance metadata role"
-    ],
-    "incorrect": [
-      "An on-premises mainframe replication link that exposed the cloud region's storage to the internet",
-      "A leaked physical badge reader at the colocation facility's loading dock",
-      "A vulnerable smart card driver on a corporate laptop fleet image"
-    ],
-    "feedback": "The breach exploited a WAF that could be tricked into making SSRF requests to the EC2 instance metadata service, returning role credentials with broad S3 access. The other options describe unrelated physical or endpoint issues."
-  },
-  {
-    "question": "Which of the following are examples of cloud data remanence risk? (Select all that apply.)",
-    "correct": [
-      "Snapshots of decommissioned volumes left behind in another region",
-      "Cached copies of objects served from a content delivery network edge",
-      "Database backup files retained in long-term storage past the retention policy"
-    ],
-    "incorrect": [
-      "Active queries running against a production read replica during business hours",
-      "Live session cookies signed with a current rotated key on the API gateway"
-    ],
-    "feedback": "Remanence is data that lingers beyond its intended lifecycle: orphaned snapshots, edge caches, and forgotten backups all qualify. Live queries and current session cookies are in-use, not residual."
-  },
-  {
-    "question": "Which scenarios describe insecure storage resources in a public cloud? (Select all that apply.)",
-    "correct": [
-      "An object storage bucket whose ACL grants list and read to anonymous users",
-      "A managed disk snapshot shared publicly to all accounts in the marketplace"
-    ],
-    "incorrect": [
-      "A bucket with default encryption, private ACL, and signed URLs for sharing",
-      "A disk snapshot encrypted with a CMK and shared to a single approved account",
-      "A storage account fronted by a private endpoint and firewalled to internal CIDRs"
-    ],
-    "feedback": "Public ACLs and publicly shared snapshots expose data without authentication. The other options describe sound configurations: private ACLs with signed URLs, scoped snapshot sharing, and private endpoints."
-  },
-  {
-    "question": "Which connectivity option provides a private, dedicated link between an enterprise data center and a cloud provider, bypassing the public internet?",
-    "correct": [
-      "Dedicated interconnect such as AWS Direct Connect or Azure ExpressRoute"
-    ],
-    "incorrect": [
-      "Site-to-site IPsec tunnel established over the public internet backbone",
-      "TLS-encrypted browser session to the provider's web management console",
-      "Outbound NAT gateway routing instance traffic to public service endpoints"
-    ],
-    "feedback": "Dedicated interconnects deliver a private circuit with predictable latency. IPsec VPNs use the public internet, and TLS consoles or NAT gateways are not private dedicated links."
-  },
-  {
-    "question": "Which control is BEST described as detective in a cloud environment?",
-    "correct": [
-      "Continuous configuration scanning that flags publicly exposed buckets"
-    ],
-    "incorrect": [
-      "Service control policy that blocks creation of public buckets organization-wide",
-      "Encrypting object data at rest with a customer-managed key for confidentiality",
-      "Backup vault with immutable retention designed to recover from ransomware"
-    ],
-    "feedback": "Detective controls find problems that already exist; configuration scanning is a classic example. The other options are preventive (SCP, encryption) or recovery-oriented (immutable backups)."
-  },
-  {
-    "question": "Which CI/CD pipeline practice MOST reduces the risk of pushing vulnerable cloud infrastructure?",
-    "correct": [
-      "Static analysis of Terraform plans plus policy-as-code checks before apply"
-    ],
-    "incorrect": [
-      "Granting the build agent administrator credentials in the target account",
-      "Running terraform apply directly from developer laptops on demand",
-      "Skipping plan output review when the change set looks small in diff"
-    ],
-    "feedback": "Pre-apply static analysis and policy-as-code (e.g., OPA, tfsec) catch misconfigurations before they reach the cloud. Admin build agents, laptop applies, and skipped reviews each weaken the pipeline."
-  },
-  {
-    "question": "FedRAMP authorization is BEST described as which of the following?",
-    "correct": [
-      "A standardized U.S. government program for assessing and authorizing cloud services"
-    ],
-    "incorrect": [
-      "A European Union framework that supersedes GDPR for cloud providers selling to member-state agencies",
-      "An ISO standard for industrial control system network segmentation",
-      "A payment-card industry program for tokenizing cardholder account numbers"
-    ],
-    "feedback": "FedRAMP standardizes how U.S. federal agencies assess and authorize cloud offerings. The distractors describe unrelated EU privacy, ICS, and card-payment regimes."
-  },
-  {
-    "question": "Which signals are most useful for shadow IT discovery? (Select all that apply.)",
-    "correct": [
-      "DNS query logs showing access to unsanctioned SaaS domains",
-      "Egress firewall and proxy logs grouped by destination service",
-      "Expense reports flagging recurring SaaS subscriptions paid with corporate cards"
-    ],
-    "incorrect": [
-      "Internal Active Directory password complexity audit reports",
-      "Switch port MAC address tables for the on-premises wiring closets"
-    ],
-    "feedback": "DNS, proxy egress, and expense data each surface SaaS usage outside official channels. AD password audits and switch MAC tables describe internal hygiene, not shadow SaaS discovery."
-  },
-  {
-    "question": "Which approach MOST effectively prevents container images with known critical CVEs from reaching production?",
-    "correct": [
-      "Registry scanning gated by an admission policy that blocks failing images"
-    ],
-    "incorrect": [
-      "Running host antivirus hourly on every worker node to catch vulnerable packages inside running containers",
-      "Disabling network policies so scanners can reach every namespace",
-      "Granting developers direct kubectl exec access in production pods"
-    ],
-    "feedback": "Scanning combined with an enforcing admission policy prevents vulnerable images from being deployed. Host AV, open networking, and broad exec rights do not gate image quality."
-  },
-  {
-    "question": "Which statement BEST describes microsegmentation as applied to cloud workloads?",
-    "correct": [
-      "Identity-aware policy that restricts traffic between workloads at fine granularity"
-    ],
-    "incorrect": [
-      "A flat subnet design allowing any-to-any reachability so east-west traffic needs no policy evaluation",
-      "A perimeter firewall applied at the public internet edge of the account",
-      "A global VLAN trunk shared across all virtual private clouds and regions"
-    ],
-    "feedback": "Microsegmentation enforces fine-grained, often identity-aware controls between workloads. The other options describe coarse perimeter or flat-network designs."
-  },
-  {
-    "question": "Which mechanism BEST prevents a serverless function from being abused as an open relay for arbitrary outbound HTTP requests?",
-    "correct": [
-      "Egress allowlist that limits the function to specific destination hostnames"
-    ],
-    "incorrect": [
-      "Increasing the function's memory allocation so concurrency limits throttle attacker-driven outbound calls",
-      "Returning HTTP 200 on all paths to confuse automated scanners",
-      "Removing structured logging so requests cannot be correlated later"
-    ],
-    "feedback": "An egress allowlist constrains where the function can talk to, limiting SSRF-style abuse. The other options either ignore the issue or actively reduce defenders' visibility."
-  },
-  {
-    "question": "Crypto agility in a cloud platform MOST directly refers to the ability to:",
-    "correct": [
-      "Swap algorithms, keys, and protocols without redesigning the application"
-    ],
-    "incorrect": [
-      "Compress ciphertext payloads to reduce storage costs across regions",
-      "Generate vanity TLS certificate fingerprints for marketing landing pages",
-      "Pin a single cipher suite forever to maximize interoperability"
-    ],
-    "feedback": "Crypto agility is about being able to change algorithms or key material as standards evolve. Compression, vanity fingerprints, and forever-pinned ciphers do not describe agility."
-  },
-  {
-    "question": "Which is a preventative control for cloud data leakage?",
-    "correct": [
-      "DLP policy blocking outbound uploads of classified data to unsanctioned services"
-    ],
-    "incorrect": [
-      "SIEM alert generated once leaked records appear on a dump site, driving containment after the fact",
-      "After-action review describing what categories of data were exfiltrated",
-      "Forensic timeline reconstructed during incident response activities"
-    ],
-    "feedback": "Preventative controls stop the event before it happens; DLP blocking egress is a clear example. After-action reviews, SIEM alerts on dump sites, and forensic timelines are detective or responsive."
-  },
-  {
-    "type": "fill_blank",
-    "question": "A ___ sits between users and cloud services to enforce policy, provide visibility, and discover shadow IT.",
-    "correct": [
-      "CASB",
-      "Cloud Access Security Broker",
-      "cloud access security broker"
-    ],
-    "case_sensitive": false,
-    "feedback": "A CASB (Cloud Access Security Broker) is the standard term for this control point in cloud security architecture."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The orchestration platform widely used to deploy and manage containerized workloads is ___.",
-    "correct": [
-      "Kubernetes",
-      "kubernetes",
-      "k8s",
-      "K8s"
-    ],
-    "case_sensitive": false,
-    "feedback": "Kubernetes (often abbreviated k8s) has become the de facto orchestration platform for production container workloads."
-  },
-  {
-    "type": "fill_blank",
-    "question": "An attacker who tricks a server into making outbound requests on their behalf, often to reach internal endpoints, is performing a ___ attack.",
-    "correct": [
-      "SSRF",
-      "server-side request forgery",
-      "Server-Side Request Forgery"
-    ],
-    "case_sensitive": false,
-    "feedback": "Server-side request forgery (SSRF) was the technique used in the Capital One breach against the cloud instance metadata service."
-  },
-  {
-    "type": "fill_blank",
-    "question": "A machine-readable inventory of components and dependencies in a software artifact is called a(n) ___.",
-    "correct": [
-      "SBOM",
-      "software bill of materials",
-      "Software Bill of Materials"
-    ],
-    "case_sensitive": false,
-    "feedback": "An SBOM lists the components and dependencies in a software artifact, supporting supply-chain transparency for cloud and on-prem builds."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The U.S. federal program that standardizes security assessment and authorization of cloud services for government use is ___.",
-    "correct": [
-      "FedRAMP",
-      "fedramp",
-      "Federal Risk and Authorization Management Program"
-    ],
-    "case_sensitive": false,
-    "feedback": "FedRAMP defines a common baseline so cloud providers can be assessed once and used across federal agencies."
-  },
-  {
-    "type": "matching",
-    "question": "Match each cloud control to the strategy it BEST represents.",
-    "pairs": [
+    "type": "npc_demo",
+    "question": "NPC: Who secures which layer",
+    "npc": "tariq",
+    "intro": "I'm Tariq, the Guild's Beacon-Courier. Every cloud control starts from one map: which layers the provider secures, and which stay yours whatever you buy.",
+    "steps": [
       {
-        "term": "Service control policy blocking public buckets",
-        "definition": "Preventative — stops the misconfiguration before it can occur"
+        "say": "Every cloud provider publishes a **shared responsibility model**: a written split of security duties between the provider and you, the customer. The provider secures the cloud itself: the buildings, the hardware, the **hypervisor** that carves hosts into virtual machines, and the network fabric. You secure everything you put in it. A short way to hold it: security of the cloud is the provider's job; security in the cloud is yours.",
+        "beats": [
+          {
+            "say": "Every cloud provider publishes a **shared responsibility model**: a written split of security duties between the provider and you, the customer."
+          },
+          {
+            "say": "The provider secures the cloud itself: the buildings, the hardware, the **hypervisor** that carves hosts into virtual machines, and the network fabric. You secure everything you put in it."
+          },
+          {
+            "say": "A short way to hold it: security of the cloud is the provider's job; security in the cloud is yours."
+          }
+        ]
       },
       {
-        "term": "Continuous configuration scanning of cloud accounts",
-        "definition": "Detective — finds issues that already exist in the environment"
+        "say": "Where the line sits depends on the **service model** you buy. **IaaS** (Infrastructure as a Service) rents you virtual machines, networks and storage; you own the guest operating system and everything above it. **PaaS** (Platform as a Service) runs your code on a platform whose OS and runtime the provider patches. **SaaS** (Software as a Service) hands you a finished application, such as Microsoft 365.",
+        "beats": [
+          {
+            "say": "Where the line sits depends on the **service model** you buy."
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; t [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"2\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\"></TD><TD><B>IaaS</B></TD><TD><B>PaaS</B></TD><TD><B>SaaS</B></TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\">data+access</TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\">you</FONT></TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\">you</FONT></TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\">you</FONT></TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\">application</TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\">you</FONT></TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\">you</FONT></TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\">runtime/OS</TD><TD COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\">you</FONT></TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\">virtualization</TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\">hardware/site</TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD><TD><FONT COLOR=\"#5aaa5a\">cloud</FONT></TD></TR></TABLE>>]; }",
+              "alt": "A table with columns IaaS, PaaS and SaaS and five rows. Data and access says 'you' in all three columns; application says 'you' under IaaS and PaaS; runtime and OS says 'you' only under IaaS; virtualization and hardware say 'cloud', meaning the provider, everywhere.",
+              "caption": "you, or the cloud provider",
+              "src": "_dot/842028db2a234145.svg"
+            }
+          },
+          {
+            "say": "**IaaS** (Infrastructure as a Service) rents you virtual machines, networks and storage; you own the guest operating system and everything above it."
+          },
+          {
+            "say": "**PaaS** (Platform as a Service) runs your code on a platform whose OS and runtime the provider patches. **SaaS** (Software as a Service) hands you a finished application, such as Microsoft 365."
+          }
+        ],
+        "check": {
+          "prompt": "Cinderpost rents virtual machines and installs its own database on them. A critical flaw is announced in the VMs' operating system. Who patches it?",
+          "answer": "Cinderpost: on IaaS the guest OS belongs to the customer",
+          "wrong": [
+            "The provider, since it owns the hosts the VMs run on",
+            "Nobody: the hypervisor keeps the flaw inside the VM"
+          ],
+          "why": "On IaaS the provider's duty stops at the hypervisor. The guest operating system, and everything installed on it, is the customer's to patch."
+        }
       },
       {
-        "term": "Immutable backup vault with retention lock",
-        "definition": "Recovery — supports restoration after destructive incidents"
-      },
-      {
-        "term": "Just-in-time elevation for cloud admin actions",
-        "definition": "Proactive — reduces standing privilege before it is abused"
+        "say": "Three duties never cross the line, in any model: **data classification**, the **identity and access** of your users, and the **configuration** of the service. The provider can run your storage, but it cannot stop you making a bucket public. That is a configuration choice, so the breach is yours even while the provider's encryption works perfectly. Customer-side guardrails catch it. **Block Public Access**, set for the whole account, forbids public buckets; a **service control policy** (SCP), an AWS Organizations guardrail, stops anyone switching that off. And **CSPM** (cloud security posture management) keeps comparing your live configuration with a security baseline, and flags a bucket that drifts open.",
+        "beats": [
+          {
+            "say": "Three duties never cross the line, in any model: **data classification**, the **identity and access** of your users, and the **configuration** of the service."
+          },
+          {
+            "say": "The provider can run your storage, but it cannot stop you making a bucket public. That is a configuration choice, so the breach is yours even while the provider's encryption works perfectly."
+          },
+          {
+            "say": "Customer-side guardrails catch it. **Block Public Access**, set for the whole account, forbids public buckets; a **service control policy** (SCP), an AWS Organizations guardrail, stops anyone switching that off."
+          },
+          {
+            "say": "And **CSPM** (cloud security posture management) keeps comparing your live configuration with a security baseline, and flags a bucket that drifts open."
+          }
+        ]
       }
     ],
-    "feedback": "Cloud controls map to preventative, detective, recovery, and proactive strategies. A mature program uses several together rather than relying on any single class."
+    "outro": "Now a team moving off servers it patched itself. Work out what it still owns."
   },
   {
-    "type": "matching",
-    "question": "Match each cloud term to its description.",
-    "pairs": [
-      {
-        "term": "Shared responsibility model",
-        "definition": "Division of security duties between the customer and the cloud provider"
-      },
-      {
-        "term": "Serverless function",
-        "definition": "Short-lived compute unit invoked by events with no managed host for the customer"
-      },
-      {
-        "term": "API gateway",
-        "definition": "Edge component that authenticates, throttles, and routes API requests"
-      },
-      {
-        "term": "Data remanence",
-        "definition": "Residual information that persists after data is meant to be removed"
-      }
+    "question": "Cinderpost Couriers moves its order API from virtual machines it patched itself onto a PaaS platform. Pip Hollowfen's migration checklist strikes off every patching task. Which task was struck off by mistake?",
+    "correct": [
+      "Updating a vulnerable logging library that is bundled in the API's code"
     ],
-    "feedback": "Each term maps to a distinct concept in cloud security architecture. Knowing them helps you reason about responsibility, exposure, and lifecycle."
+    "incorrect": [
+      "Patching the operating system under the platform's app instances",
+      "Upgrading the web server software that the platform supplies",
+      "Applying hypervisor fixes to the hosts beneath the platform"
+    ],
+    "feedback": "On PaaS the provider runs and patches the operating system and the software it supplies, such as the web server and runtime, and everything beneath them down to the hypervisor, so those three tasks really did leave Cinderpost's list. The application code stays Cinderpost's, and that includes every library it bundles: a flawed logging library is fixed only when Cinderpost updates it and redeploys."
   },
   {
-    "type": "matching",
-    "question": "Match each connectivity option to its BEST fit for hybrid cloud design.",
-    "pairs": [
-      {
-        "term": "Dedicated interconnect",
-        "definition": "Private circuit with predictable latency for steady, high-volume workloads"
-      },
-      {
-        "term": "Site-to-site IPsec VPN",
-        "definition": "Encrypted tunnel over the public internet for moderate, bursty traffic"
-      },
-      {
-        "term": "Transit gateway or hub VPC",
-        "definition": "Central routing hub that interconnects many VPCs and on-prem networks"
-      },
-      {
-        "term": "Private endpoint",
-        "definition": "Service-specific entry point reachable only from inside a private network"
-      }
+    "question": "In the grid, each lettered square is one layer under one cloud service model. Which squares are the PROVIDER's responsibility?",
+    "correct": [
+      "Square F",
+      "Square H",
+      "Square I"
     ],
-    "feedback": "Hybrid designs combine dedicated circuits, VPNs, transit hubs, and private endpoints depending on volume, sensitivity, and reach."
+    "incorrect": [
+      "Square C",
+      "Square E",
+      "Square G"
+    ],
+    "feedback": "Data and access (A, B, C) stay with the customer in every model, so C is the customer's even on SaaS. The application layer moves to the provider only on SaaS (F); on IaaS and PaaS the code is the customer's (D, E). The runtime and OS move to the provider on PaaS and SaaS (H, I), but on IaaS the guest OS is the customer's (G).",
+    "figure": {
+      "dot": "digraph { node [shape=plain]; t [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"7\"><TR><TD BORDER=\"0\"></TD><TD><B>IaaS</B></TD><TD><B>PaaS</B></TD><TD><B>SaaS</B></TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\">data+access</TD><TD WIDTH=\"44\">A</TD><TD WIDTH=\"44\">B</TD><TD WIDTH=\"44\">C</TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\">application</TD><TD WIDTH=\"44\">D</TD><TD WIDTH=\"44\">E</TD><TD WIDTH=\"44\">F</TD></TR><TR><TD BORDER=\"0\" ALIGN=\"RIGHT\">runtime/OS</TD><TD WIDTH=\"44\">G</TD><TD WIDTH=\"44\">H</TD><TD WIDTH=\"44\">I</TD></TR></TABLE>>]; }",
+      "alt": "A grid of nine squares lettered A to I, three to a row. The columns are headed IaaS, PaaS and SaaS; the rows are headed data and access, application, and runtime and OS.",
+      "caption": "three service models, three layers",
+      "src": "_dot/fa52a0b6815fdc67.svg"
+    }
   },
   {
-    "type": "matching",
-    "question": "Match each API security control to the threat it BEST addresses.",
-    "pairs": [
+    "type": "cloze",
+    "question": "Highrook runs one workload on rented virtual machines and another on a managed app platform. Under {{1}}, Highrook patches the guest operating system itself. Under {{2}}, the provider patches the OS and runtime, while Highrook still owns its code. In both, and under SaaS too, Highrook keeps data classification, user access, and the service's {{3}}.",
+    "blanks": [
       {
-        "term": "OAuth 2.0 scoped tokens",
-        "definition": "Over-broad delegated access by third-party clients"
+        "accept": [
+          "IaaS",
+          "infrastructure as a service"
+        ],
+        "hint": "service model"
       },
       {
-        "term": "Per-client rate limiting",
-        "definition": "Brute-force and credential-stuffing request volume"
+        "accept": [
+          "PaaS",
+          "platform as a service"
+        ],
+        "hint": "service model"
       },
       {
-        "term": "Structured request logging",
-        "definition": "Lack of forensic visibility into who called what and when"
-      },
-      {
-        "term": "Schema validation at the gateway",
-        "definition": "Malformed or injection-laden payloads reaching backend services"
+        "accept": [
+          "configuration",
+          "config",
+          "configurations",
+          "settings"
+        ],
+        "hint": "the third duty"
       }
     ],
-    "feedback": "Each API gateway feature pairs naturally with a specific threat class. A defense-in-depth API design layers all of them rather than relying on any single one."
+    "feedback": "Rented VMs are IaaS: the provider stops at the hypervisor, so the guest OS is Highrook's. A managed app platform is PaaS: the OS and runtime move to the provider, the code stays with Highrook. Data classification, user identity and access, and configuration never move in any model, which is why a bucket made public is always the customer's breach."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Who holds the key",
+    "npc": "tariq",
+    "intro": "Encryption at rest is on by default almost everywhere now. The question that matters is who controls the key, because whoever controls it decides who can read the data.",
+    "steps": [
+      {
+        "say": "With **cloud-managed keys**, also called provider-managed keys, the provider generates, stores, rotates and uses the key for you. Encryption costs you no effort. The catch: the provider can use that key, and can be compelled to, by a court order or by its own internal processes. With a **customer-managed key** (CMK), the key still lives in the provider's key service, such as AWS KMS or Azure Key Vault, but you set its policy, its rotation and its revocation.",
+        "beats": [
+          {
+            "say": "With **cloud-managed keys**, also called provider-managed keys, the provider generates, stores, rotates and uses the key for you. Encryption costs you no effort."
+          },
+          {
+            "say": "The catch: the provider can use that key, and can be compelled to, by a court order or by its own internal processes."
+          },
+          {
+            "say": "With a **customer-managed key** (CMK), the key still lives in the provider's key service, such as AWS KMS or Azure Key Vault, but you set its policy, its rotation and its revocation."
+          }
+        ]
+      },
+      {
+        "say": "Revocation is the prize: a CMK can be disabled or destroyed whenever you decide.",
+        "beats": [
+          {
+            "say": "Revocation is the prize: a CMK can be disabled or destroyed whenever you decide."
+          }
+        ],
+        "check": {
+          "prompt": "An archive, and the provider's backups of it, were all encrypted under one CMK. The customer destroys that key. What becomes of the backups?",
+          "answer": "They remain on disk but can no longer be decrypted",
+          "wrong": [
+            "They stay readable, because backups carry their own key",
+            "The provider must find and wipe each one before the key can go"
+          ],
+          "why": "The backups were encrypted under the same key, so without it their bytes are useless. Nobody has to find every copy, and that is the whole point."
+        }
+      },
+      {
+        "say": "Making data unreadable by destroying its key is **cryptographic erasure**, or crypto-shredding. It is how you delete data from disks you will never touch. **BYOK** (bring your own key) means you generate the key material outside the cloud and import it into the provider's key service. **HYOK** (hold your own key) keeps the key in your own external HSM, which the cloud must call for every operation. Disconnect it and the cloud is cut off at once; but if your key service goes down, so does access to your data.",
+        "beats": [
+          {
+            "say": "Making data unreadable by destroying its key is **cryptographic erasure**, or crypto-shredding. It is how you delete data from disks you will never touch."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; a [label=\"cloud-managed\\nprovider makes,\\nholds, uses key\"]; b [label=\"customer-managed\\n(CMK) in their KMS\\nyou set policy\"]; c [label=\"BYOK\\nyou make the key,\\nimport it\"]; d [label=\"HYOK\\nkey stays in\\nyour own HSM\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; a -> b [label=\" you can\\n revoke\"]; b -> c [label=\" you make\\n the key\"]; c -> d [label=\" cloud must\\n call you\"]; }",
+              "alt": "Four boxes from top to bottom: cloud-managed keys, a customer-managed key in the provider's KMS, BYOK, and HYOK with the key in your own HSM. Arrows between them say you can revoke, you make the key, and the cloud must call you.",
+              "caption": "more control, more work",
+              "src": "_dot/cb06c9ab8edd3c37.svg"
+            }
+          },
+          {
+            "say": "**BYOK** (bring your own key) means you generate the key material outside the cloud and import it into the provider's key service."
+          },
+          {
+            "say": "**HYOK** (hold your own key) keeps the key in your own external HSM, which the cloud must call for every operation. Disconnect it and the cloud is cut off at once; but if your key service goes down, so does access to your data."
+          }
+        ]
+      },
+      {
+        "say": "Software licenses split the same way. **License-included** pricing rents the software, Windows Server or SQL Server, say, inside the VM's hourly price. Under **BYOL** (bring your own license) you supply the license. It can cost less, but compliance, renewals, the vendor's audits, and whether the terms allow cloud use at all stay with you.",
+        "beats": [
+          {
+            "say": "Software licenses split the same way. **License-included** pricing rents the software, Windows Server or SQL Server, say, inside the VM's hourly price."
+          },
+          {
+            "say": "Under **BYOL** (bring your own license) you supply the license. It can cost less, but compliance, renewals, the vendor's audits, and whether the terms allow cloud use at all stay with you."
+          }
+        ]
+      }
+    ],
+    "outro": "Now a hospital with firm rules about where its key may live."
+  },
+  {
+    "question": "Greycloak Apothecary's regulator requires that the cloud provider never hold Greycloak's key material, not even an imported copy, and that Greycloak can cut the provider off from the data within minutes. The CISO accepts extra latency and an extra dependency. Which key model meets the requirement?",
+    "correct": [
+      "HYOK, with keys kept in Greycloak's own external HSM"
+    ],
+    "incorrect": [
+      "BYOK, with key material generated on-site and imported",
+      "A customer-managed key in the provider's KMS, with rotation",
+      "Cloud-managed keys, plus a contract clause on key access"
+    ],
+    "feedback": "Only HYOK keeps the key outside the provider: the cloud has to call Greycloak's HSM for each operation, so disconnecting the HSM cuts access at once, at the latency and availability cost the CISO accepted. BYOK imports the material, so the provider then holds a copy. A CMK lives in the provider's KMS even though Greycloak sets its policy. Cloud-managed keys are generated and used by the provider, and a contract clause changes none of that."
+  },
+  {
+    "type": "cloze",
+    "question": "Thornwood's archive bucket uses a {{1}}-managed key, which the provider generates, rotates and uses, so Thornwood cannot revoke it. Switching to a {{2}}-managed key in the same key service hands Thornwood the policy, rotation and revocation. On exit, Thornwood can then destroy that key and make every copy unreadable, which is {{3}} erasure.",
+    "blanks": [
+      {
+        "accept": [
+          "cloud",
+          "provider"
+        ]
+      },
+      {
+        "accept": [
+          "customer"
+        ]
+      },
+      {
+        "accept": [
+          "cryptographic",
+          "crypto"
+        ]
+      }
+    ],
+    "feedback": "A cloud-managed (provider-managed) key is run entirely by the provider, so the customer cannot pull it. A customer-managed key (CMK) still sits in the provider's KMS, but the customer decides its policy and can disable or destroy it. Destroying the key is cryptographic erasure, or crypto-shredding: every copy encrypted under it, backups included, becomes unreadable without anyone touching the disks."
+  },
+  {
+    "question": "Marketstone Exchange moves SQL Server onto cloud VMs and chooses BYOL instead of license-included pricing, to cut cost. Which obligations does that choice leave with Marketstone?",
+    "correct": [
+      "Proving to the software vendor's auditors that every deployed core is licensed",
+      "Confirming that the license terms permit running the software on cloud hosts"
+    ],
+    "incorrect": [
+      "Paying for the license as part of each VM's hourly price",
+      "Handing license renewals to the cloud provider's marketplace team",
+      "Having the provider answer the software vendor's audit letters"
+    ],
+    "feedback": "Under BYOL the customer supplies the license, so compliance, renewals and vendor audits, including whether the terms allow cloud use at all, stay with the customer. Paying for the license inside the hourly VM price is the license-included model Marketstone turned down. Neither renewals nor audit letters pass to the provider just because the software runs on its hosts."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Four layers of a container",
+    "npc": "tariq",
+    "intro": "Most cloud workloads now run as containers on an orchestrator. I want you to see the four places a container can be secured, and what goes wrong at each.",
+    "steps": [
+      {
+        "say": "A **container** packages an app with its libraries, but shares the host's kernel, kept apart by Linux namespaces and cgroups. It starts fast, but an escape through the kernel lands on the host itself. Thousands of containers need **container orchestration**: scheduling them across hosts, wiring their network, restarting failures, rolling out updates. In practice that means **Kubernetes**, often run as a managed service.",
+        "beats": [
+          {
+            "say": "A **container** packages an app with its libraries, but shares the host's kernel, kept apart by Linux namespaces and cgroups. It starts fast, but an escape through the kernel lands on the host itself."
+          },
+          {
+            "say": "Thousands of containers need **container orchestration**: scheduling them across hosts, wiring their network, restarting failures, rolling out updates. In practice that means **Kubernetes**, often run as a managed service."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; i [label=\"1 image\\nminimal base,\\nscanned, signed\"]; r [label=\"2 registry\\nprivate, authed,\\nsigned-only pulls\"]; u [label=\"3 runtime\\nPod Security\\nStandards, Falco\"]; o [label=\"4 orchestrator\\nAPI server, etcd,\\nnetwork policies\"]; i -> r -> u -> o; }",
+              "alt": "Four boxes stacked top to bottom: image, registry, runtime and orchestrator, each with a short note of its main controls.",
+              "caption": "four layers to secure",
+              "src": "_dot/48ae89343f558061.svg"
+            }
+          }
+        ]
+      },
+      {
+        "say": "**Image**: build from a minimal base such as Alpine or distroless, scan it for known vulnerabilities with a tool such as Trivy, and sign it with **Cosign** so its origin can be checked before it runs. **Registry**: images live in a private registry that demands authentication, scans what it stores, and serves only signed images to production. Now look at this:",
+        "beats": [
+          {
+            "say": "**Image**: build from a minimal base such as Alpine or distroless, scan it for known vulnerabilities with a tool such as Trivy, and sign it with **Cosign** so its origin can be checked before it runs."
+          },
+          {
+            "code": "$ trivy image web:2.0\nweb:2.0 (debian 12)\nTotal: 3 (HIGH: 2, CRITICAL: 1)",
+            "language": "build-time scan"
+          },
+          {
+            "say": "**Registry**: images live in a private registry that demands authentication, scans what it stores, and serves only signed images to production. Now look at this:"
+          },
+          {
+            "code": "containers:\n- name: web\n  image: docker.io/library/python:latest\n  # no signature check configured",
+            "language": "deployment excerpt"
+          }
+        ],
+        "check": {
+          "prompt": "Which layer does this excerpt get wrong?",
+          "answer": "Image and registry: an unsigned public image under a moving tag",
+          "wrong": [
+            "Runtime: the container is allowed to run as root",
+            "Orchestrator: the API server is open to the internet"
+          ],
+          "why": "The excerpt says nothing about what the container may do once it runs. It says what is run: an image from a public registry, unchecked, under a latest tag that can change without notice."
+        }
+      },
+      {
+        "say": "**Runtime**: what may a running container do? Kubernetes **Pod Security Standards** set three profiles, Privileged, Baseline and Restricted, enforced per namespace by the built-in **Pod Security Admission**. Under the stricter profiles a container runs as non-root, is not privileged, mounts no host filesystem, drops every Linux capability it does not need, and keeps a read-only root filesystem. **Falco** watches each container's system calls and alerts on oddities, such as a web container that suddenly opens a shell and probes the network.",
+        "beats": [
+          {
+            "say": "**Runtime**: what may a running container do? Kubernetes **Pod Security Standards** set three profiles, Privileged, Baseline and Restricted, enforced per namespace by the built-in **Pod Security Admission**."
+          },
+          {
+            "say": "Under the stricter profiles a container runs as non-root, is not privileged, mounts no host filesystem, drops every Linux capability it does not need, and keeps a read-only root filesystem."
+          },
+          {
+            "say": "**Falco** watches each container's system calls and alerts on oddities, such as a web container that suddenly opens a shell and probes the network."
+          }
+        ]
+      },
+      {
+        "say": "**Orchestrator**: Kubernetes ships permissive. Lock its **API server** with RBAC, so each pod's **service account** may ask for only what it needs, and encrypt **etcd**, the datastore holding the cluster's secrets. **Network policies** say which pods may talk to which; the safe start is **default-deny**, then allow each flow an app needs. With none, the cluster network is flat: **Admission controllers** inspect each request to the API server and can reject a privileged pod, or, through a policy engine such as Kyverno, an unsigned image, before it is stored. And each pod gets its own cloud identity, **workload identity**, instead of borrowing the credentials of the node it runs on.",
+        "beats": [
+          {
+            "say": "**Orchestrator**: Kubernetes ships permissive. Lock its **API server** with RBAC, so each pod's **service account** may ask for only what it needs, and encrypt **etcd**, the datastore holding the cluster's secrets."
+          },
+          {
+            "say": "**Network policies** say which pods may talk to which; the safe start is **default-deny**, then allow each flow an app needs. With none, the cluster network is flat:"
+          },
+          {
+            "code": "$ kubectl get networkpolicy -n payments\nNo resources found in payments namespace.",
+            "language": "cluster audit"
+          },
+          {
+            "say": "**Admission controllers** inspect each request to the API server and can reject a privileged pod, or, through a policy engine such as Kyverno, an unsigned image, before it is stored."
+          },
+          {
+            "say": "And each pod gets its own cloud identity, **workload identity**, instead of borrowing the credentials of the node it runs on."
+          }
+        ]
+      }
+    ],
+    "outro": "Here is a manifest a team applied in a hurry. Decide what should have stopped it."
+  },
+  {
+    "question": "Cinderpost's payments namespace has no pod security enforcement. A team applies this manifest, and the pod starts:\n\nspec:\n  containers:\n  - name: agent\n    image: registry.cinderpost.internal/agent@sha256:9f2c...\n    securityContext:\n      privileged: true\n      runAsUser: 0\n  volumes:\n  - name: host\n    hostPath:\n      path: /\n\nWhich control would have rejected this pod BEFORE the API server stored it?",
+    "correct": [
+      "Pod Security Admission enforcing the Restricted profile on the namespace"
+    ],
+    "incorrect": [
+      "Falco rules that alert on any privileged container spawning a shell at runtime",
+      "An admission policy that admits only Cosign-signed images",
+      "A default-deny network policy for the payments namespace"
+    ],
+    "feedback": "Pod Security Admission is the built-in admission controller for Pod Security Standards: with the namespace set to enforce Restricted, a privileged pod running as root with the host's filesystem mounted is refused at the API server and never stored. Falco is a runtime monitor, so it alerts only once the pod is running. An image-signature policy is admission control too, but it judges where the image came from, and a signed image can still ask to run privileged. A network policy limits the pod's traffic, not its privileges."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange one container image's journey from build to production, earliest first.",
+    "items": [
+      "Build the image from a minimal base such as distroless",
+      "Scan the built image for known vulnerabilities",
+      "Sign the image that passed and store it in the private registry",
+      "An admission controller checks the image's signature at deploy time",
+      "Falco watches the running container's system calls"
+    ],
+    "feedback": "Image controls come first: a small base means fewer packages to be vulnerable, and you scan what you built. You sign only what passed, and the private registry serves signed images. At deploy time an admission controller refuses anything unsigned, and once the container is running, runtime monitoring such as Falco watches its behaviour. Each layer catches what the one before it could not."
   },
   {
     "type": "code_line",
-    "question": "Write the AWS CLI command that lists all S3 buckets in the current account.",
+    "question": "The image shop:1.4 has just been built. Write the Trivy command that scans it for known vulnerabilities before it is signed.",
     "language": "bash",
     "correct": [
-      "aws s3 ls",
-      "aws s3api list-buckets"
+      "trivy image shop:1.4",
+      "trivy i shop:1.4"
     ],
     "case_sensitive": true,
-    "feedback": "`aws s3 ls` (or `aws s3api list-buckets`) enumerates buckets in the current account — a common first step when auditing cloud storage exposure."
+    "feedback": "trivy image shop:1.4 pulls the image's package list and checks it against vulnerability databases, reporting findings by severity. Run in the pipeline, a HIGH or CRITICAL result can fail the build before the image is ever signed or pushed. Trivy can also scan IaC files (trivy config), which comes up when we reach pipelines."
+  },
+  {
+    "question": "Highrook's new managed Kubernetes cluster was built with defaults: a flat pod network, pods using the node's cloud credentials, broad service-account permissions, and etcd unencrypted. Which changes shrink the damage one compromised pod can do?",
+    "correct": [
+      "Default-deny network policies, then allow only the flows each app needs",
+      "Workload identity, so each pod gets its own narrowly scoped cloud role",
+      "Encryption at rest and tight access control for etcd",
+      "RBAC limiting what each service account may ask the API server to do"
+    ],
+    "incorrect": [
+      "CPU and memory limits on every pod, so one cannot starve the node",
+      "Image tags set to latest, so pods pick up patched images on restart"
+    ],
+    "feedback": "Network policies stop lateral movement across a flat network; workload identity stops a pod from inheriting the node's broader cloud role; protecting etcd guards the cluster's secrets; and tight RBAC stops a stolen service-account token from reconfiguring the cluster. Resource limits are good hygiene, but they protect availability, not what an intruder can reach. A latest tag makes builds unpredictable and unverifiable; pin digests instead."
+  },
+  {
+    "type": "code_line",
+    "question": "Cinderpost's payments namespace turned out to have no network policies. Write the kubectl command that lists the network policies in all namespaces of the cluster at once.",
+    "language": "bash",
+    "correct": [
+      "kubectl get netpol -A",
+      "kubectl get networkpolicy -A",
+      "kubectl get networkpolicies -A",
+      "kubectl get netpol --all-namespaces",
+      "kubectl get networkpolicy --all-namespaces",
+      "kubectl get networkpolicies --all-namespaces"
+    ],
+    "case_sensitive": true,
+    "feedback": "kubectl get networkpolicy lists NetworkPolicy objects (netpol is the short name), and -A (or --all-namespaces) widens it from one namespace to the whole cluster. Any namespace missing from the output has no policy at all, which means its pods can talk to anything."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: What a function may do",
+    "npc": "tariq",
+    "intro": "Serverless takes the server away from you entirely. That removes some old chores, and it moves the danger somewhere easy to overlook.",
+    "steps": [
+      {
+        "say": "**Serverless** computing, or **FaaS** (Function as a Service), runs a function you upload whenever an event calls it, in a short-lived environment the provider builds afresh. AWS Lambda and Azure Functions are examples. There is no host for you to patch or SSH into; the OS is the provider's. But your code, its libraries, and moving off a language runtime the provider has deprecated are still yours. Defences that expect a long-lived host, such as an agent that stays running, do not fit. You rely on the platform's own logs, traces and metrics instead.",
+        "beats": [
+          {
+            "say": "**Serverless** computing, or **FaaS** (Function as a Service), runs a function you upload whenever an event calls it, in a short-lived environment the provider builds afresh. AWS Lambda and Azure Functions are examples."
+          },
+          {
+            "say": "There is no host for you to patch or SSH into; the OS is the provider's. But your code, its libraries, and moving off a language runtime the provider has deprecated are still yours."
+          },
+          {
+            "say": "Defences that expect a long-lived host, such as an agent that stays running, do not fit. You rely on the platform's own logs, traces and metrics instead."
+          }
+        ]
+      },
+      {
+        "say": "The attack surface moves to two questions. Which **triggers**, the event sources, can invoke this function? And once invoked, what may it do? The second answer is its **execution role**: the IAM identity the function runs as. A thumbnail function that reads one bucket needs a role like this:",
+        "beats": [
+          {
+            "say": "The attack surface moves to two questions. Which **triggers**, the event sources, can invoke this function? And once invoked, what may it do?"
+          },
+          {
+            "say": "The second answer is its **execution role**: the IAM identity the function runs as. A thumbnail function that reads one bucket needs a role like this:"
+          },
+          {
+            "code": "{\n  \"Effect\": \"Allow\",\n  \"Action\": \"s3:GetObject\",\n  \"Resource\": \"arn:aws:s3:::thumbs-in/*\"\n}",
+            "language": "execution role policy"
+          }
+        ],
+        "check": {
+          "prompt": "A teammate proposes the same statement with the resource set to `*`, since it still only reads. What does that change?",
+          "answer": "The function could read every object in every bucket of the account",
+          "wrong": [
+            "Nothing, because the action is still read-only",
+            "The function could now also write to thumbs-in"
+          ],
+          "why": "The action limits what the function may do; the resource limits where. With `*`, one bug in one small function can read every bucket in the account, and that is the blast radius an attacker inherits."
+        }
+      },
+      {
+        "say": "**Over-permissioned functions** are the most common serverless mistake. Picture 1,200 functions sharing a role that allows every action on every resource: any one flaw opens the whole account. Secrets need the same care. A key in an environment variable is visible to anyone who can read the function's configuration. Fetch it at start from a **secrets manager** instead, under a permission of its own that is logged, and let the secret rotate.",
+        "beats": [
+          {
+            "say": "**Over-permissioned functions** are the most common serverless mistake. Picture 1,200 functions sharing a role that allows every action on every resource: any one flaw opens the whole account."
+          },
+          {
+            "say": "Secrets need the same care. A key in an environment variable is visible to anyone who can read the function's configuration."
+          },
+          {
+            "say": "Fetch it at start from a **secrets manager** instead, under a permission of its own that is logged, and let the secret rotate."
+          }
+        ]
+      }
+    ],
+    "outro": "Here is a function with a queue on one side and a bucket on the other. Pick its role."
+  },
+  {
+    "question": "A Cinderpost function takes messages from the queue orders-in and writes one receipt object per order into the bucket receipts. Which execution role BEST applies least privilege?",
+    "correct": [
+      "Receive and delete messages on orders-in, and put objects into receipts"
+    ],
+    "incorrect": [
+      "The same actions, with Resource set to * so new queues need no change",
+      "Provider-written full-access policies for the queue and storage services, trimmed after launch",
+      "One role shared by all of the service's functions, limited to queue and storage actions"
+    ],
+    "feedback": "Least privilege names both the actions and the resources: receive and delete on this one queue, put on this one bucket. Resource * keeps the actions narrow but lets a flaw reach every queue and bucket. Full-access managed policies grant far more than the function needs, and 'trim later' rarely happens. A shared role means one function's flaw carries every other function's permissions."
+  },
+  {
+    "question": "Cinderpost moves an image-resizing service from VMs to serverless functions. Which security duties are still Cinderpost's?",
+    "correct": [
+      "Patching a vulnerable library bundled in the deployment package",
+      "Moving off a language runtime the provider has deprecated",
+      "Deciding which event sources may invoke the function"
+    ],
+    "incorrect": [
+      "Patching the OS of the environment each invocation runs in",
+      "Hardening the SSH service on the function's host",
+      "Keeping a security agent running on the host between calls"
+    ],
+    "feedback": "Serverless hands the operating system to the provider, but the code, its libraries, the runtime version and the function's triggers and permissions stay with the customer. The execution environment's OS is rebuilt and patched by the provider. There is no host to SSH into, and no long-lived host on which an agent could keep running; monitoring comes from the platform's logs and traces."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Guarding the pipeline that builds the cloud",
+    "npc": "flint",
+    "intro": "I'm Professor Flint. In the cloud, whatever you can click you can write as code, and a pipeline applies it. Automation repeats a mistake as faithfully as a fix, so today we guard the pipeline itself.",
+    "steps": [
+      {
+        "say": "Start with the pipeline's own credentials. A long-lived access key stored as a pipeline secret works until it leaks, and then it works for the thief too, until someone rotates it. **OIDC federation** replaces it. At run time the CI system hands the cloud a signed token describing the job; the cloud checks it against the role's **trust policy** and returns credentials that expire within the hour. The `aud` (audience) line says the token was minted for this cloud. The `sub` (subject) line pins the role to one repository and one branch. And the role itself is **least privilege**: a pipeline that ships the website has no business reading the customer database.",
+        "beats": [
+          {
+            "say": "Start with the pipeline's own credentials. A long-lived access key stored as a pipeline secret works until it leaks, and then it works for the thief too, until someone rotates it."
+          },
+          {
+            "say": "**OIDC federation** replaces it. At run time the CI system hands the cloud a signed token describing the job; the cloud checks it against the role's **trust policy** and returns credentials that expire within the hour."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; ci [label=\"CI job\\nrepo web,\\nbranch main\"]; sts [label=\"token service\\nchecks trust\\npolicy: aud + sub\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; cr [label=\"credentials,\\n1-hour expiry\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; res [label=\"deploy role\\nin the cloud\"]; ci -> sts [label=\" signed OIDC\\n token\"]; sts -> cr [label=\" if it matches\"]; cr -> res [label=\" used by the job\"]; }",
+              "alt": "A CI job for repository web, branch main, sends a signed OIDC token to the cloud token service, which checks the trust policy's aud and sub; if they match it issues credentials that expire in an hour, used by the job's deploy role.",
+              "caption": "no stored key",
+              "src": "_dot/85e4ef8de64519bd.svg"
+            }
+          },
+          {
+            "code": "\"Condition\": {\n  \"StringEquals\": {\n    \"token.actions.githubusercontent.com:aud\": \"sts.amazonaws.com\",\n    \"token.actions.githubusercontent.com:sub\": \"repo:highrook/web:ref:refs/heads/main\"\n  }\n}",
+            "language": "role trust policy (excerpt)"
+          },
+          {
+            "say": "The `aud` (audience) line says the token was minted for this cloud. The `sub` (subject) line pins the role to one repository and one branch."
+          },
+          {
+            "say": "And the role itself is **least privilege**: a pipeline that ships the website has no business reading the customer database."
+          }
+        ]
+      },
+      {
+        "say": "**Infrastructure as Code** (IaC) describes infrastructure in declarative files: version-controlled, reviewed in pull requests, applied by the pipeline. **Terraform**, and its open-source fork **OpenTofu**, declare the desired state and work out the diff from what exists. Terraform's **state file** records every resource it manages, secrets included, so it lives in an encrypted, access-controlled remote backend, never in Git. **Ansible** is configuration management: YAML playbooks describing how systems should be set up, applied over SSH or WinRM with no agent, usually inside VMs.",
+        "beats": [
+          {
+            "say": "**Infrastructure as Code** (IaC) describes infrastructure in declarative files: version-controlled, reviewed in pull requests, applied by the pipeline."
+          },
+          {
+            "say": "**Terraform**, and its open-source fork **OpenTofu**, declare the desired state and work out the diff from what exists."
+          },
+          {
+            "say": "Terraform's **state file** records every resource it manages, secrets included, so it lives in an encrypted, access-controlled remote backend, never in Git."
+          },
+          {
+            "say": "**Ansible** is configuration management: YAML playbooks describing how systems should be set up, applied over SSH or WinRM with no agent, usually inside VMs."
+          }
+        ]
+      },
+      {
+        "say": "Two gates guard what the pipeline applies. The first is a machine: **policy-as-code** tools such as Checkov, Trivy or OPA scan the IaC files and reject a violation before anything is built. The second gate is a person. Deploy to development and staging automatically, but a change that touches production data, deletes resources or alters IAM waits for a human to approve it.",
+        "beats": [
+          {
+            "say": "Two gates guard what the pipeline applies. The first is a machine: **policy-as-code** tools such as Checkov, Trivy or OPA scan the IaC files and reject a violation before anything is built."
+          },
+          {
+            "code": "$ checkov -d infra\nCheck: CKV2_AWS_6: \"Ensure that S3 bucket has a Public Access block\"  FAILED\nCheck: CKV_AWS_19: \"Ensure all data stored in the S3 bucket is securely encrypted at rest\"  FAILED",
+            "language": "pull request check"
+          },
+          {
+            "say": "The second gate is a person. Deploy to development and staging automatically, but a change that touches production data, deletes resources or alters IAM waits for a human to approve it."
+          }
+        ],
+        "check": {
+          "prompt": "That Checkov run failed a pull request. When was the misconfiguration caught?",
+          "answer": "Before the bucket existed, while the change was still in review",
+          "wrong": [
+            "After deployment, by a scan of the live account",
+            "At the moment someone tried to make the bucket public"
+          ],
+          "why": "Policy-as-code reads the template, not the cloud. Catching the flaw in the pull request means the bad bucket is never created at all."
+        }
+      },
+      {
+        "say": "Cloud workloads are rebuilt constantly, so their dependencies need watching. Pin IaC provider versions, so an upgrade never arrives silently. Scan images and function packages at build time, then rescan what is already deployed, because new flaws are disclosed daily. Keep an **SBOM**, a software bill of materials, for every deployed artifact, and follow your providers' advisory feeds. A tag such as `latest` is a label that moves. The **digest**, the image's sha256 hash, names one exact image and never changes.",
+        "beats": [
+          {
+            "say": "Cloud workloads are rebuilt constantly, so their dependencies need watching. Pin IaC provider versions, so an upgrade never arrives silently."
+          },
+          {
+            "say": "Scan images and function packages at build time, then rescan what is already deployed, because new flaws are disclosed daily."
+          },
+          {
+            "say": "Keep an **SBOM**, a software bill of materials, for every deployed artifact, and follow your providers' advisory feeds."
+          },
+          {
+            "code": "FROM python:latest          # a different image every week\nFROM python@sha256:4c1e...   # one exact image, every time",
+            "language": "Dockerfile"
+          },
+          {
+            "say": "A tag such as `latest` is a label that moves. The **digest**, the image's sha256 hash, names one exact image and never changes."
+          }
+        ]
+      }
+    ],
+    "outro": "Here is the trust policy of another team's deploy role. Read it the way an attacker would."
+  },
+  {
+    "question": "Thornwood's deploy role trusts the CI platform's OIDC provider. Its trust policy has this condition and no other:\n\n\"Condition\": {\n  \"StringEquals\": {\n    \"token.actions.githubusercontent.com:aud\": \"sts.amazonaws.com\"\n  }\n}\n\nWhich weakness is MOST serious?",
+    "correct": [
+      "Workflows in any repository on the platform, not just Thornwood's, can assume the role"
+    ],
+    "incorrect": [
+      "Any branch of Thornwood's own repository, not only main, can deploy to production",
+      "The aud value should name Thornwood's repository rather than the cloud's token service",
+      "Tokens issued this way last for days, so the role's maximum session must be cut"
+    ],
+    "feedback": "With no sub (subject) condition, the role checks only that the token was minted for this cloud, which is true of a token from any repository on the platform, an outsider's included. Unpinned branches are a real gap too, but a far smaller one: it is contained inside the gap the key names. The aud claim is supposed to name the audience, the cloud's token service; the repository belongs in sub. And federated credentials are short-lived by design; that is their advantage over a static key."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the stages of Highrook's secure infrastructure pipeline for one change, first to last.",
+    "items": [
+      "An engineer opens a pull request that changes the Terraform files",
+      "Policy-as-code scans the pull request and fails any violation",
+      "The pull request is reviewed and merged once its checks pass",
+      "A human approves the production stage before it runs",
+      "The pipeline trades its OIDC token for short-lived credentials and applies",
+      "CSPM keeps scanning the deployed resources for drift"
+    ],
+    "feedback": "Everything starts as a reviewable change. The machine gate (policy-as-code) runs on the pull request, so a violation never merges. Production waits for a human, and only then does the pipeline fetch short-lived credentials through OIDC and apply. CSPM comes last because it watches what now exists, catching drift from console changes that never went through the pipeline."
+  },
+  {
+    "type": "cloze",
+    "question": "Cinderpost uses two automation tools. {{1}} declares the desired state of its cloud resources and computes the diff from what exists before applying; its {{2}} file records every managed resource, secrets included, so it belongs in an encrypted remote backend. {{3}} configures the operating systems inside its VMs with YAML playbooks, connecting over SSH with no agent.",
+    "blanks": [
+      {
+        "accept": [
+          "Terraform",
+          "OpenTofu",
+          "tofu"
+        ],
+        "hint": "IaC tool"
+      },
+      {
+        "accept": [
+          "state",
+          "tfstate"
+        ]
+      },
+      {
+        "accept": [
+          "Ansible"
+        ],
+        "hint": "config tool"
+      }
+    ],
+    "feedback": "Terraform (or its open-source fork OpenTofu) is declarative IaC: you describe the end state, and it computes and applies the diff. Its state file is how it remembers what it manages, and because it holds secrets in plain form it must never sit in Git. Ansible is configuration management: agentless, over SSH or WinRM, mostly configuring what runs inside machines."
+  },
+  {
+    "type": "code_line",
+    "question": "Write the command that runs Checkov against every infrastructure-as-code file in the directory named network.",
+    "language": "bash",
+    "correct": [
+      "checkov -d network",
+      "checkov --directory network",
+      "checkov -d network/",
+      "checkov -d ./network",
+      "checkov --directory network/",
+      "checkov --directory ./network"
+    ],
+    "case_sensitive": true,
+    "feedback": "checkov -d network (or --directory network) scans every Terraform, CloudFormation, Kubernetes and similar file under that directory against Checkov's policies. Run as a pull-request check, a FAILED result blocks the merge, so a public bucket or an open security group is caught before it exists."
+  },
+  {
+    "question": "Highrook's Terraform state for the payments platform includes the database master password. Where should that state file live?",
+    "correct": [
+      "In an encrypted remote backend that only the pipeline's role can read and write"
+    ],
+    "incorrect": [
+      "In the private Git repository beside the .tf files, so each change is reviewed",
+      "On the lead engineer's laptop, protected by full-disk encryption",
+      "Nowhere: delete it after each apply and let Terraform rebuild it from the cloud"
+    ],
+    "feedback": "The state file holds secrets in plain form, so it needs encryption and tight access, and a remote backend lets every pipeline run share one locked copy. Git copies the file to every clone and keeps its history forever, so a password committed once is exposed to everyone who can read the repository. A laptop is a single point of loss that no pipeline can use. Without state, Terraform has no record of what it manages, and the next apply tries to create everything again."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A Dockerfile begins FROM python:latest, so each week's build may pull a different image. To make every build use one exact, immutable image, the team pins the base image by its sha256 ___ instead of a tag.",
+    "correct": [
+      "digest",
+      "image digest",
+      "hash"
+    ],
+    "case_sensitive": false,
+    "feedback": "A tag is a movable label: whoever controls the registry can point latest at a new image tomorrow. A digest is the image's sha256 hash, so it names exactly one set of bytes, and a pinned build is reproducible and can be checked against the SBOM and the scan that approved it."
+  },
+  {
+    "question": "Cinderpost rebuilds and redeploys its functions and container images dozens of times a day. Which practices keep its dependencies under watch?",
+    "correct": [
+      "Pinning IaC provider versions so that upgrades never arrive silently",
+      "Rescanning images already deployed, since new flaws are disclosed daily",
+      "Keeping an SBOM for every artifact it deploys"
+    ],
+    "incorrect": [
+      "Building from python:latest so each rebuild picks up the newest patches",
+      "Scanning only at build time, since a deployed image cannot change"
+    ],
+    "feedback": "Pinned provider versions stop behaviour changing under you, rescanning catches flaws disclosed after an image shipped, and an SBOM answers 'where are we running that library?' in minutes. Building from latest trades a known image for an unknown one each week. A deployed image does not change, but what is known about it does, which is why build-time scanning alone is not enough."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Brokers, gateways and a forged request",
+    "npc": "tariq",
+    "intro": "Users reach cloud apps, and services reach each other, through two kinds of choke point: a broker for people and a gateway for APIs. Then the flaw that turned one server into a hundred-million-record breach.",
+    "steps": [
+      {
+        "say": "A **CASB** (cloud access security broker) sits between your users and the cloud apps they use, and enforces policy: who may use which app, what data may move, what gets logged. It grew out of **shadow IT**: staff adopting cloud services without IT. Feed egress firewall, web proxy or DNS logs to the CASB and it shows which unsanctioned services are in use. Visibility first, then policy. An **API-based** CASB connects to a sanctioned SaaS through its management API and inspects data already stored there. It can find and fix problems, but only after the fact. A **proxy-based** CASB sits inline and can block an action before it happens. A **forward proxy** needs an agent or proxy setting on a managed device. A **reverse proxy**, reached by single sign-on redirection, also covers unmanaged devices, but often breaks thick clients and native apps.",
+        "beats": [
+          {
+            "say": "A **CASB** (cloud access security broker) sits between your users and the cloud apps they use, and enforces policy: who may use which app, what data may move, what gets logged."
+          },
+          {
+            "say": "It grew out of **shadow IT**: staff adopting cloud services without IT. Feed egress firewall, web proxy or DNS logs to the CASB and it shows which unsanctioned services are in use. Visibility first, then policy."
+          },
+          {
+            "say": "An **API-based** CASB connects to a sanctioned SaaS through its management API and inspects data already stored there. It can find and fix problems, but only after the fact."
+          },
+          {
+            "say": "A **proxy-based** CASB sits inline and can block an action before it happens. A **forward proxy** needs an agent or proxy setting on a managed device."
+          },
+          {
+            "say": "A **reverse proxy**, reached by single sign-on redirection, also covers unmanaged devices, but often breaks thick clients and native apps."
+          }
+        ],
+        "check": {
+          "prompt": "Policy must stop uploads from company-managed laptops to personal file-sharing sites, before the upload completes. Which mode fits?",
+          "answer": "A forward proxy, inline on the managed laptops",
+          "wrong": [
+            "An API-based CASB connected to the sanctioned tenant",
+            "A reverse proxy placed behind single sign-on"
+          ],
+          "why": "Blocking in real time needs an inline proxy. The laptops are managed, so a forward proxy works, and only it sees traffic to a personal site, which never passes through your single sign-on."
+        }
+      },
+      {
+        "say": "Services expose APIs, and an **API gateway** is the one point all API traffic passes through, so controls are built once instead of in every service. It **authenticates** the client, usually by validating an OAuth 2.0 access token or JWT with the identity provider, sometimes by mutual TLS. An API key identifies an application but is weak as the only proof. It **authorizes**: a token can be valid yet not allowed to call this endpoint, which its scopes decide. It validates each request against a schema, and logs every call for the SIEM. One check it cannot make: may this user read order 1234? That **object-level authorization** belongs in the service. Broken object-level authorization tops the OWASP API Security Top 10.",
+        "beats": [
+          {
+            "say": "Services expose APIs, and an **API gateway** is the one point all API traffic passes through, so controls are built once instead of in every service."
+          },
+          {
+            "say": "It **authenticates** the client, usually by validating an OAuth 2.0 access token or JWT with the identity provider, sometimes by mutual TLS. An API key identifies an application but is weak as the only proof."
+          },
+          {
+            "say": "It **authorizes**: a token can be valid yet not allowed to call this endpoint, which its scopes decide. It validates each request against a schema, and logs every call for the SIEM."
+          },
+          {
+            "say": "One check it cannot make: may this user read order 1234? That **object-level authorization** belongs in the service. Broken object-level authorization tops the OWASP API Security Top 10."
+          }
+        ]
+      },
+      {
+        "say": "**Rate limiting** caps requests per client per unit of time, usually per API key or per user, and per source IP where there is no login. It blunts brute force, scraping and floods. It also caps cost. An attacker who cannot steal data may still run up a ruinous bill by calling expensive operations: a **denial of wallet**. Quotas, budget alerts and circuit breakers limit that exposure. Huge volumetric floods are met before the gateway, by cloud-native **DDoS protection** such as AWS Shield, Azure DDoS Protection or Google Cloud Armor.",
+        "beats": [
+          {
+            "say": "**Rate limiting** caps requests per client per unit of time, usually per API key or per user, and per source IP where there is no login. It blunts brute force, scraping and floods."
+          },
+          {
+            "say": "It also caps cost. An attacker who cannot steal data may still run up a ruinous bill by calling expensive operations: a **denial of wallet**. Quotas, budget alerts and circuit breakers limit that exposure."
+          },
+          {
+            "say": "Huge volumetric floods are met before the gateway, by cloud-native **DDoS protection** such as AWS Shield, Azure DDoS Protection or Google Cloud Armor."
+          }
+        ],
+        "check": {
+          "prompt": "A key is limited to 100 requests per minute. Its owner sends 250 in one minute. How many reach the backend?",
+          "answer": "100",
+          "wrong": [
+            "250",
+            "150"
+          ],
+          "why": "The gateway passes the first 100 and throttles the other 150, usually answering HTTP 429 Too Many Requests."
+        }
+      },
+      {
+        "say": "**SSRF** (server-side request forgery) tricks a server into making a request for the attacker, to a place the attacker cannot reach directly. In the cloud the prize is the **instance metadata service** (IMDS), an internal endpoint at `169.254.169.254` that answers an instance's questions about itself, including the temporary credentials of its IAM role. **IMDSv2** blocks the simple version: a caller must first send a `PUT` to get a short-lived session token, then present it on every request. A flaw that can only make the server send `GET` requests cannot finish that handshake. It is one layer, not the cure. Keep the instance's role to least privilege, so stolen credentials open little, and have the code refuse requests to internal addresses. The 2019 Capital One breach started this way, at a **web application firewall** (WAF) running on EC2.",
+        "beats": [
+          {
+            "say": "**SSRF** (server-side request forgery) tricks a server into making a request for the attacker, to a place the attacker cannot reach directly."
+          },
+          {
+            "say": "In the cloud the prize is the **instance metadata service** (IMDS), an internal endpoint at `169.254.169.254` that answers an instance's questions about itself, including the temporary credentials of its IAM role."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; a [label=\"attacker\"]; w [label=\"web server\\nfetches any URL\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; m [label=\"metadata service\\n169.254.169.254\"]; c [label=\"role's temporary\\ncredentials\"]; s [label=\"cloud APIs:\\nstorage, etc.\"]; a -> w [label=\" crafted\\n URL\"]; w -> m [label=\" asks from\\n inside\"]; m -> c; c -> s [label=\" used from\\n anywhere\"]; }",
+              "alt": "An attacker sends a crafted URL to a web server that fetches any URL. The server asks the metadata service at 169.254.169.254 from inside, gets the role's temporary credentials, and those are used against cloud APIs from anywhere.",
+              "caption": "one flaw, one role, one metadata call",
+              "src": "_dot/f032e20cdb62a80d.svg"
+            }
+          },
+          {
+            "say": "**IMDSv2** blocks the simple version: a caller must first send a `PUT` to get a short-lived session token, then present it on every request. A flaw that can only make the server send `GET` requests cannot finish that handshake."
+          },
+          {
+            "say": "It is one layer, not the cure. Keep the instance's role to least privilege, so stolen credentials open little, and have the code refuse requests to internal addresses."
+          },
+          {
+            "say": "The 2019 Capital One breach started this way, at a **web application firewall** (WAF) running on EC2."
+          }
+        ]
+      }
+    ],
+    "outro": "First, some contractors on their own laptops. Decide which broker reaches them."
+  },
+  {
+    "question": "Highrook lets contractors open its sanctioned Salesforce tenant from their own unmanaged laptops. Policy says downloads of customer reports to those laptops must be blocked in real time, with nothing installed on the devices. Which CASB deployment BEST fits?",
+    "correct": [
+      "A reverse-proxy CASB reached through single sign-on redirection"
+    ],
+    "incorrect": [
+      "An API-based CASB that scans the tenant for exported reports",
+      "A forward-proxy CASB with an agent pushed to the contractors' laptops",
+      "Shadow IT discovery from Highrook's egress firewall and DNS logs"
+    ],
+    "feedback": "Real-time blocking needs an inline proxy, and with unmanaged devices and nothing installed, the reverse proxy is the one that reaches them: single sign-on redirects the contractor's session through the broker. An API-based CASB sees the data only after it is stored, so it cannot stop a download. A forward proxy needs an agent or proxy setting on each device, which breaks the 'nothing installed' rule. Log-based shadow IT discovery gives visibility, not enforcement, and contractors' home traffic never crosses Highrook's egress anyway."
+  },
+  {
+    "type": "cloze",
+    "question": "Wren's audit finds staff using an unsanctioned file-sharing site, found by feeding DNS logs to the CASB: that is {{1}} IT detection. To scan the files already stored in the sanctioned tenant, the CASB connects in {{2}} mode, which can act only after the fact. To stop an upload before it completes, the CASB must sit in the traffic path, in {{3}} mode.",
+    "blanks": [
+      {
+        "accept": [
+          "shadow"
+        ]
+      },
+      {
+        "accept": [
+          "API",
+          "API-based",
+          "API based"
+        ],
+        "hint": "CASB mode"
+      },
+      {
+        "accept": [
+          "proxy",
+          "proxy-based",
+          "proxy based",
+          "inline proxy",
+          "inline"
+        ],
+        "hint": "CASB mode"
+      }
+    ],
+    "feedback": "Cloud services adopted without IT are shadow IT, and logs from egress firewalls, proxies or DNS reveal them. API mode talks to the SaaS provider's management API and inspects data at rest, so it detects and responds after the fact. Proxy mode, forward or reverse, sits inline and can block in real time, at the cost of being on the critical path."
+  },
+  {
+    "question": "Highrook's API gateway validates OAuth tokens, enforces scopes and applies rate limits. A tester holding a valid token for customer 77 calls GET /orders/1234, an order that belongs to customer 91, and gets it back. Which statements are accurate?",
+    "correct": [
+      "This is broken object-level authorization, the top OWASP API risk",
+      "The orders service must check that order 1234 belongs to the caller"
+    ],
+    "incorrect": [
+      "A lower rate limit on GET /orders would close the hole",
+      "The gateway failed to authenticate the tester's token",
+      "Mutual TLS between the gateway and the service would close the hole"
+    ],
+    "feedback": "The token was genuine and its scope allowed GET /orders, so the gateway did its job; what nobody checked is whether this order belongs to this customer. That object-level check needs the order's owner, which only the service knows. A lower rate limit only slows the tester down. Mutual TLS proves that the gateway is talking to the real service, but says nothing about which customer may see which order."
+  },
+  {
+    "type": "matching",
+    "question": "Match each API gateway function to the problem it handles.",
+    "pairs": [
+      {
+        "term": "Authentication",
+        "definition": "A request arrives with an expired, badly signed JWT"
+      },
+      {
+        "term": "Authorization",
+        "definition": "A partner's genuine token calls DELETE /accounts, outside its scope"
+      },
+      {
+        "term": "Rate limiting",
+        "definition": "One API key sends 50,000 login attempts in a minute"
+      },
+      {
+        "term": "Request validation",
+        "definition": "A 2 MB string arrives in a field meant for a postcode"
+      },
+      {
+        "term": "Logging",
+        "definition": "Investigators need to know which client called /export last night"
+      }
+    ],
+    "feedback": "Authentication asks who sent this, so a bad token fails there. Authorization asks whether this caller may do this, so a valid token outside its scope fails there. Rate limiting caps volume per client. Request validation checks each request against its schema, so oversized or malformed fields never reach the service. Logging at the gateway, the one place every call passes, gives investigators the record."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Marketstone's gateway limits each API key to {{limit}} requests per minute. A credential-stuffing bot holds {{keys}} stolen partner keys and runs for one hour, one login attempt per request. At most, how many login attempts can reach the backend in that hour?",
+    "variables": {
+      "limit": {
+        "values": [
+          30,
+          60,
+          100,
+          120
+        ]
+      },
+      "keys": {
+        "min": 2,
+        "max": 9
+      }
+    },
+    "answer": {
+      "expr": "limit * keys * 60",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each key gets its own allowance: {{keys}} keys x {{limit}} per minute x 60 minutes = {{expected}} attempts. A per-key limit caps a client, not an attacker; every extra stolen key adds a full allowance. That is why per-user and per-source limits, and alerts on many keys failing logins, sit beside it."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An unauthenticated report endpoint at Cinderpost triggers a serverless function. With no quota in place, an attacker drives it at {{rate}} invocations per second for {{hours}} hours. Each million invocations costs Cinderpost ${{price}} in compute and request charges. What does the attack cost Cinderpost, in dollars?",
+    "variables": {
+      "rate": {
+        "values": [
+          500,
+          1000,
+          2000
+        ]
+      },
+      "hours": {
+        "values": [
+          2,
+          4,
+          10
+        ]
+      },
+      "price": {
+        "values": [
+          5,
+          10,
+          20
+        ]
+      }
+    },
+    "derived": {
+      "millions": "rate * 3600 * hours / 1000000"
+    },
+    "answer": {
+      "expr": "rate * 3600 * hours * price / 1000000",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{rate}} per second x 3,600 seconds x {{hours}} hours = {{millions}} million invocations, and {{millions}} x ${{price}} = ${{expected}}. Nothing was stolen; this is denial of wallet. A quota on the endpoint, a budget alert and a circuit breaker would have capped it, and requiring authentication would have tied every call to an account."
+  },
+  {
+    "question": "Thornwood's permit API is cheap to run, but its PDF export endpoint is expensive. A competitor's scripts, spread across hundreds of free accounts, each call export below the per-key rate limit, and the monthly bill has tripled. Which control BEST caps the financial exposure?",
+    "correct": [
+      "Per-account quotas on export, with budget alerts and a circuit breaker"
+    ],
+    "incorrect": [
+      "A cloud-native DDoS protection service absorbing traffic ahead of the gateway",
+      "A WAF rule set that blocks injection attempts in the export parameters",
+      "Halving the per-key rate limit on every endpoint across the API"
+    ],
+    "feedback": "This is denial of wallet: valid, authenticated, low-rate calls to an expensive operation. A quota caps each account's total use, a budget alert says when spending runs away, and a circuit breaker cuts the endpoint off at a ceiling. DDoS protection absorbs volumetric floods, and these calls are neither large nor malformed. A WAF looks for attack payloads that are not there. Halving the rate limit everywhere slows each account but caps nothing in total, and it hurts every legitimate user."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the 2019 Capital One breach chain in the order it happened.",
+    "items": [
+      "An SSRF flaw is found in a web application firewall running on EC2",
+      "The flaw makes the WAF's host query the metadata service at 169.254.169.254",
+      "The metadata service returns temporary credentials for the host's IAM role",
+      "The over-privileged credentials are used to list and download S3 buckets"
+    ],
+    "feedback": "The application-layer flaw came first, and it reached the metadata service only because the request came from inside the instance. The service handed over the role's temporary credentials, which needed no session token at the time. Those credentials could read customer buckets, far more than a WAF needs, and about 30 GB of data left. Every link sat on the customer's side of the shared responsibility line."
+  },
+  {
+    "question": "Which changes would have broken, or sharply shrunk, the Capital One chain?",
+    "correct": [
+      "Requiring IMDSv2 on the WAF's instance",
+      "Scoping the WAF host's role to what a WAF needs, with no customer-bucket reads",
+      "Having the code refuse requests to internal addresses such as 169.254.169.254"
+    ],
+    "incorrect": [
+      "Default S3 encryption with provider-managed keys on the customer buckets",
+      "Rotating the role's temporary credentials more often",
+      "Moving the customer buckets to a different AWS Region from the WAF"
+    ],
+    "feedback": "IMDSv2 demands a PUT-issued session token that a simple SSRF cannot obtain; a least-privilege role means stolen credentials open nothing valuable; and refusing internal addresses stops the forged request at its source. Provider-managed encryption decrypts transparently for any principal allowed to read, so it would have stopped nobody. The credentials were already temporary; rotating them faster still leaves a window in which they work. IAM permissions do not depend on Region, so moving buckets changes nothing."
+  },
+  {
+    "type": "ordering",
+    "question": "On an instance that requires IMDSv2, arrange how a process gets its role's credentials, first to last.",
+    "items": [
+      "Send an HTTP PUT asking the metadata service for a session token",
+      "Receive a short-lived token, limited by default to one network hop",
+      "Send the metadata GET request with the token in a header",
+      "Receive the role's temporary credentials"
+    ],
+    "feedback": "The PUT comes first, and that alone defeats a flaw that can only make the server send GET requests. The token's one-hop limit stops it from travelling past the instance, and a PUT carrying an X-Forwarded-For header, the mark of a proxy, is refused. Only a request that presents the token gets the credentials. Even so, IMDSv2 is one layer: the role behind it should still be least privilege."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Where cloud data goes wrong",
+    "npc": "tariq",
+    "intro": "Most cloud breaches are not clever. Data ends up somewhere it should not be, or stays somewhere after it should be gone. Let me name the failures, then the controls and connections that stop them.",
+    "steps": [
+      {
+        "say": "**Data exposure**: a storage resource that should be private is configured for public access. It is the most common and most preventable cloud data failure. **Data leakage**: data leaves through a legitimate channel used the wrong way, such as production data copied into a test environment, or a SaaS app allowed to read more than it needs. Cloud **DLP** (data loss prevention) scans for sensitive patterns and applies policy based on the data's classification and where it is going. **Data remanence**: residual data left on storage after deletion. You cannot shred a provider's shared disks, so the control is cryptographic erasure: destroy the customer-managed key, and the leftover bytes are unreadable. **Insecure storage resources** is the wider family: missing encryption, weak access policies, badly configured replication, and legacy resources older than today's encrypted-by-default settings.",
+        "beats": [
+          {
+            "say": "**Data exposure**: a storage resource that should be private is configured for public access. It is the most common and most preventable cloud data failure."
+          },
+          {
+            "say": "**Data leakage**: data leaves through a legitimate channel used the wrong way, such as production data copied into a test environment, or a SaaS app allowed to read more than it needs."
+          },
+          {
+            "say": "Cloud **DLP** (data loss prevention) scans for sensitive patterns and applies policy based on the data's classification and where it is going."
+          },
+          {
+            "say": "**Data remanence**: residual data left on storage after deletion. You cannot shred a provider's shared disks, so the control is cryptographic erasure: destroy the customer-managed key, and the leftover bytes are unreadable."
+          },
+          {
+            "say": "**Insecure storage resources** is the wider family: missing encryption, weak access policies, badly configured replication, and legacy resources older than today's encrypted-by-default settings."
+          }
+        ]
+      },
+      {
+        "say": "Cloud controls fall into families, told apart by **timing**. **Proactive** controls act before a resource exists: policy-as-code rejecting a template, a provisioning check, threat modeling. **Preventative** controls block an action as it is attempted: an IAM deny, an SCP, a network ACL. **Detective** controls find what has already happened: audit logs such as CloudTrail, CSPM drift scans, and anomaly detection such as GuardDuty. Remediation that closes a public bucket the moment it opens is a **responsive** control, riding on a detective one. Vendors bundle much of this into a **CNAPP** (cloud-native application protection platform): CSPM plus workload protection, entitlement management and IaC scanning.",
+        "beats": [
+          {
+            "say": "Cloud controls fall into families, told apart by **timing**."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; p1 [label=\"before deploy\\nPROACTIVE\\nIaC scan,\\nthreat modeling\"]; p2 [label=\"at the action\\nPREVENTATIVE\\nIAM deny, SCP,\\nnetwork ACL\"]; p3 [label=\"after the fact\\nDETECTIVE\\naudit logs, CSPM,\\nGuardDuty\"]; p4 [label=\"responsive\\nauto-fix\", style=\"rounded,dashed\"]; p1 -> p2 -> p3; p3 -> p4 [style=dashed]; }",
+              "alt": "Four boxes top to bottom: before deploy, proactive, such as IaC scans; at the action, preventative, such as an IAM deny or SCP; after the fact, detective, such as audit logs, CSPM and GuardDuty; and a dashed box, responsive auto-fix.",
+              "caption": "told apart by timing",
+              "src": "_dot/722f88c01fa1c822.svg"
+            }
+          },
+          {
+            "say": "**Proactive** controls act before a resource exists: policy-as-code rejecting a template, a provisioning check, threat modeling. **Preventative** controls block an action as it is attempted: an IAM deny, an SCP, a network ACL."
+          },
+          {
+            "say": "**Detective** controls find what has already happened: audit logs such as CloudTrail, CSPM drift scans, and anomaly detection such as GuardDuty."
+          },
+          {
+            "say": "Remediation that closes a public bucket the moment it opens is a **responsive** control, riding on a detective one."
+          },
+          {
+            "say": "Vendors bundle much of this into a **CNAPP** (cloud-native application protection platform): CSPM plus workload protection, entitlement management and IaC scanning."
+          }
+        ],
+        "check": {
+          "prompt": "An organization guardrail refuses an engineer's API call to switch off audit logging. Which family is that?",
+          "answer": "Preventative",
+          "wrong": [
+            "Detective",
+            "Proactive"
+          ],
+          "why": "It acted at the moment the action was attempted, and blocked it. A proactive control would have judged a template before deployment; a detective one would have found the change afterwards."
+        }
+      },
+      {
+        "say": "Hybrid traffic between your data center and the cloud takes one of two main roads. A site-to-site **IPsec VPN** across the internet is the cheapest and most flexible road, but performance varies and its endpoint can be probed from outside. **Private dedicated connectivity**, such as AWS Direct Connect, Azure ExpressRoute or Google Cloud Interconnect, gives predictable latency and contracted bandwidth, and is usually backed up by a VPN. A dedicated circuit is isolated, not encrypted. Encrypt the traffic at the transport or application layer anyway, so a mistaken route (BGP) advertisement or a compromised device exposes nothing. Many sites and clouds are often tied together with an **SD-WAN** overlay.",
+        "beats": [
+          {
+            "say": "Hybrid traffic between your data center and the cloud takes one of two main roads."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; dc [label=\"your\\ndata center\"]; i [label=\"IPsec VPN over\\npublic internet\"]; dx [label=\"dedicated circuit\\nDirect Connect,\\nExpressRoute\\n(not encrypted)\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; v [label=\"cloud VPC\"]; dc -> i; i -> v; dc -> dx; dx -> v; }",
+              "alt": "From your data center, one road runs as an IPsec VPN across the public internet to the cloud VPC; the other runs over a dedicated circuit such as Direct Connect or ExpressRoute, marked not encrypted.",
+              "caption": "two roads to the cloud",
+              "src": "_dot/fa8b4fc43899e62a.svg"
+            }
+          },
+          {
+            "say": "A site-to-site **IPsec VPN** across the internet is the cheapest and most flexible road, but performance varies and its endpoint can be probed from outside."
+          },
+          {
+            "say": "**Private dedicated connectivity**, such as AWS Direct Connect, Azure ExpressRoute or Google Cloud Interconnect, gives predictable latency and contracted bandwidth, and is usually backed up by a VPN."
+          },
+          {
+            "say": "A dedicated circuit is isolated, not encrypted. Encrypt the traffic at the transport or application layer anyway, so a mistaken route (BGP) advertisement or a compromised device exposes nothing."
+          },
+          {
+            "say": "Many sites and clouds are often tied together with an **SD-WAN** overlay."
+          }
+        ]
+      },
+      {
+        "say": "Adopting a cloud service is a process. First assess the vendor: a SOC 2 Type II report, ISO 27001 certification, a Cloud Security Alliance STAR entry, and where your data will be stored. Then check compliance, plan how it signs users in through your identity provider, send its logs to your SIEM, and plan how you would leave. Contracts matter as much as certificates: HIPAA requires a signed **business associate agreement** (BAA) before a provider handles protected health information. For U.S. federal agencies, **FedRAMP** is usually a prerequisite: one standardized assessment of a cloud offering against NIST SP 800-53 controls, reusable by many agencies. It does not replace an agency's own risk decision. Australia's IRAP and Germany's C5 play similar roles abroad. FedRAMP is mid-overhaul. Its 2026 rules rename authorization **FedRAMP Certification** and relabel the baselines as classes A to D, mandatory from January 1, 2027; older paperwork still says Authorized and Moderate.",
+        "beats": [
+          {
+            "say": "Adopting a cloud service is a process. First assess the vendor: a SOC 2 Type II report, ISO 27001 certification, a Cloud Security Alliance STAR entry, and where your data will be stored."
+          },
+          {
+            "say": "Then check compliance, plan how it signs users in through your identity provider, send its logs to your SIEM, and plan how you would leave."
+          },
+          {
+            "say": "Contracts matter as much as certificates: HIPAA requires a signed **business associate agreement** (BAA) before a provider handles protected health information."
+          },
+          {
+            "say": "For U.S. federal agencies, **FedRAMP** is usually a prerequisite: one standardized assessment of a cloud offering against NIST SP 800-53 controls, reusable by many agencies."
+          },
+          {
+            "say": "It does not replace an agency's own risk decision. Australia's IRAP and Germany's C5 play similar roles abroad."
+          },
+          {
+            "say": "FedRAMP is mid-overhaul. Its 2026 rules rename authorization **FedRAMP Certification** and relabel the baselines as classes A to D, mandatory from January 1, 2027; older paperwork still says Authorized and Moderate."
+          }
+        ]
+      }
+    ],
+    "outro": "Start with three findings from one quarterly review, and name each failure."
+  },
+  {
+    "type": "cloze",
+    "question": "Highrook's quarterly review finds three problems. A blob container left open to anonymous reads is data {{1}}. An analyst forwarding a customer list to a personal email address is data {{2}}. Fragments of a deleted database still sitting on the provider's disks are data {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "exposure"
+        ]
+      },
+      {
+        "accept": [
+          "leakage",
+          "leak",
+          "loss"
+        ]
+      },
+      {
+        "accept": [
+          "remanence"
+        ]
+      }
+    ],
+    "feedback": "Exposure is a misconfiguration: a resource that should be private is reachable. Leakage uses a legitimate channel, email here, in an unintended way, which is DLP's territory. Remanence is what lingers after deletion; on shared provider disks the customer answers it with cryptographic erasure, destroying the key the data was encrypted under."
+  },
+  {
+    "question": "Across Highrook's 140 AWS accounts, teams keep creating buckets and later making them public. Selene Marrow wants a public bucket to be impossible to create, even by account administrators, starting this week. Which control BEST meets that?",
+    "correct": [
+      "Account-level Block Public Access, with an SCP that denies turning it off"
+    ],
+    "incorrect": [
+      "A CSPM rule that alerts the SOC within minutes of any public bucket",
+      "A Checkov rule in the deploy pipeline that fails any template with a public bucket",
+      "Default encryption with provider-managed keys on every bucket"
+    ],
+    "feedback": "Only a preventative guardrail makes the action impossible: Block Public Access refuses public policies and ACLs, and a service control policy stops even account administrators from removing it. CSPM is detective: it finds the bucket after it is public. Checkov is proactive, but changes made in the console or the CLI never pass through the pipeline. Provider-managed encryption decrypts transparently for anyone allowed to read, so a public bucket stays readable."
+  },
+  {
+    "question": "Wyrmkeep Logistics is leaving a cloud analytics service. The contract requires that Wyrmkeep's data be unrecoverable from the provider's disks, replicas and backups afterwards. Everything was encrypted under a customer-managed key. Which step BEST meets the requirement?",
+    "correct": [
+      "After exporting what it must keep, destroy the customer-managed key"
+    ],
+    "incorrect": [
+      "Delete every object and permanently purge the versioned history",
+      "Overwrite each object with zeros through the storage API first",
+      "Ask the provider to physically shred the drives that held the data"
+    ],
+    "feedback": "Cryptographic erasure reaches every copy at once: replicas and backups were encrypted under the same key, so without it they are unreadable wherever they sit. Deleting or overwriting through the API changes the logical objects, but cannot reach every replica, backup or freed block on media the customer never sees. Shared, multi-tenant drives are not shredded for one customer, which is exactly why the key is the control."
+  },
+  {
+    "type": "matching",
+    "question": "Match each cloud control family to an example of it.",
+    "pairs": [
+      {
+        "term": "Proactive",
+        "definition": "A provisioning check rejects a non-compliant resource before it is created"
+      },
+      {
+        "term": "Preventative",
+        "definition": "A network ACL refuses inbound traffic from an unapproved address range"
+      },
+      {
+        "term": "Detective",
+        "definition": "Anomaly detection flags unusual API calls made by a role last night"
+      },
+      {
+        "term": "Responsive",
+        "definition": "A function re-closes a storage bucket seconds after someone opens it"
+      }
+    ],
+    "feedback": "Timing tells the families apart. Proactive acts before the resource exists, preventative at the moment an action is attempted, and detective after the fact. A responsive control is remediation that rides on a detective one: something had to notice the bucket opening before the function could close it."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Selene wants one tool that continuously compares every account's live configuration with a security baseline, and flags drift such as a storage encryption setting switched off. That category of tool is ___.",
+    "correct": [
+      "CSPM",
+      "cloud security posture management"
+    ],
+    "case_sensitive": false,
+    "feedback": "CSPM (cloud security posture management) is a detective control: it scans live configuration against baselines and alerts on misconfiguration and drift, including changes made outside the pipeline. It complements, and does not replace, proactive IaC scanning and preventative guardrails. A CNAPP bundles CSPM with workload protection, entitlement management and IaC scanning."
+  },
+  {
+    "question": "Highrook reaches its cloud VPC by the two paths shown. Path 2, a dedicated circuit, carries nightly cardholder-data replication in plaintext, and the replication needs path 2's contracted bandwidth. The network lead says encryption there is unnecessary because the circuit never touches the internet. What is the BEST response?",
+    "correct": [
+      "Encrypt path 2's traffic too: a dedicated circuit is isolated, not encrypted"
+    ],
+    "incorrect": [
+      "Agree, since traffic kept off the internet is encrypted by the provider's edge",
+      "Move the replication to path 1, whose IPsec tunnel already encrypts it",
+      "Add a second dedicated circuit so a failed provider device cannot expose it"
+    ],
+    "feedback": "Private circuits are isolated from the internet, but nothing encrypts them by default, so a mistaken BGP advertisement or a compromised device in the path would see cardholder data in the clear. Transport- or application-layer encryption over path 2 keeps the bandwidth and adds the protection. The provider's edge does not encrypt for you. Path 1 is encrypted, but its internet route cannot promise the bandwidth the stem requires. A second circuit adds availability, not confidentiality.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; dc [label=\"Highrook\\ndata center\"]; i [label=\"path 1:\\npublic internet\"]; g [label=\"VPN gateway\"]; e [label=\"path 2:\\ncolocation\\nprovider edge\"]; v [label=\"cloud VPC\"]; dc -> i; i -> g; g -> v; dc -> e; e -> v; }",
+      "alt": "Two routes from Highrook's data center to its cloud VPC. Path 1 crosses the public internet to a VPN gateway, then the VPC; path 2 runs through a colocation provider edge straight into the VPC.",
+      "caption": "Highrook's two paths",
+      "src": "_dot/6cdba866036d33b1.svg"
+    }
+  },
+  {
+    "question": "Forgeworks Industrial must replicate about 40 TB each night to the cloud with predictable latency, keep replication running if its primary link fails, and can fund only one dedicated circuit. Which design BEST fits?",
+    "correct": [
+      "One Direct Connect circuit as primary, with a site-to-site IPsec VPN as backup"
+    ],
+    "incorrect": [
+      "Two site-to-site IPsec VPN tunnels, each over a different internet provider",
+      "One Direct Connect circuit alone, relying on its contracted bandwidth",
+      "An SD-WAN overlay across broadband links to every cloud region"
+    ],
+    "feedback": "A dedicated circuit gives the predictable latency and contracted bandwidth, and pairing it with a VPN is the usual way to survive its failure without buying a second circuit. Two VPN tunnels give redundancy but share the public internet's variable performance. A single circuit with no backup fails the 'keep running' requirement. An SD-WAN overlay over broadband still rides the internet, so its latency is no more predictable."
+  },
+  {
+    "question": "Greycloak Apothecary will store patient records in a new SaaS scheduling tool. Which items must its adoption process settle before any protected health information flows?",
+    "correct": [
+      "A signed business associate agreement with the vendor",
+      "How users sign in, federated with Greycloak's identity provider",
+      "How Greycloak will extract its data and verify deletion if it leaves"
+    ],
+    "incorrect": [
+      "A vendor security whitepaper, accepted in place of an independent SOC 2 Type II report",
+      "Self-service sign-up with personal accounts, moved onto federation after go-live"
+    ],
+    "feedback": "HIPAA requires a signed BAA before a provider handles PHI; the integration plan settles authentication, ideally through the IdP; and an exit plan covers extraction and verified deletion. A vendor's own whitepaper is marketing, not independent assurance such as a SOC 2 Type II report. Personal accounts created before federation are exactly the identities nobody can later revoke or audit."
+  },
+  {
+    "question": "Stormhall Aegis is choosing a cloud service for a U.S. federal agency mission in late 2026. Which statements about FedRAMP are accurate?",
+    "correct": [
+      "Its assessment is built on NIST SP 800-53 controls and can be reused by many agencies",
+      "Its 2026 rules rename authorization FedRAMP Certification, with baselines as classes A to D"
+    ],
+    "incorrect": [
+      "A FedRAMP authorization replaces the agency's own risk decision for this mission",
+      "Its baselines are built on ISO/IEC 27001 Annex A controls rather than NIST",
+      "An Australian IRAP assessment satisfies FedRAMP for U.S. agencies"
+    ],
+    "feedback": "FedRAMP standardizes the security assessment of a cloud offering on NIST SP 800-53, so many agencies can reuse one result, and its 2026 Consolidated Rules rename authorization as Certification, with lettered classes in place of the familiar baselines. Reuse does not remove the agency's own decision about using the service for a particular mission. ISO 27001 is a separate standard, and IRAP is Australia's own program, not a substitute for FedRAMP."
+  },
+  {
+    "question": "At Wyrmkeep Logistics, 300 serverless functions read the same carrier API key from an identically named environment variable, visible to anyone who can read function configuration. The fix must let the key rotate and leave an audit trail of each read, without redesigning the functions' logic. Which approach BEST fits?",
+    "correct": [
+      "Move the key to a secrets manager that rotates it, fetched at start under a logged permission"
+    ],
+    "incorrect": [
+      "Keep one shared value, but encrypt the environment variable with a customer-managed KMS key",
+      "Give each function its own copy of the key in its own environment variable",
+      "Bake the key into each deployment package, so it no longer appears in any function's configuration"
+    ],
+    "feedback": "A secrets manager holds one rotating secret, each function fetches it at start with a dedicated permission, and every read is logged, so it meets all three constraints with a small change. Encrypting the variable hides it from casual readers, but the value is still shared and still never rotates. Per-function copies multiply the secret without making it rotate. Baking it into packages spreads it into every build artifact, which is worse."
+  },
+  {
+    "question": "Marketstone must be able to make its trade archive unreadable within an hour, on demand. It may not add any key service outside the provider whose outage could halt trading, and its two-person crypto team wants the least operational overhead. Which key model BEST fits?",
+    "correct": [
+      "A customer-managed key in the provider's KMS, disabled or destroyed on demand"
+    ],
+    "incorrect": [
+      "HYOK, with keys held in Marketstone's own HSM that the cloud must call",
+      "BYOK, generating key material on-premises and importing it into the KMS",
+      "Cloud-managed keys, with a priority support request asking the provider to purge the archive"
+    ],
+    "feedback": "A CMK gives Marketstone the revocation it needs, through cryptographic erasure, without anything outside the provider and with little to operate. HYOK adds exactly the external dependency the stem forbids: if Marketstone's HSM fails, trading stops. BYOK would also allow revocation, but generating, protecting and importing key material is extra work the constraints do not call for. With cloud-managed keys the provider controls the key, and a support request is no on-demand guarantee."
+  },
+  {
+    "question": "Greycloak must (1) block staff on hospital-managed laptops from uploading patient files to any unsanctioned cloud site, in real time, and (2) find patient files already sitting in its sanctioned collaboration tenant. Which two deployments together meet both needs?",
+    "correct": [
+      "A forward-proxy CASB with an agent on the managed laptops",
+      "An API-based CASB connected to the sanctioned tenant"
+    ],
+    "incorrect": [
+      "A reverse-proxy CASB reached through single sign-on redirection",
+      "Monthly reports of unsanctioned services built from DNS logs"
+    ],
+    "feedback": "Need 1 is real-time blocking of uploads to sites Greycloak does not control, which only an inline forward proxy on the managed devices can see. Need 2 is data at rest in a sanctioned tenant, which the API mode reads through the provider's management API. A reverse proxy works only for apps reached through Greycloak's single sign-on, so it never sees a personal site. DNS-log reports show which services are in use, but they block nothing and find no files."
+  },
+  {
+    "type": "matching",
+    "question": "Read the architecture. Match each lettered position to the control that BEST belongs there.",
+    "pairs": [
+      {
+        "term": "Position A",
+        "definition": "Absorbs a volumetric flood before it reaches the gateway"
+      },
+      {
+        "term": "Position B",
+        "definition": "Rejects a valid token that lacks the orders:read scope"
+      },
+      {
+        "term": "Position C",
+        "definition": "Checks that order 1234 belongs to the calling customer"
+      },
+      {
+        "term": "Position D",
+        "definition": "Keeps stored records encrypted under a customer-managed key"
+      }
+    ],
+    "feedback": "A sits in front of everything, where DDoS protection soaks up floods. B talks to the identity provider and feeds the SIEM, so it is the API gateway: tokens, scopes, rate limits and logging live there. C is the service behind the gateway, the only place that knows who owns order 1234, so object-level authorization belongs there. D, the data store, is where encryption at rest under a customer-managed key applies.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; cl [label=\"web, mobile,\\npartner clients\"]; A [label=\"A\"]; B [label=\"B\"]; C [label=\"C\"]; D [label=\"D\", shape=cylinder]; idp [label=\"identity\\nprovider\"]; siem [label=\"SIEM\"]; cl -> A -> B -> C -> D; idp -> B [dir=both]; B -> siem; {rank=same; idp; B; siem} }",
+      "alt": "Clients at the top send requests down a chain of lettered boxes: A, then B, then C, then a cylinder D. Box B also trades arrows with an identity provider and sends arrows to a SIEM.",
+      "caption": "an API path, positions A to D",
+      "src": "_dot/410c418c9129527b.svg"
+    }
   }
 ]

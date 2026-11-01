@@ -414,14 +414,19 @@ matches the number of questions actually in each file.
 | Networking | Troubleshooting Methodology & Cabling | 30 |
 | Networking | Services, Performance & Wireless Troubleshooting | 30 |
 | Networking | Tools & Device Commands | 33 |
-| SecurityX / CASP+ | Security Governance, Compliance & Ethics | 40 |
-| SecurityX / CASP+ | Risk Management & Threat Modeling | 42 |
-| SecurityX / CASP+ | AI Threats & Governance | 30 |
-| SecurityX / CASP+ | Security Architecture & Zero Trust | 30 |
-| SecurityX / CASP+ | Security Operations & Incident Response | 30 |
-| SecurityX / CASP+ | IAM, Cryptography & Secure Engineering | 33 |
-| SecurityX / CASP+ | Enterprise Cloud & Hybrid Security | 33 |
-| SecurityX / CASP+ | Cryptography & PKI | 35 |
+| SecurityX / CASP+ | SecurityX Review Mix | 30 (random mix) |
+| SecurityX / CASP+ | Security Governance, Compliance & Ethics | 44 |
+| SecurityX / CASP+ | Risk Management & Threat Modeling | 43 |
+| SecurityX / CASP+ | AI Threats & Governance | 44 |
+| SecurityX / CASP+ | Security Architecture & Zero Trust | 44 |
+| SecurityX / CASP+ | Identity & Access Management | 44 |
+| SecurityX / CASP+ | Secure Systems Lifecycle & Hardware Assurance | 44 |
+| SecurityX / CASP+ | Enterprise Cloud & Hybrid Security | 43 |
+| SecurityX / CASP+ | Cryptography & PKI | 44 |
+| SecurityX / CASP+ | Network, Endpoint & Infrastructure Engineering | 44 |
+| SecurityX / CASP+ | Specialized, OT & Legacy Systems | 43 |
+| SecurityX / CASP+ | Security Operations, Monitoring & Threat Hunting | 44 |
+| SecurityX / CASP+ | Vulnerability Management, Automation & Incident Response | 44 |
 
 ---
 

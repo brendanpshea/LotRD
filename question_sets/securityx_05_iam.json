@@ -1,0 +1,1496 @@
+[
+  {
+    "type": "npc_demo",
+    "question": "NPC: An account's whole life",
+    "npc": "val",
+    "intro": "I'm Val, the Guild's Ward-Smith. This set is about identity: who exists, what each one may use, and when that ends. We start with an account's whole life, because most identity incidents begin on its first day or its last.",
+    "steps": [
+      {
+        "say": "The **identity lifecycle** is an identity's whole journey: request and approval, **credential issuance**, role assignment, periodic review, then suspension and deletion. Issuance is the first weak spot. With **self-provisioning**, a new hire follows an enrolment link, registers a device and sets up MFA. They often prove who they are with a one-time code sent to their manager or the HR system. **Identity proofing** checks that the person enrolling is the intended one: a document check, a selfie compared with the ID photo, or a live video call with a trained agent. Enrolment, password reset and MFA re-registration are when an account is most exposed to social engineering. A helpdesk request to reset MFA is a high-risk transaction, not a routine one.",
+        "beats": [
+          {
+            "say": "The **identity lifecycle** is an identity's whole journey: request and approval, **credential issuance**, role assignment, periodic review, then suspension and deletion."
+          },
+          {
+            "say": "Issuance is the first weak spot. With **self-provisioning**, a new hire follows an enrolment link, registers a device and sets up MFA."
+          },
+          {
+            "say": "They often prove who they are with a one-time code sent to their manager or the HR system."
+          },
+          {
+            "say": "**Identity proofing** checks that the person enrolling is the intended one: a document check, a selfie compared with the ID photo, or a live video call with a trained agent."
+          },
+          {
+            "say": "Enrolment, password reset and MFA re-registration are when an account is most exposed to social engineering. A helpdesk request to reset MFA is a high-risk transaction, not a routine one."
+          }
+        ]
+      },
+      {
+        "say": "**Provisioning** grants a subject the access its job needs; **deprovisioning** takes it away. The mature pattern drives both from an **authoritative source**, usually the HR system, so a hire or a departure reaches every system in minutes. Three workflows carry the load. A **joiner** gets the baseline access of their role, plus extras by approval. A **mover** gains the new role's access and loses the old role's. A **leaver** is disabled on the last day and deleted after a set retention period. Here is a mover at a shipping firm, six months after her transfer:",
+        "beats": [
+          {
+            "say": "**Provisioning** grants a subject the access its job needs; **deprovisioning** takes it away."
+          },
+          {
+            "say": "The mature pattern drives both from an **authoritative source**, usually the HR system, so a hire or a departure reaches every system in minutes."
+          },
+          {
+            "say": "Three workflows carry the load. A **joiner** gets the baseline access of their role, plus extras by approval."
+          },
+          {
+            "say": "A **mover** gains the new role's access and loses the old role's. A **leaver** is disabled on the last day and deleted after a set retention period."
+          },
+          {
+            "say": "Here is a mover at a shipping firm, six months after her transfer:"
+          },
+          {
+            "code": "user:    dmorrow\ndept:    Treasury (transferred in March)\ngroups:  Treasury-Analysts\n         Payment-Approvers\n         Warehouse-Ops\n         Fleet-Scheduling",
+            "language": "directory export"
+          }
+        ],
+        "check": {
+          "prompt": "Which workflow failed for this account?",
+          "answer": "The mover step: it added Treasury but left the warehouse groups",
+          "wrong": [
+            "The joiner step: it gave her too small a baseline",
+            "The leaver step: it should have deleted her at the transfer"
+          ],
+          "why": "A transfer is a move, not a departure. The mover step must take away the old role's groups as well as add the new ones, and here only the adding happened."
+        }
+      },
+      {
+        "say": "Access that piles up as people move is **privilege creep**. **Periodic access reviews**, where a manager re-affirms each privilege of each direct report, catch what the mover step missed. Two tools are easy to confuse. **Single sign-on (SSO)** lets a user sign in once at a central **identity provider (IdP)** and reach many apps. **SCIM** (System for Cross-domain Identity Management) does a different job: it creates, updates and disables the account inside each connected app. Disable a leaver at the IdP and SSO refuses new sign-ins. The app with its own local passwords, in amber, never hears about it: only SCIM or a person removes that account.",
+        "beats": [
+          {
+            "say": "Access that piles up as people move is **privilege creep**. **Periodic access reviews**, where a manager re-affirms each privilege of each direct report, catch what the mover step missed."
+          },
+          {
+            "say": "Two tools are easy to confuse. **Single sign-on (SSO)** lets a user sign in once at a central **identity provider (IdP)** and reach many apps."
+          },
+          {
+            "say": "**SCIM** (System for Cross-domain Identity Management) does a different job: it creates, updates and disables the account inside each connected app."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; hr [label=\"HR system\\n(authoritative)\"]; gov [label=\"Identity\\ngovernance\"]; idp [label=\"Identity provider\\n(IdP)\"]; a1 [label=\"SaaS app\"]; a2 [label=\"SaaS app\"]; loc [label=\"App with local\\npasswords\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; hr -> gov [label=\" hire, move,\\n leave\"]; gov -> idp; idp -> a1 [label=\" SCIM\"]; idp -> a2 [label=\" SCIM\"]; idp -> loc [style=dashed, color=\"#ffb300\", fontcolor=\"#ffd86b\", label=\" nothing\"]; }",
+              "alt": "An HR system feeds an identity governance box, which feeds the identity provider. The IdP sends SCIM arrows to two SaaS apps, and only a dashed amber arrow marked nothing to a third app that keeps its own local passwords.",
+              "caption": "HR-driven lifecycle, and the app it misses",
+              "src": "_dot/e66481a041e5073d.svg"
+            }
+          },
+          {
+            "say": "Disable a leaver at the IdP and SSO refuses new sign-ins. The app with its own local passwords, in amber, never hears about it: only SCIM or a person removes that account."
+          }
+        ]
+      },
+      {
+        "say": "A **subject** is anything that acts, so lifecycles are not only for people: **users**, **processes** such as batch jobs, **devices**, and **services** such as APIs, cloud workloads and AI agents. A **service account** often holds a long-lived secret, runs with broad privilege, has no reviewer, and almost never trips the alerts built for human behaviour. NIST says to stop forcing routine password changes on people. Machine secrets are the opposite case: nobody memorises them, so vault them and rotate them automatically.",
+        "beats": [
+          {
+            "say": "A **subject** is anything that acts, so lifecycles are not only for people: **users**, **processes** such as batch jobs, **devices**, and **services** such as APIs, cloud workloads and AI agents."
+          },
+          {
+            "say": "A **service account** often holds a long-lived secret, runs with broad privilege, has no reviewer, and almost never trips the alerts built for human behaviour."
+          },
+          {
+            "say": "NIST says to stop forcing routine password changes on people. Machine secrets are the opposite case: nobody memorises them, so vault them and rotate them automatically."
+          }
+        ]
+      }
+    ],
+    "outro": "A contractor has left, but one door is still open. Choose the fix that closes it for every leaver after her."
+  },
+  {
+    "question": "At Wyrmkeep Logistics, a contractor's IdP account was disabled on her last day. Two weeks later she signs in to a vendor shipping portal that keeps its own local passwords; nothing else still works for her. Which change BEST stops this recurring for every future leaver?",
+    "correct": [
+      "Bring the portal under SSO, or retire it, and let SCIM disable its accounts from the HR feed"
+    ],
+    "incorrect": [
+      "Shorten IdP session lifetimes so that cached sign-ins expire within an hour of any disable event",
+      "Add the portal to the quarterly access review, where managers re-affirm each account",
+      "Require MFA at the IdP for every contractor before any application will let them in"
+    ],
+    "feedback": "The portal sits outside federation, so the IdP disable never reached it; bringing it under SSO (or retiring it) and wiring SCIM to the HR-driven lifecycle makes every future leaver's disable land there automatically. Shorter IdP sessions change nothing for an app that never asks the IdP. A quarterly review would find the account weeks or months late, and still by hand. MFA at the IdP protects federated sign-ins, and this portal is not one."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the stages of one identity's lifecycle, from first to last.",
+    "items": [
+      "Access is requested and approved",
+      "The account is created, a credential issued and the role's baseline assigned",
+      "A manager re-affirms each privilege in a periodic access review",
+      "The account is disabled on the subject's last day",
+      "The account is deleted once the retention period ends"
+    ],
+    "feedback": "Nothing is created before someone approves it; the credential and baseline arrive together at issuance; reviews happen while the identity lives; and a leaver is disabled first and deleted later. The gap between disable and delete is deliberate: during the retention period nobody can use the account, but its records are still there for audit or investigation."
+  },
+  {
+    "type": "cloze",
+    "question": "Orin connects a new SaaS app to Highrook's IdP in two separate ways. {{1}} proves who the user is each time they sign in. {{2}} creates, updates and disables the user's account inside the app itself. And when a mover keeps every old role's access as new roles are added, the build-up is called privilege {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "SSO",
+          "single sign-on",
+          "single sign on",
+          "federation"
+        ],
+        "hint": "acronym"
+      },
+      {
+        "accept": [
+          "SCIM"
+        ],
+        "hint": "acronym"
+      },
+      {
+        "accept": [
+          "creep"
+        ]
+      }
+    ],
+    "feedback": "SSO handles sign-in: the IdP authenticates the user once and the app accepts it. SCIM handles the account's lifecycle inside the app, which is why disabling a leaver at the IdP stops new sign-ins but does not, on its own, remove the app's account. Access that only ever accumulates as people change roles is privilege creep, and the mover workflow exists to stop it."
+  },
+  {
+    "question": "Highrook lets new hires self-provision: an enrolment link, device registration and MFA setup. Attackers have begun phoning the helpdesk as new hires who 'lost the link'. Which controls BEST harden this enrolment path?",
+    "correct": [
+      "Treat MFA resets and re-registration as high-risk requests that need verified identity",
+      "Proof identity before issuing the credential, such as a selfie matched to the ID photo",
+      "Send the one-time enrolment code to the hire's manager or HR record, never the caller"
+    ],
+    "incorrect": [
+      "Let the helpdesk issue a temporary password once the caller quotes an employee ID",
+      "Extend enrolment links to 30 days, so that fewer new hires need to call the helpdesk",
+      "Move MFA setup from enrolment to the first sign-in, so that enrolment is quicker"
+    ],
+    "feedback": "Enrolment and MFA re-registration are the moments social engineers target, so they get verified identity, identity proofing before issuance, and codes delivered through a channel the caller does not control. An employee ID is easy to learn, so a temporary password on that basis hands the account to the caller. A 30-day link is a longer window for a stolen link, and deferring MFA leaves the new account protected by one factor exactly when it is most exposed."
+  },
+  {
+    "question": "An audit finds that the service account behind Highrook's nightly warehouse export has had the same password for four years, and three engineers who have since left knew it. Pip argues that NIST now says passwords should not be changed on a schedule, so nothing needs to change. What is the BEST response?",
+    "correct": [
+      "NIST's rule is for people; vault this secret and rotate it automatically, starting now"
+    ],
+    "incorrect": [
+      "Agree, because NIST advises changing a password only when compromise is suspected",
+      "Convert it to an interactive user account so the user password policy covers it",
+      "Set a 20-character password with symbols, and have an admin change it by hand every 90 days"
+    ],
+    "feedback": "NIST dropped forced changes for people, who answer them with predictable tweaks; machine secrets are the opposite case, so they belong in a vault with automated rotation. Pip's reading also fails on its own terms, since a secret known to departed staff is exactly the suspected exposure that calls for a change. Making it an interactive account adds a human sign-in path to a machine identity, and a manual 90-day checklist is the kind of rotation that fails under operational pressure."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: One sign-in, many applications",
+    "npc": "tariq",
+    "intro": "I'm Tariq, the Beacon-Courier. Federation is mostly messages carried between systems, which is my trade. Here is how one sign-in opens many applications, and how to read the token that comes back.",
+    "steps": [
+      {
+        "say": "**Federation** separates who you are from what you can use. The **identity provider (IdP)**, such as Entra ID or Okta, owns the sign-in. The **service provider (SP)** is the app you actually want. It trusts the IdP's signed statement about you; OIDC and NIST call it a **relying party (RP)**. Follow the numbers. You sign in at the IdP, and its signed **assertion** travels back to the app through your browser. The app checks the IdP's signature and never sees your password. Sign in once and every federated app accepts you without asking again: that is **single sign-on (SSO)**. One disable at the IdP stops new sign-ins to all of them.",
+        "beats": [
+          {
+            "say": "**Federation** separates who you are from what you can use. The **identity provider (IdP)**, such as Entra ID or Okta, owns the sign-in."
+          },
+          {
+            "say": "The **service provider (SP)** is the app you actually want. It trusts the IdP's signed statement about you; OIDC and NIST call it a **relying party (RP)**."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; idp [label=\"IdP\"]; b [label=\"Browser\"]; sp [label=\"App (SP)\"]; b -> sp [label=\" 1 open app\"]; sp -> b [label=\" 2 go to IdP\"]; b -> idp [label=\" 3 sign in\"]; idp -> b [label=\" 4 signed\\n assertion\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; b -> sp [label=\" 5 assertion\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; }",
+              "alt": "Three boxes: IdP at the top, Browser in the middle, App at the bottom. Numbered arrows run 1 Browser to App, 2 App to Browser, 3 Browser to IdP, 4 IdP to Browser carrying a signed assertion, 5 Browser to App with the assertion.",
+              "caption": "A federated sign-in",
+              "src": "_dot/e790f0186477d3c5.svg"
+            }
+          },
+          {
+            "say": "Follow the numbers. You sign in at the IdP, and its signed **assertion** travels back to the app through your browser. The app checks the IdP's signature and never sees your password."
+          },
+          {
+            "say": "Sign in once and every federated app accepts you without asking again: that is **single sign-on (SSO)**. One disable at the IdP stops new sign-ins to all of them."
+          }
+        ]
+      },
+      {
+        "say": "Three protocols carry these messages. **SAML 2.0** uses signed XML assertions and is common in enterprise SaaS. **OAuth 2.0** handles **delegated authorization**: it issues an **access token** that lets an app call an API on your behalf, such as reading your calendar. On its own it does not say who you are. **OpenID Connect (OIDC)** layers **authentication** on top of OAuth, adding an **ID token** that says who signed in. These tokens are signed **JSON Web Tokens (JWTs)**.",
+        "beats": [
+          {
+            "say": "Three protocols carry these messages. **SAML 2.0** uses signed XML assertions and is common in enterprise SaaS."
+          },
+          {
+            "say": "**OAuth 2.0** handles **delegated authorization**: it issues an **access token** that lets an app call an API on your behalf, such as reading your calendar. On its own it does not say who you are."
+          },
+          {
+            "say": "**OpenID Connect (OIDC)** layers **authentication** on top of OAuth, adding an **ID token** that says who signed in. These tokens are signed **JSON Web Tokens (JWTs)**."
+          }
+        ],
+        "check": {
+          "prompt": "A partner app wants to post events to a team's shared calendar through an API, and needs nothing else. Which token does that job?",
+          "answer": "An OAuth access token",
+          "wrong": [
+            "An OIDC ID token",
+            "A SAML assertion"
+          ],
+          "why": "Acting on someone's data through an API is delegated authorization, which is what an access token grants. An ID token or an assertion says who the user is, which this partner never asked."
+        }
+      },
+      {
+        "say": "Most OIDC sign-ins use the **authorization code flow**. The app sends your browser to the IdP, naming its **redirect URI**: the exact address the answer must come back to. You authenticate at the IdP, which returns your browser to that redirect URI with a short-lived **authorization code**, not the tokens themselves. The app then trades the code for tokens directly at the IdP's **token endpoint**. With **PKCE** (Proof Key for Code Exchange) it also shows a secret verifier, so a stolen code is useless. Before trusting the ID token, the app checks its signature against the IdP's public keys, published at the IdP's **JWKS** endpoint.",
+        "beats": [
+          {
+            "say": "Most OIDC sign-ins use the **authorization code flow**. The app sends your browser to the IdP, naming its **redirect URI**: the exact address the answer must come back to."
+          },
+          {
+            "say": "You authenticate at the IdP, which returns your browser to that redirect URI with a short-lived **authorization code**, not the tokens themselves."
+          },
+          {
+            "say": "The app then trades the code for tokens directly at the IdP's **token endpoint**. With **PKCE** (Proof Key for Code Exchange) it also shows a secret verifier, so a stolen code is useless."
+          },
+          {
+            "say": "Before trusting the ID token, the app checks its signature against the IdP's public keys, published at the IdP's **JWKS** endpoint."
+          }
+        ]
+      },
+      {
+        "say": "A JWT is three base64url parts: header, payload and signature. Decode an ID token's payload and you see its **claims**: `iss` is the issuer, `sub` the user it is about, and `aud` the app it was minted for, named by that app's registered **client ID**. `iat` and `exp` are issue and expiry times, in Unix seconds. So this token lives 3,600 seconds, one hour. A relying party rejects it if the signature, `iss`, `aud` or `exp` fails its checks.",
+        "beats": [
+          {
+            "say": "A JWT is three base64url parts: header, payload and signature. Decode an ID token's payload and you see its **claims**:"
+          },
+          {
+            "code": "{\n  \"iss\": \"https://login.guildhall.example\",\n  \"sub\": \"u-48213\",\n  \"aud\": \"ledger-web\",\n  \"iat\": 1767261600,\n  \"exp\": 1767265200\n}",
+            "language": "decoded ID token payload"
+          },
+          {
+            "say": "`iss` is the issuer, `sub` the user it is about, and `aud` the app it was minted for, named by that app's registered **client ID**. `iat` and `exp` are issue and expiry times, in Unix seconds."
+          },
+          {
+            "say": "So this token lives 3,600 seconds, one hour. A relying party rejects it if the signature, `iss`, `aud` or `exp` fails its checks."
+          }
+        ],
+        "check": {
+          "prompt": "The app's clock reads 1767264000. How long does this token have left?",
+          "answer": "20 minutes",
+          "wrong": [
+            "60 minutes",
+            "40 minutes"
+          ],
+          "why": "Subtract the clock from `exp`: 1767265200 minus 1767264000 is 1,200 seconds, which is 20 minutes. The hour counted from `iat` is the whole lifetime, and 40 minutes of it are gone."
+        }
+      }
+    ],
+    "outro": "A different token, a different clock. Work out what is left of it."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An app receives an ID token whose decoded payload includes\n\n  \"iat\": {{iat}},\n  \"exp\": {{exp}}\n\nThe app's clock reads {{now}}. How many minutes of validity does the token have left?",
+    "variables": {
+      "iat": {
+        "values": [
+          1767254400,
+          1767258000,
+          1767261600,
+          1767265200
+        ]
+      },
+      "life": {
+        "values": [
+          30,
+          60,
+          90
+        ]
+      },
+      "used": {
+        "min": 5,
+        "max": 25
+      }
+    },
+    "derived": {
+      "exp": "iat + life * 60",
+      "now": "iat + used * 60"
+    },
+    "answer": {
+      "expr": "(exp - now) / 60",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Time left is exp minus the clock: {{exp}} minus {{now}} seconds, which is {{expected}} minutes. The iat claim says only when the token was issued; the relying party rejects the token once its clock passes exp."
+  },
+  {
+    "type": "ordering",
+    "question": "Order an OIDC authorization-code sign-in, from the first step to the last.",
+    "items": [
+      "The app redirects the browser to the IdP, naming its registered redirect URI",
+      "The user authenticates at the IdP, with MFA if policy requires it",
+      "The IdP returns the browser to the redirect URI with a one-time code",
+      "The app trades the code and its PKCE verifier for tokens at the token endpoint",
+      "The app checks the ID token's signature with JWKS keys, then iss, aud and exp"
+    ],
+    "feedback": "The browser is sent to the IdP first, the user proves who they are there, and the IdP answers with a code, never the tokens, at the exact registered redirect URI. The app then redeems the code at the token endpoint, where the PKCE verifier proves it is the same client that started the flow, and it validates the ID token before trusting a single claim in it."
+  },
+  {
+    "type": "cloze",
+    "question": "Orin is wiring three integrations to Highrook's IdP. A reporting tool that must read users' files through an API, on their behalf, needs {{1}}, which issues access tokens for delegated authorization. A new web portal that must know who signed in uses {{2}}, which adds an ID token on top of the first. A 2014-era SaaS app that expects a signed XML assertion speaks {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "OAuth",
+          "OAuth 2.0",
+          "OAuth2",
+          "OAuth 2"
+        ],
+        "hint": "protocol"
+      },
+      {
+        "accept": [
+          "OIDC",
+          "OpenID Connect",
+          "OpenID"
+        ],
+        "hint": "protocol"
+      },
+      {
+        "accept": [
+          "SAML",
+          "SAML 2.0",
+          "SAML2"
+        ],
+        "hint": "protocol"
+      }
+    ],
+    "feedback": "OAuth 2.0 is delegated authorization: its access token lets the reporting tool call the API as the user, without saying who that user is. OpenID Connect adds authentication, an ID token that names the user, on top of OAuth. SAML 2.0 carries signed XML assertions and remains common in older enterprise SaaS."
+  },
+  {
+    "question": "The diagram shows one SAML sign-in to a SaaS app, hop by hop. Which lettered hops carry the user's password, and which carry the signed assertion?",
+    "correct": [
+      "Password on C only; assertion on D, then E"
+    ],
+    "incorrect": [
+      "Password on C and E; assertion on D only",
+      "Password on A and C; assertion on F, direct",
+      "Password on C only; assertion on F, direct"
+    ],
+    "feedback": "The user types the password only to the IdP (C). The IdP's signed assertion comes back to the browser (D), which posts it to the app (E), so the app validates a signature and never sees a password. F is the trust set up once in advance, when the IdP and app exchange metadata and the signing certificate; no sign-in travels over it, which is why an option sending the assertion 'direct' misreads the flow.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; nodesep=0.5; ranksep=0.6; b [label=\"Browser\"]; idp [label=\"IdP\"]; app [label=\"App\"]; b -> idp [label=\" C\"]; idp -> b [label=\" D\"]; b -> app [label=\" A: open app\"]; app -> b [label=\" B: redirect\"]; b -> app [label=\" E\"]; {rank=same; idp; app} idp -> app [label=\"F: set up once\", style=dashed, dir=none]; }",
+      "alt": "Browser at the top, IdP and App side by side below it. Arrow A runs from Browser to App and is marked open app; B runs from App back to Browser and is marked redirect; C runs from Browser to IdP; D from IdP to Browser; E from Browser to App. A dashed line F, marked set up once, joins IdP and App.",
+      "caption": "One SAML sign-in, lettered by hop",
+      "src": "_dot/b61a5d169cb6c5b1.svg"
+    }
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Five ways to say yes",
+    "npc": "val",
+    "intro": "Authentication asks who you are; authorization asks what you may do. This scene covers five models for the second question, the two components that apply the answer, and conditional access.",
+    "steps": [
+      {
+        "say": "Take one request at a law firm: may Ines, a paralegal, open the Ortega case file? Each model answers it differently. Under **DAC** (discretionary access control), the file's owner decides. The partner who opened it adds Ines to its access list, or forgets to. Under **RBAC** (role-based access control), Ines inherits whatever the Paralegal role holds. It scales well, until the firm has hundreds of near-identical roles: **role explosion**.",
+        "beats": [
+          {
+            "say": "Take one request at a law firm: may Ines, a paralegal, open the Ortega case file? Each model answers it differently."
+          },
+          {
+            "say": "Under **DAC** (discretionary access control), the file's owner decides. The partner who opened it adds Ines to its access list, or forgets to."
+          },
+          {
+            "say": "Under **RBAC** (role-based access control), Ines inherits whatever the Paralegal role holds. It scales well, until the firm has hundreds of near-identical roles: **role explosion**."
+          }
+        ]
+      },
+      {
+        "say": "Under **ABAC** (attribute-based access control), a policy weighs attributes of the subject, the object, the action and the environment: assigned to this case, file not sealed, managed laptop, office hours. ABAC is the most expressive model, but it is only as good as its attribute data. One wrong tag on a file grants or denies in surprising ways. Under **MAC** (mandatory access control), the system stamps the file with a label such as Sealed, and only subjects cleared for that label may read it. No owner can override the label. **Rule-based** control applies one fixed rule to every request, whoever asks: no logons to the records server after 8 PM. RBAC means role-based, so rule-based is always spelled out.",
+        "beats": [
+          {
+            "say": "Under **ABAC** (attribute-based access control), a policy weighs attributes of the subject, the object, the action and the environment: assigned to this case, file not sealed, managed laptop, office hours."
+          },
+          {
+            "say": "ABAC is the most expressive model, but it is only as good as its attribute data. One wrong tag on a file grants or denies in surprising ways."
+          },
+          {
+            "say": "Under **MAC** (mandatory access control), the system stamps the file with a label such as Sealed, and only subjects cleared for that label may read it. No owner can override the label."
+          },
+          {
+            "say": "**Rule-based** control applies one fixed rule to every request, whoever asks: no logons to the records server after 8 PM. RBAC means role-based, so rule-based is always spelled out."
+          }
+        ],
+        "check": {
+          "prompt": "The partner who opened the Ortega file shares it with a consultant from another office. Which model made that decision?",
+          "answer": "DAC",
+          "wrong": [
+            "RBAC",
+            "Rule-based"
+          ],
+          "why": "The owner used her own discretion over her own resource. No role and no fixed rule was consulted, which is exactly DAC's flexibility and its weakness."
+        }
+      },
+      {
+        "say": "Next, split the decision from its enforcement. A **policy decision point (PDP)** evaluates the policy and returns permit or deny. A **policy enforcement point (PEP)**, such as a gateway, proxy, app middleware or OS kernel, actually lets the request through or blocks it. When every app keeps its own access logic, policy drifts apart. When they all ask one PDP, a policy change applies everywhere at once.",
+        "beats": [
+          {
+            "say": "Next, split the decision from its enforcement. A **policy decision point (PDP)** evaluates the policy and returns permit or deny."
+          },
+          {
+            "say": "A **policy enforcement point (PEP)**, such as a gateway, proxy, app middleware or OS kernel, actually lets the request through or blocks it."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; u [label=\"Ines\"]; pep [label=\"Gateway\\n(PEP)\"]; pdp [label=\"Policy engine\\n(PDP)\"]; app [label=\"Case-file app\"]; sig [label=\"Attributes:\\nIdP, HR, device\"]; u -> pep [label=\" request\"]; pep -> pdp [label=\" permit?\"]; pdp -> pep [label=\" decision\"]; pep -> app [label=\" if permitted\"]; sig -> pdp; {rank=same; pep; pdp} }",
+              "alt": "Ines sends a request to a gateway marked PEP. The gateway asks a policy engine marked PDP 'permit?' and gets a decision back; the engine draws on attributes from the IdP, HR and the device. Only if permitted does the request pass on to the case-file app.",
+              "caption": "Decision and enforcement, split",
+              "src": "_dot/003627f73c42e026.svg"
+            }
+          },
+          {
+            "say": "When every app keeps its own access logic, policy drifts apart. When they all ask one PDP, a policy change applies everywhere at once."
+          }
+        ]
+      },
+      {
+        "say": "**Conditional access** is ABAC at the identity provider. It weighs **user-to-device binding**, geographic location, time of day, and **device trust** such as patch level, disk encryption and EDR health. The answer need not be yes or no. It can be permit with an **obligation**: pass a **step-up** challenge with a stronger factor, or work read-only for two hours. Roll a policy out in **report-only mode** first: it logs who would have been blocked, and blocks no one. Exclude one or two monitored **break-glass** accounts, emergency admin accounts, so one bad rule cannot lock out every administrator. VPNs and proxies distort apparent location, so treat location as one risk signal, not the only gate.",
+        "beats": [
+          {
+            "say": "**Conditional access** is ABAC at the identity provider. It weighs **user-to-device binding**, geographic location, time of day, and **device trust** such as patch level, disk encryption and EDR health."
+          },
+          {
+            "say": "The answer need not be yes or no. It can be permit with an **obligation**: pass a **step-up** challenge with a stronger factor, or work read-only for two hours."
+          },
+          {
+            "say": "Roll a policy out in **report-only mode** first: it logs who would have been blocked, and blocks no one."
+          },
+          {
+            "say": "Exclude one or two monitored **break-glass** accounts, emergency admin accounts, so one bad rule cannot lock out every administrator."
+          },
+          {
+            "say": "VPNs and proxies distort apparent location, so treat location as one risk signal, not the only gate."
+          }
+        ]
+      }
+    ],
+    "outro": "Five models, five new requests. Match each request to the model deciding it."
+  },
+  {
+    "type": "matching",
+    "question": "Match each access control model to the request it is deciding.",
+    "pairs": [
+      {
+        "term": "DAC",
+        "definition": "A project lead shares her own design folder with two contractors"
+      },
+      {
+        "term": "RBAC",
+        "definition": "Each new Accounts Payable clerk inherits the AP-Clerk entitlements"
+      },
+      {
+        "term": "ABAC",
+        "definition": "A policy weighs department, file tag, device health and time per request"
+      },
+      {
+        "term": "MAC",
+        "definition": "A report labelled Secret opens only for subjects cleared to Secret"
+      },
+      {
+        "term": "Rule-based",
+        "definition": "A router accepts SSH only from the admin subnet, whoever connects"
+      }
+    ],
+    "feedback": "The owner choosing who may see her folder is DAC. Inheriting a bundle of rights by job role is RBAC. Weighing several attributes fresh on each request is ABAC. A system label no user can override is MAC. One fixed rule applied to everyone, regardless of role or ownership, is rule-based control, which is why a firewall or router ACL is its classic example."
+  },
+  {
+    "question": "Highrook's ERP has grown to 3,400 roles such as AP-Clerk-West-Senior-ReadOnly, and each new region adds hundreds more. Orin must enforce 'clerks approve invoices only for their own region, under their approval limit, from a managed device' without creating new roles. Which approach BEST fits?",
+    "correct": [
+      "An ABAC policy over region, approval limit and device attributes, checked per request"
+    ],
+    "incorrect": [
+      "One broad AP-Clerk role, with managers re-affirming each clerk's access every quarter",
+      "Invoice owners granting approval rights to colleagues they trust, invoice by invoice",
+      "MAC labels for each region that clerks cannot override, assigned by the security team"
+    ],
+    "feedback": "Role explosion is RBAC's known failure, and ABAC answers it by evaluating attributes of the subject, object and context on each request, so region, limit and device posture need no roles of their own; its price is keeping that attribute data clean. One broad role with quarterly reviews gives up the precision the requirement asks for. Letting invoice owners grant rights is DAC, with inconsistent results. MAC labels could fence off regions, but they are rigid, heavy to administer, and cannot express an approval limit or device health."
+  },
+  {
+    "type": "cloze",
+    "question": "Highrook puts a zero-trust proxy in front of its file servers. The proxy, which lets each session through or blocks it, is the {{1}}. It asks a central engine, the {{2}}, which evaluates the policy and can answer permit with an {{3}}, such as 'only after a step-up challenge'.",
+    "blanks": [
+      {
+        "accept": [
+          "PEP",
+          "policy enforcement point"
+        ],
+        "hint": "acronym"
+      },
+      {
+        "accept": [
+          "PDP",
+          "policy decision point"
+        ],
+        "hint": "acronym"
+      },
+      {
+        "accept": [
+          "obligation",
+          "obligations"
+        ]
+      }
+    ],
+    "feedback": "The component in the request path that allows or blocks is the policy enforcement point; the one that evaluates policy and returns the decision is the policy decision point. A decision need not be a bare permit or deny: permit with an obligation, such as a step-up or a read-only session, lets context tighten access without refusing it outright."
+  },
+  {
+    "question": "Highrook changed a policy in component B last week. Staff report that the change took effect for Payroll and Travel, but not for expense claims. Reading the diagram, which component explains the gap?",
+    "correct": [
+      "C, because the Expense app reads attributes and decides access itself"
+    ],
+    "incorrect": [
+      "A, because a gateway enforces decisions it did not evaluate itself",
+      "B, because a single engine serving many apps makes policies drift",
+      "D, because it sends the policy engine and Expense app different data"
+    ],
+    "feedback": "Payroll and Travel sit behind gateway A, a PEP that asks policy engine B, the PDP, so a change in B reaches both at once. The Expense app, C, takes attributes straight from D and makes its own decision, so B's change never touches it: that is the policy drift a central PDP exists to prevent. A enforcing decisions it did not make is the intended design, a central engine is the cure for drift rather than its cause, and different data from D would not stop B's policy from applying.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; u [label=\"Users\"]; a [label=\"A\\ngateway\"]; b [label=\"B\\npolicy engine\"]; p [label=\"Payroll\"]; t [label=\"Travel\"]; c [label=\"C\\nExpense app\"]; d [label=\"D\\nHR and device\\nattributes\"]; u -> a; u -> c; a -> b [label=\" permit?\"]; a -> p; a -> t; d -> b; d -> c; {rank=same; a; c} {rank=same; b; p; t} }",
+      "alt": "Users connect to box A, a gateway, and separately straight to box C, the Expense app. Gateway A sends a 'permit?' query to box B, a policy engine, and passes traffic on to Payroll and Travel. Box D, HR and device attributes, feeds both B and C.",
+      "caption": "Highrook's access path",
+      "src": "_dot/ac83fca859f9b110.svg"
+    }
+  },
+  {
+    "question": "Highrook will enforce a new conditional access policy: block sign-ins to the finance apps from unmanaged devices or from outside three approved countries. Which steps BEST protect the rollout from outages and from false confidence?",
+    "correct": [
+      "Run the policy in report-only mode first and review who it would have blocked",
+      "Exclude two monitored break-glass accounts, so one bad rule cannot lock out every admin",
+      "Treat country as one risk signal, since VPNs and proxies distort apparent location"
+    ],
+    "incorrect": [
+      "Include the emergency admin accounts as well, so that no account sits outside the policy",
+      "Make the country check the deciding gate, since device posture data is often stale"
+    ],
+    "feedback": "Report-only mode shows who would be blocked before anyone is; a small, monitored set of break-glass accounts keeps one mistaken rule from locking out every administrator; and location is a noisy signal that VPNs and proxies bend. Pulling the emergency accounts into the policy removes the escape hatch the exclusion exists to provide. Making country the deciding gate leans hardest on the weakest signal, when device trust is the stronger evidence."
+  },
+  {
+    "type": "fill_blank",
+    "question": "A monitored emergency administrator account, kept outside conditional access so that a faulty policy or an IdP outage cannot lock out every admin, is called a ___ account.",
+    "correct": [
+      "break-glass",
+      "break glass",
+      "breakglass"
+    ],
+    "case_sensitive": false,
+    "feedback": "Break-glass accounts are the deliberate exception: very few, excluded from the policies that could fail, alerting the moment they are used, and reset after each use. That accountability is what keeps an emergency path from becoming a permanent backdoor."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How strong is the proof?",
+    "npc": "val",
+    "intro": "Some decisions need stronger evidence than a password. This scene grades that evidence: factors, passkeys, biometrics, device attestation and identity proofing, and how NIST scores them.",
+    "steps": [
+      {
+        "say": "**Multifactor authentication (MFA)** needs proof from at least two different categories: something you know, something you have, something you are. Two passwords are still one factor. Passwords still matter, and NIST SP 800-63-4 sets the rules: at least 15 characters when a password is the only factor, 8 when it is part of MFA, and accept 64 or more. No composition rules such as forced symbols, no calendar-based changes, and every new password screened against a **blocklist** of common and breached values.",
+        "beats": [
+          {
+            "say": "**Multifactor authentication (MFA)** needs proof from at least two different categories: something you know, something you have, something you are. Two passwords are still one factor."
+          },
+          {
+            "say": "Passwords still matter, and NIST SP 800-63-4 sets the rules: at least 15 characters when a password is the only factor, 8 when it is part of MFA, and accept 64 or more."
+          },
+          {
+            "say": "No composition rules such as forced symbols, no calendar-based changes, and every new password screened against a **blocklist** of common and breached values."
+          }
+        ],
+        "check": {
+          "prompt": "Which sign-in is genuinely two factors?",
+          "answer": "A smart card plus the PIN that unlocks it",
+          "wrong": [
+            "A password plus a memorised PIN",
+            "A password plus a security question"
+          ],
+          "why": "The card is something you have and the PIN something you know. The other two pair a password with another thing you know: one category, so one factor."
+        }
+      },
+      {
+        "say": "Factors differ in strength. SMS codes and push approvals can be phished: a look-alike proxy page relays them to the real site as the user types or taps. Push has a second weakness, **MFA fatigue**: the attacker fires prompt after prompt until the user taps Approve to make it stop. **Number matching**, where the user types the number shown on the sign-in screen, blunts fatigue. It is still not phishing-resistant: a proxy page can relay the number too. A **passkey** (**FIDO2/WebAuthn**) is **phishing-resistant**: the browser signs a challenge with a private key bound to the real site's domain, so a look-alike site gets nothing it can use. A **device-bound** passkey's key never leaves its hardware; a **syncable** one is backed up to a cloud keychain. NIST accepts syncable ones at **AAL2**; its top level, **AAL3**, needs a non-exportable key.",
+        "beats": [
+          {
+            "say": "Factors differ in strength. SMS codes and push approvals can be phished: a look-alike proxy page relays them to the real site as the user types or taps."
+          },
+          {
+            "say": "Push has a second weakness, **MFA fatigue**: the attacker fires prompt after prompt until the user taps Approve to make it stop."
+          },
+          {
+            "say": "**Number matching**, where the user types the number shown on the sign-in screen, blunts fatigue. It is still not phishing-resistant: a proxy page can relay the number too."
+          },
+          {
+            "say": "A **passkey** (**FIDO2/WebAuthn**) is **phishing-resistant**: the browser signs a challenge with a private key bound to the real site's domain, so a look-alike site gets nothing it can use."
+          },
+          {
+            "say": "A **device-bound** passkey's key never leaves its hardware; a **syncable** one is backed up to a cloud keychain. NIST accepts syncable ones at **AAL2**; its top level, **AAL3**, needs a non-exportable key."
+          }
+        ]
+      },
+      {
+        "say": "A biometric system stores a **template**, a mathematical summary, not the raw image. Matching on the user's own device leaves no central database of faces to breach. Two errors trade off. The **false accept rate (FAR)** is how often an impostor gets in; the **false reject rate (FRR)**, how often the real user is turned away. Raise the threshold and FAR falls while FRR rises. Where the two are equal is the **crossover error rate (CER)**, a common way to compare systems. Biometrics are not secrets: a face can be photographed. Add **presentation attack detection (PAD)**, a liveness check, and let the biometric only unlock something the user holds. The rates come from trials: 6 impostors accepted out of 2,000 impostor attempts is a FAR of 0.3%.",
+        "beats": [
+          {
+            "say": "A biometric system stores a **template**, a mathematical summary, not the raw image. Matching on the user's own device leaves no central database of faces to breach."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; cap [label=\"Capture\\n(sensor)\"]; feat [label=\"Extract\\nfeatures\"]; cmp [label=\"Compare with\\nstored template\"]; sc [label=\"Score vs\\nthreshold\"]; ok [label=\"Accept\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; no [label=\"Reject\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; cap -> feat -> cmp -> sc; sc -> ok [label=\" at or above\"]; sc -> no [label=\" below\"]; }",
+              "alt": "A top-down flow: capture at the sensor, extract features, compare with the stored template, then score against a threshold, branching to accept when at or above it and reject when below.",
+              "caption": "From sensor to decision",
+              "src": "_dot/74392829770890b4.svg"
+            }
+          },
+          {
+            "say": "Two errors trade off. The **false accept rate (FAR)** is how often an impostor gets in; the **false reject rate (FRR)**, how often the real user is turned away."
+          },
+          {
+            "say": "Raise the threshold and FAR falls while FRR rises. Where the two are equal is the **crossover error rate (CER)**, a common way to compare systems."
+          },
+          {
+            "say": "Biometrics are not secrets: a face can be photographed. Add **presentation attack detection (PAD)**, a liveness check, and let the biometric only unlock something the user holds."
+          },
+          {
+            "say": "The rates come from trials: 6 impostors accepted out of 2,000 impostor attempts is a FAR of 0.3%."
+          }
+        ],
+        "check": {
+          "prompt": "The same trial had 1,000 genuine attempts, and 20 of them were rejected. What is the FRR?",
+          "answer": "2%",
+          "wrong": [
+            "0.2%",
+            "20%"
+          ],
+          "why": "FRR counts genuine users turned away: 20 out of 1,000 is 0.02, which is 2%."
+        }
+      },
+      {
+        "say": "**Attestation** is cryptographic evidence that a device or workload is in a trustworthy state: it booted with **Secure Boot**, its **TPM** is healthy, its EDR agent is running. It moves the decision from trusting a password to trusting evidence about the environment, and conditional access can demand it. **Identity proofing** is graded too, **IAL1** to **IAL3**. IAL2 needs stronger evidence, such as an automated selfie-to-ID match, and can be remote; IAL3 needs on-site, attended proofing. Last, one identity often opens both a **physical** access control, such as a badge reader, turnstile or mantrap, and a **logical** one, such as the jump host inside. Drive both from one lifecycle, and a single revocation removes the badge and the account together.",
+        "beats": [
+          {
+            "say": "**Attestation** is cryptographic evidence that a device or workload is in a trustworthy state: it booted with **Secure Boot**, its **TPM** is healthy, its EDR agent is running."
+          },
+          {
+            "say": "It moves the decision from trusting a password to trusting evidence about the environment, and conditional access can demand it."
+          },
+          {
+            "say": "**Identity proofing** is graded too, **IAL1** to **IAL3**. IAL2 needs stronger evidence, such as an automated selfie-to-ID match, and can be remote; IAL3 needs on-site, attended proofing."
+          },
+          {
+            "say": "Last, one identity often opens both a **physical** access control, such as a badge reader, turnstile or mantrap, and a **logical** one, such as the jump host inside."
+          },
+          {
+            "say": "Drive both from one lifecycle, and a single revocation removes the badge and the account together."
+          }
+        ]
+      }
+    ],
+    "outro": "A new pilot, new counts. Work out its false accept rate."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Greycloak Apothecary pilots face unlock on ward tablets. The trial logs {{imp}} impostor attempts, {{fa}} of them wrongly accepted, and {{gen}} genuine attempts, {{fr}} of them wrongly rejected. What is the false accept rate, as a percentage? Give up to two decimal places.",
+    "variables": {
+      "imp": {
+        "values": [
+          2000,
+          2500,
+          5000
+        ]
+      },
+      "fa": {
+        "min": 2,
+        "max": 24
+      },
+      "gen": {
+        "values": [
+          800,
+          1000,
+          1200
+        ]
+      },
+      "fr": {
+        "values": [
+          6,
+          9,
+          14,
+          22,
+          31
+        ]
+      }
+    },
+    "answer": {
+      "expr": "fa * 100 / imp",
+      "tolerance_abs": 0.001,
+      "display_decimals": 2
+    },
+    "feedback_template": "FAR counts impostors let in: {{fa}} of {{imp}} impostor attempts is {{expected}}%. The {{fr}} genuine users turned away belong to the false reject rate, a different number for a different failure."
+  },
+  {
+    "question": "A phishing kit aimed at Marketstone Exchange proxied the real sign-in page and relayed every second factor in real time, number-matched push prompts included. Selene wants a factor that defeats this attack for 300 traders by next quarter, without replacing the IdP. Which BEST fits?",
+    "correct": [
+      "FIDO2 passkeys, whose signed challenge is bound to the real site's domain"
+    ],
+    "incorrect": [
+      "Number matching, with the sign-in location and app details shown in each push prompt",
+      "SMS one-time codes sent to a phone number each trader has registered",
+      "Passwords of at least 15 characters, screened against a breached list"
+    ],
+    "feedback": "A passkey's signature covers the domain the browser is actually on, so a proxy page on a look-alike domain receives nothing the real site will accept; most IdPs support FIDO2, so it fits the timeline. Number matching was already in place and was relayed with everything else: it blunts MFA fatigue but is not phishing-resistant. An SMS code is relayed just as easily. A strong password is still one factor, and the kit captured passwords too."
+  },
+  {
+    "type": "fill_blank",
+    "question": "When two biometric readers are compared, the single figure most often used is the error rate at the threshold where false accepts equal false rejects: the ___.",
+    "correct": [
+      "CER",
+      "crossover error rate",
+      "crossover",
+      "EER",
+      "equal error rate"
+    ],
+    "case_sensitive": false,
+    "feedback": "The crossover error rate (also called the equal error rate) is where the FAR and FRR curves meet; a lower CER means a more accurate system overall. In deployment, though, the threshold is tuned to the resource: a vault door accepts a higher FRR to push its FAR down."
+  },
+  {
+    "question": "Stormhall Aegis must meet AAL3 for the administrators of a classified program. The help desk proposes syncable passkeys in a cloud keychain, because they survive a lost phone. What is the BEST response?",
+    "correct": [
+      "Use device-bound keys instead, since AAL3 needs a non-exportable authenticator"
+    ],
+    "incorrect": [
+      "Approve them, since being phishing-resistant is what AAL3 requires of a key",
+      "Approve them, provided each new device also confirms a code sent by SMS",
+      "Use 15-character passwords screened against a blocklist, which reach AAL3"
+    ],
+    "feedback": "NIST SP 800-63-4 accepts syncable passkeys at AAL2, but AAL3 requires an authenticator whose key cannot be exported, which a cloud-synced key by design can be; a device-bound security key with a registered spare handles the lost-phone worry. Phishing resistance is necessary for AAL3 but not sufficient. An SMS code adds a weak, phishable step without making the key non-exportable. A password alone is a single factor and sits at the bottom of the scale."
+  },
+  {
+    "question": "Wren is rewriting Highrook's password standard to follow NIST SP 800-63-4. Which rules belong in it?",
+    "correct": [
+      "At least 15 characters wherever the password is the only factor",
+      "Screen each new password against lists of common and breached values",
+      "Require a change only when compromise of the password is suspected"
+    ],
+    "incorrect": [
+      "Require a capital letter, a digit and a symbol in each new password",
+      "Expire each password after 90 days to limit how long a stolen one works"
+    ],
+    "feedback": "SP 800-63-4 favours length over complexity (15 characters when the password stands alone, 8 inside MFA, with 64 or more accepted), screens new passwords against blocklists, and asks for a change only on suspected compromise. Composition rules and calendar expiry are exactly what it dropped: users meet them with predictable patterns such as Password1! becoming Password2!, which adds no real strength."
+  },
+  {
+    "question": "Orin's conditional access policy must check device attestation before a laptop may reach the source-code system. Which signals count as attestation of the device's state?",
+    "correct": [
+      "A TPM-backed report that the laptop booted with Secure Boot enabled",
+      "Evidence that the corporate EDR agent is installed and running"
+    ],
+    "incorrect": [
+      "The user entered the right password and approved the push prompt",
+      "The laptop's IP address falls inside the corporate VPN address range",
+      "The HR system lists the user's job title as Software Engineer"
+    ],
+    "feedback": "Attestation is cryptographic evidence about the device or workload itself: a TPM-backed boot measurement and a verified, running EDR agent describe the laptop's state. A password and push describe the user, not the machine. An IP range says where traffic came from, which a compromised or unmanaged device can share. A job title is a subject attribute that ABAC may also use, but it says nothing about whether the laptop is healthy."
+  },
+  {
+    "question": "At Thornwood Civic Trust, a dismissed technician's network accounts were disabled within minutes, yet his badge opened the server-room door nine days later. Facilities issues badges from its own separate list. Which change BEST closes this gap?",
+    "correct": [
+      "Drive badge access from the same identity lifecycle, so one revocation ends both"
+    ],
+    "incorrect": [
+      "Install a mantrap at the server-room door so that tailgating is caught on camera",
+      "Have facilities reconcile active badges against the HR list once every quarter",
+      "Add a PIN pad to the door reader, so that a badge alone no longer opens the door"
+    ],
+    "feedback": "The logical controls worked and the physical one did not, because the badge system was not fed by the same lifecycle; unifying them means one HR-driven revocation removes the badge and the accounts together. A mantrap stops tailgaters, but this man had a valid badge. A quarterly reconciliation would have left his badge live for weeks. A PIN pad adds a factor he already knows, so it would not have stopped him."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Privilege on a timer",
+    "npc": "val",
+    "intro": "A few accounts can wreck the whole enterprise: domain admins, cloud root, the pipeline that deploys to production. This scene is about using that power without anyone holding it all the time, and about the machine secrets beside it.",
+    "steps": [
+      {
+        "say": "**Privileged access management (PAM)** answers one question: how do people use admin rights without holding them permanently? Permanent rights are called **standing privilege**. A **vault** holds privileged passwords, checked out for a set window and rotated afterward. A **session broker** or jump host records keystrokes and screens, and high-impact actions need a second approver. PAM is the most attractive target in the building, so it gets phishing-resistant MFA and dedicated admin workstations of its own.",
+        "beats": [
+          {
+            "say": "**Privileged access management (PAM)** answers one question: how do people use admin rights without holding them permanently? Permanent rights are called **standing privilege**."
+          },
+          {
+            "say": "A **vault** holds privileged passwords, checked out for a set window and rotated afterward. A **session broker** or jump host records keystrokes and screens, and high-impact actions need a second approver."
+          },
+          {
+            "say": "PAM is the most attractive target in the building, so it gets phishing-resistant MFA and dedicated admin workstations of its own."
+          }
+        ]
+      },
+      {
+        "say": "**Just-in-time (JIT)** access replaces standing membership. The admin role is made eligible rather than permanent; it is activated on request, often with approval, and expires by itself. **Just-enough access (JEA)** narrows what an activation can do. **Endpoint privilege management (EPM)** does the same on workstations: no permanent local admin, only approved apps elevated on demand. Break-glass accounts stay the exception: few, monitored, alerting the moment they are used, and their credentials reset after each use.",
+        "beats": [
+          {
+            "say": "**Just-in-time (JIT)** access replaces standing membership. The admin role is made eligible rather than permanent; it is activated on request, often with approval, and expires by itself."
+          },
+          {
+            "say": "**Just-enough access (JEA)** narrows what an activation can do. **Endpoint privilege management (EPM)** does the same on workstations: no permanent local admin, only approved apps elevated on demand."
+          },
+          {
+            "say": "Break-glass accounts stay the exception: few, monitored, alerting the moment they are used, and their credentials reset after each use."
+          }
+        ]
+      },
+      {
+        "say": "Mature shops add a **tiered administration model**. **Tier 0** is identity itself: domain controllers, the IdP, PAM, certificate authorities. **Tier 1** is business servers; **Tier 2**, user workstations. The rule: credentials and sessions never cross tiers downward. A Tier 0 account signs in only to Tier 0 systems, from a dedicated admin workstation.",
+        "beats": [
+          {
+            "say": "Mature shops add a **tiered administration model**. **Tier 0** is identity itself: domain controllers, the IdP, PAM, certificate authorities. **Tier 1** is business servers; **Tier 2**, user workstations."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; adm [label=\"Tier 0 admin\\naccount\"]; t0 [label=\"Tier 0\\nDCs, IdP, PAM, CA\"]; t2 [label=\"Tier 2\\nworkstations\"]; adm -> t0 [label=\" from an admin\\n workstation\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; adm -> t2 [label=\" never\", style=dashed, color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
+              "alt": "A Tier 0 admin account with two arrows: a solid green one to Tier 0 (domain controllers, IdP, PAM, CA), marked from an admin workstation, and a dashed amber one to Tier 2 workstations, marked never.",
+              "caption": "Where a Tier 0 account may sign in",
+              "src": "_dot/e0cb9e64f6b9175c.svg"
+            }
+          },
+          {
+            "say": "The rule: credentials and sessions never cross tiers downward. A Tier 0 account signs in only to Tier 0 systems, from a dedicated admin workstation."
+          }
+        ],
+        "check": {
+          "prompt": "A domain admin signs in to a receptionist's laptop with his Tier 0 account to fix a printer. What has he exposed?",
+          "answer": "His Tier 0 credential, to anything running on that laptop",
+          "wrong": [
+            "Nothing, as long as he signs out after the fix",
+            "Only the laptop itself, which is low-value Tier 2"
+          ],
+          "why": "Signing in leaves credential material, such as cached hashes or tickets, on the machine. Malware on a Tier 2 laptop can lift it, and that material opens Tier 0."
+        }
+      },
+      {
+        "say": "Machines need credentials too: API keys, database passwords, signing keys. **Secrets management** keeps them in a vault that hands each to a workload at runtime, once it proves its identity, logging every retrieval. Better still are **dynamic credentials**: the vault mints a fresh database login for one workload, and it dies within the hour. Steal it from memory and it is soon worthless. **Rotation**: machine secrets rotate automatically, and at once after any suspected exposure. A person's password changes only on suspected compromise, since forced changes breed `Spring25!`, then `Summer25!`. **Deletion** ends the lifecycle: revoke and remove unused keys and tokens, retired servers' certificates, old secret versions, and the tokens of people who left. A secret committed to git stays in the history after the file is deleted, so rotating it is the only safe response; secrets scanning in CI catches the next one.",
+        "beats": [
+          {
+            "say": "Machines need credentials too: API keys, database passwords, signing keys. **Secrets management** keeps them in a vault that hands each to a workload at runtime, once it proves its identity, logging every retrieval."
+          },
+          {
+            "say": "Better still are **dynamic credentials**: the vault mints a fresh database login for one workload, and it dies within the hour. Steal it from memory and it is soon worthless."
+          },
+          {
+            "say": "**Rotation**: machine secrets rotate automatically, and at once after any suspected exposure. A person's password changes only on suspected compromise, since forced changes breed `Spring25!`, then `Summer25!`."
+          },
+          {
+            "say": "**Deletion** ends the lifecycle: revoke and remove unused keys and tokens, retired servers' certificates, old secret versions, and the tokens of people who left."
+          },
+          {
+            "say": "A secret committed to git stays in the history after the file is deleted, so rotating it is the only safe response; secrets scanning in CI catches the next one."
+          }
+        ]
+      }
+    ],
+    "outro": "A few hours of maintenance a month, and admin rights all year round. Choose the design."
+  },
+  {
+    "question": "Cinderpost's database team holds permanent DB-Admin membership but needs it for about four hours a month of planned maintenance. Selene wants the rights to exist only during approved windows, end on their own, and record who activated them. Which design BEST fits?",
+    "correct": [
+      "Make DB-Admin an eligible role, activated on approval per window and expiring by itself"
+    ],
+    "incorrect": [
+      "Keep the standing membership, and have managers review the DB-Admin group quarterly",
+      "Vault one shared DB-Admin password, checked out per window and rotated after each window ends",
+      "Grant DB-Admin when each engineer joins the team, and remove it when they move on"
+    ],
+    "feedback": "Just-in-time elevation meets all three requirements: the role is eligible rather than permanent, approval opens it for the window, it lapses on its own, and each activation is logged against a named person. Quarterly reviews leave standing privilege in place between reviews. A vaulted shared password rotates, but it hides who used it, failing the record requirement. Granting at join and removing at departure is ordinary provisioning, still standing privilege for every day in between."
+  },
+  {
+    "question": "Highrook is buying a PAM platform for its domain and cloud administrators. Which capabilities should the design include?",
+    "correct": [
+      "Vaulted admin passwords, checked out per window and rotated after each use",
+      "Brokered sessions through a jump host that records commands and screens",
+      "Endpoint privilege management, elevating only approved apps on workstations",
+      "Phishing-resistant MFA and dedicated admin workstations for the PAM tool itself"
+    ],
+    "incorrect": [
+      "Showing each vaulted password once, so admins can keep a personal backup copy",
+      "A standing admin group kept for speed, with its members reviewed after incidents"
+    ],
+    "feedback": "Vaulting with rotation, recorded session brokering, EPM on endpoints and strong protection of the PAM tool are the core of the chapter's PAM design; PAM is the most attractive target in the environment, so it needs the strongest authentication of all. A personal backup copy of a vaulted password defeats the vault, since the copy is never rotated or logged. A standing admin group is exactly the privilege PAM exists to remove, and reviewing it after incidents is too late."
+  },
+  {
+    "question": "Highrook runs a tiered administration model. The diagram shows four sign-ins from last week. Which lettered sign-in breaks the model?",
+    "correct": [
+      "C"
+    ],
+    "incorrect": [
+      "A",
+      "B",
+      "D"
+    ],
+    "feedback": "C is a Tier 0 account signing in to a Tier 1 server: a downward crossing that leaves Tier 0 credential material on a system where Tier 1 malware could steal it. The rule is not only about workstations; Tier 0 credentials are used on Tier 0 systems alone. A keeps a Tier 0 account on Tier 0, B keeps a Tier 1 account on Tier 1, and D keeps a Tier 2 helpdesk account on a Tier 2 laptop.",
+    "figure": {
+      "dot": "digraph { rankdir=LR; t0 [label=\"Tier 0 admin\"]; t1 [label=\"Tier 1 admin\"]; hd [label=\"Helpdesk\\n(Tier 2)\"]; dc [label=\"Domain controller\\n(Tier 0)\"]; app [label=\"App server\\n(Tier 1)\"]; lap [label=\"User laptop\\n(Tier 2)\"]; t0 -> dc [label=\"A\"]; t1 -> app [label=\"B\"]; t0 -> app [label=\"C\"]; hd -> lap [label=\"D\"]; }",
+      "alt": "Three accounts on the left: Tier 0 admin, Tier 1 admin and a Tier 2 helpdesk account. Three systems on the right: a Tier 0 domain controller, a Tier 1 app server and a Tier 2 user laptop. Arrow A goes from the Tier 0 admin to the domain controller, B from the Tier 1 admin to the app server, C from the Tier 0 admin to the app server, and D from the helpdesk account to the laptop.",
+      "caption": "Last week's admin sign-ins",
+      "src": "_dot/cf6dfe87a9c18688.svg"
+    }
+  },
+  {
+    "type": "ordering",
+    "question": "Order what happens when a payments microservice gets its database login from a secrets vault, from first to last.",
+    "items": [
+      "The service authenticates to the vault with its Kubernetes service-account token",
+      "The vault confirms the pod's identity with the cluster that runs it",
+      "The vault checks a policy letting this workload read the payments DB credentials",
+      "The vault creates a database login valid for 60 minutes and returns it",
+      "The login expires, and the still-running service asks the vault for a fresh one"
+    ],
+    "feedback": "Identity comes first: the workload presents its own token and the vault verifies it with the cluster. Only then does the vault check what this identity may read, mint a short-lived credential, and log the retrieval. When the hour is up the credential dies and the service simply asks again, so a credential stolen from one pod's memory is worthless within the hour."
+  },
+  {
+    "type": "cloze",
+    "question": "Highrook's new secrets standard reads: a person's password changes only when {{1}} is suspected, because calendar changes teach predictable tweaks. A service account's secret gets {{2}} rotation, and where possible is replaced by short-lived {{3}} credentials minted per workload. A secret nobody needs any more, such as a retired server's certificate, is revoked and then {{4}}.",
+    "blanks": [
+      {
+        "accept": [
+          "compromise",
+          "a compromise",
+          "exposure",
+          "theft",
+          "breach"
+        ]
+      },
+      {
+        "accept": [
+          "automated",
+          "automatic",
+          "auto"
+        ]
+      },
+      {
+        "accept": [
+          "dynamic",
+          "ephemeral"
+        ]
+      },
+      {
+        "accept": [
+          "deleted",
+          "removed",
+          "destroyed",
+          "purged"
+        ]
+      }
+    ],
+    "feedback": "Human passwords change on suspected compromise; machine secrets rotate automatically, or better, are issued dynamically and expire within the hour. Deletion is the other half of the lifecycle: unused keys and tokens, certificates for decommissioned servers, old secret versions and departed staff's tokens are revoked and then actually removed, so nothing forgotten can be revived."
+  },
+  {
+    "question": "Pip finds a cloud access key in a public repository: it was committed three weeks ago, and the file was deleted the next day. Which actions BEST respond, now and going forward?",
+    "correct": [
+      "Revoke and rotate the key, since the git history still holds it",
+      "Review the key's activity logs for any use over the three weeks",
+      "Add secrets scanning to the CI pipeline to catch the next commit"
+    ],
+    "incorrect": [
+      "Delete the file again in a new commit, so the key leaves the history",
+      "Make the repository private, which retires copies already cloned",
+      "Add the file to .gitignore, which excludes it from earlier commits"
+    ],
+    "feedback": "Every earlier snapshot still holds the key, and a public repository may have been cloned, so the key must be treated as known: revoke and rotate it, check what it did in the meantime, and add scanning so the next one is caught before it lands. A new commit removes nothing from history. Making the repository private does nothing to copies already taken. A .gitignore entry only stops a file being added in future; it never reaches back into old commits."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Trust you never meant to grant",
+    "npc": "val",
+    "intro": "Privilege is only as safe as the record of its use and the trust that grants it. This scene reads a cloud trust policy, follows an attack that forged federation itself, and names the steps identity attacks take.",
+    "steps": [
+      {
+        "say": "Every elevation, secret retrieval and admin action belongs in central logging, on a path the privileged user cannot edit. Giving domain admins write access to the SIEM that records them is a classic mistake. In the cloud, a role also carries a **trust policy**: which identities, possibly in other accounts or organisations, may assume it. Read one the way you read a firewall rule. `Principal` says who may assume the role: here, one named role in one named account. A `Principal` of `\"*\"` would mean any account anywhere, functionally a public administrator account.",
+        "beats": [
+          {
+            "say": "Every elevation, secret retrieval and admin action belongs in central logging, on a path the privileged user cannot edit. Giving domain admins write access to the SIEM that records them is a classic mistake."
+          },
+          {
+            "say": "In the cloud, a role also carries a **trust policy**: which identities, possibly in other accounts or organisations, may assume it. Read one the way you read a firewall rule."
+          },
+          {
+            "code": "{\n  \"Effect\": \"Allow\",\n  \"Principal\": {\n    \"AWS\": \"arn:aws:iam::111122223333:role/build-runner\"\n  },\n  \"Action\": \"sts:AssumeRole\"\n}",
+            "language": "trust policy"
+          },
+          {
+            "say": "`Principal` says who may assume the role: here, one named role in one named account. A `Principal` of `\"*\"` would mean any account anywhere, functionally a public administrator account."
+          }
+        ],
+        "check": {
+          "prompt": "A second statement in this policy trusts a SAML identity provider that nobody on the team recognises. How should you read it?",
+          "answer": "As a possible backdoor federation trust, to investigate",
+          "wrong": [
+            "As harmless, since SAML assertions are signed",
+            "As a logging gap, fixed by turning on more audit"
+          ],
+          "why": "A trust entry nobody can justify is a way in, and every entry needs a written reason. An unknown SAML issuer is exactly what an attacker adds to keep access."
+        }
+      },
+      {
+        "say": "Federation concentrates trust in a few signing keys. In the 2020 **SolarWinds** campaign, attackers already inside victims' networks went after the identity layer. From the **AD FS** server they exported the **token-signing certificate** and its private key. With it they minted SAML assertions for any user, with any claims, including 'MFA done'. The technique is called **Golden SAML**. Microsoft 365 accepted the forged assertions, because the signature verified. The IdP saw nothing, so the tell was an SP sign-in with no matching IdP authentication, visible only to teams collecting logs from both sides.",
+        "beats": [
+          {
+            "say": "Federation concentrates trust in a few signing keys. In the 2020 **SolarWinds** campaign, attackers already inside victims' networks went after the identity layer."
+          },
+          {
+            "say": "From the **AD FS** server they exported the **token-signing certificate** and its private key."
+          },
+          {
+            "say": "With it they minted SAML assertions for any user, with any claims, including 'MFA done'. The technique is called **Golden SAML**."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; att [label=\"Attacker\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; subgraph cluster_idp { label=\"AD FS (IdP)\"; labelloc=b; style=\"rounded,dashed\"; color=\"#5aaa5a\"; key [label=\"Token-signing\\nkey\"]; ilog [label=\"IdP log:\\nno sign-in\"]; } sp [label=\"Microsoft 365\\n(SP)\"]; slog [label=\"SP log:\\nsign-in OK\"]; att -> key [label=\" exports\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; att -> sp [label=\" forged\\n assertion\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; key -> ilog [style=invis]; sp -> slog; }",
+              "alt": "An amber attacker box at the top with two arrows down: one exporting the token-signing key from a dashed zone marked AD FS (IdP), where the IdP log below reads no sign-in; the other sending a forged assertion to Microsoft 365 (SP), whose log below reads sign-in OK.",
+              "caption": "Golden SAML: one log has a sign-in, the other has none",
+              "src": "_dot/24fe85baa6327838.svg"
+            }
+          },
+          {
+            "say": "Microsoft 365 accepted the forged assertions, because the signature verified."
+          },
+          {
+            "say": "The IdP saw nothing, so the tell was an SP sign-in with no matching IdP authentication, visible only to teams collecting logs from both sides."
+          }
+        ]
+      },
+      {
+        "say": "The lessons: federation servers and their signing keys are **Tier 0** assets. Keep signing keys in a **hardware security module (HSM)**, which uses a key without ever exposing it. Review trust policies for unexpected SAML issuers, and centralise IdP and SP logs so each sign-in can be cross-checked. After a suspected theft, rotate the signing certificate twice in quick succession, so tokens signed with the old key stop working.",
+        "beats": [
+          {
+            "say": "The lessons: federation servers and their signing keys are **Tier 0** assets. Keep signing keys in a **hardware security module (HSM)**, which uses a key without ever exposing it."
+          },
+          {
+            "say": "Review trust policies for unexpected SAML issuers, and centralise IdP and SP logs so each sign-in can be cross-checked."
+          },
+          {
+            "say": "After a suspected theft, rotate the signing certificate twice in quick succession, so tokens signed with the old key stop working."
+          }
+        ]
+      },
+      {
+        "say": "Identity attacks unfold as a sequence. **Credential dumping** steals hashes, tickets or tokens, say from **LSASS** memory; **privilege escalation** turns them into a stronger subject. **Lateral movement** reuses them elsewhere, as in **pass-the-hash**; **unauthorized execution** runs commands through valid admin paths, such as PowerShell remoting or CI runners. **Defensive evasion** looks boring on purpose: a new MFA device, an extra OAuth consent, a backdoor federation trust, a logging connector switched off. **Injection** twists an identity workflow: an LDAP query built by pasting in raw input, a tampered SAML or OIDC parameter, abused SCIM provisioning. So hunt for sequences: a service account signing in from a new host, asking for wider consent, then running remote commands, tells a story even when every step succeeded.",
+        "beats": [
+          {
+            "say": "Identity attacks unfold as a sequence. **Credential dumping** steals hashes, tickets or tokens, say from **LSASS** memory; **privilege escalation** turns them into a stronger subject."
+          },
+          {
+            "say": "**Lateral movement** reuses them elsewhere, as in **pass-the-hash**; **unauthorized execution** runs commands through valid admin paths, such as PowerShell remoting or CI runners."
+          },
+          {
+            "say": "**Defensive evasion** looks boring on purpose: a new MFA device, an extra OAuth consent, a backdoor federation trust, a logging connector switched off."
+          },
+          {
+            "say": "**Injection** twists an identity workflow: an LDAP query built by pasting in raw input, a tampered SAML or OIDC parameter, abused SCIM provisioning."
+          },
+          {
+            "say": "So hunt for sequences: a service account signing in from a new host, asking for wider consent, then running remote commands, tells a story even when every step succeeded."
+          }
+        ]
+      }
+    ],
+    "outro": "A vendor's role, a wildcard, and a vendor who still needs access. Choose the fix."
+  },
+  {
+    "question": "Maven Drift finds this trust policy on Cinderpost's prod-observer role, created last year for a monitoring vendor:\n\n  \"Effect\": \"Allow\",\n  \"Principal\": { \"AWS\": \"*\" },\n  \"Action\": \"sts:AssumeRole\"\n\nThe vendor still needs the role. Which change BEST fixes the policy?",
+    "correct": [
+      "Name the vendor's own account as the Principal and record why it is trusted"
+    ],
+    "incorrect": [
+      "Keep the wildcard, but cut the role's permissions down to read-only monitoring",
+      "Require MFA for the vendor's console users before they may assume the role",
+      "Rotate the role's access keys monthly so that a leaked key soon stops working"
+    ],
+    "feedback": "A wildcard Principal lets any account anywhere assume the role, so the fix is to trust exactly the vendor's account and document the justification, as for any firewall rule. Trimming permissions shrinks the damage but leaves the role open to everyone, who could still read production telemetry. MFA on the vendor's users constrains the vendor, not the rest of the internet. Assumed roles hand out short-lived session credentials; the flaw is who is trusted, not how old a key is."
+  },
+  {
+    "question": "Evidence shows a Golden SAML intrusion like the one in the SolarWinds campaign. Highrook must stop the forged assertions and make a repeat harder to pull off and easier to spot. Which steps BEST do that?",
+    "correct": [
+      "Rotate the AD FS token-signing certificate twice, in quick succession",
+      "Move the signing key into an HSM and manage AD FS as a Tier 0 asset",
+      "Cross-check every SP sign-in against IdP authentication events in one log store"
+    ],
+    "incorrect": [
+      "Reset every user's password, since the forged assertions were built from them",
+      "Enforce MFA for all users, so that a forged assertion fails the MFA check",
+      "Renew the SP's own TLS certificate so that sessions cached at the SP are dropped"
+    ],
+    "feedback": "Rotating twice matters because after one rollover the previous certificate can stay trusted as the secondary; the second rotation pushes the stolen one out. An HSM and Tier 0 handling keep the next key from being exported, and joined IdP and SP logs expose any sign-in the IdP never saw. Passwords were never involved, since the attacker signed assertions directly. MFA does not help either: the forged assertion simply claims MFA was done. The SP's TLS certificate protects the connection, not the federation trust."
+  },
+  {
+    "question": "Kaeli pulls overnight activity for svc-hrsync, a directory connector account that normally signs in only from MGMT-01. No change was scheduled.\n\n  02:10  sign-in from MGMT-07\n  02:12  OAuth consent granted: Directory.ReadWrite.All\n  02:15  87 reads of privileged group membership\n  02:31  remote PowerShell session to FILESRV-3\n\nEvery event succeeded, through approved tooling. What BEST explains the sequence?",
+    "correct": [
+      "Stolen connector credentials used to widen access, map the admins, then run commands"
+    ],
+    "incorrect": [
+      "A connector upgrade that moved the sync job to a new host and broadened its scope",
+      "A faulty sync rule writing wrong group memberships, with no attacker involved",
+      "An MFA fatigue attack in which an administrator approved an unexpected push"
+    ],
+    "feedback": "Read as a sequence it is a familiar attack path: credential use from a new host, privilege expansion through a new consent, enumeration of privileged groups, then unauthorized execution through legitimate admin tooling, which is why first-line alerts saw only routine administration. An upgrade would come with a change record, and a sync job has no reason to open remote PowerShell. A faulty sync rule writes memberships; this account read them and then ran commands. MFA fatigue targets a person answering push prompts, and nothing here involves a human sign-in."
+  },
+  {
+    "type": "ordering",
+    "question": "Order this identity attack chain, from the attacker's first move to the last.",
+    "items": [
+      "Dump cached credentials from LSASS memory on a phished workstation",
+      "Pass a captured admin hash to add the account to a privileged group",
+      "Use the new group's rights to request tokens for the cloud admin console",
+      "Register an attacker-owned MFA device to keep access after a reset"
+    ],
+    "feedback": "Each step needs the one before it: dumping gives reusable material, pass-the-hash turns it into privilege escalation, the new privilege lets the attacker obtain tokens for a wider target, and a registered MFA device is persistence and defensive evasion that survives a password reset. The earlier the architecture forces vault-mediated access, reauthentication or attestation, the sooner this chain breaks."
+  },
+  {
+    "type": "matching",
+    "question": "Match each identity-centric TTP to the defensive signal most likely to expose it.",
+    "pairs": [
+      {
+        "term": "Credential dumping",
+        "definition": "A process reading LSASS memory on a workstation"
+      },
+      {
+        "term": "Privilege escalation",
+        "definition": "A privileged role assigned with no matching JIT approval"
+      },
+      {
+        "term": "Lateral movement",
+        "definition": "One account authenticating across unrelated tiers"
+      },
+      {
+        "term": "Unauthorized execution",
+        "definition": "A new remote script run by an unusual subject"
+      },
+      {
+        "term": "Defensive evasion",
+        "definition": "Audit settings changed and a new MFA device registered"
+      },
+      {
+        "term": "Injection",
+        "definition": "Directory-query anomalies and assertion validation failures"
+      }
+    ],
+    "feedback": "Dumping shows up where credentials live, such as a process reading LSASS memory. Escalation shows up as a role change that bypassed the JIT path, and lateral movement as one identity touching tiers it has no reason to. Unauthorized execution appears as scripts from a subject that does not normally run them, evasion as quiet changes to logging and MFA, and injection as odd directory queries or assertions that fail validation."
+  },
+  {
+    "question": "Thornwood's self-service password portal builds its directory search by pasting the typed username into this filter:\n\n  (&(uid=INPUT)(objectClass=person))\n\nA tester types  *)(uid=*))(|(uid=*  and the portal lists every account. Which fix BEST addresses the cause?",
+    "correct": [
+      "Escape LDAP filter characters in input, or build filters with a safe parameter API"
+    ],
+    "incorrect": [
+      "Rate-limit the portal so that mass listing of the accounts is slowed down",
+      "Require MFA before the search page loads, whatever username is entered",
+      "Move the portal's directory connection to LDAPS, so that the filter is encrypted in transit"
+    ],
+    "feedback": "This is LDAP injection: the typed text closes the intended filter and adds clauses of its own, so the directory answers a query the portal never meant to send. Escaping the filter's special characters, or building filters with an API that treats input as a value, removes the cause. Rate limiting only slows the dump. MFA decides who reaches the page, but an authenticated user can still inject. LDAPS protects the query in transit; the injected filter arrives encrypted and runs just the same."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Reading a failed sign-in",
+    "npc": "tariq",
+    "intro": "Authentication fails in a handful of familiar ways, and the error message rarely says which. This scene reads the evidence: a SAML assertion, OAuth and OIDC failures, a Kerberos exchange, and network access at the port.",
+    "steps": [
+      {
+        "say": "SAML failures come down to four causes. First, the IdP and SP disagree on the **entity ID** or the **assertion consumer URL**. Second, the SP holds a wrong or expired IdP signing certificate. Third, **clock skew** puts the assertion outside its validity window. Fourth, the attributes are not what the SP expects, such as a UPN where it keys on email. A SAML tracer that captures the real assertion is the fastest diagnostic. The `Audience` matches the SP's entity ID exactly, so the audience is fine. Yet an assertion only seconds old reads as expired: the SP's clock is already past `NotOnOrAfter`.",
+        "beats": [
+          {
+            "say": "SAML failures come down to four causes. First, the IdP and SP disagree on the **entity ID** or the **assertion consumer URL**. Second, the SP holds a wrong or expired IdP signing certificate."
+          },
+          {
+            "say": "Third, **clock skew** puts the assertion outside its validity window. Fourth, the attributes are not what the SP expects, such as a UPN where it keys on email."
+          },
+          {
+            "say": "A SAML tracer that captures the real assertion is the fastest diagnostic."
+          },
+          {
+            "code": "<saml:Conditions NotBefore=\"2026-03-09T09:15:40Z\"\n                 NotOnOrAfter=\"2026-03-09T09:20:40Z\">\n  <saml:AudienceRestriction>\n    <saml:Audience>https://crm.highrook.example/sp</saml:Audience>\n  </saml:AudienceRestriction>\n</saml:Conditions>\n\nSP entity ID:  https://crm.highrook.example/sp\nSP clock:      2026-03-09T09:21:05Z\nIssued at 09:15:40Z and posted to the SP 2 seconds later.",
+            "language": "captured assertion"
+          },
+          {
+            "say": "The `Audience` matches the SP's entity ID exactly, so the audience is fine. Yet an assertion only seconds old reads as expired: the SP's clock is already past `NotOnOrAfter`."
+          }
+        ],
+        "check": {
+          "prompt": "By roughly how much is the SP's clock fast?",
+          "answer": "About 5 minutes 23 seconds",
+          "wrong": [
+            "About 25 seconds",
+            "About 5 minutes"
+          ],
+          "why": "True time at arrival was about 09:15:42, and the SP read 09:21:05: 5 minutes 23 seconds fast. The 25 seconds past `NotOnOrAfter` is how late it looks, and 5 minutes is only the validity window. Sync the SP to NTP."
+        }
+      },
+      {
+        "say": "OAuth and OIDC fail differently. A **redirect URI** that differs from the registered one by a single trailing slash stops the flow. That strictness is deliberate: exact matching keeps authorization codes from being steered to an attacker's URL. A scope the client requests but was never granted causes an authorization failure later, not a sign-in error. A token whose `aud` names another app must be rejected, however good its signature. If every token fails at once, just after the IdP rotated its signing keys, suspect a stale **JWKS** cache at the relying party.",
+        "beats": [
+          {
+            "say": "OAuth and OIDC fail differently. A **redirect URI** that differs from the registered one by a single trailing slash stops the flow."
+          },
+          {
+            "say": "That strictness is deliberate: exact matching keeps authorization codes from being steered to an attacker's URL."
+          },
+          {
+            "say": "A scope the client requests but was never granted causes an authorization failure later, not a sign-in error. A token whose `aud` names another app must be rejected, however good its signature."
+          },
+          {
+            "say": "If every token fails at once, just after the IdP rotated its signing keys, suspect a stale **JWKS** cache at the relying party."
+          }
+        ]
+      },
+      {
+        "say": "**Kerberos** authenticates with tickets. The client proves itself to the **KDC**'s authentication service and receives a **ticket-granting ticket (TGT)**. It shows the TGT to the **ticket-granting service**, naming the target by its **service principal name (SPN)**, and gets a **service ticket**, which it presents to that service. Kerberos leans on three things: time synchronisation, with about five minutes of skew tolerated by default; DNS resolution; and correctly registered SPNs. Across domains, check the trust as well: a trust can work in one direction but not the other.",
+        "beats": [
+          {
+            "say": "**Kerberos** authenticates with tickets. The client proves itself to the **KDC**'s authentication service and receives a **ticket-granting ticket (TGT)**."
+          },
+          {
+            "say": "It shows the TGT to the **ticket-granting service**, naming the target by its **service principal name (SPN)**, and gets a **service ticket**, which it presents to that service."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; c [label=\"Client\"]; subgraph cluster_kdc { label=\"KDC\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; as [label=\"Authentication\\nservice\"]; tgs [label=\"Ticket-granting\\nservice\"]; } svc [label=\"SQL service\\n(by its SPN)\"]; c -> as [label=\"1 prove identity\"]; as -> c [label=\"2 TGT\"]; c -> tgs [label=\"3 TGT + SPN\"]; tgs -> c [label=\"4 service ticket\"]; c -> svc [label=\"5 service ticket\"]; }",
+              "alt": "A client exchanges messages with two boxes inside a zone marked KDC: 1 it proves its identity to the authentication service, 2 receives a TGT, 3 sends the TGT and an SPN to the ticket-granting service, 4 receives a service ticket, and 5 presents that ticket to a SQL service.",
+              "caption": "A Kerberos sign-in to a SQL service",
+              "src": "_dot/1e8a4b6e88f09bee.svg"
+            }
+          },
+          {
+            "say": "Kerberos leans on three things: time synchronisation, with about five minutes of skew tolerated by default; DNS resolution; and correctly registered SPNs."
+          },
+          {
+            "say": "Across domains, check the trust as well: a trust can work in one direction but not the other."
+          }
+        ],
+        "check": {
+          "prompt": "A server resumed from a week-old VM snapshot now fails every Kerberos request. Which dependency most likely broke?",
+          "answer": "Time synchronisation",
+          "wrong": [
+            "DNS resolution",
+            "SPN registration"
+          ],
+          "why": "A resumed snapshot wakes with the clock it was saved with. Once it is more than about five minutes from domain time, its tickets are refused. Resync it to the domain's time source."
+        }
+      },
+      {
+        "say": "At the network port, **802.1X** carries **EAP** (Extensible Authentication Protocol). The **supplicant** on the endpoint talks to the **authenticator**, a switch or access point, which relays to a **RADIUS** server. **EAP-TLS** proves both sides with certificates and is the strongest method. **PEAP** and **EAP-TTLS** prove the server with a certificate and the user with a password inside a tunnel. EAP-TLS failures are usually certificate problems: the client certificate has expired, was issued by a CA the RADIUS server does not trust, or fails its CRL or OCSP revocation check. On WPA3-Personal Wi-Fi, **SAE** (Simultaneous Authentication of Equals) replaces WPA2's pre-shared key and resists offline dictionary attacks. Its usual trouble: old clients without WPA3, and buggy transition modes.",
+        "beats": [
+          {
+            "say": "At the network port, **802.1X** carries **EAP** (Extensible Authentication Protocol). The **supplicant** on the endpoint talks to the **authenticator**, a switch or access point, which relays to a **RADIUS** server."
+          },
+          {
+            "say": "**EAP-TLS** proves both sides with certificates and is the strongest method. **PEAP** and **EAP-TTLS** prove the server with a certificate and the user with a password inside a tunnel."
+          },
+          {
+            "say": "EAP-TLS failures are usually certificate problems: the client certificate has expired, was issued by a CA the RADIUS server does not trust, or fails its CRL or OCSP revocation check."
+          },
+          {
+            "say": "On WPA3-Personal Wi-Fi, **SAE** (Simultaneous Authentication of Equals) replaces WPA2's pre-shared key and resists offline dictionary attacks. Its usual trouble: old clients without WPA3, and buggy transition modes."
+          }
+        ]
+      }
+    ],
+    "outro": "A new assertion, a new clock. Work out the skew in seconds."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A sign-in fails with 'assertion not yet valid'. The IdP set NotBefore to the moment it issued the assertion, which reached the SP at once. The captured assertion reads NotBefore=\"14:0{{m1}}:{{s1}}Z\", and the SP's clock read 13:5{{m2}}:{{s2}}Z when it arrived. By how many seconds is the SP's clock behind?",
+    "variables": {
+      "m1": {
+        "values": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "s1": {
+        "values": [
+          11,
+          18,
+          27,
+          34,
+          42,
+          53
+        ]
+      },
+      "m2": {
+        "values": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      "s2": {
+        "values": [
+          14,
+          22,
+          36,
+          48,
+          57
+        ]
+      }
+    },
+    "answer": {
+      "expr": "(10 - m2 + m1) * 60 + s1 - s2",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "From 13:5{{m2}}:{{s2}} up to 14:0{{m1}}:{{s1}} is {{expected}} seconds, so to the SP the assertion still lies in the future. Fix the SP host's NTP sync; widening the accepted skew would only hide the drift."
+  },
+  {
+    "question": "Cinderpost's new mobile app, registered at the IdP as client mobile-app, rejects every sign-in although the token's signature verifies. The decoded ID token reads:\n\n  \"iss\": \"https://login.cinderpost.example\",\n  \"aud\": \"web-portal\",\n  \"sub\": \"7f3c91\",\n  \"exp\": 1767268800\n\nThe app's clock reads 1767266400. Which fix is BEST?",
+    "correct": [
+      "Have the app request tokens under its own client ID, so aud names mobile-app"
+    ],
+    "incorrect": [
+      "Add web-portal to the app's accepted audiences until a proper fix ships",
+      "Lengthen the token lifetime, since exp is very close to the app's clock",
+      "Skip the audience check, because a valid signature already proves that the IdP issued it"
+    ],
+    "feedback": "The token was minted for web-portal, so the mobile app is right to reject it; the cause is the app asking for tokens under the wrong client ID. Accepting web-portal's audience would let any token minted for that app open this one too, which is exactly what aud prevents. The token still has 2,400 seconds, 40 minutes, before exp, so lifetime is not the problem. A valid signature proves who issued the token, not whom it was issued for."
+  },
+  {
+    "type": "cloze",
+    "question": "Three OIDC tickets reach Orin. At 03:00, minutes after the IdP rotated its signing keys, every token starts failing validation at once: the relying party holds a stale {{1}} cache. A sign-in fails because the app sent https://app.example/cb/ while https://app.example/cb is registered: a {{2}} URI mismatch. And so that an intercepted authorization code cannot be redeemed by anyone else, Orin requires {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "JWKS",
+          "JWK set",
+          "JWKs"
+        ],
+        "hint": "acronym"
+      },
+      {
+        "accept": [
+          "redirect",
+          "redirection",
+          "callback"
+        ]
+      },
+      {
+        "accept": [
+          "PKCE"
+        ],
+        "hint": "acronym"
+      }
+    ],
+    "feedback": "The relying party verifies signatures with keys fetched from the IdP's JWKS endpoint, so a cache that still holds the old keys fails every token the moment the IdP signs with a new one. Redirect URIs are matched exactly, trailing slash included, so codes cannot be steered elsewhere. PKCE binds the code to the client that started the flow: only the holder of the original verifier can redeem it."
+  },
+  {
+    "type": "ordering",
+    "question": "Order a Kerberos sign-in to a file service, from the first message to the last.",
+    "items": [
+      "The client proves its identity to the KDC's authentication service",
+      "The authentication service returns a ticket-granting ticket (TGT)",
+      "The client presents the TGT to the ticket-granting service, naming the SPN",
+      "The ticket-granting service returns a service ticket for that SPN",
+      "The client presents the service ticket to the file service"
+    ],
+    "feedback": "Kerberos runs AS, then TGS, then the service: the TGT proves the user is already authenticated, so the ticket-granting service can issue a ticket for one specific SPN, and only that service ticket is shown to the file server. A missing SPN breaks step 3, and clock skew breaks the whole chain, because every ticket carries timestamps."
+  },
+  {
+    "question": "After the svc-sql account is reused to run a new reporting service, clients get 'server not found in Kerberos database' connecting to the reporting server and fall back to weaker authentication. Clocks and DNS check out. Which fix is MOST likely?",
+    "correct": [
+      "Register the reporting service's SPN on the account that now runs it"
+    ],
+    "incorrect": [
+      "Resynchronise the reporting server's clock with the domain time source",
+      "Purge every user's cached tickets so that each one signs in once again",
+      "Rebuild the domain trust as two-way, as it seems to work one way only"
+    ],
+    "feedback": "The ticket-granting service could not find the SPN clients asked for, which is the classic result of reusing a service account without registering (or after duplicating) the SPN. Registering it on the right account lets the KDC issue the service ticket. Time and DNS were checked, so resyncing the clock fixes nothing. Purging tickets only makes clients ask again for an SPN that still does not exist. A one-way trust breaks sign-ins across domains, not lookups for a service in the client's own."
+  },
+  {
+    "type": "cloze",
+    "question": "On Forgeworks' wired network, the {{1}} on each laptop speaks EAP to the switch port, the authenticator, which relays it to the authentication server, usually {{2}}. Because the plant wants both sides proved with certificates, it uses EAP-{{3}}, the strongest method. The WPA3-Personal Wi-Fi in the break room instead uses {{4}}, a password-based exchange that resists offline dictionary attacks.",
+    "blanks": [
+      {
+        "accept": [
+          "supplicant"
+        ]
+      },
+      {
+        "accept": [
+          "RADIUS"
+        ]
+      },
+      {
+        "accept": [
+          "TLS"
+        ]
+      },
+      {
+        "accept": [
+          "SAE",
+          "Simultaneous Authentication of Equals"
+        ],
+        "hint": "acronym"
+      }
+    ],
+    "feedback": "In 802.1X the supplicant is the endpoint's software, the authenticator is the switch or access point, and the authentication server, usually RADIUS, makes the decision. EAP-TLS uses certificates on both sides, unlike PEAP and EAP-TTLS, which prove only the server with a certificate. SAE replaced WPA2's pre-shared key method in WPA3-Personal and denies an eavesdropper the offline guessing that PSK allowed."
+  },
+  {
+    "question": "Since Monday, laptops re-enrolled from Highrook's new issuing CA fail 802.1X on both wired and Wi-Fi, while laptops not yet re-enrolled connect fine. The RADIUS log shows:\n\n  EAP-TLS: client cert CN=LT-4471 verify failed:\n  unable to get local issuer certificate\n\nWhat is the MOST likely fix?",
+    "correct": [
+      "Add the new issuing CA's chain to the RADIUS server's trusted store"
+    ],
+    "incorrect": [
+      "Move re-enrolled laptops to PEAP, so only the server certificate is checked",
+      "Reissue each re-enrolled laptop's certificate with a longer validity period",
+      "Rotate the RADIUS shared secret configured on the switches and access points"
+    ],
+    "feedback": "Only certificates from the new CA fail, and the server cannot find their issuer: the RADIUS server does not yet trust the new issuing CA, so adding its chain fixes every re-enrolled laptop at once. Dropping to PEAP hides the symptom by giving up client certificates, the strongest part of the design. Validity is not the complaint; these certificates are brand new. The shared secret protects the switch-to-RADIUS link, and a wrong one would break every laptop, not just the re-enrolled ones."
+  },
+  {
+    "type": "matching",
+    "question": "Match each protocol to the failure an engineer most often meets with it.",
+    "pairs": [
+      {
+        "term": "SAML 2.0",
+        "definition": "The assertion's Audience differs from the SP's entity ID"
+      },
+      {
+        "term": "OAuth 2.0",
+        "definition": "An API call is refused for a scope that was never granted"
+      },
+      {
+        "term": "OIDC",
+        "definition": "Every ID token fails at once after a signing key rotation"
+      },
+      {
+        "term": "Kerberos",
+        "definition": "Tickets are refused after a VM resumes with a stale clock"
+      },
+      {
+        "term": "EAP-TLS",
+        "definition": "A client certificate was issued by a CA the server distrusts"
+      },
+      {
+        "term": "SAE",
+        "definition": "Older handhelds cannot join the new WPA3-Personal network"
+      }
+    ],
+    "feedback": "Audience and entity-ID mismatches are SAML's classic failure, and an ungranted scope is an OAuth authorization problem rather than a sign-in error. A stale JWKS cache breaks OIDC ID tokens all at once, while Kerberos tickets depend on synchronised clocks. EAP-TLS fails on certificate trust, and SAE trouble is usually client compatibility with WPA3."
+  },
+  {
+    "question": "At 02:00, Highrook's SOC sees a user approve the ninth push prompt in four minutes, for a sign-in from a country she has never visited. After the session is killed, which changes BEST fix the weakness that was exploited?",
+    "correct": [
+      "Turn on number matching, with location and app shown in each prompt",
+      "Move this user group to a phishing-resistant factor such as FIDO2 keys"
+    ],
+    "incorrect": [
+      "Disable MFA for the user until the prompts stop, then turn it back on",
+      "Shorten the push timeout, so each unanswered prompt expires sooner",
+      "Retrain the user, and keep plain push approvals in place as they are"
+    ],
+    "feedback": "This is MFA fatigue. Number matching with context means a user cannot approve a sign-in she did not start without reading a number off its screen, and a FIDO2 key removes push from the path altogether while also resisting proxy phishing, which number matching does not. Disabling MFA rewards the attacker. A shorter timeout only makes the prompts arrive faster. Training helps, but the architecture, not the user, should stop a bare push from being approved."
+  },
+  {
+    "question": "A surgeon at Greycloak cannot unlock her workstation because its fingerprint reader stopped working after a screen replacement. She needs access within the hour, and the helpdesk offers to reset her MFA over the phone. What is the BEST fallback?",
+    "correct": [
+      "Her hardware token plus a brief identity check, then re-enrol the reader"
+    ],
+    "incorrect": [
+      "A phone reset of her MFA once she confirms her employee ID and manager",
+      "Switch off MFA on her account until the fingerprint reader is replaced",
+      "Lower the reader's match threshold so damaged sensor reads still pass"
+    ],
+    "feedback": "A fallback path must itself be strongly authenticated: a hardware token she holds, plus a short identity check, keeps two factors while the reader is fixed. A phone reset on facts like an employee ID is the social-engineering opening the enrolment rules warn about. Switching off MFA removes protection from a high-value clinical account. Lowering the threshold raises the false accept rate for everyone who uses that reader, and a broken sensor still will not read."
+  }
+]

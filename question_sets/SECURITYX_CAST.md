@@ -117,3 +117,26 @@ For SecurityX feedback, **explain why the runners-up are wrong on this specific 
 > "An offline root CA with a short-lived issuing CA is correct because it limits exposure of the trust anchor while keeping issuance practical. An online root would also work technically but violates the stated requirement to keep the root unreachable from the network. A single long-lived CA fails the rotation requirement. HSM-backed keys alone do not address the topology question."
 
 That style — naming each distractor and the constraint it fails — is what makes a SecurityX-style set instructive rather than a guessing game.
+
+---
+
+## The Sets and Their Teachers
+
+There are twelve sets, one for each chapter of the open textbook *Threats Real and Imagined: A Cybersecurity Casebook for SecurityX* ([source](https://github.com/brendanpshea/securityx)). The textbook is the source for their facts, but a set must teach without it: its scenes teach every idea before a question tests it, and its feedback says why each runner-up fails. The cast above appears in question stems; the Guild's mentors (`assets/npcs.json`) teach the scenes.
+
+| Set | Chapter | Mentors |
+|---|---|---|
+| `securityx_01_governance.json` | 1 Governance, Compliance & Ethics | Val; Kaelen for the data life cycle |
+| `securityx_02_risk_threat.json` | 2 Risk Management & Threat Modeling | Val; Nia for risk arithmetic and attack trees |
+| `securityx_03_ai_threats.json` | 3 AI Threats & Governance | Omu; Val for guardrails and agency |
+| `securityx_04_architecture_zt.json` | 4 Security Architecture & Zero Trust | Tariq; Val for Zero Trust decisions and data security |
+| `securityx_05_iam.json` | 5 Identity & Access Management | Val; Tariq for federation and protocol flows |
+| `securityx_06_lifecycle_hardware.json` | 6 Secure Systems Lifecycle & Hardware Assurance | Flint for software; Ada for hardware and boot |
+| `securityx_07_cloud.json` | 7 Enterprise Cloud & Hybrid Security | Tariq; Flint for CI/CD and IaC |
+| `securityx_08_crypto_pki.json` | 8 Cryptography & PKI | Val |
+| `securityx_09_network_endpoint.json` | 9 Network, Endpoint & Infrastructure Engineering | Val for endpoints; Tariq for network services |
+| `securityx_10_ot_specialized.json` | 10 Specialized, OT & Legacy Systems | Ada; Tariq for Purdue, zones and radio |
+| `securityx_11_secops_hunting.json` | 11 Security Operations, Monitoring & Threat Hunting | Val; Kaelen for SIEM data and metrics |
+| `securityx_12_vuln_ir.json` | 12 Vulnerability Management, Automation & Incident Response | Val; Flint for automation and SOAR |
+
+The sets are held to the same audit standard as the Java and Computing Concepts sets (`tests/data.test.js`): at least 30% of questions in a format that resists memorising (ordering, cloze, dynamic numeric, code line), no six of one kind in a row, teaching scenes each followed by the question they prepare, and a catalog intro. Commands in code-line questions are kept short (20 tokenized characters) with every file and host name pinned in the stem.

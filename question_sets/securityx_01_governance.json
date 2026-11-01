@@ -1,552 +1,1363 @@
 [
   {
-    "question": "Wren reviews this excerpt from a document labeled 'Acceptable Cryptography Policy':\n\n  All TLS connections SHALL use TLS 1.3 with cipher suite\n  TLS_AES_256_GCM_SHA384, with sessions resumed only via PSK\n  with at least 256 bits of entropy.\n\nWhat is MOST likely wrong with this content's placement?",
+    "type": "npc_demo",
+    "question": "NPC: Four documents, four speeds of change",
+    "npc": "val",
+    "intro": "I'm Val, the Guild's Ward-Smith. Governance starts on paper, and the paper comes in four kinds, each with its own authority and its own pace of change. Let me walk one requirement down through all four.",
+    "steps": [
+      {
+        "say": "Every rule starts as a goal from the top, such as the board's wish to keep customer data safe. Governance turns that goal into documents people can follow. The first is the **policy**: management's statement of what the organization requires and why. It is mandatory, carries the CEO's or the board's signature, and names no products. Because it names no technology, a policy rarely changes.",
+        "beats": [
+          {
+            "say": "Every rule starts as a goal from the top, such as the board's wish to keep customer data safe. Governance turns that goal into documents people can follow."
+          },
+          {
+            "say": "The first is the **policy**: management's statement of what the organization requires and why. It is mandatory, carries the CEO's or the board's signature, and names no products."
+          },
+          {
+            "code": "REMOTE ACCESS POLICY\nAnyone reaching company systems from outside\nthe office must use strong authentication.\n\nApproved: Chief Executive Officer",
+            "language": "policy excerpt"
+          },
+          {
+            "say": "Because it names no technology, a policy rarely changes."
+          }
+        ]
+      },
+      {
+        "say": "A **standard** turns the policy into measurable, mandatory rules: named technologies, lengths, thresholds. When technology shifts, the standard is revised. The policy above it stays as it was.",
+        "beats": [
+          {
+            "say": "A **standard** turns the policy into measurable, mandatory rules: named technologies, lengths, thresholds."
+          },
+          {
+            "code": "REMOTE ACCESS STANDARD\n- MFA for all external access\n- Administrators: FIDO2 security keys or passkeys\n- Everyone else: TOTP at minimum\n- Idle VPN sessions end after 15 minutes",
+            "language": "standard excerpt"
+          },
+          {
+            "say": "When technology shifts, the standard is revised. The policy above it stays as it was."
+          }
+        ],
+        "check": {
+          "prompt": "A new line is proposed: 'Remote sessions must be protected against stolen passwords.' Where does it belong?",
+          "answer": "In the policy: it states intent with nothing to measure",
+          "wrong": [
+            "In the standard: it is a mandatory security rule",
+            "In the procedure: it tells remote staff what to do"
+          ],
+          "why": "Being mandatory doesn't make a line a standard, because policies are mandatory too. This line has no number and names no technology, so it is policy language; 'MFA, with FIDO2 keys for administrators' is how the standard makes it measurable."
+        }
+      },
+      {
+        "say": "A **procedure** is the exact steps for one task, followed to the letter. It is tied to particular tools and versions, so it is rewritten most often. A **guideline** is the one optional tier: advice such as 'register a second key and keep it in the office safe'. Nobody is disciplined for another method that still meets the standard.",
+        "beats": [
+          {
+            "say": "A **procedure** is the exact steps for one task, followed to the letter. It is tied to particular tools and versions, so it is rewritten most often."
+          },
+          {
+            "code": "ENROLL A SECURITY KEY (administrators)\n1. Sign in to the identity portal\n2. Security info > Add method > Security key\n3. Insert the key and touch it when prompted\n4. Record the enrollment in the access ticket",
+            "language": "procedure excerpt"
+          },
+          {
+            "say": "A **guideline** is the one optional tier: advice such as 'register a second key and keep it in the office safe'. Nobody is disciplined for another method that still meets the standard."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; b [label=\"Board goal\"]; p [label=\"Policy\\nwhy + what\\nrarely changes\"]; s [label=\"Standard\\nmeasurable rules\"]; pr [label=\"Procedure\\nexact steps\\nchanges most\"]; g [label=\"Guideline\\noptional advice\", style=\"rounded,dashed\"]; b -> p; p -> s; s -> pr; s -> g [style=dashed]; { rank=same; pr; g } }",
+              "alt": "A vertical chain: board goal, then policy (why and what, rarely changes), then standard (measurable rules), then procedure (exact steps, changes most). A dashed box, guideline (optional advice), hangs off the standard beside the procedure.",
+              "caption": "authority flows down; the pace of change speeds up",
+              "src": "_dot/3142fe9dac481c71.svg"
+            }
+          }
+        ]
+      },
+      {
+        "say": "Switch identity platforms and the policy may not change a word, a few lines of the standard change, and every procedure is rewritten from scratch. Neglect that last part and you get **policy rot**: procedures that no longer match reality, such as a step naming a console retired years ago. In a crisis, staff improvise, often insecurely.",
+        "beats": [
+          {
+            "say": "Switch identity platforms and the policy may not change a word, a few lines of the standard change, and every procedure is rewritten from scratch."
+          },
+          {
+            "say": "Neglect that last part and you get **policy rot**: procedures that no longer match reality, such as a step naming a console retired years ago. In a crisis, staff improvise, often insecurely."
+          }
+        ]
+      }
+    ],
+    "outro": "Here is a document someone else drafted. Decide where its lines belong."
+  },
+  {
+    "question": "Wren Saltis reviews this excerpt from Highrook Conclave's 'Acceptable Cryptography Policy', which the CEO must re-sign whenever it changes:\n\n  All TLS connections SHALL use TLS 1.3 with the cipher\n  suite TLS_AES_256_GCM_SHA384. Legacy suites are prohibited.\n\nWhich correction BEST fits the governance hierarchy?",
     "correct": [
-      "The specific cipher and version belong in a standard, not a policy"
+      "Move the version and suite into a standard, and let the policy require strong encryption"
     ],
     "incorrect": [
-      "The text uses RFC 2119 keywords, which are reserved for engineering standards rather than governance docs",
-      "The text belongs in a procedure because engineers need exact implementation steps",
-      "The text is correct when a matching procedure repeats it verbatim"
+      "Keep it in the policy, since only a CEO-signed document makes a technical rule binding",
+      "Move it into a guideline, since approved suites change as the industry's practice evolves",
+      "Move it into a procedure, since engineers need the exact suite name to configure servers"
     ],
-    "feedback": "Policies are stable, high-level statements of intent. Specific algorithm choices change as cryptography evolves and belong in a standard so the policy itself rarely needs revision."
+    "feedback": "A named protocol version and cipher suite is a measurable, mandatory requirement, which is a standard's job. The policy should only require strong, current encryption, so it is not re-signed every time cryptography moves on. Standards are binding too, which defeats the 'keep it in the policy' argument. A guideline would make the suite optional, and a procedure holds the configuration steps rather than the rule they carry out."
   },
   {
-    "question": "Highrook's policy states 'systems must use strong, current cryptography' and has not changed in 8 years. The approved-algorithm list is updated once or twice per year. Where is the algorithm list MOST appropriately maintained?",
+    "type": "cloze",
+    "question": "Of the four governance documents, only the {{1}} is optional: staff may follow another method as long as the mandatory documents are satisfied. The {{2}} is rewritten most often because it spells out steps for particular tools and versions, while the {{3}} changes least because it states intent and names no technology.",
+    "blanks": [
+      {
+        "accept": [
+          "guideline",
+          "guidelines"
+        ]
+      },
+      {
+        "accept": [
+          "procedure",
+          "procedures"
+        ]
+      },
+      {
+        "accept": [
+          "policy",
+          "policies"
+        ]
+      }
+    ],
+    "feedback": "Guidelines are recommendations; policies, standards and procedures are all mandatory. Procedures sit closest to the technology, so a platform migration rewrites them from scratch. Policies sit furthest from it, which is why they can stay unchanged for years while the standards and procedures beneath them move."
+  },
+  {
+    "type": "ordering",
+    "question": "A requirement at Greycloak Apothecary flows down through its governance documents. Arrange these statements from the most abstract and stable to the most specific and most often rewritten.",
+    "items": [
+      "Board goal: patients can trust us with their records",
+      "Policy: patient data must be protected wherever it is stored",
+      "Standard: laptops use full-disk encryption with AES-256",
+      "Procedure: open the console, enable disk encryption, escrow the key"
+    ],
+    "feedback": "The board's goal becomes a policy (intent, no technology), the policy becomes a measurable standard (a named algorithm), and the standard becomes a procedure (the exact clicks). Each step down names more technology and so changes more often: a new laptop-management tool rewrites the procedure, a new cipher revises the standard, and neither touches the policy."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: One owner per task",
+    "npc": "val",
+    "intro": "Documents need owners. This scene covers the RACI matrix, which settles who does what before an incident, the rule that splits risky actions between two people, and the executives whose example decides whether anyone follows the rules.",
+    "steps": [
+      {
+        "say": "A **RACI matrix** lists tasks down the side and people across the top, with one letter in each cell. **Responsible** means doing the work, and a task can have several. **Accountable** means answering for the outcome and signing it off.",
+        "beats": [
+          {
+            "say": "A **RACI matrix** lists tasks down the side and people across the top, with one letter in each cell."
+          },
+          {
+            "code": "Task: patch an internet-facing server\n\n            CISO  IT Ops  App owner  Help desk\nPatch it     A     R       C          I",
+            "language": "RACI matrix"
+          },
+          {
+            "say": "**Responsible** means doing the work, and a task can have several. **Accountable** means answering for the outcome and signing it off."
+          }
+        ]
+      },
+      {
+        "say": "**Consulted** people must give their input before the work is done, so the talk runs both ways. **Informed** people are told afterwards: one way. The hard rule: every task needs at least one R and exactly one A. If two people are accountable, nobody is.",
+        "beats": [
+          {
+            "say": "**Consulted** people must give their input before the work is done, so the talk runs both ways. **Informed** people are told afterwards: one way."
+          },
+          {
+            "say": "The hard rule: every task needs at least one R and exactly one A. If two people are accountable, nobody is."
+          }
+        ],
+        "check": {
+          "prompt": "A draft puts 'the Security Team' in the A column for declaring an incident. What is wrong with it?",
+          "answer": "A team is not one person, so no single owner makes the call",
+          "wrong": [
+            "Nothing: a team shares the accountability fairly",
+            "The A belongs with an outside auditor instead"
+          ],
+          "why": "Accountability has to land on one named person who can decide at 3 AM. A whole department in the A column is shared accountability, which dissolves the moment a decision is urgent."
+        }
+      },
+      {
+        "say": "Mapping tasks this way also exposes gaps in **separation of duties**: no single person should be able to both request and approve a high-risk action, such as a large wire transfer. Then a mistake or a fraud takes two people to go wrong.",
+        "beats": [
+          {
+            "say": "Mapping tasks this way also exposes gaps in **separation of duties**: no single person should be able to both request and approve a high-risk action, such as a large wire transfer."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; r [label=\"Analyst\\nrequests wire\"]; a [label=\"Controller\\napproves\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; w [label=\"Wire sent\"]; x [label=\"One person\\nrequests + approves\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r -> a; a -> w; x -> w [style=dashed, label=\" not allowed\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
+              "alt": "An analyst who requests a wire leads to a controller, in green, who approves it, and then to the wire being sent. A separate amber box, one person who requests and approves, has a dashed arrow to the wire marked not allowed.",
+              "caption": "two people for one risky action",
+              "src": "_dot/392882b665763549.svg"
+            }
+          },
+          {
+            "say": "Then a mistake or a fraud takes two people to go wrong."
+          }
+        ]
+      },
+      {
+        "say": "**Management commitment**, the tone at the top, is how far executives actually fund and enforce the program. Staff copy what leaders do, not what they sign. It is proven two ways. **Budget allocation**: a required tool nobody pays for does not exist. **Enforcement**: a rule waived for a star performer stops being a rule for anyone.",
+        "beats": [
+          {
+            "say": "**Management commitment**, the tone at the top, is how far executives actually fund and enforce the program. Staff copy what leaders do, not what they sign."
+          },
+          {
+            "say": "It is proven two ways. **Budget allocation**: a required tool nobody pays for does not exist. **Enforcement**: a rule waived for a star performer stops being a rule for anyone."
+          }
+        ],
+        "check": {
+          "prompt": "A CEO-signed policy requires endpoint detection on every laptop, but the license request has been refused two years running. Which proof of commitment is missing?",
+          "answer": "Budget allocation",
+          "wrong": [
+            "Enforcement"
+          ],
+          "why": "The policy is signed and nobody is being excused; the money is what is missing. A required control with no funding exists only on paper."
+        }
+      }
+    ],
+    "outro": "Here is a real matrix with real gaps. Find them."
+  },
+  {
+    "question": "Pip Hollowfen drafts this incident RACI for Highrook Conclave (R = Responsible, A = Accountable, C = Consulted, I = Informed, - = no role):\n\n  Task                CISO  SOC lead  Legal  PR\n  Declare incident     A      A       I     I\n  Contain hosts        I      R       -     -\n  Notify regulator     A      C       R     I\n  Issue press release  C      -       C     R\n  Brief the board      A      R       C     I\n\nWhich rows break a RACI rule?",
     "correct": [
-      "Standard"
+      "Declare incident",
+      "Contain hosts",
+      "Issue press release"
     ],
     "incorrect": [
-      "Policy",
-      "Procedure",
-      "Guideline"
+      "Notify regulator",
+      "Brief the board"
     ],
-    "feedback": "Frequently changing technical specifics live in standards. Procedures describe how to apply a standard step-by-step; guidelines are advisory; the policy expresses intent and should be stable."
+    "feedback": "Every task needs at least one R and exactly one A. Declare incident has two A's, so accountability is shared and, in practice, missing. Contain hosts and Issue press release have people doing the work but nobody answering for the outcome. Notify regulator and Brief the board each have one A and an R, with the others consulted or informed, which is how a row should look."
   },
   {
-    "question": "Which statements correctly distinguish guidelines from other governance documents? (Select all that apply.)",
+    "type": "cloze",
+    "question": "During a ransomware outbreak at Greycloak Apothecary, the SOC analysts isolating infected hosts are {{1}} for containment. Legal counsel, whose approval is required before the patient portal goes offline, is {{2}}. The communications team, emailed once the portal is down, is {{3}}. The CISO, who signs off on the containment plan and must explain the outcome to the board, is {{4}}.",
+    "blanks": [
+      {
+        "accept": [
+          "Responsible",
+          "R"
+        ],
+        "hint": "RACI role"
+      },
+      {
+        "accept": [
+          "Consulted",
+          "C"
+        ],
+        "hint": "RACI role"
+      },
+      {
+        "accept": [
+          "Informed",
+          "I"
+        ],
+        "hint": "RACI role"
+      },
+      {
+        "accept": [
+          "Accountable",
+          "A"
+        ],
+        "hint": "RACI role"
+      }
+    ],
+    "feedback": "The analysts do the work (Responsible). Legal's input is required before acting, a two-way exchange (Consulted). Communications is told after the fact, one way (Informed). The CISO is the single owner who answers for the result (Accountable), and that column may hold only one name per task."
+  },
+  {
+    "question": "At Marketstone Exchange, the treasury manager can create a new payee in the payment system and approve a wire to it, with no one else involved. The CFO wants the gap closed this month without buying new software. Which control BEST closes it?",
     "correct": [
-      "Guidelines are recommended best practices, not mandatory",
-      "Guidelines often suggest how to meet a standard or policy",
-      "Failure to follow a guideline is generally not a compliance violation",
-      "Guidelines are usually flexible aids teams can adapt to local implementation needs"
+      "Require a second person to approve new payees and any wire above a set threshold"
     ],
     "incorrect": [
-      "Guidelines override policies when they conflict",
-      "Guidelines are legally binding once approved by the board"
+      "Name the treasury manager as the single Accountable owner for wire transfers in the RACI",
+      "Require annual security awareness training for everyone on the treasury team",
+      "Have internal audit review a sample of the month's wires at each quarter's end"
     ],
-    "feedback": "Guidelines are advisory. Policies and standards are mandatory; guidelines suggest *how* to comply but do not themselves create binding obligations."
+    "feedback": "One person can both request and approve a high-risk action, so the fix is separation of duties: a second approver, which needs a workflow change rather than new software. Naming one accountable owner is sound RACI practice but leaves that same person able to act alone. Training does not remove the one-person path, and a quarterly sample review finds a fraudulent wire only after the money has gone."
   },
   {
-    "question": "Pip drafts a RACI for 'declare a security incident' and marks both the SOC manager and the CISO as Accountable. Which RACI rule does this violate?",
+    "question": "Selene Marrow's MFA policy was signed by the CEO last quarter, yet enrollment has stalled at 60%. Staff keep pointing to the COO's permanent exemption ('no time for it'). There is no budget for new tooling this year. Which action BEST restores the program?",
     "correct": [
-      "Each activity should have exactly one role marked as Accountable"
+      "Revoke the COO's exemption and have the executives enroll first, visibly"
     ],
     "incorrect": [
-      "Each activity should assign the same role as both Responsible and Accountable",
-      "Each activity requires a Consulted role from outside the security team",
-      "Each activity lists Informed roles in alphabetical order"
+      "Reissue the policy with stronger wording and a fresh signature from the board",
+      "Make the help desk Responsible for chasing every unenrolled employee",
+      "Buy a phishing-resistant MFA product so that enrollment is easier"
     ],
-    "feedback": "RACI's central discipline is a single Accountable role per activity. Multiple A's reintroduce the ambiguity the matrix exists to remove."
+    "feedback": "The workforce is copying leadership: the exemption tells everyone the rule bends for important people, which is a failure of enforcement. Removing it and having executives enroll publicly fixes the signal at no cost. A stronger-worded policy is more paper, chasing staff treats the symptom while the exemption stands, and new tooling breaks the budget constraint without touching the cause."
   },
   {
-    "question": "Which of the following are valid uses of a RACI matrix in a security program? (Select all that apply.)",
+    "type": "npc_demo",
+    "question": "NPC: The people in the path",
+    "npc": "val",
+    "intro": "Many attackers skip the software and simply ask someone to open the door. This scene covers the phishing family, the quieter leaks called OPSEC failures, and the training and reporting that change what people actually do.",
+    "steps": [
+      {
+        "say": "**Social engineering** is manipulating people into acting or revealing information. It pulls on helpfulness, deference to authority, urgency and curiosity. **Phishing** is its commonest form: a fraudulent message, usually email, made to look like a trusted sender and carrying a bad link, a malware attachment or a fake login page. **Spear phishing** aims at one person or team, using research to sound like an insider. **Whaling** is spear phishing aimed at executives, such as the CEO or CFO, who can approve large payments.",
+        "beats": [
+          {
+            "say": "**Social engineering** is manipulating people into acting or revealing information. It pulls on helpfulness, deference to authority, urgency and curiosity."
+          },
+          {
+            "say": "**Phishing** is its commonest form: a fraudulent message, usually email, made to look like a trusted sender and carrying a bad link, a malware attachment or a fake login page."
+          },
+          {
+            "say": "**Spear phishing** aims at one person or team, using research to sound like an insider. **Whaling** is spear phishing aimed at executives, such as the CEO or CFO, who can approve large payments."
+          }
+        ]
+      },
+      {
+        "say": "**Vishing** is the same game by telephone, often with spoofed caller ID and sometimes with an AI-cloned voice. **Smishing** arrives as a text message.",
+        "beats": [
+          {
+            "say": "**Vishing** is the same game by telephone, often with spoofed caller ID and sometimes with an AI-cloned voice. **Smishing** arrives as a text message."
+          },
+          {
+            "code": "Caller ID: IT Service Desk (ext. 4400)\n\"Hi Dana, it's Marco from the desk. We're moving\nyour mailbox tonight. I just need the six-digit\ncode that's about to pop up on your phone.\"",
+            "language": "call transcript"
+          }
+        ],
+        "check": {
+          "prompt": "Which kind of attack is this, and what does it lean on?",
+          "answer": "Vishing, leaning on her wish to help IT and on urgency",
+          "wrong": [
+            "Smishing, since the code arrives on her phone",
+            "Whaling, since it targets her mailbox"
+          ],
+          "why": "It happens on a phone call, so it is vishing; the code sent to her phone is the prize, not the channel. Dana is not an executive, so it is not whaling. The friendly helper and the 'tonight' deadline are the levers."
+        }
+      },
+      {
+        "say": "**OPSEC** (operational security) failures are passive leaks, not active manipulation: a badge photo online, a whiteboard behind a video call, a merger discussed in a lift. Each scrap is harmless alone. Together they script the next spear phish or vishing call. **Situational awareness** is the defense: the habit of seeing your own posts, calls and surroundings as an adversary would.",
+        "beats": [
+          {
+            "say": "**OPSEC** (operational security) failures are passive leaks, not active manipulation: a badge photo online, a whiteboard behind a video call, a merger discussed in a lift."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; post [label=\"Profile post:\\nmigrated us to\\nServer 2019\"]; photo [label=\"Team photo:\\nnames on badges\"]; atk [label=\"Attacker builds\\na pretext\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; call [label=\"Vishing call\\nto help desk\"]; reset [label=\"Password\\nreset given\"]; post -> atk; photo -> atk; atk -> call; call -> reset; }",
+              "alt": "Two public scraps, a profile post about migrating to Server 2019 and a team photo showing names on badges, both feed an amber box where an attacker builds a pretext. That leads to a vishing call to the help desk, and then to a password reset.",
+              "caption": "harmless scraps, combined",
+              "src": "_dot/d0a62745b01a2b97.svg"
+            }
+          },
+          {
+            "say": "Each scrap is harmless alone. Together they script the next spear phish or vishing call."
+          },
+          {
+            "say": "**Situational awareness** is the defense: the habit of seeing your own posts, calls and surroundings as an adversary would."
+          }
+        ]
+      },
+      {
+        "say": "An annual slide deck rarely changes behavior. **Simulated phishing** that mirrors the lures staff really get does, when each click brings a one-minute lesson naming the exact detail that was missed. Make it role-based, and teach **privacy** too: help-desk staff call a caller back on the directory number before resetting anything, and everyone learns how to handle other people's personal data. Track two numbers: the **click rate**, the share of recipients who fall for a simulation, and the **report rate**, the share who report it. Then **communication** and **reporting** close the loop: one Report Phishing button, a promise that reporting is never punished, and a SOC that triages each report and warns everyone when a lure is real.",
+        "beats": [
+          {
+            "say": "An annual slide deck rarely changes behavior. **Simulated phishing** that mirrors the lures staff really get does, when each click brings a one-minute lesson naming the exact detail that was missed."
+          },
+          {
+            "say": "Make it role-based, and teach **privacy** too: help-desk staff call a caller back on the directory number before resetting anything, and everyone learns how to handle other people's personal data."
+          },
+          {
+            "say": "Track two numbers: the **click rate**, the share of recipients who fall for a simulation, and the **report rate**, the share who report it."
+          },
+          {
+            "say": "Then **communication** and **reporting** close the loop: one Report Phishing button, a promise that reporting is never punished, and a SOC that triages each report and warns everyone when a lure is real."
+          }
+        ]
+      }
+    ],
+    "outro": "Five incidents from one city hall. Name what each one is."
+  },
+  {
+    "type": "matching",
+    "question": "Match each incident at Thornwood Civic Trust to the attack or failure it shows.",
+    "pairs": [
+      {
+        "term": "Spear phishing",
+        "definition": "An email to the parks manager cites her real grant project and asks her to open a 'revised budget'"
+      },
+      {
+        "term": "Whaling",
+        "definition": "A message crafted for the city's chief executive urges her to approve an urgent seven-figure transfer"
+      },
+      {
+        "term": "Vishing",
+        "definition": "A caller spoofing the IT desk's number asks a clerk to read out the code just sent to her phone"
+      },
+      {
+        "term": "Smishing",
+        "definition": "A text 'from the mayor' asks a clerk to buy gift cards before the mayor's meeting ends"
+      },
+      {
+        "term": "OPSEC failure",
+        "definition": "A staffer's photo of the server room, posted online, shows rack labels and model numbers"
+      }
+    ],
+    "feedback": "Spear phishing uses research on one person (her real project). Whaling is spear phishing aimed at a top executive who can move money. Vishing happens on a call, even when the prize is a code sent by text; smishing is the text message itself. The server-room photo is no attack at all: it is a passive leak an attacker can later combine with other scraps."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The habit of looking at your own posts, calls and surroundings the way an adversary would, so a leak is caught before it happens, is called ___ awareness.",
     "correct": [
-      "Clarifying who approves a change to a firewall ruleset",
-      "Removing ambiguity about who declares an incident",
-      "Documenting which stakeholders must be informed of a breach",
-      "Clarifying which teams must be consulted before a high-risk production change"
+      "situational"
+    ],
+    "case_sensitive": false,
+    "feedback": "Situational awareness is the defense against OPSEC failures. It trains people to notice that a badge photo, a whiteboard in a video call or a boast about a server migration hands an attacker the details for a convincing pretext."
+  },
+  {
+    "question": "Kaeli Renn is sorting last quarter's human-element findings at Wyrmkeep Logistics. Which of these are OPSEC failures rather than social-engineering attacks?",
+    "correct": [
+      "An engineer's public profile names the exact firewall model the company runs",
+      "A team photo posted online shows a whiteboard listing internal VLAN names",
+      "Two managers discuss an unannounced acquisition in a crowded hotel lift"
     ],
     "incorrect": [
-      "Replacing the organization's risk register",
-      "Defining the cryptographic algorithms approved for use"
+      "A caller posing as a supplier asks the help desk to reset a password",
+      "A text claiming to be the CEO asks a clerk to buy gift cards today",
+      "An email posing as payroll links to a fake staff login page"
     ],
-    "feedback": "RACI matrices clarify roles and decision rights. They do not replace risk registers, contracts, or technical standards."
+    "feedback": "OPSEC failures are passive leaks: staff give information away before anyone has contacted them. The profile, the whiteboard and the lift conversation all fit. The other three are active manipulation, an attacker reaching out by phone (vishing), by text (smishing) or by email (phishing). The two often chain: leaked details are what make the later call or email believable."
   },
   {
-    "question": "Selene Marrow wants to demonstrate visible management commitment to the security program. Which action is the MOST effective demonstration to employees?",
+    "question": "Accounts payable at Wyrmkeep Logistics receives an email from a long-standing supplier's genuine address asking that next week's payment go to a new bank account. The domain, signature and invoice numbering all check out. Which response BEST protects the payment?",
     "correct": [
-      "Visibly signing the policy and funding the program in the executive budget"
+      "Confirm the change by calling the supplier on the number already in the vendor record"
     ],
     "incorrect": [
-      "Launching the program in a company-wide meeting but leaving funding to each department",
-      "Posting the policy to the intranet quietly without executive comment or follow-up",
-      "Requiring the IT department alone to attend the annual security awareness training"
+      "Reply to the email and ask the supplier to confirm the new details in writing",
+      "Call the phone number in the email's signature block before making the change",
+      "Accept it, because the sender's domain matches exactly and is not a look-alike"
     ],
-    "feedback": "Tone from the top — visible sponsorship plus budget — is the canonical signal of management commitment."
+    "feedback": "A genuine address proves only that the message came from the supplier's mailbox, and that mailbox may be in an attacker's hands. The safe check uses a channel the attacker cannot control: a number you held before this email arrived. Replying goes back to the same mailbox, and the signature's phone number was supplied by the very message under suspicion."
   },
   {
-    "question": "Mira receives this email at Greycloak Apothecary:\n\n  From: it-support@gr3ycloak-apothecary.com\n  Subject: Mandatory password reset — action required in 1 hour\n  Body:    Click https://greycloak-portal.support-reset.io to confirm.\n\nWhich element is the STRONGEST single indicator that this is a phishing attempt?",
+    "type": "ordering",
+    "question": "Greycloak Apothecary is replacing its annual training video with a real awareness program. Arrange the steps in the order they should happen.",
+    "items": [
+      "Find out which roles handle which data, and which lures they actually receive",
+      "Write role-based lessons, such as privacy rules for staff who handle patient data",
+      "Run simulations that mirror those lures, with an instant lesson after each click",
+      "Measure click and report rates, then adjust the lures and lessons"
+    ],
+    "feedback": "You cannot write role-based lessons, such as how pharmacy staff may share patient data, until you know the roles, the data they handle and the lures they face, and you cannot simulate a lure you have not identified. Measurement comes after the simulations run, and its results feed the next round, which is what turns a one-off course into a program."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Greycloak Apothecary's monthly phishing simulation report:\n\n  Delivered:                {{sent}}\n  Clicked the link:         {{clicked}}\n  Pressed Report Phishing:  {{reported}}\n\nWhat was the click rate, as a percentage? Round to one decimal place if needed.",
+    "variables": {
+      "sent": {
+        "values": [
+          200,
+          250,
+          500,
+          1000
+        ]
+      },
+      "clicked": {
+        "min": 8,
+        "max": 60
+      },
+      "reported": {
+        "values": [
+          24,
+          41,
+          57,
+          66,
+          83
+        ]
+      }
+    },
+    "answer": {
+      "expr": "clicked * 100 / sent",
+      "tolerance_abs": 0.05,
+      "display_decimals": 1
+    },
+    "feedback_template": "Click rate is clicked divided by delivered, times 100: {{clicked}} of {{sent}} is {{expected}}%. The {{reported}} reports measure something else, the report rate. A falling click rate and a rising report rate are both signs that the program is working."
+  },
+  {
+    "question": "At Highrook Conclave, staff press Report Phishing often, but a lure reported by three employees on Monday still fooled a treasury analyst on Wednesday: the reports sat unread in a shared mailbox. Which changes close the gap?",
     "correct": [
-      "The sender domain is a look-alike that does not match the real organization"
+      "Have the SOC triage each report and pull matching messages from every mailbox",
+      "Warn all staff quickly whenever a reported lure is confirmed as malicious"
     ],
     "incorrect": [
-      "The presence of urgent language is conclusive proof of a malicious email",
-      "The one-hour deadline is the strongest indicator because phishing often creates urgency",
-      "Users should ignore the link and navigate to the normal portal instead of clicking"
+      "Run the phishing simulations weekly so that staff stay alert to new lures",
+      "Move the Report Phishing button to the top of every mail window",
+      "Discipline staff who click a simulated phish, so reporting is taken seriously"
     ],
-    "feedback": "Look-alike domains (gr3ycloak vs. greycloak; support-reset.io vs. the real domain) are the highest-fidelity indicator. Urgency, punctuation, and password references are weak signals on their own."
+    "feedback": "Staff did their part; the loop broke after the button. Triage that removes the remaining copies, plus a warning to everyone, would have stopped Wednesday's click. More simulations and a bigger button improve reporting, which was already happening. Punishing clickers discourages the very reporting the program depends on."
   },
   {
-    "question": "Which of the following are recognized social engineering techniques? (Select all that apply.)",
-    "correct": [
-      "Pretexting",
-      "Vishing",
-      "Smishing",
-      "Baiting",
-      "Tailgating",
-      "Quid pro quo"
+    "type": "npc_demo",
+    "question": "NPC: The What, the How, and the proof",
+    "npc": "val",
+    "intro": "Frameworks give a program a tested blueprint and a shared language for the board, IT and auditors. This scene sorts the ones you will meet most: those for running IT well, and those for securing it and proving it.",
+    "steps": [
+      {
+        "say": "**COBIT**, from ISACA, speaks to executives and auditors. It connects business risk to **control objectives**, such as 'IT incidents must be managed and resolved', and then stops: it is the What. **ITIL**, the global standard for IT service management, is the How: log the ticket, set its severity, escalate from Tier 1 to Tier 2, run the review. The two work together, not as rivals. Two more sit beside them: **TOGAF**, for designing enterprise architecture, and **ISO/IEC 38500**, principles for directors on the acceptable use of IT.",
+        "beats": [
+          {
+            "say": "**COBIT**, from ISACA, speaks to executives and auditors. It connects business risk to **control objectives**, such as 'IT incidents must be managed and resolved', and then stops: it is the What."
+          },
+          {
+            "say": "**ITIL**, the global standard for IT service management, is the How: log the ticket, set its severity, escalate from Tier 1 to Tier 2, run the review. The two work together, not as rivals."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; c [label=\"COBIT objective:\\nincidents managed\\nand resolved\"]; subgraph cluster_i { label=\"ITIL process\"; fontcolor=\"#5aaa5a\"; color=\"#3a6a3a\"; style=rounded; { rank=same; i1 [label=\"log\\nticket\"]; i2 [label=\"set\\nseverity\"]; i3 [label=\"escalate\\nTier 1 to 2\"]; i4 [label=\"review\"]; } i1 -> i2; i2 -> i3; i3 -> i4; } c -> i1 [label=\" how?\"]; }",
+              "alt": "A box for a COBIT objective, incidents managed and resolved, points down into a zone labelled ITIL process holding four steps in a row: log ticket, set severity, escalate Tier 1 to 2, review.",
+              "caption": "the objective, then the process",
+              "src": "_dot/b3c84448dedd72ba.svg"
+            }
+          },
+          {
+            "say": "Two more sit beside them: **TOGAF**, for designing enterprise architecture, and **ISO/IEC 38500**, principles for directors on the acceptable use of IT."
+          }
+        ],
+        "check": {
+          "prompt": "A hospital's audit committee asks whether IT's goals actually support uninterrupted patient care. Which framework speaks to that question?",
+          "answer": "COBIT",
+          "wrong": [
+            "ITIL",
+            "TOGAF"
+          ],
+          "why": "Aligning IT with business goals and setting control objectives is COBIT's job. ITIL would answer how the help desk runs a ticket; TOGAF would answer how the architecture is designed."
+        }
+      },
+      {
+        "say": "Security frameworks layer on top. **ISO/IEC 27001** sets out an **ISMS**, an information security management system; an accredited body audits it and issues a certificate. ISO/IEC 27002 supplies control guidance. The **NIST Cybersecurity Framework** (CSF) 2.0 is voluntary and self-assessed, with six functions: Govern, Identify, Protect, Detect, Respond, Recover. Govern, added in 2024, covers policy, roles and oversight.",
+        "beats": [
+          {
+            "say": "Security frameworks layer on top. **ISO/IEC 27001** sets out an **ISMS**, an information security management system; an accredited body audits it and issues a certificate. ISO/IEC 27002 supplies control guidance."
+          },
+          {
+            "say": "The **NIST Cybersecurity Framework** (CSF) 2.0 is voluntary and self-assessed, with six functions: Govern, Identify, Protect, Detect, Respond, Recover. Govern, added in 2024, covers policy, roles and oversight."
+          }
+        ]
+      },
+      {
+        "say": "**SOC 2** is a report, not a certificate: an independent auditor tests a service provider's controls against the AICPA **Trust Services Criteria**. A **Type 1** report judges whether the controls are well designed on a single date. A **Type 2** judges whether they operated effectively over a period, often six to twelve months, and it is what most buyers ask for.",
+        "beats": [
+          {
+            "say": "**SOC 2** is a report, not a certificate: an independent auditor tests a service provider's controls against the AICPA **Trust Services Criteria**."
+          },
+          {
+            "say": "A **Type 1** report judges whether the controls are well designed on a single date. A **Type 2** judges whether they operated effectively over a period, often six to twelve months, and it is what most buyers ask for."
+          }
+        ]
+      },
+      {
+        "say": "**CIS Benchmarks** are consensus hardening guides for specific products, such as a Windows Server baseline. The **CIS Controls** (v8.1) are 18 prioritized controls in three **Implementation Groups**. Implementation Group 1 holds the **foundational best practices** every other framework assumes: asset inventory, secure configuration, patching, access control, backups and logging. Last, the **CSA Cloud Controls Matrix** (CCM) is the Cloud Security Alliance's cloud-specific control set, mapped to the other standards.",
+        "beats": [
+          {
+            "say": "**CIS Benchmarks** are consensus hardening guides for specific products, such as a Windows Server baseline. The **CIS Controls** (v8.1) are 18 prioritized controls in three **Implementation Groups**."
+          },
+          {
+            "say": "Implementation Group 1 holds the **foundational best practices** every other framework assumes: asset inventory, secure configuration, patching, access control, backups and logging."
+          },
+          {
+            "say": "Last, the **CSA Cloud Controls Matrix** (CCM) is the Cloud Security Alliance's cloud-specific control set, mapped to the other standards."
+          }
+        ]
+      }
     ],
-    "incorrect": [],
-    "feedback": "Pretexting, vishing, smishing, baiting, tailgating, and quid pro quo are all recognized social-engineering techniques because they manipulate people rather than exploiting technical flaws directly."
+    "outro": "First, the oldest confusion in the room: the What and the How."
   },
   {
-    "question": "Which of the following BEST describes operational security (OPSEC) as applied to an enterprise security program?",
-    "correct": [
-      "Protecting unclassified information whose aggregation could enable an adversary"
-    ],
-    "incorrect": [
-      "Encrypting enterprise data at rest so that stolen disks yield no readable content",
-      "Requiring multi-factor authentication for privileged administrator accounts",
-      "Performing quarterly vulnerability scans across production systems"
-    ],
-    "feedback": "OPSEC is the discipline of protecting *aggregations of unclassified information* (org charts, travel schedules, vendor lists) that an adversary could combine to gain advantage."
-  },
-  {
-    "question": "Highrook is suffering recurring outages traced to inconsistent emergency-change handling — different teams approve, deploy, and document changes in different ways. Which framework MOST directly addresses this gap?",
+    "question": "Highrook Conclave keeps suffering outages traced to emergency changes: each team approves, deploys and documents them in its own way. The audit committee is satisfied with IT's control objectives; what is missing is a consistent day-to-day process. Which framework BEST fills the gap?",
     "correct": [
       "ITIL"
     ],
     "incorrect": [
       "COBIT",
-      "ISO 27001",
-      "PCI DSS"
+      "TOGAF",
+      "ISO/IEC 38500"
     ],
-    "feedback": "Change management is a core ITIL service-management practice. COBIT addresses governance (who is accountable); ISO 27001 and PCI DSS specify controls but do not prescribe service-management process structure."
+    "feedback": "ITIL is the How: it specifies service-management processes such as change management, so every team logs, approves and documents changes the same way. COBIT supplies the objectives, which the committee already has. TOGAF is for designing enterprise architecture, and ISO/IEC 38500 gives directors principles for using IT; neither defines an operational change process."
   },
   {
-    "question": "Which statements correctly compare COBIT and ITIL? (Select all that apply.)",
-    "correct": [
-      "COBIT emphasizes governance and accountability across IT and business",
-      "ITIL emphasizes service management practices and processes",
-      "The two frameworks are commonly used together rather than as alternatives",
-      "COBIT helps define governance objectives while ITIL helps operationalize service workflows"
+    "type": "cloze",
+    "question": "A hospital's {{1}} control objective says system changes must not disrupt patient care. Its IT team meets that objective with {{2}}-style change management: a Change Advisory Board reviews each patch's ticket and rollback plan before approving it. Later, when the hospital redesigns its whole enterprise architecture, it turns to {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "COBIT"
+        ],
+        "hint": "framework"
+      },
+      {
+        "accept": [
+          "ITIL"
+        ],
+        "hint": "framework"
+      },
+      {
+        "accept": [
+          "TOGAF"
+        ],
+        "hint": "framework"
+      }
     ],
-    "incorrect": [
-      "ITIL is published by ISACA; COBIT is published by AXELOS",
-      "COBIT replaces the need for any security control framework"
-    ],
-    "feedback": "COBIT (ISACA) and ITIL (now Axelos/PeopleCert) are complementary: governance + service management. Neither is a regulation, and neither replaces a security control framework."
+    "feedback": "COBIT states what must be true (the control objective), ITIL supplies how operations achieve it (the Change Advisory Board process), and TOGAF is the framework for designing enterprise architecture. The hospital uses all three, each for its own job."
   },
   {
-    "question": "Wyrmkeep Logistics maintains separate staging and production environments. Which data governance practice MOST reduces the risk that real customer PII leaks via the staging environment?",
+    "question": "Stormhall Aegis is bidding on a European defense contract that requires an internationally recognized, certifiable information security management system. Which BEST meets the requirement?",
     "correct": [
-      "Refresh staging using masked, tokenized, or synthetic data instead of real PII"
+      "ISO/IEC 27001 certification, granted after an external audit"
     ],
     "incorrect": [
-      "Grant the full developer team read access to the production database for environment parity",
-      "Refresh staging weekly from production using the standard backup-and-restore process",
-      "Defer production-grade access controls in staging until a defect is reported"
+      "A NIST CSF 2.0 self-assessment that covers all six functions",
+      "A SOC 2 Type 2 report against the Trust Services Criteria",
+      "Full adoption of all 18 CIS Controls across the company"
     ],
-    "feedback": "Masking, tokenization, or synthetic data prevents real PII from existing where it can leak. Refreshing staging from production replicates the very data you wanted to keep out."
+    "feedback": "ISO/IEC 27001 is the international standard for an ISMS, and an accredited body certifies against it after an external audit. NIST CSF is voluntary and self-assessed, so it yields no certificate. A SOC 2 report is an auditor's attestation on a service provider's controls, not an ISMS certification. The CIS Controls are prioritized safeguards with no certification attached."
   },
   {
-    "question": "Which of the following are appropriate data governance controls when promoting code and data between staging and production? (Select all that apply.)",
+    "question": "Maven Drift is vetting a SaaS logging platform for Cinderpost Couriers. Procurement requires independent evidence that the vendor's controls actually operated effectively over the past year. The vendor offers four documents. Which one meets the requirement?",
     "correct": [
-      "Separation of duties between who can deploy and who can approve",
-      "Distinct credentials and encryption keys per environment",
-      "Audit logs of all data movement between environments",
-      "Documented approvals for production data refreshes or promotion workflows"
+      "A SOC 2 Type 2 report covering the last twelve months"
     ],
     "incorrect": [
-      "Shared service accounts reused across development, staging, and production",
-      "Allowing production data to be copied to developer laptops for debugging"
+      "A SOC 2 Type 1 report, issued only last month",
+      "The vendor's own NIST CSF 2.0 self-assessment for the year",
+      "Last week's CIS Benchmark scores for the vendor's servers"
     ],
-    "feedback": "Per-environment isolation, segregated duties, and auditability are core data-governance controls."
+    "feedback": "Only a Type 2 report tests whether controls operated effectively over a period, and an independent auditor wrote it. A Type 1, however recent, judges design on a single date. A NIST CSF self-assessment is the vendor marking its own work, and a week-old hardening score says nothing about the past year."
   },
   {
-    "question": "Marketstone routes all card transactions through a P2PE-validated payment processor; cardholder data never enters Marketstone's network in the clear. What is the PRIMARY effect on Marketstone's PCI DSS posture?",
+    "type": "fill_blank",
+    "question": "NIST CSF 2.0 has six functions. Identify, Protect, Detect, Respond and Recover were joined in 2024 by ___, which covers the policies, roles and oversight of the security program.",
     "correct": [
-      "The PCI DSS scope of Marketstone's environment is significantly reduced"
+      "Govern"
     ],
-    "incorrect": [
-      "Marketstone can rely on the processor's assessment alone because payment handling is outsourced",
-      "Marketstone must now also become a PCI Qualified Security Assessor itself",
-      "Marketstone is required to obtain a SOC 1 Type I report each fiscal quarter"
-    ],
-    "feedback": "Validated P2PE removes systems from PCI DSS scope where cardholder data is never exposed. PCI obligations remain but are dramatically narrower; the merchant does not become exempt."
-  },
-  {
-    "question": "Stormhall Aegis bids on EU defense contracts that require an internationally recognized, certifiable Information Security Management System. Which standard BEST satisfies the requirement?",
-    "correct": [
-      "ISO/IEC 27001"
-    ],
-    "incorrect": [
-      "NIST Cybersecurity Framework",
-      "PCI DSS",
-      "ITIL"
-    ],
-    "feedback": "ISO/IEC 27001 is the canonical international ISMS *certification* standard. NIST CSF is a voluntary framework (not certifiable in the same sense), PCI DSS is payment-card-specific, and ITIL covers service management."
-  },
-  {
-    "question": "Cinderpost Couriers operates a SaaS that processes EU residents' personal data, accepts credit cards, and serves California consumers. Which compliance regimes apply to its operations? (Select all that apply.)",
-    "correct": [
-      "GDPR",
-      "PCI DSS",
-      "CCPA / CPRA",
-      "U.S. state breach-notification laws"
-    ],
-    "incorrect": [
-      "HIPAA",
-      "GLBA"
-    ],
-    "feedback": "GDPR (EU personal data), PCI DSS (cards), and CCPA/CPRA (California consumers) all apply. HIPAA covers U.S. PHI, FERPA covers education records, and GLBA covers U.S. financial institutions."
-  },
-  {
-    "question": "Which of the following are core requirements an organization must satisfy under the EU GDPR? (Select all that apply.)",
-    "correct": [
-      "A lawful basis for processing personal data",
-      "Notification of certain personal-data breaches to the supervisory authority within 72 hours",
-      "Honoring data-subject rights such as access, rectification, and erasure",
-      "Applying data-minimization and purpose-limitation principles",
-      "Implementing privacy-by-design measures for relevant processing activities"
-    ],
-    "incorrect": [
-      "Storing all personal data exclusively on servers physically located in Switzerland",
-      "Obtaining a U.S. SOC 2 Type II report before any processing"
-    ],
-    "feedback": "GDPR requires a lawful basis, breach notification, and data-subject rights, among others. It does not mandate a specific country, cipher mode, or U.S. attestation."
-  },
-  {
-    "question": "Thornwood Civic Trust serves California residents. Which statement BEST describes a key right granted under the CCPA / CPRA?",
-    "correct": [
-      "The right to know, delete, and opt out of the sale of personal information"
-    ],
-    "incorrect": [
-      "The right to demand free legal representation from the business in any dispute",
-      "The right to receive a portion of the company's annual profits as compensation",
-      "The right to require the business to relocate all of its servers to California"
-    ],
-    "feedback": "CCPA/CPRA grants California consumers rights to know, delete, correct, and opt out of sale/sharing of their personal information."
-  },
-  {
-    "question": "Which of the following BEST defines 'data sovereignty' in a cross-border compliance context?",
-    "correct": [
-      "Data is governed by the laws of the country where it is collected or stored"
-    ],
-    "incorrect": [
-      "Data is governed only by the laws of the country where the data subject resides",
-      "Individuals may refuse all data collection by any party at any time without consequence",
-      "Cloud providers are obligated to publish the source code of their data-handling services"
-    ],
-    "feedback": "Data sovereignty is a jurisdictional concept: data residing in country X is governed by country X's laws."
-  },
-  {
-    "question": "Which of the following are commonly cited drivers behind the €1.2 billion fine issued to Meta in 2023 by the Irish DPC? (Select all that apply.)",
-    "correct": [
-      "Transfers of EU user personal data to the United States without an adequate legal mechanism",
-      "Concerns that U.S. surveillance law could compel access to transferred data",
-      "Findings related to violations of Chapter V of the GDPR",
-      "Use of transfer arrangements regulators concluded were insufficient for the risk"
-    ],
-    "incorrect": [
-      "Failure to implement multi-factor authentication for end users",
-      "Unpaid PCI DSS assessment fees owed to the card brands"
-    ],
-    "feedback": "The Meta fine arose from EU-to-U.S. transfers under Standard Contractual Clauses that the DPC found inadequate given U.S. surveillance law — a Chapter V (international transfers) issue."
-  },
-  {
-    "question": "Selene must integrate privacy obligations from GDPR, CCPA, and HIPAA into a single internal program. Which approach is MOST effective?",
-    "correct": [
-      "Build a unified control set, applying the strictest requirement per area"
-    ],
-    "incorrect": [
-      "Maintain three fully separate policies, procedures, and training programs with no overlap",
-      "Apply only the regulation tied to headquarters and ignore obligations from the others",
-      "Wait for an audit finding before implementing controls from any given regulation"
-    ],
-    "feedback": "A common-control framework reduces duplication and applies the highest-water-mark requirement once."
-  },
-  {
-    "question": "Highrook is a U.S.-chartered commercial bank that issues credit cards and is publicly traded. Which compliance regimes are likely to apply to its operations? (Select all that apply.)",
-    "correct": [
-      "GLBA",
-      "SOX",
-      "PCI DSS",
-      "U.S. state breach-notification laws"
-    ],
-    "incorrect": [
-      "HIPAA",
-      "NERC CIP"
-    ],
-    "feedback": "Commercial banks handling customer financial data are subject to GLBA, and a publicly traded bank must satisfy SOX. Issuing payment cards brings PCI DSS into scope. HIPAA governs protected health information, and NERC CIP applies to bulk electric system entities rather than ordinary commercial banking."
-  },
-  {
-    "question": "Which of the following are typical capabilities of a modern GRC platform? (Select all that apply.)",
-    "correct": [
-      "Mapping a single control to multiple regulatory frameworks",
-      "Automated evidence collection from connected systems",
-      "Workflow tracking for risk acceptance and exception requests",
-      "Continuous compliance dashboards for executives"
-    ],
-    "incorrect": [
-      "Replacing the need for a SIEM or EDR",
-      "Performing penetration tests against production",
-      "Generating cryptographic keys for an enterprise PKI"
-    ],
-    "feedback": "GRC tools centralize control mapping, evidence, exceptions, and reporting. They do not perform detection/response, offensive testing, or key generation."
-  },
-  {
-    "question": "Wren is evaluating two GRC tools. Which evaluation criterion is MOST aligned with reducing audit fatigue in a multi-framework environment?",
-    "correct": [
-      "Strength of pre-built crosswalks between frameworks like NIST CSF, ISO 27001, and PCI DSS"
-    ],
-    "incorrect": [
-      "Total number of individual control statements the tool ships in its built-in content library",
-      "Number of supported user-interface languages and regional date formats in the product",
-      "Number of customizable dashboard widgets shipped with the default configuration"
-    ],
-    "feedback": "Cross-framework mapping is what allows a single piece of evidence to satisfy multiple audits."
-  },
-  {
-    "question": "Selene is launching a new awareness program at Greycloak, where most users handle PHI under HIPAA. Which is the BEST FIRST step in designing the program?",
-    "correct": [
-      "Identify the roles, data types, and regulations the workforce actually handles"
-    ],
-    "incorrect": [
-      "Purchase the most popular general-purpose awareness training catalog available",
-      "Schedule one-time mandatory training in the cheapest delivery format available",
-      "Send simulated phishing messages to all staff before any training is offered"
-    ],
-    "feedback": "Tailoring starts with understanding the audience and their actual obligations. Generic catalogs and untargeted phishing simulations skip the diagnosis step."
-  },
-  {
-    "question": "Wren is justifying a GRC platform purchase to the board. Which scenario provides the STRONGEST ROI argument for adopting one?",
-    "correct": [
-      "The organization is audited annually against several overlapping compliance frameworks"
-    ],
-    "incorrect": [
-      "The organization has a single regulator with one consolidated audit cycle each fiscal year",
-      "The organization recently outsourced all of its technology operations to a single vendor",
-      "The organization's compliance program currently consists only of a one-page policy"
-    ],
-    "feedback": "GRC platforms pay off most when control evidence can be reused across many overlapping audits. With a single audit and minimal program, manual processes are often cheaper than the platform."
-  },
-  {
-    "question": "Highrook's compliance lead is scoping the bank's audit program for the year. Which regulatory regimes belong in scope for a publicly traded, card-issuing U.S. commercial bank? (Select all that apply.)",
-    "correct": [
-      "GLBA",
-      "SOX",
-      "PCI DSS"
-    ],
-    "incorrect": [
-      "FERPA",
-      "HIPAA",
-      "NERC CIP"
-    ],
-    "feedback": "GLBA covers financial-services privacy and safeguarding; SOX covers financial-reporting controls for public companies; PCI DSS applies to card issuers. FERPA (education), HIPAA (healthcare), and NERC CIP (bulk electric) are sector-specific to other industries."
-  },
-  {
-    "question": "Wren is preparing for a SOX audit. Which control area is MOST DIRECTLY in SOX scope?",
-    "correct": [
-      "Internal controls over financial reporting and the systems producing them"
-    ],
-    "incorrect": [
-      "Cardholder data tokenization at the merchant point-of-sale terminals",
-      "Encryption of patient health information at rest in EHR backend systems",
-      "Reliability of bulk-electric-system operational technology cybersecurity"
-    ],
-    "feedback": "SOX (Section 404) targets ICFR — internal controls over financial reporting and the IT systems supporting it. The distractors describe scopes properly addressed by PCI DSS, HIPAA, and NERC CIP respectively."
-  },
-  {
-    "question": "A U.S. federal agency requires Cinderpost's SaaS to demonstrate authorization to handle federal data before procurement. Which program BEST satisfies this requirement?",
-    "correct": [
-      "FedRAMP authorization at the impact level required by the agency's data"
-    ],
-    "incorrect": [
-      "ISO 9001 certification of the company's overall quality management system",
-      "PCI DSS Level 1 attestation completed by a qualified external assessor",
-      "A SOC 1 Type II report covering the prior twelve months of operations"
-    ],
-    "feedback": "FedRAMP is the U.S. government's standardized authorization program for cloud services handling federal data. The distractors are valid attestations for other purposes but do not authorize federal use."
-  },
-  {
-    "question": "Forgeworks Industrial operates equipment that participates in the North American bulk electric system. Which compliance regime MOST DIRECTLY governs its cybersecurity obligations?",
-    "correct": [
-      "NERC CIP"
-    ],
-    "incorrect": [
-      "HIPAA",
-      "PCI DSS",
-      "GLBA"
-    ],
-    "feedback": "NERC CIP standards apply to entities that own or operate the bulk electric system in North America. HIPAA, PCI DSS, and GLBA are sector-specific to healthcare, payments, and financial services."
-  },
-  {
-    "question": "Which statement BEST describes the EU Digital Markets Act (DMA)?",
-    "correct": [
-      "It imposes obligations on designated 'gatekeeper' platforms to ensure fair competition"
-    ],
-    "incorrect": [
-      "It is a U.S. financial-services rule that regulates consumer credit reporting bureaus nationwide",
-      "It is a voluntary code of conduct adopted by major cloud service providers globally",
-      "It is a sector-specific replacement for the EU GDPR for telecom providers"
-    ],
-    "feedback": "The DMA targets large 'gatekeeper' platforms (search, app stores, social, etc.) to constrain self-preferencing and lock-in. It is competition-law-flavored and complements (not replaces) the GDPR."
-  },
-  {
-    "question": "Cinderpost's SaaS customers ask for independent assurance about its operational security controls. Which report is MOST appropriate to provide them?",
-    "correct": [
-      "SOC 2 Type II report covering the relevant trust services criteria"
-    ],
-    "incorrect": [
-      "SOC 1 Type I report covering controls over financial reporting only",
-      "ISO 9001 certificate covering the company's quality management system",
-      "A penetration-test attestation issued by the company's marketing team"
-    ],
-    "feedback": "SOC 2 is the AICPA report aimed at customer assurance about security, availability, processing integrity, confidentiality, and privacy. SOC 1 is for financial-reporting controls; ISO 9001 is quality; marketing-issued attestations are not credible third-party assurance."
-  },
-  {
-    "question": "Which statement BEST distinguishes the CIS Benchmarks from the CIS Controls?",
-    "correct": [
-      "Benchmarks are configuration baselines for specific products; Controls are prioritized safeguards"
-    ],
-    "incorrect": [
-      "Benchmarks apply only to operating systems; Controls apply only to network devices and cloud workloads",
-      "Benchmarks are mandated by U.S. federal law; Controls are voluntary international standards",
-      "Benchmarks are paid commercial products; Controls are free open-source documentation"
-    ],
-    "feedback": "CIS Benchmarks are hardening guides for specific products (e.g., Ubuntu 22.04, Windows Server). CIS Controls are a prioritized list of safeguards an organization should implement, independent of any one product."
-  },
-  {
-    "question": "Maven is selecting a framework to evaluate cloud service providers across many security domains using cloud-specific control statements that map to other major standards. Which framework BEST fits?",
-    "correct": [
-      "Cloud Security Alliance Cloud Controls Matrix (CSA CCM)"
-    ],
-    "incorrect": [
-      "Center for Internet Security Benchmark for Windows Server",
-      "ISO/IEC 9001 quality management system requirements standard",
-      "Payment Card Industry Data Security Standard for merchants"
-    ],
-    "feedback": "CSA CCM is the cloud-specific control framework with built-in mappings to ISO 27001, NIST, PCI, and others — designed for cloud-provider assessments. The distractors target a single product, quality management, or payments only."
+    "case_sensitive": false,
+    "feedback": "Govern, added in version 2.0, brings policy, roles, accountability and oversight into the framework itself. The other five functions describe outcomes for knowing your assets, protecting them, detecting attacks, responding and recovering."
   },
   {
     "type": "matching",
-    "question": "Match each security or reporting framework to its primary purpose.",
+    "question": "Match each security or reporting framework to what it is.",
     "pairs": [
       {
+        "term": "NIST CSF 2.0",
+        "definition": "A voluntary US framework of six functions, used as a common language for program maturity"
+      },
+      {
+        "term": "ISO/IEC 27001",
+        "definition": "A certifiable international standard for an information security management system"
+      },
+      {
         "term": "SOC 2",
-        "definition": "Attestation report on a service organization's security, availability, integrity, confidentiality, and privacy controls"
-      },
-      {
-        "term": "NIST Cybersecurity Framework",
-        "definition": "Voluntary risk-based framework structured around Identify, Protect, Detect, Respond, Recover"
-      },
-      {
-        "term": "CIS Controls",
-        "definition": "Prioritized, prescriptive set of safeguards an organization should implement"
+        "definition": "An auditor-attested report on a service provider's controls against trust criteria"
       },
       {
         "term": "CIS Benchmarks",
-        "definition": "Configuration baselines for hardening specific operating systems and applications"
+        "definition": "Consensus hardening guides for one specific product, such as a server OS"
       },
       {
-        "term": "CSA Cloud Controls Matrix",
-        "definition": "Cloud-specific control framework with mappings to many other regulations and standards"
+        "term": "CIS Controls",
+        "definition": "Prioritized safeguards grouped into three implementation groups"
+      },
+      {
+        "term": "CSA CCM",
+        "definition": "A cloud-specific control framework mapped to the other major standards"
       }
     ],
-    "feedback": "Each framework answers a different question: SOC 2 = third-party assurance; NIST CSF = risk-based program structure; CIS Controls = what to do; CIS Benchmarks = how to harden a specific product; CSA CCM = cloud-provider assessment."
+    "feedback": "Two pairs are often confused. CIS Benchmarks harden one product at a time, while the CIS Controls prioritize safeguards across a whole organization. ISO/IEC 27001 leads to a certificate for a management system, whereas SOC 2 is an auditor's attestation report on a service provider."
+  },
+  {
+    "question": "A 40-person accounting firm has no security staff. Its insurer asks it to adopt CIS Controls Implementation Group 1 this year. Which of these belong in that foundational tier?",
+    "correct": [
+      "Keeping an inventory of every hardware and software asset",
+      "Applying secure configurations and patches on a schedule",
+      "Restricting who has access to what, and reviewing it",
+      "Taking regular backups and logging key systems"
+    ],
+    "incorrect": [
+      "Staffing an in-house threat-hunting team around the clock",
+      "Earning ISO/IEC 27001 certification for the whole firm"
+    ],
+    "feedback": "Implementation Group 1 is basic hygiene: know what you have, configure and patch it, control access, back it up and log it. Every other framework assumes these are in place. A round-the-clock hunting team is a capability of mature organizations, and ISO/IEC 27001 certification is a separate management-system effort, not part of a CIS Implementation Group."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: From creation to destruction",
+    "npc": "kaelen",
+    "intro": "I'm Master Kaelen, the Grand Archivist. Data governance decides how data is kept from the day it is created to the day it is destroyed, and which environments it may enter along the way.",
+    "steps": [
+      {
+        "say": "**Data governance** manages data's availability, usability, integrity and security across the enterprise. Its backbone is **data life cycle management**. Each stage has an owner and a rule. The last matters as much as the first: data you still hold is data you can lose.",
+        "beats": [
+          {
+            "say": "**Data governance** manages data's availability, usability, integrity and security across the enterprise. Its backbone is **data life cycle management**."
+          },
+          {
+            "code": "Creation     front desk records a new patient\nStorage      saved in the clinical database\nUsage        read by doctors and by billing\nArchival     moved to cold storage after discharge\nDestruction  securely wiped when retention ends",
+            "language": "life of a clinic intake form"
+          },
+          {
+            "say": "Each stage has an owner and a rule. The last matters as much as the first: data you still hold is data you can lose."
+          }
+        ]
+      },
+      {
+        "say": "Holding data too long has a legal cost. In **e-discovery**, the search for digital evidence for a civil or criminal case, anything still on your servers can be demanded. It binds the other way too. Once litigation is reasonably expected, a **legal hold** requires you to stop deleting the relevant data, whatever the retention schedule says.",
+        "beats": [
+          {
+            "say": "Holding data too long has a legal cost. In **e-discovery**, the search for digital evidence for a civil or criminal case, anything still on your servers can be demanded."
+          },
+          {
+            "say": "It binds the other way too. Once litigation is reasonably expected, a **legal hold** requires you to stop deleting the relevant data, whatever the retention schedule says."
+          }
+        ],
+        "check": {
+          "prompt": "A job will delete three-year-old chat logs tonight. This morning Legal warned that a former contractor is likely to sue over messages from that period. What happens to the job?",
+          "answer": "It is halted for those logs under a legal hold",
+          "wrong": [
+            "It runs, since the schedule was set in advance",
+            "It runs once a copy is saved to staging for Legal"
+          ],
+          "why": "Expected litigation triggers the hold, and the hold overrides the schedule. Deleting now would destroy evidence, and a copy in staging only spreads the data into a weaker environment."
+        }
+      },
+      {
+        "say": "Data also moves between environments. **Development** is where engineers write code. **Testing/QA** and **staging** are where it is checked; staging, the last stop before release, mirrors the live system. **Production** is the live system holding the real data. The others rarely get its access controls, logging or web application firewalls, and attackers hunt for hosts like `qa-api.example.com` for that reason. The rules agree. PCI DSS, the card industry's standard, generally bars live card numbers from pre-production, and privacy laws expect you to use only the data you need.",
+        "beats": [
+          {
+            "say": "Data also moves between environments. **Development** is where engineers write code. **Testing/QA** and **staging** are where it is checked; staging, the last stop before release, mirrors the live system."
+          },
+          {
+            "say": "**Production** is the live system holding the real data. The others rarely get its access controls, logging or web application firewalls, and attackers hunt for hosts like `qa-api.example.com` for that reason."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; dev [label=\"Development\"]; qa [label=\"Testing / QA\"]; stg [label=\"Staging\\nmirrors production\"]; prod [label=\"Production\\nreal data\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; dev -> qa; qa -> stg; stg -> prod [label=\" release\"]; prod -> stg [style=dashed, label=\" unmasked\\n copy\", constraint=false, color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
+              "alt": "A vertical chain: development, testing and QA, staging, then production holding real data, with the last arrow labelled release. A dashed amber arrow runs back from production to staging, labelled unmasked copy.",
+              "caption": "code moves toward production; real data must not move back",
+              "src": "_dot/487773142a88d89f.svg"
+            }
+          },
+          {
+            "say": "The rules agree. PCI DSS, the card industry's standard, generally bars live card numbers from pre-production, and privacy laws expect you to use only the data you need."
+          }
+        ]
+      },
+      {
+        "say": "So production data never crosses into staging or development unsanitized. **Data masking** takes a copy of production and replaces sensitive fields, such as names, card numbers and ID numbers, with realistic fakes before the copy moves. The masked copy keeps production's structure, size and relationships, so tests stay realistic, but the values are useless to a thief. **Synthetic data** goes further: software, increasingly generative AI, builds a new dataset that statistically mirrors production and holds no real person at all.",
+        "beats": [
+          {
+            "say": "So production data never crosses into staging or development unsanitized."
+          },
+          {
+            "say": "**Data masking** takes a copy of production and replaces sensitive fields, such as names, card numbers and ID numbers, with realistic fakes before the copy moves."
+          },
+          {
+            "say": "The masked copy keeps production's structure, size and relationships, so tests stay realistic, but the values are useless to a thief."
+          },
+          {
+            "say": "**Synthetic data** goes further: software, increasingly generative AI, builds a new dataset that statistically mirrors production and holds no real person at all."
+          }
+        ]
+      }
+    ],
+    "outro": "Here is a nightly refresh. Find where the protection belongs."
+  },
+  {
+    "question": "Cinderpost Couriers refreshes staging from production every night along the path shown. Real customer data must never sit on a staging host. Where should the sensitive fields be masked?",
+    "correct": [
+      "At A, on the copy before it leaves production"
+    ],
+    "incorrect": [
+      "At B, as the load job writes into the staging database",
+      "At C, when the test tool displays query results",
+      "At D, by encrypting the developer laptops' disks"
+    ],
+    "feedback": "Masking has to happen before the data crosses the boundary, at A, so staging only ever receives fakes. At B the real records already sit on a staging host while the job runs. Masking at C only hides values on screen and leaves them stored in the weaker environment. Disk encryption at D protects stolen laptops, but the developers would still see real customer data.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; subgraph cluster_p { label=\"production\"; fontcolor=\"#5aaa5a\"; color=\"#3a6a3a\"; style=rounded; { rank=same; db [label=\"customer\\ndatabase\"]; a [label=\"A\\nnightly copy\"]; } db -> a; } subgraph cluster_s { label=\"staging\"; fontcolor=\"#5aaa5a\"; color=\"#5aaa5a\"; style=\"rounded,dashed\"; { rank=same; b [label=\"B\\nload job\"]; sdb [label=\"staging\\ndatabase\"]; c [label=\"C\\ntest tool\"]; } b -> sdb; sdb -> c; } d [label=\"D\\ndev laptops\"]; a -> b; c -> d; }",
+      "alt": "A path in three rows. In a production zone, a customer database feeds point A, a nightly copy. Point A feeds point B, a load job, inside a dashed staging zone that also holds a staging database and point C, a test tool. Point C feeds point D, developer laptops.",
+      "caption": "the nightly refresh",
+      "src": "_dot/34a4c96d8f6e8ee8.svg"
+    }
+  },
+  {
+    "type": "cloze",
+    "question": "Greycloak's testers need realistic records before a release. Taking a production export and replacing patients' names and ID numbers with realistic fakes is data {{1}}. Generating a brand-new dataset that mirrors production statistically but holds no real patient is {{2}} data. Either way, the data is used in {{3}}, the last environment before release, built to mirror production.",
+    "blanks": [
+      {
+        "accept": [
+          "masking",
+          "obfuscation"
+        ]
+      },
+      {
+        "accept": [
+          "synthetic"
+        ]
+      },
+      {
+        "accept": [
+          "staging"
+        ],
+        "hint": "environment"
+      }
+    ],
+    "feedback": "Masking keeps production's structure, size and relationships while making the values useless to a thief; synthetic generation starts from nothing real. Staging needs one or the other precisely because it mirrors production without having production's controls."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the life cycle of a customer's order record at Wyrmkeep Logistics, from first stage to last.",
+    "items": [
+      "Created when the customer places the order",
+      "Stored in the orders database",
+      "Used to ship the goods and answer support calls",
+      "Archived to cold storage after the account closes",
+      "Destroyed securely when its retention period ends"
+    ],
+    "feedback": "Creation, storage, usage, archival, destruction: the five stages of data life cycle management. Destruction is the easiest stage to neglect, and anything never destroyed stays available to attackers and to e-discovery."
+  },
+  {
+    "question": "A QA lead at Marketstone Exchange copies last night's production database, live card numbers included, into staging 'just for one sprint' to reproduce a customer's bug. Which problems does this create?",
+    "correct": [
+      "Testers without clearance for live customer data now have full access to it",
+      "It breaks PCI DSS, which generally bars live card numbers from pre-production",
+      "Staging's weaker controls make it the easier place to steal real data from"
+    ],
+    "incorrect": [
+      "The copy job alters production records and damages the live system's integrity",
+      "Real data makes the bug harder to reproduce, because it is too messy to test with"
+    ],
+    "feedback": "Copying production into staging stacks three failures: excessive access, a compliance violation (PCI DSS, plus privacy laws' expectation that you use only the data you need), and a target attackers actively hunt for. Copying reads production without changing it. And messy real data is the developers' honest argument for the copy, since it finds bugs; the answer is masked or synthetic data, not a weaker test."
+  },
+  {
+    "question": "Greycloak's research team needs test data for a rare-disease registry of fewer than 200 patients. The privacy office rules that even masked records could identify patients, and testers need edge cases the registry has never contained. Which approach BEST fits?",
+    "correct": [
+      "Generate synthetic data that mirrors the registry's statistics"
+    ],
+    "incorrect": [
+      "Mask the names and ID numbers in a copy of the registry before testing",
+      "Copy the registry into staging for cleared testers only",
+      "Test in production during a quiet overnight window"
+    ],
+    "feedback": "Synthetic data contains no real patient and can be generated to include edge cases that never occurred, which satisfies both constraints. Masking is the usual choice, but here each masked row still describes a real, rare patient, and masking cannot invent new cases. A restricted copy and testing in production both expose the real records."
+  },
+  {
+    "type": "ordering",
+    "question": "Highrook Conclave learns that a former employee is likely to sue over messages from two years ago. Arrange the records-handling steps in order.",
+    "items": [
+      "Legal concludes that litigation is reasonably expected",
+      "Legal issues a hold covering the relevant mailboxes and chats",
+      "Scheduled deletion of the held data is suspended",
+      "The held data is searched and produced in e-discovery",
+      "The case closes, the hold lifts, and normal retention resumes"
+    ],
+    "feedback": "The duty to preserve starts when litigation is reasonably expected, not when a lawsuit arrives. The hold is issued and then enforced by stopping deletion; only then can e-discovery search and produce the data. Once the matter ends, the hold is released and the retention schedule applies again."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Rules from outside the walls",
+    "npc": "val",
+    "intro": "Everything so far was rules we write for ourselves. Compliance is rules others enforce on us. This scene covers how compliance is checked and proven, and the EU law that reset the world's expectations of privacy.",
+    "steps": [
+      {
+        "say": "Governance is internal; **compliance** is external, and not optional. Failure can bring large fines, criminal charges or the loss of a license to operate. An **assessment** is a less formal evaluation that finds gaps, done by your own staff or a consultant. An **audit** is a formal, evidence-based review against a defined standard: **internal** when your own audit team runs it, **external** when a third party does. A **certification** is an accredited body's formal statement, after a successful external audit, that you meet the standard.",
+        "beats": [
+          {
+            "say": "Governance is internal; **compliance** is external, and not optional. Failure can bring large fines, criminal charges or the loss of a license to operate."
+          },
+          {
+            "say": "An **assessment** is a less formal evaluation that finds gaps, done by your own staff or a consultant."
+          },
+          {
+            "say": "An **audit** is a formal, evidence-based review against a defined standard: **internal** when your own audit team runs it, **external** when a third party does."
+          },
+          {
+            "say": "A **certification** is an accredited body's formal statement, after a successful external audit, that you meet the standard."
+          }
+        ],
+        "check": {
+          "prompt": "Engineers informally compare their controls with ISO/IEC 27001 to see where they fall short. What is that?",
+          "answer": "An assessment",
+          "wrong": [
+            "An internal audit",
+            "A certification"
+          ],
+          "why": "It is informal and aimed at finding gaps, so it is an assessment. An internal audit is a formal, evidence-based review by the audit team, and certification follows only a successful external audit."
+        }
+      },
+      {
+        "say": "One control often satisfies several regimes, so **GRC tools** (governance, risk and compliance platforms) map each control to every framework it serves and track its evidence automatically. Compliance also sits beside **ethics**. A person's financial, medical and location data is an extension of who they are, so protecting it is a duty to them, not only to a regulator. The EU's **General Data Protection Regulation** (GDPR) took effect in 2018. It applies to any organization, wherever it is based, that offers goods or services to people in the EU or monitors their behavior, for example with tracking scripts.",
+        "beats": [
+          {
+            "say": "One control often satisfies several regimes, so **GRC tools** (governance, risk and compliance platforms) map each control to every framework it serves and track its evidence automatically."
+          },
+          {
+            "say": "Compliance also sits beside **ethics**. A person's financial, medical and location data is an extension of who they are, so protecting it is a duty to them, not only to a regulator."
+          },
+          {
+            "say": "The EU's **General Data Protection Regulation** (GDPR) took effect in 2018."
+          },
+          {
+            "say": "It applies to any organization, wherever it is based, that offers goods or services to people in the EU or monitors their behavior, for example with tracking scripts."
+          }
+        ]
+      },
+      {
+        "say": "Where consent is the legal basis, it must be freely given, specific and informed, not buried in a 50-page terms of service. People also gain the **right to erasure**, the right to be forgotten. Once an organization becomes aware of a breach that puts people at risk, it must tell the regulator, the **supervisory authority**, within 72 hours. The most serious violations can draw fines of up to €20 million or 4% of global annual revenue, whichever is greater.",
+        "beats": [
+          {
+            "say": "Where consent is the legal basis, it must be freely given, specific and informed, not buried in a 50-page terms of service. People also gain the **right to erasure**, the right to be forgotten."
+          },
+          {
+            "say": "Once an organization becomes aware of a breach that puts people at risk, it must tell the regulator, the **supervisory authority**, within 72 hours."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; b [label=\"intrusion\\nbegins\"]; a [label=\"organization\\nbecomes aware\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; n [label=\"regulator\\nnotified\"]; b -> a [label=\" clock not\\n running\"]; a -> n [label=\" within\\n 72 hours\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; }",
+              "alt": "A top-to-bottom timeline: intrusion begins, then an amber box where the organization becomes aware, then regulator notified. The first gap is labelled clock not running; the second, in green, within 72 hours.",
+              "caption": "the clock starts at awareness",
+              "src": "_dot/4c149b1ca08870f5.svg"
+            }
+          },
+          {
+            "say": "The most serious violations can draw fines of up to €20 million or 4% of global annual revenue, whichever is greater."
+          }
+        ],
+        "check": {
+          "prompt": "A firm with €100 million in annual revenue commits one of those serious violations. What is the most it can be fined?",
+          "answer": "€20 million, the larger of the two figures",
+          "wrong": [
+            "€4 million, which is 4% of its revenue",
+            "There is no cap for a firm that size"
+          ],
+          "why": "4% of €100 million is only €4 million, and the cap is whichever figure is greater, so the €20 million floor applies. For a firm with €2 billion in revenue, 4% (€80 million) would be the cap instead."
+        }
+      },
+      {
+        "say": "GDPR also made **data sovereignty** practical: data is subject to the laws of the country where it is physically stored. So EU personal data may leave only under a transfer mechanism, such as an **adequacy decision** (the European Commission finding a country's protections good enough) or **standard contractual clauses** (SCCs). In 2023 Meta was fined €1.2 billion, the largest GDPR fine yet, for sending EU users' data to the US on SCCs the regulator ruled could not offset US surveillance law. The EU–US **Data Privacy Framework**, a new adequacy decision, followed that July and is itself under legal challenge, so careful organizations keep a fallback mechanism ready.",
+        "beats": [
+          {
+            "say": "GDPR also made **data sovereignty** practical: data is subject to the laws of the country where it is physically stored."
+          },
+          {
+            "say": "So EU personal data may leave only under a transfer mechanism, such as an **adequacy decision** (the European Commission finding a country's protections good enough) or **standard contractual clauses** (SCCs)."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; subgraph cluster_eu { label=\"EU\"; fontcolor=\"#5aaa5a\"; color=\"#3a6a3a\"; style=rounded; u [label=\"EU users\\ndata\"]; } subgraph cluster_us { label=\"United States\"; fontcolor=\"#5aaa5a\"; color=\"#3a6a3a\"; style=rounded; dc [label=\"US data\\ncenters\"]; } f [label=\"2023: record\\nEUR 1.2 bn fine\", style=\"rounded,dashed\"]; u -> dc [label=\" SCCs, ruled\\n not enough\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; dc -> f [style=dashed]; }",
+              "alt": "A zone labelled EU holds EU users' data; an amber arrow labelled SCCs, ruled not enough, runs to US data centers in a zone labelled United States, which lead by a dashed line to a box reading 2023, record EUR 1.2 billion fine.",
+              "caption": "the Meta transfers",
+              "src": "_dot/80ca22d527e4cd18.svg"
+            }
+          },
+          {
+            "say": "In 2023 Meta was fined €1.2 billion, the largest GDPR fine yet, for sending EU users' data to the US on SCCs the regulator ruled could not offset US surveillance law."
+          },
+          {
+            "say": "The EU–US **Data Privacy Framework**, a new adequacy decision, followed that July and is itself under legal challenge, so careful organizations keep a fallback mechanism ready."
+          }
+        ]
+      }
+    ],
+    "outro": "Start with how a certificate is earned, step by step."
+  },
+  {
+    "type": "ordering",
+    "question": "Wyrmkeep Logistics wants ISO/IEC 27001 certification. Arrange its path from first step to last.",
+    "items": [
+      "Staff run an informal gap assessment against the standard",
+      "Teams fix the gaps that the assessment found",
+      "The internal audit team formally checks the fixes against the standard",
+      "An accredited certification body conducts the external audit",
+      "The certification body issues the ISO/IEC 27001 certificate"
+    ],
+    "feedback": "An assessment is the informal look that finds gaps; an audit is the formal, evidence-based review, internal when the organization's own audit team runs it and external when a third party does. The internal audit confirms the fixes before the certification body arrives, and the certificate comes last, only after a successful external audit."
+  },
+  {
+    "question": "Wren Saltis collects the same quarterly access-review evidence three times a year: once for the ISO/IEC 27001 audit, once for the SOC 2 Type 2 audit and once for an internal audit against NIST CSF. Which GRC tool capability would MOST reduce the duplicated work?",
+    "correct": [
+      "Mapping each control once to every framework it serves, with evidence gathered automatically"
+    ],
+    "incorrect": [
+      "A larger built-in library of control statements, kept separately for each framework",
+      "A separate evidence workspace and dashboard set up for each of the three audits",
+      "Scheduling the three audits into different quarters so the load spreads out"
+    ],
+    "feedback": "One access review satisfies all three frameworks, so mapping it once and gathering its evidence automatically means it is collected once and reused. More control statements add content without removing the duplication, separate workspaces build the duplication in, and staggering the audits spreads the same triple effort across the year."
+  },
+  {
+    "question": "Which of these organizations are subject to GDPR?",
+    "correct": [
+      "A Texas outfitter whose site prices in euros and ships orders to Lyon",
+      "A US ad-tech firm whose script tracks EU visitors across client sites"
+    ],
+    "incorrect": [
+      "A Brazilian clinic that handles records of Brazilian residents only",
+      "A California retailer that sells only to consumers in California",
+      "A Toronto bakery whose local-only site happens to be readable in Europe"
+    ],
+    "feedback": "GDPR follows the people, not the company's address: offering goods or services to people in the EU (euro prices, shipping to Lyon) or monitoring their behavior (a tracking script) brings an organization into scope with no EU office. The Brazilian clinic answers to Brazil's LGPD and the retailer to California's CCPA. A site that is merely readable from Europe, with no offer to EU customers and no tracking, is not targeting anyone there."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A company with global annual revenue of €{{rev}} million commits one of the most serious GDPR violations. What is the maximum fine it can face, in € millions?",
+    "variables": {
+      "rev": {
+        "values": [
+          150,
+          300,
+          450,
+          600,
+          900,
+          1250,
+          2500,
+          4000,
+          7500
+        ]
+      }
+    },
+    "derived": {
+      "four": "rev * 4 / 100"
+    },
+    "answer": {
+      "expr": "max(20, rev * 4 / 100)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "4% of €{{rev}} million is €{{four}} million. The cap is whichever is greater of that and €20 million, so it is €{{expected}} million. For smaller firms the fixed €20 million is the larger figure; for large ones the 4% share wins."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Highrook Conclave's incident ticket reads:\n\n  First attacker activity:  {{lead}} h before confirmation\n  Personal-data breach confirmed, risk to customers:  {{d}} d {{h}} h ago\n\nUnder GDPR, how many hours remain to notify the supervisory authority?",
+    "variables": {
+      "lead": {
+        "values": [
+          6,
+          18,
+          30,
+          52
+        ]
+      },
+      "d": {
+        "values": [
+          0,
+          1,
+          2
+        ]
+      },
+      "h": {
+        "min": 1,
+        "max": 23
+      }
+    },
+    "derived": {
+      "elapsed": "d * 24 + h"
+    },
+    "answer": {
+      "expr": "72 - (d * 24 + h)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The 72-hour clock starts when the organization becomes aware of the breach, not when the attacker first acted {{lead}} hours earlier. {{d}} d {{h}} h is {{elapsed}} hours, so {{expected}} hours remain."
   },
   {
     "type": "fill_blank",
-    "question": "A document that is mandatory, broad, and signed by senior leadership to express management intent is called a ___.",
+    "question": "The principle that data is subject to the laws of the country in which it is physically stored is called data ___.",
     "correct": [
-      "policy"
+      "sovereignty"
     ],
     "case_sensitive": false,
-    "feedback": "Policies are the top of the governance documentation hierarchy: mandatory, broad, executive-sponsored."
+    "feedback": "Data sovereignty is why the location of a data center is a compliance decision: once data sits in a country, that country's laws, including its surveillance laws, reach it. GDPR made this an operational problem by restricting transfers of personal data out of the EU."
   },
   {
-    "type": "fill_blank",
-    "question": "In a RACI matrix, the letter R stands for ___.",
+    "question": "Cinderpost Couriers' platform handles EU customers' personal data along the flows shown. Which flow needs a GDPR transfer mechanism, such as an adequacy decision or standard contractual clauses?",
     "correct": [
-      "Responsible",
-      "responsible"
+      "C, from the Frankfurt servers to Virginia analytics"
     ],
-    "case_sensitive": false,
-    "feedback": "R = Responsible (does the work), A = Accountable (answerable for outcome), C = Consulted, I = Informed."
+    "incorrect": [
+      "A, from EU customers into the Frankfurt servers",
+      "B, from the Frankfurt servers to the Dublin backups",
+      "D, from Virginia analytics on to the BI dashboards"
+    ],
+    "feedback": "Only C carries EU personal data out of the EU, which is the moment GDPR's transfer rules apply. A and B stay inside the EU (Ireland is a member state). D happens after the data has already left; it still needs GDPR-grade handling, but the transfer out of the EU, the one an adequacy decision or SCCs must cover, is C.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; u [label=\"EU customers\"]; subgraph cluster_eu { label=\"EU\"; fontcolor=\"#5aaa5a\"; color=\"#3a6a3a\"; style=rounded; { rank=same; f [label=\"Frankfurt\\napp servers\"]; dub [label=\"Dublin\\nbackups\"]; } } subgraph cluster_us { label=\"United States\"; fontcolor=\"#5aaa5a\"; color=\"#3a6a3a\"; style=rounded; { rank=same; v [label=\"Virginia\\nanalytics\"]; bi [label=\"BI\\ndashboards\"]; } } u -> f [label=\" A\"]; f -> dub [label=\" B\"]; f -> v [label=\" C\"]; v -> bi [label=\" D\"]; }",
+      "alt": "Customers connect to Frankfurt app servers by arrow A. Inside a zone labelled EU, arrow B runs from Frankfurt to Dublin backups. Arrow C runs from Frankfurt to Virginia analytics inside a zone labelled United States, and arrow D runs from Virginia analytics to BI dashboards.",
+      "caption": "four data flows",
+      "src": "_dot/42d6c90944bd1835.svg"
+    }
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Rules by industry",
+    "npc": "val",
+    "intro": "Some regimes care where your customers live; others care what business you are in. This scene covers health records and card payments, the finance, government and utility rules, and the privacy and market laws that followed GDPR.",
+    "steps": [
+      {
+        "say": "**HIPAA** governs US healthcare. It protects **ePHI**, electronic protected health information such as medical histories, lab results and insurance data. It demands strict access controls and audit logs recording exactly who viewed which patient record. Encryption at rest and in transit is an **addressable** safeguard: implement it, or document why an equivalent measure is reasonable. And properly encrypted ePHI is exempt from breach notification.",
+        "beats": [
+          {
+            "say": "**HIPAA** governs US healthcare. It protects **ePHI**, electronic protected health information such as medical histories, lab results and insurance data."
+          },
+          {
+            "say": "It demands strict access controls and audit logs recording exactly who viewed which patient record."
+          },
+          {
+            "say": "Encryption at rest and in transit is an **addressable** safeguard: implement it, or document why an equivalent measure is reasonable. And properly encrypted ePHI is exempt from breach notification."
+          }
+        ]
+      },
+      {
+        "say": "**PCI DSS**, now at version 4.0.1, is not a law. It is a contractual standard the card brands impose, through merchants' banks, on anyone who stores, processes or transmits card data. It is prescriptive: unreadable stored card numbers, strong cryptography in transit, penetration tests at least annually. Break it and the brands can add fines, raise fees or end your ability to take cards. The **cardholder data environment** (CDE) is every system that stores, processes or transmits card data. Systems sharing a flat network with it can be pulled into the assessor's scope. Segmentation is not strictly required, but walling the CDE off on its own segment is the standard way to shrink what must be examined.",
+        "beats": [
+          {
+            "say": "**PCI DSS**, now at version 4.0.1, is not a law. It is a contractual standard the card brands impose, through merchants' banks, on anyone who stores, processes or transmits card data."
+          },
+          {
+            "say": "It is prescriptive: unreadable stored card numbers, strong cryptography in transit, penetration tests at least annually. Break it and the brands can add fines, raise fees or end your ability to take cards."
+          },
+          {
+            "say": "The **cardholder data environment** (CDE) is every system that stores, processes or transmits card data. Systems sharing a flat network with it can be pulled into the assessor's scope."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; subgraph cluster_cde { label=\"CDE segment\"; fontcolor=\"#5aaa5a\"; color=\"#5aaa5a\"; style=\"rounded,dashed\"; { rank=same; api [label=\"checkout API\"]; vault [label=\"card vault\"]; } api -> vault; } fw [label=\"firewall\"]; subgraph cluster_lan { label=\"corporate LAN\"; labelloc=b; fontcolor=\"#5aaa5a\"; color=\"#3a6a3a\"; style=rounded; cat [label=\"catalog\"]; hr [label=\"HR files\"]; mail [label=\"email\"]; } vault -> fw [dir=none]; fw -> cat [dir=none]; fw -> hr [dir=none]; fw -> mail [dir=none]; }",
+              "alt": "A dashed zone labelled CDE segment holds a checkout API feeding a card vault. Below it a firewall connects to a zone labelled corporate LAN holding catalog, HR files and email.",
+              "caption": "a small, walled-off scope",
+              "src": "_dot/c73e486dc958da12.svg"
+            }
+          },
+          {
+            "say": "Segmentation is not strictly required, but walling the CDE off on its own segment is the standard way to shrink what must be examined."
+          }
+        ],
+        "check": {
+          "prompt": "A merchant keeps card numbers in the same database as its product catalog. What does that do to its PCI DSS scope?",
+          "answer": "The whole database, and what touches it, falls into scope",
+          "wrong": [
+            "Only the card-number column falls into scope",
+            "Nothing, if the database has a strong password"
+          ],
+          "why": "Scope follows the systems, not the columns: the database stores card data, so it and every system that touches it are in scope. Separating card data onto its own segment is how the merchant shrinks that back down."
+        }
+      },
+      {
+        "say": "Finance: **GLBA** makes US financial institutions safeguard customer data; **SOX** requires reliable financial-reporting controls at US public companies; the EU's **DORA** demands ICT risk management and resilience testing. Government: **FISMA** and **FedRAMP** bring control catalogs, continuous monitoring and an authorization to operate for federal agencies, their contractors and the cloud providers that serve them. Utilities: **NERC CIP** covers the North American bulk electric system, requiring asset identification, segmentation and recovery planning.",
+        "beats": [
+          {
+            "say": "Finance: **GLBA** makes US financial institutions safeguard customer data; **SOX** requires reliable financial-reporting controls at US public companies; the EU's **DORA** demands ICT risk management and resilience testing."
+          },
+          {
+            "say": "Government: **FISMA** and **FedRAMP** bring control catalogs, continuous monitoring and an authorization to operate for federal agencies, their contractors and the cloud providers that serve them."
+          },
+          {
+            "say": "Utilities: **NERC CIP** covers the North American bulk electric system, requiring asset identification, segmentation and recovery planning."
+          }
+        ]
+      },
+      {
+        "say": "Privacy law spread after GDPR. California's **CCPA**, strengthened by the CPRA, stresses the rights to know, delete and correct data and to opt out of its sale or sharing. Brazil's **LGPD** closely mirrors GDPR. The US **COPPA** requires verifiable parental consent before online services aimed at children under 13 collect their data. And one market law: the EU's **Digital Markets Act** (DMA) puts interoperability, user-choice and data-combination duties on platforms designated as gatekeepers, with fines up to 10% of global turnover.",
+        "beats": [
+          {
+            "say": "Privacy law spread after GDPR. California's **CCPA**, strengthened by the CPRA, stresses the rights to know, delete and correct data and to opt out of its sale or sharing. Brazil's **LGPD** closely mirrors GDPR."
+          },
+          {
+            "say": "The US **COPPA** requires verifiable parental consent before online services aimed at children under 13 collect their data."
+          },
+          {
+            "say": "And one market law: the EU's **Digital Markets Act** (DMA) puts interoperability, user-choice and data-combination duties on platforms designated as gatekeepers, with fines up to 10% of global turnover."
+          }
+        ],
+        "check": {
+          "prompt": "A US game studio's new app is aimed at 10-year-olds and wants their location. Which law must it satisfy before collecting it?",
+          "answer": "COPPA, with verifiable parental consent",
+          "wrong": [
+            "CCPA, with an opt-out link",
+            "The DMA, with a choice screen"
+          ],
+          "why": "The app targets children under 13, so COPPA's parental-consent rule comes first. The CCPA's opt-out governs selling or sharing data, and the DMA applies only to designated gatekeeper platforms."
+        }
+      }
+    ],
+    "outro": "A stolen laptop and a strong password. Decide what they add up to."
+  },
+  {
+    "question": "A Greycloak Apothecary nurse's laptop holding unencrypted ePHI is stolen from a café. It had a strong login password, and nothing suggests the thief got past it. Wren Saltis must advise the privacy officer. Which conclusion is correct?",
+    "correct": [
+      "It is a breach event, and disk encryption, not the password, would have exempted it"
+    ],
+    "incorrect": [
+      "No breach occurred, because the strong password kept the thief out of the patient records",
+      "It becomes a breach only if forensics later shows the drive was actually read",
+      "No breach occurred, because encryption is merely an addressable HIPAA safeguard"
+    ],
+    "feedback": "A login password does not protect data from someone who removes the drive; encryption does, and properly encrypted ePHI is exempt from breach notification. So the stolen laptop is a breach event for the hospital whatever the thief manages, and there is no waiting for proof the drive was read. 'Addressable' means implement it or document a reasonable equivalent, not ignore it."
+  },
+  {
+    "type": "cloze",
+    "question": "{{1}} is a US law: it protects electronic health information and lists encryption as an {{2}} safeguard, one that must be implemented or replaced by a documented, reasonable equivalent. {{3}}, by contrast, is not a law at all but a contractual standard the card brands impose through merchants' banks.",
+    "blanks": [
+      {
+        "accept": [
+          "HIPAA"
+        ]
+      },
+      {
+        "accept": [
+          "addressable"
+        ]
+      },
+      {
+        "accept": [
+          "PCI DSS",
+          "PCI-DSS",
+          "PCIDSS",
+          "PCI"
+        ]
+      }
+    ],
+    "feedback": "HIPAA's teeth are legal; PCI DSS's are commercial. Breaking HIPAA brings regulators, while breaking PCI DSS can cost a merchant fines, higher fees or the ability to take cards at all. 'Addressable' is the HIPAA word that sounds optional and is not."
+  },
+  {
+    "question": "A new board member at Marketstone Exchange asks Wren what PCI DSS actually demands. Which of these statements are accurate?",
+    "correct": [
+      "It is a contractual standard the card brands impose through merchants' banks",
+      "Card numbers that are stored must be rendered unreadable",
+      "Penetration testing must be done at least once a year"
+    ],
+    "incorrect": [
+      "It is a federal law, and serious violations carry prison terms",
+      "An assessment fails outright unless the cardholder environment is segmented",
+      "A merchant that transmits card data but never stores it is out of scope"
+    ],
+    "feedback": "PCI DSS binds by contract, not statute: the consequences are fines, higher fees or losing the ability to take cards, not prison. It requires unreadable stored card numbers, strong cryptography in transit and penetration testing at least annually. Segmentation is not strictly required, though it is the standard way to shrink scope. And it covers anyone who stores, processes or transmits card data, so transmitting alone is enough."
+  },
+  {
+    "question": "Marketstone Exchange segmented its cardholder data environment as shown, then added the nightly job marked by the amber arrow. What should the PCI DSS assessor conclude?",
+    "correct": [
+      "C now stores card data, so it and the flat LAN it shares are pulled into scope"
+    ],
+    "incorrect": [
+      "The API and vault remain the whole scope, since the export passes the firewall",
+      "C joins the scope, but A, B and D stay out because they never touch card data",
+      "The firewall joins the scope as the one device that carries the export"
+    ],
+    "feedback": "A system that stores card numbers is part of the cardholder data environment wherever it sits, so C is in scope, and because the LAN is flat, the systems sharing it with C are pulled in too, undoing the segmentation. The firewall did not keep the data out; it let it through. The fix is to stop exporting full card numbers, or to move the reporting into the segment.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; subgraph cluster_cde { label=\"CDE segment\"; fontcolor=\"#5aaa5a\"; color=\"#5aaa5a\"; style=\"rounded,dashed\"; { rank=same; api [label=\"checkout API\"]; vault [label=\"card vault\"]; } api -> vault; } fw [label=\"firewall\"]; subgraph cluster_lan { label=\"corporate LAN (flat)\"; labelloc=b; fontcolor=\"#5aaa5a\"; color=\"#3a6a3a\"; style=rounded; { rank=same; a [label=\"A\\ncatalog\"]; b [label=\"B\\nHR files\"]; c [label=\"C\\nreporting\"]; d [label=\"D\\nemail\"]; } a -> b [style=invis]; b -> c [style=invis]; c -> d [style=invis]; } vault -> fw [label=\" nightly export:\\n full card numbers\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; fw -> c [color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
+      "alt": "A dashed zone labelled CDE segment holds a checkout API feeding a card vault. An amber arrow labelled nightly export, full card numbers, runs from the vault to a firewall and on to box C. Box C sits beside boxes A, B and D in a zone labelled corporate LAN (flat).",
+      "caption": "after the new export job",
+      "src": "_dot/8a822c33b55decf7.svg"
+    }
+  },
+  {
+    "type": "cloze",
+    "question": "A US streaming service expands abroad. In the EU, {{1}} requires it to tell the regulator of a qualifying breach within 72 hours. At home, California's {{2}}, strengthened by the CPRA, lets subscribers opt out of the sale or sharing of their data. In Brazil, {{3}} imposes protections closely modeled on the EU's. And its kids' profiles, aimed at children under 13, need verifiable parental consent under {{4}}.",
+    "blanks": [
+      {
+        "accept": [
+          "GDPR"
+        ],
+        "hint": "law"
+      },
+      {
+        "accept": [
+          "CCPA"
+        ],
+        "hint": "law"
+      },
+      {
+        "accept": [
+          "LGPD"
+        ],
+        "hint": "law"
+      },
+      {
+        "accept": [
+          "COPPA"
+        ],
+        "hint": "law"
+      }
+    ],
+    "feedback": "One service, four privacy laws, each triggered by where its users are or who they are: GDPR for people in the EU, the CCPA as amended by the CPRA for California consumers, Brazil's LGPD for Brazilian residents, and COPPA for children under 13 in the US."
   },
   {
     "type": "matching",
-    "question": "Match each governance document type to its defining property.",
+    "question": "Match each regime to the organizations it targets.",
     "pairs": [
       {
-        "term": "Policy",
-        "definition": "Mandatory high-level statement of management intent"
+        "term": "GLBA",
+        "definition": "US financial institutions safeguarding their customers' data"
       },
       {
-        "term": "Standard",
-        "definition": "Mandatory specific technical or operational requirement"
+        "term": "SOX",
+        "definition": "US public companies, for their financial-reporting controls"
       },
       {
-        "term": "Procedure",
-        "definition": "Step-by-step instructions for performing a task"
+        "term": "FedRAMP",
+        "definition": "Cloud providers that serve US federal agencies"
       },
       {
-        "term": "Guideline",
-        "definition": "Recommended (non-mandatory) practice or advice"
+        "term": "NERC CIP",
+        "definition": "Operators within the North American bulk electric system"
+      },
+      {
+        "term": "DMA",
+        "definition": "Large platforms the EU designates as gatekeepers"
+      },
+      {
+        "term": "COPPA",
+        "definition": "Online services aimed at children under 13"
       }
     ],
-    "feedback": "The hierarchy runs policy → standard → procedure, with guidelines as advisory companions."
+    "feedback": "Industry regimes follow the business: banks (GLBA), listed companies (SOX), federal cloud suppliers (FedRAMP, alongside FISMA for the agencies themselves), and the power grid (NERC CIP). The DMA targets a handful of designated gatekeeper platforms, and COPPA targets services built for young children."
   },
   {
-    "type": "matching",
-    "question": "Match each compliance regime to its primary scope.",
-    "pairs": [
-      {
-        "term": "PCI DSS",
-        "definition": "Protection of cardholder data for entities handling payment cards"
-      },
-      {
-        "term": "HIPAA",
-        "definition": "Protection of protected health information in U.S. healthcare"
-      },
-      {
-        "term": "GDPR",
-        "definition": "Protection of personal data of individuals in the EU/EEA"
-      },
-      {
-        "term": "CCPA / CPRA",
-        "definition": "Consumer privacy rights for California residents"
-      },
-      {
-        "term": "ISO/IEC 27001",
-        "definition": "International requirements for an Information Security Management System"
-      }
+    "question": "Cinderpost Couriers, a privately held SaaS start-up, processes personal data of customers in France and Germany, takes card payments directly, and serves consumers in California above the CCPA's thresholds. Which regimes apply to it?",
+    "correct": [
+      "GDPR",
+      "PCI DSS",
+      "CCPA / CPRA"
     ],
-    "feedback": "Knowing which regime applies to which data and population is the first move in any compliance gap analysis."
+    "incorrect": [
+      "GLBA",
+      "SOX",
+      "DMA"
+    ],
+    "feedback": "Selling to people in the EU brings in GDPR, handling card payments brings in PCI DSS, and California consumers above the thresholds bring in the CCPA as amended by the CPRA. GLBA covers financial institutions, not merchants that take cards; SOX covers public companies, and Cinderpost is privately held; the DMA applies only to platforms the European Commission designates as gatekeepers."
   },
   {
-    "type": "matching",
-    "question": "Match each governance framework to its primary focus.",
-    "pairs": [
-      {
-        "term": "COBIT",
-        "definition": "Governance and management of enterprise IT"
-      },
-      {
-        "term": "ITIL",
-        "definition": "Best practices for IT service management"
-      },
-      {
-        "term": "ISO/IEC 27001",
-        "definition": "Requirements for an Information Security Management System"
-      },
-      {
-        "term": "NIST Cybersecurity Framework",
-        "definition": "Voluntary risk-based framework organized around Identify, Protect, Detect, Respond, Recover"
-      }
+    "question": "Highrook Conclave's US analytics platform receives EU customers' personal data under standard contractual clauses. Counsel warns that regulators have ruled such clauses insufficient against US surveillance law before, and that the EU–US Data Privacy Framework is itself under legal challenge. Selene must keep the EU service running however the courts rule. Which strategy BEST meets that constraint?",
+    "correct": [
+      "Store and process EU personal data in EU regions, so no transfer is needed"
     ],
-    "feedback": "COBIT = governance, ITIL = service management, ISO 27001 = ISMS requirements, NIST CSF = risk-based functional model."
+    "incorrect": [
+      "Certify to the Data Privacy Framework and retire the clauses as redundant",
+      "Keep relying on the clauses, since GDPR recognizes them as a mechanism",
+      "Encrypt the data in transit to the US, which takes it outside the transfer rules"
+    ],
+    "feedback": "Meta's €1.2 billion fine came from exactly this: transfers on clauses a regulator found could not offset the destination's surveillance law. Privacy Shield fell in court and its successor is under challenge, so any single mechanism can vanish; keeping EU data in the EU removes the dependence. Encryption in transit protects data on the wire but changes nothing about where it is stored or which laws reach it there."
+  },
+  {
+    "question": "Greycloak Apothecary must satisfy HIPAA, the CCPA and, for its telehealth service in Ireland, GDPR, with one small compliance team. Which approach BEST covers all three without tripling the audit workload?",
+    "correct": [
+      "One control set mapped in a GRC tool to each regime, with the strictest rule applied where they differ"
+    ],
+    "incorrect": [
+      "GDPR's requirements alone, since meeting the strictest law also satisfies the other two",
+      "Three separate programs, so that each regulator sees a dedicated owner and its own evidence",
+      "ISO/IEC 27001 certification, since an accredited certificate shows compliance with all three laws"
+    ],
+    "feedback": "Most controls overlap, so building them once, mapping each to every regime and taking the strictest requirement where rules differ avoids triple work without leaving gaps. GDPR alone misses HIPAA specifics such as logs of who viewed which patient record, and the CCPA's opt-out of sale or sharing. Separate programs triple the effort the constraint forbids. An ISO/IEC 27001 certificate proves a management system exists; it does not discharge legal duties under any of the three laws."
+  },
+  {
+    "question": "A post-incident review at Marketstone Exchange finds that, after a spoofed call 'from the CFO', the CEO approved a $1.8M wire. The CEO was exempt from awareness training, no written rule required a call-back for large wires, and the CEO was both requester and sole approver. Selene can make one headline recommendation to the board. Which BEST closes both the procedural and the cultural gap?",
+    "correct": [
+      "Dual approval and a call-back to a known number for large wires, with no executive exemptions"
+    ],
+    "incorrect": [
+      "Monthly vishing simulations for the treasury team, each followed by an instant lesson",
+      "A RACI that names the CEO as the sole Accountable approver for every large wire",
+      "A cyber-insurance policy that reimburses the company for any wire-fraud losses"
+    ],
+    "feedback": "The attack was whaling by phone, and it worked because one person could request and approve, nothing required a call-back, and the exemption showed that rules bend for executives. Dual approval with a mandatory call-back is separation of duties written into a standard, and 'no exemptions' repairs management commitment. Training the treasury team misses the person who was targeted, a sole-approver RACI cements the flaw, and insurance pays for the next loss without preventing it."
   }
 ]
