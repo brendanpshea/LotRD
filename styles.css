@@ -1792,8 +1792,23 @@ code.verdict-text {
 
 /* ── NPC teaching scene ───────────────────────────────────────────────────── */
 
+/* A scene is read as prose, a paragraph at a time, so it gets a heavier
+   monospace than the game's Courier New: thin strokes and a small x-height make
+   16px of Courier read like 13px of most fonts. Still monospace, so the
+   terminal look holds, and each system's own readable one is tried first.
+   Buttons keep the game's font (they set their own), except a check's options,
+   which are part of what is read. The code editor is not affected. */
+.npc-scene {
+    --npc-font: ui-monospace, Menlo, Consolas, 'Cascadia Mono', 'DejaVu Sans Mono',
+                'Liberation Mono', 'Noto Sans Mono', 'Courier New', Courier, monospace;
+    font-family: var(--npc-font);
+}
+
+/* Wraps, so on a narrow phone the Skip button takes its own line rather than
+   running off the card's edge. */
 .npc-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
@@ -1821,8 +1836,11 @@ code.verdict-text {
     image-rendering: auto;
 }
 
+/* Shrinks beside the portrait, so on a phone it is the Skip button that wraps. */
 .npc-name {
     color: #ffd86b;
+    flex: 1 1 8em;
+    min-width: 0;
 }
 
 .npc-skip {
@@ -1833,7 +1851,7 @@ code.verdict-text {
 .npc-narrate,
 .npc-replay,
 .npc-rate {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     padding: 3px 10px;
     margin-top: 0;
     margin-bottom: 0;
@@ -1904,7 +1922,7 @@ code.verdict-text {
 /* `code` in a mentor's line: something typed, or printed, set apart from the
    words around it. */
 .npc-inline {
-    font-family: 'Courier New', Courier, monospace;
+    font-family: var(--npc-font);
     font-size: 0.95em;
     color: #b6f5b6;
     background: #050c05;
@@ -1923,20 +1941,29 @@ code.verdict-text {
     color: inherit;
 }
 
+/* Lighter than .dim's #888 (5.3:1): #a3b5a3 is 8.7:1 on the card. */
 .npc-scene-title {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    color: #a3b5a3;
     margin-bottom: 6px;
 }
 
+/* The mentor's lines: 18px (17px on a phone), with the line spacing of prose. */
 .npc-dialogue {
     background: var(--bg-input, #070e07);
     border: 1px solid #2a4a2a;
     padding: 10px 12px;
     margin-bottom: 10px;
+    font-size: 1.125rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+    .npc-dialogue { font-size: 1.0625rem; }
 }
 
 .npc-line {
-    margin: 0 0 10px 0;
+    margin: 0 0 0.75em 0;
     white-space: pre-wrap;
 }
 
@@ -1955,8 +1982,9 @@ code.verdict-text {
 /* The artifact under discussion: pseudocode, a program, a query. Deliberately
    unlike the speech around it — this is the thing being read, not the reading. */
 .npc-code {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.92rem;
+    font-family: var(--npc-font);
+    font-size: 0.88em;
+    line-height: 1.4;
     color: #b6f5b6;
     background: #050c05;
     border: 1px solid #2f5f2f;
@@ -1970,10 +1998,10 @@ code.verdict-text {
 .npc-code[data-lang]::before {
     content: attr(data-lang);
     display: block;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #5c9c5c;
+    color: #6fae6f;
     margin-bottom: 4px;
 }
 
@@ -1989,6 +2017,9 @@ code.verdict-text {
     display: block;
     width: 100%;
     text-align: left;
+    font-family: var(--npc-font);
+    font-size: 1.0625rem;
+    line-height: 1.4;
 }
 
 /* ── Multi-blank cloze encounter ──────────────────────────────────────────── */
