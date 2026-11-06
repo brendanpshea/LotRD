@@ -461,17 +461,18 @@ matches the number of questions actually in each file.
 | Java | GUIs & Event-Driven Programming | 39 |
 | Java | Git, Testing & Working with AI | 41 |
 | Networking | Network+ Review Mix | 30 (random mix) |
-| Networking | Network+ Fundamentals | 30 |
-| Networking | Media, Topology & IPv4 Addressing | 30 |
-| Networking | Routing & Switching | 30 |
-| Networking | Wireless & Physical Installations | 30 |
-| Networking | Operations & Monitoring | 30 |
-| Networking | DR, Network Services & Access | 30 |
-| Networking | Network Security Concepts | 30 |
-| Networking | Attacks & Defense | 30 |
-| Networking | Troubleshooting Methodology & Cabling | 30 |
-| Networking | Services, Performance & Wireless Troubleshooting | 30 |
-| Networking | Tools & Device Commands | 33 |
+| Networking | Appliances, Protocols & Models | 43 |
+| Networking | Media, Transceivers & IP Addressing | 43 |
+| Networking | Cloud, Topologies & Modern Networks | 43 |
+| Networking | Routing & Switching | 44 |
+| Networking | Wireless & Physical Installations | 43 |
+| Networking | Policies, Documentation & Monitoring | 43 |
+| Networking | Continuity, Remote Access & AI | 44 |
+| Networking | Security Concepts & Compliance | 43 |
+| Networking | Attacks & Defenses | 42 |
+| Networking | Troubleshooting Cabling, Interfaces & Wireless | 43 |
+| Networking | Troubleshooting Devices & Services | 44 |
+| Networking | Troubleshooting Tools & Commands | 44 |
 | SecurityX / CASP+ | SecurityX Review Mix | 30 (random mix) |
 | SecurityX / CASP+ | Security Governance, Compliance & Ethics | 45 |
 | SecurityX / CASP+ | Risk Management & Threat Modeling | 44 |

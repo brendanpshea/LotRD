@@ -1,422 +1,1021 @@
 [
   {
-    "question": "Which command sends ICMP Echo Requests to a destination to verify reachability and measure round-trip time?",
-    "correct": [
-      "ping"
+    "type": "npc_demo",
+    "question": "NPC: Is it reachable, and what is in the way?",
+    "npc": "tariq",
+    "intro": "I'm Tariq, the Beacon-Courier. Before you touch a config, you ask two questions: can I reach the far end at all, and if the path is slow, where. Two commands answer those: ping and traceroute.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**ping** sends an **ICMP Echo Request** and times the **Echo Reply**. It reports round-trip time and how many replies came back, so loss and latency show up at a glance."
+          },
+          {
+            "say": "The count flag differs by OS. On Linux it is `ping -c 4 host`; on Windows it is `ping -n 4 host`, and plain `ping host` on Windows stops after four on its own."
+          }
+        ],
+        "say": "ping sends an ICMP Echo Request and times the Echo Reply. It reports round-trip time and how many replies came back, so loss and latency show up at a glance. The count flag differs by OS. On Linux it is ping -c 4 host; on Windows it is ping -n 4 host, and plain ping host on Windows stops after four on its own."
+      },
+      {
+        "beats": [
+          {
+            "say": "**traceroute** finds the routers on the way. It sends probes with a **TTL** of 1, then 2, then 3. Each router that drops a probe for TTL reaching 0 returns an **ICMP Time Exceeded**, naming itself."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; h[label=\"host\"]; r1[label=\"R1\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r2[label=\"R2\"]; r3[label=\"R3\"]; d[label=\"server\"]; h->r1[label=\" TTL=1\"]; r1->h[label=\" Time\\nExceeded\", style=dashed]; r1->r2[label=\" TTL=2\"]; r2->r3; r3->d; }",
+              "alt": "A host sending a probe to the first router, which sends a dashed reply back; longer arrows reach the second and third routers and then a server.",
+              "caption": "each higher TTL reaches one router further",
+              "src": "_dot/ad38d4af3de988fe.svg"
+            }
+          },
+          {
+            "say": "The tool names Windows and Linux differently: **tracert** on Windows, **traceroute** on Linux and macOS. Windows tracert uses ICMP Echo; Linux traceroute uses UDP by default."
+          }
+        ],
+        "say": "traceroute finds the routers on the way. It sends probes with a TTL of 1, then 2, then 3. Each router that drops a probe for TTL reaching 0 returns an ICMP Time Exceeded, naming itself. The tool names Windows and Linux differently: tracert on Windows, traceroute on Linux and macOS. Windows tracert uses ICMP Echo; Linux traceroute uses UDP by default.",
+        "check": {
+          "prompt": "A traceroute shows the first six hops answering quickly, then hop 7 onward all time out, yet the destination web page loads fine. What is the MOST likely reason?",
+          "answer": "Those routers are configured not to reply to the probes, but still forward traffic",
+          "wrong": [
+            "The path is broken at hop 7, so the site cannot actually be reached",
+            "The TTL stopped incrementing, so no probe got past hop 6"
+          ],
+          "why": "Many routers rate-limit or drop the ICMP/UDP probes traceroute relies on while forwarding real traffic normally, so timed-out middle hops with a working destination are expected, not a fault."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "**nslookup** queries DNS on Windows, Linux and macOS alike; **dig** gives fuller answers on Linux and macOS but is not on Windows by default. `dig silverkeep.example AAAA` asks for one record type."
+          },
+          {
+            "say": "A host's own settings come from **ipconfig** on Windows (`/all` adds DNS servers and lease details, `/flushdns` empties the DNS cache) and from **ip address** (`ip a`) on modern Linux, where the older **ifconfig** may still be installed."
+          },
+          {
+            "say": "**netstat**, or **ss** on modern Linux, lists the local host's own connections and listening ports: `-a` shows them all, and `-n` keeps addresses and ports as numbers. **arp -a** prints the local cache of IP-to-MAC mappings."
+          },
+          {
+            "say": "To look across the network instead, **nmap** scans a range for live hosts, their open ports, and the services and OS behind them."
+          }
+        ],
+        "say": "nslookup queries DNS on Windows, Linux and macOS alike; dig gives fuller answers on Linux and macOS but is not on Windows by default. dig silverkeep.example AAAA asks for one record type. A host's own settings come from ipconfig on Windows (/all adds DNS servers and lease details, /flushdns empties the DNS cache) and from ip address (ip a) on modern Linux, where the older ifconfig may still be installed. netstat, or ss on modern Linux, lists the local host's own connections and listening ports: -a shows them all, and -n keeps addresses and ports as numbers. arp -a prints the local cache of IP-to-MAC mappings. To look across the network instead, nmap scans a range for live hosts, their open ports, and the services and OS behind them."
+      }
     ],
-    "incorrect": [
-      "nslookup",
-      "netstat",
-      "arp"
-    ],
-    "feedback": "ping is the universal reachability and latency test. It uses ICMP Echo Request/Reply and is usually the first thing to try."
+    "outro": "Start with ping to prove reachability, then traceroute to see where a slow path turns slow."
   },
   {
-    "question": "Which command shows the path packets take to a destination by displaying each router hop along the way?",
+    "question": "Aria wants to confirm a server is reachable and measure the round-trip time from her workstation. Which command does this, and what does it rely on?",
     "correct": [
-      "traceroute (tracert on Windows)"
+      "ping, which sends ICMP Echo Requests and times the Echo Replies"
     ],
     "incorrect": [
-      "netstat (active connection list)",
-      "ipconfig /all (interface details)",
-      "ping (ICMP echo request/reply)"
+      "nslookup, which sends ICMP Echo Requests to the DNS server",
+      "arp, which sends a broadcast and waits for the host to answer with its MAC",
+      "netstat, which opens a TCP connection to the host and reports the latency"
     ],
-    "feedback": "traceroute increments the TTL on successive probes so each router along the path returns an ICMP Time Exceeded, revealing the hop sequence and per-hop latency."
+    "feedback": "ping is the universal reachability and latency test: an ICMP Echo Request out, an Echo Reply back, timed. nslookup resolves names and does not use ICMP; arp resolves IP to MAC on the local segment only; netstat lists local sockets and sends nothing to a remote host."
   },
   {
-    "question": "Brom needs to look up the IPv4 address associated with a hostname from a Windows command prompt. Which tool fits best?",
+    "type": "code_line",
+    "question": "On a Linux host, write the command that sends exactly 4 ICMP echo requests to the address 10.0.0.1.",
+    "language": "bash",
+    "correct": [
+      "ping -c 4 10.0.0.1",
+      "ping -c4 10.0.0.1",
+      "ping 10.0.0.1 -c 4",
+      "ping 10.0.0.1 -c4"
+    ],
+    "case_sensitive": true,
+    "feedback": "On Linux, ping runs until stopped unless you cap it with -c (count): ping -c 4 10.0.0.1 sends four and exits. On Windows the same cap is -n 4, because -c means something else there."
+  },
+  {
+    "type": "cloze",
+    "question": "On Windows the path-tracing command is {{1}}, which sends ICMP Echo probes; on Linux it is {{2}}, which sends UDP probes by default. Either way, each router that drops an expiring probe answers with an ICMP Time {{3}} message.",
+    "blanks": [
+      {
+        "accept": [
+          "tracert",
+          "tracert.exe"
+        ],
+        "hint": "command"
+      },
+      {
+        "accept": [
+          "traceroute"
+        ],
+        "hint": "command"
+      },
+      {
+        "accept": [
+          "Exceeded"
+        ],
+        "hint": "ICMP message"
+      }
+    ],
+    "feedback": "Windows names the tool tracert and probes with ICMP Echo; Linux and macOS name it traceroute and use UDP to high ports by default (traceroute -I switches to ICMP). The TTL trick is the same on both: the router that decrements a probe's TTL to 0 drops it and returns ICMP Time Exceeded, which reveals that router's address."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A ping test sent {{sent}} echo requests and received {{recv}} replies. What is the packet loss, as a percentage?",
+    "variables": {
+      "sent": {
+        "values": [
+          20,
+          40,
+          100
+        ]
+      },
+      "lostpct": {
+        "values": [
+          10,
+          20,
+          25,
+          50
+        ]
+      }
+    },
+    "derived": {
+      "recv": "sent - sent * lostpct / 100"
+    },
+    "answer": {
+      "expr": "lostpct",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Packet loss is replies missing divided by requests sent, times 100: ({{sent}} minus {{recv}}) over {{sent}} is {{expected}} percent. Any steady loss on a LAN points to a duplex mismatch, a bad cable, or an overloaded link."
+  },
+  {
+    "question": "On a Windows workstation with no extra tools installed, Mira needs to look up the IPv4 address a hostname resolves to. Which command is built in for this?",
     "correct": [
       "nslookup"
     ],
     "incorrect": [
-      "netstat",
-      "tcpdump",
-      "arp"
-    ],
-    "feedback": "nslookup queries DNS for record information. dig is the more featureful Unix equivalent."
-  },
-  {
-    "question": "Which command-line DNS tool is the modern Unix/Linux standard, with detailed output for record types, query timing, and authoritative responses?",
-    "correct": [
-      "dig"
-    ],
-    "incorrect": [
-      "nslookup",
-      "netstat",
-      "ifconfig"
-    ],
-    "feedback": "dig (Domain Information Groper) is the standard Linux DNS troubleshooting tool, offering more flexibility and clarity than the older nslookup."
-  },
-  {
-    "question": "Which command-line tool captures packets directly from a network interface for offline analysis, often producing pcap files for Wireshark?",
-    "correct": [
-      "tcpdump"
-    ],
-    "incorrect": [
-      "traceroute",
-      "netstat",
-      "arp"
-    ],
-    "feedback": "tcpdump is the classic CLI capture tool on Unix-like systems. It writes pcap files that can be inspected later with Wireshark or other analyzers."
-  },
-  {
-    "question": "Aria opens Wireshark to inspect a problematic TLS handshake at the byte level. What category of tool is Wireshark?",
-    "correct": [
-      "Protocol analyzer"
-    ],
-    "incorrect": [
-      "Speed tester",
-      "Toner",
-      "Visual fault locator"
-    ],
-    "feedback": "Wireshark is the dominant protocol analyzer. It decodes captured packets across hundreds of protocols, often used together with tcpdump captures."
-  },
-  {
-    "question": "Which command displays open TCP/UDP ports and active network connections on the local host?",
-    "correct": [
-      "netstat (or ss on modern Linux)"
-    ],
-    "incorrect": [
-      "traceroute (hop-by-hop path discovery)",
-      "ping (ICMP reachability test)",
-      "arp -a (IP-to-MAC mappings)"
-    ],
-    "feedback": "netstat -an / ss -tulpn show listening sockets and established connections. Useful for spotting unexpected services and orphaned connections."
-  },
-  {
-    "question": "Which command on Windows displays the local host's IP address, subnet mask, and default gateway?",
-    "correct": [
-      "ipconfig"
-    ],
-    "incorrect": [
-      "ifconfig",
-      "ip address (Linux)",
-      "arp"
-    ],
-    "feedback": "ipconfig is the Windows command. ifconfig is the legacy Unix command; modern Linux uses `ip address` (or `ip a`) instead."
-  },
-  {
-    "question": "Which command displays the local host's ARP cache, showing the IP-to-MAC bindings the host has learned on its segment?",
-    "correct": [
-      "arp"
-    ],
-    "incorrect": [
-      "nslookup",
-      "netstat",
-      "tcpdump"
-    ],
-    "feedback": "`arp -a` shows cached IP-to-MAC mappings. It's useful when troubleshooting duplicate IPs or suspected ARP poisoning."
-  },
-  {
-    "question": "Which tool performs network discovery by scanning hosts and services across a range of IP addresses and ports?",
-    "correct": [
-      "Nmap"
-    ],
-    "incorrect": [
-      "tcpdump",
+      "dig",
       "ipconfig",
-      "Visual fault locator"
-    ],
-    "feedback": "Nmap is the standard host/port discovery and service-fingerprinting tool. It's used for asset discovery, audits, and (with permission) penetration testing."
-  },
-  {
-    "question": "Which protocol allows directly connected devices from different vendors to discover each other's identity, capabilities, and port assignments?",
-    "correct": [
-      "Link Layer Discovery Protocol (LLDP)"
-    ],
-    "incorrect": [
-      "Cisco Discovery Protocol (CDP) only",
-      "Spanning Tree Protocol (STP)",
-      "Border Gateway Protocol (BGP)"
-    ],
-    "feedback": "LLDP is the IEEE 802.1AB vendor-neutral neighbor-discovery protocol. CDP serves the same purpose but is Cisco-proprietary."
-  },
-  {
-    "question": "Which of the following statements about CDP and LLDP are accurate?",
-    "correct": [
-      "CDP is Cisco-proprietary; LLDP is an IEEE standard",
-      "Both reveal information such as connected device name, port, and platform",
-      "Both should generally be disabled on ports facing untrusted networks to limit information leakage"
-    ],
-    "incorrect": [
-      "LLDP is Cisco-only and does not interoperate with other vendors",
-      "CDP and LLDP encrypt their advertisements by default",
-      "Both protocols are required for Spanning Tree to function"
-    ],
-    "feedback": "CDP and LLDP are great for mapping unknown topologies, but they leak details. Disable on edge/untrusted ports to avoid feeding reconnaissance."
-  },
-  {
-    "question": "Mira wants to confirm whether her ISP is actually delivering the contracted internet bandwidth from a user workstation. Which tool fits?",
-    "correct": [
-      "A speed tester such as iperf or a web Speedtest"
-    ],
-    "incorrect": [
-      "Traceroute to map the hop-by-hop path to the ISP",
-      "Visual fault locator for fiber continuity testing",
-      "Toner and probe for cable identification"
-    ],
-    "feedback": "Speed testers measure achievable throughput end-to-end. Pair them with iperf between two trusted hosts to isolate ISP vs. internal performance."
-  },
-  {
-    "question": "Old Hask needs to identify which of dozens of unlabeled cables in a wiring closet leads to a specific wall jack. Which tool fits?",
-    "correct": [
-      "Toner and probe (cable toner)"
-    ],
-    "incorrect": [
-      "Cable tester for continuity and wiremap",
-      "Visual fault locator",
-      "Wi-Fi analyzer"
-    ],
-    "feedback": "A toner injects an audible signal onto a cable; the probe at the other end picks it up so a tech can identify the right run."
-  },
-  {
-    "question": "Hask suspects a fiber patch cable is broken somewhere along its length. Which tool sends a visible-light source through the fiber so a break or sharp bend leaks light at the fault location?",
-    "correct": [
-      "Visual fault locator (VFL)"
-    ],
-    "incorrect": [
-      "Toner and probe for tracing copper pairs",
-      "Optical time-domain reflectometer (OTDR)",
-      "Copper cable tester"
-    ],
-    "feedback": "A VFL pumps a bright red laser into the fiber. Breaks and tight bends glow red where light escapes, making the fault visually obvious."
-  },
-  {
-    "question": "Which tool verifies that a copper cable is wired correctly (continuity, pinout, pair integrity) and can detect issues such as shorts, opens, and split pairs?",
-    "correct": [
-      "Cable tester"
-    ],
-    "incorrect": [
-      "Visual fault locator",
-      "Toner and probe",
-      "Wi-Fi analyzer"
-    ],
-    "feedback": "A cable tester verifies physical wiring against the expected pinout. More advanced certification testers also measure crosstalk, attenuation, and length."
-  },
-  {
-    "question": "Which device sits inline (or alongside, via a SPAN port replacement) on a copper or fiber link to provide a copy of the traffic to a monitoring tool without disrupting the live link?",
-    "correct": [
-      "Network tap"
-    ],
-    "incorrect": [
-      "Visual fault locator",
-      "Toner and probe",
-      "Cable tester"
-    ],
-    "feedback": "Taps provide a passive or active copy of link traffic. They are preferred over SPAN/mirror ports when fidelity, full-duplex visibility, and zero packet loss matter."
-  },
-  {
-    "question": "Aria wants to map nearby Wi-Fi networks, see channel utilization, and spot adjacent-channel interference. Which tool fits?",
-    "correct": [
-      "Wi-Fi analyzer"
-    ],
-    "incorrect": [
-      "Toner and probe",
-      "Visual fault locator",
-      "tcpdump on a wired interface"
-    ],
-    "feedback": "Wi-Fi analyzers (laptop or smartphone apps) show SSIDs, channels, signal strength, and overlap. Spectrum analyzers go further by visualizing non-Wi-Fi RF noise."
-  },
-  {
-    "question": "Brom wants to see which switch port a particular MAC address has been learned on. Which command fits?",
-    "correct": [
-      "show mac-address-table"
-    ],
-    "incorrect": [
-      "show interface (port counters)",
-      "show route (IP routing table)",
-      "show vlan brief"
-    ],
-    "feedback": "`show mac-address-table` (or `show mac address-table`) lists learned MACs and their ports — invaluable for tracking down where a device is physically connected."
-  },
-  {
-    "question": "Captain Doran wants to view the router's current routing table, including learned and connected networks. Which command fits?",
-    "correct": [
-      "show route (or show ip route)"
-    ],
-    "incorrect": [
-      "show interface (link and error counters)",
-      "show config (running configuration)",
-      "show arp (IP-to-MAC cache)"
-    ],
-    "feedback": "`show ip route` (Cisco) or `show route` (many other vendors) displays the routing table, including next hops, metrics, and source protocols."
-  },
-  {
-    "question": "Which command displays counters such as packets in/out, CRC errors, and runts/giants for a switch or router interface?",
-    "correct": [
-      "show interface"
-    ],
-    "incorrect": [
-      "show mac-address-table",
-      "show power",
-      "show vlan"
-    ],
-    "feedback": "`show interface` displays operational state and detailed counters. Watch CRC, input errors, and runts to spot Layer 1 problems."
-  },
-  {
-    "question": "Which command displays the running or saved configuration of a network device?",
-    "correct": [
-      "show running-config or show startup-config"
-    ],
-    "incorrect": [
-      "show route for the active routing table",
-      "show vlan for the VLAN database",
-      "show power for PoE budget status"
-    ],
-    "feedback": "`show running-config` shows the currently active config. `show startup-config` shows what will load on next boot. Differences between the two indicate unsaved changes."
-  },
-  {
-    "question": "Which command displays the device's ARP cache, showing IP-to-MAC bindings learned by the device?",
-    "correct": [
-      "show arp"
-    ],
-    "incorrect": [
-      "show mac-address-table",
-      "show interface",
-      "show vlan"
-    ],
-    "feedback": "`show arp` lets you see which MACs the router/switch has bound to which IPs — useful when chasing duplicate IPs or unexpected reachability."
-  },
-  {
-    "question": "Which command on a switch displays the configured VLANs and which ports are members of each?",
-    "correct": [
-      "show vlan"
-    ],
-    "incorrect": [
-      "show route",
-      "show interface",
-      "show power"
-    ],
-    "feedback": "`show vlan` (or `show vlan brief`) lists VLAN IDs, names, and member ports — essential for confirming or correcting VLAN assignments."
-  },
-  {
-    "question": "Which command displays the PoE power budget, allocated power per port, and remaining capacity on a PoE-capable switch?",
-    "correct": [
-      "show power inline"
-    ],
-    "incorrect": [
-      "show interface status",
-      "show vlan brief",
-      "show config"
-    ],
-    "feedback": "`show power inline` (or vendor equivalents) reports PoE allocation and what is still available. Use it when PoE devices fail to power up after additions to the switch."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The command-line tool that sends ICMP Echo Requests and reports round-trip times to a destination is ___.",
-    "correct": [
-      "ping"
-    ],
-    "case_sensitive": false,
-    "feedback": "ping is the universal reachability test. Loss percentage and RTT distribution reveal a lot about a path's health."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The Linux command-line tool for capturing packets directly from a network interface, commonly producing pcap files, is ___.",
-    "correct": [
       "tcpdump"
     ],
-    "case_sensitive": false,
-    "feedback": "tcpdump pairs naturally with Wireshark: capture on the server with tcpdump, then inspect the pcap with Wireshark on a workstation."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The vendor-neutral IEEE protocol that lets connected network devices advertise their identity and capabilities to each other is ___.",
-    "correct": [
-      "LLDP",
-      "Link Layer Discovery Protocol",
-      "link layer discovery protocol"
-    ],
-    "case_sensitive": false,
-    "feedback": "LLDP (802.1AB) is the multivendor counterpart to Cisco's CDP. Both are great for topology discovery and unfortunate for information leakage on untrusted ports."
-  },
-  {
-    "type": "matching",
-    "question": "Match each command-line tool to its primary use.",
-    "pairs": [
-      {
-        "term": "ping",
-        "definition": "Test reachability and round-trip time using ICMP"
-      },
-      {
-        "term": "traceroute / tracert",
-        "definition": "Display the path packets take to a destination, hop by hop"
-      },
-      {
-        "term": "nslookup / dig",
-        "definition": "Query DNS for record information"
-      },
-      {
-        "term": "tcpdump",
-        "definition": "Capture packets from a network interface for analysis"
-      },
-      {
-        "term": "netstat / ss",
-        "definition": "Show open ports and active network connections on the local host"
-      },
-      {
-        "term": "arp",
-        "definition": "Display the local IP-to-MAC address cache"
-      }
-    ],
-    "feedback": "These six commands are the core CLI toolbox for everyday network troubleshooting on Windows, Linux, and macOS."
-  },
-  {
-    "type": "matching",
-    "question": "Match each hardware tool to the problem it most directly helps solve.",
-    "pairs": [
-      {
-        "term": "Toner and probe",
-        "definition": "Identify which cable in a bundle leads to a specific jack"
-      },
-      {
-        "term": "Cable tester",
-        "definition": "Verify pinout, continuity, and pair integrity on copper runs"
-      },
-      {
-        "term": "Visual fault locator",
-        "definition": "Locate breaks or tight bends in a fiber cable using visible light"
-      },
-      {
-        "term": "Network tap",
-        "definition": "Provide a passive copy of live link traffic to a monitoring tool"
-      },
-      {
-        "term": "Wi-Fi analyzer",
-        "definition": "Survey nearby SSIDs, channels, signal strength, and interference"
-      }
-    ],
-    "feedback": "The right hardware tool dramatically shortens troubleshooting time — knowing which to grab is half the job."
-  },
-  {
-    "type": "fill_blank",
-    "question": "In ping, the flag that sets the number of echo requests is ___.",
-    "correct": [
-      "-c"
-    ],
-    "case_sensitive": true,
-    "feedback": "ping -c lets you choose how many requests to send."
-  },
-  {
-    "type": "fill_blank",
-    "question": "The Linux command commonly used to query DNS records from the shell is ___.",
-    "correct": [
-      "dig"
-    ],
-    "case_sensitive": true,
-    "feedback": "dig is the standard DNS lookup tool for queries such as A records."
+    "feedback": "nslookup queries DNS and ships with Windows, Linux, and macOS. dig is the richer DNS tool but is not installed by default on Windows. ipconfig shows local interface settings, not DNS answers; tcpdump captures packets."
   },
   {
     "type": "code_line",
-    "question": "Write the Linux command that displays all active TCP and UDP connections along with their numeric port numbers (no hostname resolution).",
+    "question": "On Linux, use dig to look up the MX records for the domain example.com.",
+    "language": "bash",
+    "correct": [
+      "dig example.com mx",
+      "dig mx example.com",
+      "dig example.com MX",
+      "dig MX example.com",
+      "dig -t mx example.com",
+      "dig -t MX example.com",
+      "dig example.com -t mx",
+      "dig example.com -t MX"
+    ],
+    "case_sensitive": true,
+    "feedback": "dig takes the name and the record type in either order, so dig example.com mx and dig mx example.com both ask for mail-exchanger records. Leaving the type off returns A records instead."
+  },
+  {
+    "type": "cloze",
+    "question": "Both tools query DNS from the command line: {{1}} ships with Windows and also runs on Linux and macOS, while {{2}} is the more detailed tool used on Linux and macOS, which Windows does not include.",
+    "blanks": [
+      {
+        "accept": [
+          "nslookup"
+        ],
+        "hint": "on Windows too"
+      },
+      {
+        "accept": [
+          "dig"
+        ],
+        "hint": "Linux and macOS"
+      }
+    ],
+    "feedback": "nslookup is the cross-platform DNS lookup that Windows ships; dig (Domain Information Groper) gives fuller output - query time, flags, the authority section - and is the usual choice on Linux and macOS. On many Linux systems both come in one DNS-utilities package, so a minimal install may need it added."
+  },
+  {
+    "question": "Which commands display a host's own IPv4 address and subnet mask, on the OS named?",
+    "correct": [
+      "ipconfig on Windows",
+      "ip address on modern Linux",
+      "ifconfig on older Linux"
+    ],
+    "incorrect": [
+      "arp -a on Windows",
+      "nslookup on modern Linux"
+    ],
+    "feedback": "Windows uses ipconfig; modern Linux uses the ip suite (ip address, or ip a), and ifconfig is the older Linux net-tools command that still shows address and mask where it is installed. arp -a lists other hosts' IP-to-MAC mappings, not your own mask, and nslookup queries DNS."
+  },
+  {
+    "type": "code_line",
+    "question": "On a modern Linux host, write the command that lists all network interfaces with their IP addresses.",
+    "language": "bash",
+    "correct": [
+      "ip addr show",
+      "ip a",
+      "ip addr",
+      "ip address",
+      "ip address show",
+      "ip a s",
+      "ip a show",
+      "ip addr list",
+      "ip address list",
+      "ip -br a",
+      "ip -br addr",
+      "ip -br address",
+      "ip -brief a",
+      "ip -brief addr",
+      "ip -brief address"
+    ],
+    "case_sensitive": true,
+    "feedback": "ip addr show (or just ip a) lists every interface with its state and its IPv4 and IPv6 addresses. It is the modern replacement for ifconfig; on Windows the equivalent is ipconfig."
+  },
+  {
+    "type": "code_line",
+    "question": "On Windows, write the command that clears the local DNS resolver cache.",
+    "language": "bash",
+    "correct": [
+      "ipconfig /flushdns",
+      "Clear-DnsClientCache"
+    ],
+    "case_sensitive": false,
+    "feedback": "ipconfig /flushdns (or PowerShell's Clear-DnsClientCache) empties the Windows resolver cache so the next lookup goes back to the DNS server - the fix when a record changed but the host keeps resolving the old address. On Linux the cache lives in the resolver service (for example systemd-resolved), not in ip."
+  },
+  {
+    "type": "code_line",
+    "question": "On Linux, display all TCP and UDP connections with numeric addresses and ports (no name resolution). Use netstat or its modern replacement.",
     "language": "bash",
     "correct": [
       "netstat -an",
+      "netstat -na",
       "netstat -a -n",
+      "netstat -n -a",
+      "netstat -tuan",
+      "netstat -tuna",
+      "netstat -taun",
+      "netstat -tanu",
+      "netstat -tnua",
+      "netstat -tnau",
+      "netstat -utan",
+      "netstat -utna",
+      "netstat -uatn",
+      "netstat -uant",
+      "netstat -unta",
+      "netstat -unat",
+      "netstat -atun",
+      "netstat -atnu",
+      "netstat -autn",
+      "netstat -aunt",
+      "netstat -antu",
+      "netstat -anut",
+      "netstat -ntua",
+      "netstat -ntau",
+      "netstat -nuta",
+      "netstat -nuat",
+      "netstat -natu",
+      "netstat -naut",
       "ss -an",
-      "ss -a -n"
+      "ss -na",
+      "ss -a -n",
+      "ss -n -a",
+      "ss -tuan",
+      "ss -tuna",
+      "ss -taun",
+      "ss -tanu",
+      "ss -tnua",
+      "ss -tnau",
+      "ss -utan",
+      "ss -utna",
+      "ss -uatn",
+      "ss -uant",
+      "ss -unta",
+      "ss -unat",
+      "ss -atun",
+      "ss -atnu",
+      "ss -autn",
+      "ss -aunt",
+      "ss -antu",
+      "ss -anut",
+      "ss -ntua",
+      "ss -ntau",
+      "ss -nuta",
+      "ss -nuat",
+      "ss -natu",
+      "ss -naut"
     ],
     "case_sensitive": true,
-    "feedback": "netstat -an (or ss -an on modern Linux) — -a shows all sockets (listening and established), -n suppresses hostname resolution so port numbers appear numerically. ss is the modern replacement for netstat."
+    "feedback": "-a shows all sockets, listening and established; -n keeps addresses and ports numeric instead of resolving names, which is faster and avoids a hung lookup. Adding -t and -u (netstat -tuan) limits the list to TCP and UDP, leaving out local Unix sockets. ss -an or ss -tuan is the modern Linux equivalent."
+  },
+  {
+    "question": "A security review uses nmap against a subnet. Which of the following are things nmap is designed to do?",
+    "correct": [
+      "Discover which hosts on a range are up",
+      "Find which TCP and UDP ports are open on a host",
+      "Guess a service's version and the host's OS from its responses"
+    ],
+    "incorrect": [
+      "Decode the application-layer payload of each captured packet",
+      "Show the local machine's own ARP cache entries"
+    ],
+    "feedback": "nmap is a network scanner: host discovery, port scanning, and service/OS fingerprinting. Decoding captured payloads is a packet analyzer's job (Wireshark); reading the local ARP cache is arp's."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An nmap scan checks {{ports}} TCP ports on each of {{hosts}} live hosts. How many individual port probes does the scan send in total?",
+    "variables": {
+      "ports": {
+        "values": [
+          20,
+          50,
+          100
+        ]
+      },
+      "hosts": {
+        "min": 3,
+        "max": 8
+      }
+    },
+    "answer": {
+      "expr": "ports * hosts",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "One probe per port per host: {{ports}} ports times {{hosts}} hosts is {{expected}} probes. This is why scanning every port on a large range is slow and noisy, and why targeted port lists are kinder to the network."
+  },
+  {
+    "type": "code_line",
+    "question": "On Windows or Linux, write the command that displays all entries in the local ARP cache.",
+    "language": "bash",
+    "correct": [
+      "arp -a"
+    ],
+    "case_sensitive": true,
+    "feedback": "arp -a lists every cached IP-to-MAC mapping on Windows and Linux alike. (Modern Linux also offers ip neigh for the same table.) Watch for one MAC claiming several IPs, a sign of ARP spoofing."
+  },
+  {
+    "question": "Old Hask keeps netcat (nc), a tool that opens raw TCP and UDP connections, in his kit. Which of these jobs can nc do from the command line?",
+    "correct": [
+      "Test whether TCP port 443 on a host accepts a connection",
+      "Connect to a mail server's port 25 and read its greeting banner",
+      "Listen on a port to receive a test connection from another host"
+    ],
+    "incorrect": [
+      "Decode a capture file's packets protocol by protocol",
+      "Look up the MX records published for a domain",
+      "Show which MAC address answers for an IP on the segment"
+    ],
+    "feedback": "netcat reads and writes raw TCP and UDP connections, so it can test a port (nc -zv), grab a banner by connecting and reading what the service sends first, or listen (nc -l) for a test connection or file. Decoding captures is a packet analyzer's job, MX lookups belong to dig or nslookup, and IP-to-MAC mappings come from arp."
+  },
+  {
+    "type": "code_line",
+    "question": "Using netcat, scan (zero-I/O) with verbose output whether TCP port 443 is open on the host 10.0.0.5.",
+    "language": "bash",
+    "correct": [
+      "nc -zv 10.0.0.5 443",
+      "nc -vz 10.0.0.5 443",
+      "nc -z -v 10.0.0.5 443",
+      "nc -v -z 10.0.0.5 443",
+      "netcat -zv 10.0.0.5 443",
+      "netcat -vz 10.0.0.5 443"
+    ],
+    "case_sensitive": true,
+    "feedback": "-z makes nc test the port without sending data, and -v prints whether it succeeded, so nc -zv 10.0.0.5 443 reports open or refused. Drop -z and nc would stay connected waiting to pass data."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Seeing the traffic itself",
+    "npc": "tariq",
+    "intro": "ping and traceroute tell you a path is bad; they never tell you what the packets say. For that you capture the traffic and read it. Let's see the difference between a full capture and a flow summary.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A **packet capture** records whole packets off an interface, headers and payload. On Linux the classic tool is **tcpdump**; it writes a `.pcap` file."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; i[label=\"interface\"]; t[label=\"tcpdump\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; f[label=\"capture\\n.pcap\"]; w[label=\"Wireshark\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; i->t[label=\" packets\"]; t->f[label=\" write\"]; f->w[label=\" open\"]; }",
+              "alt": "An interface feeding a capture tool, which writes a capture file, which is then opened in an analysis program.",
+              "caption": "capture on the wire, read it later",
+              "src": "_dot/d6d86fe1dabc708c.svg"
+            }
+          },
+          {
+            "say": "You then open that file in a **packet analyzer** (also called a protocol analyzer) such as **Wireshark**, which decodes each packet across hundreds of protocols."
+          }
+        ],
+        "say": "A packet capture records whole packets off an interface, headers and payload. On Linux the classic tool is tcpdump; it writes a .pcap file. You then open that file in a packet analyzer (also called a protocol analyzer) such as Wireshark, which decodes each packet across hundreds of protocols."
+      },
+      {
+        "beats": [
+          {
+            "say": "Capturing everything is heavy. **NetFlow** instead exports a summary per conversation - source and destination IP and port, protocol, byte and packet counts, timestamps - and keeps no payload."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; subgraph cluster_cap{label=\"full capture\"; pk[label=\"every packet\\n+ payload\"];} subgraph cluster_nf{label=\"NetFlow\"; fl[label=\"one record\\nper flow:\\nIPs, ports,\\nbytes\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"];} }",
+              "alt": "Two panels: on the left a box for every packet with its payload, on the right a single summary record per flow listing addresses, ports, and byte counts.",
+              "caption": "contents versus summary",
+              "src": "_dot/2d2fd550af2c262c.svg"
+            }
+          },
+          {
+            "say": "So NetFlow answers who talked to whom, how much, and when; a full capture answers what they actually said. A log line reading `bytes=240240` is flow data, not a packet."
+          }
+        ],
+        "say": "Capturing everything is heavy. NetFlow instead exports a summary per conversation - source and destination IP and port, protocol, byte and packet counts, timestamps - and keeps no payload. So NetFlow answers who talked to whom, how much, and when; a full capture answers what they actually said. A log line reading bytes=240240 is flow data, not a packet.",
+        "check": {
+          "prompt": "You need to prove which exact HTTP URL a host requested. Which source has that detail?",
+          "answer": "A full packet capture, because it keeps the payload",
+          "wrong": [
+            "NetFlow, because its flow record stores every URL requested",
+            "Either one: both record the application-layer content"
+          ],
+          "why": "NetFlow records only the conversation's metadata - addresses, ports, counts - so the URL inside the payload is simply not there. Only a full capture keeps the bytes that carry it."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "One more place telemetry lands. Every router, switch, and firewall writes event messages, and a **log collector** gathers them in one searchable place: a **syslog** server, or a **SIEM** that adds correlation and alerting."
+          },
+          {
+            "say": "A collected log line is terse but complete. This one names the host, the facility and severity, the interface, and what happened:"
+          },
+          {
+            "code": "Mar 2 23:41:55 core1 %LINK-3-UPDOWN:\n  Interface TenGigabitEthernet1/1, changed state to up",
+            "language": "syslog"
+          }
+        ],
+        "say": "One more place telemetry lands. Every router, switch, and firewall writes event messages, and a log collector gathers them in one searchable place: a syslog server, or a SIEM that adds correlation and alerting. A collected log line is terse but complete. This one names the host, the facility and severity, the interface, and what happened."
+      }
+    ],
+    "outro": "Capture when you need the contents, flow data for the shape of the traffic, and the log collector for what each device reports."
+  },
+  {
+    "question": "Aria opens Wireshark to inspect a failing TLS handshake byte by byte. What category of tool is Wireshark?",
+    "correct": [
+      "A packet (protocol) analyzer"
+    ],
+    "incorrect": [
+      "A spectrum analyzer",
+      "A toner and probe",
+      "A log collector"
+    ],
+    "feedback": "Wireshark is the dominant packet/protocol analyzer: it decodes captured packets across many protocols. A spectrum analyzer visualizes RF energy, a toner and probe traces copper cables, and a log collector aggregates text log entries - none of them decode packets."
+  },
+  {
+    "type": "code_line",
+    "question": "On Linux, capture traffic on interface eth0 limited to port 53 using tcpdump.",
+    "language": "bash",
+    "correct": [
+      "tcpdump -i eth0 port 53",
+      "tcpdump -ni eth0 port 53",
+      "tcpdump -n -i eth0 port 53",
+      "tcpdump -i eth0 -n port 53",
+      "tcpdump -i eth0 port 53 -n",
+      "tcpdump port 53 -i eth0",
+      "tcpdump -i eth0 'port 53'",
+      "tcpdump -i eth0 \"port 53\"",
+      "sudo tcpdump -i eth0 port 53",
+      "sudo tcpdump -ni eth0 port 53"
+    ],
+    "case_sensitive": true,
+    "feedback": "-i picks the interface and the trailing filter port 53 keeps only DNS traffic, so tcpdump -i eth0 port 53 captures just the packets of interest. Without -i, tcpdump picks one interface for you, which may not be the one you want."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The classic Linux command-line tool that records packets off an interface and writes them to a .pcap file for later analysis is ___.",
+    "correct": [
+      "tcpdump"
+    ],
+    "case_sensitive": true,
+    "feedback": "tcpdump pairs naturally with Wireshark: capture on the server with tcpdump -w, then read the .pcap on a workstation. It is the command-line engine; Wireshark is the graphical analyzer."
+  },
+  {
+    "question": "A capacity report at Marketstone Exchange needs the top talkers - which hosts moved the most bytes - over the last week, with no interest in packet contents. Which data source fits best and why?",
+    "correct": [
+      "NetFlow, because its per-flow byte and packet counts measure traffic volume"
+    ],
+    "incorrect": [
+      "A full packet capture, because only payload bytes can be totaled into traffic volume",
+      "A spectrum analyzer, because it measures throughput across the RF spectrum",
+      "syslog, because routers log every conversation's byte count by default"
+    ],
+    "feedback": "NetFlow summarizes each flow's addresses, ports, and byte/packet counts - exactly what top-talker and volume reports need, and far lighter than storing payloads. A week of full captures would be enormous and unnecessary; a spectrum analyzer measures RF, not bytes; and syslog does not record per-flow byte totals."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The flow-export technology that records metadata for each conversation - source and destination, ports, protocol, and byte and packet counts - while keeping no payload, is ___.",
+    "correct": [
+      "NetFlow",
+      "IPFIX"
+    ],
+    "case_sensitive": false,
+    "feedback": "NetFlow (and the vendor-neutral IPFIX standard built from it) summarizes conversations for traffic analysis and accounting. It is the lightweight counterpart to a full packet capture, which does keep the payload."
+  },
+  {
+    "question": "Which fields does a NetFlow record typically contain?",
+    "correct": [
+      "Source and destination IP addresses",
+      "Source and destination port numbers",
+      "The IP protocol of the flow",
+      "The byte and packet counts for the flow"
+    ],
+    "incorrect": [
+      "The decrypted contents of each packet's payload",
+      "The HTTP request body of every web transaction"
+    ],
+    "feedback": "A flow record is metadata: the addresses, ports, protocol, and counts that describe a conversation. It deliberately holds no payload, so neither packet contents nor an HTTP body appears - for those you need a full capture."
+  },
+  {
+    "type": "matching",
+    "question": "Match each command-line tool to what it does.",
+    "pairs": [
+      {
+        "term": "ping",
+        "definition": "Test reachability and round-trip time with ICMP echo"
+      },
+      {
+        "term": "traceroute / tracert",
+        "definition": "Reveal the routers along the path, hop by hop, using TTL"
+      },
+      {
+        "term": "nslookup / dig",
+        "definition": "Query DNS for a name's records"
+      },
+      {
+        "term": "netstat / ss",
+        "definition": "List the local host's open ports and active connections"
+      },
+      {
+        "term": "arp",
+        "definition": "Show the local IP-to-MAC address cache for the segment"
+      },
+      {
+        "term": "nmap",
+        "definition": "Scan a range for live hosts, open ports, and services"
+      }
+    ],
+    "feedback": "These six commands are the everyday CLI toolbox. Knowing which reads the local socket table (netstat), which reaches across the network (ping, traceroute, nmap), and which resolve or map addresses (nslookup/dig, arp) is half of fast troubleshooting."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Tools you hold in your hand",
+    "npc": "ada",
+    "intro": "I'm Ada, the Chief Artificer. Some faults live below any command prompt - a mislabeled cable, radio noise, a link you must watch without disturbing. For those you reach for hardware. Here are three.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A **toner and probe** finds one cable in a bundle. The **tone generator** clips onto a wire and injects an audible signal; you sweep the **probe** over the far-end cables until one sings. Use it on unpowered copper."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; tg[label=\"tone\\ngenerator\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; a[label=\"cable A\"]; b[label=\"cable B\"]; c[label=\"cable C\"]; p[label=\"probe\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; tg->a[label=\" tone\"]; a->p[label=\" beeps\", style=dashed]; }",
+              "alt": "A tone generator clipped to one of three cables; a dashed line shows the probe beeping at that same cable's far end.",
+              "caption": "the tone sings only on its own wire",
+              "src": "_dot/ae241797c3ed0742.svg"
+            }
+          }
+        ],
+        "say": "A toner and probe finds one cable in a bundle. The tone generator clips onto a wire and injects an audible signal; you sweep the probe over the far-end cables until one sings. Use it on unpowered copper."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **spectrum analyzer** shows raw radio energy across a band. Unlike a Wi-Fi analyzer, which lists SSIDs and channels, it sees **non-Wi-Fi** sources too: a microwave oven, a 2.4 GHz cordless phone, or a Bluetooth device crowding the band."
+          },
+          {
+            "say": "And a **network tap** is a device spliced inline on a link that copies the full-duplex traffic out to a monitor port, with no frames lost. A switch **SPAN**/mirror port makes the copy inside the switch instead, and can drop frames when it is oversubscribed."
+          }
+        ],
+        "say": "A spectrum analyzer shows raw radio energy across a band. Unlike a Wi-Fi analyzer, which lists SSIDs and channels, it sees non-Wi-Fi sources too: a microwave oven, a 2.4 GHz cordless phone, or a Bluetooth device crowding the band. And a network tap is a device spliced inline on a link that copies the full-duplex traffic out to a monitor port, with no frames lost. A switch SPAN/mirror port makes the copy inside the switch instead, and can drop frames when it is oversubscribed.",
+        "check": {
+          "prompt": "Users on channel 1 get steady interference, but a Wi-Fi analyzer shows no access point on or near that channel. Which tool identifies the source?",
+          "answer": "A spectrum analyzer, which sees non-Wi-Fi RF sources a Wi-Fi analyzer cannot",
+          "wrong": [
+            "A toner and probe, which traces the radio signal back to its cable",
+            "A packet analyzer, which decodes the interfering radio frames"
+          ],
+          "why": "Interference with no Wi-Fi source on the channel is almost always a non-802.11 emitter. A spectrum analyzer shows that raw energy; a Wi-Fi analyzer, which only reads Wi-Fi beacons, is blind to it."
+        }
+      }
+    ],
+    "outro": "Match the tool to the layer: copper to a toner, radio to a spectrum analyzer, a link you must watch to a tap."
+  },
+  {
+    "question": "Old Hask faces a patch panel of fifty unlabeled copper runs and must find which one reaches a specific wall jack. Which tool is designed for exactly this?",
+    "correct": [
+      "Toner and probe"
+    ],
+    "incorrect": [
+      "Spectrum analyzer",
+      "Packet analyzer",
+      "Network tap"
+    ],
+    "feedback": "A toner and probe traces and identifies an individual copper run: the toner puts a signal on the wire at the jack, and the probe finds the one cable that beeps at the panel. A spectrum analyzer is for RF, a packet analyzer decodes traffic, and a tap copies a live link."
+  },
+  {
+    "type": "fill_blank",
+    "question": "In the two-part cable-tracing kit, the tone generator injects a signal onto the wire and the technician sweeps the matching handheld unit, the ___, over the bundle to find which cable beeps.",
+    "correct": [
+      "probe"
+    ],
+    "case_sensitive": false,
+    "feedback": "The tone generator (the 'toner') puts the signal on; the probe is the wand you sweep to detect it. Together they are called a toner and probe, or a tone generator and probe."
+  },
+  {
+    "question": "The 2.4 GHz Wi-Fi at The Gilded Tankard suffers interference, but the Wi-Fi analyzer shows no competing access point on the affected channel. Which of these sources could a spectrum analyzer reveal that the Wi-Fi analyzer cannot identify?",
+    "correct": [
+      "A microwave oven in the kitchen",
+      "A 2.4 GHz cordless phone at the bar",
+      "A Bluetooth speaker by the hearth"
+    ],
+    "incorrect": [
+      "A neighbor's access point on the same channel",
+      "A rogue access point broadcasting an SSID"
+    ],
+    "feedback": "A spectrum analyzer shows raw RF energy, so it reveals non-802.11 emitters - a microwave oven, a 2.4 GHz cordless phone, Bluetooth - that a Wi-Fi analyzer, which decodes only Wi-Fi frames, cannot name. Any access point, a neighbor's or a rogue, sends beacons the Wi-Fi analyzer already lists."
+  },
+  {
+    "type": "cloze",
+    "question": "To copy a link's traffic to a monitoring tool, a hardware {{1}} is spliced inline and passes a lossless full-duplex copy, while a switch {{2}} port mirrors the traffic inside the switch and may drop frames when it is oversubscribed.",
+    "blanks": [
+      {
+        "accept": [
+          "tap",
+          "network tap"
+        ],
+        "hint": "inline device"
+      },
+      {
+        "accept": [
+          "SPAN",
+          "mirror",
+          "span"
+        ],
+        "hint": "switch feature"
+      }
+    ],
+    "feedback": "A network tap is passive hardware that guarantees every frame; a SPAN (mirror) port is convenient and needs no extra device, but it competes for the switch's resources and can silently drop frames under load."
+  },
+  {
+    "question": "Which statements about a network tap, compared with a switch SPAN/mirror port, are correct?",
+    "correct": [
+      "A tap copies the link in hardware, so it does not drop frames under heavy load",
+      "A tap can pass physical-layer errors that a SPAN port usually filters out"
+    ],
+    "incorrect": [
+      "A SPAN port guarantees zero frame loss at any switch load",
+      "A tap resolves hostnames before forwarding traffic to the analyzer",
+      "A tap decrypts the traffic for the analyzer"
+    ],
+    "feedback": "A tap passes a faithful full-duplex copy regardless of switch load, and it can relay errors a SPAN port filters out. A SPAN port is convenient but can drop frames when oversubscribed, and a tap neither resolves names nor decrypts - those are distractors."
+  },
+  {
+    "question": "Doran reads this excerpt of a branch router's configuration on Cisco IOS (show running-config):\n\nlogging host 10.0.9.20\nlogging trap warnings\nntp server 10.0.9.1\n\nWhat do these lines tell him about 10.0.9.20?",
+    "correct": [
+      "It is the log collector the router sends its syslog messages to"
+    ],
+    "incorrect": [
+      "It is a device whose syslog messages this router collects",
+      "It is the server the router takes its time from",
+      "It is an analyzer that receives a mirror of the router's traffic"
+    ],
+    "feedback": "logging host names the syslog server, the log collector, that the router sends its event messages to, and logging trap warnings sets how severe a message must be to go there. The router is the sender, not the collector. Its time source is the ntp server line, 10.0.9.1, a separate setting, and mirroring traffic to an analyzer is a SPAN session on a switch, not a logging line. Reading a configuration this way tells you where a device's logs should be before you go looking for them on the collector."
+  },
+  {
+    "type": "matching",
+    "question": "Match each diagnostic tool to the problem it most directly addresses.",
+    "pairs": [
+      {
+        "term": "Toner and probe",
+        "definition": "Find which copper cable in a bundle reaches a given jack"
+      },
+      {
+        "term": "Spectrum analyzer",
+        "definition": "Locate non-Wi-Fi radio interference on a wireless band"
+      },
+      {
+        "term": "Network tap",
+        "definition": "Copy a live link's full-duplex traffic to a monitor with no loss"
+      },
+      {
+        "term": "Packet analyzer",
+        "definition": "Decode captured packets across many protocols"
+      },
+      {
+        "term": "Log collector",
+        "definition": "Aggregate event messages from many devices in one place"
+      }
+    ],
+    "feedback": "Each tool fits a different layer of trouble: copper (toner and probe), radio (spectrum analyzer), a link to watch (tap), traffic to read (packet analyzer), and device events to correlate (log collector)."
+  },
+  {
+    "question": "Lyra must place one network tap to capture the traffic that passes directly between Server-1 and Server-2, which both connect to the same access switch. The diagram letters four candidate links, A through D. On which link does the tap see that traffic?",
+    "correct": [
+      "C"
+    ],
+    "incorrect": [
+      "A",
+      "B",
+      "D"
+    ],
+    "feedback": "Traffic between two hosts on the same access switch goes from one server's port to the other's and never reaches the uplink, so only a tap on a server's own link (C, Server-1's) sees it. The firewall link (A) and the core-to-access uplink (B) carry only traffic leaving the access switch, and the workstation switch's link (D) is another segment entirely.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; node[shape=box]; net[label=\"Internet\"]; fw[label=\"edge\\nfirewall\"]; core[label=\"core\\nswitch\"]; acc[label=\"access\\nswitch\"]; w[label=\"wkstn\\nswitch\"]; s1[label=\"Server-1\"]; s2[label=\"Server-2\"]; net->fw; fw->core[label=\" A\"]; core->acc[label=\" B\"]; core->w[label=\" D\"]; acc->s1[label=\" C\"]; acc->s2; }",
+      "alt": "A top-down network: Internet to an edge firewall, then a core switch that feeds an access switch and a workstation switch; the access switch serves Server-1 and Server-2. Links are lettered: A from firewall to core, B from core to access switch, C from access switch to Server-1, and D from core to workstation switch.",
+      "caption": "four candidate tap links",
+      "src": "_dot/02afa913d6472356.svg"
+    }
+  },
+  {
+    "question": "On the access switch shown, Brom wants a SPAN (mirror) session that copies only Server-1's traffic to the analyzer. The ports are lettered A through D. Which port must he set as the SPAN source?",
+    "correct": [
+      "A"
+    ],
+    "incorrect": [
+      "B",
+      "C",
+      "D"
+    ],
+    "feedback": "A SPAN source is the port whose traffic you want copied, so to mirror Server-1 the source is Server-1's own port (A). The destination of the session is the analyzer's port (D); the uplink (C) and Server-2's port (B) carry the wrong traffic.",
+    "figure": {
+      "dot": "digraph { rankdir=LR; node[shape=box]; sw[label=\"access\\nswitch\"]; p1[label=\"Server-1\\n(A)\"]; p2[label=\"Server-2\\n(B)\"]; up[label=\"uplink\\n(C)\"]; an[label=\"analyzer\\n(D)\"]; sw->p1; sw->p2; sw->up; sw->an; }",
+      "alt": "An access switch with four labeled ports: one to Server-1 marked A, one to Server-2 marked B, an uplink marked C, and one to an analyzer marked D.",
+      "caption": "which port is the mirror source?",
+      "src": "_dot/ebd4df27f84e6e02.svg"
+    }
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Reading what the tools print",
+    "npc": "nia",
+    "intro": "I'm Nia, the Logic-Weaver. Running the command is the easy half; the skill is reading the table it prints. Let's walk a route table and an ARP cache line by line.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A Linux route table from `ip route`. The first word of each line is the destination; `default` is the catch-all, the route taken when nothing more specific matches."
+          },
+          {
+            "code": "default via 192.168.1.1 dev eth0\n192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.50",
+            "language": "ip route"
+          },
+          {
+            "say": "So `default via 192.168.1.1` is the **default gateway**: anything outside 192.168.1.0/24 is handed to 192.168.1.1. The second line is the directly connected LAN, reached without a gateway."
+          }
+        ],
+        "say": "A Linux route table from ip route. The first word of each line is the destination; default is the catch-all, the route taken when nothing more specific matches. So default via 192.168.1.1 is the default gateway: anything outside 192.168.1.0/24 is handed to 192.168.1.1. The second line is the directly connected LAN, reached without a gateway."
+      },
+      {
+        "beats": [
+          {
+            "say": "Now an ARP cache from `arp -a`. Each line maps an IP to the MAC that answered for it on this segment."
+          },
+          {
+            "code": "192.168.1.1   aa-bb-cc-00-11-22  dynamic\n192.168.1.60  aa-bb-cc-00-11-22  dynamic",
+            "language": "arp -a"
+          },
+          {
+            "say": "Read carefully: two different IPs share one MAC. On a normal LAN that is suspicious - one host answering for another address is what **ARP spoofing** looks like."
+          }
+        ],
+        "say": "Now an ARP cache from arp -a. Each line maps an IP to the MAC that answered for it on this segment. Read carefully: two different IPs share one MAC. On a normal LAN that is suspicious - one host answering for another address is what ARP spoofing looks like.",
+        "check": {
+          "prompt": "A host's route table holds `default via 192.168.1.1` and `192.168.1.0/24 dev eth0`. Which line decides where a packet for 8.8.8.8 goes first?",
+          "answer": "The default route, via 192.168.1.1, since 8.8.8.8 is not in 192.168.1.0/24",
+          "wrong": [
+            "The 192.168.1.0/24 line, because it is listed and connected",
+            "Neither: with no route to 8.8.8.8 the packet is dropped"
+          ],
+          "why": "8.8.8.8 does not fall inside 192.168.1.0/24, so the most specific match fails and the packet follows the default route to the gateway 192.168.1.1."
+        }
+      }
+    ],
+    "outro": "Read every column. The fault is usually sitting in a line you skimmed past."
+  },
+  {
+    "question": "A technician runs ip route on a Linux host and sees the output below. What is this host's default gateway?\n\ndefault via 10.1.1.254 dev eth0\n10.1.1.0/24 dev eth0 proto kernel scope link src 10.1.1.40\n169.254.0.0/16 dev eth0 scope link",
+    "correct": [
+      "10.1.1.254"
+    ],
+    "incorrect": [
+      "10.1.1.40",
+      "169.254.0.0",
+      "10.1.1.0"
+    ],
+    "feedback": "The default gateway is the next hop on the default route: 'default via 10.1.1.254'. 10.1.1.40 is this host's own address (src), 10.1.1.0/24 is the connected LAN, and 169.254.0.0/16 is the link-local (APIPA) range, not a gateway."
+  },
+  {
+    "question": "A technician runs ipconfig /all on a Windows host and sees the excerpt below. Which address does this host use to resolve names?\n\n   IPv4 Address. . . . . . . . . . . : 10.0.5.20\n   Subnet Mask . . . . . . . . . . . : 255.255.255.0\n   Default Gateway . . . . . . . . . : 10.0.5.1\n   DHCP Enabled. . . . . . . . . . . : Yes\n   DNS Servers . . . . . . . . . . . : 10.0.5.53",
+    "correct": [
+      "10.0.5.53"
+    ],
+    "incorrect": [
+      "10.0.5.1",
+      "10.0.5.20",
+      "255.255.255.0"
+    ],
+    "feedback": "Name resolution uses the DNS Servers setting: 10.0.5.53. 10.0.5.1 is the default gateway (used to route off-subnet), 10.0.5.20 is the host's own IPv4 address, and 255.255.255.0 is the subnet mask."
+  },
+  {
+    "question": "From the single line of netstat output below, which statements are correct?\n\nTCP    10.0.0.20:52100      93.184.216.34:443    ESTABLISHED",
+    "correct": [
+      "The local host is 10.0.0.20 using source port 52100",
+      "The remote end is 93.184.216.34 on port 443",
+      "The connection is currently open, not merely listening"
+    ],
+    "incorrect": [
+      "The local host is listening for incoming connections on port 52100",
+      "This is a UDP connection, because it names two ports",
+      "The remote end initiated the connection to local port 443"
+    ],
+    "feedback": "The local address and port come first (10.0.0.20:52100), the foreign address and port second (93.184.216.34:443), and ESTABLISHED means the connection is up. It is not LISTENING, it begins with TCP (not UDP), and 443 is the remote port, not a local listener."
+  },
+  {
+    "question": "Brom runs netstat -an on a Windows host and sees these lines. Which line shows an established outbound connection to a remote web server?\n\nProto  Local Address        Foreign Address      State\nTCP    0.0.0.0:445          0.0.0.0:0            LISTENING\nTCP    10.0.0.20:52100      93.184.216.34:443   ESTABLISHED\nTCP    0.0.0.0:3389         0.0.0.0:0            LISTENING",
+    "correct": [
+      "TCP 10.0.0.20:52100 -> 93.184.216.34:443, ESTABLISHED"
+    ],
+    "incorrect": [
+      "TCP 0.0.0.0:445 -> 0.0.0.0:0, LISTENING",
+      "TCP 0.0.0.0:3389 -> 0.0.0.0:0, LISTENING",
+      "None: netstat -an never shows outbound connections"
+    ],
+    "feedback": "An established connection names a real foreign address and port and reads ESTABLISHED: here the host's high port 52100 is talking to 93.184.216.34:443 (HTTPS). The two LISTENING lines, with foreign address 0.0.0.0:0, are local services (SMB 445, RDP 3389) waiting for a connection, not making one."
+  },
+  {
+    "question": "Aria runs arp -a on Windows and sees the cache below. The default gateway is 192.168.0.1. Which MAC address is currently bound to the gateway?\n\nInterface: 192.168.0.50 --- 0xb\n  Internet Address      Physical Address      Type\n  192.168.0.1           1c-2d-3e-4f-50-61     dynamic\n  192.168.0.75          9a-8b-7c-6d-5e-4f     dynamic\n  192.168.0.255         ff-ff-ff-ff-ff-ff     static",
+    "correct": [
+      "1c-2d-3e-4f-50-61"
+    ],
+    "incorrect": [
+      "9a-8b-7c-6d-5e-4f",
+      "ff-ff-ff-ff-ff-ff",
+      "192.168.0.50"
+    ],
+    "feedback": "Find the gateway's IP (192.168.0.1) in the Internet Address column and read across: 1c-2d-3e-4f-50-61. 9a-8b-... belongs to another host, ff-ff-ff-ff-ff-ff is the broadcast entry for .255, and 192.168.0.50 is the interface's own IP, not a MAC."
+  },
+  {
+    "question": "A technician reviews this line on the log collector, sent from a switch named sw1:\n\nMar 3 02:14:07 sw1 %LINK-3-UPDOWN: Interface GigabitEthernet0/5, changed state to down\n\nWhat does this log entry report?",
+    "correct": [
+      "Port GigabitEthernet0/5 on sw1 went down at 02:14:07"
+    ],
+    "incorrect": [
+      "Switch sw1 lost power at 02:14:07",
+      "VLAN 5 was removed from sw1 at 02:14:07",
+      "The default gateway on sw1 changed at 02:14:07"
+    ],
+    "feedback": "The %LINK-3-UPDOWN message names the interface (GigabitEthernet0/5) and its new state (down), with the timestamp and the host sw1. It is one interface changing state - not a power loss, a VLAN change, or a gateway event."
+  },
+  {
+    "question": "A user reports a slow connection. The tracert output below is from their workstation. Between which two hops does the large jump in round-trip time first appear?\n\n  1    <1 ms    <1 ms    <1 ms   10.0.0.1\n  2     2 ms     2 ms     3 ms   203.0.113.1\n  3     3 ms     2 ms     3 ms   198.51.100.9\n  4    88 ms    91 ms    90 ms   198.51.100.40\n  5    89 ms    90 ms    92 ms   192.0.2.7",
+    "correct": [
+      "Between hop 3 and hop 4"
+    ],
+    "incorrect": [
+      "Between hop 1 and hop 2",
+      "Between hop 4 and hop 5",
+      "Between hop 2 and hop 3"
+    ],
+    "feedback": "RTT climbs from about 3 ms at hop 3 to about 90 ms at hop 4 and stays there, so the latency is introduced on the link into hop 4. Hops 4 to 5 add almost nothing, and the first three hops are all low - the delay is not there."
+  },
+  {
+    "type": "ordering",
+    "question": "Arrange the steps by which traceroute discovers the routers on a path, in the order they happen.",
+    "items": [
+      "Send a probe with the TTL set to 1",
+      "The first router decrements the TTL to 0, drops the probe, and returns an ICMP Time Exceeded naming itself",
+      "Raise the TTL by one and send again, so the next router answers",
+      "Repeat until the destination itself replies, ending the trace"
+    ],
+    "feedback": "Each probe dies one hop further along because its TTL runs out there, and the router that drops it reveals its own address in the Time Exceeded message. Raising the TTL step by step walks the path until the destination answers."
+  },
+  {
+    "question": "An nmap scan of 10.0.0.5 returns the output below. Which ports are reported as open?\n\nPORT     STATE    SERVICE\n22/tcp   open     ssh\n23/tcp   closed   telnet\n80/tcp   open     http\n443/tcp  filtered https",
+    "correct": [
+      "22/tcp (ssh)",
+      "80/tcp (http)"
+    ],
+    "incorrect": [
+      "23/tcp (telnet)",
+      "443/tcp (https)"
+    ],
+    "feedback": "Only ports reading 'open' are accepting connections: 22 (ssh) and 80 (http). 23 is 'closed' (reachable but nothing listening), and 443 is 'filtered', meaning a firewall dropped the probe so nmap cannot tell - neither counts as open."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: One symptom, one tool",
+    "npc": "tariq",
+    "intro": "The exam rarely asks what a tool is; it asks which tool for this symptom. Let's practice reading a complaint and reaching for the one tool that answers it fastest.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Work from the symptom. 'Is the server even up?' is reachability - that is ping. 'Where does the path get slow?' walks the route - that is traceroute."
+          },
+          {
+            "say": "'Which service is listening here?' reads the local socket table - netstat. 'Which cable is this?' is physical - a toner and probe. 'What is jamming this channel?' is RF - a spectrum analyzer."
+          }
+        ],
+        "say": "Work from the symptom. 'Is the server even up?' is reachability - that is ping. 'Where does the path get slow?' walks the route - that is traceroute. 'Which service is listening here?' reads the local socket table - netstat. 'Which cable is this?' is physical - a toner and probe. 'What is jamming this channel?' is RF - a spectrum analyzer.",
+        "check": {
+          "prompt": "You must find which hosts on a subnet are up and which ports each one exposes. Which tool fits?",
+          "answer": "nmap, which probes the whole range across the network",
+          "wrong": [
+            "netstat, which lists the open ports of every host on the subnet",
+            "arp -a, which lists every host on the subnet with its open ports"
+          ],
+          "why": "netstat reads only the local host's own sockets, and arp -a shows only cached IP-to-MAC entries. Discovering other hosts and their ports means sending probes across the network, which is what nmap does."
+        }
+      }
+    ],
+    "outro": "Name the layer the symptom lives on, and the tool usually names itself."
+  },
+  {
+    "question": "Mira reports she can reach a server by its IP address but not by its hostname. From a Linux admin workstation, which commands query DNS directly to confirm the cause?",
+    "correct": [
+      "nslookup",
+      "dig"
+    ],
+    "incorrect": [
+      "traceroute",
+      "arp -a",
+      "netstat -an"
+    ],
+    "feedback": "The IP works but the name does not, so resolution is the suspect, and both nslookup and dig ask a DNS server directly and show whether it answers. traceroute maps the routed path (already working, since the IP is reachable), arp -a shows IP-to-MAC mappings, and netstat -an lists local sockets - none of them queries DNS."
+  },
+  {
+    "question": "Two devices on the same VLAN intermittently lose connectivity, and a duplicate IP is suspected. Which command most directly shows whether one IP is being claimed by two different MAC addresses?",
+    "correct": [
+      "arp -a, to read the IP-to-MAC cache on the segment"
+    ],
+    "incorrect": [
+      "traceroute, to see which hop the duplicate sits behind",
+      "ipconfig /flushdns, to clear the stale duplicate entry",
+      "nmap -sn, to scan the subnet for the duplicate's open ports"
+    ],
+    "feedback": "A duplicate IP shows up in the ARP cache as the mapping flapping between two MACs, which arp -a reveals directly. traceroute maps routed paths (a duplicate is a local-segment issue), flushing DNS touches name resolution, and a ping sweep finds hosts but not the MAC conflict."
+  },
+  {
+    "type": "rule_table",
+    "question": "Silverkeep Holdings' technicians carry one standard toolkit. For each symptom, choose the single tool that most directly diagnoses it. No tool is the best fit for more than one row, and one tool in the list fits none of them.",
+    "columns": [
+      {
+        "header": "Symptom"
+      },
+      {
+        "header": "Best tool",
+        "options": [
+          "ping",
+          "traceroute",
+          "netstat",
+          "nslookup",
+          "Toner and probe",
+          "Spectrum analyzer",
+          "Network tap"
+        ]
+      }
+    ],
+    "rows": [
+      [
+        "Is this host reachable, and what is the round-trip time?",
+        {
+          "answer": "ping"
+        }
+      ],
+      [
+        "A path is slow - which router along it adds the delay?",
+        {
+          "answer": "traceroute"
+        }
+      ],
+      [
+        "Which TCP ports are listening on this local server?",
+        {
+          "answer": "netstat"
+        }
+      ],
+      [
+        "A hostname will not resolve, though its IP works",
+        {
+          "answer": "nslookup"
+        }
+      ],
+      [
+        "Find which unlabeled copper run reaches a given jack",
+        {
+          "answer": "Toner and probe"
+        }
+      ],
+      [
+        "Non-Wi-Fi interference is suspected on a wireless band",
+        {
+          "answer": "Spectrum analyzer"
+        }
+      ]
+    ],
+    "feedback": "Each symptom names its layer, and the layer names the tool: reachability is ping, path latency is traceroute, local sockets are netstat, name resolution is nslookup (or dig), a copper run is a toner and probe, and radio interference is a spectrum analyzer. A network tap - for a lossless copy of a link - is the odd one out, needed by none of these rows."
   }
 ]

@@ -1,81 +1,265 @@
 [
   {
-    "question": "Which of the following best describes static routing?",
-    "correct": [
-      "Routes are manually configured by an administrator and change only when edited"
+    "type": "npc_demo",
+    "question": "NPC: Reading a routing table",
+    "npc": "tariq",
+    "intro": "I'm Tariq, the Beacon-Courier. Every packet a router forwards is decided by one list, its routing table. Let's read a real one, line by line, and see where each kind of route comes from.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A **routing table**, also called the IP route table, lists destination prefixes. For each one it names the next hop, or the exit interface, that leads there."
+          },
+          {
+            "code": "R1# show ip route\nGateway of last resort is 203.0.113.1 to network 0.0.0.0\n\nS*  0.0.0.0/0 [1/0] via 203.0.113.1\nC   10.10.0.0/24 is directly connected, Gi0/1\nL   10.10.0.1/32 is directly connected, Gi0/1\nS   10.50.0.0/16 [1/0] via 10.10.0.2\nO   172.16.8.0/22 [110/20] via 10.10.0.3, Gi0/1",
+            "language": "Cisco IOS output"
+          },
+          {
+            "say": "The letter on the left is where the route came from. The bracket holds two numbers we'll use later: [administrative distance/metric]."
+          }
+        ],
+        "say": "A **routing table**, also called the IP route table, lists destination prefixes. For each one it names the next hop, or the exit interface, that leads there. The letter on the left is where the route came from. The bracket holds two numbers we'll use later: [administrative distance/metric]."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **connected route** (C) appears by itself once an interface has an address and its link is up. L marks the router's own address on that subnet."
+          },
+          {
+            "say": "A **static route** (S) is typed in by an administrator. `ip route 10.50.0.0 255.255.0.0 10.10.0.2` gives the destination, its mask, then the next hop."
+          },
+          {
+            "say": "Static routes are simple and predictable, but they don't learn. If the path beyond that next hop breaks, the route stays, and traffic keeps going there."
+          }
+        ],
+        "say": "A **connected route** (C) appears by itself once an interface has an address and its link is up. L marks the router's own address on that subnet. A **static route** (S) is typed in by an administrator. `ip route 10.50.0.0 255.255.0.0 10.10.0.2` gives the destination, its mask, then the next hop. Static routes are simple and predictable, but they don't learn. If the path beyond that next hop breaks, the route stays, and traffic keeps going there."
+      },
+      {
+        "beats": [
+          {
+            "say": "The **default route**, 0.0.0.0/0 (`::/0` in IPv6), has a prefix length of zero, so it matches every destination. The router uses it only when nothing more specific matches."
+          },
+          {
+            "say": "Its next hop is the **gateway of last resort**. A branch with one ISP link may need little more than this one line."
+          }
+        ],
+        "say": "The **default route**, 0.0.0.0/0 (`::/0` in IPv6), has a prefix length of zero, so it matches every destination. The router uses it only when nothing more specific matches. Its next hop is the **gateway of last resort**. A branch with one ISP link may need little more than this one line.",
+        "check": {
+          "prompt": "R1 has a default route and a static route for 10.50.0.0/16 via 10.10.0.2. A packet arrives for 10.50.200.1. Which route forwards it?",
+          "answer": "The static route, via 10.10.0.2",
+          "wrong": [
+            "The default route, as 10.50.200.1 isn't listed",
+            "The connected route, straight out Gi0/1"
+          ],
+          "why": "10.50.0.0/16 covers every address from 10.50.0.0 to 10.50.255.255, so it matches: a route covers a whole prefix, not a list of hosts. The default route is only the fallback when nothing more specific matches."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "A **dynamic route** (O here, for OSPF) is learned from a neighbor by a **routing protocol**, not typed in."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; lan[label=\"LAN\\n10.5.0.0/16\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; r3[label=\"R3\"]; r2[label=\"R2\"]; r1[label=\"R1\"]; lan->r3[dir=none]; r3->r2[label=\" 10.5.0.0/16\\n via R3\"]; r2->r1[label=\" 10.5.0.0/16\\n via R2\"]; }",
+              "alt": "A LAN box for 10.5.0.0/16 attached to R3. An arrow from R3 to R2, and another from R2 to R1, each carry the prefix and the router to reach it through.",
+              "caption": "one prefix, announced hop by hop",
+              "src": "_dot/a90569ccb76ae1b9.svg"
+            }
+          },
+          {
+            "say": "**Route announcement** is that exchange: each router advertises the prefixes it can reach, and its neighbors install them and pass them on."
+          },
+          {
+            "say": "If a link fails, its routes are withdrawn, and the routers converge on another path."
+          },
+          {
+            "say": "The internet works the same way: an organization announces its public prefix to its ISPs so the world can reach it."
+          },
+          {
+            "say": "A static route isn't announced, though, unless you tell a routing protocol to redistribute it."
+          }
+        ],
+        "say": "A **dynamic route** (O here, for OSPF) is learned from a neighbor by a **routing protocol**, not typed in. **Route announcement** is that exchange: each router advertises the prefixes it can reach, and its neighbors install them and pass them on. If a link fails, its routes are withdrawn, and the routers converge on another path. The internet works the same way: an organization announces its public prefix to its ISPs so the world can reach it. A static route isn't announced, though, unless you tell a routing protocol to redistribute it."
+      }
     ],
-    "incorrect": [
-      "Routers periodically exchange routing updates with neighbors to learn paths dynamically",
-      "Routes are automatically generated based on observed traffic patterns",
-      "Routes are discovered by broadcasting ARP requests for each destination"
-    ],
-    "feedback": "Static routes are hand-configured and do not adapt to topology changes. They are simple and predictable but do not scale to large or frequently changing networks."
+    "outro": "Now a branch router's table for you to read."
   },
   {
-    "question": "Which of the following are advantages of dynamic routing compared to static routing?",
+    "question": "Brom runs show ip route on the Ember Forge branch router; the output is below. A packet arrives for 172.20.1.5. What does the router do with it?",
+    "code": "Gateway of last resort is 198.51.100.1 to network 0.0.0.0\n\nS*  0.0.0.0/0 [1/0] via 198.51.100.1\nC   192.168.40.0/24 is directly connected, Gi0/1\nL   192.168.40.1/32 is directly connected, Gi0/1\nS   10.0.0.0/8 [1/0] via 192.168.40.254",
+    "code_language": "show ip route",
     "correct": [
-      "Routers can adapt automatically to topology changes such as link failures",
-      "Route tables scale more easily in larger networks",
-      "Admins do not need to update every router by hand when a subnet is added"
+      "Forwards it to 198.51.100.1 by the default route"
     ],
     "incorrect": [
-      "Dynamic routing protocols use no router CPU or bandwidth for updates",
-      "Dynamic routing removes the need for any IP addressing plan or summarization",
-      "Dynamic routing requires every router to use the same serial number"
+      "Drops it, since no line lists a 172.20.0.0 network",
+      "Forwards it to 192.168.40.254 by the static route",
+      "ARPs for 172.20.1.5 directly out interface Gi0/1"
     ],
-    "feedback": "Dynamic routing trades some CPU and bandwidth overhead for automatic adaptation and scalability. Static routing remains useful for small or predictable topologies."
-  },
-  {
-    "question": "Captain Doran is peering Silverkeep Holdings' edge router with the ISP to exchange routes between their autonomous systems. Which routing protocol is he using?",
-    "correct": [
-      "Border Gateway Protocol (BGP)"
-    ],
-    "incorrect": [
-      "Open Shortest Path First (OSPF)",
-      "Enhanced Interior Gateway Routing Protocol (EIGRP)",
-      "Routing Information Protocol version 2 (RIPv2)"
-    ],
-    "feedback": "BGP is the path-vector protocol used between autonomous systems on the internet. OSPF and EIGRP are interior gateway protocols used inside a single organization."
-  },
-  {
-    "question": "Which routing protocol is a link-state interior gateway protocol that floods link-state advertisements (LSAs) within an area and calculates shortest paths using Dijkstra's algorithm?",
-    "correct": [
-      "OSPF"
-    ],
-    "incorrect": [
-      "BGP",
-      "EIGRP",
-      "RIP"
-    ],
-    "feedback": "OSPF is a link-state IGP. EIGRP is a Cisco advanced distance-vector (hybrid) protocol. BGP is a path-vector protocol used between autonomous systems."
-  },
-  {
-    "question": "A router has learned the same destination network from OSPF and from a static route. Assuming default values, which route will be installed in the routing table?",
-    "correct": [
-      "The static route, because it has a lower administrative distance"
-    ],
-    "incorrect": [
-      "The OSPF route, because it was learned dynamically and reflects the current topology",
-      "Both routes, load-balanced equally",
-      "Neither route, because the tie cannot be broken"
-    ],
-    "feedback": "Administrative distance (AD) ranks the trustworthiness of route sources. Lower is better. Default ADs: directly connected = 0, static = 1, EIGRP = 90, OSPF = 110, RIP = 120."
-  },
-  {
-    "question": "A router has two routes to the same destination in its routing table: 10.1.2.0/24 via OSPF and 10.1.0.0/16 via BGP. A packet arrives destined for 10.1.2.50. Which route is used?",
-    "correct": [
-      "10.1.2.0/24, because it is the longest (most specific) prefix match"
-    ],
-    "incorrect": [
-      "10.1.0.0/16, because administrative distance is compared before prefix length",
-      "Neither, because the router will drop the packet",
-      "Both routes, in a round-robin fashion"
-    ],
-    "feedback": "The longest prefix match wins, regardless of routing protocol or administrative distance. A /24 is more specific than a /16."
+    "feedback": "172.20.1.5 is not inside 192.168.40.0/24 or 10.0.0.0/8, so the only line that matches is 0.0.0.0/0, the default route, and its next hop 198.51.100.1 is the gateway of last resort. A router drops a packet only when no route matches, and a default route matches everything. The static route covers 10.x.x.x addresses only, and the router ARPs directly only for hosts on a connected subnet."
   },
   {
     "type": "matching",
-    "question": "Match each routing protocol to its default administrative distance on a Cisco router.",
+    "question": "Match each kind of route to the situation it fits.",
+    "pairs": [
+      {
+        "term": "Connected route",
+        "definition": "Appears by itself once an interface is addressed and its link is up"
+      },
+      {
+        "term": "Static route",
+        "definition": "Typed in by an administrator for one subnet behind a neighbor router"
+      },
+      {
+        "term": "Default route",
+        "definition": "Catches every destination with no better match and sends it to the ISP"
+      },
+      {
+        "term": "Dynamic route",
+        "definition": "Learned from neighbors and moved to a new path when a link fails"
+      }
+    ],
+    "feedback": "Connected routes come from the router's own up interfaces. Static routes are typed by hand and do not adapt to failures. The default route, 0.0.0.0/0, is the catch-all for anything with no more specific match. Dynamic routes are announced by neighbors through a routing protocol and withdrawn or replaced as the network changes."
+  },
+  {
+    "question": "Silverkeep's routers learn most of their routes dynamically. Which statements about route announcement are true?",
+    "correct": [
+      "Each router advertises the prefixes it can reach, and neighbors pass them on",
+      "When a link fails, its routes are withdrawn and routers converge on another path",
+      "An organization announces its public prefix to its ISPs so the internet can reach it"
+    ],
+    "incorrect": [
+      "A static route typed on one router is announced to its neighbors by default",
+      "Routers learn remote prefixes by sending ARP requests for each remote subnet",
+      "Routers exchange their routes once at boot and then stop sending updates"
+    ],
+    "feedback": "Route announcement is how dynamic routing works: routers advertise reachable prefixes, neighbors install and re-advertise them, and a failure triggers a withdrawal so the network converges on a new path. The same idea is how an organization tells the internet where its public prefix lives. A static route stays on the router where it was typed unless it is redistributed into a routing protocol; ARP only resolves MAC addresses on a local subnet; and routing protocols keep exchanging updates for as long as they run, which is how they notice failures."
+  },
+  {
+    "question": "Aria types the command below in global configuration mode on Silverkeep's router R1. What does it do?",
+    "code": "ip route 10.60.0.0 255.255.0.0 10.10.0.2",
+    "code_language": "Cisco IOS",
+    "correct": [
+      "Sends traffic for 10.60.0.0/16 to the next-hop router at 10.10.0.2"
+    ],
+    "incorrect": [
+      "Announces 10.60.0.0/16 to R1's OSPF neighbors via 10.10.0.2",
+      "Sends traffic from the source 10.60.0.0/16 toward 10.10.0.2",
+      "Assigns 10.60.0.0/16 to the interface that faces 10.10.0.2"
+    ],
+    "feedback": "ip route takes a destination, a mask and a next hop, so packets addressed to 10.60.0.0/16 (mask 255.255.0.0) are handed to 10.10.0.2. Routes match on the destination address, never the source. A static route is not announced to neighbors unless it is redistributed into a routing protocol, and an interface's own address is set with ip address under that interface, not with ip route."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Which route wins",
+    "npc": "nia",
+    "intro": "I'm Nia, the Logic-Weaver. A router often holds several routes that could carry the same packet. Let's settle the contest the way the router does: three tests, in a fixed order.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "First test: **prefix length**. Of all the routes that match the destination, the one with the longest prefix, the most specific, wins. That's **longest prefix match**."
+          },
+          {
+            "code": "D   10.40.0.0/16  [90/3072] via 10.0.0.6\nO   10.40.7.0/24  [110/30]  via 10.0.0.2\nS*  0.0.0.0/0     [1/0]     via 203.0.113.1",
+            "language": "R2's routing table"
+          },
+          {
+            "say": "A packet for 10.40.7.9 matches all three lines. The /24 is the longest, so the packet goes to 10.0.0.2, even though the EIGRP line has the lower first number."
+          }
+        ],
+        "say": "First test: **prefix length**. Of all the routes that match the destination, the one with the longest prefix, the most specific, wins. That's **longest prefix match**. A packet for 10.40.7.9 matches all three lines. The /24 is the longest, so the packet goes to 10.0.0.2, even though the EIGRP line has the lower first number.",
+        "check": {
+          "prompt": "Same table. Which line forwards a packet for 10.40.9.1?",
+          "answer": "The /16 EIGRP route, via 10.0.0.6",
+          "wrong": [
+            "The /24 OSPF route, as the longest prefix",
+            "The default route, as 10.40.9.1 misses the /24"
+          ],
+          "why": "10.40.7.0/24 covers only 10.40.7.0 to 10.40.7.255, so it doesn't match at all. Of the routes that do match, the /16 is longer than the /0 default."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Second test, only for routes to the very same prefix from different sources: **administrative distance** (AD), how far the router trusts each source. Lower wins."
+          },
+          {
+            "code": "Connected          0\nStatic             1\neBGP              20\nEIGRP (internal)  90\nOSPF             110\niBGP             200",
+            "language": "Cisco default AD"
+          },
+          {
+            "say": "So if EIGRP and OSPF both offer 10.40.7.0/24, EIGRP's copy goes in the table: 90 beats 110."
+          },
+          {
+            "say": "You can give a static route a high AD on purpose: `ip route 10.60.0.0 255.255.0.0 10.0.0.9 200`."
+          },
+          {
+            "say": "It waits behind any dynamic route to that prefix and takes over only if that route disappears: a **floating static route**."
+          }
+        ],
+        "say": "Second test, only for routes to the very same prefix from different sources: **administrative distance** (AD), how far the router trusts each source. Lower wins. So if EIGRP and OSPF both offer 10.40.7.0/24, EIGRP's copy goes in the table: 90 beats 110. You can give a static route a high AD on purpose: `ip route 10.60.0.0 255.255.0.0 10.0.0.9 200`. It waits behind any dynamic route to that prefix and takes over only if that route disappears: a **floating static route**."
+      },
+      {
+        "beats": [
+          {
+            "say": "Third test, only between paths from the same protocol: the **metric**. The best metric wins."
+          },
+          {
+            "say": "Each protocol measures in its own way: OSPF adds up link costs, EIGRP weighs bandwidth and delay, and BGP compares path **attributes**."
+          },
+          {
+            "say": "Metrics from different protocols are never compared with each other; that's AD's job. If two paths tie on metric, both can be installed to share the traffic: **equal-cost multipath** (ECMP)."
+          }
+        ],
+        "say": "Third test, only between paths from the same protocol: the **metric**. The best metric wins. Each protocol measures in its own way: OSPF adds up link costs, EIGRP weighs bandwidth and delay, and BGP compares path **attributes**. Metrics from different protocols are never compared with each other; that's AD's job. If two paths tie on metric, both can be installed to share the traffic: **equal-cost multipath** (ECMP)."
+      },
+      {
+        "beats": [
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; node[shape=box]; m[label=\"routes that\\nmatch\"]; p[label=\"1. longest\\nprefix\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; a[label=\"2. lowest AD\"]; mt[label=\"3. best metric\"]; e[label=\"still tied:\\nshare (ECMP)\"]; m->p; p->a[label=\" same prefix?\"]; a->mt[label=\" same source?\"]; mt->e[label=\" equal?\"]; }",
+              "alt": "A top-down chain of boxes: routes that match, then longest prefix, then lowest AD if the prefixes tie, then best metric if the sources tie, then sharing if still equal.",
+              "caption": "the three tests, in order",
+              "src": "_dot/5c9add9055da00c6.svg"
+            }
+          },
+          {
+            "say": "So the order is fixed: prefix length, then AD, then metric. A later test only breaks a tie the earlier one left."
+          }
+        ],
+        "say": "So the order is fixed: prefix length, then AD, then metric. A later test only breaks a tie the earlier one left.",
+        "check": {
+          "prompt": "A router holds S 10.80.0.0/16 [1/0], O 10.80.4.0/22 [110/20] and D 10.80.4.0/22 [90/3072]. Which forwards a packet for 10.80.5.5?",
+          "answer": "The EIGRP /22: longest prefix, then AD 90",
+          "wrong": [
+            "The static /16: AD 1 beats any dynamic route",
+            "The OSPF /22: its metric of 20 is lowest"
+          ],
+          "why": "10.80.4.0/22 covers 10.80.4.0 to 10.80.7.255, so both /22s match and beat the /16 on prefix length. They tie there, so AD decides between OSPF and EIGRP, and EIGRP's 90 wins. Metrics 20 and 3072 are never compared across protocols."
+        }
+      }
+    ],
+    "outro": "Now some tables for you to settle, one test at a time."
+  },
+  {
+    "question": "R2's routing table is below. Which next hop does R2 use for a packet to 10.30.12.77?",
+    "code": "O   10.30.0.0/16     [110/20]  via 10.0.0.2\nD   10.30.12.0/24    [90/3328] via 10.0.0.6\nS   10.30.12.128/25  [1/0]     via 10.0.0.10\nS*  0.0.0.0/0        [1/0]     via 203.0.113.1",
+    "code_language": "show ip route",
+    "correct": [
+      "10.0.0.6"
+    ],
+    "incorrect": [
+      "10.0.0.10",
+      "10.0.0.2",
+      "203.0.113.1"
+    ],
+    "feedback": "Longest prefix wins, but only among routes that match. 10.30.12.128/25 covers .128 to .255, so .77 falls outside it. The longest route that does match is 10.30.12.0/24, via 10.0.0.6. The /16 (via 10.0.0.2) and the default (via 203.0.113.1) also match but are less specific, and AD plays no part because the prefixes differ."
+  },
+  {
+    "type": "matching",
+    "question": "Match each route source to its default administrative distance on a Cisco router.",
     "pairs": [
       {
         "term": "Directly connected",
@@ -86,6 +270,10 @@
         "definition": "1"
       },
       {
+        "term": "eBGP",
+        "definition": "20"
+      },
+      {
         "term": "EIGRP (internal)",
         "definition": "90"
       },
@@ -94,311 +282,1238 @@
         "definition": "110"
       },
       {
-        "term": "RIP",
-        "definition": "120"
+        "term": "iBGP",
+        "definition": "200"
       }
     ],
-    "feedback": "Administrative distance determines which source is preferred when the same destination is learned from multiple protocols. Lower AD wins."
+    "feedback": "Lower AD means more trusted. A connected network is certain (0), and a static route is the administrator's explicit word (1). Routes learned from another AS by eBGP (20) rank above the interior protocols EIGRP (90) and OSPF (110), while iBGP routes (200) rank last because an interior protocol usually knows the inside better. AD matters only when two sources offer the very same prefix."
   },
   {
-    "question": "Within a single routing protocol, when multiple valid paths to the same destination exist, what is used to pick the best one?",
+    "question": "R3 learns 10.70.0.0/16 from OSPF with a metric of 30. As a backup over a slower link, Aria adds the command below. Which route does R3 use while the OSPF route is up, and why?",
+    "code": "ip route 10.70.0.0 255.255.0.0 10.9.9.1 130",
+    "code_language": "Cisco IOS",
     "correct": [
-      "The metric, which varies by protocol"
+      "OSPF's route, because its AD of 110 is below the static route's 130"
     ],
     "incorrect": [
-      "The MAC address of the next-hop interface",
-      "The DNS name of the destination",
-      "The alphabetical order of the route's description"
+      "The static route, because a static route has an AD of 1",
+      "OSPF's route, because its metric of 30 is lower than 130",
+      "Both routes, sharing the traffic as an equal-cost pair"
     ],
-    "feedback": "Administrative distance chooses between different protocols; metric chooses between paths within the same protocol. Each protocol defines its own metric."
+    "feedback": "The 130 at the end sets this static route's administrative distance, which makes it a floating static route: it stays out of the table while OSPF's route (AD 110) exists and takes over only if that route is withdrawn. AD 1 is just a static route's default. The OSPF metric of 30 is not the reason, since metrics are compared only between paths from the same protocol, and equal-cost sharing likewise happens only within one protocol."
   },
   {
-    "question": "Which of the following are true about NAT and PAT?",
+    "type": "cloze",
+    "question": "A router first prefers the matching route with the longest {{1}}. Between routes to the same prefix from different sources, it keeps the one with the lowest {{2}}. Between paths learned from the same protocol, it keeps the best {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "prefix",
+          "prefix length",
+          "prefix match",
+          "match",
+          "mask",
+          "subnet mask"
+        ]
+      },
+      {
+        "accept": [
+          "administrative distance",
+          "AD",
+          "admin distance",
+          "distance"
+        ]
+      },
+      {
+        "accept": [
+          "metric",
+          "cost"
+        ]
+      }
+    ],
+    "feedback": "Prefix length, then administrative distance, then metric. Each test only breaks a tie left by the one before: a /24 beats a /16 whatever their AD, AD only compares sources that offer the identical prefix, and a metric is only meaningful against another metric from the same protocol."
+  },
+  {
+    "question": "R4's routing table is below. Which destinations will R4 forward to 10.0.0.2?",
+    "code": "S*  0.0.0.0/0          [1/0]     via 198.51.100.1\nO   10.20.0.0/16       [110/11]  via 10.0.0.2\nD   10.20.30.0/24      [90/3072] via 10.0.0.6\nS   10.20.30.128/25    [1/0]     via 10.0.0.2",
+    "code_language": "show ip route",
     "correct": [
-      "NAT translates private IPs to a public IP at the network edge",
-      "PAT maps many internal hosts to one public IP by using different source ports",
-      "Home internet routers commonly use outbound PAT to share one public IP"
+      "10.20.30.200",
+      "10.20.99.1"
     ],
     "incorrect": [
-      "NAT operates at Layer 2 by translating MAC addresses rather than IP addresses",
-      "PAT requires each internal host to have its own unique public IPv4 address",
-      "NAT and PAT are only used on IPv6 networks and not IPv4"
+      "10.20.30.100",
+      "10.21.0.1",
+      "10.200.30.130"
     ],
-    "feedback": "NAT rewrites IP addresses as packets cross a boundary. PAT (port address translation, a.k.a. NAT overload) multiplexes many internal hosts onto a single public IP using unique source ports."
+    "feedback": "Find every route that matches, then take the longest. 10.20.30.200 falls inside the /25 (.128 to .255), so it goes to 10.0.0.2. 10.20.99.1 matches only the /16 and the default, so the /16 sends it to 10.0.0.2. 10.20.30.100 is below .128, so the /24 wins and it goes to 10.0.0.6. 10.21.0.1 and 10.200.30.130 are outside 10.20.0.0/16 altogether and leave by the default route to 198.51.100.1."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: OSPF, EIGRP and BGP",
+    "npc": "tariq",
+    "intro": "Three routing protocols carry most enterprise and internet routes, and each one measures a path differently. Let's see what each shares with its neighbors and how it decides.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "An **interior gateway protocol** (IGP) routes inside one organization. An exterior one routes between organizations, each an **autonomous system** (AS) with its own AS number."
+          },
+          {
+            "say": "**OSPF** (Open Shortest Path First) is an open-standard **link-state** IGP. Each router floods **link-state advertisements** (LSAs) about its links."
+          },
+          {
+            "say": "So every router in an **area** holds the same map, and each runs Dijkstra's shortest path first (SPF) algorithm on it."
+          },
+          {
+            "figure": {
+              "dot": "graph { rankdir=LR; node[shape=box]; subgraph cluster_a1 { label=\"area 1\"; style=\"rounded,dashed\"; r1[label=\"R1\"]; } subgraph cluster_a0 { label=\"area 0\\n(backbone)\"; style=\"rounded,dashed\"; r2[label=\"R2\"]; r3[label=\"R3\"]; } subgraph cluster_a2 { label=\"area 2\"; style=\"rounded,dashed\"; r4[label=\"R4\"]; } r1--r2; r2--r3; r3--r4; }",
+              "alt": "Three dashed zones in a row: area 1 holding R1, area 0, the backbone, holding R2 and R3, and area 2 holding R4. Links run R1 to R2, R2 to R3, and R3 to R4.",
+              "caption": "OSPF areas hang off area 0",
+              "src": "_dot/17456d545ca71a95.svg"
+            }
+          },
+          {
+            "say": "Areas keep each map small, and every area attaches to the backbone, **area 0**."
+          }
+        ],
+        "say": "An **interior gateway protocol** (IGP) routes inside one organization. An exterior one routes between organizations, each an **autonomous system** (AS) with its own AS number. **OSPF** (Open Shortest Path First) is an open-standard **link-state** IGP. Each router floods **link-state advertisements** (LSAs) about its links. So every router in an **area** holds the same map, and each runs Dijkstra's shortest path first (SPF) algorithm on it. Areas keep each map small, and every area attaches to the backbone, **area 0**."
+      },
+      {
+        "beats": [
+          {
+            "say": "OSPF's metric is **cost**. A link's cost is commonly the reference bandwidth divided by the link's bandwidth, and a path costs the sum of its links."
+          },
+          {
+            "code": "10 Gbps link     cost 1\n1 Gbps link      cost 10\n100 Mbps link    cost 100",
+            "language": "cost, 10 Gbps reference"
+          },
+          {
+            "say": "Many routers default to a 100 Mbps reference, which gives every link of 100 Mbps or faster a cost of 1. That's why networks raise it."
+          }
+        ],
+        "say": "OSPF's metric is **cost**. A link's cost is commonly the reference bandwidth divided by the link's bandwidth, and a path costs the sum of its links. Many routers default to a 100 Mbps reference, which gives every link of 100 Mbps or faster a cost of 1. That's why networks raise it.",
+        "check": {
+          "prompt": "With the 10 Gbps reference, path X crosses two 1 Gbps links and path Y crosses one 100 Mbps link. Which does OSPF install?",
+          "answer": "Path X, at cost 20 against 100",
+          "wrong": [
+            "Path Y: one link is fewer hops than two",
+            "Both, since OSPF splits traffic over paths"
+          ],
+          "why": "OSPF adds up the costs: 10 + 10 = 20 for X, against 100 for Y. Hop count plays no part, and traffic is shared only when two paths tie on cost."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "**EIGRP** (Enhanced Interior Gateway Routing Protocol) was developed by Cisco and runs mostly on Cisco routers."
+          },
+          {
+            "say": "It's an **advanced distance-vector** protocol: neighbors share their best routes, not a whole map."
+          },
+          {
+            "say": "Its metric combines the slowest bandwidth along the path with the total delay."
+          },
+          {
+            "say": "Its DUAL algorithm also keeps a precomputed loop-free backup, the **feasible successor**, so it can switch paths almost at once."
+          }
+        ],
+        "say": "**EIGRP** (Enhanced Interior Gateway Routing Protocol) was developed by Cisco and runs mostly on Cisco routers. It's an **advanced distance-vector** protocol: neighbors share their best routes, not a whole map. Its metric combines the slowest bandwidth along the path with the total delay. Its DUAL algorithm also keeps a precomputed loop-free backup, the **feasible successor**, so it can switch paths almost at once."
+      },
+      {
+        "beats": [
+          {
+            "say": "**BGP** (Border Gateway Protocol) is the **path-vector** protocol that runs between autonomous systems. Peers are configured by hand and talk over TCP port 179."
+          },
+          {
+            "say": "Every BGP route carries its **AS path**, the list of ASes it has crossed."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; node[shape=box]; subgraph cluster_s { label=\"AS 64500\\nSilverkeep\"; style=\"rounded,dashed\"; e[label=\"edge\\nrouter\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; } subgraph cluster_a { label=\"AS 64501\"; style=\"rounded,dashed\"; a[label=\"ISP A\"]; } subgraph cluster_b { label=\"AS 64502\"; style=\"rounded,dashed\"; b[label=\"ISP B\"]; } e->a[label=\" 198.51.100.0/24\"]; e->b[label=\" 198.51.100.0/24\"]; }",
+              "alt": "Silverkeep's edge router, inside AS 64500, sends its prefix 198.51.100.0/24 to ISP A in AS 64501 and to ISP B in AS 64502.",
+              "caption": "eBGP: one prefix announced to two ISPs",
+              "src": "_dot/99528de30d718ec6.svg"
+            }
+          },
+          {
+            "say": "BGP has no single metric. It compares path **attributes** in a set order."
+          },
+          {
+            "say": "Near the top is the highest **local preference**, your own policy; then the shortest AS path; later the lowest **MED** (multi-exit discriminator), a hint the neighboring AS sends."
+          },
+          {
+            "say": "eBGP, between ASes, has AD 20; iBGP, inside one AS, has AD 200."
+          }
+        ],
+        "say": "**BGP** (Border Gateway Protocol) is the **path-vector** protocol that runs between autonomous systems. Peers are configured by hand and talk over TCP port 179. Every BGP route carries its **AS path**, the list of ASes it has crossed. BGP has no single metric. It compares path **attributes** in a set order. Near the top is the highest **local preference**, your own policy; then the shortest AS path; later the lowest **MED** (multi-exit discriminator), a hint the neighboring AS sends. eBGP, between ASes, has AD 20; iBGP, inside one AS, has AD 200."
+      }
+    ],
+    "outro": "Now put the three protocols to work."
+  },
+  {
+    "question": "Captain Doran is planning Silverkeep's routing. The campus has 30 routers from two vendors, and the edge connects to two ISPs that must learn Silverkeep's public prefix. Which pairing fits?",
+    "correct": [
+      "OSPF inside the campus, and BGP with each of the two ISPs"
+    ],
+    "incorrect": [
+      "BGP inside the campus, and OSPF with the two ISPs",
+      "EIGRP inside the campus, and OSPF with the two ISPs",
+      "EIGRP everywhere, peering with each ISP on TCP 179"
+    ],
+    "feedback": "OSPF is an open-standard IGP, so routers from both vendors can run it across the campus. BGP is the exterior protocol ISPs use to exchange prefixes between autonomous systems, so it is how Silverkeep announces its prefix. OSPF is not used to peer with ISPs, EIGRP is a Cisco-developed protocol and a poor fit for a two-vendor campus, and TCP 179 is BGP's port, not EIGRP's."
+  },
+  {
+    "type": "cloze",
+    "question": "OSPF is a {{1}}-state protocol: every router in an area holds the same map. EIGRP is an advanced {{2}}-vector protocol whose neighbors share their best routes. BGP is a {{3}}-vector protocol whose routes carry the AS numbers they have crossed.",
+    "blanks": [
+      {
+        "accept": [
+          "link",
+          "link-state"
+        ]
+      },
+      {
+        "accept": [
+          "distance",
+          "distance-vector"
+        ]
+      },
+      {
+        "accept": [
+          "path",
+          "path-vector"
+        ]
+      }
+    ],
+    "feedback": "A link-state protocol (OSPF) floods a description of every link, so each router computes its own paths from a full map. A distance-vector protocol, EIGRP's family, passes along best routes and their distances and trusts the neighbor's view. Path-vector BGP passes each route along with the list of ASes it crossed, which is how it spots loops and applies policy."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Silverkeep's OSPF uses a 10 Gbps reference bandwidth, so a 10 Gbps link costs 1, a 1 Gbps link costs 10, and a 100 Mbps link costs 100. The path from R1 to the data center crosses these links:\n\n10 Gbps links: {{a}}\n1 Gbps links: {{b}}\n100 Mbps links: {{c}}\n\nWhat total cost does OSPF give the path?",
+    "variables": {
+      "a": {
+        "values": [
+          1,
+          2,
+          3
+        ]
+      },
+      "b": {
+        "values": [
+          1,
+          2,
+          3
+        ]
+      },
+      "c": {
+        "values": [
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    "answer": {
+      "expr": "a + 10 * b + 100 * c",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Multiply each count by its link cost and add: {{a}} × 1, plus {{b}} × 10, plus {{c}} × 100, gives {{expected}}. OSPF installs whichever path has the lowest total, however many hops it takes."
+  },
+  {
+    "question": "OSPF on the routers below uses the 10 Gbps reference bandwidth, and each link is labeled with its speed. R1 needs a route to the server LAN behind R6. Which neighbor does R1 install as the next hop?",
+    "figure": {
+      "dot": "graph { rankdir=LR; nodesep=0.6; ranksep=1.0; node[shape=box]; r1[label=\"R1\"]; r2[label=\"R2\"]; r3[label=\"R3\"]; r4[label=\"R4\"]; r5[label=\"R5\"]; r7[label=\"R7\"]; r6[label=\"R6\"]; r1--r2[label=\"1G\"]; r2--r6[label=\"1G\"]; r1--r3[label=\"10G\"]; r3--r4[label=\"1G\"]; r4--r6[label=\"10G\"]; r1--r5[label=\"10G\"]; r5--r6[label=\"100M\"]; r1--r7[label=\"1G\"]; r7--r6[label=\"100M\"]; }",
+      "alt": "Seven routers. R1 links to R2, R3, R5 and R7. R2, R5 and R7 each link to R6; R3 links to R4, which links to R6. Each link is labeled 1G, 10G or 100M.",
+      "caption": "link speeds between R1 and R6",
+      "src": "_dot/0e403bff2df9f2b6.svg"
+    },
+    "correct": [
+      "R3"
+    ],
+    "incorrect": [
+      "R2",
+      "R5",
+      "R7"
+    ],
+    "feedback": "Add up the costs along each path: R1–R3–R4–R6 is 1 + 10 + 1 = 12, R1–R2–R6 is 10 + 10 = 20, R1–R5–R6 is 1 + 100 = 101, and R1–R7–R6 is 10 + 100 = 110. OSPF installs the lowest total, 12, so R1's route points at R3, even though that path has the most hops. Two paths would share the traffic only if their costs tied, and none do here."
+  },
+  {
+    "question": "Silverkeep receives the same internet prefix from both of its ISPs over eBGP. Which of these can BGP compare to choose between the two paths?",
+    "correct": [
+      "The local preference that Silverkeep's own policy assigns",
+      "The length of each path's AS path"
+    ],
+    "incorrect": [
+      "The administrative distance of each eBGP session",
+      "Each path's EIGRP metric of bandwidth and delay",
+      "The OSPF area that each path was flooded into"
+    ],
+    "feedback": "BGP chooses among its own paths by comparing attributes in order: a higher local preference, set by Silverkeep's policy, comes before a shorter AS path. Administrative distance only ranks different route sources, and both paths here are eBGP with AD 20, so it cannot separate them. A bandwidth-and-delay metric belongs to EIGRP and areas belong to OSPF; neither exists inside BGP."
   },
   {
     "type": "fill_blank",
-    "question": "The NAT variant that lets many internal hosts share a single public IP address by tracking unique source port numbers is called ___.",
+    "question": "BGP peers are configured by hand, and they run their session over TCP port ___.",
     "correct": [
-      "PAT",
-      "port address translation",
-      "NAT overload"
+      "179"
     ],
     "case_sensitive": false,
-    "feedback": "PAT (also called NAT overload) uses the transport-layer source port to distinguish flows sharing the same translated public IP."
+    "feedback": "BGP runs over TCP port 179, which gives it reliable, ordered delivery for very large route tables; a firewall that blocks TCP 179 between two peers stops the session from forming. OSPF and EIGRP, by contrast, run directly over IP rather than over TCP."
   },
   {
-    "question": "Which technology lets two or more routers share a virtual IP that hosts use as their default gateway, so that if the active router fails, a standby router takes over transparently?",
-    "correct": [
-      "First Hop Redundancy Protocol (FHRP), e.g., HSRP or VRRP"
+    "type": "npc_demo",
+    "question": "NPC: NAT, PAT and a gateway that survives",
+    "npc": "tariq",
+    "intro": "Two jobs happen where a LAN meets the outside: private addresses must be translated to reach the internet, and hosts need a gateway that stays up when a router dies. Let's take them in turn.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**NAT** (network address translation) rewrites addresses as packets cross the router."
+          },
+          {
+            "say": "A host's private address is its **inside local** address; the public address that stands for it outside is its **inside global** address."
+          },
+          {
+            "say": "**Static NAT** maps one private address to one public address permanently, so hosts on the internet can open connections to it."
+          },
+          {
+            "say": "**Dynamic NAT** lends public addresses from a pool, one per host while it's busy."
+          }
+        ],
+        "say": "**NAT** (network address translation) rewrites addresses as packets cross the router. A host's private address is its **inside local** address; the public address that stands for it outside is its **inside global** address. **Static NAT** maps one private address to one public address permanently, so hosts on the internet can open connections to it. **Dynamic NAT** lends public addresses from a pool, one per host while it's busy."
+      },
+      {
+        "beats": [
+          {
+            "say": "**PAT** (port address translation, also called NAT overload) lets many hosts share one public address."
+          },
+          {
+            "say": "The router rewrites each flow's source port too, and records the pair in its translation table so replies find their way back."
+          },
+          {
+            "code": "Pro Inside global      Inside local      Outside local     Outside global\ntcp 203.0.113.9:40001  10.0.1.21:50111   192.0.2.80:443    192.0.2.80:443\ntcp 203.0.113.9:40002  10.0.1.22:50111   192.0.2.80:443    192.0.2.80:443",
+            "language": "show ip nat translations"
+          },
+          {
+            "say": "On Cisco routers you mark the LAN side with `ip nat inside` and the internet side with `ip nat outside`, so the router knows which way to translate."
+          }
+        ],
+        "say": "**PAT** (port address translation, also called NAT overload) lets many hosts share one public address. The router rewrites each flow's source port too, and records the pair in its translation table so replies find their way back. On Cisco routers you mark the LAN side with `ip nat inside` and the internet side with `ip nat outside`, so the router knows which way to translate.",
+        "check": {
+          "prompt": "A reply from 192.0.2.80:443 arrives for 203.0.113.9:40002. Where does the router send it?",
+          "answer": "To 10.0.1.22, port 50111",
+          "wrong": [
+            "To 10.0.1.21, port 50111, the first entry",
+            "To both hosts, as they share one address"
+          ],
+          "why": "The public port, 40002, picks out the flow, and the table maps it back to 10.0.1.22:50111. That port is what lets one public address serve many hosts at once."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Now the gateway. Hosts know only one default gateway address."
+          },
+          {
+            "say": "A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** and a virtual MAC: the **active** router answers for them, and the **standby** waits."
+          },
+          {
+            "figure": {
+              "dot": "graph { rankdir=BT; node[shape=box]; h1[label=\"host\"]; h2[label=\"host\"]; sw[label=\"switch\"]; r1[label=\"R1  .2\\nactive\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; r2[label=\"R2  .3\\nstandby\"]; vip[label=\"virtual IP\\n10.0.20.1\", style=\"rounded,dashed\"]; h1--sw; h2--sw; sw--r1; sw--r2; r1--vip[style=dashed]; r2--vip[style=dashed]; }",
+              "alt": "Two hosts connect to a switch, which connects to R1 (.2, active) and R2 (.3, standby). Both routers have dashed links to one shared virtual IP, 10.0.20.1.",
+              "caption": "two routers, one virtual gateway",
+              "src": "_dot/52626664861fe612.svg"
+            }
+          },
+          {
+            "say": "**HSRP** is Cisco's FHRP, **VRRP** is the open standard, and Cisco's GLBP also spreads hosts across both routers. The router with the highest **priority** becomes active."
+          }
+        ],
+        "say": "Now the gateway. Hosts know only one default gateway address. A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** and a virtual MAC: the **active** router answers for them, and the **standby** waits. **HSRP** is Cisco's FHRP, **VRRP** is the open standard, and Cisco's GLBP also spreads hosts across both routers. The router with the highest **priority** becomes active.",
+        "check": {
+          "prompt": "R1 (10.0.20.2) is active for virtual IP 10.0.20.1, and R2 (10.0.20.3) is standby. What gateway should DHCP give the hosts?",
+          "answer": "10.0.20.1, the virtual IP",
+          "wrong": [
+            "10.0.20.2, the active router's own address",
+            "10.0.20.3, so hosts use the spare router"
+          ],
+          "why": "Hosts must point at the virtual IP, which moves to whichever router is active. A router's own address goes down with that router."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "The routers exchange hellos. If the standby stops hearing them for the hold time, it becomes active and takes over the virtual IP and MAC."
+          },
+          {
+            "say": "It sends a **gratuitous ARP** so the switches learn which port the virtual MAC is on now."
+          },
+          {
+            "say": "The hosts change nothing. With **preemption** set, a higher-priority router that comes back takes the active role again; without it, the role stays where it is."
+          }
+        ],
+        "say": "The routers exchange hellos. If the standby stops hearing them for the hold time, it becomes active and takes over the virtual IP and MAC. It sends a **gratuitous ARP** so the switches learn which port the virtual MAC is on now. The hosts change nothing. With **preemption** set, a higher-priority router that comes back takes the active role again; without it, the role stays where it is."
+      }
     ],
-    "incorrect": [
-      "Link Aggregation Control Protocol (LACP) bundling multiple uplinks",
-      "Port Address Translation (PAT) sharing one public address",
-      "Spanning Tree Protocol (STP) blocking redundant paths"
-    ],
-    "feedback": "FHRPs like HSRP, VRRP, and GLBP present a virtual IP/MAC that hosts use as their gateway. If the active router fails, a standby takes over without clients reconfiguring."
+    "outro": "Now the translation tables and gateways are yours."
   },
   {
-    "question": "A load balancer presents a single IP address to clients, behind which a pool of real servers actually handles the traffic. What is this client-facing address called?",
+    "question": "Silverkeep's edge router shows the translations below. A client on the internet tries to open a new connection. Which attempt will the router translate and forward inside?",
+    "code": "Pro Inside global      Inside local      Outside local      Outside global\n--- 203.0.113.20       10.0.5.20         ---                ---\ntcp 203.0.113.9:1025   10.0.1.30:49200   198.51.100.7:443   198.51.100.7:443\ntcp 203.0.113.9:1026   10.0.1.31:49200   198.51.100.7:443   198.51.100.7:443",
+    "code_language": "show ip nat translations",
     "correct": [
-      "Virtual IP (VIP)"
+      "A new connection to 203.0.113.20 on TCP 443"
     ],
     "incorrect": [
-      "APIPA address",
-      "Loopback address",
-      "Anycast multicast group"
+      "A new connection to 203.0.113.9 on TCP 1027",
+      "A new connection to 203.0.113.9 on TCP 443",
+      "A new connection to 10.0.5.20 on TCP 443"
     ],
-    "feedback": "A Virtual IP is a logical address owned by the load balancer (or FHRP group) rather than a single physical interface. Clients connect to the VIP and the traffic is distributed to real servers."
+    "feedback": "The first line is a static NAT entry: 203.0.113.20 always stands for 10.0.5.20, so a connection started from outside is translated and forwarded. The 203.0.113.9 lines are PAT entries created by two outbound flows; they exist only for replies to those flows, and nothing maps port 1027 or port 443 on that address. 10.0.5.20 is a private inside local address, which is not routed on the internet."
   },
   {
-    "question": "Aria has a single physical router interface connected to a trunk and wants it to route between three VLANs. Which feature does she configure to give the interface multiple logical IP addresses, one per VLAN?",
-    "correct": [
-      "Subinterfaces with 802.1Q tagging"
+    "type": "ordering",
+    "question": "A PC at 10.0.1.30 opens a web session through a PAT router whose public address is 203.0.113.9. Put the steps in order, from first to last.",
+    "items": [
+      "The PC sends a packet from 10.0.1.30:49200 to the web server",
+      "The router rewrites the source to 203.0.113.9:1025 and records the pair",
+      "The web server replies to 203.0.113.9:1025",
+      "The router finds port 1025 in its table and rewrites the destination",
+      "The PC receives the reply at 10.0.1.30:49200"
     ],
-    "incorrect": [
-      "Spanning Tree Protocol port cost tuning",
-      "Jumbo frame support on the trunk link",
-      "Port Address Translation (PAT)"
-    ],
-    "feedback": "Subinterfaces (GigabitEthernet0/0.10, 0/0.20, etc.) let one physical interface terminate multiple VLANs by tagging each with 802.1Q — the classic 'router on a stick'."
+    "feedback": "Outbound, the router replaces the private source address and port with its public address and a free port, and records the mapping. The server only ever sees 203.0.113.9:1025, so that is where it replies. Inbound, the router looks up port 1025, restores 10.0.1.30:49200 as the destination, and forwards the reply inside."
   },
   {
-    "question": "Which of the following are true about VLANs?",
+    "type": "code_line",
+    "question": "On Cisco IOS, interface GigabitEthernet0/1 faces Silverkeep's LAN, and you are in its interface configuration mode. Write the command that marks it as the NAT inside interface.",
+    "language": "cisco",
     "correct": [
-      "VLANs segment a single physical switch into multiple broadcast domains",
-      "Hosts in different VLANs cannot communicate without a Layer 3 device",
-      "VLAN membership information is stored in the switch's VLAN database"
+      "ip nat inside",
+      "ip nat in"
     ],
-    "incorrect": [
-      "All VLANs on a switch share a single broadcast domain by default",
-      "VLANs eliminate the need for IP addressing",
-      "Every VLAN on a switch must use the same IP subnet"
-    ],
-    "feedback": "A VLAN is a Layer 2 broadcast domain. Communication between VLANs requires routing (a Layer 3 switch SVI or an external router)."
+    "case_sensitive": false,
+    "feedback": "ip nat inside marks the LAN-facing interface and ip nat outside marks the internet-facing one; translation happens as packets cross between the two. PAT is then switched on by a rule such as ip nat inside source list 1 interface GigabitEthernet0/0 overload, where overload is the keyword for many hosts sharing one address."
   },
   {
-    "question": "A Layer 3 switch needs an IP address on VLAN 20 so that it can route traffic for hosts in that VLAN. Which construct provides that IP?",
+    "question": "R1 and R2 share the default gateway for VLAN 20 using HSRP. R1's own address is 10.0.20.2, and R2 runs the default priority of 100. Which statements does R1's output below support?",
+    "code": "R1# show standby brief\n             P indicates configured to preempt.\nInterface  Grp  Pri P State   Active  Standby    Virtual IP\nGi0/1      20   110 P Active  local   10.0.20.3  10.0.20.1",
+    "code_language": "Cisco IOS output",
     "correct": [
-      "A Switch Virtual Interface (SVI)"
+      "Hosts in VLAN 20 should use 10.0.20.1 as their default gateway",
+      "If R1 fails, R2 takes over 10.0.20.1 and the hosts change nothing",
+      "When R1 recovers, it takes the active role back, since it preempts"
     ],
     "incorrect": [
-      "A dedicated physical routed port cabled to VLAN 20",
-      "A trunk port carrying VLAN 20",
-      "The native VLAN on the trunk"
+      "R2 should be active, since 100 is the default HSRP priority",
+      "Hosts should list 10.0.20.2 and 10.0.20.3 as two gateways"
     ],
-    "feedback": "An SVI (e.g., 'interface Vlan20') is a logical Layer 3 interface on a switch that provides a gateway address for the VLAN's hosts."
+    "feedback": "The virtual IP, 10.0.20.1, is the gateway hosts use; whichever router is active answers for it, so a failover needs no change on the hosts. R1 has priority 110 against R2's 100, and the higher priority wins, so R1 is active. The P flag means R1 preempts: after it fails and recovers, it reclaims the active role. Listing the routers' real addresses defeats the point, because hosts would keep sending to a dead router."
   },
   {
-    "question": "Which standard defines the 802.1Q tag inserted into Ethernet frames to identify VLAN membership on a trunk link?",
-    "correct": [
-      "IEEE 802.1Q"
+    "type": "npc_demo",
+    "question": "NPC: VLANs, trunks and routing between them",
+    "npc": "tariq",
+    "intro": "One switch can carry several separate networks at once. Let's see how VLANs divide it, how one cable carries many of them, and how traffic gets from one VLAN to another.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A **VLAN** (virtual LAN) is a separate broadcast domain inside the switches. Hosts in VLAN 10 and VLAN 20 can't reach each other at Layer 2, even on the same switch."
+          },
+          {
+            "say": "Every port starts in the **default VLAN**, VLAN 1, which can't be deleted."
+          },
+          {
+            "say": "The **management VLAN** holds the switch's own IP address for SSH and monitoring; good practice gives it a VLAN of its own, not VLAN 1."
+          },
+          {
+            "code": "VLAN Name      Status    Ports\n1    default   active    Gi1/0/9\n10   SALES     active    Gi1/0/1, Gi1/0/2\n30   GUEST     active    Gi1/0/5",
+            "language": "show vlan brief"
+          },
+          {
+            "say": "Notice the uplink, Gi1/0/24, isn't listed. A trunk belongs to many VLANs, so `show interfaces trunk` reports it instead."
+          }
+        ],
+        "say": "A **VLAN** (virtual LAN) is a separate broadcast domain inside the switches. Hosts in VLAN 10 and VLAN 20 can't reach each other at Layer 2, even on the same switch. Every port starts in the **default VLAN**, VLAN 1, which can't be deleted. The **management VLAN** holds the switch's own IP address for SSH and monitoring; good practice gives it a VLAN of its own, not VLAN 1. Notice the uplink, Gi1/0/24, isn't listed. A trunk belongs to many VLANs, so `show interfaces trunk` reports it instead."
+      },
+      {
+        "beats": [
+          {
+            "say": "An **access port** belongs to one VLAN and sends its frames **untagged**: the PC never knows which VLAN it is in."
+          },
+          {
+            "say": "A **trunk port** carries many VLANs over one link, so each frame is **tagged** using **802.1Q**: 4 bytes added to the Ethernet header, holding a 12-bit VLAN ID (1 to 4094 are usable)."
+          },
+          {
+            "code": "interface Gi1/0/1\n switchport mode access\n switchport access vlan 10\n!\ninterface Gi1/0/24\n switchport mode trunk\n switchport trunk allowed vlan 10,30,99\n switchport trunk native vlan 999",
+            "language": "Cisco IOS switch"
+          },
+          {
+            "say": "Wireless APs join VLANs too: each **SSID**, the network name a Wi-Fi client picks from a list, can be bridged to a VLAN of its own."
+          }
+        ],
+        "say": "An **access port** belongs to one VLAN and sends its frames **untagged**: the PC never knows which VLAN it is in. A **trunk port** carries many VLANs over one link, so each frame is **tagged** using **802.1Q**: 4 bytes added to the Ethernet header, holding a 12-bit VLAN ID (1 to 4094 are usable). Wireless APs join VLANs too: each **SSID**, the network name a Wi-Fi client picks from a list, can be bridged to a VLAN of its own."
+      },
+      {
+        "beats": [
+          {
+            "say": "One VLAN on a trunk travels untagged: the **native VLAN**, VLAN 1 unless you change it. Both ends of the trunk must agree on it."
+          },
+          {
+            "say": "If they don't, an untagged frame leaves one switch from one VLAN and lands in a different VLAN on the other."
+          },
+          {
+            "say": "Good practice: set the native VLAN to an unused VLAN, such as 999, on every trunk, and allow only the VLANs the link needs."
+          }
+        ],
+        "say": "One VLAN on a trunk travels untagged: the **native VLAN**, VLAN 1 unless you change it. Both ends of the trunk must agree on it. If they don't, an untagged frame leaves one switch from one VLAN and lands in a different VLAN on the other. Good practice: set the native VLAN to an unused VLAN, such as 999, on every trunk, and allow only the VLANs the link needs.",
+        "check": {
+          "prompt": "SW1's end of a trunk uses native VLAN 10; SW2's end uses native VLAN 20. An untagged VLAN 10 frame crosses from SW1. Where does SW2 put it?",
+          "answer": "In VLAN 20, SW2's own native VLAN",
+          "wrong": [
+            "In VLAN 10, since the frame keeps its VLAN",
+            "Nowhere: trunks drop untagged frames"
+          ],
+          "why": "An untagged frame carries no VLAN ID, so the receiving switch assumes its own native VLAN. That's how a mismatch leaks traffic from one VLAN into another."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Traffic between VLANs needs a Layer 3 hop. In a **router on a stick**, one router port trunks to the switch."
+          },
+          {
+            "say": "That port is split into **sub-interfaces**, one per VLAN, each with its VLAN tag and that VLAN's gateway address."
+          },
+          {
+            "code": "interface Gi0/0.10\n encapsulation dot1Q 10\n ip address 10.0.10.1 255.255.255.0",
+            "language": "Cisco IOS router"
+          },
+          {
+            "figure": {
+              "dot": "graph { rankdir=TB; node[shape=box]; r[label=\"R1\\nGi0/0.10  Gi0/0.20\"]; sw[label=\"switch\"]; p1[label=\"PC1\\nVLAN 10\"]; p2[label=\"PC2\\nVLAN 20\"]; r--sw[label=\" trunk:\\n tagged 10, 20\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; sw--p1[label=\" access,\\n untagged\"]; sw--p2[label=\" access,\\n untagged\"]; }",
+              "alt": "A router with two sub-interfaces joins a switch over one link marked as a trunk tagged 10 and 20. The switch joins PC1 in VLAN 10 and PC2 in VLAN 20 over untagged access links.",
+              "caption": "router on a stick",
+              "src": "_dot/804b49046c9c94b7.svg"
+            }
+          },
+          {
+            "say": "A multilayer switch can route internally instead, with a **switch virtual interface** (SVI): `interface vlan 10` with an IP address, plus `ip routing`."
+          },
+          {
+            "say": "Each SVI is its VLAN's gateway, and the management VLAN's SVI holds the switch's own address."
+          }
+        ],
+        "say": "Traffic between VLANs needs a Layer 3 hop. In a **router on a stick**, one router port trunks to the switch. That port is split into **sub-interfaces**, one per VLAN, each with its VLAN tag and that VLAN's gateway address. A multilayer switch can route internally instead, with a **switch virtual interface** (SVI): `interface vlan 10` with an IP address, plus `ip routing`. Each SVI is its VLAN's gateway, and the management VLAN's SVI holds the switch's own address."
+      }
     ],
-    "incorrect": [
-      "IEEE 802.3",
-      "IEEE 802.1X",
-      "IEEE 802.11"
-    ],
-    "feedback": "802.1Q defines VLAN tagging. 802.3 is Ethernet itself, 802.1X is port-based authentication, and 802.11 is wireless LAN."
+    "outro": "Your turn: VLANs to read, trunks to build, and a port plan to fill in."
   },
   {
-    "question": "On an 802.1Q trunk, which VLAN carries untagged traffic by default?",
+    "question": "Brom runs show vlan brief on access switch SW2; the output is below. The uplink, Gi1/0/24, is connected and passing traffic. Which statements does the output support?",
+    "code": "VLAN Name       Status    Ports\n1    default    active    Gi1/0/7, Gi1/0/8\n10   STAFF      active    Gi1/0/1, Gi1/0/2, Gi1/0/3\n20   PRINTERS   active    Gi1/0/4\n99   MGMT       active",
+    "code_language": "show vlan brief",
     "correct": [
-      "The native VLAN"
+      "Gi1/0/7 and Gi1/0/8 are still in the default VLAN",
+      "Gi1/0/24 is not listed because it is a trunk port"
     ],
     "incorrect": [
-      "The voice VLAN",
-      "VLAN 0",
-      "The highest-numbered configured VLAN"
+      "The printer on Gi1/0/4 can reach Gi1/0/1 without a router",
+      "Gi1/0/1 to Gi1/0/3 send 802.1Q-tagged frames to their PCs",
+      "VLAN 99 is the native VLAN, since it has no access ports"
     ],
-    "feedback": "Frames on the native VLAN are sent untagged across the trunk. By default this is VLAN 1, but best practice is to change it and ensure both ends of a trunk agree."
+    "feedback": "Ports nobody has assigned sit in VLAN 1, the default VLAN, so Gi1/0/7 and Gi1/0/8 are unassigned. show vlan brief lists access ports only, so a working uplink that is missing from it is a trunk; show interfaces trunk would show it. VLAN 20 and VLAN 10 are separate broadcast domains, so the printer needs a Layer 3 hop to reach a staff PC, and access ports send untagged frames. A VLAN with no access ports is normal for a management VLAN, whose members are the switch's SVI and the trunks; it says nothing about the native VLAN."
   },
   {
-    "question": "Which switch feature tags IP phone traffic into a dedicated VLAN while still carrying untagged PC traffic on the same port, so a phone and a workstation can share a single access port?",
-    "correct": [
-      "Voice VLAN"
+    "type": "cloze",
+    "question": "An {{1}} port belongs to a single VLAN and sends its frames untagged. A {{2}} port carries many VLANs and adds an 802.1Q tag to every frame except those of its {{3}} VLAN.",
+    "blanks": [
+      {
+        "accept": [
+          "access"
+        ]
+      },
+      {
+        "accept": [
+          "trunk",
+          "trunking"
+        ]
+      },
+      {
+        "accept": [
+          "native"
+        ]
+      }
     ],
-    "incorrect": [
-      "Native VLAN",
-      "Subinterface",
-      "Spanning Tree PortFast"
-    ],
-    "feedback": "A voice VLAN allows an IP phone (with a passthrough port for a PC) to tag its own voice traffic while the PC's data stays untagged on the access VLAN."
+    "feedback": "End devices sit on access ports and never see a tag. Links between switches, or to a router on a stick or a multi-VLAN AP, are trunks, where 802.1Q tags tell the VLANs apart. The one VLAN a trunk sends untagged is its native VLAN, and both ends must agree on which it is."
   },
   {
-    "question": "Which of the following statements about link aggregation are correct?",
+    "question": "Aria is hardening the trunk between SW1 and SW2, which needs to carry VLANs 10, 20 and 99 only. Which configuration of the two ends follows good practice?",
     "correct": [
-      "It bundles multiple physical links between devices into a single logical link",
-      "It increases available bandwidth and provides redundancy if a member link fails",
-      "LACP (IEEE 802.3ad) is a common protocol used to negotiate the bundle"
+      "Native VLAN 999 (unused) on both ends; allowed VLANs 10, 20, 99"
     ],
     "incorrect": [
-      "It allows a single frame to be split across multiple member links simultaneously",
-      "It requires member links to operate at different speeds",
-      "It is a substitute for Spanning Tree and eliminates the need for STP on any network"
+      "Native VLAN 1 on both ends; allowed list left at its default",
+      "Native VLAN 99 on SW1 and 999 on SW2; allowed VLANs 10, 20, 99",
+      "Native VLAN 10 on both ends, so staff frames skip the tag; 10, 20, 99"
     ],
-    "feedback": "Link aggregation (LAG / EtherChannel / port-channel) bundles links using LACP or PAgP. Individual flows are hashed to a single link, but the bundle as a whole looks like one high-bandwidth link."
+    "feedback": "Good practice moves the native VLAN off VLAN 1 to a VLAN no host uses, sets it the same on both ends, and prunes the allowed list to what the link needs. The defaults leave VLAN 1 untagged and every VLAN crossing the link. Mismatched native VLANs leak untagged frames from one VLAN into another. Making a user VLAN native puts real traffic on the untagged VLAN, where it is easiest to misdeliver."
   },
   {
-    "question": "Brom reports that a workstation connected to a 1 Gbps switch port is performing poorly. Running `show interface` on the switch shows the port negotiated at 100 Mbps / half-duplex. What is the most likely issue?",
+    "type": "code_line",
+    "question": "On Cisco IOS, you are in interface configuration mode for Gi1/0/24, the uplink to the core switch. Write the command that makes the port a permanent 802.1Q trunk.",
+    "language": "cisco",
     "correct": [
-      "A duplex or speed mismatch on the link"
+      "switchport mode trunk",
+      "sw mode trunk",
+      "sw mo tr",
+      "sw mo trunk",
+      "sw mode tr",
+      "switchport mode tr"
     ],
-    "incorrect": [
-      "The switch does not support Ethernet",
-      "The port is configured as a trunk",
-      "Spanning Tree is blocking the port"
-    ],
-    "feedback": "Half-duplex on a modern switch port almost always indicates a failed autonegotiation or a mismatch (e.g., one side hardcoded, the other auto). It causes late collisions and poor throughput."
+    "case_sensitive": false,
+    "feedback": "switchport mode trunk turns the port into a trunk that carries 802.1Q-tagged frames for its allowed VLANs. switchport mode access does the opposite, pinning the port to one VLAN. On older switches that also support Cisco's own ISL tagging, switchport trunk encapsulation dot1q has to be entered first."
   },
   {
-    "question": "What is the primary purpose of Spanning Tree Protocol (STP) on a switched Ethernet network?",
+    "question": "Silverkeep's new floor is wired as shown. SW2 and SW3 each serve VLANs 10, 20 and 30, R1 routes between the VLANs over its single link, and the AP bridges a staff SSID to VLAN 10 and a guest SSID to VLAN 30. Which lettered links must be 802.1Q trunks?",
+    "figure": {
+      "dot": "graph { rankdir=TB; nodesep=0.4; ranksep=0.6; node[shape=box]; r1[label=\"R1\\nrouter\"]; c[label=\"SW1\\ncore\"]; a2[label=\"SW2\"]; a3[label=\"SW3\"]; pc[label=\"PC\\nVLAN 10\"]; pr[label=\"printer\\nVLAN 20\"]; ap[label=\"AP\\nstaff + guest\\nSSIDs\"]; r1--c[label=\" A\"]; c--a2[label=\" B\"]; c--a3[label=\" C\"]; a2--pc[label=\" D\"]; a2--pr[label=\" E\"]; a3--ap[label=\" F\"]; }",
+      "alt": "A router at the top joins a core switch by link A. The core switch joins two access switches by links B and C. One access switch joins a PC in VLAN 10 by link D and a printer in VLAN 20 by link E; the other joins a wireless AP by link F.",
+      "caption": "six links, lettered A to F",
+      "src": "_dot/1c87a0f683b9907c.svg"
+    },
     "correct": [
-      "To prevent Layer 2 loops by blocking redundant paths"
+      "A",
+      "B",
+      "C",
+      "F"
     ],
     "incorrect": [
-      "To distribute IP addresses to hosts automatically",
-      "To translate private IPs to public IPs at the network edge",
-      "To authenticate users connecting to a switch port"
+      "D",
+      "E"
     ],
-    "feedback": "STP (and its successors RSTP/MSTP) blocks redundant links until needed, preventing broadcast storms and MAC table instability on networks with physical loops."
+    "feedback": "A link must be a trunk when it carries more than one VLAN. A is the router-on-a-stick link, carrying every VLAN to R1's sub-interfaces; B and C carry all three VLANs to the access switches; F carries the AP's two SSIDs, tagged as VLANs 10 and 30. D and E each serve one end device in one VLAN, so they are access ports."
+  },
+  {
+    "type": "code_line",
+    "question": "Router on a stick, on Cisco IOS: you have created sub-interface GigabitEthernet0/0.20 to route for VLAN 20. Write the command that makes the sub-interface send and accept frames tagged for VLAN 20.",
+    "language": "cisco",
+    "correct": [
+      "encapsulation dot1q 20",
+      "encap dot1q 20",
+      "enc dot1q 20"
+    ],
+    "case_sensitive": false,
+    "feedback": "encapsulation dot1Q 20 binds the sub-interface to 802.1Q VLAN 20: frames that arrive tagged 20 belong to it, and it tags what it sends with 20. The .20 in the sub-interface's name is only a label and does not set the VLAN by itself. The sub-interface then gets VLAN 20's gateway address with ip address."
+  },
+  {
+    "type": "ordering",
+    "question": "PC1 in VLAN 10 sends a packet to PC2 in VLAN 20 through a router on a stick. Put the frame's journey in order, from first to last.",
+    "items": [
+      "PC1 sends an untagged frame to its gateway's MAC address",
+      "The switch tags the frame VLAN 10 and sends it up the trunk",
+      "Sub-interface Gi0/0.10 accepts it, and the router routes the packet",
+      "Sub-interface Gi0/0.20 sends it back down the trunk tagged VLAN 20",
+      "The switch removes the tag and delivers it out PC2's access port"
+    ],
+    "feedback": "PC1's access port is untagged, so the switch adds the VLAN 10 tag as the frame enters the trunk. The router's VLAN 10 sub-interface takes it in and routes the packet toward the VLAN 20 subnet, and the VLAN 20 sub-interface sends it back down the same trunk with the new tag. The switch strips the tag on the way out of PC2's access port. The packet crosses the trunk twice, which is the main limit of a router on a stick."
   },
   {
     "type": "fill_blank",
-    "question": "The standard Ethernet maximum transmission unit (MTU) for the payload of a frame is ___ bytes.",
+    "question": "On a multilayer switch, the logical Layer 3 interface created with interface vlan 20 and given an IP address acts as VLAN 20's gateway. This logical interface is called a(n) ___.",
     "correct": [
-      "1500"
+      "SVI",
+      "switch virtual interface",
+      "switched virtual interface"
     ],
     "case_sensitive": false,
-    "feedback": "Standard Ethernet MTU is 1500 bytes. Jumbo frames typically carry a 9000-byte payload and require that every device in the path support them."
+    "feedback": "A switch virtual interface (SVI) is a routed interface for a whole VLAN rather than for one physical port. With ip routing enabled, SVIs route between VLANs inside the switch, so no router on a stick is needed; the management VLAN's SVI is where the switch's own address lives."
   },
   {
-    "question": "Which term describes an Ethernet frame with a payload significantly larger than the standard 1500-byte MTU, typically 9000 bytes?",
+    "type": "rule_table",
+    "question": "Aria is configuring access switch SW2. Design: staff PCs are in VLAN 10, printers in VLAN 20 and guests in VLAN 30; the switch's management SVI is in VLAN 99. End devices get access ports. A port that must carry more than one VLAN is a trunk, and every trunk uses the unused VLAN 999 as its native VLAN, except the AP's port: the AP sends its own management traffic untagged, and that traffic must land in VLAN 99. Choose n/a where a setting does not apply.",
+    "columns": [
+      {
+        "header": "Port"
+      },
+      {
+        "header": "Connected to"
+      },
+      {
+        "header": "Mode",
+        "options": [
+          "access",
+          "trunk"
+        ]
+      },
+      {
+        "header": "Access VLAN",
+        "options": [
+          "10",
+          "20",
+          "30",
+          "99",
+          "n/a"
+        ]
+      },
+      {
+        "header": "Native VLAN",
+        "options": [
+          "1",
+          "99",
+          "999",
+          "n/a"
+        ]
+      }
+    ],
+    "rows": [
+      [
+        "Gi1/0/1",
+        "Staff PC",
+        {
+          "answer": "access"
+        },
+        {
+          "answer": "10"
+        },
+        {
+          "answer": "n/a"
+        }
+      ],
+      [
+        "Gi1/0/2",
+        "Network printer",
+        {
+          "answer": "access"
+        },
+        {
+          "answer": "20"
+        },
+        {
+          "answer": "n/a"
+        }
+      ],
+      [
+        "Gi1/0/3",
+        "AP: staff and guest SSIDs",
+        {
+          "answer": "trunk"
+        },
+        {
+          "answer": "n/a"
+        },
+        {
+          "answer": "99"
+        }
+      ],
+      [
+        "Gi1/0/24",
+        "Uplink to the core switch",
+        {
+          "answer": "trunk"
+        },
+        {
+          "answer": "n/a"
+        },
+        {
+          "answer": "999"
+        }
+      ]
+    ],
+    "feedback": "The staff PC and the printer each need one VLAN, so they get access ports in VLANs 10 and 20; an access port sends untagged frames and has no native VLAN to set. The AP carries staff and guest traffic, so its port is a trunk, and since its own management frames arrive untagged, they land in the trunk's native VLAN, which therefore has to be 99. The uplink carries every VLAN and follows the general rule, native VLAN 999. VLAN 1 fits nowhere: leaving the default native VLAN in place is exactly what the design avoids."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How spanning tree picks a root",
+    "npc": "nia",
+    "intro": "Redundant links between switches are a good idea until a frame starts circling. Let's trace how a switch learns addresses, why a loop is fatal, and how spanning tree decides which ports to block.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A switch learns from the **source** MAC of every frame, recording that MAC, its VLAN and the port it arrived on in its **MAC address table**."
+          },
+          {
+            "code": "Vlan  Mac Address      Type     Ports\n30    00aa.0b0c.1001   DYNAMIC  Gi1/0/5\n30    00aa.0b0c.2002   DYNAMIC  Gi1/0/48",
+            "language": "show mac address-table"
+          },
+          {
+            "say": "For the **destination** MAC it looks the table up. A known address goes out that one port; an unknown address, or a broadcast, is **flooded** out every other port in the same VLAN."
+          },
+          {
+            "say": "With two paths between switches, a flooded frame comes back and is flooded again, round and round, because Ethernet frames carry no TTL."
+          },
+          {
+            "say": "**Spanning Tree Protocol** (STP, IEEE 802.1D) prevents that by blocking just enough ports to leave a single path."
+          }
+        ],
+        "say": "A switch learns from the **source** MAC of every frame, recording that MAC, its VLAN and the port it arrived on in its **MAC address table**. For the **destination** MAC it looks the table up. A known address goes out that one port; an unknown address, or a broadcast, is **flooded** out every other port in the same VLAN. With two paths between switches, a flooded frame comes back and is flooded again, round and round, because Ethernet frames carry no TTL. **Spanning Tree Protocol** (STP, IEEE 802.1D) prevents that by blocking just enough ports to leave a single path."
+      },
+      {
+        "beats": [
+          {
+            "say": "Switches exchange **BPDUs** (bridge protocol data units) and elect one **root bridge**: the switch with the lowest **bridge ID**."
+          },
+          {
+            "say": "A bridge ID is a priority, 32768 by default and set in steps of 4096, followed by the switch's MAC address. The priority is compared first; the MAC only breaks a tie."
+          },
+          {
+            "say": "The priority field also carries the VLAN number, the **extended system ID**, so a switch at the default priority shows 32778 for VLAN 10."
+          }
+        ],
+        "say": "Switches exchange **BPDUs** (bridge protocol data units) and elect one **root bridge**: the switch with the lowest **bridge ID**. A bridge ID is a priority, 32768 by default and set in steps of 4096, followed by the switch's MAC address. The priority is compared first; the MAC only breaks a tie. The priority field also carries the VLAN number, the **extended system ID**, so a switch at the default priority shows 32778 for VLAN 10.",
+        "check": {
+          "prompt": "SW-A: priority 32768, MAC 0000.0c11.1111. SW-B: 32768, MAC 0000.0c00.0001. SW-C: 28672, MAC 0000.0cff.ffff. Which becomes root?",
+          "answer": "SW-C, with the lowest priority",
+          "wrong": [
+            "SW-B, with the lowest MAC address",
+            "SW-A, as the first switch to boot"
+          ],
+          "why": "Priority is compared before the MAC, and 28672 beats 32768. SW-B's low MAC would only have mattered if the priorities had tied."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Each non-root switch picks one **root port**: its port with the lowest total cost to the root. If two ports tie on cost, the one leading to the neighbor with the lower bridge ID wins."
+          },
+          {
+            "say": "Every port on the root bridge is a **designated port**. On each other link, the end nearer the root (lower cost) is designated; if the costs tie, the switch with the lower bridge ID wins."
+          },
+          {
+            "figure": {
+              "dot": "graph { rankdir=TB; nodesep=1.2; ranksep=0.9; node[shape=box]; rt[label=\"SW1  root\\nprio 4096\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; s2[label=\"SW2\\nprio 32768\\nMAC ..11\"]; s3[label=\"SW3\\nprio 32768\\nMAC ..22\"]; rt--s2[taillabel=\"DP\", headlabel=\"RP\", labeldistance=2.3]; rt--s3[taillabel=\"DP\", headlabel=\"RP\", labeldistance=2.3]; s2--s3[taillabel=\"DP\", headlabel=\"blocked\", labeldistance=2.6, style=dashed, color=\"#ffb300\", fontcolor=\"#ffd86b\"]; {rank=same; s2; s3} }",
+              "alt": "Root SW1 at the top has a designated port (DP) on both of its links. SW2 and SW3 each have a root port (RP) facing SW1. On the dashed link between them, SW2's end is designated and SW3's end is blocked.",
+              "caption": "one root, and one blocked port",
+              "src": "_dot/27f5ad0982766f20.svg"
+            }
+          },
+          {
+            "say": "A port that is neither root nor designated is blocked; RSTP calls it an **alternate port**."
+          },
+          {
+            "say": "A port facing a single host can be made an **edge port** (Cisco's **PortFast**), which goes straight to forwarding."
+          }
+        ],
+        "say": "Each non-root switch picks one **root port**: its port with the lowest total cost to the root. If two ports tie on cost, the one leading to the neighbor with the lower bridge ID wins. Every port on the root bridge is a **designated port**. On each other link, the end nearer the root (lower cost) is designated; if the costs tie, the switch with the lower bridge ID wins. A port that is neither root nor designated is blocked; RSTP calls it an **alternate port**. A port facing a single host can be made an **edge port** (Cisco's **PortFast**), which goes straight to forwarding."
+      },
+      {
+        "beats": [
+          {
+            "say": "In classic 802.1D a port moves through **blocking**, **listening**, **learning** and **forwarding**; a shut-down port is **disabled**."
+          },
+          {
+            "say": "Listening and learning each last the forward delay, 15 seconds by default."
+          },
+          {
+            "say": "STP comes in **modes**. **RSTP** (802.1w) converges in a second or two through a handshake between neighbors instead of waiting on timers; its port states are discarding, learning and forwarding."
+          },
+          {
+            "say": "**MSTP** (802.1s) maps many VLANs onto a few tree instances. Cisco's **PVST+** and **Rapid PVST+** run a separate tree for every VLAN."
+          }
+        ],
+        "say": "In classic 802.1D a port moves through **blocking**, **listening**, **learning** and **forwarding**; a shut-down port is **disabled**. Listening and learning each last the forward delay, 15 seconds by default. STP comes in **modes**. **RSTP** (802.1w) converges in a second or two through a handshake between neighbors instead of waiting on timers; its port states are discarding, learning and forwarding. **MSTP** (802.1s) maps many VLANs onto a few tree instances. Cisco's **PVST+** and **Rapid PVST+** run a separate tree for every VLAN.",
+        "check": {
+          "prompt": "Two switches run 802.1D with default timers. A new uplink between them comes up, and it isn't an edge port. About how long before it forwards?",
+          "answer": "About 30 seconds: 15 listening, 15 learning",
+          "wrong": [
+            "About 2 seconds, after a handshake",
+            "At once, like a PortFast port"
+          ],
+          "why": "Classic STP waits out the forward delay twice before forwarding. The quick handshake belongs to RSTP, and going straight to forwarding is only for edge ports."
+        }
+      }
+    ],
+    "outro": "Now elect some roots and block some ports yourself."
+  },
+  {
+    "question": "SW1's MAC address table is below. A frame in VLAN 10 arrives on Gi1/0/2 from 0011.2233.8888, addressed to 0011.2233.9999. What does SW1 do?",
+    "code": "Vlan  Mac Address      Type     Ports\n10    0011.2233.4455   DYNAMIC  Gi1/0/1\n10    0011.2233.6677   DYNAMIC  Gi1/0/24\n20    00aa.bbcc.ddee   DYNAMIC  Gi1/0/3",
+    "code_language": "show mac address-table",
     "correct": [
-      "Jumbo frame"
+      "Learns 0011.2233.8888 on Gi1/0/2, then floods the frame out every other VLAN 10 port"
     ],
     "incorrect": [
-      "Runt frame",
-      "Giant frame (error)",
-      "Baby giant"
+      "Learns 0011.2233.8888 on Gi1/0/2, then drops the frame since its destination is unknown",
+      "Sends the frame out Gi1/0/24 alone, since the uplink leads toward hosts it doesn't know",
+      "Learns 0011.2233.8888 on Gi1/0/2, then floods the frame out the ports of VLANs 10 and 20"
     ],
-    "feedback": "Jumbo frames reduce per-packet overhead for bulk transfers like storage traffic. Every hop in the path must support jumbo frames or fragmentation/drops will occur."
+    "feedback": "A switch records the source of every frame, so 0011.2233.8888 is now known on Gi1/0/2. The destination is not in the table, so the frame is an unknown unicast and is flooded out every port in VLAN 10 except the one it came in on, the trunk Gi1/0/24 included. Flooding stays inside the frame's VLAN, which is why Gi1/0/3 in VLAN 20 gets nothing, and a switch has no notion of sending unknown traffic up an uplink the way a router uses a default route."
   },
   {
-    "question": "Which of the following are symptoms of an MTU mismatch between two hosts?",
+    "type": "dynamic_numeric",
+    "question": "Brom sets a switch's spanning-tree priority for VLAN {{v}} to {{p}}. The priority field of its bridge ID carries that priority plus the VLAN number, the extended system ID. What value does the priority field hold for VLAN {{v}}?",
+    "variables": {
+      "p": {
+        "values": [
+          4096,
+          8192,
+          24576,
+          28672
+        ]
+      },
+      "v": {
+        "values": [
+          10,
+          20,
+          30,
+          99
+        ]
+      }
+    },
+    "answer": {
+      "expr": "p + v",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The configured {{p}} plus the extended system ID, {{v}}, makes {{expected}}. Priority is set in steps of 4096 because the low 12 bits of the field are kept for the VLAN number. The lowest value, then the lowest MAC, wins the root election."
+  },
+  {
+    "question": "The four switches below run STP for one VLAN. Every link is 1 Gbps, so every link has the same cost. Each box shows the bridge priority and the last digits of the switch's MAC address (the rest of every MAC is identical). Which lettered port ends up blocked, as an alternate port?",
+    "figure": {
+      "dot": "graph { rankdir=TB; nodesep=1.0; ranksep=0.8; node[shape=box]; s2[label=\"SW2\\nprio 4096\\nMAC ..00f2\"]; s1[label=\"SW1\\nprio 32768\\nMAC ..00a1\"]; s4[label=\"SW4\\nprio 32768\\nMAC ..0094\"]; s3[label=\"SW3\\nprio 32768\\nMAC ..0013\"]; s2--s1; s2--s4; s1--s3[taillabel=\"A\", headlabel=\"B\", labeldistance=2.2, fontcolor=\"#ffd86b\"]; s4--s3[taillabel=\"D\", headlabel=\"C\", labeldistance=2.2, fontcolor=\"#ffd86b\"]; {rank=same; s1; s4} }",
+      "alt": "Four switches in a ring. SW2 at the top (priority 4096, MAC ending 00f2) links to SW1 (32768, ending 00a1) and to SW4 (32768, ending 0094). SW1 and SW4 each link down to SW3 (32768, ending 0013). Letters mark the lower links' ports: A at SW1 and B at SW3 on one link, D at SW4 and C at SW3 on the other.",
+      "caption": "four candidate ports, A to D",
+      "src": "_dot/4f8d3c238515183f.svg"
+    },
     "correct": [
-      "Small packets (such as pings with default size) succeed while larger transfers stall",
-      "Applications that rely on large TCP segments hang or time out",
-      "Path MTU Discovery failures when ICMP is blocked along the path"
+      "B"
     ],
     "incorrect": [
-      "All ICMP echo requests are silently translated to broadcasts",
-      "The host loses its MAC address",
-      "DHCP leases are refused on every interface"
+      "A",
+      "C",
+      "D"
     ],
-    "feedback": "MTU mismatches are classic 'small things work, big things don't' problems. Path MTU Discovery relies on ICMP Fragmentation Needed; filtering that ICMP causes 'PMTU black holes'."
+    "feedback": "SW2 is root, with the lowest priority, 4096. SW1 and SW4 each reach it over one link, so their ports facing SW2 are root ports. SW3 is two links from the root either way, a tie on cost, so the tie goes to the neighbor with the lower bridge ID: SW4 (MAC ..0094) beats SW1 (..00a1), making C SW3's root port. On the SW1–SW3 link, SW1 is nearer the root, so A is designated, which leaves B neither root nor designated: it blocks. SW3's low MAC never mattered, because cost to the root is compared before bridge ID."
   },
   {
-    "type": "fill_blank",
-    "question": "On an 802.1Q trunk, traffic that is not tagged with a VLAN ID is assumed to belong to the ___ VLAN.",
-    "correct": [
-      "native"
+    "type": "ordering",
+    "question": "A switch running classic 802.1D STP brings up a new uplink that is not an edge port. Put the states the port passes through in order, from first to last.",
+    "items": [
+      "Blocking: receives BPDUs but forwards no frames",
+      "Listening: exchanges BPDUs, learns no MAC addresses",
+      "Learning: fills the MAC table, still forwards nothing",
+      "Forwarding: sends and receives data frames"
     ],
-    "case_sensitive": false,
-    "feedback": "Untagged frames on a trunk belong to the native VLAN. Mismatched native VLANs on either end of a trunk are a common misconfiguration."
-  },
-  {
-    "type": "fill_blank",
-    "question": "On Cisco devices, the default administrative distance of a static route is ___.",
-    "correct": [
-      "1"
-    ],
-    "case_sensitive": false,
-    "feedback": "Static routes have an AD of 1, beaten only by directly connected routes (AD 0). This is why static routes override OSPF, EIGRP, and BGP by default."
+    "feedback": "A new 802.1D port starts in blocking, then spends one forward delay (15 seconds by default) in listening, while the tree settles, and another in learning, where it fills its MAC table so it won't flood blindly. Only then does it forward. Disabled is the state of a port that is shut down, outside this sequence, and RSTP folds blocking and listening into one discarding state."
   },
   {
     "type": "matching",
-    "question": "Match each switching term to its best description.",
+    "question": "Match each spanning-tree port role to its description.",
     "pairs": [
       {
-        "term": "Access port",
-        "definition": "A switch port that belongs to a single VLAN and carries untagged traffic for that VLAN"
+        "term": "Root port",
+        "definition": "On a non-root switch, the one port with the lowest cost to the root"
       },
       {
-        "term": "Trunk port",
-        "definition": "A switch port that carries traffic for multiple VLANs, tagged with 802.1Q"
+        "term": "Designated port",
+        "definition": "On each link, the forwarding end that is nearer the root bridge"
       },
       {
-        "term": "SVI",
-        "definition": "A logical Layer 3 interface on a switch that provides a gateway for a VLAN"
+        "term": "Alternate port",
+        "definition": "A port with another path to the root, held in blocking as a spare"
       },
       {
-        "term": "LAG",
-        "definition": "Multiple physical links bundled into a single logical link for bandwidth and redundancy"
-      },
-      {
-        "term": "STP",
-        "definition": "A protocol that blocks redundant paths to prevent Layer 2 loops"
+        "term": "Edge port",
+        "definition": "A port facing a single end device, sent straight to forwarding"
       }
     ],
-    "feedback": "These are the core building blocks of Layer 2 switch configuration for Network+."
+    "feedback": "Every non-root switch has exactly one root port, and every link has one designated port, the end closer to the root, so all ports on the root bridge are designated. Whatever is left over is an alternate port, blocked but ready to take over. An edge port (PortFast) faces a host, which cannot create a loop, so it skips listening and learning."
   },
   {
-    "type": "matching",
-    "question": "Match each routing term to its best description.",
-    "pairs": [
+    "question": "Captain Doran runs 200 VLANs across the campus. He wants each failure to converge within a couple of seconds, but not 200 separate spanning trees. Which STP mode fits?",
+    "correct": [
+      "MSTP (802.1s), mapping the 200 VLANs onto a few instances"
+    ],
+    "incorrect": [
+      "Rapid PVST+, running one rapid tree per VLAN",
+      "Classic 802.1D, with one slow tree shared by the VLANs",
+      "PVST+, running one 802.1D tree per VLAN"
+    ],
+    "feedback": "MSTP groups VLANs into a handful of instances, each a rapid spanning tree, so 200 VLANs might need only two trees. Rapid PVST+ converges quickly but builds one tree per VLAN, 200 of them. Classic 802.1D and PVST+ wait on timers, taking 30 to 50 seconds to converge, and PVST+ also builds a tree per VLAN."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Duplex, bundles, mirrors, neighbors and power",
+    "npc": "tariq",
+    "intro": "A switch port does more than pass frames. It can be bundled, mirrored, powered, shut down for its own protection, and asked what's plugged into it. Let's go through the settings you'll meet most.",
+    "steps": [
       {
-        "term": "Administrative distance",
-        "definition": "A value used to rank the trustworthiness of different route sources"
+        "beats": [
+          {
+            "say": "**Half duplex** means only one side transmits at a time, listening for collisions with CSMA/CD, as on old hubs. **Full duplex** sends and receives at the same time, so collisions can't happen."
+          },
+          {
+            "say": "Both ends should **autonegotiate**, or both be set by hand to the same speed and duplex. If one end is hard-set, the auto end can still sense the speed but falls back to half duplex."
+          },
+          {
+            "say": "An **error-disabled** (err-disabled) port is one the switch shut down itself after detecting a fault."
+          },
+          {
+            "say": "**BPDU guard** does it to an edge port that receives a BPDU, because a switch has appeared where a host should be; port security does it on a MAC violation."
+          },
+          {
+            "say": "The port stays down until someone removes the cause and bounces it with `shutdown` then `no shutdown`, or an errdisable recovery timer re-enables it."
+          },
+          {
+            "say": "`show interfaces status err-disabled` lists such ports, with the reason."
+          }
+        ],
+        "say": "**Half duplex** means only one side transmits at a time, listening for collisions with CSMA/CD, as on old hubs. **Full duplex** sends and receives at the same time, so collisions can't happen. Both ends should **autonegotiate**, or both be set by hand to the same speed and duplex. If one end is hard-set, the auto end can still sense the speed but falls back to half duplex. An **error-disabled** (err-disabled) port is one the switch shut down itself after detecting a fault. **BPDU guard** does it to an edge port that receives a BPDU, because a switch has appeared where a host should be; port security does it on a MAC violation. The port stays down until someone removes the cause and bounces it with `shutdown` then `no shutdown`, or an errdisable recovery timer re-enables it. `show interfaces status err-disabled` lists such ports, with the reason."
       },
       {
-        "term": "Metric",
-        "definition": "A value used to choose between multiple paths learned from the same protocol"
+        "beats": [
+          {
+            "say": "**Link aggregation** bundles parallel links into one logical link, a port channel, for bandwidth and redundancy."
+          },
+          {
+            "say": "**LACP** (IEEE 802.3ad, now 802.1AX) builds the bundle by exchanging LACPDUs, and drops a member that fails."
+          },
+          {
+            "say": "A port in LACP **active** mode starts the negotiation; a **passive** port only answers."
+          },
+          {
+            "say": "Traffic is spread per flow, so four 1 Gbps links give 4 Gbps in total, but a single transfer still tops out at 1 Gbps."
+          },
+          {
+            "figure": {
+              "dot": "graph { rankdir=BT; node[shape=box]; srv[label=\"server\\n2 NICs\"]; subgraph cluster_m { label=\"one LACP partner\"; style=\"rounded,dashed\"; a[label=\"SW-A\"]; b[label=\"SW-B\"]; } core[label=\"core\"]; srv--a[label=\" member 1\"]; srv--b[label=\" member 2\"]; a--b[label=\" peer link\", constraint=false, color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; a--core; b--core; }",
+              "alt": "A server with two NICs at the bottom: one member link runs to SW-A and one to SW-B. SW-A and SW-B sit inside a dashed box labeled as one LACP partner, joined by a peer link, and both connect up to a core switch.",
+              "caption": "one bundle, two switches",
+              "src": "_dot/ddb51f3d3c043983.svg"
+            }
+          },
+          {
+            "say": "A normal bundle ends on one switch. **MLAG** (multi-chassis link aggregation) lets it end on two switches, joined by a peer link, that act as one LACP partner."
+          },
+          {
+            "say": "So the bundle survives a whole switch failing."
+          }
+        ],
+        "say": "**Link aggregation** bundles parallel links into one logical link, a port channel, for bandwidth and redundancy. **LACP** (IEEE 802.3ad, now 802.1AX) builds the bundle by exchanging LACPDUs, and drops a member that fails. A port in LACP **active** mode starts the negotiation; a **passive** port only answers. Traffic is spread per flow, so four 1 Gbps links give 4 Gbps in total, but a single transfer still tops out at 1 Gbps. A normal bundle ends on one switch. **MLAG** (multi-chassis link aggregation) lets it end on two switches, joined by a peer link, that act as one LACP partner. So the bundle survives a whole switch failing."
       },
       {
-        "term": "Prefix length",
-        "definition": "The number of bits in the network portion of a route, used to prefer more specific routes"
+        "beats": [
+          {
+            "say": "**CDP** (Cisco Discovery Protocol) and **LLDP** (Link Layer Discovery Protocol, IEEE 802.1AB) let a device announce its name, model, port and address to its direct neighbors."
+          },
+          {
+            "say": "CDP is Cisco's own; LLDP works across vendors. On Cisco IOS, `show cdp neighbors` and `show lldp neighbors` list what each has heard, and LLDP often has to be switched on first with `lldp run`."
+          },
+          {
+            "say": "Each line names a neighbor, the local port it was heard on, and, as its Port ID, the neighbor's own port at the far end of the cable."
+          },
+          {
+            "say": "Traffic is harder to see. A switch sends a known unicast frame only out the destination's port, so an analyzer plugged into some other port sees almost none of it."
+          },
+          {
+            "say": "**Port mirroring** (Cisco's **SPAN**) copies the traffic of a source port or VLAN, in one direction or both, to a destination port where an analyzer or IDS sits."
+          },
+          {
+            "say": "RSPAN carries the copies across a VLAN to another switch."
+          },
+          {
+            "code": "monitor session 1 source interface Gi1/0/10 both\nmonitor session 1 destination interface Gi1/0/48",
+            "language": "Cisco IOS switch"
+          }
+        ],
+        "say": "**CDP** (Cisco Discovery Protocol) and **LLDP** (Link Layer Discovery Protocol, IEEE 802.1AB) let a device announce its name, model, port and address to its direct neighbors. CDP is Cisco's own; LLDP works across vendors. On Cisco IOS, `show cdp neighbors` and `show lldp neighbors` list what each has heard, and LLDP often has to be switched on first with `lldp run`. Each line names a neighbor, the local port it was heard on, and, as its Port ID, the neighbor's own port at the far end of the cable. Traffic is harder to see. A switch sends a known unicast frame only out the destination's port, so an analyzer plugged into some other port sees almost none of it. **Port mirroring** (Cisco's **SPAN**) copies the traffic of a source port or VLAN, in one direction or both, to a destination port where an analyzer or IDS sits. RSPAN carries the copies across a VLAN to another switch.",
+        "check": {
+          "prompt": "Gi1/0/10 receives 600 Mb/s and sends 700 Mb/s, mirrored in both directions to a 1 Gbps destination port. What happens?",
+          "answer": "Some copies are dropped: 1.3 Gb/s won't fit",
+          "wrong": [
+            "Nothing is lost: full duplex gives it 2 Gb/s",
+            "Gi1/0/10's own traffic slows down to fit"
+          ],
+          "why": "Both directions of the source are copied out the destination port's single transmit direction, so 1.3 Gb/s of copies meets a 1 Gb/s port and the excess is dropped. The mirrored port itself is not slowed; only the copies suffer."
+        }
       },
       {
-        "term": "FHRP",
-        "definition": "A mechanism that allows multiple routers to share a virtual gateway IP for failover"
+        "beats": [
+          {
+            "say": "**LLDP-MED**, an LLDP extension for phones, carries details such as the voice VLAN and how much power the phone needs."
+          },
+          {
+            "say": "That power comes from **PoE** (Power over Ethernet): the switch, the power sourcing equipment (**PSE**), powers a powered device (**PD**) over the data cable."
+          },
+          {
+            "say": "Each standard is quoted at the switch port, with less arriving at the device after losses in the cable:"
+          },
+          {
+            "code": "802.3af (PoE)     15.4 W port   12.95 W device\n802.3at (PoE+)    30 W port     25.5 W device\n802.3bt Type 3    60 W port     51 W device\n802.3bt Type 4    90 W port     71.3 W device",
+            "language": "PoE standards"
+          },
+          {
+            "say": "A switch also has a total **PoE budget**: the power allocated to all its ports together has to fit inside it."
+          }
+        ],
+        "say": "**LLDP-MED**, an LLDP extension for phones, carries details such as the voice VLAN and how much power the phone needs. That power comes from **PoE** (Power over Ethernet): the switch, the power sourcing equipment (**PSE**), powers a powered device (**PD**) over the data cable. Each standard is quoted at the switch port, with less arriving at the device after losses in the cable: A switch also has a total **PoE budget**: the power allocated to all its ports together has to fit inside it.",
+        "check": {
+          "prompt": "An AP needs 22 W delivered to the AP. Which is the lowest standard that can power it?",
+          "answer": "802.3at (PoE+), with 25.5 W at the device",
+          "wrong": [
+            "802.3af, since its port supplies 15.4 W",
+            "802.3bt Type 3, since 22 W is too much for PoE+"
+          ],
+          "why": "Compare the need with the power that reaches the device: 22 W is more than 802.3af's 12.95 W but fits within 802.3at's 25.5 W, so PoE+ is enough."
+        }
       }
     ],
-    "feedback": "Route selection is a layered decision: longest prefix match first, then AD across protocols, then metric within a single protocol."
+    "outro": "Last stretch: real switch ports to configure and read."
   },
   {
-    "question": "Lyra is hardening the network and wants to make sure only authorized VLANs are carried on each trunk between switches. Which configuration technique should she use?",
+    "question": "A pan-tilt-zoom camera with a built-in heater needs 60 W delivered to the camera itself. Which is the lowest PoE standard that can power it?",
     "correct": [
-      "Set an allowed VLAN list on each trunk"
+      "802.3bt Type 4"
     ],
     "incorrect": [
-      "Disable 802.1Q tagging on every trunk",
-      "Move every trunk into the native VLAN",
-      "Enable PortFast on every trunk"
+      "802.3bt Type 3",
+      "802.3at (PoE+)",
+      "802.3af (PoE)"
     ],
-    "feedback": "Pruning the allowed VLAN list on trunks limits the blast radius of VLAN hopping and misconfiguration. Trunks should only carry the VLANs they actually need."
+    "feedback": "What counts is the power that reaches the device. 802.3bt Type 3 supplies 60 W at the switch port, but only 51 W arrives at the device, which falls short; Type 4 supplies 90 W at the port and 71.3 W at the device, enough for 60 W. 802.3at (25.5 W at the device) and 802.3af (12.95 W) are far too small."
   },
   {
-    "question": "Which of the following describe why a network engineer might enable jumbo frames?",
+    "type": "dynamic_numeric",
+    "question": "An access switch has a total PoE budget of {{b}} W. It already powers {{c}} cameras on 802.3bt ports, each allocated 60 W. Every AP port is allocated the full 802.3at 30 W. How many APs can the switch still power?",
+    "variables": {
+      "b": {
+        "values": [
+          370,
+          480,
+          740
+        ]
+      },
+      "c": {
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    "derived": {
+      "left": "b - 60 * c"
+    },
+    "answer": {
+      "expr": "floor((b - 60 * c) / 30)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "{{b}} W less {{c}} × 60 W of camera allocations leaves {{left}} W. At 30 W per AP that is {{expected}} APs, rounding down, since one port's allocation can't be split."
+  },
+  {
+    "question": "Old Hask hard-sets a legacy controller's NIC to 100 Mb/s full duplex and leaves the switch port on auto. The port comes up at 100 Mb/s, half duplex. What explains it, and what is the fix?",
     "correct": [
-      "To improve throughput on storage traffic such as iSCSI or NFS inside a data center",
-      "To reduce CPU overhead by sending fewer, larger frames for bulk transfers"
+      "The auto end heard no negotiation and fell back to half duplex; set both ends alike"
     ],
     "incorrect": [
-      "To force all devices on the internet to accept oversized Ethernet frames",
-      "To replace the need for Spanning Tree Protocol",
-      "To allow a switch to route between VLANs without an SVI"
+      "The cable is too long for full duplex at 100 Mb/s; replace it with a shorter Cat 6 run",
+      "Full duplex needs CSMA/CD, which this NIC lacks; enable CSMA/CD on the NIC instead",
+      "The switch port is a trunk, and trunks run half duplex; make it an access port instead"
     ],
-    "feedback": "Jumbo frames are typically used on controlled, high-bandwidth links (storage networks, data center fabrics). End-to-end support is required, which is why they are uncommon on general internet-facing paths."
+    "feedback": "With autonegotiation off on the NIC, the switch can still sense 100 Mb/s from the signal but has no way to learn the duplex, so the standard has it fall back to half. The two ends then disagree. Set both to auto, or hard-set both to 100/full. Cable length limits are the same for both duplex modes, CSMA/CD belongs to half duplex rather than full, and trunk ports run full duplex like any other port."
+  },
+  {
+    "question": "Brom finds the output below on SW3. A user had plugged a small desktop switch into the desk port. Which statements are true?",
+    "code": "SW3# show interfaces status err-disabled\nPort      Name    Status        Reason\nGi1/0/9   desk9   err-disabled  bpduguard",
+    "code_language": "Cisco IOS output",
+    "correct": [
+      "SW3 shut the port itself after a BPDU arrived on an edge port",
+      "The port passes no traffic until it is re-enabled",
+      "Remove the small switch, then shutdown and no shutdown the port"
+    ],
+    "incorrect": [
+      "The port is in STP listening and will forward after 15 seconds",
+      "The port fell back to half duplex and needs hard-setting to full"
+    ],
+    "feedback": "bpduguard in the Reason column says BPDU guard err-disabled the port: an edge port should only ever see a host, and a BPDU means a switch was attached. An err-disabled port is shut down and carries nothing. The fix is to remove the cause, then bounce the port with shutdown and no shutdown, or let errdisable recovery re-enable it when its timer runs out. STP listening is a normal step toward forwarding, not err-disabled, and a duplex fallback never shuts a port down."
+  },
+  {
+    "type": "cloze",
+    "question": "An LACP port in {{1}} mode sends LACPDUs to start building a bundle. A port in {{2}} mode only answers them, so if both ends are set that way, no bundle forms.",
+    "blanks": [
+      {
+        "accept": [
+          "active"
+        ]
+      },
+      {
+        "accept": [
+          "passive"
+        ]
+      }
+    ],
+    "feedback": "At least one end of an LACP link has to be active, because a passive port waits to be asked. Active with active, or active with passive, both build the bundle; passive with passive never starts the negotiation, so the bundle does not form."
+  },
+  {
+    "question": "A database server must stay online even if a whole access switch fails, and it needs the bandwidth of both its 10 Gbps NICs at once. What should Captain Doran configure?",
+    "correct": [
+      "MLAG on two switches, with one NIC on each in a single LACP bundle"
+    ],
+    "incorrect": [
+      "An LACP bundle with both NICs cabled to the same switch, set active",
+      "Both NICs on separate switches, with STP blocking one as alternate",
+      "Port mirroring of the server's port to a second, standby switch"
+    ],
+    "feedback": "MLAG lets two switches act as one LACP partner, so the server's bundle uses both NICs at once and keeps running on one switch if the other dies. A bundle to a single switch survives a failed link but not a failed switch. Letting STP block one link keeps a spare path but halves the bandwidth, and mirroring only copies traffic for analysis; it carries none of the server's own."
+  },
+  {
+    "question": "Lyra's IDS is cabled to Gi1/0/40 and must receive a copy of all traffic to and from the file server on Gi1/0/12. Which configuration does that?",
+    "correct": [
+      "Mirror source Gi1/0/12, both directions, to destination Gi1/0/40"
+    ],
+    "incorrect": [
+      "Mirror source Gi1/0/40, both directions, to destination Gi1/0/12",
+      "Make Gi1/0/40 an access port in the file server's VLAN",
+      "Make Gi1/0/40 a trunk that carries the file server's VLAN"
+    ],
+    "feedback": "The port being watched is the mirror source, and the IDS port is the destination, and mirroring both directions copies the frames the server receives as well as those it sends. The reversed session would pour copies of the IDS's traffic onto the server's port. Joining the server's VLAN, on an access port or a trunk, shows the IDS only broadcasts and flooded frames, because the switch sends the server's unicast frames out the server's port alone."
+  },
+  {
+    "question": "Brom needs to know where SW1's uplink, Gi1/0/24, lands on the core switch. He runs the command below on SW1. Which port on CORE1 is the uplink cabled to?",
+    "code": "SW1# show cdp neighbors\nDevice ID  Local Intrfce  Holdtme  Capability  Platform    Port ID\nCORE1      Gig 1/0/24     152      R S I       C9300-48P   Gig 1/0/1\nAP-LOBBY   Gig 1/0/5      121      T           AIR-AP2802  Gig 0",
+    "code_language": "Cisco IOS output",
+    "correct": [
+      "Gig 1/0/1"
+    ],
+    "incorrect": [
+      "Gig 1/0/24",
+      "Gig 1/0/5",
+      "Gig 0"
+    ],
+    "feedback": "In CDP output, Local Intrfce is the port on the switch you are typing on, and Port ID is the neighbor's port at the far end of that cable. So SW1's Gi1/0/24 connects to CORE1's Gi1/0/1. Gig 1/0/5 and Gig 0 belong to the AP's line. show lldp neighbors gives the same two facts, as Local Intf and Port ID, for neighbors from any vendor."
+  },
+  {
+    "type": "code_line",
+    "question": "SW1, a Cisco switch, connects to IP phones and APs from another vendor. Write the IOS command that lists the neighbors SW1 has discovered with the vendor-neutral discovery protocol.",
+    "language": "cisco",
+    "correct": [
+      "show lldp neighbors",
+      "show lldp neighbor",
+      "sh lldp neighbors",
+      "show lldp nei",
+      "sh lldp nei",
+      "show lldp neighbors detail",
+      "sh lldp neighbor",
+      "show lldp neigh",
+      "sh lldp neigh",
+      "sh lldp neighbors detail"
+    ],
+    "case_sensitive": false,
+    "feedback": "LLDP (IEEE 802.1AB) is the vendor-neutral protocol, so show lldp neighbors is the command; adding detail shows addresses and capabilities as well. show cdp neighbors would list only devices that speak Cisco's own CDP. If the list is empty, LLDP may still be off, and lldp run turns it on globally."
+  },
+  {
+    "question": "Silverkeep adds VLAN 40 for lab PCs on SW2, a Layer 2 access switch. Lab hosts must reach the other VLANs through SVIs on the core switch, and SW2's uplink trunk carries only the VLANs on its allowed list. Which steps are required?",
+    "correct": [
+      "Create VLAN 40 and make the lab PCs' ports access ports in it",
+      "Add VLAN 40 to the allowed list on both ends of the uplink trunk",
+      "Create interface vlan 40 on the core switch with the gateway address"
+    ],
+    "incorrect": [
+      "Set the uplink's native VLAN to 40 so lab frames need no tag",
+      "Add a static route for VLAN 40 on each Layer 2 access switch",
+      "Mirror the lab ports to the core switch so it can see VLAN 40"
+    ],
+    "feedback": "A new VLAN needs three things end to end: access ports in it on the edge switch, permission to cross every trunk between there and the router, and a Layer 3 interface, here an SVI holding the gateway address, to route it. The VLAN must also exist on the core switch for its SVI to come up. Tagging works fine without making 40 the native VLAN, which would undo the good-practice unused native VLAN. Layer 2 access switches do not route, so they need no routes, and port mirroring only copies traffic for analysis."
   }
 ]

@@ -1615,7 +1615,7 @@ describe('Arithmetic shown in questions is actually correct', () => {
 // only by direct link, so it no longer has the catalog entry the standard reads.)
 describe('Audit checks', () => {
   const index = loadJSON('question_sets/index.json');
-  const MEETS_AUDIT_STANDARD = setId => /^java_(?!lab_)|^computing_concepts_(0[456789]|1[0-6])_|^techplus_|^securityx_/.test(setId);
+  const MEETS_AUDIT_STANDARD = setId => /^java_(?!lab_)|^computing_concepts_(0[456789]|1[0-6])_|^techplus_|^securityx_|^netplus_/.test(setId);
   const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'rule_table', 'code_write', 'sql_write']);
   const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
 

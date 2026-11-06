@@ -1,399 +1,1527 @@
 [
   {
-    "question": "What is the first step in the standard CompTIA troubleshooting methodology?",
+    "type": "npc_demo",
+    "question": "NPC: What the interface counters are telling you",
+    "npc": "ada",
+    "intro": "I'm Ada, the Chief Artificer. Most link trouble starts at the physical layer, and a switch keeps score of it on every port. Let's put those counters to work as evidence.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Troubleshooting has a fixed order. First **identify the problem**, then **establish a theory** of probable cause, then **test the theory**."
+          },
+          {
+            "say": "Next **establish a plan of action** and its possible effects, **implement** the fix or escalate, **verify** full system functionality, and finally **document** what you found."
+          },
+          {
+            "say": "Evidence drives the first three steps, and on a wired link the best evidence is the port's own error counters."
+          },
+          {
+            "say": "Many technicians start at Layer 1 and work up, because a bad cable can masquerade as almost anything."
+          }
+        ],
+        "say": "Troubleshooting has a fixed order. First **identify the problem**, then **establish a theory** of probable cause, then **test the theory**. Next **establish a plan of action** and its possible effects, **implement** the fix or escalate, **verify** full system functionality, and finally **document** what you found. Evidence drives the first three steps, and on a wired link the best evidence is the port's own error counters. Many technicians start at Layer 1 and work up, because a bad cable can masquerade as almost anything."
+      },
+      {
+        "beats": [
+          {
+            "say": "Every Ethernet frame ends with a 4-byte **frame check sequence** (FCS). The sender computes it from the frame's bits, the receiver computes it again, and a mismatch means bits were damaged on the way."
+          },
+          {
+            "say": "The receiver drops that frame and adds one to its **CRC** counter, named after the cyclic redundancy check behind the FCS."
+          },
+          {
+            "say": "Rising CRCs point at Layer 1: a damaged or badly terminated cable, **EMI** (electromagnetic interference) from motors or power lines, or a failing NIC or transceiver."
+          },
+          {
+            "code": "Gi1/0/7 is up, line protocol is up\n  Full-duplex, 1000Mb/s, media type is 10/100/1000BaseTX\n     2213874 packets input, 0 no buffer\n     0 runts, 0 giants, 0 throttles\n     4812 input errors, 4812 CRC, 0 frame, 0 overrun, 0 ignored\n     0 output errors, 0 collisions, 0 interface resets",
+            "language": "show interfaces (Cisco IOS)"
+          },
+          {
+            "say": "Counters add up from the last reset, so a big number may be old news. Run `clear counters`, wait, and look again: a count that is still climbing is a live problem."
+          }
+        ],
+        "say": "Every Ethernet frame ends with a 4-byte **frame check sequence** (FCS). The sender computes it from the frame's bits, the receiver computes it again, and a mismatch means bits were damaged on the way. The receiver drops that frame and adds one to its **CRC** counter, named after the cyclic redundancy check behind the FCS. Rising CRCs point at Layer 1: a damaged or badly terminated cable, **EMI** (electromagnetic interference) from motors or power lines, or a failing NIC or transceiver. Counters add up from the last reset, so a big number may be old news. Run `clear counters`, wait, and look again: a count that is still climbing is a live problem.",
+        "check": {
+          "prompt": "Gi1/0/7's CRC count is still climbing after `clear counters`, and every other error counter stays at 0. What do you inspect first?",
+          "answer": "The cable, its connectors, and the NIC at the far end",
+          "wrong": [
+            "The VLAN the port is assigned to",
+            "The routing table on the core switch"
+          ],
+          "why": "CRC errors mean frames arrived damaged, which is a physical problem on that link. VLANs and routes decide where good frames go; they cannot damage bits in flight."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Ethernet frames have a legal size: at least 64 bytes, and at most 1518 bytes untagged, enough for the standard 1500-byte **MTU** (maximum transmission unit) of payload. An 802.1Q VLAN tag adds 4 bytes, for 1522."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; nodesep=0.3; r [label=\"runt\\n< 64 B\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; ok [label=\"legal frame\\n64 to 1518 B\\n(1522 tagged)\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; g [label=\"giant\\n> 1518 B\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r -> ok [label=\" larger\"]; ok -> g [label=\" larger\"]; }",
+              "alt": "Three boxes in a row from smallest to largest: a frame under 64 bytes, the legal range of 64 to 1518 bytes (1522 tagged), and a frame over 1518 bytes.",
+              "caption": "the frame sizes a standard port accepts",
+              "src": "_dot/731864980a96ebcc.svg"
+            }
+          },
+          {
+            "say": "A **runt** is a frame under 64 bytes, usually a fragment left by a collision or a faulty NIC."
+          },
+          {
+            "say": "A **giant** is a frame over the maximum, most often from a host sending **jumbo frames** (frames carrying more than 1500 bytes) to a port not set for them."
+          }
+        ],
+        "say": "Ethernet frames have a legal size: at least 64 bytes, and at most 1518 bytes untagged, enough for the standard 1500-byte **MTU** (maximum transmission unit) of payload. An 802.1Q VLAN tag adds 4 bytes, for 1522. A **runt** is a frame under 64 bytes, usually a fragment left by a collision or a faulty NIC. A **giant** is a frame over the maximum, most often from a host sending **jumbo frames** (frames carrying more than 1500 bytes) to a port not set for them.",
+        "check": {
+          "prompt": "A 40-byte frame arrives at a switch port. What does the port do with it?",
+          "answer": "Drops it and counts it as a runt",
+          "wrong": [
+            "Pads it out to 64 bytes and forwards it",
+            "Forwards it, since only oversized frames are dropped"
+          ],
+          "why": "Padding a short frame up to 64 bytes is the sender's job. A frame that arrives short is broken, usually a collision fragment, so the receiver drops it and counts a runt."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Two counters measure load rather than damage. An **overrun** means frames arrived faster than the port's hardware could move them into memory, so they were lost before they were ever buffered."
+          },
+          {
+            "say": "**Drops** mean a queue was full. **Input drops** happen when the device cannot process arriving traffic fast enough."
+          },
+          {
+            "say": "**Output drops** happen when more traffic is headed out of a port than it can send, such as several busy ports all sending to one."
+          },
+          {
+            "code": "  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 18342\n     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored",
+            "language": "show interfaces (Cisco IOS)"
+          },
+          {
+            "say": "Output drops with clean error counters mean **congestion**, not a bad cable. The cure is more capacity or QoS (quality of service, which decides what is sent first), not a new patch cord."
+          }
+        ],
+        "say": "Two counters measure load rather than damage. An **overrun** means frames arrived faster than the port's hardware could move them into memory, so they were lost before they were ever buffered. **Drops** mean a queue was full. **Input drops** happen when the device cannot process arriving traffic fast enough. **Output drops** happen when more traffic is headed out of a port than it can send, such as several busy ports all sending to one. Output drops with clean error counters mean **congestion**, not a bad cable. The cure is more capacity or QoS (quality of service, which decides what is sent first), not a new patch cord."
+      }
+    ],
+    "outro": "Your turn: some counters from real ports, and the faults behind them."
+  },
+  {
+    "question": "Brom sees that this switch port is up and decides the cable must be fine.\n\nGi1/0/14 is up, line protocol is up\n     0 runts, 0 giants, 0 throttles\n     9310 input errors, 9310 CRC, 0 frame, 0 overrun, 0 ignored\n  Total output drops: 0\n\nThe CRC count keeps rising after clear counters. What is the MOST likely cause?",
     "correct": [
-      "Identify the problem"
+      "A damaged or badly terminated cable on that link"
     ],
     "incorrect": [
-      "Establish a theory of probable cause",
-      "Implement the solution",
-      "Document findings"
+      "Congestion filling the port's output queue",
+      "A host sending frames larger than the port's MTU",
+      "Frames arriving faster than the port's hardware can buffer"
     ],
-    "feedback": "The methodology starts with understanding what is actually wrong before forming theories. Skipping this step leads to fixing the wrong thing."
-  },
-  {
-    "question": "Which of the following are appropriate activities while identifying the problem?",
-    "correct": [
-      "Question users about what they were doing when the issue began",
-      "Determine whether anything in the environment recently changed",
-      "Try to duplicate the problem if possible"
-    ],
-    "incorrect": [
-      "Reboot every device in the data center as a first step",
-      "Begin replacing hardware before gathering any information",
-      "Skip user interviews because they are unreliable"
-    ],
-    "feedback": "Identification is about gathering facts: symptoms, recent changes, scope, and reproducibility. Premature action wastes time and can make things worse."
-  },
-  {
-    "question": "Aria is troubleshooting an outage and uses the OSI model from Layer 1 upward — checking cables, link lights, and switch ports before moving on to IP, transport, and application. Which troubleshooting approach is this?",
-    "correct": [
-      "Bottom-to-top OSI"
-    ],
-    "incorrect": [
-      "Top-to-bottom OSI",
-      "Divide and conquer",
-      "Question the obvious only"
-    ],
-    "feedback": "Bottom-to-top starts with the physical layer and works up. Top-to-bottom starts at the application layer. Divide and conquer picks a middle layer first based on initial evidence."
-  },
-  {
-    "question": "After establishing a theory of probable cause, what is the next step in the methodology?",
-    "correct": [
-      "Test the theory to determine the cause"
-    ],
-    "incorrect": [
-      "Document findings and lessons learned",
-      "Implement the solution immediately",
-      "Verify full system functionality"
-    ],
-    "feedback": "Theories must be tested before action is taken. If the test confirms the theory, plan a fix. If not, form a new theory or escalate."
-  },
-  {
-    "question": "Which of the following are appropriate actions if a tested theory turns out to be wrong?",
-    "correct": [
-      "Establish a new theory based on what was learned",
-      "Escalate to a more experienced engineer or vendor support",
-      "Re-examine assumptions, including the user's report"
-    ],
-    "incorrect": [
-      "Continue applying the same incorrect fix repeatedly",
-      "Skip directly to documenting the incident as resolved",
-      "Power-cycle every production device until something works"
-    ],
-    "feedback": "If the theory fails, iterate or escalate — don't keep applying a fix that the evidence has already disproved."
-  },
-  {
-    "question": "What does 'identify potential effects' mean as part of establishing a plan of action?",
-    "correct": [
-      "Anticipate side effects of the fix on users, services, and downstream systems"
-    ],
-    "incorrect": [
-      "Implement the fix immediately and evaluate the impact only if users report problems",
-      "Skip change management approval when the fix touches only one device",
-      "Disable monitoring while the change is applied"
-    ],
-    "feedback": "Even small fixes can have ripple effects (link flaps, route reconvergence, application disconnects). Anticipating those effects is a core part of the plan-of-action step."
-  },
-  {
-    "question": "After implementing a fix, what should be done to confirm the issue is fully resolved and to reduce its recurrence?",
-    "correct": [
-      "Verify full system functionality and implement preventive measures"
-    ],
-    "incorrect": [
-      "Restore the system to its pre-fix state so the change window can be closed",
-      "Close the ticket as soon as the user stops reporting the symptom",
-      "Document only the symptoms, not the resolution"
-    ],
-    "feedback": "Verification ensures the fix actually worked end to end. Preventive measures (monitoring, alerting, documentation, hardening) reduce the chance of a repeat."
-  },
-  {
-    "question": "What is the final step in the CompTIA troubleshooting methodology?",
-    "correct": [
-      "Document findings, actions, and outcomes"
-    ],
-    "incorrect": [
-      "Establish a theory of probable cause and test the theory",
-      "Implement the solution",
-      "Identify the problem"
-    ],
-    "feedback": "Documentation captures what happened so future incidents (and other engineers) benefit. It is the step that is most often skipped under time pressure — and most often regretted later."
-  },
-  {
-    "type": "fill_blank",
-    "question": "When facing several issues at once, the methodology recommends approaching multiple problems ___, rather than trying to solve all of them at the same time.",
-    "correct": [
-      "individually",
-      "separately",
-      "one at a time"
-    ],
-    "case_sensitive": false,
-    "feedback": "Tackling problems individually keeps cause and effect clear. Bulk changes hide which fix actually solved which symptom."
-  },
-  {
-    "question": "Old Hask runs a long copper Ethernet drop next to fluorescent light ballasts and gets intermittent errors. Which form of signal degradation is most likely?",
-    "correct": [
-      "Electromagnetic interference (EMI) from the lighting"
-    ],
-    "incorrect": [
-      "Crosstalk from adjacent pairs coupling inside the cable jacket",
-      "Attenuation from cable length alone",
-      "Improper transceiver standard"
-    ],
-    "feedback": "Fluorescent ballasts and other electrical equipment radiate EMI that couples into UTP. Reroute the cable, use STP, or use fiber to eliminate the problem."
-  },
-  {
-    "question": "Which of the following are forms of signal degradation on copper cabling?",
-    "correct": [
-      "Crosstalk between adjacent pairs in the same or nearby cables",
-      "Attenuation that increases with cable length",
-      "EMI from external sources such as motors or fluorescent lights"
-    ],
-    "incorrect": [
-      "Increased VLAN throughput as the cable warms up",
-      "Spontaneous duplex negotiation that improves performance",
-      "Automatic correction of a TX/RX swap by the switch"
-    ],
-    "feedback": "Crosstalk, attenuation, and EMI are the classic copper-signal problems. Use shielded cabling, proper distances, and good cable management to control them."
-  },
-  {
-    "question": "Brom terminated a Cat 6 cable and now sees link but very poor throughput. A cable tester reports 'split pair'. What is the most likely cause?",
-    "correct": [
-      "Improper termination — pin slots correct but pair scheme is invalid"
-    ],
-    "incorrect": [
-      "The cable run exceeds the 100-meter limit, so attenuation is degrading throughput",
-      "EMI bleed from a nearby fluorescent light fixture",
-      "The switch port is administratively down"
-    ],
-    "feedback": "Split pairs cause excessive crosstalk because the differential pairs no longer share the same twisted pair. The cable still connects pin-to-pin but performs poorly."
-  },
-  {
-    "question": "Which of the following is the most likely symptom of crossed transmit and receive fibers (TX/RX transposed) on a fiber link with no Auto-MDIX support?",
-    "correct": [
-      "No link light comes up on either end"
-    ],
-    "incorrect": [
-      "Link comes up at full speed and full duplex with no errors",
-      "Throughput is normal but CRC errors are very high",
-      "The port is reported as administratively down"
-    ],
-    "feedback": "If TX on one end is connected to TX on the other, neither side receives signal — link does not come up. Swapping one fiber pair fixes it."
-  },
-  {
-    "question": "Which of the following describes shielded twisted pair (STP) compared to unshielded twisted pair (UTP)?",
-    "correct": [
-      "STP adds a metallic shield that reduces EMI susceptibility but must be properly grounded"
-    ],
-    "incorrect": [
-      "STP carries its own grounding conductor, so shielded runs can exceed the 100-meter copper limit",
-      "STP and UTP are functionally identical and interchangeable",
-      "UTP supports higher speeds than STP at every category"
-    ],
-    "feedback": "STP helps in noisy environments but only if grounded correctly at the recommended end. Improperly grounded STP can perform worse than UTP."
-  },
-  {
-    "question": "Which of the following statements about copper cable categories are accurate?",
-    "correct": [
-      "Cat 5e supports 1 Gbps Ethernet up to 100 meters",
-      "Cat 6a supports 10 Gbps Ethernet up to 100 meters",
-      "Cat 8 is intended primarily for short-distance, high-speed runs in the data center"
-    ],
-    "incorrect": [
-      "Cat 5 supports 10 Gbps over 100 meters",
-      "Cat 6a is limited to 100 Mbps regardless of distance",
-      "Cat 8 supports 100 Gbps over 100-meter horizontal runs"
-    ],
-    "feedback": "Higher categories generally support higher speeds and tighter electrical tolerances. Cat 8 trades distance for speed, targeting top-of-rack data center links."
-  },
-  {
-    "question": "Old Hask is patching a switch in an older building and finds a 200-meter horizontal copper run that has been struggling for years. Which fix is most appropriate?",
-    "correct": [
-      "Replace the run with fiber, since copper Ethernet is limited to 100 meters"
-    ],
-    "incorrect": [
-      "Lower the port speed to 10 Mbps, since slower signaling carries farther on copper",
-      "Re-terminate the cable with a higher category and call it good",
-      "Add a second copper cable in parallel to the existing run"
-    ],
-    "feedback": "100 meters is a hard limit for copper Ethernet (TIA-568). Longer runs need fiber, an intermediate switch/repeater, or a redesigned IDF placement."
-  },
-  {
-    "question": "Which connector or cable type is appropriate for a long-distance, high-bandwidth link between two buildings several hundred meters apart?",
-    "correct": [
-      "Single-mode fiber with appropriate transceivers"
-    ],
-    "incorrect": [
-      "Cat 6 UTP run directly between the two buildings",
-      "RG-6 coaxial cable with F-type connectors",
-      "DAC twinaxial cable"
-    ],
-    "feedback": "Single-mode fiber easily supports kilometers. Multimode is good for shorter inter-building runs. Copper and DAC are not appropriate for distances beyond about 100 meters and a few meters respectively."
-  },
-  {
-    "question": "Brom runs `show interface` and sees increasing CRC error counters on a switch port. Which of the following could plausibly cause this?",
-    "correct": [
-      "A failing or improperly terminated cable",
-      "EMI on a long copper run",
-      "A duplex mismatch with the device on the other end"
-    ],
-    "incorrect": [
-      "The port being administratively shut down",
-      "The switch having an unused port that is disabled",
-      "Spanning Tree successfully blocking a redundant link"
-    ],
-    "feedback": "CRC errors indicate frames arrived with corruption. Common causes include bad cabling, EMI, faulty optics, and duplex mismatches that produce late collisions."
-  },
-  {
-    "question": "Which of the following describes a 'runt' frame on an Ethernet interface?",
-    "correct": [
-      "A frame smaller than the 64-byte minimum, often caused by collisions or a faulty NIC"
-    ],
-    "incorrect": [
-      "A frame larger than the 1518-byte maximum, which the interface counts as a giant instead",
-      "A frame that has been intentionally throttled by QoS",
-      "A frame with a bad CRC but a valid length"
-    ],
-    "feedback": "Runts are undersized frames. Giants (or jabbers) are oversized frames. Both are visible in `show interface` and indicate physical-layer or NIC trouble."
-  },
-  {
-    "question": "Which port status indicates that the switch automatically disabled the port due to an error condition such as a port-security violation or BPDU guard?",
-    "correct": [
-      "Err-disabled"
-    ],
-    "incorrect": [
-      "Administratively down",
-      "Suspended (in a port-channel)",
-      "Up/up"
-    ],
-    "feedback": "Err-disabled means the switch took the port down because of a detected problem. Recovery is either automatic (after a timer) or manual (`shutdown` / `no shutdown`)."
-  },
-  {
-    "question": "Which port status means a port has been manually shut down by an administrator?",
-    "correct": [
-      "Administratively down"
-    ],
-    "incorrect": [
-      "Suspended as a port-channel member",
-      "Connected and forwarding",
-      "Err-disabled"
-    ],
-    "feedback": "Administratively down (or 'admin down') means an operator issued `shutdown`. Err-disabled was triggered automatically by an error condition."
-  },
-  {
-    "question": "A port-channel member port shows 'suspended'. What does that typically indicate?",
-    "correct": [
-      "The member's parameters do not match the bundle, so it is not forwarding"
-    ],
-    "incorrect": [
-      "The port has been removed from the configuration, leaving the bundle with one fewer member",
-      "The port has been administratively shut down by an operator",
-      "The port is operating normally as part of the channel"
-    ],
-    "feedback": "Suspended members in a LAG/EtherChannel usually indicate a config mismatch — speed, duplex, allowed VLANs, or LACP/PAgP misconfiguration."
-  },
-  {
-    "question": "Captain Doran adds several PoE+ access points to a switch and a few of them stop powering up. Which is the most likely cause?",
-    "correct": [
-      "The switch's PoE power budget has been exceeded"
-    ],
-    "incorrect": [
-      "The APs are tagged into the wrong VLAN by the switch port",
-      "Spanning Tree is blocking the AP ports",
-      "The APs are missing 802.1X credentials"
-    ],
-    "feedback": "Each PoE switch has a finite power budget. As more powered devices attach, low-priority ports stop receiving power once the budget is exhausted."
-  },
-  {
-    "question": "Which of the following are true about Power over Ethernet standards?",
-    "correct": [
-      "802.3af (PoE) provides up to about 15.4W per port at the source",
-      "802.3at (PoE+) provides up to about 30W per port at the source",
-      "802.3bt (PoE++/4PPoE) extends per-port power well beyond 30W using all four pairs"
-    ],
-    "incorrect": [
-      "All PoE standards deliver the same maximum wattage",
-      "PoE only works over fiber, not copper",
-      "PoE+ devices always work even when plugged into PoE-only (802.3af) switches"
-    ],
-    "feedback": "Each generation increases power. A PoE+ device may receive only baseline power, or none, when plugged into a switch that supports a lower standard."
-  },
-  {
-    "question": "Aria swaps a 10G SFP+ in a switch with a 1G SFP and the link comes up at 1 Gbps but the far end still expects 10 Gbps. Which kind of issue is this?",
-    "correct": [
-      "Transceiver speed mismatch on the two ends of the link"
-    ],
-    "incorrect": [
-      "Electromagnetic interference from overhead lighting on the fiber strand",
-      "PoE power budget exceeded on the switch",
-      "ARP poisoning on the segment"
-    ],
-    "feedback": "Optics must match on both ends — same speed, compatible wavelength, and compatible reach. A mismatch yields no link or a degraded link, depending on the platform."
-  },
-  {
-    "question": "Brom suspects a faulty fiber link. He inserts an optical power meter and sees received power well below the transceiver's specified minimum. Which condition does this indicate?",
-    "correct": [
-      "Low signal strength (high optical loss) on the fiber link"
-    ],
-    "incorrect": [
-      "A duplex mismatch between the two fiber transceivers is halving throughput",
-      "Excessive PoE current draw on the switch",
-      "An err-disabled port due to BPDU guard"
-    ],
-    "feedback": "Received optical power below the transceiver's minimum threshold causes errors and dropped frames. Causes include dirty connectors, damaged fiber, too many splices, or excessive distance."
-  },
-  {
-    "type": "fill_blank",
-    "question": "An interface status that indicates the switch automatically disabled the port due to a detected error such as a port-security violation is called ___-disabled.",
-    "correct": [
-      "err",
-      "error"
-    ],
-    "case_sensitive": false,
-    "feedback": "An err-disabled port stays down until either an automatic recovery timer fires or an administrator clears it with `shutdown` followed by `no shutdown`."
-  },
-  {
-    "type": "fill_blank",
-    "question": "An Ethernet frame larger than the maximum 1518-byte size (without jumbo support) is called a ___.",
-    "correct": [
-      "giant",
-      "giants"
-    ],
-    "case_sensitive": false,
-    "feedback": "Giants (oversized frames) often indicate a faulty NIC, a misconfigured MTU, or jumbo-frame mismatches between hosts and switches."
+    "feedback": "A port can be up and still receive damaged frames: CRC errors mean the FCS check failed, so bits changed in transit, which points at the cable, its connectors, EMI or the NIC. Congestion would show as output drops, oversized frames as giants, and hardware that cannot keep up as overruns, and all three read 0 here."
   },
   {
     "type": "matching",
-    "question": "Match each interface counter or port status to what it usually indicates.",
+    "question": "Match each interface counter to what it most often means.",
     "pairs": [
       {
         "term": "CRC errors",
-        "definition": "Frames arriving with bad checksums, often from cabling, EMI, or duplex mismatch"
+        "definition": "Frames whose check value failed, so bits were damaged on the way"
       },
       {
         "term": "Runts",
-        "definition": "Frames smaller than the 64-byte minimum, often caused by collisions"
+        "definition": "Frames under 64 bytes, often fragments left by collisions"
       },
       {
         "term": "Giants",
-        "definition": "Frames larger than the maximum (without jumbo support), often a NIC or MTU issue"
+        "definition": "Frames over the maximum size, often jumbo frames on a 1500-byte port"
       },
       {
-        "term": "Err-disabled",
-        "definition": "Switch automatically shut the port down due to a detected error condition"
+        "term": "Overruns",
+        "definition": "Frames lost because the receiving hardware could not buffer them fast enough"
       },
       {
-        "term": "Administratively down",
-        "definition": "Operator manually issued shutdown on the port"
+        "term": "Output drops",
+        "definition": "Frames discarded because more traffic was queued to leave than the port could send"
       }
     ],
-    "feedback": "Reading interface counters and port states fluently is one of the fastest ways to localize a Layer 1 / Layer 2 problem."
+    "feedback": "CRC errors and runts are signs of damage or collisions; giants are a size problem, usually an MTU setting; overruns and output drops are load problems, where the hardware or a queue could not keep up. Sorting a counter into damage, size or load tells you whether to reach for a cable tester, the configuration, or more capacity."
+  },
+  {
+    "question": "A backup server sends to a NAS (network-attached storage) through one switch, as in the diagram. During backups the copy slows down and output drops climb on one interface, while every CRC counter stays at 0. At which lettered interface do the output drops climb?",
+    "correct": [
+      "C"
+    ],
+    "incorrect": [
+      "A",
+      "B",
+      "D"
+    ],
+    "feedback": "Output drops build up where traffic must leave faster than the link can carry it: 10 Gbps arrives at B, but C can send only 1 Gbps toward the NAS, so its output queue overflows. A and B sit on the fast link and keep up, and D never receives more than 1 Gbps, which it can take. Clean CRC counters confirm congestion, not a physical fault.",
+    "figure": {
+      "dot": "digraph { rankdir=LR; nodesep=0.4; srv [shape=Mrecord, label=\"{backup\\nserver | <a> A}\"]; sw [shape=Mrecord, label=\"{<b> B | switch | <c> C}\"]; nas [shape=Mrecord, label=\"{<d> D | NAS}\"]; srv:a -> sw:b [label=\"10 Gbps\"]; sw:c -> nas:d [label=\"1 Gbps\"]; }",
+      "alt": "A backup server joined to a switch by a 10 Gbps link whose ends are marked A at the server and B at the switch, and the switch joined to a NAS by a 1 Gbps link whose ends are marked C at the switch and D at the NAS.",
+      "caption": "the backup path, interfaces lettered",
+      "src": "_dot/8923d1e51f42ce2f.svg"
+    }
+  },
+  {
+    "type": "cloze",
+    "question": "A frame that arrives shorter than 64 bytes is counted as a {{1}}, one longer than the port's maximum frame size is counted as a {{2}}, and one whose frame check sequence fails is counted as a {{3}} error.",
+    "blanks": [
+      {
+        "accept": [
+          "runt",
+          "runts"
+        ],
+        "hint": "too short"
+      },
+      {
+        "accept": [
+          "giant",
+          "giants"
+        ],
+        "hint": "too long"
+      },
+      {
+        "accept": [
+          "CRC",
+          "FCS"
+        ],
+        "hint": "three letters"
+      }
+    ],
+    "feedback": "Runts and giants are counted by size alone: under the 64-byte minimum, or over 1518 bytes (1522 with a VLAN tag) on a standard port. A CRC error is counted by content: the frame's size may be fine, but the check value the receiver computed did not match the FCS."
+  },
+  {
+    "type": "fill_blank",
+    "question": "Error totals on a Cisco switch keep growing from their last reset, so an old burst can look like a current fault. The privileged EXEC command that zeroes them, so you can watch whether errors are still rising, is clear ___.",
+    "correct": [
+      "counters",
+      "counter",
+      "count"
+    ],
+    "case_sensitive": false,
+    "feedback": "clear counters zeroes every interface's counters, and clear counters followed by an interface name zeroes just that one. Clear them, wait through normal traffic, then compare: a count that climbs again is a live fault, while one that stays at 0 was history."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Copper runs, fiber strands and the modules between them",
+    "npc": "ada",
+    "intro": "A link that is up can still be sick, and one that is down is usually a cable or an optic. Let's walk the physical path: copper length and crosstalk, fiber faults, and the transceivers at each end.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Twisted-pair copper Ethernet is specified to 100 meters per **channel**: up to 90 meters of fixed horizontal cable, plus patch cords at both ends."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; nodesep=0.3; subgraph cluster_ch { label=\"channel: 100 m in all\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; sw [label=\"switch\"]; pp [label=\"patch\\npanel\"]; jack [label=\"wall\\njack\"]; pc [label=\"PC\"]; } sw -> pp [label=\"patch\", dir=none]; pp -> jack [label=\"horizontal\\nup to 90 m\", dir=none, color=\"#ffb300\", fontcolor=\"#ffd86b\"]; jack -> pc [label=\"patch\", dir=none]; }",
+              "alt": "A switch, a patch panel, a wall jack and a PC in a row: a patch cord, then a horizontal run of up to 90 m, then a second patch cord, all inside a dashed box for the 100 m channel.",
+              "src": "_dot/ed45da876da71634.svg"
+            }
+          },
+          {
+            "say": "Past that, **attenuation**, the signal weakening with distance, leaves too little at the far end. Expect CRC errors, a link that falls back to a lower speed, or no link at all."
+          },
+          {
+            "say": "A **TDR** (time-domain reflectometer), built into cable certifiers and many switches, times a pulse's echo to report a run's length and the distance to a break or short."
+          }
+        ],
+        "say": "Twisted-pair copper Ethernet is specified to 100 meters per **channel**: up to 90 meters of fixed horizontal cable, plus patch cords at both ends. Past that, **attenuation**, the signal weakening with distance, leaves too little at the far end. Expect CRC errors, a link that falls back to a lower speed, or no link at all. A **TDR** (time-domain reflectometer), built into cable certifiers and many switches, times a pulse's echo to report a run's length and the distance to a break or short.",
+        "check": {
+          "prompt": "A run has 86 m of horizontal cable plus a 6 m and an 11 m patch cord. Is the channel within spec?",
+          "answer": "No: it totals 103 m, over the 100 m limit",
+          "wrong": [
+            "Yes: only the horizontal cable counts toward the limit",
+            "Yes: the horizontal part is under 90 m"
+          ],
+          "why": "The 100 m limit covers the whole channel, patch cords included: 86 + 6 + 11 = 103 m. The 90 m figure is the most the fixed horizontal part may use."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Each pair is twisted so interference hits both of its wires equally and cancels out. **Crosstalk** is signal leaking from one pair into another."
+          },
+          {
+            "say": "**NEXT** (near-end crosstalk) is measured at the transmitting end, **FEXT** (far-end) at the other, and **alien crosstalk** leaks between neighboring cables."
+          },
+          {
+            "say": "The usual culprit is the termination: pairs untwisted too far at a jack or plug. Keep each pair twisted to within about 13 mm (half an inch) of its contacts."
+          },
+          {
+            "say": "A basic tester checks the **wire map**: that all eight wires reach the right pins, which catches an **open** (a broken wire), a **short**, and a **reversed pair** (a pair's two wires swapped)."
+          },
+          {
+            "say": "A **split pair**, where one signal's two wires land on two different twisted pairs, puts every wire on its correct pin, so a basic continuity test passes it. A certifier still fails it on NEXT."
+          },
+          {
+            "say": "EMI comes from outside the cable. Route copper away from power lines and motors, or use shielded cable, which helps only when the shield is properly grounded."
+          }
+        ],
+        "say": "Each pair is twisted so interference hits both of its wires equally and cancels out. **Crosstalk** is signal leaking from one pair into another. **NEXT** (near-end crosstalk) is measured at the transmitting end, **FEXT** (far-end) at the other, and **alien crosstalk** leaks between neighboring cables. The usual culprit is the termination: pairs untwisted too far at a jack or plug. Keep each pair twisted to within about 13 mm (half an inch) of its contacts. A basic tester checks the **wire map**: that all eight wires reach the right pins, which catches an **open** (a broken wire), a **short**, and a **reversed pair** (a pair's two wires swapped). A **split pair**, where one signal's two wires land on two different twisted pairs, puts every wire on its correct pin, so a basic continuity test passes it. A certifier still fails it on NEXT. EMI comes from outside the cable. Route copper away from power lines and motors, or use shielded cable, which helps only when the shield is properly grounded."
+      },
+      {
+        "beats": [
+          {
+            "say": "Light in glass is immune to EMI and crosstalk, but it is easy to lose. The commonest fault is a **dirty connector**: dust or oil on the end face blocks or scatters the light."
+          },
+          {
+            "say": "Inspect the end face with a **fiber inspection scope** and clean it before anything else."
+          },
+          {
+            "say": "A link uses two strands, and each end's transmitter (TX) must feed the other end's receiver (RX). Swap them, **reversed polarity**, and neither end hears anything."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; nodesep=0.3; ranksep=1.2; subgraph cluster_a { label=\"switch A\"; style=rounded; color=\"#5aaa5a\"; atx [label=\"TX\"]; arx [label=\"RX\"]; } subgraph cluster_b { label=\"switch B\"; style=rounded; color=\"#5aaa5a\"; brx [label=\"RX\"]; btx [label=\"TX\"]; } atx -> brx [color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; btx -> arx [color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; }",
+              "alt": "Two switches, A and B, each with a TX and an RX port; one strand runs from A's TX to B's RX, and the other from B's TX to A's RX.",
+              "caption": "each transmitter feeds the far receiver",
+              "src": "_dot/e430d5f88d9c6e99.svg"
+            }
+          },
+          {
+            "say": "Bending a strand tighter than its **bend radius** leaks light out of the glass. An **optical power meter** (light meter) shows how much light is left at any point along a link."
+          }
+        ],
+        "say": "Light in glass is immune to EMI and crosstalk, but it is easy to lose. The commonest fault is a **dirty connector**: dust or oil on the end face blocks or scatters the light. Inspect the end face with a **fiber inspection scope** and clean it before anything else. A link uses two strands, and each end's transmitter (TX) must feed the other end's receiver (RX). Swap them, **reversed polarity**, and neither end hears anything. Bending a strand tighter than its **bend radius** leaks light out of the glass. An **optical power meter** (light meter) shows how much light is left at any point along a link.",
+        "check": {
+          "prompt": "A fiber uplink worked until Brom re-patched it. Now neither end shows a link, and both connectors were just cleaned. What is the likely cause?",
+          "answer": "The strands are swapped, so each TX feeds the far TX",
+          "wrong": [
+            "Crosstalk between the two strands of the cable",
+            "EMI from power cables in the same tray"
+          ],
+          "why": "Re-patching is the classic moment for a polarity swap: clean connectors and no light at either receiver mean each transmitter is aimed at a transmitter. Glass carries light, not current, so neither crosstalk nor EMI applies to fiber."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "The fiber must match the optics. **Multimode** (a wide core) takes 850 nm optics such as 10GBASE-SR, good for about 300 m on OM3; **single-mode** (a narrow core) takes 1310 or 1550 nm optics such as 10GBASE-LR, good for 10 km."
+          },
+          {
+            "say": "Each optic is a **transceiver** module: **SFP** for 1 Gbps, **SFP+** for 10, **SFP28** for 25, **QSFP+** for 40, **QSFP28** for 100. Both ends must match in speed, wavelength and fiber type, and a switch may refuse a module it does not support."
+          },
+          {
+            "code": "Port      Tx power   Rx power   Rx low alarm\nTe1/1/1   -2.3 dBm   -4.1 dBm   -14.4 dBm\nTe1/1/2   -2.1 dBm  -19.6 dBm   -14.4 dBm",
+            "language": "show interfaces transceiver (simplified)"
+          },
+          {
+            "say": "**DOM** (digital optical monitoring) reports each optic's transmit and receive power in **dBm**, decibels relative to one milliwatt. Closer to zero is stronger, and every 3 dB is half or double the power."
+          },
+          {
+            "say": "Losses in dB subtract straight from a level in dBm: a -2 dBm transmitter through 6 dB of loss arrives at -8 dBm. Te1/1/2 receives far below its low alarm, so light is being lost on the way."
+          },
+          {
+            "say": "Too much light is a fault as well: an optic built for 40 or 80 km, used on a short patch, can overload its receiver past the **high alarm**, and an inline **attenuator** fixes it."
+          }
+        ],
+        "say": "The fiber must match the optics. **Multimode** (a wide core) takes 850 nm optics such as 10GBASE-SR, good for about 300 m on OM3; **single-mode** (a narrow core) takes 1310 or 1550 nm optics such as 10GBASE-LR, good for 10 km. Each optic is a **transceiver** module: **SFP** for 1 Gbps, **SFP+** for 10, **SFP28** for 25, **QSFP+** for 40, **QSFP28** for 100. Both ends must match in speed, wavelength and fiber type, and a switch may refuse a module it does not support. **DOM** (digital optical monitoring) reports each optic's transmit and receive power in **dBm**, decibels relative to one milliwatt. Closer to zero is stronger, and every 3 dB is half or double the power. Losses in dB subtract straight from a level in dBm: a -2 dBm transmitter through 6 dB of loss arrives at -8 dBm. Te1/1/2 receives far below its low alarm, so light is being lost on the way. Too much light is a fault as well: an optic built for 40 or 80 km, used on a short patch, can overload its receiver past the **high alarm**, and an inline **attenuator** fixes it.",
+        "check": {
+          "prompt": "An optic reads Rx -24 dBm against a -14.4 dBm low alarm, and its partner's Tx is normal. What do you do first?",
+          "answer": "Inspect and clean the connectors along that link",
+          "wrong": [
+            "Add an attenuator to cut the received power",
+            "Swap both optics for a higher-speed type"
+          ],
+          "why": "Rx far below its alarm means light is lost between the two optics, and dirt is the commonest cause, so inspect and clean first. An attenuator removes even more light: it cures an overloaded receiver, not a starved one."
+        }
+      }
+    ],
+    "outro": "Now some runs, strands and optics that are misbehaving."
+  },
+  {
+    "question": "Old Hask tests a copper run to a warehouse office. The PC there logs errors and sometimes links at 100 Mb/s instead of 1000, and the tester reports 128 m between the switch and the PC. What is the MOST likely cause?",
+    "correct": [
+      "Attenuation from a run beyond the 100 m limit"
+    ],
+    "incorrect": [
+      "Crosstalk from a split pair at the wall jack",
+      "Output drops from congestion on the uplink",
+      "EMI from the warehouse's fluorescent lighting"
+    ],
+    "feedback": "128 m is well past the 100 m channel limit, so the signal attenuates before it reaches the far end, and errors plus a fall back to a lower speed are the classic signs. A split pair or EMI could also cause errors, but nothing here points to either, while the length alone guarantees trouble. Congestion shows as output drops, not as a link that cannot hold 1000 Mb/s. The fix is a closer switch or a fiber run."
+  },
+  {
+    "question": "Brom re-terminates a Cat 6 jack and, to make the job easier, untwists about 5 cm of each pair. The link comes up, but a certifier now fails the run and the port logs CRC errors under load. What is the MOST likely cause?",
+    "correct": [
+      "Near-end crosstalk between pairs at the jack"
+    ],
+    "incorrect": [
+      "Alien crosstalk from neighboring cables in the bundle",
+      "Attenuation from the length the untwisting added",
+      "A reversed pair left by the re-termination"
+    ],
+    "feedback": "Untwisting 5 cm, against a limit of about 13 mm, removes the twist that cancels coupling between pairs, so signal leaks from pair to pair right where the transmitter is strongest: near-end crosstalk. Alien crosstalk comes from other cables, which nobody touched; untwisting adds no meaningful length; and a reversed pair is a wiring error that the wire map would flag."
+  },
+  {
+    "question": "A multimode fiber link between two wiring closets is up, but it logs CRC errors and DOM shows its receive power just above the low alarm. Which of the following could cause the low receive power?",
+    "correct": [
+      "A dirty or scratched connector end face",
+      "A strand bent tighter than its bend radius in the tray",
+      "A poor splice or patch-panel connection along the path"
+    ],
+    "incorrect": [
+      "EMI from fluorescent lights above the cable tray",
+      "Crosstalk between the two strands of the cable",
+      "TX and RX strands swapped at one end of the link"
+    ],
+    "feedback": "Dirt, tight bends and poor splices or connections all lose light, so less of it reaches the receiver. Fiber carries light, not current, so EMI and crosstalk do not apply, and swapped strands would leave no link at all rather than a weak one."
+  },
+  {
+    "question": "Old Hask measures a single-mode link with a light meter at the four points shown, because the far switch reports low receive power. Where is the fault?",
+    "correct": [
+      "In the patch cord and connectors between C and D"
+    ],
+    "incorrect": [
+      "In the patch cord and connectors between A and B",
+      "In the 400 m backbone run between B and C",
+      "In switch 1's optic, which launches too little light"
+    ],
+    "feedback": "Read the drop between neighboring points: A to B loses 0.4 dB and the 400 m backbone from B to C only 0.7 dB, both normal, but C to D loses 12.8 dB across a short patch cord. That much loss in a few meters means a dirty or damaged connector, or a crushed or kinked cord, at that end. The transmitter is fine: it launches -2.0 dBm.",
+    "figure": {
+      "dot": "digraph { rankdir=TB; nodesep=0.3; ranksep=0.35; a [label=\"A: switch 1 TX\\n-2.0 dBm\"]; b [label=\"B: panel 1\\n-2.4 dBm\"]; c [label=\"C: panel 2\\n-3.1 dBm\"]; d [label=\"D: switch 2 RX\\n-15.9 dBm\"]; a -> b [label=\" patch cord\"]; b -> c [label=\" backbone\\n 400 m\"]; c -> d [label=\" patch cord\"]; }",
+      "alt": "Four measurement points from top to bottom: A at switch 1's transmitter reads -2.0 dBm, B at the first patch panel reads -2.4 dBm, C at the second patch panel reads -3.1 dBm, and D at switch 2's receiver reads -15.9 dBm. A patch cord joins A and B, a 400 m backbone run joins B and C, and a patch cord joins C and D.",
+      "caption": "light-meter readings along the link",
+      "src": "_dot/6acc7c6640ddf99e.svg"
+    }
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A 10 Gbps optic transmits at {{tx}} dBm. The fiber and connectors between the two optics lose {{loss}} dB, and the far receiver needs at least {{sens}} dBm to work. How many dB of margin remain above the receiver's minimum?",
+    "variables": {
+      "tx": {
+        "values": [
+          -1,
+          -2,
+          -3
+        ]
+      },
+      "loss": {
+        "min": 4,
+        "max": 9
+      },
+      "sens": {
+        "values": [
+          -14,
+          -15,
+          -16
+        ]
+      }
+    },
+    "derived": {
+      "rx": "tx - loss"
+    },
+    "answer": {
+      "expr": "tx - loss - sens",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Subtract the loss from the transmit level: {{tx}} dBm less {{loss}} dB arrives at {{rx}} dBm, which is {{expected}} dB above the receiver's {{sens}} dBm minimum. A thin margin leaves no room for a dirty connector or a tight bend later."
+  },
+  {
+    "question": "Which of these mismatches would keep a new fiber link from coming up at all?",
+    "correct": [
+      "A 10GBASE-LR optic at one end and a 10GBASE-SR optic at the other",
+      "A 10 Gbps SFP+ at one end and a 1 Gbps SFP at the other",
+      "TX and RX swapped at one end, so each transmitter feeds a transmitter"
+    ],
+    "incorrect": [
+      "Matching SR optics at both ends of a 20 m multimode patch lead",
+      "Clean connectors with receive power 3 dB above the low alarm"
+    ],
+    "feedback": "Both ends must agree on wavelength and fiber type (LR is 1310 nm on single-mode, SR is 850 nm on multimode), on speed (a 10 Gbps SFP+ cannot talk to a 1 Gbps SFP), and each TX must feed the far RX. Matching SR optics over 20 m of multimode are well within reach, and a receive level above the alarm is thin but working."
+  },
+  {
+    "type": "ordering",
+    "question": "Old Hask is about to connect a fiber patch cord to a switch optic. Put the steps of good fiber hygiene in order, first to last.",
+    "items": [
+      "Inspect the end face with a fiber scope",
+      "Clean the end face if the scope shows dirt",
+      "Inspect again to confirm it is clean",
+      "Mate the connector and check the receive power"
+    ],
+    "feedback": "Inspect, clean, inspect again, then connect. Cleaning without looking can smear oil around or miss a scratch, and mating a dirty connector can grind the dirt into both end faces. Checking receive power afterwards confirms the link has the light it needs."
   },
   {
     "type": "matching",
-    "question": "Match each troubleshooting step to its position in the CompTIA methodology.",
+    "question": "Match each physical fault to the symptom it most likely produces.",
     "pairs": [
       {
-        "term": "Identify the problem",
-        "definition": "Step 1: gather information, question users, identify symptoms, determine what changed"
+        "term": "Excess cable length",
+        "definition": "A copper run tests at 140 m and keeps dropping to a lower speed"
       },
       {
-        "term": "Establish a theory",
-        "definition": "Step 2: form a probable cause, considering OSI top-down/bottom-up or divide and conquer"
+        "term": "Split pair",
+        "definition": "Every wire reaches its correct pin, but the run fails a NEXT test"
       },
       {
-        "term": "Test the theory",
-        "definition": "Step 3: confirm or disprove the suspected cause before taking action"
+        "term": "Reversed polarity",
+        "definition": "A fiber link has no light at either receiver right after a re-patch"
       },
       {
-        "term": "Plan and implement",
-        "definition": "Steps 4-5: plan the fix with awareness of side effects, then implement or escalate"
+        "term": "Overloaded receiver",
+        "definition": "An 80 km optic on a 3 m patch reads receive power above its high alarm"
       },
       {
-        "term": "Verify and document",
-        "definition": "Steps 6-7: verify full functionality, add preventive measures, then document everything"
+        "term": "Bend radius exceeded",
+        "definition": "Fiber errors began after the cable was cinched tightly around a rack post"
       }
     ],
-    "feedback": "The seven-step methodology is testable on its own and a useful mental checklist when you're under pressure during a real incident."
+    "feedback": "Length starves a copper signal; a split pair keeps every pin right but breaks the pairing, so only a crosstalk test catches it; swapped strands leave both receivers dark; a long-reach optic on a short patch floods its receiver until an attenuator is added; and a tight bend leaks light out of the glass."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Interface states and port status",
+    "npc": "tariq",
+    "intro": "I'm Tariq, the Beacon-Courier. Before touching a cable, ask the switch: it reports every port in a few words, and often the reason. Let's read those words.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "`show interfaces` opens each port with two states: the **status**, whether Layer 1 has a usable signal, and the **line protocol**, whether Layer 2 is working over it."
+          },
+          {
+            "code": "Gi1/0/3 is up, line protocol is up\nGi1/0/4 is down, line protocol is down\nGi1/0/5 is administratively down, line protocol is down\nGi1/0/6 is down, line protocol is down (err-disabled)",
+            "language": "show interfaces (first lines)"
+          },
+          {
+            "say": "`up/up` is healthy. `down/down` means no usable signal: nothing plugged in, a broken cable, a dead far end, or settings the two ends cannot agree on."
+          },
+          {
+            "say": "`up/down` means a signal but no working Layer 2, as when the two ends of a serial link use different encapsulations."
+          },
+          {
+            "say": "`show interfaces status` gives one line per port, with a status of `connected`, `notconnect` (no link), `disabled` (shut down by an admin) or `err-disabled`."
+          }
+        ],
+        "say": "`show interfaces` opens each port with two states: the **status**, whether Layer 1 has a usable signal, and the **line protocol**, whether Layer 2 is working over it. `up/up` is healthy. `down/down` means no usable signal: nothing plugged in, a broken cable, a dead far end, or settings the two ends cannot agree on. `up/down` means a signal but no working Layer 2, as when the two ends of a serial link use different encapsulations. `show interfaces status` gives one line per port, with a status of `connected`, `notconnect` (no link), `disabled` (shut down by an admin) or `err-disabled`."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Administratively down** means someone entered `shutdown` on the port. Nothing is wrong with the cable, and the port stays down until it is enabled again in interface configuration."
+          },
+          {
+            "say": "**Error disabled** (`err-disabled`) means the switch shut the port itself because a protection feature fired."
+          },
+          {
+            "say": "**Port security** saw a MAC address it does not allow, **BPDU guard** saw a **BPDU**, a spanning-tree message only switches send, on a port meant for an end device, or the link kept flapping up and down."
+          },
+          {
+            "code": "%PM-4-ERR_DISABLE: bpduguard error detected on Gi1/0/6, putting Gi1/0/6 in err-disable state",
+            "language": "switch log"
+          },
+          {
+            "say": "The log names the cause. Remove it, then bounce the port with `shutdown` followed by `no shutdown`, or let an **errdisable recovery** timer bring it back on its own."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; nodesep=0.5; admin [label=\"admin\\ndown\"]; up [label=\"up/up\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; err [label=\"err-\\ndisabled\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; up -> admin [label=\" shutdown\"]; admin -> up [label=\" no shutdown\"]; up -> err [label=\" violation\"]; err -> up [label=\" fix cause,\\n then bounce\"]; }",
+              "alt": "Three states: up/up, an admin-down state entered by shutdown and left by no shutdown, and an err-disabled state entered by a violation and left by fixing the cause and bouncing the port.",
+              "caption": "how a port leaves and returns to up/up",
+              "src": "_dot/d9dc6b0396ad5194.svg"
+            }
+          }
+        ],
+        "say": "**Administratively down** means someone entered `shutdown` on the port. Nothing is wrong with the cable, and the port stays down until it is enabled again in interface configuration. **Error disabled** (`err-disabled`) means the switch shut the port itself because a protection feature fired. **Port security** saw a MAC address it does not allow, **BPDU guard** saw a **BPDU**, a spanning-tree message only switches send, on a port meant for an end device, or the link kept flapping up and down. The log names the cause. Remove it, then bounce the port with `shutdown` followed by `no shutdown`, or let an **errdisable recovery** timer bring it back on its own.",
+        "check": {
+          "prompt": "The small switch that tripped BPDU guard on Gi1/0/6 is still plugged in when Brom bounces the port. What happens?",
+          "answer": "BPDU guard sees its BPDUs again and err-disables the port",
+          "wrong": [
+            "The port comes up and stays up, since the bounce cleared the error",
+            "The port drops to administratively down instead"
+          ],
+          "why": "Bouncing the port only clears the state; the protection feature checks again at once. Remove the cause first, or the port goes straight back to err-disabled."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "An **EtherChannel**, also called a **LAG** (link aggregation group), bundles several ports into one logical link, usually negotiated with **LACP** (Link Aggregation Control Protocol)."
+          },
+          {
+            "say": "Every member must match the others in speed, duplex and VLAN settings. One that does not is **suspended**: physically up, but kept out of the bundle and carrying no traffic."
+          },
+          {
+            "code": "Flags:  D - down   P - bundled in port-channel   s - suspended\nGroup  Port-channel  Protocol    Ports\n1      Po1(SU)       LACP        Gi1/0/21(P)  Gi1/0/22(P)  Gi1/0/23(s)",
+            "language": "show etherchannel summary"
+          }
+        ],
+        "say": "An **EtherChannel**, also called a **LAG** (link aggregation group), bundles several ports into one logical link, usually negotiated with **LACP** (Link Aggregation Control Protocol). Every member must match the others in speed, duplex and VLAN settings. One that does not is **suspended**: physically up, but kept out of the bundle and carrying no traffic.",
+        "check": {
+          "prompt": "Gi1/0/23 shows (s). Its trunk allows VLANs 10-30, while the other two members allow 10-20. What brings it into the bundle?",
+          "answer": "Set its allowed VLANs to match the other members",
+          "wrong": [
+            "Enter no shutdown on Gi1/0/23",
+            "Replace its cable, since suspended means a Layer 1 fault"
+          ],
+          "why": "Suspended means the port is up but out of step with its bundle. Make it match and LACP adds it back; it was never shut down, and its cable is fine."
+        }
+      }
+    ],
+    "outro": "Now some ports in trouble. Read the words, then decide."
+  },
+  {
+    "question": "Mira says a user's desk port went dead. The switch log shows:\n\n%PM-4-ERR_DISABLE: psecure-violation error detected on Gi1/0/9, putting Gi1/0/9 in err-disable state\n\nWhich should the technician do FIRST?",
+    "correct": [
+      "Find out which device triggered port security and deal with it"
+    ],
+    "incorrect": [
+      "Enter shutdown and then no shutdown to restore the port at once",
+      "Replace the patch cable between the wall jack and the PC",
+      "Remove Gi1/0/9 from its EtherChannel bundle"
+    ],
+    "feedback": "psecure-violation means port security saw a MAC address it does not allow, such as a personal switch or a swapped PC, and the switch shut the port to stop it. Deal with that first: bouncing the port while the device is still there just err-disables it again. The cable is not at fault, and nothing here involves an EtherChannel."
+  },
+  {
+    "type": "cloze",
+    "question": "A port someone turned off with the shutdown command shows {{1}} down. A port the switch turned off itself, after port security or BPDU guard fired, shows {{2}}. An EtherChannel member left out of its bundle for mismatched settings shows {{3}}.",
+    "blanks": [
+      {
+        "accept": [
+          "administratively",
+          "admin"
+        ],
+        "hint": "who turned it off?"
+      },
+      {
+        "accept": [
+          "err-disabled",
+          "errdisabled",
+          "error disabled",
+          "error-disabled",
+          "err disabled"
+        ],
+        "hint": "the switch did it"
+      },
+      {
+        "accept": [
+          "suspended"
+        ],
+        "hint": "one word"
+      }
+    ],
+    "feedback": "Administratively down is a person's choice, made with shutdown and undone with no shutdown. Err-disabled is the switch protecting the network, and it lasts until the cause is removed and the port is bounced or a recovery timer fires. Suspended is an EtherChannel member that is up but out of step with its bundle, so it carries no traffic until its settings match."
+  },
+  {
+    "type": "code_line",
+    "question": "On a Cisco switch, show interfaces reports:\n\nGi1/0/12 is administratively down, line protocol is down\n\nYou are already in interface configuration mode for Gi1/0/12. Write the command that enables the port.",
+    "language": "cisco",
+    "correct": [
+      "no shutdown",
+      "no shut",
+      "no shu"
+    ],
+    "case_sensitive": false,
+    "feedback": "Administratively down means the port was turned off with shutdown in its configuration, so no shutdown (often typed no shut) turns it back on. Nothing is wrong with the cable; the switch was simply told to leave the port off."
+  },
+  {
+    "type": "ordering",
+    "question": "A desk port is err-disabled, and you suspect its damaged patch cable. Put the steps to restore the port properly in order, first to last.",
+    "items": [
+      "Read the log to confirm which feature disabled the port",
+      "Replace the damaged patch cable",
+      "Bounce the port: shutdown, then no shutdown",
+      "Confirm the port shows connected and stays up",
+      "Record the cause and the fix in the ticket"
+    ],
+    "feedback": "Confirm the cause in the log first (here link-flap, from the damaged cable), then remove it by replacing the cable. Only then does bouncing the port clear the err-disabled state for good; bounce it before the new cable is in and it simply flaps and err-disables again. Checking that it stays connected verifies the fix, and the ticket records what was done."
+  },
+  {
+    "question": "Users notice the uplink bundle to the core is slower than usual. On the access switch:\n\nGroup  Port-channel  Protocol  Ports\n1      Po1(SU)       LACP      Gi1/0/47(P)  Gi1/0/48(s)\n\nGi1/0/47 runs at 1000 Mb/s full duplex, but someone hard-set Gi1/0/48 to speed 100. What is the BEST fix?",
+    "correct": [
+      "Set Gi1/0/48's speed to match Gi1/0/47 so LACP can bundle it"
+    ],
+    "incorrect": [
+      "Enter no shutdown on Gi1/0/48 to bring it back into the bundle",
+      "Replace Gi1/0/48's cable, since (s) marks a failed link",
+      "Clear the counters on Po1 so LACP renegotiates both members"
+    ],
+    "feedback": "(s) means suspended: Gi1/0/48 is up, but its speed does not match the bundle, so the channel runs on Gi1/0/47 alone. Matching the speed lets LACP bundle it again. The port was never shut down, a failed link would be flagged D for down, and clearing counters only resets statistics."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Duplex, speed and MTU mismatches",
+    "npc": "tariq",
+    "intro": "The two ends of a link must agree on three things: how fast to talk, whether both may talk at once, and how big a frame can be. Here's how each disagreement shows up.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Full duplex** sends and receives at the same time. **Half duplex** takes turns and has to watch for collisions. Ports normally **autonegotiate** both speed and duplex with the device at the other end."
+          },
+          {
+            "say": "The classic trap: one end is hard-set to `speed 100` and `duplex full`, so it stops negotiating. The other end, still on auto, can sense the speed but not the duplex, so it falls back to half duplex."
+          },
+          {
+            "say": "That is a **duplex mismatch**. The link comes up and light traffic looks fine, but it falls apart under load."
+          },
+          {
+            "say": "The half-duplex end logs **late collisions**, collisions after the first 64 bytes of a frame, while the full-duplex end logs CRC errors and runts."
+          },
+          {
+            "code": "Switch Fa0/5 (hard-set):  Full-duplex, 100Mb/s\n     1987 CRC, 253 runts, 0 late collision\nPC NIC (auto):            Half-duplex, 100Mb/s\n     late collisions: 1630",
+            "language": "both ends of one link"
+          }
+        ],
+        "say": "**Full duplex** sends and receives at the same time. **Half duplex** takes turns and has to watch for collisions. Ports normally **autonegotiate** both speed and duplex with the device at the other end. The classic trap: one end is hard-set to `speed 100` and `duplex full`, so it stops negotiating. The other end, still on auto, can sense the speed but not the duplex, so it falls back to half duplex. That is a **duplex mismatch**. The link comes up and light traffic looks fine, but it falls apart under load. The half-duplex end logs **late collisions**, collisions after the first 64 bytes of a frame, while the full-duplex end logs CRC errors and runts.",
+        "check": {
+          "prompt": "Users on Fa0/5 get quick pings but crawling file copies. What fixes it for good?",
+          "answer": "Set both ends to auto, or hard-set both to the same speed and duplex",
+          "wrong": [
+            "Replace the cable, since CRC errors mean damaged copper",
+            "Lower the MTU on Fa0/5 to cut the runts"
+          ],
+          "why": "The settings disagree, not the copper: let both ends negotiate, or set both by hand to match. A new cable would show the same counters, and these runts are collision fragments, not a size problem."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "A **speed mismatch** is harder to miss. If the two ends are hard-set to different speeds, say 100 and 1000, they cannot form a link at all."
+          },
+          {
+            "say": "The port sits at `down/down`, shown as `notconnect`. Optics of different speeds fail the same way."
+          },
+          {
+            "say": "In `show interfaces status`, an `a-` prefix, as in `a-full` and `a-1000`, means the value was autonegotiated; a bare `full` or `100` was set by hand."
+          }
+        ],
+        "say": "A **speed mismatch** is harder to miss. If the two ends are hard-set to different speeds, say 100 and 1000, they cannot form a link at all. The port sits at `down/down`, shown as `notconnect`. Optics of different speeds fail the same way. In `show interfaces status`, an `a-` prefix, as in `a-full` and `a-1000`, means the value was autonegotiated; a bare `full` or `100` was set by hand."
+      },
+      {
+        "beats": [
+          {
+            "say": "The MTU is the largest payload a frame may carry, 1500 bytes by default. Jumbo frames raise it, commonly to 9000 bytes, so storage and backup traffic spends less of each frame on headers."
+          },
+          {
+            "say": "Jumbo frames work only if every hop allows them: both hosts, and every switch port and router interface between."
+          },
+          {
+            "say": "One hop left at 1500 is an **MTU mismatch**, and a switch there drops the oversized frames and counts them as giants."
+          },
+          {
+            "say": "A router facing a packet bigger than its next link's MTU fragments it, unless the packet's **Don't Fragment** (DF) bit is set. Then it drops the packet and sends back an ICMP 'fragmentation needed' message."
+          }
+        ],
+        "say": "The MTU is the largest payload a frame may carry, 1500 bytes by default. Jumbo frames raise it, commonly to 9000 bytes, so storage and backup traffic spends less of each frame on headers. Jumbo frames work only if every hop allows them: both hosts, and every switch port and router interface between. One hop left at 1500 is an **MTU mismatch**, and a switch there drops the oversized frames and counts them as giants. A router facing a packet bigger than its next link's MTU fragments it, unless the packet's **Don't Fragment** (DF) bit is set. Then it drops the packet and sends back an ICMP 'fragmentation needed' message."
+      },
+      {
+        "beats": [
+          {
+            "say": "The tell is that small things work and big ones fail: pings and logins succeed, but file copies stall."
+          },
+          {
+            "say": "Test with a ping that sets DF and fills the packet: its payload is the MTU minus 28 bytes, 20 for the IP header and 8 for ICMP."
+          },
+          {
+            "code": "C:\\> ping -f -l 1472 10.0.0.20\nReply from 10.0.0.20: bytes=1472 time<1ms TTL=64\nC:\\> ping -f -l 1473 10.0.0.20\nPacket needs to be fragmented but DF set.",
+            "language": "Windows command prompt"
+          },
+          {
+            "say": "On Windows, `-f` sets DF and `-l` sets the payload size; on Linux the same test is `ping -M do -s`."
+          }
+        ],
+        "say": "The tell is that small things work and big ones fail: pings and logins succeed, but file copies stall. Test with a ping that sets DF and fills the packet: its payload is the MTU minus 28 bytes, 20 for the IP header and 8 for ICMP. On Windows, `-f` sets DF and `-l` sets the payload size; on Linux the same test is `ping -M do -s`.",
+        "check": {
+          "prompt": "Two hosts set to a 9000-byte MTU can ping each other with `-f -l 1472`, but not with `-f -l 8972`. What does that tell you?",
+          "answer": "A hop between them still has a 1500-byte MTU",
+          "wrong": [
+            "The path is fine; 8972 is over the jumbo limit",
+            "One host's NIC has a duplex mismatch"
+          ],
+          "why": "8972 plus 28 bytes of headers is exactly 9000, so it should pass a 9000-byte path. Since 1472 (a 1500-byte packet) works and 8972 does not, some hop is still at the default MTU."
+        }
+      }
+    ],
+    "outro": "Your turn: mismatched links, and the counters that give them away."
+  },
+  {
+    "question": "A PC's NIC is hard-set to 100 Mb/s full duplex. Its switch port, left on auto, shows:\n\nFa0/8 is up, line protocol is up\n  Half-duplex, 100Mb/s\n     0 runts, 0 giants, 0 throttles\n     2210 collisions, 1874 late collision\n\nWhat is the MOST likely cause of the user's slow transfers?",
+    "correct": [
+      "A duplex mismatch with the PC's full-duplex NIC"
+    ],
+    "incorrect": [
+      "A speed mismatch between the NIC and the port",
+      "An MTU mismatch dropping the PC's large frames",
+      "Congestion filling the port's output queue"
+    ],
+    "feedback": "The PC stopped negotiating when it was hard-set, so the auto port sensed 100 Mb/s but fell back to half duplex: a duplex mismatch, and the half-duplex side logs late collisions exactly as here. A speed mismatch would leave no link at all, an MTU problem would show giants, and congestion would show output drops."
+  },
+  {
+    "type": "cloze",
+    "question": "In a duplex mismatch, the {{1}}-duplex end logs late collisions, because its partner transmits whenever it likes; the {{2}}-duplex end logs CRC errors and runts, from the frames its partner abandoned partway.",
+    "blanks": [
+      {
+        "accept": [
+          "half"
+        ],
+        "hint": "takes turns"
+      },
+      {
+        "accept": [
+          "full"
+        ],
+        "hint": "never waits"
+      }
+    ],
+    "feedback": "The full-duplex end never listens before sending, so the half-duplex end keeps detecting collisions late in its frames and abandons them. The full-duplex end receives those cut-off frames and counts them as CRC errors and runts. Both patterns on one link are the signature of a duplex mismatch."
+  },
+  {
+    "question": "Aria hard-sets a switch port to speed 1000 and duplex full, but the security camera on it is hard-set to 100 Mb/s full duplex. What will show interfaces report for the port?",
+    "correct": [
+      "Down, line protocol down: the two ends cannot form a link"
+    ],
+    "incorrect": [
+      "Up at 100 Mb/s, with late collisions on the switch side",
+      "Up at 1000 Mb/s, with CRC errors on the camera side",
+      "Err-disabled, because the switch flags a speed violation"
+    ],
+    "feedback": "Two ends hard-set to different speeds cannot agree on a signal at all, so the port stays down/down (notconnect in show interfaces status). Late collisions and CRC errors come from a duplex mismatch, which needs a working link to happen. A speed mismatch is not a protection feature, so it does not err-disable the port."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A Windows admin wants to prove that a path carries {{mtu}}-byte packets without fragmentation, using ping -f -l. What is the largest -l payload size, in bytes, that should succeed?",
+    "variables": {
+      "mtu": {
+        "values": [
+          1400,
+          1450,
+          1492,
+          4470,
+          9216
+        ]
+      }
+    },
+    "answer": {
+      "expr": "mtu - 28",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The ICMP payload plus a 20-byte IP header and an 8-byte ICMP header must fit within the MTU, so the largest payload is {{mtu}} minus 28, which is {{expected}} bytes. One byte more should fail with 'Packet needs to be fragmented but DF set'."
+  },
+  {
+    "question": "Silverkeep's storage team set the backup servers and the storage array to a 9000-byte MTU. Pings between them work, but large backup jobs stall. The access switch port facing one server shows:\n\n     0 runts, 48211 giants, 0 throttles\n     48211 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored\n\nWhat is the MOST likely cause?",
+    "correct": [
+      "The switch ports in the path were left at the default 1500-byte MTU"
+    ],
+    "incorrect": [
+      "The servers' NICs are failing and damaging large frames in transit",
+      "The backup VLAN is congested, so the switch drops frames on output",
+      "A duplex mismatch on the server port is cutting frames short"
+    ],
+    "feedback": "Small pings fit in 1500 bytes, but full 9000-byte frames reach a switch port still at the default MTU, which drops them and counts giants: jumbo frames must be enabled at every hop. Damaged frames would raise CRC and a duplex mismatch would raise runts, both 0 here, and congestion shows as output drops, not as giants arriving from the server."
+  },
+  {
+    "question": "Which statements about jumbo frames are correct?",
+    "correct": [
+      "Every hop on the path, hosts included, must allow the larger MTU",
+      "They cut header overhead for large storage and backup transfers"
+    ],
+    "incorrect": [
+      "The two ends negotiate the MTU automatically, as they do duplex",
+      "A switch splits a jumbo frame into 1500-byte frames for a standard port",
+      "IEEE 802.3 fixes their size at exactly 9000 bytes"
+    ],
+    "feedback": "Jumbo frames carry more payload per header, which helps bulk transfers, but only if every host, switch port and router interface on the path is set for them. Ethernet has no MTU negotiation; a switch drops an oversized frame rather than splitting it (fragmenting is a router's job, at Layer 3); and jumbo sizes are a vendor convention, commonly 9000 bytes, not an IEEE 802.3 value."
+  },
+  {
+    "type": "code_line",
+    "question": "On a Cisco switch, write the privileged EXEC command that lists every port on one line each, with its status, VLAN, duplex and speed.",
+    "language": "cisco",
+    "correct": [
+      "show interfaces status",
+      "show interface status",
+      "show int status",
+      "sh int status",
+      "sh interfaces status",
+      "sh interface status"
+    ],
+    "case_sensitive": false,
+    "feedback": "show interfaces status prints one line per port: its name, description, status (connected, notconnect, disabled, err-disabled), VLAN, duplex, speed and type. It is the quickest way to spot a dead or shut port, and an a- prefix on duplex or speed shows the value was negotiated rather than set by hand."
+  },
+  {
+    "question": "Brom runs show interfaces status on an access switch:\n\nPort     Name     Status        Vlan  Duplex  Speed\nGi1/0/1  desk-01  connected     10    a-full  a-1000\nGi1/0/2  desk-02  notconnect    10    auto    auto\nGi1/0/3  printer  disabled      20    auto    auto\nGi1/0/4  desk-04  err-disabled  10    auto    auto\nGi1/0/5  cam-05   connected     30    full    100\n\nWhich conclusions does this output support?",
+    "correct": [
+      "Gi1/0/2 has no link, so check its cable and the device at the far end",
+      "Gi1/0/3 was turned off with shutdown and needs no shutdown",
+      "Gi1/0/5's speed and duplex were set by hand, not negotiated"
+    ],
+    "incorrect": [
+      "Gi1/0/1 has a duplex mismatch with its desk PC",
+      "Gi1/0/4 will come back once its cable is reseated",
+      "Gi1/0/5 will err-disable because it is not autonegotiating"
+    ],
+    "feedback": "notconnect is no link (a cable or the far end), disabled is an admin shutdown, and a bare full and 100 mean Gi1/0/5 was hard-set, so its camera must be hard-set to match. Gi1/0/1's a-full and a-1000 were negotiated, which is the healthy case; Gi1/0/4 is err-disabled, which reseating a cable never clears; and hard-setting a port is allowed, not a violation."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: PoE standards and the power budget",
+    "npc": "ada",
+    "intro": "Power over Ethernet (PoE) sends power down the same twisted pair as the data, so a phone or access point needs no outlet. Let's choose the right standard for each device and keep a switch inside its power budget.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "The switch is the **PSE** (power sourcing equipment); the phone, camera or AP is the **PD** (powered device)."
+          },
+          {
+            "say": "Before power flows, the PSE runs **detection**: a low test voltage looks for the PD's signature resistance, so an ordinary laptop NIC is never powered."
+          },
+          {
+            "say": "Then **classification**: the PD reports how much power it needs. Only then does the PSE power it up, and it cuts power if the PD is unplugged."
+          }
+        ],
+        "say": "The switch is the **PSE** (power sourcing equipment); the phone, camera or AP is the **PD** (powered device). Before power flows, the PSE runs **detection**: a low test voltage looks for the PD's signature resistance, so an ordinary laptop NIC is never powered. Then **classification**: the PD reports how much power it needs. Only then does the PSE power it up, and it cuts power if the PD is unplugged."
+      },
+      {
+        "beats": [
+          {
+            "code": "Standard        Name   At the PSE   At the PD\n802.3af         PoE    15.4 W       12.95 W\n802.3at         PoE+   30 W         25.5 W\n802.3bt Type 3  PoE++  60 W         51 W\n802.3bt Type 4  PoE++  90 W         71.3 W",
+            "language": "IEEE PoE standards"
+          },
+          {
+            "say": "The device gets less than the switch sends, because the cable turns some power into heat over a 100 m run. So size each device against the PD column: a 14 W camera needs PoE+, even though 802.3af sends 15.4 W."
+          },
+          {
+            "say": "Newer switches power older devices: an 802.3bt switch runs an 802.3af phone. The reverse can fail: a PoE+ AP on an 802.3af port may not boot, or may run with features such as a radio switched off."
+          }
+        ],
+        "say": "The device gets less than the switch sends, because the cable turns some power into heat over a 100 m run. So size each device against the PD column: a 14 W camera needs PoE+, even though 802.3af sends 15.4 W. Newer switches power older devices: an 802.3bt switch runs an 802.3af phone. The reverse can fail: a PoE+ AP on an 802.3af port may not boot, or may run with features such as a radio switched off.",
+        "check": {
+          "prompt": "A camera with a heater needs 40 W at the camera. What is the lowest standard that covers it?",
+          "answer": "802.3bt Type 3, with 51 W at the PD",
+          "wrong": [
+            "802.3at, with 30 W at the PSE",
+            "802.3bt Type 4, with 71.3 W at the PD"
+          ],
+          "why": "Read the PD column: 802.3at gives only 25.5 W at the device, and Type 4 would work but is more than needed. Type 3 delivers 51 W at the PD, which covers 40 W."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "A PoE switch also has a total **power budget**, such as 370 W, shared by all its ports."
+          },
+          {
+            "say": "Many switches reserve each port's full allocation at the PSE, so the PSE column is what counts against the budget, not what a device happens to draw."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; nodesep=0.35; sw [label=\"PoE switch\\nbudget 240 W\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; ph [label=\"6 phones\\n802.3af\"]; ap [label=\"4 APs\\n802.3at\"]; nw [label=\"new AP\\n802.3at\", style=\"rounded,dashed\"]; sw -> ph [label=\" 6 x 15.4 W\"]; sw -> ap [label=\" 4 x 30 W\"]; sw -> nw [label=\" ?\", style=dashed]; }",
+              "alt": "A PoE switch with a 240 W budget feeding six 802.3af phones at 15.4 W each and four 802.3at APs at 30 W each, with a dashed link to one more 802.3at AP waiting for power.",
+              "caption": "what this switch has already reserved",
+              "src": "_dot/cd45133bced0c484.svg"
+            }
+          },
+          {
+            "say": "Here six 802.3af phones reserve 6 × 15.4 = 92.4 W and four PoE+ APs 4 × 30 = 120 W, so 212.4 W of the 240 W budget is spoken for."
+          },
+          {
+            "say": "When the budget runs out, the switch powers ports in priority order, and the ports that lose stay dark: an AP that never boots, or a camera that drops off when another device is plugged in."
+          }
+        ],
+        "say": "A PoE switch also has a total **power budget**, such as 370 W, shared by all its ports. Many switches reserve each port's full allocation at the PSE, so the PSE column is what counts against the budget, not what a device happens to draw. Here six 802.3af phones reserve 6 × 15.4 = 92.4 W and four PoE+ APs 4 × 30 = 120 W, so 212.4 W of the 240 W budget is spoken for. When the budget runs out, the switch powers ports in priority order, and the ports that lose stay dark: an AP that never boots, or a camera that drops off when another device is plugged in.",
+        "check": {
+          "prompt": "One more PoE+ AP is plugged into this switch. Does it get power?",
+          "answer": "No: only 27.6 W is left, less than the 30 W it reserves",
+          "wrong": [
+            "Yes: an AP like this draws only about 20 W, so it fits",
+            "Yes: the switch trims every port a little to make room"
+          ],
+          "why": "The switch counts the AP's 30 W PSE allocation, not its actual draw, and 240 - 212.4 leaves 27.6 W. That port stays unpowered until the budget grows or another device is removed."
+        }
+      }
+    ],
+    "outro": "Your turn: devices to power and budgets to balance."
+  },
+  {
+    "question": "A digital signage display needs 55 W at the display, delivered over a single cable. Which is the lowest PoE standard that can power it?",
+    "correct": [
+      "802.3bt Type 4"
+    ],
+    "incorrect": [
+      "802.3bt Type 3",
+      "802.3at",
+      "802.3af"
+    ],
+    "feedback": "Size the device against the power at the PD: 802.3bt Type 3 sends 60 W from the switch but delivers only 51 W at the device, short of 55 W. Type 4 delivers 71.3 W at the PD, so it is the lowest that works. 802.3at (25.5 W at the PD) and 802.3af (12.95 W) are far too small."
+  },
+  {
+    "question": "Which statements about PoE are correct?",
+    "correct": [
+      "A PD receives less power than its PSE sends, because the cable loses some",
+      "An 802.3bt switch can power an older 802.3af phone",
+      "Detection keeps a PSE from powering a device that is not a PD"
+    ],
+    "incorrect": [
+      "An 802.3af port delivers its full 15.4 W to a PD at the end of a 100 m run",
+      "A PoE+ AP draws its full 30 W from an 802.3af port by pulling harder"
+    ],
+    "feedback": "Cable loss is why every standard has two figures: 802.3af sends 15.4 W but guarantees only 12.95 W at the PD. Newer PSEs are backward compatible, and detection's signature check is what keeps PoE safe for ordinary NICs. An 802.3af port tops out at 15.4 W at the PSE, so a PoE+ AP on one is underpowered: it may not boot, or it runs with features switched off."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A switch has a {{budget}} W PoE budget and reserves each port's full PSE wattage for its standard. It already powers {{phones}} 802.3af phones and {{aps}} 802.3at access points. How many more 802.3at access points can it power?",
+    "variables": {
+      "budget": {
+        "values": [
+          370,
+          480,
+          740
+        ]
+      },
+      "phones": {
+        "min": 4,
+        "max": 10
+      },
+      "aps": {
+        "min": 2,
+        "max": 5
+      }
+    },
+    "derived": {
+      "used": "(154 * phones + 300 * aps) / 10",
+      "left": "(budget * 10 - 154 * phones - 300 * aps) / 10"
+    },
+    "answer": {
+      "expr": "floor((budget * 10 - 154 * phones - 300 * aps) / 300)",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "At the PSE, 802.3af reserves 15.4 W and 802.3at 30 W, so the devices already on the switch take {{used}} W, leaving {{left}} W of {{budget}} W. Each extra PoE+ AP reserves 30 W, so {{expected}} more fit; a leftover smaller than 30 W powers nothing."
+  },
+  {
+    "type": "rule_table",
+    "question": "Silverkeep is filling a new switch with a 240 W PoE budget. Policy: give each device the lowest PoE standard whose power at the PD covers what the device needs, and count each port at its standard's full PSE wattage, which is what this switch reserves. Choose each device's standard and type the watts reserved for it, then type the total reserved and what is left of the budget.",
+    "columns": [
+      {
+        "header": "Device"
+      },
+      {
+        "header": "Needs at device"
+      },
+      {
+        "header": "Standard",
+        "options": [
+          "802.3af",
+          "802.3at",
+          "802.3bt Type 3",
+          "802.3bt Type 4"
+        ]
+      },
+      {
+        "header": "Reserved (W)"
+      }
+    ],
+    "rows": [
+      [
+        "Desk phone",
+        "6 W",
+        {
+          "answer": "802.3af"
+        },
+        {
+          "accept": [
+            "15.4",
+            "15.4 W",
+            "15.4W",
+            "15.4 watts"
+          ]
+        }
+      ],
+      [
+        "Badge reader",
+        "13.5 W",
+        {
+          "answer": "802.3at"
+        },
+        {
+          "accept": [
+            "30",
+            "30 W",
+            "30W",
+            "30 watts"
+          ]
+        }
+      ],
+      [
+        "Wi-Fi 6 AP",
+        "24 W",
+        {
+          "answer": "802.3at"
+        },
+        {
+          "accept": [
+            "30",
+            "30 W",
+            "30W",
+            "30 watts"
+          ]
+        }
+      ],
+      [
+        "Pan-tilt camera",
+        "48 W",
+        {
+          "answer": "802.3bt Type 3"
+        },
+        {
+          "accept": [
+            "60",
+            "60 W",
+            "60W",
+            "60 watts"
+          ]
+        }
+      ],
+      [
+        "Lobby kiosk",
+        "68 W",
+        {
+          "answer": "802.3bt Type 4"
+        },
+        {
+          "accept": [
+            "90",
+            "90 W",
+            "90W",
+            "90 watts"
+          ]
+        }
+      ],
+      [
+        "Total reserved",
+        "—",
+        "—",
+        {
+          "accept": [
+            "225.4",
+            "225.4 W",
+            "225.4W",
+            "225.4 watts"
+          ]
+        }
+      ],
+      [
+        "Left of 240 W",
+        "—",
+        "—",
+        {
+          "accept": [
+            "14.6",
+            "14.6 W",
+            "14.6W",
+            "14.6 watts"
+          ]
+        }
+      ]
+    ],
+    "feedback": "Pick by the PD column. The 6 W phone fits 802.3af (12.95 W at the PD), but the 13.5 W badge reader does not, so it needs 802.3at even though 802.3af sends 15.4 W. The 24 W AP fits 802.3at (25.5 W), the 48 W camera needs Type 3 (51 W), and the 68 W kiosk needs Type 4 (71.3 W). Reserved at the PSE: 15.4 + 30 + 30 + 60 + 90 = 225.4 W, leaving 14.6 W, not enough for even one more 802.3af phone."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Signal, noise and interference in the air",
+    "npc": "tariq",
+    "intro": "Wireless trouble hides in the air, so we measure the air. Let's read signal and noise levels, then sort interference by where it comes from.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A client's **RSSI** (received signal strength indicator) is reported in dBm, and for Wi-Fi it is a negative number."
+          },
+          {
+            "say": "Around -45 dBm is strong, about -67 dBm is a common minimum for voice and video, and below about -80 dBm the link is barely usable."
+          },
+          {
+            "say": "As signal weakens, the AP and client fall back to slower data rates and retry more often, so a weak link is a slow link long before it drops."
+          }
+        ],
+        "say": "A client's **RSSI** (received signal strength indicator) is reported in dBm, and for Wi-Fi it is a negative number. Around -45 dBm is strong, about -67 dBm is a common minimum for voice and video, and below about -80 dBm the link is barely usable. As signal weakens, the AP and client fall back to slower data rates and retry more often, so a weak link is a slow link long before it drops.",
+        "check": {
+          "prompt": "Which is the stronger signal: -72 dBm or -58 dBm?",
+          "answer": "-58 dBm, because it is closer to zero",
+          "wrong": [
+            "-72 dBm, because 72 is the bigger number"
+          ],
+          "why": "Wi-Fi levels in dBm are negative, so the one nearer zero is stronger. -58 dBm is 14 dB stronger than -72 dBm, more than twenty times the power."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "The **noise floor** is the background RF energy on the channel, usually around -90 dBm or lower in a quiet building."
+          },
+          {
+            "say": "**SNR** (signal-to-noise ratio) is how far the signal stands above that floor, in dB: the signal minus the noise."
+          },
+          {
+            "code": "Client   Signal    Noise     SNR\nlap-07   -61 dBm   -94 dBm   33 dB\nlap-12   -66 dBm   -78 dBm   12 dB",
+            "language": "wireless survey readings"
+          },
+          {
+            "say": "lap-12's signal is only 5 dB weaker, but its noise floor is 16 dB higher, so its SNR collapsed. A strong signal is not enough; it has to stand clear of the noise."
+          }
+        ],
+        "say": "The **noise floor** is the background RF energy on the channel, usually around -90 dBm or lower in a quiet building. **SNR** (signal-to-noise ratio) is how far the signal stands above that floor, in dB: the signal minus the noise. lap-12's signal is only 5 dB weaker, but its noise floor is 16 dB higher, so its SNR collapsed. A strong signal is not enough; it has to stand clear of the noise."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Noise** from devices that are not Wi-Fi raises the noise floor: microwave ovens, Bluetooth, some cordless phones and wireless cameras, mostly in 2.4 GHz."
+          },
+          {
+            "say": "**Co-channel interference** is other Wi-Fi on the same channel. Radios that hear each other must take turns, so they share one channel's airtime and everyone slows down."
+          },
+          {
+            "say": "**Adjacent-channel interference** comes from overlapping channels, such as 1 and 3 in 2.4 GHz, and corrupts frames instead."
+          },
+          {
+            "say": "A **rogue device**, an AP or hotspot nobody approved, causes both problems: it competes for your channels, and it is a security hole. Find it with a wireless survey, then remove it."
+          }
+        ],
+        "say": "**Noise** from devices that are not Wi-Fi raises the noise floor: microwave ovens, Bluetooth, some cordless phones and wireless cameras, mostly in 2.4 GHz. **Co-channel interference** is other Wi-Fi on the same channel. Radios that hear each other must take turns, so they share one channel's airtime and everyone slows down. **Adjacent-channel interference** comes from overlapping channels, such as 1 and 3 in 2.4 GHz, and corrupts frames instead. A **rogue device**, an AP or hotspot nobody approved, causes both problems: it competes for your channels, and it is a security hole. Find it with a wireless survey, then remove it.",
+        "check": {
+          "prompt": "A café's three APs all use channel 6. Signal is strong everywhere, but Wi-Fi is slow at busy times. What kind of interference is this?",
+          "answer": "Co-channel: the APs share one channel's airtime",
+          "wrong": [
+            "Adjacent-channel: their channels partly overlap",
+            "Noise from a device that is not Wi-Fi"
+          ],
+          "why": "Same channel, strong signal, slow under load: the radios defer to each other and share one channel's airtime. Overlap needs different but nearby channels, and noise would raise the noise floor rather than slowing things only at busy times."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "The **spectrum** you use shapes all of this. 2.4 GHz reaches farthest but has only three non-overlapping channels in North America, 1, 6 and 11, and it is crowded with noise."
+          },
+          {
+            "figure": {
+              "dot": "graph { rankdir=LR; nodesep=0.4; a [label=\"AP\\nch 1\"]; b [label=\"AP\\nch 6\"]; c [label=\"AP\\nch 11\"]; d [label=\"AP\\nch 1\"]; a -- b; b -- c; c -- d; }",
+              "alt": "Four access points in a row with channels 1, 6, 11 and 1; lines join each AP to its neighbor, and the two channel 1 APs are not joined.",
+              "caption": "neighboring cells never share a channel",
+              "src": "_dot/c97b093be7517401.svg"
+            }
+          },
+          {
+            "say": "5 GHz has many more channels but shorter range. 6 GHz, opened up by Wi-Fi 6E and also used by Wi-Fi 7, is the cleanest and shortest-range, and only 6E or 7 clients can use it."
+          },
+          {
+            "say": "Some 5 GHz channels require **DFS** (dynamic frequency selection): an AP must leave the channel if it detects radar, and its clients drop briefly."
+          },
+          {
+            "say": "Wider channels (40, 80 or 160 MHz) are faster but use up more of the band, so fewer APs can stay out of each other's way."
+          },
+          {
+            "say": "A **Wi-Fi analyzer** decodes Wi-Fi frames, so it shows SSIDs, channels and signal levels. A **spectrum analyzer** shows raw RF energy across the band, so it also reveals noise that is not Wi-Fi at all."
+          }
+        ],
+        "say": "The **spectrum** you use shapes all of this. 2.4 GHz reaches farthest but has only three non-overlapping channels in North America, 1, 6 and 11, and it is crowded with noise. 5 GHz has many more channels but shorter range. 6 GHz, opened up by Wi-Fi 6E and also used by Wi-Fi 7, is the cleanest and shortest-range, and only 6E or 7 clients can use it. Some 5 GHz channels require **DFS** (dynamic frequency selection): an AP must leave the channel if it detects radar, and its clients drop briefly. Wider channels (40, 80 or 160 MHz) are faster but use up more of the band, so fewer APs can stay out of each other's way. A **Wi-Fi analyzer** decodes Wi-Fi frames, so it shows SSIDs, channels and signal levels. A **spectrum analyzer** shows raw RF energy across the band, so it also reveals noise that is not Wi-Fi at all."
+      }
+    ],
+    "outro": "Now some readings from real floors to diagnose."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "A survey at The Gilded Tankard reports a client's signal at {{sig}} dBm and the noise floor at {{noise}} dBm. What is the client's SNR in dB?",
+    "variables": {
+      "sig": {
+        "min": -75,
+        "max": -50
+      },
+      "noise": {
+        "min": -98,
+        "max": -85
+      }
+    },
+    "answer": {
+      "expr": "sig - noise",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "SNR is the signal minus the noise: {{sig}} dBm minus {{noise}} dBm is {{expected}} dB. Many designs aim for roughly 25 dB or more for voice and video; a lower figure means retries and slower data rates even when the signal itself looks strong."
+  },
+  {
+    "type": "fill_blank",
+    "question": "To track down a wireless video camera flooding 2.4 GHz with energy that a Wi-Fi analyzer cannot decode, you use a ___ analyzer.",
+    "correct": [
+      "spectrum"
+    ],
+    "case_sensitive": false,
+    "feedback": "A spectrum analyzer shows raw RF energy by frequency, so it reveals noise sources that are not Wi-Fi at all: cameras, microwave ovens, Bluetooth. A Wi-Fi analyzer decodes only Wi-Fi frames, so it shows SSIDs and signal levels but is blind to everything else."
+  },
+  {
+    "question": "Mira reports that Wi-Fi in the staff break room becomes unusable for a few minutes at a time around lunch. A spectrum analyzer shows a wide burst of energy across much of 2.4 GHz while it lasts, but a Wi-Fi analyzer shows no new networks. What is the MOST likely cause?",
+    "correct": [
+      "A microwave oven raising the noise floor"
+    ],
+    "incorrect": [
+      "A neighbor's AP on channel 6 causing co-channel interference",
+      "A rogue AP someone plugged into the break-room jack",
+      "The AP leaving a DFS channel after detecting radar"
+    ],
+    "feedback": "Bursts of energy across 2.4 GHz at lunchtime, with no new Wi-Fi network visible, is the signature of a microwave oven: noise from a device that is not Wi-Fi, which raises the noise floor and crushes SNR. A neighbor's AP or a rogue AP would show up in the Wi-Fi analyzer, and DFS applies to 5 GHz channels, not 2.4 GHz."
+  },
+  {
+    "question": "The diagram shows five 2.4 GHz APs at Ravenshade Academy; a line joins two APs whose coverage overlaps. Users near two of them report slow Wi-Fi despite strong signal. Which single change removes the co-channel interference without creating a new conflict?",
+    "correct": [
+      "Move AP D to channel 1"
+    ],
+    "incorrect": [
+      "Move AP C to channel 1",
+      "Move AP D to channel 6",
+      "Move AP E to channel 11"
+    ],
+    "feedback": "C and D are both on channel 11 and overlap, so they share airtime. C cannot move, because its other neighbors already use 1 (A) and 6 (B). D's only other neighbor, E, uses 6, so channel 1 is free for D. Moving C to 1 would clash with A, moving D to 6 would clash with E, and moving E to 11 would add a clash with D while leaving C and D on the same channel.",
+    "figure": {
+      "dot": "graph { rankdir=LR; nodesep=0.4; ranksep=0.6; A [label=\"A\\nch 1\"]; B [label=\"B\\nch 6\"]; C [label=\"C\\nch 11\"]; D [label=\"D\\nch 11\"]; E [label=\"E\\nch 6\"]; A -- B; A -- C; B -- C; C -- D; D -- E; }",
+      "alt": "Five boxes, A to E, each showing a channel: A on 1, B on 6, C on 11, D on 11 and E on 6. Lines join A to B, A to C, B to C, C to D, and D to E.",
+      "caption": "a line joins APs whose cells overlap",
+      "src": "_dot/84a00030abad3337.svg"
+    }
+  },
+  {
+    "question": "Ravenshade's 2.4 GHz network is crowded and slow in the lecture halls. Which practices make better use of the spectrum?",
+    "correct": [
+      "Steer capable clients to 5 GHz or 6 GHz, where there are many more channels",
+      "Keep 2.4 GHz channels 20 MHz wide, on a 1, 6 and 11 plan"
+    ],
+    "incorrect": [
+      "Bond 2.4 GHz channels to 40 MHz for more speed per client",
+      "Add channels 3 and 9 to the 2.4 GHz plan for more capacity",
+      "Raise every AP's transmit power so the cells overlap more"
+    ],
+    "feedback": "5 GHz and 6 GHz offer far more non-overlapping channels, and in 2.4 GHz only 20 MHz channels on 1, 6 and 11 avoid overlap. A 40 MHz channel eats most of the 2.4 GHz band; channels 3 and 9 overlap their neighbors and add adjacent-channel interference; and more overlap between cells means more co-channel interference, not more capacity."
+  },
+  {
+    "question": "A survey at The Gilded Tankard finds an AP on channel 6, broadcasting the inn's guest SSID from a room upstairs, that is not one of the inn's own APs. Which statements are correct?",
+    "correct": [
+      "It is a rogue device, and guests who join it are at risk",
+      "It competes for airtime with the inn's own channel 6 APs"
+    ],
+    "incorrect": [
+      "It is harmless, because it uses the inn's own SSID",
+      "It raises the noise floor the way a microwave oven does"
+    ],
+    "feedback": "An unapproved AP is a rogue device: guests may join it instead of the inn's network, and as Wi-Fi on channel 6 it shares airtime with the inn's channel 6 APs. Copying the inn's SSID makes it more dangerous, not less. Because it is Wi-Fi, it causes co-channel contention rather than raising the noise floor, and a Wi-Fi analyzer shows it plainly, so a survey can locate it for removal."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Roaming, placement and antennas",
+    "npc": "tariq",
+    "intro": "Coverage problems come from where the radios sit and how they hand a client along. Let's follow a client down a hall, then tune the antennas and power levels that serve it.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Roaming** is a client moving from one AP to another in the same network. The client decides when to roam, not the AP, so a **sticky client** can cling to a distant AP at -80 dBm while a closer one sits idle."
+          },
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; nodesep=0.4; ap1 [label=\"AP 1\"]; cl [label=\"client\\nwalking\", style=\"rounded,dashed\"]; ap2 [label=\"AP 2\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; ap1 -> cl [label=\" -80 dBm\", style=dashed]; cl -> ap2 [label=\" -55 dBm\", dir=back, color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; }",
+              "alt": "A walking client between two APs: a dashed arrow from AP 1 marked -80 dBm, and a solid arrow from AP 2 marked -55 dBm.",
+              "caption": "still connected to AP 1",
+              "src": "_dot/eceea30405e52e69.svg"
+            }
+          },
+          {
+            "say": "Help it along: overlap neighboring cells, and give every AP the same SSID, security and VLAN."
+          },
+          {
+            "say": "**802.11k** gives clients a list of neighbor APs, **802.11v** lets the network suggest a better AP, and **802.11r** (fast transition) lets a client roam without a full re-authentication."
+          },
+          {
+            "say": "Voice calls are the first casualty: a roam that waits for a full 802.1X re-authentication can drop audio for a moment, or drop the call."
+          }
+        ],
+        "say": "**Roaming** is a client moving from one AP to another in the same network. The client decides when to roam, not the AP, so a **sticky client** can cling to a distant AP at -80 dBm while a closer one sits idle. Help it along: overlap neighboring cells, and give every AP the same SSID, security and VLAN. **802.11k** gives clients a list of neighbor APs, **802.11v** lets the network suggest a better AP, and **802.11r** (fast transition) lets a client roam without a full re-authentication. Voice calls are the first casualty: a roam that waits for a full 802.1X re-authentication can drop audio for a moment, or drop the call.",
+        "check": {
+          "prompt": "A phone on a call loses audio for two seconds at every hand-off, though signal is good everywhere. Which feature helps most?",
+          "answer": "802.11r, so the phone skips the full re-authentication",
+          "wrong": [
+            "802.11k, so the phone gets a neighbor list",
+            "Higher AP transmit power, so the cells overlap more"
+          ],
+          "why": "Good signal everywhere means the phone roams at the right moment; the gap is the re-authentication at each new AP, and 802.11r arranges the keys ahead so the hand-off is fast. A neighbor list speeds up finding the next AP, not joining it, and more power only adds overlap."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "**Placement** decides coverage. Mount an AP on the ceiling of the space it serves, out in the open: not inside a closet or cabinet, above a metal ceiling, or behind a concrete pillar or lift shaft."
+          },
+          {
+            "say": "Water and metal absorb and reflect signal: an aquarium, metal shelving, mirrored glass, even a crowded room of people. An omnidirectional AP in a building's corner sends much of its signal outside."
+          },
+          {
+            "say": "Plan with a **site survey**, and check the result with a **heat map** of measured signal across the floor plan."
+          }
+        ],
+        "say": "**Placement** decides coverage. Mount an AP on the ceiling of the space it serves, out in the open: not inside a closet or cabinet, above a metal ceiling, or behind a concrete pillar or lift shaft. Water and metal absorb and reflect signal: an aquarium, metal shelving, mirrored glass, even a crowded room of people. An omnidirectional AP in a building's corner sends much of its signal outside. Plan with a **site survey**, and check the result with a **heat map** of measured signal across the floor plan."
+      },
+      {
+        "beats": [
+          {
+            "say": "An antenna adds no power; it shapes it. **Gain**, in dBi, is how much it focuses signal in its main direction."
+          },
+          {
+            "say": "An **omnidirectional** antenna covers all around it; a **directional** one, such as a patch, Yagi or parabolic dish, throws a narrow beam farther."
+          },
+          {
+            "say": "**Poor gain** comes from the wrong antenna for the job, a loose or damaged antenna cable, or mismatched polarization (one antenna vertical, the other horizontal)."
+          },
+          {
+            "say": "It also comes from misalignment: on a building-to-building link, dishes a few degrees off can lose most of the signal."
+          },
+          {
+            "say": "**EIRP** (effective isotropic radiated power) is what actually leaves the antenna: transmit power plus antenna gain, minus cable loss."
+          },
+          {
+            "say": "A 17 dBm radio with a 6 dBi antenna and 2 dB of cable loss radiates 21 dBm. Regulators cap EIRP, so a high-gain antenna can mean turning the radio down."
+          }
+        ],
+        "say": "An antenna adds no power; it shapes it. **Gain**, in dBi, is how much it focuses signal in its main direction. An **omnidirectional** antenna covers all around it; a **directional** one, such as a patch, Yagi or parabolic dish, throws a narrow beam farther. **Poor gain** comes from the wrong antenna for the job, a loose or damaged antenna cable, or mismatched polarization (one antenna vertical, the other horizontal). It also comes from misalignment: on a building-to-building link, dishes a few degrees off can lose most of the signal. **EIRP** (effective isotropic radiated power) is what actually leaves the antenna: transmit power plus antenna gain, minus cable loss. A 17 dBm radio with a 6 dBi antenna and 2 dB of cable loss radiates 21 dBm. Regulators cap EIRP, so a high-gain antenna can mean turning the radio down."
+      },
+      {
+        "beats": [
+          {
+            "say": "Every Wi-Fi link runs both ways. The **TX level** is what a radio transmits; the **RX level** is what arrives at the other end. An AP may transmit far more power than a phone or laptop can send back."
+          },
+          {
+            "say": "Turn an AP up too far and clients at the edge hear it well, so they stay connected, while the AP barely hears them: the client's RX level looks strong, but the AP's RX level from the client is weak."
+          }
+        ],
+        "say": "Every Wi-Fi link runs both ways. The **TX level** is what a radio transmits; the **RX level** is what arrives at the other end. An AP may transmit far more power than a phone or laptop can send back. Turn an AP up too far and clients at the edge hear it well, so they stay connected, while the AP barely hears them: the client's RX level looks strong, but the AP's RX level from the client is weak.",
+        "check": {
+          "prompt": "At the edge of a cell, laptops show strong signal from the AP, but uploads crawl and the AP logs heavy retries from them. Which adjustment fixes it?",
+          "answer": "Lower the AP's transmit power toward the clients' level, adding APs if gaps open",
+          "wrong": [
+            "Raise the AP's transmit power so the laptops hear it even better",
+            "Move the AP to a DFS channel to escape interference"
+          ],
+          "why": "The laptops already hear the AP; it is the AP that cannot hear them. Matching AP power to the clients shrinks the cell to the range where both directions work, and extra APs fill any gap. More AP power widens the imbalance, and a channel change does not touch it."
+        }
+      }
+    ],
+    "outro": "Last stretch: wireless cases as the exam gives them, then one ticket worked from start to finish."
+  },
+  {
+    "question": "Brom's laptop stays on an AP down the hall at -79 dBm even when he sits under another AP with the same SSID and security. Which change helps the laptop move to the nearer AP?",
+    "correct": [
+      "Enable 802.11k and 802.11v so the network can point it to the nearer AP"
+    ],
+    "incorrect": [
+      "Raise the far AP's transmit power so the laptop hears it better",
+      "Put both APs on the same channel so the hand-off is seamless",
+      "Give the nearer AP its own SSID so the laptop notices it"
+    ],
+    "feedback": "This is a sticky client: roaming is the client's decision, and it is hanging on to a weak AP. 802.11k gives it a neighbor list and 802.11v lets the network suggest a better AP, so it moves sooner. More power on the far AP makes it stickier, sharing a channel adds co-channel interference, and a different SSID breaks roaming altogether."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "An outdoor AP radio transmits at {{tx}} dBm into an antenna with {{gain}} dBi of gain, through a cable that loses {{loss}} dB. What is the EIRP in dBm?",
+    "variables": {
+      "tx": {
+        "min": 10,
+        "max": 20
+      },
+      "gain": {
+        "values": [
+          3,
+          5,
+          6,
+          8,
+          9,
+          12
+        ]
+      },
+      "loss": {
+        "min": 1,
+        "max": 4
+      }
+    },
+    "answer": {
+      "expr": "tx + gain - loss",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "EIRP is the radio's transmit power plus the antenna's gain, minus the cable's loss: {{tx}} plus {{gain}} minus {{loss}} is {{expected}} dBm. If that is over the regulatory limit for the band, the radio's transmit power has to come down."
+  },
+  {
+    "question": "Which of these AP placements are likely to leave poor coverage in the room the AP is meant to serve?",
+    "correct": [
+      "Inside a metal network cabinet in a closet off the room",
+      "Above the room's metal ceiling tiles",
+      "Behind a large aquarium on the far side of the room"
+    ],
+    "incorrect": [
+      "On the ceiling near the middle of the room",
+      "Below the ceiling in the open, clear of metal shelving"
+    ],
+    "feedback": "Metal cabinets and metal ceilings reflect and absorb signal, and a large body of water absorbs it, so all three leave the room with weak coverage. An AP on the ceiling near the middle of the space it serves, out in the open and away from metal, is the textbook placement, and a site survey with a heat map confirms it."
+  },
+  {
+    "question": "A point-to-point wireless bridge links two buildings with a directional dish at each end. After a windstorm, the RX level at both ends fell from -55 dBm to -78 dBm, and a spectrum analyzer shows no new noise. What is the MOST likely cause?",
+    "correct": [
+      "A dish knocked out of alignment, cutting the link's effective gain"
+    ],
+    "incorrect": [
+      "Co-channel interference from a neighbor's new AP on the bridge's channel",
+      "A higher noise floor from the storm's rain, which lowers the RX level",
+      "A sticky-client fault, because the bridge will not roam to a better AP"
+    ],
+    "feedback": "Both ends lost 23 dB at once with no new noise, and only the storm changed: a dish pushed a few degrees off its partner throws most of its focused beam aside, so the link's effective gain collapses. Interference and noise do not lower the received signal level (they cost airtime or SNR), and a fixed bridge has no other AP to roam to."
+  },
+  {
+    "question": "Aria answers coverage complaints by setting every AP to maximum transmit power. Afterward, laptops show full bars far from the APs but connect worse there, and users close to the APs are slower too. What explains these results?",
+    "correct": [
+      "Distant laptops hear the APs, but their weaker transmissions do not reach back",
+      "The larger cells overlap more on the same channels, adding co-channel interference"
+    ],
+    "incorrect": [
+      "Raising transmit power also raised every antenna's gain in dBi",
+      "Higher power pushed the APs onto DFS channels, which keep dropping",
+      "The stronger RX level overloads the laptops' Wi-Fi radios"
+    ],
+    "feedback": "Power fixes only one direction: the laptops' RX level rises, but the APs still cannot hear the laptops' weaker transmissions, so distant clients cling on and retry. Bigger cells also hear each other on shared channels, so co-channel interference slows everyone. Gain belongs to the antenna, not the power setting; transmit power has nothing to do with DFS; and normal Wi-Fi levels do not overload a client radio."
+  },
+  {
+    "type": "matching",
+    "question": "Match each wireless problem to the fix that addresses it.",
+    "pairs": [
+      {
+        "term": "Co-channel interference",
+        "definition": "Re-plan channels so overlapping APs differ, and trim AP power"
+      },
+      {
+        "term": "Non-Wi-Fi noise",
+        "definition": "Find the source with a spectrum analyzer, then remove or move it"
+      },
+      {
+        "term": "Sticky client",
+        "definition": "Enable 802.11k and 802.11v so the network can steer clients"
+      },
+      {
+        "term": "Rogue device",
+        "definition": "Locate the unapproved AP with a survey and take it off the air"
+      },
+      {
+        "term": "Coverage gap",
+        "definition": "Survey the weak area behind the lift shaft, then add or move an AP"
+      }
+    ],
+    "feedback": "Each fix targets its cause: channel planning separates APs that share airtime; a spectrum analyzer finds noise a Wi-Fi tool cannot see; 802.11k and 802.11v nudge a client that will not let go; a rogue AP has to be found and removed; and a gap needs an AP placed where the survey shows weak signal."
+  },
+  {
+    "type": "ordering",
+    "question": "Mira's ticket: a user's file copies crawl, and the switch port shows late collisions. That identifies the problem. Put the remaining troubleshooting steps in order, first to last.",
+    "items": [
+      "Theorize a duplex mismatch from the late collisions",
+      "Compare the speed and duplex settings at both ends",
+      "Plan the change for a quiet window, noting the brief outage it causes",
+      "Set both ends to autonegotiate, or escalate if the device is not yours",
+      "Confirm the counters stay clean and the user's copies are fast",
+      "Record the cause, the fix and the lesson in the ticket"
+    ],
+    "feedback": "After identifying the problem come the theory (a duplex mismatch), the test (compare both ends), the plan with its effects (a short link outage), implementing or escalating, verifying full functionality, and documenting. Testing before planning keeps you from scheduling a fix for the wrong cause, and verifying before documenting means the ticket records what actually worked."
   }
 ]
