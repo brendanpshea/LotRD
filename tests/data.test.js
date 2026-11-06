@@ -1936,7 +1936,28 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
           if (DESCRIBED.test(text)) bad.push(`${setId}[${i}] ${part}: describes the mentor instead of letting them speak: ${text.slice(0, 60)}`);
           // "This scene covers X, Y and Z" reads out a table of contents; a teacher just starts.
           if (/\b(?:this|the|next) (?:scene|demonstration)\b/i.test(text)) bad.push(`${setId}[${i}] ${part}: talks about "this scene" instead of getting on with it: ${text.slice(0, 60)}`);
+          // "Here: X, Y and Z" is the same table of contents with its label torn off.
+          if (/\bHere:/.test(text)) bad.push(`${setId}[${i}] ${part}: "Here:" and a list of topics; say why it matters instead: ${text.slice(0, 60)}`);
         }
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  // A scene's title is the question it answers, shown as its heading. Sets move to
+  // this as their scenes are rewritten (WRITING_GUIDE: Title, opening and closing lines).
+  const QUESTION_TITLES = setId => /^securityx_|^netplus_/.test(setId);
+
+  it('a rewritten set titles each scene with the question it answers', () => {
+    const bad = [];
+    for (const setId of index.filter(QUESTION_TITLES)) {
+      loadJSON(`question_sets/${setId}`).forEach((q, i) => {
+        if (q.type !== 'npc_demo') return;
+        if (!/^NPC: \S/.test(q.question)) bad.push(`${setId}[${i}]: a scene's title starts "NPC: ": ${q.question}`);
+        const title = q.question.replace(/^NPC:\s*/, '');
+        if (!title.endsWith('?')) bad.push(`${setId}[${i}]: the title is not a question: ${title}`);
+        if (title.split(/\s+/).length > 12) bad.push(`${setId}[${i}]: a title of more than 12 words: ${title}`);
+        if ((q.intro || '').includes(title)) bad.push(`${setId}[${i}]: the intro repeats the title`);
       });
     }
     assert.deepEqual(bad, []);

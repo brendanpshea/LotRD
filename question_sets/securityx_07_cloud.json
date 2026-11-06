@@ -1,9 +1,9 @@
 [
   {
     "type": "npc_demo",
-    "question": "NPC: Who secures which layer",
+    "question": "NPC: Which security jobs stay yours in the cloud?",
     "npc": "tariq",
-    "intro": "I'm Tariq, the Guild's Beacon-Courier. Every cloud control starts from one map: which layers the provider secures, and which stay yours whatever you buy.",
+    "intro": "I'm Tariq, the Guild's Beacon-Courier. When something goes wrong in the cloud, the first argument is over whose job it was to prevent it. Providers settle that in advance, in writing, so the place to begin is the document that draws the line.",
     "steps": [
       {
         "say": "Every cloud provider publishes a **shared responsibility model**: a written split of security duties between the provider and you, the customer. The provider secures the cloud itself: the buildings, the hardware, the **hypervisor** that carves hosts into virtual machines, and the network fabric. You secure everything you put in it. A short way to hold it: security of the cloud is the provider's job; security in the cloud is yours.",
@@ -68,7 +68,7 @@
         ]
       }
     ],
-    "outro": "Now a team moving off servers it patched itself. Work out what it still owns."
+    "outro": "Next, a team moves off servers it patched itself and strikes every patching task from its list. Find the task it still owns."
   },
   {
     "question": "Cinderpost Couriers moves its order API from virtual machines it patched itself onto a PaaS platform. Pip Hollowfen's migration checklist strikes off every patching task. Which task was struck off by mistake?",
@@ -215,9 +215,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Who holds the key",
+    "question": "NPC: Who holds the keys and licenses when you use the cloud?",
     "npc": "tariq",
-    "intro": "Encryption at rest is on by default almost everywhere now. The question that matters is who controls the key, because whoever controls it decides who can read the data.",
+    "intro": "Almost every cloud service now encrypts your data at rest without being asked, so the word encrypted on a settings page tells you very little. What matters is who can use the key, because whoever can use it can read the data. At one end, the provider holds the key entirely, and that's where the options begin.",
     "steps": [
       {
         "say": "With **cloud-managed keys**, also called provider-managed keys, the provider generates, stores, rotates and uses the key for you. Encryption costs you no effort. The catch: the provider can use that key, and can be compelled to, by a court order or by its own internal processes. With a **customer-managed key** (CMK), the key still lives in the provider's key service, such as AWS KMS or Azure Key Vault, but you set its policy, its rotation and its revocation.",
@@ -284,7 +284,7 @@
         ]
       }
     ],
-    "outro": "Now a hospital with firm rules about where its key may live."
+    "outro": "Next, a regulator sets firm rules about where a company's key may live. Choose the key model that meets them."
   },
   {
     "question": "Greycloak Apothecary's regulator requires that the cloud provider never hold Greycloak's key material, not even an imported copy, and that Greycloak can cut the provider off from the data within minutes. The CISO accepts extra latency and an extra dependency. Which key model meets the requirement?",
@@ -337,9 +337,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Four layers of a container",
+    "question": "NPC: How do you secure a container, layer by layer?",
     "npc": "tariq",
-    "intro": "Most cloud workloads now run as containers on an orchestrator. I want you to see the four places a container can be secured, and what goes wrong at each.",
+    "intro": "A developer downloads a ready-made container from the internet to try something out, and a week later it's running in production, never scanned. Nothing stopped it, because a container can be checked at several points and nobody checked at any of them. Before those checks make sense, you need to know what a container is and why escaping one is so costly.",
     "steps": [
       {
         "say": "A **container** packages an app with its libraries, but shares the host's kernel, kept apart by Linux namespaces and cgroups. It starts fast, but an escape through the kernel lands on the host itself. Thousands of containers need **container orchestration**: scheduling them across hosts, wiring their network, restarting failures, rolling out updates. In practice that means **Kubernetes**, often run as a managed service.",
@@ -495,9 +495,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: What a function may do",
+    "question": "NPC: What should a serverless function be allowed to do?",
     "npc": "tariq",
-    "intro": "Serverless takes the server away from you entirely. That removes some old chores, and it moves the danger somewhere easy to overlook.",
+    "intro": "Hand a small function to the provider and it runs whenever it's called, with no server for you to look after. Plenty of teams take that as a reason to relax. The danger hasn't gone, though; it has moved somewhere easy to overlook. So what exactly does the provider take off your hands?",
     "steps": [
       {
         "say": "**Serverless** computing, or **FaaS** (Function as a Service), runs a function you upload whenever an event calls it, in a short-lived environment the provider builds afresh. AWS Lambda and Azure Functions are examples. There is no host for you to patch or SSH into; the OS is the provider's. But your code, its libraries, and moving off a language runtime the provider has deprecated are still yours. Defences that expect a long-lived host, such as an agent that stays running, do not fit. You rely on the platform's own logs, traces and metrics instead.",
@@ -582,9 +582,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Guarding the pipeline that builds the cloud",
+    "question": "NPC: How do you secure the pipeline that builds your cloud?",
     "npc": "flint",
-    "intro": "I'm Professor Flint. In the cloud, whatever you can click you can write as code, and a pipeline applies it. Automation repeats a mistake as faithfully as a fix, so today we guard the pipeline itself.",
+    "intro": "I'm Professor Flint. In the cloud, almost anything you can click in a console can be written as code and applied by a pipeline. That pipeline ends up holding the keys to everything it builds, and it repeats a mistake as faithfully as a fix. So the pipeline itself needs guarding as carefully as production does.",
     "steps": [
       {
         "say": "Start with the pipeline's own credentials. A long-lived access key stored as a pipeline secret works until it leaks, and then it works for the thief too, until someone rotates it. **OIDC federation** replaces it. At run time the CI system hands the cloud a signed token describing the job; the cloud checks it against the role's **trust policy** and returns credentials that expire within the hour. The `aud` (audience) line says the token was minted for this cloud. The `sub` (subject) line pins the role to one repository and one branch. And the role itself is **least privilege**: a pipeline that ships the website has no business reading the customer database.",
@@ -785,9 +785,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Brokers, gateways and a forged request",
+    "question": "NPC: Who guards the way into cloud apps and APIs?",
     "npc": "tariq",
-    "intro": "Users reach cloud apps, and services reach each other, through two kinds of choke point: a broker for people and a gateway for APIs. Then the flaw that turned one server into a hundred-million-record breach.",
+    "intro": "Ask a company which cloud apps its staff use, and its own web logs will tell a longer story than IT can. Nobody can post a guard in front of every one of those apps, so traffic is steered through a few choke points instead. The first is built for people, and it was invented to close exactly that gap.",
     "steps": [
       {
         "say": "A **CASB** (cloud access security broker) sits between your users and the cloud apps they use, and enforces policy: who may use which app, what data may move, what gets logged. It grew out of **shadow IT**: staff adopting cloud services without IT. Feed egress firewall, web proxy or DNS logs to the CASB and it shows which unsanctioned services are in use. Visibility first, then policy. An **API-based** CASB connects to a sanctioned SaaS through its management API and inspects data already stored there. It can find and fix problems, but only after the fact. A **proxy-based** CASB sits inline and can block an action before it happens. A **forward proxy** needs an agent or proxy setting on a managed device. A **reverse proxy**, reached by single sign-on redirection, also covers unmanaged devices, but often breaks thick clients and native apps.",
@@ -887,7 +887,7 @@
         ]
       }
     ],
-    "outro": "First, some contractors on their own laptops. Decide which broker reaches them."
+    "outro": "First, some contractors need a sanctioned app on their own laptops. Decide which kind of broker can reach them."
   },
   {
     "question": "Highrook lets contractors open its sanctioned Salesforce tenant from their own unmanaged laptops. Policy says downloads of customer reports to those laptops must be blocked in real time, with nothing installed on the devices. Which CASB deployment BEST fits?",
@@ -1079,9 +1079,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Where cloud data goes wrong",
+    "question": "NPC: What does it take to keep data safe in the cloud?",
     "npc": "tariq",
-    "intro": "Most cloud breaches are not clever. Data ends up somewhere it should not be, or stays somewhere after it should be gone. Let me name the failures, then the controls and connections that stop them.",
+    "intro": "Plenty of cloud breaches aren't clever: nobody cracks the encryption or finds a flaw in the provider's code, and the data just ends up somewhere it was never meant to be. Those failures fall into a few patterns with names of their own, and the commonest comes first.",
     "steps": [
       {
         "say": "**Data exposure**: a storage resource that should be private is configured for public access. It is the most common and most preventable cloud data failure. **Data leakage**: data leaves through a legitimate channel used the wrong way, such as production data copied into a test environment, or a SaaS app allowed to read more than it needs. Cloud **DLP** (data loss prevention) scans for sensitive patterns and applies policy based on the data's classification and where it is going. **Data remanence**: residual data left on storage after deletion. You cannot shred a provider's shared disks, so the control is cryptographic erasure: destroy the customer-managed key, and the leftover bytes are unreadable. **Insecure storage resources** is the wider family: missing encryption, weak access policies, badly configured replication, and legacy resources older than today's encrypted-by-default settings.",

@@ -1926,8 +1926,9 @@ export class GameUI {
       slot.classList.add("npc-portrait--image");
     }).catch(() => {});
 
-    // The `question` field is the scene's title (and its identity in the data).
-    $(this.root, "[data-ref=npcSceneTitle]").textContent = q.question || "";
+    // The `question` field is the scene's title (and its identity in the data):
+    // the question the scene answers. "NPC:" marks a scene in the data only.
+    $(this.root, "[data-ref=npcSceneTitle]").textContent = (q.question || "").replace(/^NPC:\s*/, "");
     const dialogue = $(this.root, "[data-ref=npcDialogue]");
     const controls = $(this.root, "[data-ref=npcControls]");
     $(this.root, "[data-action=npc-skip]").addEventListener("click", () => onDone());

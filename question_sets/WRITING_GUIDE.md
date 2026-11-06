@@ -935,9 +935,9 @@ Writing good ones — everything said for Python class problems applies, and als
 | Field | Required | Type | Notes |
 |-------|----------|------|-------|
 | `type` | yes | `"npc_demo"` | Must be exactly this string |
-| `question` | yes | string | The scene's title (shown as a caption; also its identity — must be unique). Prefix with `NPC:` by convention |
+| `question` | yes | string | The scene's title: the question the scene answers (see *Title, opening and closing lines*). Shown as the scene's heading; also its identity, so it must be unique. Prefix it with `NPC:`, which marks a scene in the data and is not shown |
 | `npc` | yes | string | Mentor **id** from [`assets/npcs.json`](../assets/npcs.json) — `ada`, `nia`, `zoya`, `flint`, `kaelen`, `tariq`, `val`, `omu`. The game resolves the display name and portrait from the roster. Pick the mentor whose domain matches the lesson, and write the prose to fit them (Zoya uses they/them) |
-| `intro` / `outro` | no | string | The mentor's opening and closing words, spoken to the student (see *Opening and closing lines*) |
+| `intro` / `outro` | no | string | The mentor's opening and closing words, spoken to the student (see *Title, opening and closing lines*) |
 | `steps` | yes | object[] | 2–4 steps; each needs `say`, may carry `beats` and one `check` |
 | `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is either `{"say": "..."}` (one spoken line), `{"code": "...", "language": "..."}` (the artifact being examined), or `{"figure": {...}}` (a picture; see [Pictures in Questions](#pictures-in-questions-figure)). Without it the whole `say` string appears in one go |
 | `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues |
@@ -966,14 +966,30 @@ Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase descr
 
 Each step is its own frame: when the next step starts, the screen clears, so a step should make sense on its own rather than leaning on the line just above it from the previous step.
 
-### Opening and closing lines
+### Title, opening and closing lines
+
+**The title is the question the scene answers**, asked the way a student would ask it: "How do you decide which risks to fix?", "What does a risk cost per year?", "Who takes charge when ransomware hits?" It is the scene's heading, read before anything else, so it does the job of saying what the scene is for. That frees the intro to start talking instead of summarising. One question, about ten words at most, ending in a question mark; `NPC: ` goes in front of it in the data. (Older sets still have noun-phrase titles such as "Planning for the worst day". A scene that is rewritten gets a question.)
 
 The `intro` and `outro` are the mentor talking, shown like every other line the mentor says: first person, to the student. They are not stage directions. A line like "Kaelen lays out five index cards…" or "“Words in hand,” Zoya says." is narration about the mentor, and `data.test.js` rejects it.
 
 - **A mentor introduces themselves once per set**, very briefly, at the start of their first scene in it: "I'm Kaelen, the Grand Archivist." Later scenes in the same set go straight to the point. The name and portrait are already in the scene's header.
-- **Say what the scene is about, plainly, the way a teacher would say it.** Start with the problem or the question, then say what you are about to do: "Two things are easy to mix up: a class, which is a design, and the objects built from it. Let's pull them apart." Never read out a table of contents: "This scene covers X, Y and Z" is the scene describing itself, not the mentor talking, and `data.test.js` rejects "this scene" in an intro or outro. "Let's…", "Here is how…", "You need to…" or just the hook itself all do the job. Don't announce props or images here; if the scene uses one, it is introduced where it is explained (rule 3 below).
-- **Brief:** one or two short sentences after the introduction, 45 words at most. The intro sits right above the first beat, so it leads into that beat rather than repeating it.
+- **Open on something concrete**: a moment, a person, a cost, a puzzle. Then say why it is hard or why it matters, and hand over to the first beat. "Sooner or later something gets through, and the day it does is no time to work out who decides what. The plans that matter are written long before. Let's start with the people, because coordination breaks before the technology does."
+- **Talk; don't outline.** Write whole sentences, with contractions and the joining words of speech (so, but, because). Never list what is coming. "Here: who leads, how fast systems must come back, which backups survive ransomware, and how you prove…" is a table of contents with its heading torn off, and so is "This scene covers X, Y and Z", which `data.test.js` rejects along with "Here:". The steps will show what is coming. Two things joined by "and" read as speech; three or more read as a list. No slogan or fragment standing alone ("Assume the breach."). Don't announce props or images here; if the scene uses one, it is introduced where it is explained (rule 3 below).
+- **Don't repeat the title.** Answer the question the title leaves open: why should I care?
+- **Vary the handover across a set.** "Let's start with…" is one way to hand over to the first beat, and it is fine once or twice. Seven scenes that all end on it, or seven outros that all open "Next,", become a tic the student hears. The handover can be a question, the problem's first step, or simply the sentence that makes the first beat necessary.
+- **Length:** two to four sentences after the self-introduction, about 70 words at most.
+- **The first beat picks up where the intro stops.** If the intro ends "Let's start with the people", the first beat is about people. A first beat that opens on a bare definition can land abruptly. Then either the intro's last sentence leads into it ("…so let's start with what a risk actually is"), or the beat gets a half-sentence of why before the definition.
 - **No quotation marks around the speech, and no dialogue tags.** Quotation marks for in-world text inside it are fine (a sign reading "ENTER YOUR AGE").
+
+**The outro** is one or two whole sentences that send the student to the question after the scene: what it is, and what to do with it. "Next, ransomware strikes between two snapshots. Work out how much data is lost." Write sentences, not a string of fragments ("Snapshots, a ransomware strike and a clock."), and never give the answer away.
+
+A scene from SecurityX 02, before and after:
+
+| | Before | After |
+|---|---|---|
+| Title | Planning for the worst day | How do you plan for the worst day? |
+| Intro | Assume the breach. Here: who leads when it happens, how fast systems and data must come back, which backups survive ransomware, and how you prove that what you restored is intact. | Sooner or later something gets through, and the day it does is no time to work out who decides what. The plans that matter are written long before: who leads, and how much the business can afford to lose. Let's start with the people, because coordination breaks before the technology does. |
+| Outro | Snapshots, a ransomware strike and a clock. Work out what is lost. | Next, ransomware strikes between two snapshots. Work out how much data is lost. |
 
 ### Narration (a mentor's voice)
 

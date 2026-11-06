@@ -1,9 +1,9 @@
 [
   {
     "type": "npc_demo",
-    "question": "NPC: Reading a routing table",
+    "question": "NPC: How does a router know where to send a packet?",
     "npc": "tariq",
-    "intro": "I'm Tariq, the Beacon-Courier. Every packet a router forwards is decided by one list, its routing table. Let's read a real one, line by line, and see where each kind of route comes from.",
+    "intro": "I'm Tariq, the Beacon-Courier. Every packet that reaches a router raises the same question: which way from here? The router answers it from one list, and if you can read that list, you can say where any packet will go before it's even sent. Let's look at a real one and see where each line came from.",
     "steps": [
       {
         "beats": [
@@ -83,7 +83,7 @@
         "say": "A **dynamic route** (O here, for OSPF) is learned from a neighbor by a **routing protocol**, not typed in. **Route announcement** is that exchange: each router advertises the prefixes it can reach, and its neighbors install them and pass them on. If a link fails, its routes are withdrawn, and the routers converge on another path. The internet works the same way: an organization announces its public prefix to its ISPs so the world can reach it. A static route isn't announced, though, unless you tell a routing protocol to redistribute it."
       }
     ],
-    "outro": "Now a branch router's table for you to read."
+    "outro": "Next, Brom shows you the routing table from the Ember Forge branch router. Work out what the router does with one arriving packet."
   },
   {
     "question": "Brom runs show ip route on the Ember Forge branch router; the output is below. A packet arrives for 172.20.1.5. What does the router do with it?",
@@ -152,9 +152,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Which route wins",
+    "question": "NPC: When several routes match, which one does the router use?",
     "npc": "nia",
-    "intro": "I'm Nia, the Logic-Weaver. A router often holds several routes that could carry the same packet. Let's settle the contest the way the router does: three tests, in a fixed order.",
+    "intro": "I'm Nia, the Logic-Weaver. A router often holds several routes that could all carry the same packet, and if you guess wrong about which one it uses, you'll troubleshoot the wrong link. The router doesn't guess: it runs a few tests in a fixed order, and the first one asks how specific each route is.",
     "steps": [
       {
         "beats": [
@@ -241,7 +241,7 @@
         }
       }
     ],
-    "outro": "Now some tables for you to settle, one test at a time."
+    "outro": "Next comes R2's routing table and a packet for 10.30.12.77. Find the next hop R2 uses."
   },
   {
     "question": "R2's routing table is below. Which next hop does R2 use for a packet to 10.30.12.77?",
@@ -350,9 +350,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: OSPF, EIGRP and BGP",
+    "question": "NPC: Which routing protocol fits where, and how does each decide?",
     "npc": "tariq",
-    "intro": "Three routing protocols carry most enterprise and internet routes, and each one measures a path differently. Let's see what each shares with its neighbors and how it decides.",
+    "intro": "Typed-in routes never learn, so once a network grows past a few routers, the routers have to tell each other what they can reach. Three protocols carry most enterprise and internet routes, and each one judges a path by its own measure. The first thing to know about any of them is where it's meant to run.",
     "steps": [
       {
         "beats": [
@@ -449,7 +449,7 @@
         "say": "**BGP** (Border Gateway Protocol) is the **path-vector** protocol that runs between autonomous systems. Peers are configured by hand and talk over TCP port 179. Every BGP route carries its **AS path**, the list of ASes it has crossed. BGP has no single metric. It compares path **attributes** in a set order. Near the top is the highest **local preference**, your own policy; then the shortest AS path; later the lowest **MED** (multi-exit discriminator), a hint the neighboring AS sends. eBGP, between ASes, has AD 20; iBGP, inside one AS, has AD 200."
       }
     ],
-    "outro": "Now put the three protocols to work."
+    "outro": "Next, Captain Doran is planning routing for a campus with two ISPs. Choose the pairing of protocols that fits."
   },
   {
     "question": "Captain Doran is planning Silverkeep's routing. The campus has 30 routers from two vendors, and the edge connects to two ISPs that must learn Silverkeep's public prefix. Which pairing fits?",
@@ -562,9 +562,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: NAT, PAT and a gateway that survives",
+    "question": "NPC: How do private hosts get online, even when a router dies?",
     "npc": "tariq",
-    "intro": "Two jobs happen where a LAN meets the outside: private addresses must be translated to reach the internet, and hosts need a gateway that stays up when a router dies. Let's take them in turn.",
+    "intro": "A whole office can browse the web from behind one public address, and the internet never sees the private addresses behind it. That takes careful bookkeeping at the edge router, and it leaves every host depending on a single gateway to stay up. Let's take the address translation first.",
     "steps": [
       {
         "beats": [
@@ -656,7 +656,7 @@
         "say": "The routers exchange hellos. If the standby stops hearing them for the hold time, it becomes active and takes over the virtual IP and MAC. It sends a **gratuitous ARP** so the switches learn which port the virtual MAC is on now. The hosts change nothing. With **preemption** set, a higher-priority router that comes back takes the active role again; without it, the role stays where it is."
       }
     ],
-    "outro": "Now the translation tables and gateways are yours."
+    "outro": "Next, Silverkeep's edge router shows its translations, and someone on the internet tries to connect in. Pick the attempt the router will forward."
   },
   {
     "question": "Silverkeep's edge router shows the translations below. A client on the internet tries to open a new connection. Which attempt will the router translate and forward inside?",
@@ -712,9 +712,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: VLANs, trunks and routing between them",
+    "question": "NPC: How can one switch carry separate networks, and connect them?",
     "npc": "tariq",
-    "intro": "One switch can carry several separate networks at once. Let's see how VLANs divide it, how one cable carries many of them, and how traffic gets from one VLAN to another.",
+    "intro": "Guests and staff can plug into the same switch and still be kept completely apart, as long as the switch is divided the right way. Dividing it is the easy part; carrying the pieces between switches, and joining them where they should meet, takes more care. So we'll begin with the easy part.",
     "steps": [
       {
         "beats": [
@@ -808,7 +808,7 @@
         "say": "Traffic between VLANs needs a Layer 3 hop. In a **router on a stick**, one router port trunks to the switch. That port is split into **sub-interfaces**, one per VLAN, each with its VLAN tag and that VLAN's gateway address. A multilayer switch can route internally instead, with a **switch virtual interface** (SVI): `interface vlan 10` with an IP address, plus `ip routing`. Each SVI is its VLAN's gateway, and the management VLAN's SVI holds the switch's own address."
       }
     ],
-    "outro": "Your turn: VLANs to read, trunks to build, and a port plan to fill in."
+    "outro": "First, Brom shows you the VLAN list from an access switch. Pick every statement the output supports."
   },
   {
     "question": "Brom runs show vlan brief on access switch SW2; the output is below. The uplink, Gi1/0/24, is connected and passing traffic. Which statements does the output support?",
@@ -1025,9 +1025,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: How spanning tree picks a root",
+    "question": "NPC: Why don't redundant links between switches loop forever?",
     "npc": "nia",
-    "intro": "Redundant links between switches are a good idea until a frame starts circling. Let's trace how a switch learns addresses, why a loop is fatal, and how spanning tree decides which ports to block.",
+    "intro": "A second link between two switches looks like a sensible backup, and it is, right up until a single frame starts going round and round between them. To see why that happens, you first need to know how a switch decides where each frame goes, so let's start there.",
     "steps": [
       {
         "beats": [
@@ -1125,7 +1125,7 @@
         }
       }
     ],
-    "outro": "Now elect some roots and block some ports yourself."
+    "outro": "First comes SW1's MAC address table and a frame arriving on one of its ports. Work out what SW1 does with it."
   },
   {
     "question": "SW1's MAC address table is below. A frame in VLAN 10 arrives on Gi1/0/2 from 0011.2233.8888, addressed to 0011.2233.9999. What does SW1 do?",
@@ -1234,9 +1234,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Duplex, bundles, mirrors, neighbors and power",
+    "question": "NPC: What else can a switch port do besides pass frames?",
     "npc": "tariq",
-    "intro": "A switch port does more than pass frames. It can be bundled, mirrored, powered, shut down for its own protection, and asked what's plugged into it. Let's go through the settings you'll meet most.",
+    "intro": "When a port suddenly goes dark, the cause is often the switch protecting itself rather than a broken cable. Ports have more settings than most people realize, and it's better to know them before one surprises you. The most basic setting is whether both ends can talk at the same time.",
     "steps": [
       {
         "beats": [
@@ -1359,7 +1359,7 @@
         }
       }
     ],
-    "outro": "Last stretch: real switch ports to configure and read."
+    "outro": "Next, a camera with a built-in heater needs power from its switch port. Choose the lowest PoE standard that can run it."
   },
   {
     "question": "A pan-tilt-zoom camera with a built-in heater needs 60 W delivered to the camera itself. Which is the lowest PoE standard that can power it?",

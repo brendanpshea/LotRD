@@ -1,9 +1,9 @@
 [
   {
     "type": "npc_demo",
-    "question": "NPC: Putting each control on a real boundary",
+    "question": "NPC: Where on a network should each control sit?",
     "npc": "tariq",
-    "intro": "I'm Tariq, the Guild's Beacon-Courier. Every security control has to live somewhere, and the spot decides what it can see, what it can stop, and what it can break. Let me walk you along a network's trust boundaries.",
+    "intro": "I'm Tariq, the Guild's Beacon-Courier. Put a blocking device on the wrong link and one bad rule becomes an outage; put a sensor on the wrong link and it watches traffic nobody cares about. Every control has to live somewhere, and the spot decides what it can do. So I always start by finding the lines where trust changes.",
     "steps": [
       {
         "say": "A **trust boundary** is where traffic you trust meets traffic you don't. Before I place any control, I ask four questions about the spot. A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries: internet to the DMZ (the zone for public-facing servers), partners to the extranet built for them, users to a sensitive data zone. It does not understand application logic, though. Treat it as the only layer of defense and you have one wall with nothing behind it.",
@@ -89,7 +89,7 @@
         ]
       }
     ],
-    "outro": "Now a different link, with a different appetite for risk. Decide what goes in the path."
+    "outro": "Now a different link, with a different appetite for risk. Decide which deployment fits it."
   },
   {
     "question": "Highrook Conclave's internet-facing payments API carries its highest-value traffic. The network team has tuned signatures on this link for months and staffs tuning around the clock, and leadership wants known exploit traffic stopped, not merely reported. Which deployment BEST fits?",
@@ -164,9 +164,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: In front of users, in front of servers",
+    "question": "NPC: What goes between a client and a server, and why?",
     "npc": "tariq",
-    "intro": "Five components sit between a client and a server, and people mix them up constantly. The useful question is never which one is best, but which side of the trust boundary needs mediating.",
+    "intro": "A request from a laptop to a web app can pass through several boxes on the way, and they're easy to mix up because they all sit in the middle. The useful question is never which one is best, but which side it works for: the people sending requests, or the servers answering them. Let's start with the side closest to the user.",
     "steps": [
       {
         "say": "A **forward proxy** stands in front of users. Their outbound requests pass through it, so it can enforce acceptable use, inspect TLS, run suspicious downloads in a sandbox, and stop data leaving. A **reverse proxy** stands in front of servers. Inbound requests reach it first; it terminates TLS, spreads requests across servers as a load balancer does, and hides the backend from direct exposure.",
@@ -234,7 +234,7 @@
         }
       }
     ],
-    "outro": "Five requirements, five components. Match each requirement to the side of the boundary it needs."
+    "outro": "Next come five requirements and the five components you've just met. Match each requirement to the component placed to meet it."
   },
   {
     "type": "matching",
@@ -339,9 +339,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Designing how it fails",
+    "question": "NPC: How do you build a system that fails gracefully?",
     "npc": "tariq",
-    "intro": "Resilient systems are not systems that never fail. They fail predictably, recover quickly, and keep one broken part from taking down the rest. Let me show you the design choices, and the arithmetic, behind that.",
+    "intro": "Every system fails eventually; what matters is whether one broken server takes the whole service down with it. You can design for that, and a surprising amount of the design comes down to simple arithmetic. Let's begin with the box that decides which server gets each request.",
     "steps": [
       {
         "say": "**Load balancing** spreads requests across several nodes. **Health checks** pull a failing node out of rotation, so one broken server does not stop the service. The balancer is a security component, not just plumbing. It often terminates TLS, and it can steer traffic away from a compromised node so defenders can isolate it without an outage. A balancer also lets you scale out. **Horizontal scaling** adds nodes; **vertical scaling** makes one node bigger, which is simpler but means a bigger loss when that one node fails. Pool nodes can be **non-persistent**: rebuilt from a known-good image, or discarded after use, so an intruder's foothold does not survive the next rebuild. Not everything can be stateless. A **persistent** system, such as the database, keeps its state over time, so it stays tightly segmented and closely monitored instead.",
@@ -439,7 +439,7 @@
         }
       }
     ],
-    "outro": "A real settlement service, with a standby that has already failed once. Weigh the dormant standby against the cost of spare capacity."
+    "outro": "Next comes a settlement service whose standby site failed its last failover test. Choose the design that fits what leadership now wants."
   },
   {
     "question": "Highrook's settlement service runs at two sites in active-passive mode. The standby site is rarely exercised, and last year's failover test failed on expired certificates nobody had noticed. Leadership now wants failover that live traffic proves every day, and will fund extra capacity. Which design BEST fits?",
@@ -638,9 +638,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: No trust by location",
+    "question": "NPC: If the network isn't trusted, how is access decided?",
     "npc": "val",
-    "intro": "I'm Val, the Guild's Ward-Smith. Zero Trust rejects one assumption: that being on the right network makes a request trustworthy. I'll show you what replaces it, one decision at a time.",
+    "intro": "I'm Val, the Guild's Ward-Smith. For years, being plugged into the office network was enough to be trusted, so one compromised laptop on the inside could reach almost anything. The model that replaced that habit still says yes or no to every request; what changed is how it decides.",
     "steps": [
       {
         "say": "In **Zero Trust**, access is granted per request, from verified identity, device posture, context, and the resource asked for. Network location alone earns nothing. NIST SP 800-207 splits every access decision into two roles. The **policy decision point (PDP)** weighs the request against policy and returns allow or deny. The **policy enforcement point (PEP)** sits in the data path in front of the resource, as a gateway, reverse proxy, or agent, and applies that answer. NIST divides the PDP once more: a **policy engine** makes the decision, and a **policy administrator** tells the PEP to open or tear down the session.",
@@ -750,7 +750,7 @@
         }
       }
     ],
-    "outro": "Here is an architecture drawn as connections. Read it the way a PEP would, one connection at a time."
+    "outro": "Here is an HR service drawn as lettered connections. Read them one at a time, and find the one whose requests no policy decision covers."
   },
   {
     "question": "Highrook's PDP evaluates every request it receives correctly. In the HR service drawn below, which lettered connection carries requests to a resource that no policy decision ever covers?",
@@ -932,9 +932,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Dividing the inside, dissolving the edge",
+    "question": "NPC: How do you secure a network that has no edge?",
     "npc": "tariq",
-    "intro": "The old network had one hard edge and a soft inside. I'll show you how architects divide the inside, what a VPN is still for, how machine calls get checked, and what replaced the edge itself.",
+    "intro": "The old network had one hard edge and a soft inside, so anyone who got past the edge could wander freely. Now staff work from anywhere and the apps live in the cloud, so the edge has holes everywhere. So let's start inside, with how to stop one break-in from spreading.",
     "steps": [
       {
         "say": "**Segmentation** separates an environment into zones, enforced by firewalls or access control lists (**ACLs**), so a compromise in one zone cannot freely reach another. The aim is to stop **lateral movement**: an attacker's sideways steps from one compromised system to the next, mostly over east-west traffic. **Microsegmentation** goes finer. Policy is written per workload, keyed to workload identity, labels, or tags instead of subnet lines, so it follows workloads that move between hosts faster than diagrams are updated. **Software-defined networking (SDN)** makes that practical: it separates the **control plane**, which decides where traffic should go, from the **data plane**, which forwards it, so segmentation is set in software.",
@@ -1029,7 +1029,7 @@
         ]
       }
     ],
-    "outro": "A flat clinical network, and workloads that will not stay put. Choose what limits the next red-team path."
+    "outro": "Next, red-team testers walk across a flat clinical network whose virtual machines move between hosts every week. Choose the control that limits their path."
   },
   {
     "question": "During a red-team exercise at Greycloak, testers moved from a compromised nurse-station PC to the imaging servers and then to the pharmacy database, all on one clinical VLAN. The clinical workloads are virtual machines that move between hosts every week, so rules tied to IP addresses keep going stale. Which control BEST limits this path?",
@@ -1129,9 +1129,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Boundaries you can watch being crossed",
+    "question": "NPC: How do you guard a boundary and see it crossed?",
     "npc": "tariq",
-    "intro": "Boundaries are not only network lines. I'll show you the kinds of boundary an architect draws, how to shrink what is exposed, and where sensors must sit to tell you a boundary was crossed.",
+    "intro": "A boundary nobody watches can be crossed without anyone noticing. So an architect decides two things about every boundary: what it guards, and where the evidence of a crossing would show up. The most valuable things get the tightest zones, so that's where to begin.",
     "steps": [
       {
         "say": "A **secure zone** holds high-value assets behind tightly controlled entry points: a management network, a payment-card environment, a regulated-data enclave. A **data perimeter** is the set of guardrails that keeps data within trusted identities, trusted devices and networks, and approved destinations, wherever the data lives. **System components** such as identity providers, gateways, policy engines, and management consoles are boundaries too: whoever controls them can rewrite the rules for everything else. So they live in a secure zone of their own, reached only through a **jump host**: a hardened server that admins log in to first.",
@@ -1338,9 +1338,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Data that carries its own rules",
+    "question": "NPC: How do you protect data by how sensitive it is?",
     "npc": "val",
-    "intro": "Architects protect data best when they stop treating it all as equal. I'll show you how classification becomes labels and tags that machines act on, where DLP watches, and how you prove any of it works.",
+    "intro": "A hospital's patient records and its cafeteria menu can sit on the same file server, and the server can't tell them apart. Lock both down like patient records and simple work grinds to a halt; treat both like the menu and the records leak. So protection starts with deciding how sensitive each piece of data is.",
     "steps": [
       {
         "say": "A **classification model** defines sensitivity categories, such as public, internal, confidential, and restricted, so systems know that a payment record and a marketing brochure need different handling. **Data labeling** makes the classification visible: in a document, an email, a cloud object, or a database field. A **tagging strategy** goes further: machine-readable metadata that automation acts on. A tagged resource can trigger encryption, retention rules, stricter sharing, or DLP policy by itself. The more policy runs from tags, the less it depends on someone remembering, which matters most when data flows across on-premises systems, SaaS, and cloud storage.",
@@ -1445,7 +1445,7 @@
         }
       }
     ],
-    "outro": "Back to the first idea: a classification marking that does less than it should."
+    "outro": "Back to where we began: a company marks its sensitive files, but none of its systems act on the marking. Choose the change that makes the architecture enforce it."
   },
   {
     "question": "Highrook marks customer files 'Confidential-PII' with a footer printed in each document. Its DLP, storage encryption, and retention policies ignore the marking, so marked files still sync to personal cloud drives. Which change BEST lets the architecture enforce the classification automatically?",

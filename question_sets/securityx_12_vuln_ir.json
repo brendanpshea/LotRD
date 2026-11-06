@@ -1,9 +1,9 @@
 [
   {
     "type": "npc_demo",
-    "question": "NPC: When input becomes instructions",
+    "question": "NPC: How do attackers abuse the requests your program accepts?",
     "npc": "val",
-    "intro": "I'm Val, the Guild's Ward-Smith. Most software flaws come in families, and the family tells you the fix. We start with the families where data a stranger sent ends up treated as instructions.",
+    "intro": "I'm Val, the Guild's Ward-Smith. Someone uploads a picture to your site, and your server ends up running a command hidden in the file's name. A stranger's data has been read as instructions, and requests get abused in several other ways too. Each has its own family and its own fix, so let's start with the one behind that upload.",
     "steps": [
       {
         "say": "**Injection** happens when untrusted input reaches an interpreter, such as a SQL engine, a shell or an LDAP directory, and is read as part of the command. The shell sees the semicolon and runs a second command that nobody wrote into the program.",
@@ -104,7 +104,7 @@
         ]
       }
     ],
-    "outro": "Now a different language and a different cookie. Name the family first, then the fix."
+    "outro": "Next, a Java service reads a cookie that comes straight back from the user's browser. Name the family first, then the fix."
   },
   {
     "question": "Pip finds this in a Java service at Cinderpost Couriers. The prefs cookie lives in the user's browser and comes back with every request.\n\n  byte[] raw = Base64.getDecoder().decode(prefsCookie);\n  ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(raw));\n  UserPrefs prefs = (UserPrefs) in.readObject();\n\nWhich vulnerability class is this, and what is the root-cause fix?",
@@ -177,9 +177,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Flaws in timing, memory and setup",
+    "question": "NPC: What else makes software unsafe, besides bad input?",
     "npc": "val",
-    "intro": "Not every flaw is a stranger's input read as code. Some hide in timing, in memory, or in how a system was set up, and each has a design habit that prevents it.",
+    "intro": "A program can check every input perfectly and still be beaten, because some flaws need no clever input at all. They hide in when things happen, or in a setting nobody changed from the default. Each has a design habit that prevents it, and timing is the easiest one to see.",
     "steps": [
       {
         "say": "A **race condition** is a bug whose result depends on timing. The common form is **time of check to time of use (TOCTOU)**: the state changes between checking it and acting on it. In the gap, another user plants a link named `report.txt` that points at a system file, and the root job writes straight through it.",
@@ -277,7 +277,7 @@
         }
       }
     ],
-    "outro": "Next, a bank's balance check that runs on many threads at once. Find the gap."
+    "outro": "A bank's withdrawal handler runs on many threads at once, and two withdrawals both succeed. Choose the fix that removes the flaw."
   },
   {
     "question": "A withdrawal handler at Marketstone Exchange runs on many threads at once:\n\n  bal = get_balance(acct)\n  if bal >= amount:\n      set_balance(acct, bal - amount)\n      send_funds(amount)\n\nTovin's red team fires two 900-credit withdrawals at the same instant against a 1,000-credit balance, and both succeed. Which fix BEST removes the flaw?",
@@ -360,9 +360,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Naming, scoring and ranking a flaw",
+    "question": "NPC: How do you size up a newly announced flaw?",
     "npc": "val",
-    "intro": "When a new flaw is announced, you need three answers fast: are we affected, how bad is it, and does it go first? Here is the kit for each, and for checking hosts automatically.",
+    "intro": "The morning a serious flaw goes public, every manager asks the same thing: are we running it? If nobody knows what's inside your software, finding out can take weeks, and attackers won't wait that long. The flaw that taught everyone this arrived in December 2021, and its story shows what went wrong.",
     "steps": [
       {
         "say": "In December 2021, Log4Shell (CVE-2021-44228, CVSS 10.0) let attackers run code on a server just by getting a crafted string into its logs. The flaw was in Log4j, a Java logging library inside thousands of products. A **Software Bill of Materials (SBoM)** is a machine-readable inventory of every component and version in a product, including **transitive dependencies** pulled in by other libraries. SPDX and CycloneDX are the common formats. Searching your SBoMs answers \"are we affected?\" in hours instead of weeks, and dependency scanners in the CI/CD pipeline keep that answer current. A **Vulnerability Exploitability eXchange (VEX)** statement is a vendor's verdict for one product, such as \"not affected: the vulnerable code is never called\".",
@@ -466,7 +466,7 @@
         ]
       }
     ],
-    "outro": "Now a vector from a different device. Read every pair before you judge it."
+    "outro": "Now a scanner reports a CVSS vector for a building controller. Read every pair before you judge what it says."
   },
   {
     "question": "Kaeli Renn's scanner reports this vector for a flaw in a building-management controller:\n\n  CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N\n\nWhich reading of the vector is correct?",
@@ -678,9 +678,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Scripts, triggers and infrastructure as code",
+    "question": "NPC: How does a small team automate its security work?",
     "npc": "flint",
-    "intro": "I'm Professor Flint. A small SOC cannot check ten thousand machines by hand, so we write the work down as code: scripts, the events that set them off, and infrastructure defined in files.",
+    "intro": "I'm Professor Flint. A SOC with four analysts and ten thousand machines can't check them by hand, not even once a month. So the work gets written down as code, and the code runs whether anyone is awake or not. It's usually written in a handful of languages, so those come first.",
     "steps": [
       {
         "say": "Three languages carry most security automation: **Python** for HTTP, cloud SDKs such as `boto3` and vendor APIs; **PowerShell** for Windows and Microsoft 365; **Bash** for Linux, CI/CD pipelines and container entrypoints. The first way to start a script is a schedule. On Linux that is a **cron job**: five time fields, then the command. That line pulls a threat-intel feed of **indicators of compromise (IOCs)**, such as known-bad IPs, domains and file hashes, at 02:00 every day. A `*` means every value of its field, and day-of-week counts from 0 for Sunday.",
@@ -776,7 +776,7 @@
         ]
       }
     ],
-    "outro": "A pull request is waiting with a Terraform file in it. Decide which control catches it, and when."
+    "outro": "A pull request is waiting, with a risky Terraform file in it. Decide which control should catch it, and when."
   },
   {
     "question": "A pull request at Cinderpost Couriers adds this Terraform for a new reports bucket:\n\n  resource \"aws_s3_bucket_acl\" \"reports\" {\n    bucket = aws_s3_bucket.reports.id\n    acl    = \"public-read\"\n  }\n\nMaven wants mistakes like this stopped before anything is deployed, without adding console reviews. Which control BEST fits?",
@@ -839,9 +839,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Playbooks, runbooks and the approval gate",
+    "question": "NPC: How far should security automation go on its own?",
     "npc": "flint",
-    "intro": "Scripts become a system when a SOAR platform runs them for you. The hard part is choosing what to automate, where a person must still decide, and how to stop automation doing harm.",
+    "intro": "A script that locks a stolen account in ten seconds is a gift, until the day it locks the wrong one at three in the morning. Automation does exactly what it's told, as fast as it's told, whether or not anyone is watching. So the hard part isn't writing it; it's deciding what it may do alone. The platform that runs it is where that decision gets made.",
     "steps": [
       {
         "say": "**Security orchestration, automation and response (SOAR)** platforms chain security tools' APIs together when a SIEM alert fires. A **playbook** is the automated logic: when this alert fires, do this, then that. A **runbook** is the documented manual procedure an analyst follows when automation is not enough or a human decision is needed. When a playbook acts on its own, isolating a host or disabling an account without waiting for anyone, that is **auto-containment**.",
@@ -1065,9 +1065,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: The incident-response lifecycle",
+    "question": "NPC: In what order do you handle a security incident?",
     "npc": "val",
-    "intro": "When a defense fails, a practised response is what limits the damage. Let's walk the incident-response lifecycle, and see why its order matters.",
+    "intro": "Picture an analyst who spots an intruder on a mail server and rebuilds it within the hour. The server is clean, but the evidence is gone, and nobody knows how the intruder got in or whether they're still inside. In a response, the order of the work matters as much as the work, and that begins with what the work actually is.",
     "steps": [
       {
         "say": "**Incident response (IR)** is the organized work of detecting, containing, eradicating and recovering from an incident while preserving evidence and learning from it. The classic model, from NIST SP 800-61 Rev. 2, has four phases. Analysis and containment loop back and forth as new evidence turns up, and lessons learned feed the next round of preparation. **Detection and analysis** confirms the alert and scopes the incident: how many systems are affected, whether the attacker still has access, and what data may be exposed. In April 2025, **SP 800-61 Rev. 3** replaced it with a CSF 2.0 profile: Govern, Identify and Protect cover preparation; Detect, Respond and Recover cover the incident; lessons flow back as Improvement.",
@@ -1173,7 +1173,7 @@
         }
       }
     ],
-    "outro": "Now a real case with its actions out of order. Put them back in lifecycle order."
+    "outro": "Next, a real response to ransomware comes with its actions shuffled, including work done months before. Put them back in lifecycle order."
   },
   {
     "type": "ordering",
@@ -1302,9 +1302,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Evidence that vanishes, and evidence that holds up",
+    "question": "NPC: How do you investigate an attack without spoiling the evidence?",
     "npc": "val",
-    "intro": "Evidence counts only if you capture it before it vanishes and can prove nobody changed it since. We'll go from a suspicious file to what to capture first, how to capture it, and where else to look.",
+    "intro": "A strange file turns up on a shared drive, and nobody knows what it does. Double-click it on an ordinary PC and you've handed the attacker a second machine. Evidence handled carelessly can't be trusted afterwards, so the same care runs through the whole investigation. For the file, that means finding out what it does somewhere it can't hurt anything.",
     "steps": [
       {
         "say": "Start with the sample. A **malware sandbox** detonates a suspicious file in an isolated environment and records what it does, such as network connections, registry changes and dropped files, with no risk to production. From the report you extract IOCs: IP addresses, domains, file hashes, registry keys and command-line patterns to block and hunt for across the fleet. When the report is not enough, **reverse engineering** takes the sample apart. Static analysis reads it without running it: a **disassembler** turns machine code into assembly, and a **decompiler** rebuilds C-like source. Managed **bytecode**, such as Java or .NET, decompiles to near-original source; a native **binary** is far harder. Dynamic analysis runs the sample under a debugger or in the sandbox. Code-similarity measures such as fuzzy hashes link a sample to known **variants**, and **code stylometry** studies coding habits to suggest an author. Attackers plant false flags, so treat attribution as a probability.",
@@ -1402,7 +1402,7 @@
         ]
       }
     ],
-    "outro": "A Linux server this time, still running. Put the capture in order."
+    "outro": "Now a compromised Linux server is still running. Put the acquisition steps in the order they should happen."
   },
   {
     "type": "ordering",

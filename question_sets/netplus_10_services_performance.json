@@ -1,9 +1,9 @@
 [
   {
     "type": "npc_demo",
-    "question": "NPC: Address, mask, gateway, and the lease behind them",
+    "question": "NPC: Why does a host end up with bad IP settings?",
     "npc": "tariq",
-    "intro": "I'm Tariq, the Beacon-Courier. Many tickets that say the network is down end at the host's own settings: its address, mask and gateway, and the DHCP server that handed them out. Let's read one host the way a technician does.",
+    "intro": "I'm Tariq, the Beacon-Courier. Plenty of tickets that say the network is down get closed without anyone touching the network. The fault is in the host's own settings, or in the server that handed them out, and the user sees the same dead screen either way. So before you touch a switch or a router, ask the host what it's actually using.",
     "steps": [
       {
         "say": "Start at the host. On Windows, `ipconfig /all` shows what the adapter actually holds, and this one holds an odd address. An address in **169.254.0.0/16** is **APIPA** (Automatic Private IP Addressing). The host asked for a DHCP lease, heard no answer, and gave itself a link-local address that reaches only other APIPA hosts on the same link.",
@@ -96,7 +96,7 @@
         ]
       }
     ],
-    "outro": "Your turn. Read what the host and the server tell you before you change anything."
+    "outro": "Next, a user can't reach anything, not even the printer beside her desk. Read her PC's settings and find the most likely cause."
   },
   {
     "question": "Mira Sollen reports that a user on the third floor can't reach anything, not even the printer beside her desk. Mira runs ipconfig /all on the PC:\n\n   DHCP Enabled. . . . . . . . . . . : Yes\n   Autoconfiguration Enabled . . . . : Yes\n   Autoconfiguration IPv4 Address. . : 169.254.88.14(Preferred)\n   Subnet Mask . . . . . . . . . . . : 255.255.0.0\n   Default Gateway . . . . . . . . . :\n\nWhat is the MOST likely cause?",
@@ -230,9 +230,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Following one name to the server that owns it",
+    "question": "NPC: Where can a DNS lookup go wrong?",
     "npc": "tariq",
-    "intro": "A name that won't resolve looks exactly like a dead network, even when every packet would arrive. Let's follow one lookup from the host to the server that owns the answer, and see where each step can go wrong.",
+    "intro": "Typing one name into a browser can set off a hunt through several servers before an address comes back. Any step of that hunt can fail, and each failure looks a little different from the user's desk. The first stop is the places a host checks before it asks anyone else.",
     "steps": [
       {
         "say": "Before asking DNS at all, a host checks its own **hosts file** (`/etc/hosts` on Linux and macOS, `C:\\Windows\\System32\\drivers\\etc\\hosts` on Windows) and its DNS cache. An entry there wins over DNS.",
@@ -325,7 +325,7 @@
         ]
       }
     ],
-    "outro": "Your turn. When a name fails, ask which server answered, and where its answer came from."
+    "outro": "Now Brom says the file server is down, yet his ping to its address works. Read his `nslookup` output and find the most likely cause."
   },
   {
     "question": "Brom tells Mira the file server is down. On a VLAN 30 PC, ping 10.0.5.20 (the file server's address) succeeds, but then he runs:\n\nC:\\> nslookup files.silverkeep.example\nDNS request timed out.\n    timeout was 2 seconds.\nServer:  UnKnown\nAddress:  10.30.0.53\n\nDNS request timed out.\n    timeout was 2 seconds.\n*** Request to UnKnown timed-out\n\nWhat is the MOST likely cause?",
@@ -527,9 +527,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Loops, wrong VLANs, one-way links and virtual switches",
+    "question": "NPC: Why does traffic fail when every link light is on?",
     "npc": "tariq",
-    "intro": "Switches forward frames without asking questions, so a Layer 2 fault hits everyone at once. Let's look at loops, wrong VLANs, links that work in one direction only, and the virtual switch inside a hypervisor.",
+    "intro": "A switch forwards frames without asking many questions, and that's exactly why its mistakes spread so fast. Some Layer 2 faults strand one user whose port looks perfectly healthy, while others hit everyone on the switch at once. Let's start with the damage that spreads, and why a switch can't stop it.",
     "steps": [
       {
         "say": "An Ethernet frame carries no TTL. Give two switches two paths between them with nothing to stop it, and a broadcast circles forever, copied at every switch: a **broadcast storm**. Links fill, MAC tables flap, and the VLAN stops. **Spanning Tree Protocol** (STP) prevents that. Switches exchange **BPDUs**, elect a **root bridge** (the lowest bridge ID), and block one port in each loop so that a single path remains. **BPDU guard** shuts an edge port down if a switch is ever plugged into it, and **PortFast** lets an edge port skip STP's roughly 30-second wait before it forwards.",
@@ -618,7 +618,7 @@
         }
       }
     ],
-    "outro": "Your turn. Ask first whether one host is broken or everyone is."
+    "outro": "Now Brom adds a small switch under a desk, and minutes later the whole floor crawls. Use the counters and the log to find the most likely cause."
   },
   {
     "question": "STP is disabled on an access switch. Brom tucks a small unmanaged switch under a desk and patches it to two wall jacks for extra ports. Minutes later the whole floor crawls, broadcast counters on Gi1/0/5 and Gi1/0/9 climb by thousands a second, and the access switch logs:\n\n%SW_MATM-4-MACFLAP_NOTIF: Host 0050.56a1.0b2c in vlan 10 is flapping between port Gi1/0/5 and port Gi1/0/9\n\nWhat is the MOST likely cause?",
@@ -707,9 +707,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Following a packet hop by hop",
+    "question": "NPC: How do you find where a routed path breaks?",
     "npc": "tariq",
-    "intro": "A router forwards by its table and nothing else. When a path fails, read the table on each hop and ask what it will do with this one destination. Let's walk the common ways a path goes wrong, then the edge router's translations.",
+    "intro": "Packets don't wander: each router sends them exactly where its table says. So when traffic vanishes somewhere along a path, the explanation is written in a table on one of the hops, and your job is to find which one. Let's start with a single router and what it knows.",
     "steps": [
       {
         "say": "Here is a router's table. It knows its own LAN and one remote network, learned from OSPF. The router uses the most specific route that matches. A destination that matches nothing, with no default route (`0.0.0.0/0`, the gateway of last resort), is dropped: a **missing route**. Remember the return trip as well: the far end needs a route back to the source, or the request arrives and the reply is the packet that gets dropped.",
@@ -795,7 +795,7 @@
         }
       }
     ],
-    "outro": "Your turn. Read each hop's table before you blame the destination."
+    "outro": "Next, a branch office reaches some HQ subnets but not a new one. Read the branch router's table and choose the change that fixes it."
   },
   {
     "question": "Users at Ember Forge (10.30.0.0/24) reach HQ servers in 10.10.0.0/16 over the tunnel, but nothing in the new HQ subnet 10.20.0.0/16. HQ's routers already route 10.30.0.0/24 back to the branch. The branch router shows:\n\nEmber-R1# show ip route\nGateway of last resort is not set\n\n      10.0.0.0/8 is variably subnetted, 5 subnets, 4 masks\nC        10.30.0.0/24 is directly connected, GigabitEthernet0/1\nL        10.30.0.1/32 is directly connected, GigabitEthernet0/1\nS        10.10.0.0/16 [1/0] via 10.255.0.1\nC        10.255.0.0/30 is directly connected, Tunnel0\nL        10.255.0.2/32 is directly connected, Tunnel0\n\nWhich change fixes it?",
@@ -928,9 +928,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Reading the rules the way the device does",
+    "question": "NPC: Why does a security device block what it should allow?",
     "npc": "val",
-    "intro": "I'm Val, the Ward-Smith. When a firewall or a NAC blocks something, it is usually doing exactly what it was told. Let's read the rules the way the device does, top to bottom, and find out what it was really told.",
+    "intro": "I'm Val, the Ward-Smith. When a firewall turns away traffic that ought to pass, or a switch port refuses a perfectly good printer, it's tempting to call the device broken. It almost never is: it's doing exactly what it was told, and what it was told isn't what anyone meant. So let's read the rules the way the device itself reads them.",
     "steps": [
       {
         "say": "An **ACL** (access control list) is an ordered list of permit and deny rules. The device compares each packet with the rules from the top and acts on the **first match**; a packet that matches nothing meets the **implicit deny** at the end. Rule 20 looks right, yet staff on 10.20.0.0/24 get nothing from 10.0.5.20 on HTTPS.",
@@ -1022,7 +1022,7 @@
         }
       }
     ],
-    "outro": "Your turn. Find the rule that actually matched, not the one that was meant to."
+    "outro": "Here's a clinic whose firewall blocks an admin's remote desktop session to its records server. Read the rules and work out why."
   },
   {
     "question": "Thornwood Clinic's stateful firewall uses the first rule that matches. The admin workstation 10.40.0.25 cannot open RDP (TCP 3389) to the records server 10.0.9.11, although staff reach the portal on 10.0.9.10 fine. The rules:\n\n#  Action  Source         Destination    Service\n1  Allow   10.40.0.0/24   10.0.9.10      TCP 443\n2  Deny    10.40.0.0/24   10.0.9.0/24    Any\n3  Allow   10.40.0.25     10.0.9.11      TCP 3389\n4  Allow   10.40.0.0/24   Any            TCP 80, 443\n5  Deny    Any            Any            Any\n\nWhy is the RDP session blocked?",
@@ -1113,9 +1113,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Slow, choppy, or gone",
+    "question": "NPC: What do users mean when they say the network's slow?",
     "npc": "tariq",
-    "intro": "Users call several different problems slow. Let's measure which one it is, delay, uneven delay, loss or a full link, and then see why voice calls feel each of them first.",
+    "intro": "The same shaky link that makes a download take a little longer can make a phone call impossible to follow. A download can wait for whatever went missing, but a call can't, so voice is where a bad path shows up first. To judge how bad it is, you first have to put numbers on that path.",
     "steps": [
       {
         "say": "Three numbers describe a path. **Latency** is the delay from end to end; ping shows the round trip. **Jitter** is the variation in that delay from one packet to the next. **Packet loss** is the share that never arrives.",
@@ -1207,7 +1207,7 @@
         ]
       }
     ],
-    "outro": "Your turn. Name the problem precisely before you pick a fix."
+    "outro": "Next, Marketstone reserves part of its WAN priority queue for voice. Work out how many calls fit in it."
   },
   {
     "type": "dynamic_numeric",
@@ -1332,9 +1332,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: When the device itself is the problem",
+    "question": "NPC: What can go wrong with the device itself?",
     "npc": "tariq",
-    "intro": "Sometimes the traffic is fine and the device carrying it is not: you can't reach it, it runs different software from its twin, its configuration has changed, or its clock is wrong. Let's take each in turn.",
+    "intro": "At two in the morning a core switch stops passing traffic, and the SSH session you'd use to fix it runs through that very switch. Faults like that live in the device, not in the traffic it carries, so they need their own checks. Let's start with the most basic one: can you reach the device at all?",
     "steps": [
       {
         "say": "**Reachability** comes first: you can't fix what you can't reach. **In-band** management, SSH to the device across the production network, fails exactly when that network does. **Out-of-band** management uses a separate path, a console server, a dedicated management network or a cellular modem, so it still works when production is down. **Remote access** has its own faults: SSH not enabled on the VTY lines (the virtual terminals remote sessions use), no RSA key generated so the SSH server never starts, or a management ACL that leaves out your subnet. Many sites allow management only from a **jump host**, a hardened server admins connect through first, so a session from anywhere else is refused by design.",
@@ -1420,7 +1420,7 @@
         }
       }
     ],
-    "outro": "Your turn. Check the device before you blame the network it carries."
+    "outro": "Now a server with no NTP gains a few seconds every day. Work out how many days it takes to run 5 minutes ahead."
   },
   {
     "type": "dynamic_numeric",
@@ -1503,7 +1503,7 @@
       "base line"
     ],
     "case_sensitive": false,
-    "feedback": "A baseline turns a reading into a judgement: 60% CPU is a fault on a switch that normally sits at 20%, and an ordinary afternoon on one that always runs at 60%. Take it when things work, and refresh it after planned changes."
+    "feedback": "A baseline turns a reading into a judgment: 60% CPU is a fault on a switch that normally sits at 20%, and an ordinary afternoon on one that always runs at 60%. Take it when things work, and refresh it after planned changes."
   },
   {
     "type": "code_line",

@@ -1,9 +1,9 @@
 [
   {
     "type": "npc_demo",
-    "question": "NPC: The chain of trust",
+    "question": "NPC: How do certificates get issued and trusted?",
     "npc": "val",
-    "intro": "I'm Val, the Guild's Ward-Smith. Anyone can generate a key pair and claim to be your bank. Let me show you how a public key infrastructure decides which of those claims to believe.",
+    "intro": "I'm Val, the Guild's Ward-Smith. Anyone can generate a key pair in a second and claim it belongs to your bank. The encryption with that key would be flawless, and you'd still be talking to a thief. What you need is someone you already trust to vouch for the key, and the vouching has to be written down in a form a browser can check.",
     "steps": [
       {
         "say": "A **public key infrastructure (PKI)** is the people, policies and systems that bind public keys to identities. The binding is a **digital certificate**: it names its **subject** and is signed by its **issuer**, a **certificate authority (CA)**. At the top sits the **root CA**, the **trust anchor**. Its certificate is self-signed, and it is trusted only because a copy ships in the **trust store** of every **relying party**: the browser or system checking a certificate. Public CAs such as Let's Encrypt or DigiCert are trusted by browsers and operating systems. A private CA inside an enterprise vouches for its own servers, staff and devices, which no public CA has any business doing.",
@@ -79,7 +79,7 @@
         ]
       }
     ],
-    "outro": "Now a hierarchy that grew the wrong way. Decide what it should become."
+    "outro": "Next is a hierarchy that grew the wrong way, with a new contract to satisfy. Decide what it should become."
   },
   {
     "question": "Stormhall Aegis runs one online root CA that signs every server and laptop certificate directly, several hundred a day. A new contract requires that the trust anchor be unreachable from any network, and issuance must stay same-day. Which redesign BEST meets both requirements?",
@@ -150,9 +150,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: What a certificate says",
+    "question": "NPC: What do the fields in a certificate tell you?",
     "npc": "val",
-    "intro": "A certificate is more than a public key in a wrapper. Its fields say which names it covers, what it may do, and where to check that it still stands. Let me read one with you.",
+    "intro": "Click the padlock in a browser and you'll find a certificate with a page of fields most people never read. Those fields aren't decoration: each one is a rule, and the client enforces it whatever the site's owner intended. So it pays to know what each field is for.",
     "steps": [
       {
         "say": "Here is a certificate printed by `openssl x509 -in cert.pem -noout -text`, trimmed to the parts that matter. Each **extension** below the dates is a constraint that the client enforces.",
@@ -218,7 +218,7 @@
         ]
       }
     ],
-    "outro": "Your turn: a certificate that refuses one hostname. Find out why."
+    "outro": "Next, users of one hostname are getting a name-mismatch error. Read the server's certificate and find out why."
   },
   {
     "question": "Users of https://eu.trade.marketstone.example get a name-mismatch error. Iolen pulls the server's certificate:\n  Subject: CN = trade.marketstone.example\n  Not Before: Oct  1 00:00:00 2026 GMT\n  Not After : Mar 30 23:59:59 2027 GMT\n  X509v3 Subject Alternative Name:\n      DNS:trade.marketstone.example, DNS:*.marketstone.example\n  X509v3 Extended Key Usage:\n      TLS Web Server Authentication\nWhat is the cause?",
@@ -310,9 +310,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Revocation and watching the CAs",
+    "question": "NPC: What if a certificate goes bad before it expires?",
     "npc": "val",
-    "intro": "Sometimes a certificate must die before its end date, usually because its private key leaked. Here is how clients find out, and why the web now leans on short lifetimes and public logs instead.",
+    "intro": "Picture a server's private key leaking on a Tuesday, while its certificate stays valid until spring. Every client that sees the certificate will keep trusting whoever holds that key until somebody tells it otherwise. Telling millions of clients is harder than it sounds, and the oldest answer is a list.",
     "steps": [
       {
         "say": "A **certificate revocation list (CRL)** is a signed list of revoked serial numbers. It grows over time, and each relying party downloads the whole thing. The **Online Certificate Status Protocol (OCSP)** asks the CA about one certificate, live. But each query adds a round trip and tells the CA which site you are visiting. Worse, browsers **soft-fail**: if the OCSP responder does not answer, the connection goes ahead as if the certificate were fine.",
@@ -379,7 +379,7 @@
         ]
       }
     ],
-    "outro": "A client that stalls on every connection. Choose what fixes it."
+    "outro": "Next, revocation checks are slowing every connection to an API, and an outage once took it down. Choose the change that fixes both."
   },
   {
     "question": "Greycloak Apothecary's internal clients query the CA's OCSP responder on every new TLS connection to the records API. Each query adds about 200 ms, and when the responder went down last month, the API went down with it. Revocation checking must stay in force. Which change BEST addresses both problems?",
@@ -447,9 +447,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Data at rest, in transit, in use",
+    "question": "NPC: How do you protect data wherever it is?",
     "npc": "val",
-    "intro": "Data spends its life in three states: stored, moving and being worked on. Each state has its own threat and its own tool, and the tool for one does nothing for the others.",
+    "intro": "A backup locked in a vault can be perfectly encrypted. Load the same records into memory to work on them, and that encryption does nothing at all. Data changes state over its life, and each state has its own threat and its own tool. The first state is where most data spends its time: sitting still on a disk.",
     "steps": [
       {
         "say": "**Data at rest** sits on disks, backups and object storage. The control is **symmetric** encryption (one shared key, such as AES-256), with keys held in a **key management service (KMS)** or an HSM. Regulators reward it: HIPAA and GDPR breach rules go easier on properly encrypted data, PCI DSS requires stored card numbers to be unreadable, and US federal systems must use FIPS 140-3 validated modules. Full-disk encryption and a database's transparent data encryption (TDE) work this way. The threat they answer is a stolen disk or backup.",
@@ -581,9 +581,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Privacy, signatures and passkeys",
+    "question": "NPC: How do you hide what's private and prove what's genuine?",
     "npc": "val",
-    "intro": "Now two jobs that pull in opposite directions: using sensitive data without exposing the people in it, and proving exactly who sent, built or logged in to something.",
+    "intro": "A clinic wants researchers to study its patient records without learning who any of the patients are. The same clinic must prove that each prescription it sends came from one of its own doctors, unaltered. One job hides who is behind the data and the other pins it down, and their tools are easy to confuse. Hiding comes in several strengths, so we'll begin with the most complete.",
     "steps": [
       {
         "say": "**Anonymization** strips identifying information so no one can re-identify the subject, irreversibly. It is harder than it looks: many 'anonymized' datasets fell to **linkage attacks** that joined them with other data. **Pseudonymization** swaps identifiers for consistent stand-ins, so analytics still work. Anyone holding the mapping table can reverse it. **Tokenization** replaces a value such as a card number with a **token** that has no mathematical link to it; only a separate **token vault** maps back. Systems that see only tokens can drop out of PCI DSS scope. **Data masking** shows part of a value, like `****-****-****-1234`, and **obfuscation** makes data or code hard to read. Neither is cryptography: masking is a screen-level control, and obfuscation has no mathematical guarantee.",
@@ -789,9 +789,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Envelopes and authenticated ciphers",
+    "question": "NPC: How do real systems encrypt data and guard the keys?",
     "npc": "val",
-    "intro": "Encrypting at scale raises practical questions: how to keep master keys out of harm's way, which cipher modes to trust, and what to do when the hardware is slow or the secret is weak.",
+    "intro": "Choosing a strong cipher takes a minute, and it's rarely where real systems go wrong. They fail around it, in how the keys are handled and how the cipher is used. The biggest problem is keeping a master key safe while it protects a mountain of data.",
     "steps": [
       {
         "say": "Encrypting 100 GB directly under one master key is awkward: the key must stay online throughout, and rotating it means re-encrypting everything. **Envelope encryption** splits the job in two. A fresh **data encryption key (DEK)** encrypts the object locally. A **key encryption key (KEK)** that never leaves the KMS wraps the DEK, and the wrapped DEK is stored beside the ciphertext.",
@@ -861,7 +861,7 @@
         ]
       }
     ],
-    "outro": "Now follow one object's envelope from upload to download."
+    "outro": "Now put the life of one object under envelope encryption in order, from upload to a later download."
   },
   {
     "type": "ordering",
@@ -1021,9 +1021,9 @@
   },
   {
     "type": "npc_demo",
-    "question": "NPC: Forward secrecy and the quantum clock",
+    "question": "NPC: Can traffic recorded today be read years from now?",
     "npc": "val",
-    "intro": "Two questions about time. If your server's key is stolen next year, what happens to traffic recorded today? And what happens to that recording once quantum computers arrive?",
+    "intro": "Some secrets must stay secret for decades: a patient's history, say, or a government's plans. Copying the encrypted traffic that carries them costs an attacker almost nothing. Whether that copy is ever readable depends on choices made before it was sent, beginning with how each session's keys are made.",
     "steps": [
       {
         "say": "**Forward secrecy** means a stolen long-term key cannot unlock past sessions. Each session's keys come from fresh **ephemeral** Diffie-Hellman key shares, written (EC)DHE, deleted when the session ends. The older alternative, **static RSA** key exchange, had the client encrypt the session secret under the server's public key. Steal that key later, and every recording opens. TLS 1.3 removed static RSA and static DH entirely. Its `ClientHello` already carries an ephemeral key share, the `ServerHello` answers with one, and the certificate's key only signs the handshake.",
@@ -1103,7 +1103,7 @@
         ]
       }
     ],
-    "outro": "First, a stolen key and six months of recordings. Work out exactly what is exposed."
+    "outro": "First, an attacker holds six months of recordings and has just stolen the server's key. Work out exactly which sessions are exposed."
   },
   {
     "question": "An attacker has recorded six months of Marketstone Exchange's TLS traffic and has now stolen the server's long-term RSA private key. During that period the server accepted three kinds of handshake:\n  TLS 1.2 with static RSA key exchange\n  TLS 1.2 with ECDHE key exchange\n  TLS 1.3 (ECDHE)\nWhich recorded sessions can the attacker decrypt?",
