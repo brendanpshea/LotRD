@@ -686,7 +686,7 @@
         ]
       },
       {
-        "say": "Owl may have methods that Creature lacks. Say Owl also has a method called `hunt`: `javac` refuses it. It judges each call by the declared type, and Creature has no `hunt`. The object really is an Owl, but javac never sees objects: they are built only when the program runs.",
+        "say": "Owl may have methods that Creature lacks. Say Owl also has a method called `hunt`: `javac` refuses it. It judges each call by the declared type, and Creature has no `hunt`. The object really is an Owl, but javac never sees objects: they are built only when the program runs. You have met this rule already. After `List<String> names = new ArrayList<>();`, javac let you call only List's methods, even though the object was an ArrayList.",
         "beats": [
           {
             "say": "Owl may have methods that Creature lacks. Say Owl also has a method called `hunt`:",
@@ -700,6 +700,10 @@
           {
             "say": "`javac` refuses it. It judges each call by the declared type, and Creature has no `hunt`. The object really is an Owl, but javac never sees objects: they are built only when the program runs.",
             "narrate": "javac refuses it. It judges each call by the declared type, and Creature has no hunt. The object really is an Owl, but javac never sees objects. They're built only when the program runs."
+          },
+          {
+            "say": "You have met this rule already. After `List<String> names = new ArrayList<>();`, javac let you call only List's methods, even though the object was an ArrayList.",
+            "narrate": "You've met this rule already. When you wrote a List of Strings called names, holding a new ArrayList, javac let you call only List's methods, even though the object was an ArrayList."
           }
         ]
       }
@@ -949,11 +953,11 @@
         }
       },
       {
-        "say": "An **interface** goes one step further. It is a list of methods that a class promises to have, and usually nothing else. A class makes the promise with **implements**. A class may extend only one parent, but it may implement several interfaces. An interface's methods are public, so the class writes `public` in front of each one.",
+        "say": "An **interface** goes one step further. It is a list of methods that a class promises to have, and usually nothing else. You have met one already: List is an interface, and ArrayList is a class that keeps its promise. A class makes the promise with **implements**. A class may extend only one parent, but it may implement several interfaces. An interface's methods are public, so the class writes `public` in front of each one.",
         "beats": [
           {
-            "say": "An **interface** goes one step further. It is a list of methods that a class promises to have, and usually nothing else.",
-            "narrate": "An interface goes one step further. It's a list of methods that a class promises to have, and usually nothing else."
+            "say": "An **interface** goes one step further. It is a list of methods that a class promises to have, and usually nothing else. You have met one already: List is an interface, and ArrayList is a class that keeps its promise.",
+            "narrate": "An interface goes one step further. It's a list of methods that a class promises to have, and usually nothing else. You've met one already: List is an interface, and ArrayList is a class that keeps its promise."
           },
           {
             "code": "interface Drawable {\n    String draw();\n}\n\nclass Rock implements Drawable {\n    public String draw() {\n        return \"[rock]\";\n    }\n}",
@@ -1043,6 +1047,141 @@
       }
     ],
     "feedback": "abstract and @Override and implements are all promises that javac checks before the program runs. extends names one parent; implements may name several interfaces."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: An interface makes code testable",
+    "npc": "flint",
+    "intro": "I'm Professor Flint. A game that rolls dice can give a different answer each time, but a test needs one answer it can check. An interface solves that, and it is how big projects stay testable.",
+    "steps": [
+      {
+        "say": "A test runs a piece of code and checks that the answer is the one you expect. But `damage()` might give 2 one time and 12 the next, so a test cannot know what to expect.",
+        "beats": [
+          {
+            "code": "class Battle {\n    int damage() {\n        int roll = (int) (Math.random() * 6) + 1;\n        return roll * 2;\n    }\n}",
+            "language": "java",
+            "narrate": "Here's a Battle class. Its damage method rolls the dice right there inside the method, using Math dot random, and then doubles the roll."
+          },
+          {
+            "say": "A test runs a piece of code and checks that the answer is the one you expect. But `damage()` might give 2 one time and 12 the next, so a test cannot know what to expect.",
+            "narrate": "A test runs a piece of code, and checks that the answer is the one you expect. But damage might give 2 one time, and 12 the next. So a test can't know what answer to expect."
+          }
+        ]
+      },
+      {
+        "say": "So pull the roll out into an interface, Dice, with one method, and write two classes that keep its promise. RandomDice is for the real game. FixedDice is made only for tests: it always rolls 6, so its answer is known in advance. Python would accept any object that has a `roll` method. Java wants the promise written down, as an interface, and `javac` checks that every kind of dice keeps it.",
+        "beats": [
+          {
+            "say": "So pull the roll out into an interface, Dice, with one method, and write two classes that keep its promise.",
+            "narrate": "So pull the roll out into an interface, called Dice, with one method. Then write two classes that keep its promise."
+          },
+          {
+            "code": "interface Dice {\n    int roll();\n}\n\nclass RandomDice implements Dice {\n    public int roll() {\n        return (int) (Math.random() * 6) + 1;\n    }\n}\n\nclass FixedDice implements Dice {\n    public int roll() {\n        return 6;\n    }\n}",
+            "language": "java",
+            "narrate": "Here's the interface, Dice, and two classes that implement it. Look at what each one's roll method returns."
+          },
+          {
+            "say": "RandomDice is for the real game. FixedDice is made only for tests: it always rolls 6, so its answer is known in advance.",
+            "narrate": "RandomDice is for the real game. FixedDice is made only for tests. It always rolls 6, so its answer is known in advance."
+          },
+          {
+            "say": "Python would accept any object that has a `roll` method. Java wants the promise written down, as an interface, and `javac` checks that every kind of dice keeps it.",
+            "narrate": "Python would accept any object that happens to have a roll method. Java wants the promise written down, as an interface, and javac checks that every kind of dice keeps it."
+          }
+        ]
+      },
+      {
+        "say": "Battle is handed its dice, and the field's type is the interface, Dice. Battle never asks which kind of dice it holds: it just calls `roll()`. The game builds `new Battle(new RandomDice())`. A test builds `new Battle(new FixedDice())`.",
+        "beats": [
+          {
+            "code": "class Battle {\n    private Dice dice;\n\n    Battle(Dice dice) {\n        this.dice = dice;\n    }\n\n    int damage() {\n        return dice.roll() * 2;\n    }\n}",
+            "language": "java",
+            "narrate": "Here's Battle again. Now it doesn't make its own dice. It's handed one, in its constructor, and keeps it in a field whose type is Dice."
+          },
+          {
+            "say": "Battle is handed its dice, and the field's type is the interface, Dice. Battle never asks which kind of dice it holds: it just calls `roll()`.",
+            "narrate": "Battle is handed its dice, and the field's type is the interface, Dice. Battle never asks which kind of dice it holds. It just calls roll."
+          },
+          {
+            "say": "The game builds `new Battle(new RandomDice())`. A test builds `new Battle(new FixedDice())`.",
+            "narrate": "So the game builds a Battle with a new RandomDice. And a test builds a Battle with a new FixedDice."
+          }
+        ],
+        "check": {
+          "prompt": "In the test, Battle holds a FixedDice. What does `damage()` return?",
+          "answer": "12, every time it is called",
+          "wrong": [
+            "A number from 2 to 12",
+            "6, the number FixedDice rolls"
+          ],
+          "why": "FixedDice always rolls 6, and `damage()` doubles the roll. With the chance taken out, the test knows the one right answer.",
+          "narrate": "In the test, Battle holds a FixedDice. What does damage return?",
+          "why_narrate": "FixedDice always rolls 6, and damage doubles the roll. So it's 12, every time. With the chance taken out, the test knows the one right answer."
+        }
+      },
+      {
+        "say": "Here is that test, written with JUnit, as you wrote tests two sets back: Notice what did not change to make this work: Battle. It depends only on the interface, so any kind of Dice can be handed to it, real or made for a test, and its code stays the same. That is polymorphism paying off in a big project. A class that depends on an interface, not on one particular class, can be tested on its own, and its parts can be swapped later.",
+        "beats": [
+          {
+            "say": "Here is that test, written with JUnit, as you wrote tests two sets back:",
+            "narrate": "Here's that test, written with JUnit, the way you wrote tests two sets back."
+          },
+          {
+            "code": "@Test\nvoid damageDoublesTheRoll() {\n    Battle battle = new Battle(new FixedDice());\n    assertEquals(12, battle.damage());\n}",
+            "language": "java",
+            "narrate": "It builds a Battle with a FixedDice, then checks that damage is 12. It gives the same result on every run."
+          },
+          {
+            "say": "Notice what did not change to make this work: Battle. It depends only on the interface, so any kind of Dice can be handed to it, real or made for a test, and its code stays the same.",
+            "narrate": "Now notice what didn't change to make this work: Battle. It depends only on the interface. So any kind of Dice can be handed to it, real or made for a test, and Battle's code stays exactly the same."
+          },
+          {
+            "say": "That is polymorphism paying off in a big project. A class that depends on an interface, not on one particular class, can be tested on its own, and its parts can be swapped later.",
+            "narrate": "That's polymorphism paying off in a big project. A class that depends on an interface, not on one particular class, can be tested on its own. And its parts can be swapped out later."
+          }
+        ]
+      }
+    ],
+    "outro": "Hand each class what it needs, as an interface, and you can test it.",
+    "intro_narrate": "I'm Professor Flint. A game that rolls dice can give a different answer each time. But a test needs one answer it can check. An interface solves that problem, and it's how big projects stay testable.",
+    "outro_narrate": "Hand each class what it needs, as an interface, and you'll be able to test it."
+  },
+  {
+    "type": "code_trace",
+    "question": "This FixedDice rolls whatever number it is given. What does the program print?",
+    "code": "interface Dice {\n    int roll();\n}\n\nclass FixedDice implements Dice {\n    private int value;\n\n    FixedDice(int value) {\n        this.value = value;\n    }\n\n    public int roll() {\n        return value;\n    }\n}\n\nclass Battle {\n    private Dice dice;\n\n    Battle(Dice dice) {\n        this.dice = dice;\n    }\n\n    int damage() {\n        return dice.roll() * 2 + 1;\n    }\n}\n\nBattle b = new Battle(new FixedDice(4));\nSystem.out.println(b.damage());\nSystem.out.println(b.damage());",
+    "language": "java",
+    "correct": [
+      "9\n9"
+    ],
+    "case_sensitive": true,
+    "feedback": "The dice always rolls 4, so damage is 4 times 2, plus 1, which is 9, and it is 9 again on the second call. That sameness is the point: a test of Battle can say exactly what it expects."
+  },
+  {
+    "question": "Why does a test hand Battle a FixedDice instead of a RandomDice?",
+    "correct": [
+      "So that damage() gives one known answer the test can check"
+    ],
+    "incorrect": [
+      "So that the real game rolls a 6 every time it is played",
+      "So that Battle can skip calling roll() while it is tested",
+      "So that javac can work out the roll before the program runs"
+    ],
+    "feedback": "A test compares the answer with the one it expects, so the answer must not change from run to run. The real game still uses RandomDice; only the test swaps it out, and Battle still calls roll() either way.",
+    "language": "java"
+  },
+  {
+    "question": "Battle's field has the type Dice, the interface, not RandomDice. What does that buy you?",
+    "correct": [
+      "Any Dice class can be handed in, and Battle stays the same"
+    ],
+    "incorrect": [
+      "Battle runs faster, since an interface has no code of its own",
+      "javac checks that every roll will be between 1 and 6",
+      "Battle can build a RandomDice of its own whenever it needs one"
+    ],
+    "feedback": "Battle depends only on the promise, roll(), so RandomDice, FixedDice or a class not yet written can all be handed in. javac checks that each one has roll(), but not what it returns.",
+    "language": "java"
   },
   {
     "type": "npc_demo",
@@ -1416,6 +1555,187 @@
   },
   {
     "type": "npc_demo",
+    "question": "NPC: From many files to one program",
+    "npc": "flint",
+    "intro": "A real project has dozens of classes, the tests for them, and libraries written by other people. Nobody compiles all of that by hand. Here is how one command does it.",
+    "steps": [
+      {
+        "say": "A **build tool** turns a project's many files into one program you can run. The two you will meet most are **Maven** and **Gradle**. Each project has a **build file**: `pom.xml` for Maven, or `build.gradle` for Gradle. It describes the project and lists its **dependencies**: libraries of other people's code that the project uses. Each dependency names who made it, what it is called, and its version. This one is JUnit, and `test` means only the tests need it.",
+        "beats": [
+          {
+            "say": "A **build tool** turns a project's many files into one program you can run. The two you will meet most are **Maven** and **Gradle**.",
+            "narrate": "A build tool turns a project's many files into one program you can run. The two you'll meet most often are called Maven and Gradle."
+          },
+          {
+            "say": "Each project has a **build file**: `pom.xml` for Maven, or `build.gradle` for Gradle. It describes the project and lists its **dependencies**: libraries of other people's code that the project uses.",
+            "narrate": "Each project has a build file. For Maven it's called pom dot xml, and for Gradle, build dot gradle. It describes the project, and lists its dependencies: libraries of other people's code that the project uses."
+          },
+          {
+            "code": "<dependency>\n    <groupId>org.junit.jupiter</groupId>\n    <artifactId>junit-jupiter</artifactId>\n    <version>5.10.2</version>\n    <scope>test</scope>\n</dependency>",
+            "language": "part of a pom.xml",
+            "narrate": "Here's one dependency from Maven's build file. Find the four tags inside dependency."
+          },
+          {
+            "say": "Each dependency names who made it, what it is called, and its version. This one is JUnit, and `test` means only the tests need it.",
+            "narrate": "Each dependency names who made it, what it's called, and its version. This one is JUnit, and the word test means that only the tests need it."
+          }
+        ]
+      },
+      {
+        "say": "The tool downloads each dependency, usually from **Maven Central**, a public store of Java libraries. Python has the same idea: **pip**, Python's installer, downloads packages from **PyPI**, Python's public store, using the list in a file called `requirements.txt`.",
+        "beats": [
+          {
+            "say": "The tool downloads each dependency, usually from **Maven Central**, a public store of Java libraries.",
+            "narrate": "The tool downloads each dependency, usually from Maven Central, a public store of Java libraries."
+          },
+          {
+            "say": "Python has the same idea: **pip**, Python's installer, downloads packages from **PyPI**, Python's public store, using the list in a file called `requirements.txt`.",
+            "narrate": "Python has the same idea. pip, Python's installer, downloads packages from PyPI, Python's public store, using the list in a file called requirements dot t x t."
+          }
+        ],
+        "check": {
+          "prompt": "A teammate adds a library to the build file. What does the next build do about it?",
+          "answer": "Downloads that version, before compiling anything",
+          "wrong": [
+            "Nothing, until each teammate installs it by hand",
+            "Compiles first, then reports the library missing"
+          ],
+          "why": "The build file is the list of what the project needs, so the tool fetches whatever is missing before it compiles. Everyone on the team gets the same version.",
+          "narrate": "A teammate adds a library to the build file. What does the next build do about it?",
+          "why_narrate": "The build file is the list of what the project needs. So the tool fetches whatever is missing, before it compiles. And everyone on the team gets the same version."
+        }
+      },
+      {
+        "say": "Then one command builds the whole project. With Maven it is `mvn package`, and it starts by compiling every class in `src/main/java`, the folder you laid out in the last set. Then it compiles and runs every test in `src/test/java`, and last it packages the program as a **JAR**: one file holding all of the program's compiled `.class` files, zipped together. With Gradle the command is `gradle build`, and it does the same jobs.",
+        "beats": [
+          {
+            "say": "Then one command builds the whole project. With Maven it is `mvn package`, and it starts by compiling every class in `src/main/java`, the folder you laid out in the last set.",
+            "narrate": "Then one command builds the whole project. With Maven, it's M V N package. It starts by compiling every class in source, main, java: the folder you laid out in the last set."
+          },
+          {
+            "say": "Then it compiles and runs every test in `src/test/java`, and last it packages the program as a **JAR**: one file holding all of the program's compiled `.class` files, zipped together.",
+            "narrate": "Then it compiles and runs every test in source, test, java. And last, it packages the program as a JAR: one file holding all of the program's compiled class files, zipped together."
+          },
+          {
+            "say": "With Gradle the command is `gradle build`, and it does the same jobs.",
+            "narrate": "With Gradle, the command is gradle build, and it does the same jobs."
+          }
+        ],
+        "check": {
+          "prompt": "One of the forty tests fails during `mvn package`. What happens?",
+          "answer": "The build fails, and no JAR is made",
+          "wrong": [
+            "The JAR is made, with a warning about one test",
+            "The failing test is skipped, and the build goes on"
+          ],
+          "why": "Running the tests is one of the build's steps, and Maven runs them before it packages. A failing test fails the whole build, so a program that fails its own tests never becomes a JAR.",
+          "narrate": "One of the forty tests fails, during M V N package. What happens?",
+          "why_narrate": "Running the tests is one of the build's steps, and Maven runs them before it packages. A failing test fails the whole build. So a program that fails its own tests never becomes a JAR."
+        }
+      },
+      {
+        "say": "Once the build file names the class that holds `main`, you can run the JAR with one line: Every build follows the same build file, the same way, on anyone's machine, and runs the tests again whenever the code changes. That is how a team keeps a large Java project working.",
+        "beats": [
+          {
+            "say": "Once the build file names the class that holds `main`, you can run the JAR with one line:",
+            "narrate": "Once the build file names the class that holds main, you can run the JAR, with one line."
+          },
+          {
+            "code": "java -jar game.jar",
+            "language": "typed at the command line",
+            "narrate": "Here's that one line. Java opens the JAR and starts at the main the build file named."
+          },
+          {
+            "say": "Every build follows the same build file, the same way, on anyone's machine, and runs the tests again whenever the code changes. That is how a team keeps a large Java project working.",
+            "narrate": "Every build follows the same build file, the same way, on anyone's machine. And it runs the tests again whenever the code changes. That's how a team keeps a large Java project working."
+          }
+        ]
+      }
+    ],
+    "outro": "Build often, and let the tests stop a bad build before anyone runs it.",
+    "intro_narrate": "A real project has dozens of classes, the tests for them, and libraries written by other people. Nobody compiles all of that by hand. Let me show you how one command does the lot.",
+    "outro_narrate": "Build often, and let the tests stop a bad build before anyone ever runs it."
+  },
+  {
+    "type": "ordering",
+    "question": "Put the steps of mvn package in the order Maven carries them out, first to last.",
+    "items": [
+      "Read the build file, pom.xml",
+      "Compile the classes in src/main/java",
+      "Compile the tests in src/test/java",
+      "Run every test",
+      "Package the compiled classes into a JAR"
+    ],
+    "feedback": "Maven reads the build file, compiles the program, then compiles and runs the tests, and packages only after every test has passed. That order is why a failing test means no JAR."
+  },
+  {
+    "type": "matching",
+    "question": "Match each Python tool or habit to the Java one that does the same job.",
+    "pairs": [
+      {
+        "term": "pip",
+        "definition": "Maven or Gradle"
+      },
+      {
+        "term": "requirements.txt",
+        "definition": "pom.xml or build.gradle"
+      },
+      {
+        "term": "PyPI",
+        "definition": "Maven Central"
+      },
+      {
+        "term": "assert, in a Python test",
+        "definition": "assertEquals, in a JUnit test"
+      },
+      {
+        "term": "python game.py",
+        "definition": "java -jar game.jar"
+      }
+    ],
+    "feedback": "pip fetches libraries listed in requirements.txt from PyPI; Maven or Gradle fetch those listed in the build file from Maven Central. A Java build tool does more than pip, though: it also compiles, runs the tests, and packages the JAR."
+  },
+  {
+    "question": "Your change to Battle breaks one test, and you run gradle build. What does the build report?",
+    "correct": [
+      "A failed build, and a report of which test failed"
+    ],
+    "incorrect": [
+      "A successful build, since the other tests all passed",
+      "A successful build, with the failing test left out",
+      "A compile error, since javac checks what each test expects"
+    ],
+    "feedback": "The change compiles, so javac has nothing to say: whether damage() gives the right number is found only when the test runs. A failing test fails the build, whichever tool you use, and the tool reports which test it was, so the broken change is caught before anyone uses the program.",
+    "language": "java"
+  },
+  {
+    "question": "What is a JAR?",
+    "correct": [
+      "One file that holds a program's compiled classes, zipped"
+    ],
+    "incorrect": [
+      "A Java source file that holds every class of a program",
+      "The build file that lists the libraries a project uses",
+      "A folder laid out as src/main/java and src/test/java"
+    ],
+    "feedback": "JAR stands for Java ARchive: the program's compiled .class files, zipped into one file, which java -jar can run once the build file names the class with main. The source files and the build file stay behind in the project.",
+    "language": "java"
+  },
+  {
+    "question": "In a build file, what is a dependency?",
+    "correct": [
+      "A library of other people's code that the project uses"
+    ],
+    "incorrect": [
+      "A class in the project that another class extends",
+      "A test that has to pass before the build carries on",
+      "A method that has to run before main is called"
+    ],
+    "feedback": "A dependency is code the project depends on but did not write, such as JUnit. The build file names it and its version, and the build tool downloads it.",
+    "language": "java"
+  },
+  {
+    "type": "npc_demo",
     "question": "NPC: Before it runs, or while it runs",
     "npc": "ada",
     "intro": "I'm Ada, the Chief Artificer. You have met a good deal of trouble in this wing. I want you to sort all of it by one question: when does Java find out?",
@@ -1468,15 +1788,15 @@
         }
       },
       {
-        "say": "And some mistakes are never reported at all: the program runs and gives a wrong answer. An `int` that overflows wraps around without a word, and `7 / 2` quietly drops its fraction. Those are the hardest to find. That is why you test your code, and why it pays to let `javac` check everything it can.",
+        "say": "And some mistakes are never reported at all: the program runs and gives a wrong answer. An `int` that overflows wraps around without a word, and `7 / 2` quietly drops its fraction. Those are the hardest to find. That is why you test your code, why a build refuses to finish when a test fails, and why it pays to let `javac` check everything it can.",
         "beats": [
           {
             "say": "And some mistakes are never reported at all: the program runs and gives a wrong answer. An `int` that overflows wraps around without a word, and `7 / 2` quietly drops its fraction.",
             "narrate": "And some mistakes are never reported at all. The program runs, and simply gives a wrong answer. An int that overflows wraps around without a word, and 7 divided by 2 quietly drops its fraction."
           },
           {
-            "say": "Those are the hardest to find. That is why you test your code, and why it pays to let `javac` check everything it can.",
-            "narrate": "Those are the hardest of all to find. That's why you test your code, and why it pays to let javac check everything it can."
+            "say": "Those are the hardest to find. That is why you test your code, why a build refuses to finish when a test fails, and why it pays to let `javac` check everything it can.",
+            "narrate": "Those are the hardest of all to find. That's why you test your code, why a build refuses to finish when a test fails, and why it pays to let javac check everything it can."
           }
         ],
         "check": {
@@ -1735,6 +2055,49 @@
     "solution": "private double radius;\n\nCircle(double radius) {\n    this.radius = radius;\n}\n\npublic double area() {\n    return Math.PI * radius * radius;\n}\n\npublic String name() {\n    return \"circle\";\n}",
     "hint": "Copy Square's shape: a private field, a constructor that stores it with this.radius = radius, and the two methods the interface lists, each with public in front.",
     "feedback": "implements Shape is a promise to have area() and name(), and javac holds Circle to it. Because the interface's methods are public, Circle's must be too. Then a Shape array can hold Squares and Circles alike, and each answers area() its own way."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class CountingDice, which implements Dice (above). A test uses it to choose the roll AND to count how many times Battle rolls. It needs two private fields,  int value  and  int rolls;  a constructor  CountingDice(int value),  with rolls starting at 0;  public int roll(),  which adds 1 to rolls and returns value;  and  public int getRolls(),  which returns rolls.",
+    "scaffold": "interface Dice {\n    int roll();\n}\n\nclass Battle {\n    private Dice dice;\n\n    Battle(Dice dice) {\n        this.dice = dice;\n    }\n\n    int damage() {\n        return dice.roll() * 2;\n    }\n}",
+    "signature": "class CountingDice implements Dice",
+    "tests": [
+      {
+        "run": "Dice d = new CountingDice(5);",
+        "check": "d.roll()",
+        "expect": 5
+      },
+      {
+        "run": "CountingDice d = new CountingDice(4);\nd.roll();\nd.roll();",
+        "check": "d.getRolls()",
+        "expect": 2
+      },
+      {
+        "run": "CountingDice d = new CountingDice(3);\nBattle b = new Battle(d);",
+        "check": "b.damage() + d.getRolls()",
+        "expect": 7
+      },
+      {
+        "run": "Dice a = new CountingDice(2);\nDice b = new CountingDice(5);",
+        "check": "a.roll()",
+        "expect": 2
+      },
+      {
+        "run": "CountingDice a = new CountingDice(2);\nCountingDice b = new CountingDice(5);\na.roll();",
+        "check": "b.getRolls()",
+        "expect": 0
+      },
+      {
+        "private": "CountingDice.value"
+      },
+      {
+        "private": "CountingDice.rolls"
+      }
+    ],
+    "solution": "private int value;\nprivate int rolls;\n\nCountingDice(int value) {\n    this.value = value;\n}\n\npublic int roll() {\n    rolls = rolls + 1;\n    return value;\n}\n\npublic int getRolls() {\n    return rolls;\n}",
+    "hint": "Like Circle: private fields, a constructor that stores value with this.value = value (an int field starts at 0 by itself), and the methods with public in front. roll() changes rolls before it returns.",
+    "feedback": "CountingDice keeps the Dice promise, so Battle accepts it without a single change. Because the test chooses the roll, damage() has one right answer; because the dice counts, the test can also check that Battle rolled exactly once. Each dice keeps its own count, which is why the fields must not be static."
   },
   {
     "type": "code_write",

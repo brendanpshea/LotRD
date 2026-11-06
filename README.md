@@ -252,7 +252,7 @@ A CodingBat-style problem: the signature is fixed and shown above the box, the s
 }
 ```
 
-- **Where they appear.** The standalone *Python Lab* set is all `code_write`; Computing Concepts chapters 3, 4 and 5 each end with six of them, after the reading and tracing questions that teach the same construct and after a mentor scene introducing the format. Chapter 3's are pure expressions (no `if`, no loops), chapter 4's use conditionals and loops, chapter 5's use lists and dictionaries — matching what each chapter has taught. Most are ported from the course's own PyQuiz banks, so a student meets the same problems the notebook set them. The four bonus sets *Python to Java* each end with eight Java ones, most of them showing the Python function they port (see *Code shown with a question*).
+- **Where they appear.** The standalone *Python Lab* set is all `code_write`; Computing Concepts chapters 3, 4 and 5 each end with six of them, after the reading and tracing questions that teach the same construct and after a mentor scene introducing the format. Chapter 3's are pure expressions (no `if`, no loops), chapter 4's use conditionals and loops, chapter 5's use lists and dictionaries — matching what each chapter has taught. Most are ported from the course's own PyQuiz banks, so a student meets the same problems the notebook set them. The four bonus sets *Python to Java* each end with eight or nine Java ones, most of them showing the Python function they port (see *Code shown with a question*); one shows a JUnit test class instead, and asks for the method that passes it.
 - **`hint`** is optional: one line, kept behind a *Stuck? Show a hint* fold so opening it is the student's decision.
 - **Run is free and unlimited.** The Run button executes the same tests that will grade the answer and shows expected against actual, row by row. Only Submit resolves the turn.
 - **Graded per test case**, like matching and cloze, but the attack dice are scaled to a fixed budget (`CODE_WRITE_HIT_BUDGET`) rather than one die per case — otherwise a ten-case problem would deal twice the damage of a five-case one for the same work. The question re-queues unless every case passes.
@@ -401,10 +401,10 @@ matches the number of questions actually in each file.
 | Computing Concepts | OS, Networks, Cloud & the Web | 50 |
 | Computing Concepts | Cybersecurity — Defending Systems | 50 |
 | Computing Concepts | AI, Machine Learning & Ethics | 50 |
-| Computing Concepts | Bonus: Python to Java 1 — Values & Types | 44 |
-| Computing Concepts | Bonus: Python to Java 2 — Decisions, Loops & Methods | 46 |
-| Computing Concepts | Bonus: Python to Java 3 — Collections & Classes | 45 |
-| Computing Concepts | Bonus: Python to Java 4 — Recursion, Polymorphism & Exceptions | 52 |
+| Computing Concepts | Bonus: Python to Java 1 — Values, Types & the JVM | 57 |
+| Computing Concepts | Bonus: Python to Java 2 — Decisions, Loops, Methods & Tests | 57 |
+| Computing Concepts | Bonus: Python to Java 3 — Collections, Classes & Packages | 58 |
+| Computing Concepts | Bonus: Python to Java 4 — The Big Ideas & Building a Project | 61 |
 | Database | Database Foundations | 33 |
 | Database | Introduction to SQL: SELECT | 30 |
 | Database | Joins and Set Operations | 30 |

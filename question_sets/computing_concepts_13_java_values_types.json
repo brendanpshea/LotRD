@@ -272,6 +272,175 @@
   },
   {
     "type": "npc_demo",
+    "question": "NPC: Inside the JVM",
+    "npc": "ada",
+    "intro": "javac has turned your program into bytecode. What happens to that bytecode next decides where Java can run, and how fast. Let's look inside the JVM.",
+    "intro_narrate": "javac has turned your program into bytecode. What happens to that bytecode next decides where Java can run, and how fast it goes. Let's look inside the JVM.",
+    "steps": [
+      {
+        "say": "Bytecode is not **machine code**, the instructions one kind of processor carries out itself. It is written for the JVM, and there is a JVM for Windows, for Mac and for Linux. So the same `.class` file runs on any machine that has a JVM. Java's motto for this is **write once, run anywhere**. Python manages this too: a `.py` file runs wherever Python is installed. A program compiled to one processor's machine code, as C programs are, does not.",
+        "beats": [
+          {
+            "say": "Bytecode is not **machine code**, the instructions one kind of processor carries out itself. It is written for the JVM, and there is a JVM for Windows, for Mac and for Linux.",
+            "narrate": "Bytecode isn't machine code, the instructions that one kind of processor carries out by itself. It's written for the JVM instead, and there's a JVM for Windows, for Mac, and for Linux."
+          },
+          {
+            "say": "So the same `.class` file runs on any machine that has a JVM. Java's motto for this is **write once, run anywhere**.",
+            "narrate": "So the very same dot class file runs on any machine that has a JVM. Java's motto for this is write once, run anywhere."
+          },
+          {
+            "say": "Python manages this too: a `.py` file runs wherever Python is installed. A program compiled to one processor's machine code, as C programs are, does not.",
+            "narrate": "Python manages this too. A dot p y file runs wherever Python is installed. But a program compiled to one processor's machine code, as C programs are, does not."
+          }
+        ],
+        "check": {
+          "prompt": "You compile Hello.java on a Windows laptop. Where can the Hello.class it makes be run?",
+          "answer": "On any machine with a JVM, Mac and Linux too",
+          "wrong": [
+            "Just on Windows machines like the one it was made on",
+            "Anywhere at all, even on a machine with no JVM"
+          ],
+          "why": "Bytecode is written for the JVM, not for one processor, so any machine with a JVM can run the same .class file, as long as that JVM is at least as new as the javac that made it. A machine with no JVM cannot run it at all.",
+          "narrate": "You compile Hello dot java on a Windows laptop. Where can the Hello dot class file it makes be run?",
+          "why_narrate": "On any machine with a JVM, Mac and Linux too, as long as that JVM is at least as new as the javac that made the file. Bytecode is written for the JVM, not for one processor. But a machine with no JVM can't run it at all."
+        }
+      },
+      {
+        "say": "When a program starts, the JVM **interprets** its bytecode: it reads each instruction and carries it out, one at a time. Meanwhile the JVM watches which methods run most. Its **just-in-time (JIT) compiler**, a compiler that works while the program runs, turns those methods into machine code, and from then on they run much faster. So a Java program that runs for a long time gets faster as it goes. The cost comes at the start: a JVM takes a moment to get going, before the JIT has helped at all.",
+        "beats": [
+          {
+            "say": "When a program starts, the JVM **interprets** its bytecode: it reads each instruction and carries it out, one at a time.",
+            "narrate": "When a program starts, the JVM interprets its bytecode. That means it reads each instruction and carries it out, one at a time."
+          },
+          {
+            "say": "Meanwhile the JVM watches which methods run most. Its **just-in-time (JIT) compiler**, a compiler that works while the program runs, turns those methods into machine code, and from then on they run much faster.",
+            "narrate": "Meanwhile, the JVM keeps watch on which methods run the most. Its just-in-time compiler, the JIT, is a compiler that works while the program runs. It turns those methods into machine code, and from then on they run much faster."
+          },
+          {
+            "say": "So a Java program that runs for a long time gets faster as it goes. The cost comes at the start: a JVM takes a moment to get going, before the JIT has helped at all.",
+            "narrate": "So a Java program that runs for a long time gets faster as it goes. The cost comes at the start. A JVM takes a moment to get going, before the JIT has helped at all."
+          }
+        ],
+        "check": {
+          "prompt": "Which program gains the most from the JIT compiler?",
+          "answer": "A server calling the same methods for days",
+          "wrong": [
+            "A script that prints one line and stops",
+            "A long program whose every line runs only once"
+          ],
+          "why": "The JIT pays off when the same methods run many times. A one-line script is over before anything is worth compiling, and in a program whose every line runs once, nothing is used often enough to be worth compiling.",
+          "narrate": "Which program gains the most from the JIT compiler?",
+          "why_narrate": "The server that calls the same methods for days. The JIT pays off when the same methods run many times. A one line script is over too soon, and in a program whose every line runs only once, nothing is used often enough to be worth compiling."
+        }
+      },
+      {
+        "say": "A Java program makes objects as it runs, and you never free them by hand. The JVM's **garbage collector** finds objects the program can no longer reach, because nothing refers to them any more, and frees their memory. Python frees memory automatically too, so none of this is new work for you: in neither language do you free memory yourself.",
+        "beats": [
+          {
+            "say": "A Java program makes objects as it runs, and you never free them by hand. The JVM's **garbage collector** finds objects the program can no longer reach, because nothing refers to them any more, and frees their memory.",
+            "narrate": "A Java program makes objects as it runs, and you never free them by hand. The JVM's garbage collector finds the objects that the program can no longer reach, because nothing refers to them any more, and frees their memory."
+          },
+          {
+            "code": "int score = 7;\nString report = \"Score: \" + score;   // a new String is made\nreport = \"No score yet\";             // nothing refers to the first one now",
+            "language": "java",
+            "narrate": "Here, report first refers to a new String, Score 7. Then report is moved to a different String, and nothing refers to the first one any more. The garbage collector can free it."
+          },
+          {
+            "say": "Python frees memory automatically too, so none of this is new work for you: in neither language do you free memory yourself.",
+            "narrate": "Python frees memory automatically too, so none of this is new work for you. In neither language do you free memory yourself."
+          }
+        ]
+      }
+    ],
+    "outro": "Your turn: where can bytecode run, and what makes it fast?",
+    "outro_narrate": "Your turn. Where can bytecode run, and what makes it fast?"
+  },
+  {
+    "question": "A team builds one .class file and needs it to run on Windows, Mac and Linux machines. What do those machines need?",
+    "correct": [
+      "A JVM at least as new as the javac that built it"
+    ],
+    "incorrect": [
+      "A copy of javac on each, to compile it again",
+      "The source code, so each can make its own bytecode",
+      "A separate .class file built for each system"
+    ],
+    "feedback": "Bytecode is written for the JVM, not for one processor or system, so one .class file runs wherever there is a JVM that understands it. That means one at least as new as the javac that made it, since a newer javac writes bytecode that an older JVM refuses. Nobody needs the source code or javac to run it: those are needed only to make the bytecode."
+  },
+  {
+    "type": "ordering",
+    "question": "Put the life of a Java program in order, from what you type to the fast machine code.",
+    "items": [
+      "You write the source code, in Hello.java",
+      "javac checks the source code for compile errors",
+      "javac writes the bytecode, in Hello.class",
+      "The JVM runs the bytecode, interpreting it at first",
+      "The JIT turns the most-used methods into machine code"
+    ],
+    "feedback": "javac does its work once, before the program runs: it checks the source and writes bytecode. The JVM then runs that bytecode, interpreting it at first, and while the program runs the JIT compiles the methods used most into machine code."
+  },
+  {
+    "question": "A Java web server runs for weeks. Why does it run faster after its first few minutes than at the very start?",
+    "correct": [
+      "The JIT has compiled its most-used methods into machine code"
+    ],
+    "incorrect": [
+      "javac recompiles the source code while the server runs",
+      "The garbage collector has deleted the methods it no longer needs",
+      "The interpreter speeds up the more often it runs a method"
+    ],
+    "feedback": "At first the JVM interprets the bytecode, and the interpreter never speeds up. As the server runs, the JIT compiler spots the methods called most and replaces the interpreting with machine code, which the processor runs directly. javac is finished before the program starts, and the garbage collector frees objects, not methods."
+  },
+  {
+    "question": "For which of these programs is the JVM's start-up time most likely to matter?",
+    "correct": [
+      "A tiny script that runs for a fraction of a second"
+    ],
+    "incorrect": [
+      "A web server that runs for months without stopping",
+      "A game that runs for hours while someone plays",
+      "A program that sorts a billion records overnight"
+    ],
+    "feedback": "A JVM takes a moment to get going, and at first it runs without the JIT's help. For a program that runs for hours, that moment is nothing. For a script whose real work takes a fraction of a second, it can be most of the run. In practice the bigger wait is javac: every change has to be compiled before it can run, which takes a second or so even for a small program. Both are reasons quick scripts are so often written in Python."
+  },
+  {
+    "question": "Which of these are true of Java's garbage collector?",
+    "correct": [
+      "It frees objects that the program can no longer reach",
+      "It works inside the JVM while the program runs"
+    ],
+    "incorrect": [
+      "It frees an object even while a variable still refers to it",
+      "It runs as part of javac, before the program starts",
+      "It needs you to write a line freeing each object"
+    ],
+    "feedback": "The garbage collector is part of the JVM, and it works while the program runs: it looks for objects that the program can no longer reach, because nothing refers to them any more, and takes their memory back. An object that is still referred to is left alone. You never free memory by hand, in Java or in Python."
+  },
+  {
+    "type": "matching",
+    "question": "Match each part of how Java runs to what it is.",
+    "pairs": [
+      {
+        "term": "Bytecode",
+        "definition": "Instructions written for the JVM, not for one processor"
+      },
+      {
+        "term": "Machine code",
+        "definition": "Instructions that one kind of processor runs itself"
+      },
+      {
+        "term": "The interpreter",
+        "definition": "The part that runs bytecode one instruction at a time"
+      },
+      {
+        "term": "The JIT compiler",
+        "definition": "The part that compiles busy methods as the program runs"
+      }
+    ],
+    "feedback": "Bytecode is what javac writes, made for the JVM rather than for one kind of processor. Machine code is what a processor carries out by itself. Inside the JVM, the interpreter runs the bytecode step by step at first, and the JIT compiler turns the methods used most into machine code while the program runs."
+  },
+  {
+    "type": "npc_demo",
     "question": "NPC: Every variable has a type",
     "npc": "ada",
     "intro": "In Python, a variable can hold anything. In Java, each variable is made for one type of value. Here is the difference.",
@@ -1073,6 +1242,207 @@
       "s.indexOf(\"a\")"
     ],
     "feedback": "substring and toUpperCase both make new Strings, and \"\" + anything is a String, because + with a String joins. charAt gives a char, while length and indexOf give ints: a count and a position."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Which language for which job",
+    "npc": "ada",
+    "intro": "You could write most programs in either Python or Java, so why do teams pick one over the other? Each is strong where the other is weak. Let's weigh them.",
+    "intro_narrate": "You could write most programs in either Python or Java. So why do teams pick one over the other? Each one is strong where the other is weak. Let's weigh them up.",
+    "steps": [
+      {
+        "say": "Java's types pay off on a big program that many people work on for years. javac finds a type mistake anywhere in the program before it ships, not when a customer reaches that line. Because the types say what each name is, an **IDE**, the editor programmers work in, can list the methods a value has as you type, and can rename a method everywhere it is used, safely. The types document the code, too. A method's first line, its header, such as `double average(int a, int b)`, says two ints go in and a double comes out.",
+        "beats": [
+          {
+            "say": "Java's types pay off on a big program that many people work on for years. javac finds a type mistake anywhere in the program before it ships, not when a customer reaches that line.",
+            "narrate": "Java's types pay off on a big program, one that many people work on for years. javac finds a type mistake anywhere in the program before it ships, not when a customer happens to reach that line."
+          },
+          {
+            "say": "Because the types say what each name is, an **IDE**, the editor programmers work in, can list the methods a value has as you type, and can rename a method everywhere it is used, safely.",
+            "narrate": "Because the types say what each name is, an IDE, the editor programmers work in, can list the methods a value has as you type. It can also rename a method everywhere it's used, safely."
+          },
+          {
+            "say": "The types document the code, too. A method's first line, its header, such as `double average(int a, int b)`, says two ints go in and a double comes out.",
+            "narrate": "The types document the code, too. A method's first line, its header, might say double average, taking int a and int b. That tells you two ints go in, and a double comes out."
+          }
+        ],
+        "check": {
+          "prompt": "A team renames a method that is used in 300 places in a large Java program. What makes the IDE's automatic rename safe?",
+          "answer": "The types tell it which uses are that very method",
+          "wrong": [
+            "Java programs are shorter, so there is less to search",
+            "It changes every word in the code that matches the name"
+          ],
+          "why": "Two classes may each have a method with the same name, and a variable may share it too. The types say which class each value belongs to, so the IDE changes exactly the uses of that one method, and javac then checks the result.",
+          "narrate": "A team renames a method that's used in 300 places in a large Java program. What makes the IDE's automatic rename safe?",
+          "why_narrate": "The types tell it which uses are that very method. Two classes might each have a method with the same name. Because the types say which class each value belongs to, the IDE changes exactly the right uses, and javac checks the result."
+        }
+      },
+      {
+        "say": "Python has optional **type hints**, which say what type each name should hold: `def average(a: int, b: int) -> float:`. Separate tools such as mypy check them, but Python itself neither requires them nor enforces them.",
+        "beats": [
+          {
+            "say": "Python has optional **type hints**, which say what type each name should hold: `def average(a: int, b: int) -> float:`.",
+            "narrate": "Python has optional type hints, which say what type each name should hold. These ones say that a and b are ints, and that the function gives back a float."
+          },
+          {
+            "say": "Separate tools such as mypy check them, but Python itself neither requires them nor enforces them.",
+            "narrate": "Separate tools, such as mypy, check them. But Python itself neither requires them nor enforces them."
+          }
+        ]
+      },
+      {
+        "say": "For heavy calculation, JIT-compiled Java usually runs much faster than the same work written in plain Python. The types help even with the JIT switched off. Java knows each variable's type before it runs, so it can add plain numbers directly, while Python checks what kind of value each name holds at every step. That is why Python's fast libraries, such as NumPy, do their heavy work in C, which is compiled straight to machine code. Your Python just tells them what to do.",
+        "beats": [
+          {
+            "say": "For heavy calculation, JIT-compiled Java usually runs much faster than the same work written in plain Python.",
+            "narrate": "Next, speed. For heavy calculation, JIT compiled Java usually runs much faster than the same work written in plain Python."
+          },
+          {
+            "say": "The types help even with the JIT switched off. Java knows each variable's type before it runs, so it can add plain numbers directly, while Python checks what kind of value each name holds at every step.",
+            "narrate": "The types help even with the JIT switched off. Java knows each variable's type before the program runs, so it can add plain numbers directly. Python has to check what kind of value each name holds, at every step."
+          },
+          {
+            "say": "That is why Python's fast libraries, such as NumPy, do their heavy work in C, which is compiled straight to machine code. Your Python just tells them what to do.",
+            "narrate": "That's why Python's fast libraries, such as NumPy, do their heavy work in C, which is compiled straight to machine code. Your Python code just tells them what to do."
+          }
+        ]
+      },
+      {
+        "say": "Java's homes are the large back-end servers of banks and online stores; big-data tools built on the JVM, such as Kafka, Hadoop and Elasticsearch; and Minecraft: Java Edition. Android's own libraries are written in Java. New Android apps are mostly written in Kotlin, a language that uses Java's libraries. Python's homes are data analysis and machine learning, scripts and automation, notebooks, and quick prototypes. Java's strengths have a cost: more to write, and every change must be compiled before it runs. For a quick script or an experiment, Python's shorter code usually wins.",
+        "beats": [
+          {
+            "say": "Java's homes are the large back-end servers of banks and online stores; big-data tools built on the JVM, such as Kafka, Hadoop and Elasticsearch; and Minecraft: Java Edition.",
+            "narrate": "Java's homes are the large back end servers of banks and online stores, big data tools built on the JVM, such as Kafka, Hadoop and Elasticsearch, and Minecraft, Java Edition."
+          },
+          {
+            "say": "Android's own libraries are written in Java. New Android apps are mostly written in Kotlin, a language that uses Java's libraries.",
+            "narrate": "Android's own libraries are written in Java. New Android apps, though, are mostly written in Kotlin, a language that uses Java's libraries."
+          },
+          {
+            "say": "Python's homes are data analysis and machine learning, scripts and automation, notebooks, and quick prototypes.",
+            "narrate": "Python's homes are data analysis and machine learning, scripts and automation, notebooks, and quick prototypes."
+          },
+          {
+            "say": "Java's strengths have a cost: more to write, and every change must be compiled before it runs. For a quick script or an experiment, Python's shorter code usually wins.",
+            "narrate": "Java's strengths have a cost. There's more to write, and every change must be compiled before it runs. For a quick script or an experiment, Python's shorter code usually wins."
+          }
+        ],
+        "check": {
+          "prompt": "A scientist wants to try an idea on some data this afternoon, in a notebook. What is the best reason to use Python?",
+          "answer": "Little code to write, and data libraries ready to use",
+          "wrong": [
+            "Python finds type mistakes before the code runs",
+            "Python runs heavy loops faster than Java does"
+          ],
+          "why": "For a quick experiment, how fast you can write it matters most, and Python's short code, notebooks and data libraries win. Python does not check types before running, and plain Python loops are usually slower than Java's.",
+          "narrate": "A scientist wants to try an idea on some data this afternoon, in a notebook. What's the best reason to use Python?",
+          "why_narrate": "Little code to write, and data libraries ready to use. For a quick experiment, how fast you can write it matters most. Python doesn't check types before running, and plain Python loops are usually slower than Java's."
+        }
+      }
+    ],
+    "outro": "Your turn: for each job, find the reason that matters most.",
+    "outro_narrate": "Your turn. For each job, find the reason that matters most."
+  },
+  {
+    "question": "A bank's payment system is worked on by 200 programmers and must keep running for years. What is the best reason the bank writes it in Java?",
+    "correct": [
+      "javac catches type mistakes across the whole program before it ships"
+    ],
+    "incorrect": [
+      "Java code is shorter to write than the same code in Python",
+      "Java programs start up faster than Python scripts do",
+      "Java code needs no testing, because javac finds every bug"
+    ],
+    "feedback": "On a large program that lasts for years, catching type mistakes before release, and changing code safely with the IDE's help, matter most. Java is longer to write and slower to start, not shorter or quicker. And javac finds type mistakes, not every bug, so tests are still needed."
+  },
+  {
+    "question": "A data analyst needs a one-off chart from a spreadsheet by this afternoon. What is the best reason to reach for Python?",
+    "correct": [
+      "Short code, with data and chart libraries ready to use"
+    ],
+    "incorrect": [
+      "Its type checks catch mistakes before the chart is drawn",
+      "Its JIT compiler makes one-off scripts run the fastest",
+      "Its programs run on any machine that has a JVM"
+    ],
+    "feedback": "For quick, one-off work on data, what matters is how fast you can write it, and Python's short code, notebooks and data libraries win. Python does not check types before running (its hints are optional, and need a separate tool), and the JIT and the JVM belong to Java."
+  },
+  {
+    "type": "fill_blank",
+    "question": "The Python shown uses optional type ___, which separate tools such as mypy can check.",
+    "code": "def area(w: int, h: int) -> int:\n    return w * h",
+    "code_language": "python",
+    "correct": [
+      "hints",
+      "hint",
+      "annotations"
+    ],
+    "case_sensitive": false,
+    "feedback": "Type hints say what type each name should hold, and they document the code much as Java's types do. But they are optional, and Python does not check them as it runs: a separate tool such as mypy does."
+  },
+  {
+    "type": "code_trace",
+    "question": "This is Python, with type hints that say n is an int. What does it print?",
+    "code": "def twice(n: int) -> int:\n    return n * 2\n\nprint(twice(\"ab\"))",
+    "language": "python",
+    "correct": [
+      "abab"
+    ],
+    "case_sensitive": true,
+    "feedback": "The hints say n should be an int, but Python ignores them when it runs: \"ab\" * 2 repeats the text, giving abab. A separate tool such as mypy would report the mistake before the program ran. In Java, javac refuses a String where an int is declared, every time."
+  },
+  {
+    "question": "A team writes a game server that will run day and night, doing heavy calculation on every move. What is the best reason to choose Java over plain Python?",
+    "correct": [
+      "The JIT turns its busiest methods into machine code"
+    ],
+    "incorrect": [
+      "Java starts faster, so each move is answered sooner",
+      "Java needs less code, so the server is quicker to build",
+      "Java frees memory by itself, and Python cannot"
+    ],
+    "feedback": "A long-running server doing heavy calculation is where the JIT pays off: the methods used most become machine code, so JIT-compiled Java usually runs this kind of work much faster than plain Python. Start-up happens once, so it hardly matters here. Java needs more code, not less, and Python frees memory automatically too."
+  },
+  {
+    "question": "Which of these are real reasons a large team might choose Java?",
+    "correct": [
+      "javac finds type mistakes before the program ships",
+      "The IDE can rename a method everywhere it is used, safely",
+      "Method headers say what each method takes and returns"
+    ],
+    "incorrect": [
+      "Java programs start up faster than Python scripts",
+      "Java code is shorter than the same code in Python"
+    ],
+    "feedback": "Static types pay off as a program grows: javac checks every use before release, the IDE can rename and suggest safely because it knows what each name is, and the headers document the code. The costs run the other way: Java needs more code up front, every change must be compiled, and it starts more slowly."
+  },
+  {
+    "type": "matching",
+    "question": "Match each job to the language that suits it, and why.",
+    "pairs": [
+      {
+        "term": "A mod for Minecraft: Java Edition",
+        "definition": "Java, the language the game itself is written in"
+      },
+      {
+        "term": "Training a machine-learning model",
+        "definition": "Python, whose libraries do the maths in C"
+      },
+      {
+        "term": "A ten-line script to rename photos",
+        "definition": "Python, with very little code to write"
+      },
+      {
+        "term": "A bank's back-end server, changed by many for years",
+        "definition": "Java, whose types catch mistakes before release"
+      },
+      {
+        "term": "A new Android app",
+        "definition": "Kotlin, which uses Java's libraries"
+      }
+    ],
+    "feedback": "Each language has its homes. A Minecraft: Java Edition mod is written in Java, like the game. Machine learning is Python's, because its libraries do the heavy maths in C. A tiny script needs little code, which favours Python. A big, long-lived server favours Java's types. And new Android apps are mostly written in Kotlin, which uses Java's libraries."
   },
   {
     "type": "npc_demo",

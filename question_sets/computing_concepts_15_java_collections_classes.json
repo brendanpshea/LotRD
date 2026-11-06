@@ -714,7 +714,7 @@
           {
             "code": "class Hero {\n    String name;\n    int hp;\n\n    Hero(String name, int hp) {\n        this.name = name;\n        this.hp = hp;\n    }\n}",
             "language": "java",
-            "narrate": "Here's the class Hero. The two fields, name and hp, are declared at the top. Below them is the code that sets up each new hero. We'll look at that part closely in the next scene."
+            "narrate": "Here's the class Hero. The two fields, name and hp, are declared at the top. Below them is the code that sets up each new hero. We'll come back to that part soon, and look at it closely."
           },
           {
             "code": "ArrayList<Hero> party = new ArrayList<>();\nparty.add(new Hero(\"Ayla\", 30));\nparty.add(new Hero(\"Bren\", 12));\nSystem.out.println(party.get(1).hp);",
@@ -1112,6 +1112,418 @@
     ],
     "case_sensitive": true,
     "feedback": "println, String concatenation with +, and a printed list all call toString(). Add @Override above it, so that javac checks you really are replacing the toString every class inherits."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: One class, one file, one job",
+    "npc": "zoya",
+    "intro": "A real program has many classes, not one. They need somewhere to live and a sensible way to share out the work, so let's split one small game into classes.",
+    "steps": [
+      {
+        "say": "In Java, each **public class** lives in a file of its own, named after the class: Potion goes in `Potion.java`.",
+        "beats": [
+          {
+            "say": "In Java, each **public class** lives in a file of its own, named after the class: Potion goes in `Potion.java`.",
+            "narrate": "In Java, each public class lives in a file of its own, and the file is named after the class. So the class Potion goes in a file called Potion dot java."
+          },
+          {
+            "code": "Shop.java:1: error: class Potion is public, should be declared in a file named Potion.java\npublic class Potion {\n       ^",
+            "language": "javac, given Shop.java",
+            "narrate": "Put the public class Potion in a file called Shop dot java, and javac refuses it. It even tells you which file the class belongs in."
+          }
+        ],
+        "check": {
+          "prompt": "A file holds `public class GameMap`. What must the file be called?",
+          "answer": "`GameMap.java`",
+          "wrong": [
+            "`GameMap.class`",
+            "`Game.java`"
+          ],
+          "why": "A public class goes in a file with exactly its name and the ending `.java`. `GameMap.class` is the file javac makes from it.",
+          "narrate": "A file holds the public class GameMap. What must that file be called?",
+          "why_narrate": "A public class goes in a file with exactly its name, followed by dot java. GameMap dot class is a different file: it's the one javac makes, when it compiles GameMap dot java."
+        }
+      },
+      {
+        "say": "Classes in the same package, which for now means the same folder, use each other by name, with no `import`. Party imports ArrayList, which lives in `java.util`, but uses Hero with no import at all: `Hero.java` sits in the same folder.",
+        "beats": [
+          {
+            "say": "Classes in the same package, which for now means the same folder, use each other by name, with no `import`.",
+            "narrate": "Classes in the same package, which for now just means the same folder, use each other by name. No import line is needed for them."
+          },
+          {
+            "code": "import java.util.ArrayList;\n\npublic class Party {\n    private ArrayList<Hero> heroes = new ArrayList<>();\n\n    public void add(Hero h) {\n        heroes.add(h);\n    }\n}",
+            "language": "java: Party.java",
+            "narrate": "Here's Party dot java. It imports ArrayList. But look at how it uses Hero."
+          },
+          {
+            "say": "Party imports ArrayList, which lives in `java.util`, but uses Hero with no import at all: `Hero.java` sits in the same folder.",
+            "narrate": "Party imports ArrayList, from java dot util. But it uses Hero with no import at all, because Hero dot java sits right there, in the same folder."
+          }
+        ]
+      },
+      {
+        "say": "Give each class one job. A class whose parts all serve one job has high **cohesion**, and classes that rely little on each other's insides have low **coupling**. So a method that works on one hero's hp belongs in Hero, and one that walks the whole list of heroes belongs in Party.",
+        "beats": [
+          {
+            "say": "Give each class one job. A class whose parts all serve one job has high **cohesion**, and classes that rely little on each other's insides have low **coupling**.",
+            "narrate": "Give each class one job. A class whose parts all serve that one job has high cohesion. And classes that rely very little on each other's insides have low coupling. You met both words with Python classes."
+          },
+          {
+            "code": "Hero.java    knows its own name and hp\nParty.java   keeps the list of heroes\nShop.java    sells Potions for gold\nGame.java    holds main, where the program starts",
+            "language": "four files, four jobs",
+            "narrate": "Four files, one class in each, and each with one job. Read down the right-hand side: a hero, a party, a shop, and the game itself."
+          },
+          {
+            "say": "So a method that works on one hero's hp belongs in Hero, and one that walks the whole list of heroes belongs in Party.",
+            "narrate": "So a method that works on one hero's hp belongs in Hero. And a method that walks the whole list of heroes belongs in Party, which keeps that list."
+          }
+        ]
+      },
+      {
+        "say": "One more habit: declare a variable by what it can do, not by which class built it. **List** is an **interface**: a list of methods, such as `add`, `get` and `size`, that a class promises to have. You will write interfaces of your own in the next set. ArrayList keeps that promise, and so does **LinkedList**, which stores its items another way. javac holds you to it: on `names` it allows only List's methods, even though the object is an ArrayList. So if the rest of the code uses `names` only as a List, switching to a LinkedList changes one line. That keeps coupling low: the code depends on what a list can do, not on one class.",
+        "beats": [
+          {
+            "say": "One more habit: declare a variable by what it can do, not by which class built it.",
+            "narrate": "One more habit. Declare a variable by what it can do, not by which class built it."
+          },
+          {
+            "code": "List<String> names = new ArrayList<>();    // today\nList<String> names = new LinkedList<>();   // later: only this line changes",
+            "language": "java",
+            "narrate": "Two versions of the same line. Both declare names as a List. Only the class after the word new is different."
+          },
+          {
+            "say": "**List** is an **interface**: a list of methods, such as `add`, `get` and `size`, that a class promises to have. You will write interfaces of your own in the next set.",
+            "narrate": "List is an interface. That's a list of methods, such as add, get and size, that a class promises to have. You'll write interfaces of your own in the next set."
+          },
+          {
+            "say": "ArrayList keeps that promise, and so does **LinkedList**, which stores its items another way.",
+            "narrate": "ArrayList keeps that promise. And so does LinkedList, which stores its items in a different way."
+          },
+          {
+            "say": "javac holds you to it: on `names` it allows only List's methods, even though the object is an ArrayList.",
+            "narrate": "And javac holds you to it. On names, it allows only the methods that List promises, even though the object really is an ArrayList."
+          },
+          {
+            "say": "So if the rest of the code uses `names` only as a List, switching to a LinkedList changes one line. That keeps coupling low: the code depends on what a list can do, not on one class.",
+            "narrate": "So if the rest of the code uses names only as a List, then switching to a LinkedList changes that one line. That keeps coupling low: the code depends on what a list can do, not on one particular class."
+          }
+        ]
+      }
+    ],
+    "outro": "Your turn. Start with a file name.",
+    "intro_narrate": "A real program has many classes, not just one. They need somewhere to live, and a sensible way to share out the work. So let's split one small game into classes, and see how it's done.",
+    "outro_narrate": "Now it's your turn. Let's start with a file name."
+  },
+  {
+    "question": "javac stops with this error. What fixes it?",
+    "code": "Store.java:1: error: class Shop is public, should be declared in a file named Shop.java\npublic class Shop {\n       ^",
+    "code_language": "javac says",
+    "correct": [
+      "Rename the file to Shop.java, after its public class"
+    ],
+    "incorrect": [
+      "Add the line import Shop; at the top of the file",
+      "Add a main method, so Java knows where the program starts",
+      "Move the file into a new folder called Shop"
+    ],
+    "feedback": "A public class has to live in a file with exactly its name, so Shop goes in Shop.java. An import is for a class in another package, main decides where a program starts, and a folder holds a package, not one class."
+  },
+  {
+    "type": "matching",
+    "question": "Each class in the game has one job. Match each method to the class that should own it.",
+    "pairs": [
+      {
+        "term": "public int getHp()",
+        "definition": "Hero"
+      },
+      {
+        "term": "public int totalHp(), over every hero",
+        "definition": "Party"
+      },
+      {
+        "term": "public Potion sell(String name)",
+        "definition": "Shop"
+      },
+      {
+        "term": "public static void main(String[] args)",
+        "definition": "Game"
+      }
+    ],
+    "feedback": "getHp reads one hero's own field, so it is Hero's. totalHp walks the list of heroes, which Party keeps. sell hands out a Potion from the stock, which is Shop's job. And main, where the program starts, goes in Game, whose only job is to start it."
+  },
+  {
+    "question": "A method heal(int amount) raises one hero's hp, but never above that hero's maximum. Which class should it belong to?",
+    "correct": [
+      "Hero"
+    ],
+    "incorrect": [
+      "Party",
+      "Shop",
+      "Game"
+    ],
+    "feedback": "heal works on one hero's own fields, hp and maxHp, so it belongs with them, in Hero. If those fields are private, as they should be, no other class could change them directly anyway. Party might call heal on every hero, but the healing itself is Hero's job."
+  },
+  {
+    "type": "code_trace",
+    "question": "names is declared as a List, and this time the object is a LinkedList. What does it print?",
+    "code": "List<String> names = new LinkedList<>();\nnames.add(\"Ash\");\nnames.add(0, \"Bog\");\nnames.add(\"Elm\");\nSystem.out.println(names.get(1) + \" \" + names.size());",
+    "language": "java",
+    "correct": [
+      "Ash 3"
+    ],
+    "case_sensitive": true,
+    "feedback": "Every method used here is one that List promises, so it works the same whichever list was built. add(0, \"Bog\") puts Bog in front, giving [Bog, Ash, Elm], so place 1 is Ash and the size is 3. With new ArrayList<>() it would print the same."
+  },
+  {
+    "question": "Why write List<String> names = new ArrayList<>(); rather than ArrayList<String> names = new ArrayList<>();?",
+    "correct": [
+      "The other code relies only on List, so one line can switch the class"
+    ],
+    "incorrect": [
+      "A variable declared as a List runs faster than one declared as an ArrayList",
+      "A List variable may hold Strings and ints together, as a Python list can",
+      "A List variable fixes the number of items, the way an array does"
+    ],
+    "feedback": "Declaring names as a List means the rest of the program may use only List's methods, so it does not depend on which class made the list. Switching to a LinkedList is then a one-line change. ArrayList<String> names is also legal; it just ties the code to one class. Neither is faster, neither fixes the length, and a List<String> holds Strings only."
+  },
+  {
+    "question": "names is declared as List<String> names = new ArrayList<>(); and trimToSize is a method that ArrayList has but List does not. Which lines does javac accept?",
+    "correct": [
+      "names.add(\"Fen\");",
+      "names = new LinkedList<>();"
+    ],
+    "incorrect": [
+      "names.trimToSize();",
+      "names = new HashSet<>();"
+    ],
+    "feedback": "javac goes by the declared type, List. add is a List method, and a LinkedList is a List, so both lines are accepted. trimToSize is not a List method, so javac refuses it on names even though the object is an ArrayList; and a HashSet is not a List at all."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Packages, and where the files go",
+    "npc": "flint",
+    "intro": "I'm Professor Flint. Two companies can each write a class called Potion, and a large program holds hundreds of classes. Here is how Java keeps them apart, and how it finds each one.",
+    "steps": [
+      {
+        "say": "A **package** is a named group of classes. A file names its package in its very first line. By convention, package names begin with a domain name written backwards, such as `com.example.game`. Each company owns its domain, so its packages do not clash with another company's. The folders mirror the package, one for each part of its name: this file goes in `guild/items/Potion.java`, and its compiled `Potion.class` in a `guild/items` folder too. That is where Java's tools look for a class they need. A file with no package line, like every one so far, is in the **unnamed package**.",
+        "beats": [
+          {
+            "say": "A **package** is a named group of classes. A file names its package in its very first line.",
+            "narrate": "A package is a named group of classes. And a file says which package it belongs to, in its very first line."
+          },
+          {
+            "say": "By convention, package names begin with a domain name written backwards, such as `com.example.game`. Each company owns its domain, so its packages do not clash with another company's.",
+            "narrate": "By convention, package names begin with a web domain, written backwards, such as com dot example dot game. Each company owns its own domain name, so its packages don't clash with anyone else's."
+          },
+          {
+            "code": "package guild.items;\n\npublic class Potion {\n    public int price = 5;\n}",
+            "language": "java: Potion.java",
+            "narrate": "Here's Potion dot java. Its first line puts the class Potion into the package called guild dot items."
+          },
+          {
+            "say": "The folders mirror the package, one for each part of its name: this file goes in `guild/items/Potion.java`, and its compiled `Potion.class` in a `guild/items` folder too. That is where Java's tools look for a class they need.",
+            "narrate": "The folders mirror the package name, one folder for each part of it. So this file goes in a folder called items, inside one called guild, and its compiled class file goes in a guild, items folder too. That's where Java's tools look, when they need that class."
+          },
+          {
+            "say": "A file with no package line, like every one so far, is in the **unnamed package**.",
+            "narrate": "And a file with no package line at all, like every file you've seen so far, is in what Java calls the unnamed package."
+          }
+        ],
+        "check": {
+          "prompt": "A file starts with `package guild.monsters;` and holds `public class Wyrm`. Where does it go?",
+          "answer": "`guild/monsters/Wyrm.java`",
+          "wrong": [
+            "`guild.monsters/Wyrm.java`",
+            "`monsters/guild/Wyrm.java`"
+          ],
+          "why": "Each part of the package name is a folder, in order, and the file is named after its public class.",
+          "narrate": "A file starts with package guild dot monsters, and holds the public class Wyrm. Where does that file go?",
+          "why_narrate": "Each part of the package name becomes a folder, in the same order: guild, then monsters inside it. And the file itself is named after its public class: Wyrm dot java."
+        }
+      },
+      {
+        "say": "To use a class from another package by its short name, **import** it by its full name. Unlike Python's `import`, it runs no code. Only `java.lang`, home of String and System, comes in without an import. The order is fixed: the `package` line first, then the imports, then the class. Leave the import out, and javac reports `cannot find symbol`.",
+        "beats": [
+          {
+            "say": "To use a class from another package by its short name, **import** it by its full name. Unlike Python's `import`, it runs no code.",
+            "narrate": "To use a class from another package by its short name, you import it, by its full name. And unlike Python's import, a Java import runs no code at all."
+          },
+          {
+            "code": "package guild;\n\nimport guild.items.Potion;\n\npublic class Game {\n    public static void main(String[] args) {\n        Potion p = new Potion();\n        System.out.println(p.price);\n    }\n}",
+            "language": "java: Game.java",
+            "narrate": "Here's Game dot java, in the package guild. Look at its first three parts, from the top down."
+          },
+          {
+            "say": "Only `java.lang`, home of String and System, comes in without an import.",
+            "narrate": "Only one package comes in without an import: java dot lang, the home of String and System."
+          },
+          {
+            "say": "The order is fixed: the `package` line first, then the imports, then the class. Leave the import out, and javac reports `cannot find symbol`.",
+            "narrate": "The order is fixed: the package line first, then any imports, then the class. And if you leave out the import, javac says it cannot find symbol."
+          }
+        ]
+      },
+      {
+        "say": "Packages also decide who may use what. Java has four **access levels**. `protected` matters once classes extend each other, in the next set. With no word at all, a field or method is **package-private**: classes in its own package may use it, and javac refuses everyone else.",
+        "beats": [
+          {
+            "say": "Packages also decide who may use what. Java has four **access levels**.",
+            "narrate": "Packages also decide who may use what. Java has four access levels."
+          },
+          {
+            "code": "public      any class, in any package\nprotected   its own package, and child classes anywhere\n(no word)   its own package only\nprivate     its own class only",
+            "language": "access levels",
+            "narrate": "Here are all four, from the most open to the most closed: public, protected, no word at all, and private."
+          },
+          {
+            "say": "`protected` matters once classes extend each other, in the next set.",
+            "narrate": "Protected only matters once classes extend each other, and that comes in the next set."
+          },
+          {
+            "say": "With no word at all, a field or method is **package-private**: classes in its own package may use it, and javac refuses everyone else.",
+            "narrate": "With no access word at all, a field or a method is package-private. Classes in its own package may use it, and javac refuses everyone else."
+          }
+        ],
+        "check": {
+          "prompt": "Potion, in `guild.items`, declares `int power;` with no access word. Can Game, in `guild`, read `p.power`?",
+          "answer": "No: guild is a different package",
+          "wrong": [
+            "Yes: with no word, a field is public",
+            "Yes: guild.items is inside guild"
+          ],
+          "why": "Packages do not nest for access: `guild` and `guild.items` are two different packages. javac says `power is not public in Potion; cannot be accessed from outside package`.",
+          "narrate": "Potion, in guild dot items, declares int power, with no access word. Can Game, in the package guild, read p dot power?",
+          "why_narrate": "No. Packages don't nest for access: guild, and guild dot items, are two different packages. So javac says power is not public in Potion, and cannot be accessed from outside its package."
+        }
+      },
+      {
+        "say": "Large projects are built by a tool such as Maven or Gradle, which the next set covers. Both expect these folders: `src/main/java` holds the program, `src/test/java` its tests, and `src/main/resources` the other files it reads. Inside each, the folders mirror the packages.",
+        "beats": [
+          {
+            "say": "Large projects are built by a tool such as Maven or Gradle, which the next set covers. Both expect these folders:",
+            "narrate": "Large projects are built by a tool, such as Maven or Gradle, and the next set covers those. Both of them expect these folders."
+          },
+          {
+            "code": "game/\n  src/\n    main/\n      java/          the program\n        guild/Game.java\n        guild/items/Potion.java\n      resources/     other files it reads\n    test/\n      java/          the tests\n        guild/items/PotionTest.java",
+            "language": "project folders",
+            "narrate": "Here are the folders that Maven and Gradle both expect. Follow the indentation down from game, the project's own folder."
+          },
+          {
+            "say": "`src/main/java` holds the program, `src/test/java` its tests, and `src/main/resources` the other files it reads. Inside each, the folders mirror the packages.",
+            "narrate": "Source, main, java, holds the program. Source, test, java, holds its tests. And source, main, resources, holds any other files the program reads. Inside each one, the folders mirror the packages."
+          }
+        ]
+      }
+    ],
+    "outro": "Your turn: put a file in order.",
+    "intro_narrate": "I'm Professor Flint. Here's a problem. Two companies can each write a class called Potion, and a large program holds hundreds of classes. So how does Java keep them apart, and find the right one? Let me show you.",
+    "outro_narrate": "Now it's your turn. Start by putting one file in order."
+  },
+  {
+    "type": "ordering",
+    "question": "Put the lines of Shop.java in order, from the top of the file to the bottom.",
+    "items": [
+      "package guild.shop;",
+      "import guild.items.Potion;",
+      "public class Shop {",
+      "    private Potion stock = new Potion();",
+      "}"
+    ],
+    "language": "java",
+    "feedback": "The package line comes first, then the imports, then the class, whose fields go inside its braces. javac refuses an import written above the package line."
+  },
+  {
+    "question": "In a Maven or Gradle project, a file begins package com.example.game.items; and holds public class Potion. Potion is part of the game, not a test. Where does it go?",
+    "correct": [
+      "src/main/java/com/example/game/items/Potion.java"
+    ],
+    "incorrect": [
+      "src/main/java/com.example.game.items/Potion.java",
+      "src/main/resources/com/example/game/items/Potion.java",
+      "src/test/java/com/example/game/items/Potion.java"
+    ],
+    "feedback": "Program code goes under src/main/java, and inside it each part of the package name is one folder, in order. resources is for files that are not Java code, and src/test/java is for the tests."
+  },
+  {
+    "type": "matching",
+    "question": "Match each folder of a standard Maven or Gradle project to what it holds.",
+    "pairs": [
+      {
+        "term": "src/main/java",
+        "definition": "The program's own Java code"
+      },
+      {
+        "term": "src/test/java",
+        "definition": "The tests for that code"
+      },
+      {
+        "term": "src/main/resources",
+        "definition": "Other files the program reads, such as settings"
+      },
+      {
+        "term": "src/main/java/guild/items",
+        "definition": "The classes in the package guild.items"
+      }
+    ],
+    "feedback": "main is the program and test is its tests; java holds code and resources holds other files. Below src/main/java, the folders are the packages, one folder for each part of the name."
+  },
+  {
+    "question": "Potion.java, in src/main/java/guild/items, declares int brew() with no access word. PotionTest.java, in src/test/java/guild/items, begins package guild.items;. Can PotionTest call Potion's package-private brew()?",
+    "correct": [
+      "Yes: both are in the package guild.items"
+    ],
+    "incorrect": [
+      "No: the files are in different folders",
+      "No: Potion alone may call it",
+      "Yes: test code may call any method"
+    ],
+    "feedback": "Access goes by package, not by folder. Both files declare package guild.items, so they are in one package, even though one sits under src/main/java and the other under src/test/java. That is why tests are put in the same package as the code they test: they can reach its package-private parts. A private method would still be out of reach."
+  },
+  {
+    "type": "cloze",
+    "question": "package {{1}};\n\nimport {{2}}.Potion;\n\npublic class Shop {\n    private Potion stock;\n}",
+    "prompt": "Shop.java is in src/main/java/guild/shop; Potion.java is in src/main/java/guild/items. Complete Shop.java.",
+    "language": "java",
+    "blanks": [
+      {
+        "accept": [
+          "guild.shop"
+        ],
+        "case_sensitive": true
+      },
+      {
+        "accept": [
+          "guild.items"
+        ],
+        "case_sensitive": true
+      }
+    ],
+    "feedback": "Below src/main/java, each folder is one part of a package name, and the parts are joined with dots: the folder guild/shop is the package guild.shop. Shop names its own package on its first line, and imports Potion by its full name, its package and then the class."
+  },
+  {
+    "question": "Game.java, in the package guild, uses Potion from guild.items but has no import line. What does javac report?",
+    "correct": [
+      "cannot find symbol"
+    ],
+    "incorrect": [
+      "package guild.items does not exist",
+      "Potion is not public in guild.items",
+      "missing import for class Potion"
+    ],
+    "feedback": "Without the import, javac looks for Potion in Game's own package, guild, finds nothing, and cannot find the symbol. import guild.items.Potion; tells it where to look. 'package guild.items does not exist' is what you see when the import is there but the package's folder is not where javac looks."
+  },
+  {
+    "question": "By convention, package names begin with a domain name written backwards, as in com.example.game. Why?",
+    "correct": [
+      "A company owns its domain, so its package names are its own"
+    ],
+    "incorrect": [
+      "Java downloads each class from the website the domain names",
+      "javac checks that whoever compiles it owns that domain",
+      "It makes the package public, so that other companies may use it"
+    ],
+    "feedback": "A domain name has one owner, so starting package names with it, reversed so that the most general part comes first, keeps one company's packages apart from another's: com.example.game.Potion and org.guild.Potion are different classes. It is a convention only: nothing is downloaded, javac checks no ownership, and the name says nothing about access."
   },
   {
     "type": "code_write",
