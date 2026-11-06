@@ -293,6 +293,39 @@ const WRAPPER = `<!doctype html><meta charset="utf-8"><title>fake D2L</title>
       report.sceneFigure = (doc().querySelector('.npc-figure img') || { getAttribute: () => null }).getAttribute('alt');
       return report;
     },
+    // A question that shows a listing (its code field): a multiple-choice question about some
+    // Python, and a Java problem that shows the Python it ports. Each listing sits
+    // between the question and what answers it, labelled and coloured; a code trace,
+    // which has a panel of its own, does not get a second one.
+    async codePanel({ set }) {
+      const gc = win().gameController;
+      await gc._launchSet(set, 'new');
+      await until(() => gc.model, 'the set to load');
+      const ask = q => { gc.model.questions_to_ask = [q]; gc.model.current_question = null; gc.continueAdventure(); };
+      const after = (a, b) => (a.compareDocumentPosition(b) & 4) !== 0;
+      const panel = () => doc().querySelector('[data-ref=qFigure] .q-code');
+      ask({ question: 'What does area(3, 4) return?', code: 'def area(w, h):\\n    return w * h', code_language: 'Python',
+            correct: ['12'], incorrect: ['7', '34', '0'] });
+      await until(() => panel(), 'the listing under a multiple-choice question');
+      const report = {
+        mcLabel: panel().dataset.lang,
+        mcText: panel().innerText,
+        mcColoured: !!panel().querySelector('.hl-kw'),
+        mcOrder: after(doc().querySelector('[data-ref=qText]'), panel()) && after(panel(), doc().querySelector('[data-ref=options]')),
+      };
+      ask({ type: 'code_write', language: 'java', question: 'Write this Python function in Java.',
+            code: 'def area(w, h):\\n    return w * h', code_language: 'python',
+            signature: 'public int area(int w, int h)', solution: 'return w * h;',
+            tests: [{ args: [3, 4], expect: 12 }, { args: [5, 1], expect: 5 }, { args: [0, 9], expect: 0 }] });
+      await until(() => panel() && doc().querySelector('[data-ref=signature]'), 'the listing above a Java problem');
+      report.writeLabel = panel().dataset.lang;
+      report.writeOrder = after(panel(), doc().querySelector('[data-ref=signature]'));
+      ask({ type: 'code_trace', question: 'What does it print?', code: 'System.out.println(7 / 2);', language: 'java', correct: ['3'] });
+      await until(() => doc().querySelector('[data-ref=codeSnippet]') && doc().querySelector('[data-ref=codeSnippet]').textContent, 'the trace');
+      report.traceSlotHidden = doc().querySelector('[data-ref=qFigure]').hidden;
+      report.traceSecondPanel = !!panel();
+      return report;
+    },
     // Device two: a browser that has never seen the game. Just look at the menu.
     async look({ clear, leave, clearTitle, leaveTitle }) {
       for (const d of doc().querySelectorAll('details')) d.open = true;

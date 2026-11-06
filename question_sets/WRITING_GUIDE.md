@@ -17,7 +17,7 @@ Each question set is a **JSON array** of question objects saved in `question_set
 | Code Line | `"code_line"` | Text input + token-Wordle | Writing one line of code/command |
 | Ordering | `"ordering"` | Tap-to-sequence | Process steps, algorithm stages, Parsons-style code arrangement |
 | Multi-Blank Cloze | `"cloze"` | Inline text inputs | Synthesis: several related terms held in contrast in one passage |
-| Write the Code | `"code_write"` | Code editor + test table | Writing a whole small function, run against real test cases (Python only) |
+| Write the Code | `"code_write"` | Code editor + test table | Writing a whole small function or class, run against real test cases (Python, or Java with `"language": "java"`) |
 | NPC Teaching Scene | `"npc_demo"` | Dialogue walkthrough | Worked examples immediately before a paired question (not a question itself) |
 
 A good problem set uses a **mix of all types**. Aim for roughly:
@@ -31,6 +31,27 @@ A good problem set uses a **mix of all types**. Aim for roughly:
 - 1–3 NPC scenes per set, each directly followed by its paired question
 
 Dynamic numeric questions use a safe built-in expression engine. JSON content does **not** execute arbitrary JavaScript.
+
+### Code shown with a question (`code`, `code_language`)
+
+Any question may show a listing in a code panel between its stem and its answers. Use it whenever a question is about some code: a multiple-choice question about a class, a matching question about a Python function and its Java twin, a Java `code_write` problem that ports the Python shown.
+
+```json
+{
+  "question": "A student meant to override sound, but misspelled it. What does new Wolf().sound() return?",
+  "code": "class Creature {\n    String sound() { return \"...\"; }\n}\n\nclass Wolf extends Creature {\n    String sounds() { return \"Awoo\"; }\n}",
+  "code_language": "java",
+  "correct": ["\"...\""],
+  "incorrect": ["\"Awoo\"", "Nothing: it does not compile", "null"]
+}
+```
+
+| Field | Notes |
+|-------|-------|
+| `code` | The listing, as it should look: real line breaks (`\n`) and real indentation. Shown as written, never reflowed |
+| `code_language` | Labels the panel and colours it: `java` and `python` are coloured, anything else (`pseudocode`, `output`) is shown plain. Optional; without it the question's `language` is used. A Java `code_write` that shows Python says `"language": "java", "code_language": "python"` |
+
+Prefer the panel to code written into the stem: a stem is shown in the prose font, so code there is hard to tell from the words around it. A `code_trace` keeps its own `code` and `language`, as before. A `figure` on the same question is shown under the listing.
 
 ---
 
@@ -954,7 +975,7 @@ The `intro` and `outro` are the mentor talking, shown like every other line the 
 
 ### Narration (a mentor's voice)
 
-A scene can be narrated. Then a **▶ Listen** button appears at the end of the scene's title line. Pressed, the mentor speaks each beat as it appears, and the line being said is lit; the button becomes **❚❚ Pause**, and beside it come **↻** (say this frame again) and a speed button (1×, 1.25×, 1.5×, 0.75×). Narration is off until a student turns it on, and the browser remembers the choice. Narrated so far: every scene in Computing Concepts 6 to 15, Java 00 and Java 07.
+A scene can be narrated. Then a **▶ Listen** button appears at the end of the scene's title line. Pressed, the mentor speaks each beat as it appears, and the line being said is lit; the button becomes **❚❚ Pause**, and beside it come **↻** (say this frame again) and a speed button (1×, 1.25×, 1.5×, 0.75×). Narration is off until a student turns it on, and the browser remembers the choice. Narrated so far: every scene in Computing Concepts 6 to 16, Java 00 and Java 07.
 
 A narrated scene has a spoken line for everything it shows:
 

@@ -1,0 +1,1857 @@
+[
+  {
+    "type": "npc_demo",
+    "question": "NPC: A method that calls itself",
+    "npc": "nia",
+    "intro": "I'm Nia, the Logic-Weaver. This part of the Java wing is about methods that call themselves, and we will take it one step at a time. You already know that a method can call another method; today's whole lesson is one small twist on that.",
+    "steps": [
+      {
+        "say": "Quick review. A **method** is a named block of code, and it runs when you **call** it. This one calls `System.out.println`: A method may call any method it can see, even itself. A method that calls itself is a **recursive method**.",
+        "beats": [
+          {
+            "say": "Quick review. A **method** is a named block of code, and it runs when you **call** it. This one calls `System.out.println`:",
+            "narrate": "First, a quick review. A method is a named block of code, and it runs only when you call it. Here's one that calls another method, System dot out dot println."
+          },
+          {
+            "code": "static void greet(String name) {\n    System.out.println(\"Hello \" + name);\n}\n\ngreet(\"Nia\");",
+            "language": "java",
+            "narrate": "Look inside greet: its body is a call to println. The last line, below the closing brace, is where greet itself is called."
+          },
+          {
+            "say": "A method may call any method it can see, even itself. A method that calls itself is a **recursive method**.",
+            "narrate": "Now, a method may call any method it can see, and that includes itself. And a method that calls itself has a name: it's a recursive method."
+          }
+        ]
+      },
+      {
+        "say": "Here is a recursive method. Read it slowly. `countdown(3)` checks: is `n` zero? No. So it prints 3, and then it calls `countdown(2)`: the same method, with a smaller number.",
+        "beats": [
+          {
+            "say": "Here is a recursive method. Read it slowly.",
+            "narrate": "Here's a recursive method. Read it slowly, line by line."
+          },
+          {
+            "code": "static void countdown(int n) {\n    if (n == 0) {\n        return;\n    }\n    System.out.println(n);\n    countdown(n - 1);\n}\n\ncountdown(3);",
+            "language": "java",
+            "narrate": "This is countdown. Look for three things: the if that checks for zero, the println, and the last line inside the braces, where countdown calls itself."
+          },
+          {
+            "say": "`countdown(3)` checks: is `n` zero? No. So it prints 3, and then it calls `countdown(2)`: the same method, with a smaller number.",
+            "narrate": "Start with countdown of 3. It checks: is n zero? No. So it prints 3, and then it calls countdown of 2. That's the same method again, with a smaller number."
+          }
+        ],
+        "check": {
+          "prompt": "`countdown(2)` prints 2. What does it do next?",
+          "answer": "It calls `countdown(1)`",
+          "wrong": [
+            "It calls `countdown(3)` again",
+            "It stops, because it has printed"
+          ],
+          "why": "Each call hands the next call a number that is one smaller: `n - 1`.",
+          "narrate": "Now countdown of 2 is running, and it prints 2. What does it do next?",
+          "why_narrate": "Each call hands the next call a number that's one smaller, n minus 1. So countdown of 2 calls countdown of 1."
+        }
+      },
+      {
+        "say": "`countdown(1)` prints 1 and calls `countdown(0)`. Now `n` is zero, so that call returns at once, and the chain stops. The program has printed: Each call does the same job on a smaller number, until one is small enough to stop.",
+        "beats": [
+          {
+            "figure": {
+              "dot": "digraph { n0 [label=\"countdown(3)\\nprints 3\" ]; n1 [label=\"countdown(2)\\nprints 2\" ]; n2 [label=\"countdown(1)\\nprints 1\" ]; n3 [label=\"countdown(0)\\nreturns, no call\" color=\"#7CFC00\" fontcolor=\"#7CFC00\" style=\"rounded,filled\" fillcolor=\"#0f3a0f\"]; n0 -> n1 [label=\" calls\"]; n1 -> n2 [label=\" calls\"]; n2 -> n3 [label=\" calls\"]; }",
+              "alt": "A chain of four boxes, top to bottom: countdown(3) prints 3, countdown(2) prints 2, countdown(1) prints 1, each calling the next; countdown(0) returns without calling anything.",
+              "caption": "Each arrow is one recursive call.",
+              "src": "_dot/eba48718d3d4638f.svg"
+            },
+            "narrate": "Here's the whole chain, top to bottom, and each arrow is one call. Countdown of 3, then 2, then 1, and at the bottom, in green, countdown of 0."
+          },
+          {
+            "say": "`countdown(1)` prints 1 and calls `countdown(0)`. Now `n` is zero, so that call returns at once, and the chain stops. The program has printed:",
+            "narrate": "Countdown of 1 prints 1, and calls countdown of 0. Now n is zero, so that call returns at once, and the chain stops. Here's what the program printed."
+          },
+          {
+            "code": "3\n2\n1",
+            "language": "output",
+            "narrate": "Three lines: 3, then 2, then 1. Notice that there's no zero. The call with zero returned before it reached the print."
+          },
+          {
+            "say": "Each call does the same job on a smaller number, until one is small enough to stop.",
+            "narrate": "That's the pattern. Each call does the same job on a smaller number, until one is small enough to stop."
+          }
+        ]
+      },
+      {
+        "say": "Every recursive method has two parts. The **base case** is the input so small that the method answers without calling itself. Here that is `n` equal to 0: just `return`. The **recursive case** is everything else: do one small piece of the work, then call the same method on a **smaller input**. Here: print `n`, then call with `n - 1`.",
+        "beats": [
+          {
+            "say": "Every recursive method has two parts. The **base case** is the input so small that the method answers without calling itself. Here that is `n` equal to 0: just `return`.",
+            "narrate": "Every recursive method has two parts. The base case is the input so small that the method can answer without calling itself. Here, that's n equal to 0, and the answer is just return."
+          },
+          {
+            "say": "The **recursive case** is everything else: do one small piece of the work, then call the same method on a **smaller input**. Here: print `n`, then call with `n - 1`.",
+            "narrate": "The recursive case is everything else. Do one small piece of the work, then call the same method on a smaller input. Here, the small piece is printing n, and the smaller input is n minus 1."
+          }
+        ],
+        "check": {
+          "prompt": "Why must the recursive call use a smaller input, such as `n - 1`?",
+          "answer": "So each call gets closer to the base case",
+          "wrong": [
+            "So the method runs faster each time",
+            "So Java can reuse the same variable"
+          ],
+          "why": "5, 4, 3, 2, 1, 0: every call is one step nearer to the input that stops the chain.",
+          "narrate": "So why must the recursive call use a smaller input, such as n minus 1?",
+          "why_narrate": "Think of 5, 4, 3, 2, 1, 0. Every call is one step nearer to the base case, the input that stops the chain."
+        }
+      }
+    ],
+    "outro": "Trace one yourself. Take it one call at a time.",
+    "intro_narrate": "I'm Nia, the Logic-Weaver. This part of the Java wing is about methods that call themselves, and we'll take it one step at a time. You already know that a method can call another method. Today's whole lesson is one small twist on that.",
+    "outro_narrate": "Now trace one yourself. Take it one call at a time, and note each print as it happens."
+  },
+  {
+    "type": "code_trace",
+    "question": "Trace this recursive method one call at a time. What does the program print?",
+    "code": "static void launch(int n) {\n    if (n == 0) {\n        System.out.println(\"Go!\");\n        return;\n    }\n    System.out.println(n);\n    launch(n - 1);\n}\n\nlaunch(3);",
+    "language": "java",
+    "correct": [
+      "3\n2\n1\nGo!"
+    ],
+    "case_sensitive": true,
+    "feedback": "launch(3) prints 3 and calls launch(2), which prints 2 and calls launch(1), which prints 1 and calls launch(0). That last call is the base case: it prints Go! and returns without calling again."
+  },
+  {
+    "question": "What makes a Java method recursive?",
+    "correct": [
+      "Its body contains a call to the method itself"
+    ],
+    "incorrect": [
+      "Its body contains a loop that repeats work",
+      "It returns a value to whoever called it",
+      "It is called twice from the main method"
+    ],
+    "feedback": "Recursive means the method calls itself. A loop repeats work too, but that is called iteration; and being called several times from outside is just ordinary use of a method.",
+    "language": "java"
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "countdown(n) prints n and then calls countdown(n - 1). When n is 0 it returns without printing or calling anything. Counting the very first call and the final call with 0, how many times is countdown called during countdown({{n}})?",
+    "variables": {
+      "n": {
+        "min": 5,
+        "max": 30
+      }
+    },
+    "answer": {
+      "expr": "n + 1",
+      "tolerance_abs": 0
+    },
+    "allow_expression": false,
+    "feedback_template": "The calls are countdown({{n}}), then one for every smaller number, down to countdown(0). Counting the 0 gives {{expected}} calls. The last one prints nothing, but it is still a call."
+  },
+  {
+    "type": "matching",
+    "question": "Match each line of this recursive method to the role it plays.",
+    "code": "static void fade(int n) {\n    if (n == 0) {\n        return;\n    }\n    System.out.println(n);\n    fade(n - 1);\n}",
+    "code_language": "java",
+    "pairs": [
+      {
+        "term": "if (n == 0) {",
+        "definition": "Tests whether this is the base case"
+      },
+      {
+        "term": "return;",
+        "definition": "Ends this call without calling again"
+      },
+      {
+        "term": "System.out.println(n);",
+        "definition": "Does this call's one piece of the work"
+      },
+      {
+        "term": "fade(n - 1);",
+        "definition": "Makes the recursive call on a smaller input"
+      }
+    ],
+    "feedback": "Test for the base case, stop if it is one; otherwise do one piece of work and pass a smaller problem to yourself. Nearly every recursive method has this skeleton, in Java or in Python."
+  },
+  {
+    "type": "cloze",
+    "question": "Every recursive method has two parts. The {{1}} case answers directly and ends the chain of calls. The {{2}} case does a little work and then calls the method again on a smaller input.",
+    "blanks": [
+      {
+        "accept": [
+          "base"
+        ],
+        "hint": "which case?"
+      },
+      {
+        "accept": [
+          "recursive"
+        ],
+        "hint": "which case?"
+      }
+    ],
+    "feedback": "Base case: stop and answer. Recursive case: do one piece and hand a smaller problem to yourself. A method with only the second part never stops."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The stack of waiting calls",
+    "npc": "nia",
+    "intro": "So far our methods only printed. The useful ones **return** an answer, and they build it out of the answer to a smaller problem.",
+    "steps": [
+      {
+        "say": "I want 1 + 2 + 3 + 4. Notice that it is just 4, plus the sum up to 3. And the sum up to 3 is 3, plus the sum up to 2. The same problem, smaller each time. Base case: the sum up to 0 is 0. Recursive case: `n`, plus the total of everything below `n`.",
+        "beats": [
+          {
+            "say": "I want 1 + 2 + 3 + 4. Notice that it is just 4, plus the sum up to 3. And the sum up to 3 is 3, plus the sum up to 2. The same problem, smaller each time.",
+            "narrate": "Say I want 1 plus 2 plus 3 plus 4. Notice that it's just 4, plus the sum up to 3. And the sum up to 3 is 3, plus the sum up to 2. It's the same problem, smaller each time."
+          },
+          {
+            "code": "static int total(int n) {\n    if (n == 0) {\n        return 0;\n    }\n    return n + total(n - 1);\n}",
+            "language": "java",
+            "narrate": "Here's that idea as a Java method called total, which returns an int. Look at the return line at the bottom: n, plus a call to total on n minus 1."
+          },
+          {
+            "say": "Base case: the sum up to 0 is 0. Recursive case: `n`, plus the total of everything below `n`.",
+            "narrate": "The base case: the sum up to 0 is 0. The recursive case: n, plus the total of everything below n."
+          }
+        ]
+      },
+      {
+        "say": "Call `total(3)`. It cannot finish yet: it needs `total(2)` first. `total(2)` needs `total(1)`, and `total(1)` needs `total(0)`. Each call **waits** for the one below it. `total(0)` is the base case, so it returns 0 at once. Now the waiting calls can finish, from the bottom back up.",
+        "beats": [
+          {
+            "say": "Call `total(3)`. It cannot finish yet: it needs `total(2)` first. `total(2)` needs `total(1)`, and `total(1)` needs `total(0)`. Each call **waits** for the one below it.",
+            "narrate": "Now call total of 3. It can't finish yet, because it needs total of 2 first. Total of 2 needs total of 1, and total of 1 needs total of 0. Each call waits for the one below it."
+          },
+          {
+            "say": "`total(0)` is the base case, so it returns 0 at once. Now the waiting calls can finish, from the bottom back up.",
+            "narrate": "Total of 0 is the base case, so it returns 0 straight away. Now the waiting calls can finish, one by one, from the bottom back up."
+          }
+        ],
+        "check": {
+          "prompt": "`total(0)` has returned 0. So what does `total(1)` return?",
+          "answer": "1, because 1 + 0 is 1",
+          "wrong": [
+            "0, the same as the base case",
+            "2, because 1 + 1 is 2"
+          ],
+          "why": "`total(1)` works out `n + total(n - 1)`, and that is 1 + 0.",
+          "narrate": "Total of 0 has returned 0. So what does total of 1 return?",
+          "why_narrate": "Total of 1 works out n, plus total of n minus 1. Here, that's 1 plus 0, which is 1."
+        }
+      },
+      {
+        "say": "Where do the waiting calls wait? Each time a method is called, Java makes a note: which method, what its variables hold, and where it paused. That note is a **frame**. Every call gets its own frame, so every call has its own `n`. The frames go in a pile called the **call stack**, and a new call's frame goes on top. Only the top one is running. The others are paused, each waiting for the call above it.",
+        "beats": [
+          {
+            "say": "Where do the waiting calls wait? Each time a method is called, Java makes a note: which method, what its variables hold, and where it paused. That note is a **frame**.",
+            "narrate": "Where do all those waiting calls actually wait? Each time a method is called, Java makes a note of three things: which method it is, what its variables hold, and where it paused. That note is called a frame."
+          },
+          {
+            "say": "Every call gets its own frame, so every call has its own `n`. The frames go in a pile called the **call stack**, and a new call's frame goes on top.",
+            "narrate": "Every call gets a frame of its own, so every call has its own n. The frames go in a pile called the call stack, and each new call's frame goes on top."
+          },
+          {
+            "figure": {
+              "dot": "digraph { node [shape=plain]; s [label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"3\" CELLPADDING=\"5\"><TR><TD BORDER=\"0\" COLSPAN=\"3\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">top of the stack</FONT></TD></TR><TR><TD WIDTH=\"70\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>total(0)</B></FONT></TD><TD WIDTH=\"70\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>n is 0</B></FONT></TD><TD WIDTH=\"70\" COLOR=\"#ffb300\" BGCOLOR=\"#3a2c00\"><FONT COLOR=\"#ffd86b\"><B>running</B></FONT></TD></TR><TR><TD WIDTH=\"70\" COLOR=\"#00c840\">total(1)</TD><TD WIDTH=\"70\" COLOR=\"#00c840\">n is 1</TD><TD WIDTH=\"70\" COLOR=\"#2a4a2a\"><FONT COLOR=\"#4f6f4f\">waiting</FONT></TD></TR><TR><TD WIDTH=\"70\" COLOR=\"#00c840\">total(2)</TD><TD WIDTH=\"70\" COLOR=\"#00c840\">n is 2</TD><TD WIDTH=\"70\" COLOR=\"#2a4a2a\"><FONT COLOR=\"#4f6f4f\">waiting</FONT></TD></TR><TR><TD WIDTH=\"70\" COLOR=\"#00c840\">total(3)</TD><TD WIDTH=\"70\" COLOR=\"#00c840\">n is 3</TD><TD WIDTH=\"70\" COLOR=\"#2a4a2a\"><FONT COLOR=\"#4f6f4f\">waiting</FONT></TD></TR><TR><TD BORDER=\"0\" COLSPAN=\"3\"><FONT POINT-SIZE=\"10\" COLOR=\"#5aaa5a\">bottom: the first call</FONT></TD></TR></TABLE>>]; }",
+              "alt": "The call stack at the deepest moment of total(3): four frames, top first. total(0) with n 0 is running, highlighted; total(1), total(2) and total(3) are waiting beneath it.",
+              "caption": "Only the top frame runs.",
+              "src": "_dot/49d56360aecf9528.svg"
+            },
+            "narrate": "The top of the stack is at the top of the picture. Total of 0, in amber, is running. Below it, total of 1, 2 and 3, each with its own n, are waiting. The bottom one was the first call."
+          },
+          {
+            "say": "Only the top one is running. The others are paused, each waiting for the call above it.",
+            "narrate": "Only the top frame is running. The others are paused, and each one is waiting for the call just above it."
+          }
+        ],
+        "check": {
+          "prompt": "In what order will these four calls finish?",
+          "answer": "`total(0)` first, `total(3)` last",
+          "wrong": [
+            "`total(3)` first, `total(0)` last",
+            "All four at once, when `total(0)` returns"
+          ],
+          "why": "A stack is last in, first out: the newest call finishes first, and each call that finishes lets the one below it carry on.",
+          "narrate": "So in what order will these four calls finish?",
+          "why_narrate": "A stack is last in, first out. The newest call, total of 0, finishes first. And each call that finishes lets the one below it carry on, until total of 3 finishes last."
+        }
+      },
+      {
+        "say": "Each time a call returns, its frame is taken off the pile, and the call beneath it wakes up holding the answer. Frames pile up on the way down and come off in reverse on the way back. When you write a recursive method, don't trace the whole chain in your head. **Trust** the call on the smaller input to return the right answer, and ask only what to do with it. Take the base case away, and frames pile up with nothing to stop them, until Java has no room for another. Then it stops the program and reports a **StackOverflowError**:",
+        "beats": [
+          {
+            "say": "Each time a call returns, its frame is taken off the pile, and the call beneath it wakes up holding the answer. Frames pile up on the way down and come off in reverse on the way back.",
+            "narrate": "Each time a call returns, its frame is taken off the pile, and the call beneath it wakes up, holding the answer it was waiting for. So frames pile up on the way down, and come off in reverse on the way back."
+          },
+          {
+            "say": "When you write a recursive method, don't trace the whole chain in your head. **Trust** the call on the smaller input to return the right answer, and ask only what to do with it.",
+            "narrate": "And here's the habit to build. When you write a recursive method, don't trace the whole chain in your head. Trust the call on the smaller input to return the right answer, and ask only what to do with it."
+          },
+          {
+            "say": "Take the base case away, and frames pile up with nothing to stop them, until Java has no room for another. Then it stops the program and reports a **StackOverflowError**:",
+            "narrate": "Now take the base case away. Frames pile up with nothing to stop them, until Java has no room left for another one. Then it stops the program, and reports a Stack Overflow Error."
+          },
+          {
+            "code": "Exception in thread \"main\" java.lang.StackOverflowError",
+            "language": "what Java reports",
+            "narrate": "This is the first line of what Java reports. It names the error, Stack Overflow Error: the call stack has overflowed."
+          }
+        ]
+      }
+    ],
+    "outro": "Work one out by hand. Bottom first, then back up.",
+    "intro_narrate": "So far, our recursive methods only printed. The useful ones return an answer, and they build that answer out of the answer to a smaller problem.",
+    "outro_narrate": "Now work one out by hand. Start with the base case at the bottom, then work your way back up."
+  },
+  {
+    "type": "code_trace",
+    "question": "Work from the base case back up. What does the program print?",
+    "code": "static int total(int n) {\n    if (n == 0) {\n        return 0;\n    }\n    return n + total(n - 1);\n}\n\nSystem.out.println(total(5));",
+    "language": "java",
+    "correct": [
+      "15"
+    ],
+    "case_sensitive": true,
+    "feedback": "total(0) is 0, total(1) is 1, total(2) is 3, total(3) is 6, total(4) is 10, and total(5) is 5 + 10 = 15. Each answer is built from the one below it."
+  },
+  {
+    "question": "total(3) reaches the line  return n + total(n - 1);  Why can it not return straight away?",
+    "correct": [
+      "It has to wait for total(2) to return before it can add"
+    ],
+    "incorrect": [
+      "It has to check the base case line once again first",
+      "It has to print n before Java allows it to return",
+      "It has to call total(4) first to find the next value"
+    ],
+    "feedback": "Java must know the value of total(2) before it can add 3 to it. So total(3) pauses on that line, total(2) runs to completion, and only then does total(3) finish the addition and return.",
+    "language": "java"
+  },
+  {
+    "type": "ordering",
+    "question": "total(n) returns 0 when n is 0, and otherwise n + total(n - 1). Arrange what happens during the call total(2), from first to last.",
+    "items": [
+      "total(2) starts, and calls total(1)",
+      "total(1) starts, and calls total(0)",
+      "total(0) returns 0",
+      "total(1) returns 1",
+      "total(2) returns 3"
+    ],
+    "feedback": "The calls go down first (2, then 1, then 0) and the returns come back in reverse (0, then 1, then 2). The first call made is the last to finish."
+  },
+  {
+    "type": "code_trace",
+    "question": "The factorial of n is n times every whole number below it, down to 1: the factorial of 4 is 4 × 3 × 2 × 1. What does the program print?",
+    "code": "static int fact(int n) {\n    if (n == 1) {\n        return 1;\n    }\n    return n * fact(n - 1);\n}\n\nSystem.out.println(fact(5));",
+    "language": "java",
+    "correct": [
+      "120"
+    ],
+    "case_sensitive": true,
+    "feedback": "fact(1) is 1, fact(2) is 2, fact(3) is 6, fact(4) is 24, and fact(5) is 5 × 24 = 120. The answers are built on the way back up."
+  },
+  {
+    "type": "code_line",
+    "question": "pow2(n) returns 2 to the power n, and its base case is pow2(0), which is 1. Write its recursive case: one Java statement that returns 2 times pow2 of n - 1.",
+    "language": "java",
+    "correct": [
+      "return 2 * pow2(n - 1);",
+      "return pow2(n - 1) * 2;"
+    ],
+    "case_sensitive": true,
+    "feedback": "return 2 * pow2(n - 1); — this call's one piece of work is a single doubling, and the rest of the job is handed to pow2 on a smaller number. Java wants the semicolon."
+  },
+  {
+    "type": "code_trace",
+    "question": "Here the println comes AFTER the recursive call. What does the program print?",
+    "code": "static void show(int n) {\n    if (n == 0) {\n        return;\n    }\n    show(n - 1);\n    System.out.println(n);\n}\n\nshow(3);",
+    "language": "java",
+    "correct": [
+      "1\n2\n3"
+    ],
+    "case_sensitive": true,
+    "feedback": "show(3) pauses before it prints, and so do show(2) and show(1). Only when show(0) returns do the waiting calls wake up, deepest first: 1, then 2, then 3. Code after the recursive call runs on the way back up."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "countdown(n) prints n, then calls countdown(n - 1). No countdown call has returned yet. During countdown({{n}}), how many countdown frames are on the call stack at the moment the number {{k}} is printed?",
+    "variables": {
+      "n": {
+        "min": 7,
+        "max": 12
+      },
+      "k": {
+        "min": 1,
+        "max": 4
+      }
+    },
+    "answer": {
+      "expr": "n - k + 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The frames on the stack belong to countdown({{n}}) and every call below it, down to countdown({{k}}), which is the one printing. Counting from {{n}} down to {{k}} gives {{expected}} frames."
+  },
+  {
+    "question": "This method is missing one of its two parts. What happens on the call shout(3)?",
+    "code": "static void shout(int n) {\n    System.out.println(n);\n    shout(n - 1);\n}",
+    "code_language": "java",
+    "correct": [
+      "It counts down past 0 until Java throws a StackOverflowError"
+    ],
+    "incorrect": [
+      "It prints 3, 2, 1 and then stops by itself once n reaches 0",
+      "It prints 3 one time, since a method may call itself once",
+      "It prints nothing, since javac refuses to compile the method"
+    ],
+    "feedback": "There is no base case, so nothing tells the method to stop at 0. It prints 3, 2, 1, 0, -1, -2 and carries on until the call stack is full. javac compiles it happily: it cannot tell that the calls will never end.",
+    "language": "java"
+  },
+  {
+    "question": "This method HAS a base case. What happens on the call stall(5)?",
+    "code": "static void stall(int n) {\n    if (n == 0) {\n        return;\n    }\n    stall(n);\n}",
+    "code_language": "java",
+    "correct": [
+      "The base case is never reached, so it ends in a StackOverflowError"
+    ],
+    "incorrect": [
+      "The base case is reached on the sixth call, so it returns normally",
+      "It returns at once, because the if line is checked first",
+      "It runs five times, because n starts out at the value five"
+    ],
+    "feedback": "stall(5) calls stall(5), which calls stall(5): the input never gets smaller, so n never becomes 0. A base case only helps if every recursive call moves TOWARD it. The fix is stall(n - 1).",
+    "language": "java"
+  },
+  {
+    "question": "What is a StackOverflowError actually reporting?",
+    "correct": [
+      "Too many unfinished calls have piled up on the call stack"
+    ],
+    "incorrect": [
+      "A recursive method returned a value of the wrong type",
+      "A recursive method was declared twice under one name",
+      "The base case was reached before any work was done"
+    ],
+    "feedback": "The call stack has room for a limited number of frames, some thousands. A recursion that never reaches its base case fills it. Python reports the same problem as a RecursionError.",
+    "language": "java"
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Loop or recursion?",
+    "npc": "nia",
+    "intro": "You have been wondering whether a loop could have done all of this. Good. It could.",
+    "steps": [
+      {
+        "say": "Here is the sum from 1 to `n` as a loop, using the accumulator pattern. It gives exactly the same answers as our recursive `total`. A solution built on a loop is called **iterative**.",
+        "beats": [
+          {
+            "say": "Here is the sum from 1 to `n` as a loop, using the accumulator pattern.",
+            "narrate": "Here's the sum from 1 to n written as a loop, using the accumulator pattern you already know."
+          },
+          {
+            "code": "static int totalLoop(int n) {\n    int result = 0;\n    for (int i = 1; i <= n; i++) {\n        result = result + i;\n    }\n    return result;\n}",
+            "language": "java",
+            "narrate": "Find result. It starts at 0, the loop adds each number to it in turn, and the return line hands it back."
+          },
+          {
+            "say": "It gives exactly the same answers as our recursive `total`. A solution built on a loop is called **iterative**.",
+            "narrate": "It gives exactly the same answers as our recursive total. And a solution built on a loop, like this one, is called iterative."
+          }
+        ]
+      },
+      {
+        "say": "Anything a loop can do, recursion can do, and the other way round. For plain counting the loop is usually the better choice: it adds nothing to the call stack, so it has no depth limit.",
+        "beats": [
+          {
+            "say": "Anything a loop can do, recursion can do, and the other way round. For plain counting the loop is usually the better choice: it adds nothing to the call stack, so it has no depth limit.",
+            "narrate": "Anything a loop can do, recursion can do, and the other way round. But for plain counting, the loop is usually the better choice. It adds nothing to the call stack, so it has no depth limit."
+          }
+        ],
+        "check": {
+          "prompt": "You must add up a million numbers in Java. Which is the safer choice?",
+          "answer": "A loop, which needs no stack of calls",
+          "wrong": [
+            "Recursion, with one call per number",
+            "Either one; they behave identically"
+          ],
+          "why": "A million waiting calls is far more than Java's call stack can hold, so the recursive version would end in a StackOverflowError.",
+          "narrate": "Say you must add up a million numbers in Java. Which is the safer choice?",
+          "why_narrate": "A million waiting calls is far more than Java's call stack can hold. So the recursive version would end in a Stack Overflow Error."
+        }
+      },
+      {
+        "say": "The **Fibonacci numbers** begin 0, 1, 1, 2, 3. After the first two, each one is the sum of the two before it. The base case covers two inputs: `fib(0)` is 0 and `fib(1)` is 1. The recursive case makes **two** recursive calls and adds their answers. `fib(2)` is `fib(1) + fib(0)`, which is 1 + 0, so 1. And `fib(3)` is `fib(2) + fib(1)`.",
+        "beats": [
+          {
+            "say": "The **Fibonacci numbers** begin 0, 1, 1, 2, 3. After the first two, each one is the sum of the two before it.",
+            "narrate": "The Fibonacci numbers begin 0, 1, 1, 2, 3. After the first two, each one is the sum of the two numbers just before it."
+          },
+          {
+            "code": "static int fib(int n) {\n    if (n < 2) {\n        return n;\n    }\n    return fib(n - 1) + fib(n - 2);\n}",
+            "language": "java",
+            "narrate": "Here's fib in Java. Find the if at the top, which catches any n below 2, and then the return line at the bottom, with its two calls to fib."
+          },
+          {
+            "say": "The base case covers two inputs: `fib(0)` is 0 and `fib(1)` is 1. The recursive case makes **two** recursive calls and adds their answers.",
+            "narrate": "The base case covers two inputs at once: fib of 0 is 0, and fib of 1 is 1. The recursive case makes two recursive calls, not one, and adds their answers together."
+          },
+          {
+            "say": "`fib(2)` is `fib(1) + fib(0)`, which is 1 + 0, so 1. And `fib(3)` is `fib(2) + fib(1)`.",
+            "narrate": "Fib of 2 is fib of 1, plus fib of 0. That's 1 plus 0, so 1. And fib of 3 is fib of 2, plus fib of 1."
+          }
+        ],
+        "check": {
+          "prompt": "So what is `fib(3)`?",
+          "answer": "2",
+          "wrong": [
+            "3",
+            "1"
+          ],
+          "why": "`fib(2)` is 1 and `fib(1)` is 1, and 1 + 1 is 2.",
+          "narrate": "Use what you've just worked out. So what is fib of 3?",
+          "why_narrate": "Fib of 2 is 1, and fib of 1 is 1. Add them, and 1 plus 1 is 2."
+        }
+      },
+      {
+        "say": "Each call that is not a base case makes two more, so the calls branch out into a **call tree**: `fib(2)` is worked out twice, from scratch each time. As `n` grows, the repeats multiply, and this `fib` becomes painfully slow. It is correct, and it reads just like the definition, but a loop does the same job far faster. Elegant is not always efficient. So use recursion when a problem is made of smaller copies of itself, such as a folder that holds folders, and a loop when you are only counting.",
+        "beats": [
+          {
+            "say": "Each call that is not a base case makes two more, so the calls branch out into a **call tree**:",
+            "narrate": "Each call that isn't a base case makes two more calls. So the calls branch out, into what's called a call tree."
+          },
+          {
+            "figure": {
+              "dot": "digraph { nodesep=0.12; ranksep=0.35; node [margin=\"0.06,0.05\"];\n f4 [label=\"fib(4)\"]; f3 [label=\"fib(3)\"]; f2a [label=\"fib(2)\" color=\"#ffb300\" fontcolor=\"#ffd86b\" style=\"rounded,filled\" fillcolor=\"#3a2c00\"]; f2b [label=\"fib(2)\" color=\"#ffb300\" fontcolor=\"#ffd86b\" style=\"rounded,filled\" fillcolor=\"#3a2c00\"];\n f1a [label=\"fib(1)\" color=\"#7CFC00\" fontcolor=\"#7CFC00\"]; f1b [label=\"fib(1)\" color=\"#7CFC00\" fontcolor=\"#7CFC00\"]; f1c [label=\"fib(1)\" color=\"#7CFC00\" fontcolor=\"#7CFC00\"]; f0a [label=\"fib(0)\" color=\"#7CFC00\" fontcolor=\"#7CFC00\"]; f0b [label=\"fib(0)\" color=\"#7CFC00\" fontcolor=\"#7CFC00\"];\n f4 -> f3; f4 -> f2a; f3 -> f2b; f3 -> f1a; f2a -> f1b; f2a -> f0a; f2b -> f1c; f2b -> f0b; }",
+              "alt": "The call tree of fib(4), nine boxes. fib(4) calls fib(3) and fib(2); fib(3) calls fib(2) and fib(1); each fib(2) calls fib(1) and fib(0). The two fib(2) boxes are highlighted as repeated work; the leaves are green.",
+              "caption": "The call tree of fib(4).",
+              "src": "_dot/4b13fdb5d7ac5a79.svg"
+            },
+            "narrate": "Here's the call tree of fib of 4. Start at the top, and follow the branches down. The green boxes at the ends are base cases. Now find the two amber boxes."
+          },
+          {
+            "say": "`fib(2)` is worked out twice, from scratch each time. As `n` grows, the repeats multiply, and this `fib` becomes painfully slow.",
+            "narrate": "Both amber boxes are fib of 2. It's worked out twice, from scratch each time. As n grows, those repeats multiply, and this fib becomes painfully slow."
+          },
+          {
+            "say": "It is correct, and it reads just like the definition, but a loop does the same job far faster. Elegant is not always efficient.",
+            "narrate": "It's correct, and it reads just like the definition. But a loop does the same job far faster. Elegant is not always efficient."
+          },
+          {
+            "say": "So use recursion when a problem is made of smaller copies of itself, such as a folder that holds folders, and a loop when you are only counting.",
+            "narrate": "So use recursion when a problem is made of smaller copies of itself, such as a folder that holds more folders. And use a loop when you're only counting."
+          }
+        ]
+      }
+    ],
+    "outro": "Count the calls in a call tree yourself. Build it up from the bottom.",
+    "intro_narrate": "You've probably been wondering whether a loop could have done all of this. Good question. It could.",
+    "outro_narrate": "Now count the calls in a call tree yourself. Build it up from the bottom, one level at a time."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "fib(n) returns n when n < 2, and otherwise returns fib(n - 1) + fib(n - 2). The call tree of fib(4) has 9 calls in it, and fib(3) makes 5. Counting the first call and every call it leads to, how many calls to fib does fib({{n}}) make in all?",
+    "variables": {
+      "n": {
+        "values": [
+          5,
+          6
+        ]
+      }
+    },
+    "derived": {
+      "n1": "n - 1",
+      "n2": "n - 2",
+      "a": "2 * round(pow((1 + sqrt(5)) / 2, n) / sqrt(5)) - 1",
+      "b": "2 * round(pow((1 + sqrt(5)) / 2, n - 1) / sqrt(5)) - 1"
+    },
+    "answer": {
+      "expr": "2 * round(pow((1 + sqrt(5)) / 2, n + 1) / sqrt(5)) - 1",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "Each call that is not a base case makes one call for n - 1 and one for n - 2. So fib({{n}}) makes itself, plus the {{a}} calls of fib({{n1}}), plus the {{b}} calls of fib({{n2}}): 1 + {{a}} + {{b}} = {{expected}}."
+  },
+  {
+    "type": "code_trace",
+    "question": "Build the answer up from the base cases: fib(0), fib(1), fib(2), and so on. What does the program print?",
+    "code": "static int fib(int n) {\n    if (n < 2) {\n        return n;\n    }\n    return fib(n - 1) + fib(n - 2);\n}\n\nSystem.out.println(fib(6));",
+    "language": "java",
+    "correct": [
+      "8"
+    ],
+    "case_sensitive": true,
+    "feedback": "fib(0) to fib(6) are 0, 1, 1, 2, 3, 5, 8. Each is the sum of the two before it, so fib(6) is fib(5) + fib(4) = 5 + 3 = 8."
+  },
+  {
+    "question": "Why is the two-call recursive fib slow for a large n?",
+    "correct": [
+      "It works out the same smaller values over and over"
+    ],
+    "incorrect": [
+      "It reaches the call stack's depth limit on every call",
+      "It has two base cases where one would be enough",
+      "It adds its numbers, which is slower than multiplying"
+    ],
+    "feedback": "fib(n - 1) and fib(n - 2) each recompute values the other has already found. The number of calls (5, 9, 15, 25, ...) grows by more than half again with each step up in n. The depth stays small; it is the NUMBER of calls that explodes.",
+    "language": "java"
+  },
+  {
+    "question": "Which of the following are true about recursion and loops in Java?",
+    "correct": [
+      "A loop can compute anything a recursive method can",
+      "Each unfinished recursive call holds a frame on the stack",
+      "A recursive method needs a base case in order to stop"
+    ],
+    "incorrect": [
+      "A recursive method runs faster than the matching loop",
+      "A Java loop stops with an error after a few thousand passes"
+    ],
+    "feedback": "Loops and recursion are equally powerful. Recursion costs a frame per unfinished call, which is why it has a depth limit and a loop does not, and it is usually a little slower, not faster.",
+    "language": "java"
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: The variable's type and the object's class",
+    "npc": "zoya",
+    "intro": "I'm Zoya, the Golem-Shaper. In Python, one call could make different objects answer in different ways. Java does the same, with one extra check before the program runs.",
+    "steps": [
+      {
+        "say": "**extends** names the parent class, as the parentheses on a Python class line do. Owl **overrides** `sound`: it has a method with the same name and the same parameters as its parent's. Now look at Owl's constructor. A child's constructor hands values up to its parent's constructor with `super(...)`, on its very first line, as `super().__init__(...)` does in Python. Here Creature's constructor stores the name.",
+        "beats": [
+          {
+            "code": "class Creature {\n    String name;\n\n    Creature(String name) {\n        this.name = name;\n    }\n\n    String sound() {\n        return \"...\";\n    }\n}\n\nclass Owl extends Creature {\n    Owl(String name) {\n        super(name);\n    }\n\n    String sound() {\n        return \"Hoo\";\n    }\n}",
+            "language": "java",
+            "narrate": "Here's Creature, with a name and a method called sound. Below it is a child class, Owl, with a constructor and a sound of its own. Look for the word extends on Owl's first line."
+          },
+          {
+            "say": "**extends** names the parent class, as the parentheses on a Python class line do. Owl **overrides** `sound`: it has a method with the same name and the same parameters as its parent's.",
+            "narrate": "The word extends names the parent class, just as the parentheses on a Python class line do. And Owl overrides sound: it has a method with the same name, and the same parameters, as its parent's."
+          },
+          {
+            "say": "Now look at Owl's constructor. A child's constructor hands values up to its parent's constructor with `super(...)`, on its very first line, as `super().__init__(...)` does in Python. Here Creature's constructor stores the name.",
+            "narrate": "Now look at Owl's constructor. A child's constructor hands values up to its parent's constructor with super, on its very first line, just as super dot init does in Python. Here, Creature's constructor is the one that stores the name."
+          }
+        ],
+        "check": {
+          "prompt": "Suppose Owl's constructor leaves out `super(name);`. What happens?",
+          "answer": "javac refuses: Creature's constructor needs a name",
+          "wrong": [
+            "The Owl is built, with no name stored",
+            "Java calls `super(name)` for you"
+          ],
+          "why": "With no `super(...)` line, Java calls `super()` with nothing, and Creature has no constructor that takes nothing. So Owl does not compile.",
+          "narrate": "Suppose Owl's constructor leaves out its super line. What happens?",
+          "why_narrate": "With no super line, Java calls the parent's constructor with nothing at all. But Creature has no constructor that takes nothing, so Owl doesn't compile."
+        }
+      },
+      {
+        "say": "Now a line that Python never needed. The variable on the left has a declared type, Creature. The object on the right is an Owl. That is allowed, because an Owl is a Creature: a variable of type Creature may hold an object of Creature's class or of any child class.",
+        "beats": [
+          {
+            "say": "Now a line that Python never needed. The variable on the left has a declared type, Creature. The object on the right is an Owl.",
+            "narrate": "Now here's a line that Python never needed. The variable on the left has a declared type, Creature. But the object on the right is an Owl."
+          },
+          {
+            "code": "Creature c = new Owl(\"Hedwig\");\nSystem.out.println(c.sound());",
+            "language": "java",
+            "narrate": "Here's that line, with a print below it. The type written on the left is Creature, but new Owl, on the right, builds an Owl."
+          },
+          {
+            "say": "That is allowed, because an Owl is a Creature: a variable of type Creature may hold an object of Creature's class or of any child class.",
+            "narrate": "That's allowed, because an Owl is a Creature. A variable of type Creature may hold an object of Creature's class, or of any of its child classes."
+          }
+        ],
+        "check": {
+          "prompt": "What does `c.sound()` print?",
+          "answer": "`Hoo`, from Owl",
+          "wrong": [
+            "`...`, from Creature",
+            "Nothing: javac refuses the line"
+          ],
+          "why": "The object is an Owl, so Owl's `sound` runs. The type written on the variable does not choose the version; the object's class does.",
+          "narrate": "So, what does c dot sound print?",
+          "why_narrate": "The object is an Owl, so Owl's version of sound runs, and it prints Hoo. The type written on the variable doesn't choose the version. The object's class does."
+        }
+      },
+      {
+        "say": "Java reads that call at two different moments. Before the program runs, `javac` checks the **declared type**: does Creature have a method called `sound`? It does, so the line compiles. While the program runs, the **object's class** decides which version runs, here Owl's. That is **polymorphism**: the same call, different behaviour, decided by each object's class.",
+        "beats": [
+          {
+            "say": "Java reads that call at two different moments. Before the program runs, `javac` checks the **declared type**: does Creature have a method called `sound`? It does, so the line compiles.",
+            "narrate": "Java looks at that call at two different moments. First, before the program runs, javac checks the declared type. Does Creature have a method called sound? It does, so the line compiles."
+          },
+          {
+            "say": "While the program runs, the **object's class** decides which version runs, here Owl's. That is **polymorphism**: the same call, different behaviour, decided by each object's class.",
+            "narrate": "Then, while the program runs, the object's class decides which version runs, and here that's Owl's. That's polymorphism: the same call, but different behaviour, decided by each object's class."
+          }
+        ]
+      },
+      {
+        "say": "Owl may have methods that Creature lacks. Say Owl also has a method called `hunt`: `javac` refuses it. It judges each call by the declared type, and Creature has no `hunt`. The object really is an Owl, but javac never sees objects: they are built only when the program runs.",
+        "beats": [
+          {
+            "say": "Owl may have methods that Creature lacks. Say Owl also has a method called `hunt`:",
+            "narrate": "Now, Owl may have methods that Creature lacks. Say Owl also has a method called hunt."
+          },
+          {
+            "code": "Creature c = new Owl(\"Hedwig\");\nc.hunt();    // refused by javac",
+            "language": "java",
+            "narrate": "Here, c holds an Owl again. But this time the second line calls hunt, a method that only Owl has."
+          },
+          {
+            "say": "`javac` refuses it. It judges each call by the declared type, and Creature has no `hunt`. The object really is an Owl, but javac never sees objects: they are built only when the program runs.",
+            "narrate": "javac refuses it. It judges each call by the declared type, and Creature has no hunt. The object really is an Owl, but javac never sees objects. They're built only when the program runs."
+          }
+        ]
+      }
+    ],
+    "outro": "Two questions, every time: what is the variable's type, and what is the object?",
+    "intro_narrate": "I'm Zoya, the Golem-Shaper. In Python, you saw one call make different objects answer in different ways. Java does exactly the same. It just adds one extra check, before the program ever runs.",
+    "outro_narrate": "So ask two questions, every time. What type is the variable? And what is the object inside it?"
+  },
+  {
+    "type": "code_trace",
+    "question": "Both variables have the type Coin. What does the program print?",
+    "code": "class Coin {\n    int value() {\n        return 1;\n    }\n}\n\nclass Gem extends Coin {\n    int value() {\n        return 5;\n    }\n}\n\nCoin a = new Gem();\nCoin b = new Coin();\nSystem.out.println(a.value() + b.value());",
+    "language": "java",
+    "correct": [
+      "6"
+    ],
+    "case_sensitive": true,
+    "feedback": "a holds a Gem, so Gem's value runs and gives 5; b holds a plain Coin, which gives 1. The type on the variable is Coin both times, but each object's own class picks the version: 5 + 1 = 6."
+  },
+  {
+    "question": "Owl has a method hunt that Creature lacks. Which of these will javac refuse?",
+    "code": "class Creature {\n    String sound() {\n        return \"...\";\n    }\n}\n\nclass Owl extends Creature {\n    String sound() {\n        return \"Hoo\";\n    }\n\n    String hunt() {\n        return \"Swoop\";\n    }\n}",
+    "code_language": "java",
+    "correct": [
+      "Creature c = new Owl(); c.hunt();"
+    ],
+    "incorrect": [
+      "Owl o = new Owl(); o.hunt();",
+      "Creature c = new Owl(); c.sound();",
+      "Owl o = new Owl(); o.sound();"
+    ],
+    "feedback": "javac judges a call by the variable's declared type. A Creature variable offers only Creature's methods, so c.hunt() is refused even though the object is an Owl. An Owl variable offers hunt, and both types offer sound.",
+    "language": "java"
+  },
+  {
+    "type": "fill_blank",
+    "question": "Calling the same method on objects of different classes, and having each one respond in its own way, is called ___.",
+    "correct": [
+      "polymorphism"
+    ],
+    "case_sensitive": false,
+    "feedback": "Polymorphism means 'many forms': one call, such as c.sound(), takes a different form for each class of object it meets."
+  },
+  {
+    "type": "dynamic_numeric",
+    "question": "Gem is a child class of Coin. Coin's value() returns 1, and Gem overrides it to return {{g}}. An ArrayList<Coin> named bag holds {{c}} Coin objects and {{n}} Gem objects. What does this print?\n\nint total = 0;\nfor (Coin item : bag) {\n    total = total + item.value();\n}\nSystem.out.println(total);",
+    "variables": {
+      "g": {
+        "min": 5,
+        "max": 9
+      },
+      "c": {
+        "min": 2,
+        "max": 8
+      },
+      "n": {
+        "min": 2,
+        "max": 5
+      }
+    },
+    "answer": {
+      "expr": "c + n * g",
+      "tolerance_abs": 0
+    },
+    "feedback_template": "The list's type says Coin, but each object answers value() with its own class's version: each Coin with 1, and each Gem with {{g}}. So the total is {{c}} for the coins plus {{n}} gems at {{g}} each: {{expected}}."
+  },
+  {
+    "question": "A loop picks each creature's sound with a chain of  if (c instanceof Wolf) ... else if (c instanceof Owl) ...  lines (instanceof asks whether an object belongs to a class). Why is giving each class its own sound() method the better design?",
+    "correct": [
+      "A new creature class then needs no change to the loop"
+    ],
+    "incorrect": [
+      "instanceof gives the wrong answer for a child class",
+      "A method call runs faster than a chain of if statements",
+      "Java limits how many else if lines a loop may hold"
+    ],
+    "feedback": "With the instanceof chain, every new class means finding and editing every such loop. With polymorphism, the new class brings its own sound() and the loops are never touched.",
+    "language": "java"
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: A note that javac checks",
+    "npc": "zoya",
+    "intro": "In Python, a misspelled method name overrides nothing, and nothing warns you. Java will warn you, if you ask it to.",
+    "steps": [
+      {
+        "say": "Wolf wrote `sounds`, not `sound`. Python sees a brand new method, so a Wolf's `sound` is still Creature's, which returns `...`, and no error appears.",
+        "beats": [
+          {
+            "code": "class Creature:\n    def sound(self):\n        return \"...\"\n\nclass Wolf(Creature):\n    def sounds(self):\n        return \"Awoo\"",
+            "language": "python",
+            "narrate": "Here's some Python. Wolf means to override sound. Look closely at the name it actually wrote."
+          },
+          {
+            "say": "Wolf wrote `sounds`, not `sound`. Python sees a brand new method, so a Wolf's `sound` is still Creature's, which returns `...`, and no error appears.",
+            "narrate": "Wolf wrote sounds, with an s, not sound. Python sees a brand new method. So a Wolf's sound is still Creature's, which returns three dots, and no error appears anywhere."
+          }
+        ]
+      },
+      {
+        "say": "Above the method sits **@Override**, a note to Java that says 'I mean to replace a parent method'.",
+        "beats": [
+          {
+            "code": "class Wolf extends Creature {\n    @Override\n    String sounds() {\n        return \"Awoo\";\n    }\n}",
+            "language": "java",
+            "narrate": "And here's the same mistake in Java, with one extra line above the method: at Override."
+          },
+          {
+            "say": "Above the method sits **@Override**, a note to Java that says 'I mean to replace a parent method'.",
+            "narrate": "Above the method sits at Override. It's a note to Java that says: I mean to replace a parent method."
+          }
+        ],
+        "check": {
+          "prompt": "With `@Override` above `sounds`, when do you find out about the misspelling?",
+          "answer": "When you compile, before the program runs",
+          "wrong": [
+            "When the program calls `sound` and gets `...`",
+            "Never: Java quietly adds a second method"
+          ],
+          "why": "javac checks the note against the parent class while compiling, so the program is not built until the name is right.",
+          "narrate": "With at Override above sounds, when do you find out about the misspelling?",
+          "why_narrate": "javac checks the note against the parent class while it compiles. So the program isn't built at all until the name is right."
+        }
+      },
+      {
+        "say": "Java holds you to the note. If the parent has no such method to replace, `javac` refuses to compile the program, and says so: Leave the note out, and Java behaves just as Python does: `sounds` quietly becomes a new method. So write `@Override` above every method you mean to override. It costs one line, and it turns a silent bug into an error you see at once.",
+        "beats": [
+          {
+            "say": "Java holds you to the note. If the parent has no such method to replace, `javac` refuses to compile the program, and says so:",
+            "narrate": "Java holds you to that note. If the parent has no such method to replace, javac refuses to compile the program, and it tells you why."
+          },
+          {
+            "code": "error: method does not override or implement a method from a supertype",
+            "language": "what javac reports",
+            "narrate": "This is javac's complaint. It says that the method marked with the note replaces nothing in the parent."
+          },
+          {
+            "say": "Leave the note out, and Java behaves just as Python does: `sounds` quietly becomes a new method. So write `@Override` above every method you mean to override.",
+            "narrate": "Leave the note out, and Java behaves just as Python does: sounds quietly becomes a new method. So write at Override above every method you mean to override."
+          },
+          {
+            "say": "It costs one line, and it turns a silent bug into an error you see at once.",
+            "narrate": "It costs one line, and it turns a silent bug into an error you see at once."
+          }
+        ]
+      }
+    ],
+    "outro": "Say what you mean, and let javac check it.",
+    "intro_narrate": "In Python, a misspelled method name overrides nothing, and nothing warns you. Java will warn you, if you ask it to. Let me show you how.",
+    "outro_narrate": "Say what you mean, with at Override, and let javac check it for you."
+  },
+  {
+    "question": "The author means to override toString, but misspells it. What happens when this class is compiled?",
+    "code": "class Potion {\n    String name = \"tonic\";\n\n    @Override\n    public String tostring() {\n        return \"Potion: \" + name;\n    }\n}",
+    "code_language": "java",
+    "correct": [
+      "javac refuses it, since tostring overrides no method"
+    ],
+    "incorrect": [
+      "It compiles, and printing a Potion shows Potion: tonic",
+      "It compiles, and javac corrects the name to toString",
+      "It compiles, but it crashes when a Potion is printed"
+    ],
+    "feedback": "@Override asks javac to check that the method replaces one in a parent. Every class inherits toString, but nothing called tostring, so javac stops with \"method does not override or implement a method from a supertype\".",
+    "language": "java"
+  },
+  {
+    "type": "code_trace",
+    "question": "This time the author leaves @Override out. What does the program print?",
+    "code": "class Creature {\n    String sound() {\n        return \"...\";\n    }\n}\n\nclass Wolf extends Creature {\n    String sounds() {\n        return \"Awoo\";\n    }\n}\n\nWolf w = new Wolf();\nSystem.out.println(w.sound());",
+    "language": "java",
+    "correct": [
+      "..."
+    ],
+    "case_sensitive": true,
+    "feedback": "Without @Override, javac has nothing to check: sounds is simply a second method. Wolf has no sound of its own, so Creature's runs, and the bug passes silently, exactly as it would in Python."
+  },
+  {
+    "type": "cloze",
+    "question": "Written above a method, {{1}} asks javac to check that the method really replaces one in its parent class. A misspelled name is then caught when the program is {{2}}, not while it runs.",
+    "blanks": [
+      {
+        "accept": [
+          "@Override",
+          "Override"
+        ],
+        "hint": "annotation"
+      },
+      {
+        "accept": [
+          "compiled",
+          "compiling",
+          "built"
+        ],
+        "hint": "when?"
+      }
+    ],
+    "feedback": "@Override turns a silent mistake into a compile error: javac compares the method with the parent's before the program is ever built."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Abstract classes and interfaces",
+    "npc": "zoya",
+    "intro": "Some parent classes exist only to be inherited from. Java lets you say so, and then holds every child class to it.",
+    "steps": [
+      {
+        "say": "Shape is marked **abstract**: it exists only to be inherited from, so `new Shape()` will not compile. Its `area` is an **abstract method**: a first line and a semicolon, with no body. It is a gap that every child class must fill in.",
+        "beats": [
+          {
+            "code": "abstract class Shape {\n    abstract double area();\n\n    String describe() {\n        return \"area \" + area();\n    }\n}",
+            "language": "java",
+            "narrate": "Here's Shape. Look for the word abstract, which appears twice: once on the class line, and once on the method called area."
+          },
+          {
+            "say": "Shape is marked **abstract**: it exists only to be inherited from, so `new Shape()` will not compile.",
+            "narrate": "Shape is marked abstract. It exists only to be inherited from, so trying to build one with new Shape won't even compile."
+          },
+          {
+            "say": "Its `area` is an **abstract method**: a first line and a semicolon, with no body. It is a gap that every child class must fill in.",
+            "narrate": "Its area is an abstract method. It's a first line and a semicolon, with no body at all. It's a gap that every child class must fill in."
+          }
+        ]
+      },
+      {
+        "say": "Square fills the gap. It inherits `describe` from Shape, and `describe` calls `area()`.",
+        "beats": [
+          {
+            "code": "class Square extends Shape {\n    double side;\n\n    Square(double side) {\n        this.side = side;\n    }\n\n    @Override\n    double area() {\n        return side * side;\n    }\n}",
+            "language": "java",
+            "narrate": "Here's Square, a child of Shape. It stores a side, and fills the gap with an area of its own."
+          },
+          {
+            "say": "Square fills the gap. It inherits `describe` from Shape, and `describe` calls `area()`.",
+            "narrate": "Square fills the gap. It inherits describe from Shape, and describe calls area."
+          }
+        ],
+        "check": {
+          "prompt": "What does `new Square(3).describe()` return?",
+          "answer": "`area 9.0`",
+          "wrong": [
+            "`area 0`",
+            "An error: Shape's `area` has no body to run"
+          ],
+          "why": "The object is a Square, so Square's `area` runs, and it returns 3.0 times 3.0. That is a double, and a double joined to text keeps its `.0`.",
+          "narrate": "So, what does describe return, for a new Square with side 3?",
+          "why_narrate": "The object is a Square, so Square's area is the one that runs, and it returns 3 point 0 times 3 point 0. That's a double, and a double joined to text keeps its point 0. So the answer is area 9 point 0."
+        }
+      },
+      {
+        "say": "An **interface** goes one step further. It is a list of methods that a class promises to have, and usually nothing else. A class makes the promise with **implements**. A class may extend only one parent, but it may implement several interfaces. An interface's methods are public, so the class writes `public` in front of each one.",
+        "beats": [
+          {
+            "say": "An **interface** goes one step further. It is a list of methods that a class promises to have, and usually nothing else.",
+            "narrate": "An interface goes one step further. It's a list of methods that a class promises to have, and usually nothing else."
+          },
+          {
+            "code": "interface Drawable {\n    String draw();\n}\n\nclass Rock implements Drawable {\n    public String draw() {\n        return \"[rock]\";\n    }\n}",
+            "language": "java",
+            "narrate": "Here's an interface called Drawable, with one method, draw. Below it, a class called Rock makes the promise and keeps it."
+          },
+          {
+            "say": "A class makes the promise with **implements**. A class may extend only one parent, but it may implement several interfaces.",
+            "narrate": "A class makes the promise with the word implements. A class may extend only one parent, but it may implement several interfaces."
+          },
+          {
+            "say": "An interface's methods are public, so the class writes `public` in front of each one.",
+            "narrate": "And an interface's methods are public, so the class has to write public in front of each one."
+          }
+        ],
+        "check": {
+          "prompt": "Rock says `implements Drawable`, but someone deletes its `draw` method. When is that found?",
+          "answer": "When javac compiles Rock",
+          "wrong": [
+            "When `draw` is first called",
+            "Never: Rock just has no `draw`"
+          ],
+          "why": "The promise is checked by the compiler, so the mistake never reaches a running program.",
+          "narrate": "Rock says implements Drawable, but someone deletes its draw method. When is that found?",
+          "why_narrate": "The promise is checked by the compiler. So the mistake never reaches a running program at all."
+        }
+      }
+    ],
+    "outro": "Abstract classes and interfaces are promises, and javac makes every class keep them.",
+    "intro_narrate": "Some parent classes exist only to be inherited from. Java lets you say so, and then it holds every child class to it.",
+    "outro_narrate": "Abstract classes and interfaces are promises written into the code. And javac makes every class keep them."
+  },
+  {
+    "question": "Which of these lines will javac refuse?",
+    "code": "abstract class Shape {\n    abstract double area();\n}\n\nclass Square extends Shape {\n    double side = 2;\n\n    @Override\n    double area() {\n        return side * side;\n    }\n}",
+    "code_language": "java",
+    "correct": [
+      "Shape s = new Shape();",
+      "Square q = new Shape();"
+    ],
+    "incorrect": [
+      "Shape s = new Square();",
+      "Square q = new Square();",
+      "double a = new Square().area();"
+    ],
+    "feedback": "Shape is abstract, so new Shape() is refused wherever it appears. A Shape variable may hold a Square, since a Square is a Shape, and a Square can be built and asked for its area.",
+    "language": "java"
+  },
+  {
+    "type": "code_trace",
+    "question": "Both classes implement the Speaker interface. What does the program print?",
+    "code": "interface Speaker {\n    String speak();\n}\n\nclass Bell implements Speaker {\n    public String speak() {\n        return \"ding\";\n    }\n}\n\nclass Horn implements Speaker {\n    public String speak() {\n        return \"toot\";\n    }\n}\n\nSpeaker[] all = { new Horn(), new Bell() };\nfor (Speaker s : all) {\n    System.out.println(s.speak());\n}",
+    "language": "java",
+    "correct": [
+      "toot\nding"
+    ],
+    "case_sensitive": true,
+    "feedback": "The array's type is Speaker, but each object answers speak() with its own class's version, in the array's order: the Horn first, then the Bell. An interface type works just like a parent class type."
+  },
+  {
+    "type": "matching",
+    "question": "Match each Java word or idea to what it does.",
+    "pairs": [
+      {
+        "term": "abstract class",
+        "definition": "A parent class that cannot itself be built with new"
+      },
+      {
+        "term": "abstract method",
+        "definition": "A first line with no body, for each child to fill in"
+      },
+      {
+        "term": "interface",
+        "definition": "A list of methods that a class promises to have"
+      },
+      {
+        "term": "@Override",
+        "definition": "A note asking javac to check that a parent method is replaced"
+      },
+      {
+        "term": "extends",
+        "definition": "The word naming the one parent class a class inherits from"
+      },
+      {
+        "term": "implements",
+        "definition": "The word naming the interfaces a class promises to keep"
+      }
+    ],
+    "feedback": "abstract and @Override and implements are all promises that javac checks before the program runs. extends names one parent; implements may name several interfaces."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: When something goes wrong",
+    "npc": "kaelen",
+    "intro": "I'm Kaelen, the Grand Archivist. Every program you have written so far assumed that nothing would go wrong. This chapter is about what happens when something does go wrong, and what your program can do about it.",
+    "steps": [
+      {
+        "say": "`Integer.parseInt` is Java's `int()`. It cannot make a number out of `\"abc\"`, and Java does not guess. It stops the program on that line and reports an error; the second line never runs. The proper word for an error like this is an **exception**.",
+        "beats": [
+          {
+            "code": "int age = Integer.parseInt(\"abc\");\nSystem.out.println(\"never printed\");",
+            "language": "java",
+            "narrate": "Here are two short lines. The first hands Integer dot parseInt the letters abc, and asks it for a number. The second simply prints a message."
+          },
+          {
+            "say": "`Integer.parseInt` is Java's `int()`. It cannot make a number out of `\"abc\"`, and Java does not guess. It stops the program on that line and reports an error; the second line never runs.",
+            "narrate": "Integer dot parseInt is Java's version of int. It can't make a number out of the letters abc, and Java won't guess what you meant. So it stops the program right there, and the second line never runs."
+          },
+          {
+            "say": "The proper word for an error like this is an **exception**.",
+            "narrate": "The proper word for an error like this one is an exception. You'll hear that word a great deal in this chapter."
+          }
+        ]
+      },
+      {
+        "say": "This report is called a **stack trace**. Its first line names the **kind** of exception, here NumberFormatException, and then, after the colon, a message saying what went wrong. The lines below say where it happened, call by call, ending at the line in your own code.",
+        "beats": [
+          {
+            "code": "Exception in thread \"main\" java.lang.NumberFormatException: For input string: \"abc\"\n    ... (the lines inside parseInt) ...\n    at Main.main(Main.java:3)",
+            "language": "the start and end of what Java reports",
+            "narrate": "Here's what Java printed when it stopped. Start with the very first line."
+          },
+          {
+            "say": "This report is called a **stack trace**. Its first line names the **kind** of exception, here NumberFormatException, and then, after the colon, a message saying what went wrong.",
+            "narrate": "This report is called a stack trace. Its first line names the kind of exception, and here that's Number Format Exception. Then, after the colon, comes a message saying what went wrong."
+          },
+          {
+            "say": "The lines below say where it happened, call by call, ending at the line in your own code.",
+            "narrate": "The lines below it say where it happened, call by call, ending at the line in your own code."
+          }
+        ],
+        "check": {
+          "prompt": "Which part of this report names the kind of exception?",
+          "answer": "`NumberFormatException`",
+          "wrong": [
+            "`For input string: \"abc\"`",
+            "`at Main.main`"
+          ],
+          "why": "The kind comes just before the colon on the first line. The message comes after it.",
+          "narrate": "So, in this report, which part names the kind of exception?",
+          "why_narrate": "The kind comes just before the colon, on the first line: Number Format Exception. The message comes after the colon."
+        }
+      },
+      {
+        "say": "**try** marks the lines that might fail. **catch** names the kind of exception to watch for, and its block says what to do instead of crashing. That is called **catching** the exception. If `text` is `\"abc\"`, `parseInt` fails, Java jumps straight to the `catch` block, and the rest of the `try` is skipped. Then the program carries on below, as if nothing had happened.",
+        "beats": [
+          {
+            "code": "try {\n    int age = Integer.parseInt(text);\n    System.out.println(age + 1);\n} catch (NumberFormatException e) {\n    System.out.println(\"That is not a number.\");\n}\nSystem.out.println(\"Goodbye\");",
+            "language": "java",
+            "narrate": "Here's the shape of it. Two new words: try, at the top, and catch, partway down. The last line, the one that prints Goodbye, sits outside both of them."
+          },
+          {
+            "say": "**try** marks the lines that might fail. **catch** names the kind of exception to watch for, and its block says what to do instead of crashing. That is called **catching** the exception.",
+            "narrate": "try marks the lines that might fail. catch names the kind of exception to watch for, here Number Format Exception, and its block says what to do instead of crashing. That's called catching the exception."
+          },
+          {
+            "say": "If `text` is `\"abc\"`, `parseInt` fails, Java jumps straight to the `catch` block, and the rest of the `try` is skipped. Then the program carries on below, as if nothing had happened.",
+            "narrate": "Suppose text is the letters abc. parseInt fails, Java jumps straight down to the catch block, and the rest of the try is skipped. Then the program carries on below it, as if nothing had happened."
+          }
+        ],
+        "check": {
+          "prompt": "Now `text` is `\"30\"`. What is printed?",
+          "answer": "`31`, then `Goodbye`",
+          "wrong": [
+            "`That is not a number.` then `Goodbye`",
+            "`31`, then `That is not a number.`"
+          ],
+          "why": "Nothing fails, so the `try` runs to its end and the `catch` block is skipped. The line after the `catch` runs either way.",
+          "narrate": "Now say text is 30. What gets printed?",
+          "why_narrate": "Nothing fails this time, so the try runs right to its end, and prints 31. The catch block is skipped. Then the line after it runs, as it does either way, and prints Goodbye."
+        }
+      },
+      {
+        "say": "A third block, **finally**, can follow the `catch`. It runs as soon as the `try`, or the `catch`, is done, whether or not anything failed, and before the lines below it. It is for cleaning up, such as closing a file you opened.",
+        "beats": [
+          {
+            "say": "A third block, **finally**, can follow the `catch`. It runs as soon as the `try`, or the `catch`, is done, whether or not anything failed, and before the lines below it.",
+            "narrate": "A third block, called finally, can follow the catch. It runs as soon as the try, or the catch, is done. It runs whether or not anything failed, and it runs before the lines below it."
+          },
+          {
+            "code": "try {\n    int n = Integer.parseInt(text);\n    System.out.println(n + 1);\n} catch (NumberFormatException e) {\n    System.out.println(\"That is not a number.\");\n} finally {\n    System.out.println(\"Checked.\");\n}\nSystem.out.println(\"Goodbye\");",
+            "language": "java",
+            "narrate": "Here's the same code with a finally block added, just before the Goodbye line. Whichever way the try goes, Checked comes next, and then Goodbye."
+          },
+          {
+            "say": "It is for cleaning up, such as closing a file you opened.",
+            "narrate": "It's for cleaning up, such as closing a file you opened."
+          }
+        ]
+      }
+    ],
+    "outro": "Follow the jump, from the line that fails to the catch.",
+    "intro_narrate": "I'm Kaelen, the Grand Archivist. Every program you've written so far has assumed that nothing would go wrong. This chapter is about what happens when something does go wrong, and what your program can do about it. Let's begin with a program that fails.",
+    "outro_narrate": "Follow the jump, from the line that fails to the catch. That's all there is to it."
+  },
+  {
+    "type": "code_trace",
+    "question": "Integer.parseInt fails on \"12x\" just as it does on \"abc\". What does the program print?",
+    "code": "try {\n    int n = Integer.parseInt(\"12x\");\n    System.out.println(\"A\");\n} catch (NumberFormatException e) {\n    System.out.println(\"B\");\n} finally {\n    System.out.println(\"C\");\n}\nSystem.out.println(\"D\");",
+    "language": "java",
+    "correct": [
+      "B\nC\nD"
+    ],
+    "case_sensitive": true,
+    "feedback": "parseInt throws, so the rest of the try (printing A) is skipped and the catch block prints B. finally runs whatever happened, printing C, and then the program carries on to D."
+  },
+  {
+    "type": "code_trace",
+    "question": "This time nothing goes wrong. What does the program print?",
+    "code": "try {\n    int n = Integer.parseInt(\"7\");\n    System.out.println(n * 2);\n} catch (NumberFormatException e) {\n    System.out.println(\"bad\");\n} finally {\n    System.out.println(\"done\");\n}\nSystem.out.println(\"end\");",
+    "language": "java",
+    "correct": [
+      "14\ndone\nend"
+    ],
+    "case_sensitive": true,
+    "feedback": "parseInt succeeds, so the whole try runs and prints 14, and the catch is skipped. finally runs as soon as the try is done, failure or not, so done comes before the end line below it."
+  },
+  {
+    "question": "text holds null, so text.trim() throws a NullPointerException, not a NumberFormatException. What happens?",
+    "code": "try {\n    int n = Integer.parseInt(text.trim());\n    System.out.println(n);\n} catch (NumberFormatException e) {\n    System.out.println(\"not a number\");\n}",
+    "code_language": "java",
+    "correct": [
+      "It is not caught, and the program stops with a stack trace"
+    ],
+    "incorrect": [
+      "It is caught by the same catch, since both are exceptions",
+      "Java first turns it into a NumberFormatException, which is caught",
+      "The try is skipped, and the program carries on below"
+    ],
+    "feedback": "A catch block catches only the kind it names (or a more specific kind that extends it). A NullPointerException is a different kind, so it passes straight by this catch and stops the program. That is usually what you want: it reveals a bug nobody planned for.",
+    "language": "java"
+  },
+  {
+    "type": "fill_blank",
+    "question": "The block that runs at the end of a try, whether or not an exception was thrown, starts with the keyword ___.",
+    "correct": [
+      "finally"
+    ],
+    "case_sensitive": true,
+    "feedback": "finally runs however the try ends, so it is the place for cleaning up: closing a file, or putting back what was changed."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Throwing, and the exceptions javac insists on",
+    "npc": "kaelen",
+    "intro": "So far every exception has come from Java itself. Some problems only your own code knows about, and for those you can throw one yourself.",
+    "steps": [
+      {
+        "say": "The keyword **throw** causes an exception on purpose. The word **new** is there because an exception is an object, and `new` is how you make one. When a method throws, it stops on that line, and the exception goes back to the code that called the method. If a matching `catch` is waiting there, it runs; if not, the exception keeps going up.",
+        "beats": [
+          {
+            "code": "static int checkAge(int age) {\n    if (age < 0) {\n        throw new IllegalArgumentException(\"age cannot be negative\");\n    }\n    return age;\n}",
+            "language": "java",
+            "narrate": "Here's a method that refuses a negative age. Look at the line inside the if: it begins with throw new."
+          },
+          {
+            "say": "The keyword **throw** causes an exception on purpose. The word **new** is there because an exception is an object, and `new` is how you make one.",
+            "narrate": "The keyword throw causes an exception, on purpose. And the word new is there because an exception is an object, and new is how you make one."
+          },
+          {
+            "say": "When a method throws, it stops on that line, and the exception goes back to the code that called the method. If a matching `catch` is waiting there, it runs; if not, the exception keeps going up.",
+            "narrate": "When a method throws, it stops right on that line, and the exception goes back to the code that called the method. If a matching catch is waiting there, that catch runs. If not, the exception keeps going up."
+          }
+        ],
+        "check": {
+          "prompt": "`checkAge(-5)` is called inside a `try` whose `catch` names IllegalArgumentException. What runs after the `throw`?",
+          "answer": "The `catch` block in the code that called it",
+          "wrong": [
+            "The `return age;` line below the `throw`",
+            "Nothing more: the whole program stops"
+          ],
+          "why": "checkAge stops at the `throw`, so its `return` never runs. The exception goes back to the caller, and the caller's matching `catch` runs.",
+          "narrate": "Check age of minus 5 is called inside a try, and its catch names Illegal Argument Exception. What runs after the throw?",
+          "why_narrate": "Check age stops at the throw, so its return line never runs. The exception goes back to the caller, and the caller's matching catch is what runs next."
+        }
+      },
+      {
+        "say": "In `catch (IllegalArgumentException e)`, `e` is the exception that was caught, and `e.getMessage()` gives back the message it was thrown with. This prints `age cannot be negative`. Why throw, rather than return -1? A returned -1 can be mistaken for a real answer and added into a total. An exception cannot be ignored by accident: someone catches it, or the program stops and says why.",
+        "beats": [
+          {
+            "code": "try {\n    checkAge(-5);\n} catch (IllegalArgumentException e) {\n    System.out.println(e.getMessage());\n}",
+            "language": "java",
+            "narrate": "Here's the caller: a try that calls check age with minus 5, and a catch below it that prints something."
+          },
+          {
+            "say": "In `catch (IllegalArgumentException e)`, `e` is the exception that was caught, and `e.getMessage()` gives back the message it was thrown with. This prints `age cannot be negative`.",
+            "narrate": "In the catch line, e is the name given to the exception that was caught. And e dot getMessage gives back the message it was thrown with. So this prints: age cannot be negative."
+          },
+          {
+            "say": "Why throw, rather than return -1? A returned -1 can be mistaken for a real answer and added into a total.",
+            "narrate": "Why throw at all, rather than returning minus 1? Because a returned minus 1 can be mistaken for a real answer, and added into a total as if nothing were wrong."
+          },
+          {
+            "say": "An exception cannot be ignored by accident: someone catches it, or the program stops and says why.",
+            "narrate": "An exception can't be ignored by accident. Either someone catches it, or the program stops and says why, in a stack trace."
+          }
+        ]
+      },
+      {
+        "say": "Now something Python never does. For some kinds of exception, a missing file among them, Java checks before the program runs. You must either catch the exception, or declare with the word **throws** that your method may throw it: These are called **checked exceptions**. Python lets you forget, and find out when it happens. Java will not compile until you have decided.",
+        "beats": [
+          {
+            "say": "Now something Python never does. For some kinds of exception, a missing file among them, Java checks before the program runs.",
+            "narrate": "Now, something Python never does. For some kinds of exception, a missing file among them, Java checks before the program even runs."
+          },
+          {
+            "say": "You must either catch the exception, or declare with the word **throws** that your method may throw it:",
+            "narrate": "You must either catch the exception, or declare, with the word throws, that your method may throw it."
+          },
+          {
+            "code": "static void load() throws FileNotFoundException {\n    // ... opens save.txt ...\n}",
+            "language": "java",
+            "narrate": "Here's a method that declares it. Look at the end of its first line: throws File Not Found Exception."
+          },
+          {
+            "say": "These are called **checked exceptions**. Python lets you forget, and find out when it happens. Java will not compile until you have decided.",
+            "narrate": "These are called checked exceptions. Python lets you forget, and find out when it happens. Java won't even compile your program until you've decided."
+          }
+        ]
+      },
+      {
+        "say": "The rest, such as NumberFormatException and IllegalArgumentException, are **unchecked**: `javac` leaves it to you whether to catch them.",
+        "beats": [
+          {
+            "say": "The rest, such as NumberFormatException and IllegalArgumentException, are **unchecked**: `javac` leaves it to you whether to catch them.",
+            "narrate": "The rest, such as Number Format Exception and Illegal Argument Exception, are unchecked. javac leaves it up to you whether to catch them."
+          }
+        ],
+        "check": {
+          "prompt": "A method opens a file, which may throw FileNotFoundException. It neither catches it nor says `throws`. What happens?",
+          "answer": "javac refuses to compile the method",
+          "wrong": [
+            "The program stops if the file is missing",
+            "Java catches it for you, and carries on"
+          ],
+          "why": "A checked exception must be caught or declared. Until it is, the program is never built, let alone run.",
+          "narrate": "A method opens a file, which may throw a File Not Found Exception. It neither catches it, nor says throws. What happens?",
+          "why_narrate": "A checked exception must be caught, or declared. Until it is, javac won't build the program, let alone run it."
+        }
+      }
+    ],
+    "outro": "Throw what you mean, and decide what you catch.",
+    "intro_narrate": "So far, every exception you've seen has come from Java itself. But some problems only your own code knows about, and for those, you can throw an exception yourself.",
+    "outro_narrate": "Throw what you mean, and decide what you catch."
+  },
+  {
+    "question": "LowGoldException extends Exception, which makes it a checked exception. What does javac do with the method pay?",
+    "code": "class LowGoldException extends Exception {\n    LowGoldException(String message) {\n        super(message);\n    }\n}\n\nstatic void pay(int gold) {\n    if (gold < 10) {\n        throw new LowGoldException(\"not enough gold\");\n    }\n}",
+    "code_language": "java",
+    "correct": [
+      "javac refuses: pay must catch it or declare it with throws"
+    ],
+    "incorrect": [
+      "It compiles, and it throws whenever gold is low",
+      "It compiles, but javac warns that the message is never read",
+      "javac refuses, since a method may not throw its own exception"
+    ],
+    "feedback": "A checked exception must be caught or declared. pay does neither, so javac reports \"unreported exception LowGoldException; must be caught or declared to be thrown\". Writing  static void pay(int gold) throws LowGoldException  fixes it.",
+    "language": "java"
+  },
+  {
+    "type": "code_trace",
+    "question": "The exception is thrown inside half, but caught by the code that called it. What does the program print?",
+    "code": "static int half(int n) {\n    if (n < 0) {\n        throw new IllegalArgumentException(\"negative\");\n    }\n    return n / 2;\n}\n\ntry {\n    System.out.println(half(9));\n    System.out.println(half(-4));\n    System.out.println(half(2));\n} catch (IllegalArgumentException e) {\n    System.out.println(e.getMessage());\n}",
+    "language": "java",
+    "correct": [
+      "4\nnegative"
+    ],
+    "case_sensitive": true,
+    "feedback": "half(9) is 9 / 2, which is 4 in whole numbers. half(-4) throws: half stops, the exception travels up to the try that called it, and the rest of the try, half(2) included, is skipped. The catch prints the message."
+  },
+  {
+    "question": "quarter calls half, and half throws an IllegalArgumentException. quarter has no try or catch of its own. Where does the exception go next?",
+    "code": "static int half(int n) {\n    if (n % 2 != 0) {\n        throw new IllegalArgumentException(\"odd\");\n    }\n    return n / 2;\n}\n\nstatic int quarter(int n) {\n    return half(half(n));\n}",
+    "code_language": "java",
+    "correct": [
+      "Up to the code that called quarter, which may catch it"
+    ],
+    "incorrect": [
+      "Back into half, which runs the throw line once more",
+      "Nowhere: quarter returns 0 in place of the answer",
+      "Straight out of the program, past every waiting catch"
+    ],
+    "feedback": "An exception that is not caught where it arrives keeps going up, one caller at a time: from half to quarter, and from quarter to whoever called quarter. The first matching catch on the way up is the one that runs.",
+    "language": "java"
+  },
+  {
+    "question": "What does this print?",
+    "code": "try {\n    throw new IllegalStateException(\"door is locked\");\n} catch (IllegalStateException e) {\n    System.out.println(e.getMessage());\n}",
+    "code_language": "java",
+    "correct": [
+      "door is locked"
+    ],
+    "incorrect": [
+      "IllegalStateException",
+      "java.lang.IllegalStateException: door is locked",
+      "e.getMessage()"
+    ],
+    "feedback": "e is the exception that was caught, and e.getMessage() gives back only the message it was made with. Printing e itself would show the kind as well: java.lang.IllegalStateException: door is locked.",
+    "language": "java"
+  },
+  {
+    "type": "matching",
+    "question": "Match each exception or error to what causes it.",
+    "pairs": [
+      {
+        "term": "NumberFormatException",
+        "definition": "Text that is not a number, handed to Integer.parseInt"
+      },
+      {
+        "term": "ArrayIndexOutOfBoundsException",
+        "definition": "An array position before its start or past its end"
+      },
+      {
+        "term": "NullPointerException",
+        "definition": "A method called through a variable that holds null"
+      },
+      {
+        "term": "ArithmeticException",
+        "definition": "A whole number divided by the int value 0"
+      },
+      {
+        "term": "StackOverflowError",
+        "definition": "Too many unfinished calls piled up on the call stack"
+      }
+    ],
+    "feedback": "Each name is a clue to the cause. All five happen while the program runs, because each depends on a value: the text, the position, the variable, the divisor, or how deep the calls go."
+  },
+  {
+    "question": "Which of these is a checked exception, one that javac makes you catch or declare?",
+    "correct": [
+      "FileNotFoundException"
+    ],
+    "incorrect": [
+      "NumberFormatException",
+      "IllegalArgumentException",
+      "ArrayIndexOutOfBoundsException"
+    ],
+    "feedback": "A missing file is something no program can rule out in advance, so Java insists that you plan for it. The other three are unchecked: they usually mean a mistake in the program, and javac leaves catching them to you.",
+    "language": "java"
+  },
+  {
+    "type": "cloze",
+    "question": "Java's {{1}} statement causes an exception on purpose, and a method that may pass on a checked exception says so on its first line with the word {{2}}.",
+    "blanks": [
+      {
+        "accept": [
+          "throw"
+        ],
+        "hint": "keyword"
+      },
+      {
+        "accept": [
+          "throws"
+        ],
+        "hint": "keyword"
+      }
+    ],
+    "feedback": "throw, inside the method, throws one exception now. throws, on the method's first line, warns callers that it may happen, which is what javac requires for a checked exception."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Before it runs, or while it runs",
+    "npc": "ada",
+    "intro": "I'm Ada, the Chief Artificer. You have met a good deal of trouble in this wing. I want you to sort all of it by one question: when does Java find out?",
+    "steps": [
+      {
+        "say": "Some mistakes are found by `javac`, before the program runs at all. These are **compile-time errors**: the program is never built, so it never runs. `javac` can catch these because each breaks a rule it can check from the text alone: a declared type, an `@Override`, an abstract class, a checked exception.",
+        "beats": [
+          {
+            "say": "Some mistakes are found by `javac`, before the program runs at all. These are **compile-time errors**: the program is never built, so it never runs.",
+            "narrate": "Some mistakes are found by javac, before the program runs at all. These are called compile-time errors. The program is never built, so it never runs."
+          },
+          {
+            "code": "int count = \"ten\";                 // a String is not an int\nCreature c = new Owl(\"Hedwig\");\nc.hunt();                          // Creature has no hunt\nShape s = new Shape();             // Shape is abstract",
+            "language": "java",
+            "narrate": "Three of these lines are refused by javac, each with its reason in a comment on the right. The line with no comment is only there to set up the one below it."
+          },
+          {
+            "say": "`javac` can catch these because each breaks a rule it can check from the text alone: a declared type, an `@Override`, an abstract class, a checked exception.",
+            "narrate": "javac can catch these because each one breaks a rule it can check from the text alone: a declared type, an at Override, an abstract class, or a checked exception."
+          }
+        ]
+      },
+      {
+        "say": "Other mistakes show up only **while the program runs**, because they depend on values that do not exist until then, such as the text a user types. These are **run-time errors**. In Java they arrive as exceptions, or as errors such as StackOverflowError.",
+        "beats": [
+          {
+            "say": "Other mistakes show up only **while the program runs**, because they depend on values that do not exist until then, such as the text a user types. These are **run-time errors**.",
+            "narrate": "Other mistakes show up only while the program runs, because they depend on values that don't exist until then, such as the text a user types. These are called run-time errors."
+          },
+          {
+            "code": "int n = Integer.parseInt(text);   // fine for \"12\", not for \"abc\"\nint x = nums[i];                  // not if i is past the end\nint t = total(-1);                // never reaches its base case",
+            "language": "java",
+            "narrate": "Here are lines that javac accepts. Whether each one fails depends on a value, and values exist only once the program runs."
+          },
+          {
+            "say": "In Java they arrive as exceptions, or as errors such as StackOverflowError.",
+            "narrate": "In Java, they arrive as exceptions, or as errors, such as a Stack Overflow Error."
+          }
+        ],
+        "check": {
+          "prompt": "Which of these can javac find before the program runs?",
+          "answer": "Calling `hunt` on a Creature variable",
+          "wrong": [
+            "Handing `\"abc\"` to `parseInt`",
+            "A recursion that never reaches its base case"
+          ],
+          "why": "javac checks the declared type, Creature, and finds no `hunt`. The other two depend on values and calls that happen only while the program runs.",
+          "narrate": "Which of these can javac find before the program runs?",
+          "why_narrate": "javac checks the declared type, Creature, and finds no hunt. The other two depend on values, and on calls, that happen only while the program runs."
+        }
+      },
+      {
+        "say": "And some mistakes are never reported at all: the program runs and gives a wrong answer. An `int` that overflows wraps around without a word, and `7 / 2` quietly drops its fraction. Those are the hardest to find. That is why you test your code, and why it pays to let `javac` check everything it can.",
+        "beats": [
+          {
+            "say": "And some mistakes are never reported at all: the program runs and gives a wrong answer. An `int` that overflows wraps around without a word, and `7 / 2` quietly drops its fraction.",
+            "narrate": "And some mistakes are never reported at all. The program runs, and simply gives a wrong answer. An int that overflows wraps around without a word, and 7 divided by 2 quietly drops its fraction."
+          },
+          {
+            "say": "Those are the hardest to find. That is why you test your code, and why it pays to let `javac` check everything it can.",
+            "narrate": "Those are the hardest of all to find. That's why you test your code, and why it pays to let javac check everything it can."
+          }
+        ],
+        "check": {
+          "prompt": "A method meant to average two scores returns `(a + b) / 2`, and gives 3 for 3 and 4. Who reports the mistake?",
+          "answer": "No one: the program runs, and the answer is wrong",
+          "wrong": [
+            "javac, which refuses division of two ints",
+            "Java, which throws an ArithmeticException"
+          ],
+          "why": "Integer division is legal Java, and nothing goes wrong while it runs: 7 / 2 is simply 3. Only a test that expects 3.5 would catch it.",
+          "narrate": "A method meant to average two scores divides a plus b by 2, and gives 3 for 3 and 4. Who reports the mistake?",
+          "why_narrate": "Nobody does. Integer division is legal Java, and nothing goes wrong while it runs: 7 divided by 2 is simply 3. Only a test that expects 3 point 5 would catch it."
+        }
+      }
+    ],
+    "outro": "Before it runs, while it runs, or never. Sort each one.",
+    "intro_narrate": "I'm Ada, the Chief Artificer. You've met a good deal of trouble in this wing. I want you to sort all of it by asking one question: when does Java find out?",
+    "outro_narrate": "Before it runs, while it runs, or never. Sort each mistake into one of those three."
+  },
+  {
+    "question": "Which of these does javac refuse, so that the program never runs at all?",
+    "correct": [
+      "A method marked @Override that matches no parent method",
+      "Calling hunt() on a variable whose type is Creature",
+      "A method that throws a checked exception it neither catches nor declares"
+    ],
+    "incorrect": [
+      "Handing the text \"abc\" to Integer.parseInt, which wants digits",
+      "A recursive method with no base case, only the call to itself",
+      "Calling a method on a variable that was set to null just above"
+    ],
+    "feedback": "The first three break rules javac can check from the code alone. A bad number, a recursion that never stops, and a method called through null all depend on what happens while the program runs, and each ends in an exception or an error then. javac does not track what a variable holds, even one line later.",
+    "language": "java"
+  },
+  {
+    "question": "Which of these show up only while the program runs, as an exception or an error?",
+    "correct": [
+      "Reading nums[5] from an array whose length is 3",
+      "Dividing the int 7 by an int variable that holds 0"
+    ],
+    "incorrect": [
+      "Writing int n = \"7\"; in a method, putting text in an int",
+      "Adding 1 to an int that holds 2147483647, the largest int",
+      "Working out 7 / 2 in ints and expecting the answer 3.5"
+    ],
+    "feedback": "nums[5] throws an ArrayIndexOutOfBoundsException and 7 / 0 throws an ArithmeticException, both while running. int n = \"7\"; never compiles. Overflow and 7 / 2 giving 3 are never reported at all: they are silent wrong answers.",
+    "language": "java"
+  },
+  {
+    "question": "Creature c = new Owl(\"Hedwig\"); and then c.sound(). Owl overrides sound. When is it settled that Owl's version is the one that runs?",
+    "correct": [
+      "While the program runs, by the class of the object in c"
+    ],
+    "incorrect": [
+      "Before it runs, when javac reads the type written on c",
+      "Before it runs, when javac sees which class was written last",
+      "While it runs, by the type that was written on the variable c"
+    ],
+    "feedback": "javac checks only that Creature has a sound, so the call is allowed. Which version runs is decided later, while the program runs, by the object's own class: here an Owl. That run-time choice is what makes polymorphism work.",
+    "language": "java"
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write this Python function as a Java method. It returns the sum of the digits of n, using recursion; n is 0 or more. Careful: Python's // is plain / in Java when both sides are ints.",
+    "code": "def sum_digits(n):\n    if n < 10:\n        return n\n    return n % 10 + sum_digits(n // 10)",
+    "code_language": "python",
+    "signature": "public int sumDigits(int n)",
+    "tests": [
+      {
+        "args": [
+          0
+        ],
+        "expect": 0
+      },
+      {
+        "args": [
+          7
+        ],
+        "expect": 7
+      },
+      {
+        "args": [
+          42
+        ],
+        "expect": 6
+      },
+      {
+        "args": [
+          999
+        ],
+        "expect": 27
+      },
+      {
+        "args": [
+          1005
+        ],
+        "expect": 6
+      }
+    ],
+    "solution": "if (n < 10) {\n    return n;\n}\nreturn n % 10 + sumDigits(n / 10);",
+    "hint": "Two parts, as in the Python: if n < 10, return n; otherwise return the last digit, n % 10, plus sumDigits of n / 10.",
+    "feedback": "n % 10 is the last digit and n / 10 is the number without it, so each call peels off one digit and hands the rest down. A number below 10 is its own digit sum: that is the base case."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return base raised to the power exp, using recursion rather than Math.pow. Anything to the power 0 is 1. Otherwise the answer is base times (base to the power exp - 1). exp is 0 or more. The base case is written for you; add the recursive case.",
+    "signature": "public int power(int base, int exp)",
+    "starter": "if (exp == 0) {\n    return 1;\n}\n",
+    "tests": [
+      {
+        "args": [
+          2,
+          0
+        ],
+        "expect": 1
+      },
+      {
+        "args": [
+          5,
+          1
+        ],
+        "expect": 5
+      },
+      {
+        "args": [
+          2,
+          3
+        ],
+        "expect": 8
+      },
+      {
+        "args": [
+          3,
+          4
+        ],
+        "expect": 81
+      },
+      {
+        "args": [
+          10,
+          2
+        ],
+        "expect": 100
+      }
+    ],
+    "solution": "if (exp == 0) {\n    return 1;\n}\nreturn base * power(base, exp - 1);",
+    "hint": "The recursive call keeps base the same and makes exp one smaller: power(base, exp - 1).",
+    "feedback": "Only exp shrinks; base rides along unchanged. When a method has two parameters, ask which one is heading for the base case."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return the String s written backwards, using recursion. The empty string backwards is the empty string. For any other string: reverse the rest, s.substring(1), and put the first character, s.charAt(0), on the END.",
+    "signature": "public String reverse(String s)",
+    "tests": [
+      {
+        "args": [
+          ""
+        ],
+        "expect": ""
+      },
+      {
+        "args": [
+          "a"
+        ],
+        "expect": "a"
+      },
+      {
+        "args": [
+          "ab"
+        ],
+        "expect": "ba"
+      },
+      {
+        "args": [
+          "owl"
+        ],
+        "expect": "lwo"
+      },
+      {
+        "args": [
+          "torch"
+        ],
+        "expect": "hcrot"
+      }
+    ],
+    "solution": "if (s.isEmpty()) {\n    return \"\";\n}\nreturn reverse(s.substring(1)) + s.charAt(0);",
+    "hint": "Base case: if s.isEmpty() (or s.equals(\"\")), return \"\". Then the order of the + matters: the reversed rest first, then s.charAt(0).",
+    "feedback": "reverse(s.substring(1)) + s.charAt(0): trust the recursive call to reverse the rest, then decide where this call's one character goes. Test for the empty string with isEmpty() or equals(\"\"), never ==."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Wolf, a child of Creature (given above). It needs two things: a constructor  Wolf(String name)  that hands the name up to Creature's constructor, and an override of  public String sound()  that returns \"Awoo\". Mark the override with @Override.",
+    "scaffold": "public class Creature {\n    private String name;\n\n    public Creature(String name) {\n        this.name = name;\n    }\n\n    public String getName() {\n        return name;\n    }\n\n    public String sound() {\n        return \"...\";\n    }\n}",
+    "signature": "class Wolf extends Creature",
+    "tests": [
+      {
+        "run": "Creature c = new Wolf(\"Fang\");",
+        "check": "c.sound()",
+        "expect": "Awoo"
+      },
+      {
+        "run": "Wolf w = new Wolf(\"Grey\");",
+        "check": "w.getName()",
+        "expect": "Grey"
+      },
+      {
+        "run": "Creature c = new Creature(\"Blob\");",
+        "check": "c.sound()",
+        "expect": "..."
+      },
+      {
+        "run": "Creature c = new Wolf(\"Ash\");",
+        "check": "c.getName() + \" says \" + c.sound()",
+        "expect": "Ash says Awoo"
+      }
+    ],
+    "solution": "Wolf(String name) {\n    super(name);\n}\n\n@Override\npublic String sound() {\n    return \"Awoo\";\n}",
+    "hint": "The constructor's one line is super(name);. The override must be public, as Creature's sound is: a child may not make a method harder to reach.",
+    "feedback": "super(name) runs Creature's constructor, which stores the name in its private field, so getName() works on a Wolf too. Leave it out and Wolf does not compile: Java would call Creature() with nothing, and Creature has no such constructor. The override replaces sound only for Wolves, so a plain Creature still says \"...\", while a Creature variable holding a Wolf runs the Wolf's version."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write the class Circle, which implements the interface Shape, just as Square (above) does. It needs one private field,  double radius;  a constructor  Circle(double radius);  public double area(), which returns Math.PI * radius * radius; and public String name(), which returns \"circle\". Canvas, which adds up the areas of any Shapes, should then work for Circles too.",
+    "scaffold": "interface Shape {\n    double area();\n\n    String name();\n}\n\nclass Square implements Shape {\n    private double side;\n\n    Square(double side) {\n        this.side = side;\n    }\n\n    public double area() {\n        return side * side;\n    }\n\n    public String name() {\n        return \"square\";\n    }\n}\n\nclass Canvas {\n    static double totalArea(Shape[] shapes) {\n        double total = 0;\n        for (Shape s : shapes) {\n            total = total + s.area();\n        }\n        return total;\n    }\n}",
+    "signature": "class Circle implements Shape",
+    "tests": [
+      {
+        "run": "Shape s = new Circle(1.0);",
+        "check": "s.area()",
+        "expect": 3.141592653589793
+      },
+      {
+        "run": "Shape s = new Circle(2.0);",
+        "check": "s.area()",
+        "expect": 12.566370614359172
+      },
+      {
+        "run": "Shape s = new Circle(5.0);",
+        "check": "s.name()",
+        "expect": "circle"
+      },
+      {
+        "run": "Shape[] all = { new Square(2.0), new Circle(1.0) };",
+        "check": "Canvas.totalArea(all)",
+        "expect": 7.141592653589793
+      },
+      {
+        "private": "Circle.radius"
+      }
+    ],
+    "solution": "private double radius;\n\nCircle(double radius) {\n    this.radius = radius;\n}\n\npublic double area() {\n    return Math.PI * radius * radius;\n}\n\npublic String name() {\n    return \"circle\";\n}",
+    "hint": "Copy Square's shape: a private field, a constructor that stores it with this.radius = radius, and the two methods the interface lists, each with public in front.",
+    "feedback": "implements Shape is a promise to have area() and name(), and javac holds Circle to it. Because the interface's methods are public, Circle's must be too. Then a Shape array can hold Squares and Circles alike, and each answers area() its own way."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Return true if text is a whole number, and false if it is not. Let Integer.parseInt decide: try to parse text and return true; if it throws a NumberFormatException, catch it and return false.",
+    "signature": "public boolean isWholeNumber(String text)",
+    "tests": [
+      {
+        "args": [
+          "12"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "abc"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "3.5"
+        ],
+        "expect": false
+      },
+      {
+        "args": [
+          "-4"
+        ],
+        "expect": true
+      },
+      {
+        "args": [
+          "7 "
+        ],
+        "expect": false
+      }
+    ],
+    "solution": "try {\n    Integer.parseInt(text);\n    return true;\n} catch (NumberFormatException e) {\n    return false;\n}",
+    "hint": "One try, one catch. In the try, call Integer.parseInt(text) and then return true; in the catch (NumberFormatException e), return false.",
+    "feedback": "parseInt either succeeds or throws. If it succeeds, the next line, return true, runs; if it throws, the rest of the try is skipped and the catch returns false. The number itself is not needed, only whether parsing worked, so there is no answer like -1 that could be mistaken for a real one."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "If age is less than 13, throw  new IllegalArgumentException(\"too young\").  Otherwise return age unchanged.",
+    "signature": "public int checkAge(int age)",
+    "tests": [
+      {
+        "args": [
+          20
+        ],
+        "expect": 20
+      },
+      {
+        "args": [
+          5
+        ],
+        "throws": "IllegalArgumentException"
+      },
+      {
+        "args": [
+          13
+        ],
+        "expect": 13
+      },
+      {
+        "args": [
+          12
+        ],
+        "throws": "IllegalArgumentException"
+      }
+    ],
+    "solution": "if (age < 13) {\n    throw new IllegalArgumentException(\"too young\");\n}\nreturn age;",
+    "hint": "An if, and inside it the throw. The return comes after the if, not inside it.",
+    "feedback": "throw stops the method on the spot and hands the problem to whoever called it, so no else is needed: if the throw happens, the return below it is never reached. IllegalArgumentException is unchecked, so the first line needs no throws."
+  },
+  {
+    "type": "code_write",
+    "language": "java",
+    "question": "Write withdraw. If amount is more than the gold in THIS purse, throw  new NotEnoughGoldException(\"not enough gold\")  and change nothing. Otherwise take amount out of the purse. NotEnoughGoldException is checked, which is why the method's first line says throws.",
+    "scaffold": "class NotEnoughGoldException extends Exception {\n    public NotEnoughGoldException(String message) {\n        super(message);\n    }\n}\n\npublic class Purse {\n    private int gold;\n\n    public Purse(int gold) {\n        this.gold = gold;\n    }\n\n    public int getGold() {\n        return gold;\n    }\n",
+    "signature": "public void withdraw(int amount) throws NotEnoughGoldException",
+    "tests": [
+      {
+        "run": "Purse p = new Purse(50);\np.withdraw(20);",
+        "check": "p.getGold()",
+        "expect": 30
+      },
+      {
+        "run": "Purse p = new Purse(50);\np.withdraw(80);",
+        "throws": "NotEnoughGoldException"
+      },
+      {
+        "run": "Purse p = new Purse(50);\ntry { p.withdraw(80); } catch (NotEnoughGoldException e) { }",
+        "check": "p.getGold()",
+        "expect": 50
+      },
+      {
+        "run": "Purse p = new Purse(50);\np.withdraw(50);",
+        "check": "p.getGold()",
+        "expect": 0
+      },
+      {
+        "run": "Purse a = new Purse(50);\nPurse b = new Purse(9);\na.withdraw(10);",
+        "check": "b.getGold()",
+        "expect": 9
+      }
+    ],
+    "solution": "if (amount > gold) {\n    throw new NotEnoughGoldException(\"not enough gold\");\n}\ngold = gold - amount;",
+    "hint": "Check first: if amount > gold, throw. The subtraction goes after the if, so it never runs when the throw does.",
+    "feedback": "Check, then act. Because throw leaves the method at once, the gold changes only when the withdrawal is allowed. The throws on the first line is the declaration javac insists on for a checked exception; anyone who calls withdraw must now catch it or declare it in turn."
+  }
+]

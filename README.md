@@ -70,6 +70,26 @@ The original type. Select all correct answers; partial credit is not given for i
 }
 ```
 
+### Code shown with a question (`code`)
+
+Any question may carry a listing, shown as a code panel between its stem and its answers — the class a multiple-choice question asks about, or the Python that a Java `code_write` problem asks the student to port:
+
+```json
+{
+  "type": "code_write",
+  "language": "java",
+  "question": "Write this Python function in Java.",
+  "code": "def area(w, h):\n    return w * h",
+  "code_language": "python",
+  "signature": "public int area(int w, int h)",
+  "...": "tests and solution as for any Java problem"
+}
+```
+
+- `code_language` labels the panel and colours Java and Python; other values (`pseudocode`, `output`) are shown plain. Without it the panel takes the question's `language`, so a multiple-choice question about Java can just say `"language": "java"`. It is separate because `language` already decides other things on some types (which interpreter runs a `code_write`; monospace items in an `ordering`).
+- A `code_trace` draws its `code` in its own panel, as before, and is not given a second one.
+- A picture (`figure`) on the same question is shown below the listing.
+
 ### Fill-in-the-Blank
 
 ```json
@@ -232,7 +252,7 @@ A CodingBat-style problem: the signature is fixed and shown above the box, the s
 }
 ```
 
-- **Where they appear.** The standalone *Python Lab* set is all `code_write`; Computing Concepts chapters 3, 4 and 5 each end with six of them, after the reading and tracing questions that teach the same construct and after a mentor scene introducing the format. Chapter 3's are pure expressions (no `if`, no loops), chapter 4's use conditionals and loops, chapter 5's use lists and dictionaries — matching what each chapter has taught. Most are ported from the course's own PyQuiz banks, so a student meets the same problems the notebook set them.
+- **Where they appear.** The standalone *Python Lab* set is all `code_write`; Computing Concepts chapters 3, 4 and 5 each end with six of them, after the reading and tracing questions that teach the same construct and after a mentor scene introducing the format. Chapter 3's are pure expressions (no `if`, no loops), chapter 4's use conditionals and loops, chapter 5's use lists and dictionaries — matching what each chapter has taught. Most are ported from the course's own PyQuiz banks, so a student meets the same problems the notebook set them. The four bonus sets *Python to Java* each end with eight Java ones, most of them showing the Python function they port (see *Code shown with a question*).
 - **`hint`** is optional: one line, kept behind a *Stuck? Show a hint* fold so opening it is the student's decision.
 - **Run is free and unlimited.** The Run button executes the same tests that will grade the answer and shows expected against actual, row by row. Only Submit resolves the turn.
 - **Graded per test case**, like matching and cloze, but the attack dice are scaled to a fixed budget (`CODE_WRITE_HIT_BUDGET`) rather than one die per case — otherwise a ten-case problem would deal twice the damage of a five-case one for the same work. The question re-queues unless every case passes.
@@ -269,7 +289,7 @@ The SQL counterpart of write-the-code. The student writes a whole `SELECT`, and 
 
 Not a question: a mentor NPC (default: *Ada the Artificer*) walks through a worked example step by step, with optional low-stakes `check` prompts ("what comes next?") that get a gentle correction when wrong. Scenes deal no damage, award no XP, never requeue, are skippable, don't count toward `question_count`, and are excluded from reviews and rank trials. Author each scene **immediately before a paired question** that uses the same technique with different surface features. See the [WRITING_GUIDE](question_sets/WRITING_GUIDE.md) for the schema.
 
-A scene can also be **narrated** (so far: every scene in Computing Concepts 6 to 15, Java 00 and Java 07): a ▶ Listen button on its title line. With it on, the mentor speaks each beat as it appears, in their own voice, a little more fully than the screen, and the line being said is lit; ❚❚ Pause stops it and ↻ says the frame again. Narration is off until the student turns it on, and the browser remembers the choice. The clips are MP3s in `narration/`, rendered with Gemini TTS by `tools/narrate.py`. See *Narration* in the writing guide.
+A scene can also be **narrated** (so far: every scene in Computing Concepts 6 to 16, Java 00 and Java 07): a ▶ Listen button on its title line. With it on, the mentor speaks each beat as it appears, in their own voice, a little more fully than the screen, and the line being said is lit; ❚❚ Pause stops it and ↻ says the frame again. Narration is off until the student turns it on, and the browser remembers the choice. The clips are MP3s in `narration/`, rendered with Gemini TTS by `tools/narrate.py`. See *Narration* in the writing guide.
 
 ---
 
@@ -381,6 +401,10 @@ matches the number of questions actually in each file.
 | Computing Concepts | OS, Networks, Cloud & the Web | 50 |
 | Computing Concepts | Cybersecurity — Defending Systems | 50 |
 | Computing Concepts | AI, Machine Learning & Ethics | 50 |
+| Computing Concepts | Bonus: Python to Java 1 — Values & Types | 44 |
+| Computing Concepts | Bonus: Python to Java 2 — Decisions, Loops & Methods | 46 |
+| Computing Concepts | Bonus: Python to Java 3 — Collections & Classes | 45 |
+| Computing Concepts | Bonus: Python to Java 4 — Recursion, Polymorphism & Exceptions | 52 |
 | Database | Database Foundations | 33 |
 | Database | Introduction to SQL: SELECT | 30 |
 | Database | Joins and Set Operations | 30 |

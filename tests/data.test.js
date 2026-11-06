@@ -1557,7 +1557,7 @@ describe('Arithmetic shown in questions is actually correct', () => {
 // only by direct link, so it no longer has the catalog entry the standard reads.)
 describe('Audit checks', () => {
   const index = loadJSON('question_sets/index.json');
-  const MEETS_AUDIT_STANDARD = setId => /^java_(?!lab_)|^computing_concepts_(0[456789]|1[012345])_|^techplus_|^securityx_/.test(setId);
+  const MEETS_AUDIT_STANDARD = setId => /^java_(?!lab_)|^computing_concepts_(0[456789]|1[0-6])_|^techplus_|^securityx_/.test(setId);
   const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write', 'sql_write']);
   const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
 
@@ -1576,12 +1576,21 @@ describe('Audit checks', () => {
     assert.deepEqual(bad, []);
   });
 
-  it('multiple choice never carries a "code" field, which the engine does not display', () => {
+  it('a "code" listing is text, and its language is named only beside one', () => {
+    // Any question may show a listing under its stem (code_trace always did).
+    // code_language labels and colours it; without a listing it means nothing.
     const bad = [];
     for (const setId of index) {
-      questionsOf(setId).forEach((q, i) => { if (!q.type && q.code) bad.push(`${setId}[${i}]`); });
+      questionsOf(setId).forEach((q, i) => {
+        if (q.code !== undefined && (typeof q.code !== 'string' || !q.code.trim())) bad.push(`${setId}[${i}]: code must be non-empty text`);
+        if (q.code_language !== undefined) {
+          if (q.code === undefined) bad.push(`${setId}[${i}]: code_language with no code to label`);
+          if (typeof q.code_language !== 'string' || !q.code_language.trim()) bad.push(`${setId}[${i}]: code_language must name a language`);
+          if (q.type === 'code_trace') bad.push(`${setId}[${i}]: a code_trace's language is its "language"`);
+        }
+      });
     }
-    assert.deepEqual(bad, [], 'put the code in the stem, on its own lines');
+    assert.deepEqual(bad, []);
   });
 
   it('no matching question has two identical definitions', () => {

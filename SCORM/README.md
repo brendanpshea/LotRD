@@ -72,7 +72,10 @@ Rules and their tests: `tests/scorm-single.test.js`, the single-set block of
 `tests/dataloss.test.js`, and `tests/browser.test.js`.
 
 Computing Concepts chapters 1-3 stay as a multi-set, rank-graded edition
-(students are part-way through it); chapters 4-12 are single-set packages.
+(students are part-way through it); chapters 4-12, and the four bonus sets
+"Python to Java" (13-16), are single-set packages. The bonus sets replaced
+Recursion, More OOP and Exceptions & Files, whose packages were
+lotrd-cc-13-recursion, lotrd-cc-14-more-oop and lotrd-cc-15-exceptions-files.
 
 ## How scoring works
 

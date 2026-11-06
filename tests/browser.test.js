@@ -275,6 +275,35 @@ describe('in a real browser: writing a query', { skip }, () => {
   });
 });
 
+describe('in a real browser: a question that shows code', { skip }, () => {
+  let server, seen;
+
+  before(async () => {
+    server = await startServer();
+    seen = await visit(browser, server.origin, 'codePanel', { set: 'computing_concepts_04_control_functions.json' });
+  });
+
+  after(async () => { await server?.close(); });
+
+  it('shows the listing between the question and the answers, labelled and coloured', () => {
+    assert.ok(!seen.error, seen.error);
+    assert.equal(seen.mcLabel, 'Python');
+    assert.match(seen.mcText, /def area\(w, h\):\n {4}return w \* h/);
+    assert.equal(seen.mcColoured, true, 'Python keywords are coloured');
+    assert.equal(seen.mcOrder, true, 'question, then code, then answers');
+  });
+
+  it('shows a Java problem the Python it ports, above the method to write', () => {
+    assert.equal(seen.writeLabel, 'python');
+    assert.equal(seen.writeOrder, true);
+  });
+
+  it('does not draw a trace\'s code twice', () => {
+    assert.equal(seen.traceSecondPanel, false);
+    assert.equal(seen.traceSlotHidden, true);
+  });
+});
+
 describe('in a real browser: a question with a picture', { skip }, () => {
   let server, seen;
 

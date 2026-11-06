@@ -104,6 +104,26 @@ function figureCredit(src) {
   return figureCredits.get(sidecar);
 }
 
+// ── Code shown with a question ──────────────────────────────────────────
+// Any question may carry a `code` listing, shown as a panel under its stem: the
+// Python a Java problem asks the student to port, or the class a multiple-choice
+// question is about. `code_language` names its language (falling back to the
+// question's `language`), which labels the panel and colours Java and Python.
+
+/** @returns {HTMLPreElement} */
+export function codePanel(code, language) {
+  const pre = document.createElement("pre");
+  pre.className = "code-snippet q-code";
+  const name = String(language || "").trim();
+  const lang = name.toLowerCase();
+  if (name) pre.dataset.lang = name;
+  pre.setAttribute("aria-label", name ? `${name} code` : "Code");
+  if (/^java\b/.test(lang)) pre.innerHTML = highlightJava(code);
+  else if (/^python\b/.test(lang)) pre.innerHTML = highlightPython(code);
+  else pre.textContent = code;
+  return pre;
+}
+
 export class GameUI {
   constructor(root, model, controller = null) {
     this.root = root;
@@ -1268,16 +1288,20 @@ export class GameUI {
   }
 
   /**
-   * Show the current question's picture in the template's figure slot, below the
-   * question and above the answers. A question without one leaves the slot hidden.
+   * Show what the current question is about in the template's figure slot, below
+   * the question and above the answers: its listing (`code`), then its picture
+   * (`figure`). A code trace draws its `code` in a panel of its own, so it is not
+   * shown twice. A question with neither leaves the slot hidden.
    */
   _renderFigure(root, q) {
     const slot = $(root, "[data-ref=qFigure]");
     if (!slot) return;
     slot.replaceChildren();
-    const ok = q && q.figure && typeof q.figure.src === "string";
-    if (ok) slot.appendChild(this._figureElement(q.figure));
-    slot.hidden = !ok;
+    if (q && q.type !== "code_trace" && typeof q.code === "string" && q.code) {
+      slot.appendChild(codePanel(q.code, q.code_language || q.language));
+    }
+    if (q && q.figure && typeof q.figure.src === "string") slot.appendChild(this._figureElement(q.figure));
+    slot.hidden = !slot.firstChild;
   }
 
   /**
