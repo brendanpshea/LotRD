@@ -1946,7 +1946,7 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
 
   // A scene's title is the question it answers, shown as its heading. Sets move to
   // this as their scenes are rewritten (WRITING_GUIDE: Title, opening and closing lines).
-  const QUESTION_TITLES = setId => /^securityx_|^netplus_/.test(setId);
+  const QUESTION_TITLES = setId => /^securityx_|^netplus_|^techplus_/.test(setId);
 
   it('a rewritten set titles each scene with the question it answers', () => {
     const bad = [];
