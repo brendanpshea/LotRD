@@ -1,7 +1,7 @@
 // tests/model.test.js — Unit tests for src/model.js
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { rollDice, Player, Monster, GameModel,
+import { rollDice, Player, Monster, GameModel, BOSS_IMAGE,
          levenshtein, levenshteinSimilarity, wordleFeedback,
          tokenize, tokenSimilarity, tokenWordleFeedback,
          CL_MAX_ATTEMPTS, pickClozeBlank, parseClozeSegments,
@@ -124,7 +124,7 @@ describe('Player', () => {
     const p = new Player();
     assert.equal(p.level, 1);
     assert.equal(p.xp, 0);
-    assert.equal(p.xp_to_next_level, 100);
+    assert.equal(p.xp_to_next_level, 300);
     assert.equal(p.max_hit_points, 20);
     assert.equal(p.hit_points, 20);
     assert.equal(p.attack_die, 6);
@@ -136,7 +136,7 @@ describe('Player', () => {
     const p = new Player({ level: 5, xp: 30, revive_charges: 3 });
     assert.equal(p.level, 5);
     assert.equal(p.xp, 30);
-    assert.equal(p.xp_to_next_level, Math.round(100 * Math.pow(1.25, 4)));
+    assert.equal(p.xp_to_next_level, Math.round(300 * Math.pow(1.15, 4)));
     assert.equal(p.revive_charges, 3);
   });
 
@@ -1298,27 +1298,37 @@ describe('Streak mechanics', () => {
 describe('checkLevelUp', () => {
   it('levels up when xp >= xp_to_next_level', () => {
     const gm = freshModel();
-    gm.player.xp = 100;
+    gm.player.xp = 300;
     const gained = gm.checkLevelUp();
     assert.equal(gained, 1);
     assert.equal(gm.player.level, 2);
-    assert.equal(gm.player.xp_to_next_level, 125);
+    assert.equal(gm.player.xp_to_next_level, 345);
   });
 
   it('can gain multiple levels at once', () => {
     const gm = freshModel();
-    gm.player.xp = 500;
+    gm.player.xp = 700;
     const gained = gm.checkLevelUp();
     assert.ok(gained >= 2, `Expected >=2 levels, got ${gained}`);
   });
 
-  it('grants +2 max HP per level (and heals current HP by the same amount)', () => {
+  it('grants +2 max HP per level, and restores HP to full', () => {
     const gm = freshModel();
-    const startHp = gm.player.hit_points;
-    gm.player.xp = 150;
+    gm.player.hit_points = 7;
+    gm.player.xp = 300;
     const gained = gm.checkLevelUp();
-    assert.equal(gm.player.max_hit_points, 20 + gained * 2);
-    assert.equal(gm.player.hit_points, startHp + gained * 2);
+    assert.equal(gained, 1);
+    assert.equal(gm.player.max_hit_points, 22);
+    assert.equal(gm.player.hit_points, 22, 'a level-up heals to full');
+  });
+
+  it('does not heal a hero knocked out in the same round back up: they keep only the growth', () => {
+    const gm = freshModel();
+    gm.player.hit_points = -3;
+    gm.player.xp = 300;
+    gm.checkLevelUp();
+    assert.equal(gm.player.max_hit_points, 22);
+    assert.equal(gm.player.hit_points, -1, 'a level is a reward, not a revive');
   });
 
   it('attack_die stays fixed; base_defense bumps every 5 levels', () => {
@@ -1334,23 +1344,23 @@ describe('checkLevelUp', () => {
     const gm = freshModel();
     assert.equal(gm.player.revive_charges, 0);
 
-    gm.player.xp = 100;
+    gm.player.xp = gm.player.xp_to_next_level;
     const gained1 = gm.checkLevelUp();
     assert.equal(gm.player.revive_charges, gained1);
 
-    gm.player.xp = 125;
+    gm.player.xp = gm.player.xp_to_next_level;
     const gained2 = gm.checkLevelUp();
     assert.equal(gm.player.revive_charges, gained1 + gained2);
   });
 
-  it('XP curve grows by 1.25x from a base of 100', () => {
+  it('XP curve grows by 1.15x from a base of 300', () => {
     const gm = freshModel();
     // Level up through several levels, checking threshold each time
     for (let targetLevel = 2; targetLevel <= 10; targetLevel++) {
       gm.player.xp = gm.player.xp_to_next_level;
       gm.checkLevelUp();
       assert.equal(gm.player.level, targetLevel);
-      assert.equal(gm.player.xp_to_next_level, Math.round(100 * Math.pow(1.25, targetLevel - 1)));
+      assert.equal(gm.player.xp_to_next_level, Math.round(300 * Math.pow(1.15, targetLevel - 1)));
     }
   });
 });
@@ -2499,5 +2509,56 @@ describe('dynamic_numeric expression input', () => {
     const res = started().submitDynamicNumericGuess('7 * 7');
     assert.equal(res.status, 'wrong');
     assert.equal(res.evaluated, 49);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// The boss waits for the end of the set; a level-up says what it gave
+// ────────────────────────────────────────────────────────────────────────────────
+describe('the boss is kept for the end of the set', () => {
+  const WITH_BOSS = [...SAMPLE_MONSTERS,
+    { monster_name: 'Test Wyrm', hit_dice: 5, attack_die: 8, defense: 2, image: 'wyrm.png', sprite: 'wyrm.webp', boss: true }];
+
+  it('generateMonster never picks the monster marked boss, even at its own level', () => {
+    const gm = freshModel(null, WITH_BOSS);
+    gm.player.level = 5;
+    for (let i = 0; i < 1000; i++) assert.notEqual(gm.generateMonster().monster_name, 'Test Wyrm');
+  });
+
+  it('the Recursive Dragon is drawn as the monster marked boss', () => {
+    const boss = freshModel(null, WITH_BOSS)._spawnBoss(3);
+    assert.equal(boss.monster_name, 'The Recursive Dragon');
+    assert.equal(boss.image, 'wyrm.png');
+    assert.equal(boss.sprite, 'wyrm.webp');
+    assert.equal(boss.is_boss, true);
+  });
+
+  it('with no monster marked boss, it still has a picture', () => {
+    assert.equal(freshModel()._spawnBoss(3).image, BOSS_IMAGE);
+  });
+});
+
+describe('a level-up reports each gain as before and after', () => {
+  it('for the level-up screen: levels, HP restored, max HP, revives', () => {
+    const gm = freshModel();
+    gm.nextEncounter();
+    gm.player.xp = gm.player.xp_to_next_level - 1;
+    gm.player.hit_points = 5;
+    const turn = gm._finalizeTurn({ xpGained: 10, requeue: false, historyEntry: {}, isPerfect: true });
+    assert.equal(turn.levelsGained, 1);
+    const r = turn.levelUpRewards;
+    assert.deepEqual([r.from_level, r.to_level], [1, 2]);
+    assert.deepEqual([r.hp_before, r.hp_after], [5, 22]);
+    assert.deepEqual([r.max_hp_before, r.max_hp_after, r.hp_gained], [20, 22, 2]);
+    assert.deepEqual([r.revives_before, r.revives_after, r.revive_gained], [0, 1, 1]);
+    assert.deepEqual([r.defense_before, r.defense_after, r.defense_gained], [1, 1, 0]);
+  });
+
+  it('reports nothing when no level was gained', () => {
+    const gm = freshModel();
+    gm.nextEncounter();
+    const turn = gm._finalizeTurn({ xpGained: 10, requeue: false, historyEntry: {}, isPerfect: true });
+    assert.equal(turn.levelsGained, 0);
+    assert.equal(turn.levelUpRewards, null);
   });
 });

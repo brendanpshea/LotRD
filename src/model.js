@@ -891,6 +891,10 @@ export const INVENTORY_SIZE = 2;
 // A missed question comes back this many places further down the queue.
 const REQUEUE_GAP = 3;
 
+// The end-of-set boss is drawn as the monster marked "boss" in monsters.json; this
+// is its picture if the roster ever loses the mark. It never appears mid-set.
+export const BOSS_IMAGE = "recursion_wyrm.png";
+
 // A monster rolls this many d10 for HP beyond one per level, so a fight lasts
 // about five answers. With one per level alone it lasted about two, and often one:
 // a perfect answer rolls a die for every right choice and every distractor avoided.
@@ -920,7 +924,10 @@ export function landed(damage, defense) {
 export class Player {
     static maxHpForLevel(level)       { return 20 + (level - 1) * 2; }
     static baseDefenseForLevel(level) { return 1 + Math.floor((level - 1) / 5); }
-    static xpToNext(level)            { return Math.round(100 * Math.pow(1.25, level - 1)); }
+    // Every answer earns XP, so this sets how often a level comes: about once a
+    // set (40-55 answers) for the first few levels, then a little more rarely.
+    // A level is an event, not a running tick.
+    static xpToNext(level)            { return Math.round(300 * Math.pow(1.15, level - 1)); }
 
     static _defaultFields() {
         const level = 1;
@@ -1202,12 +1209,15 @@ export class GameModel {
 
     /**
      * Pick a monster weighted toward player level: weight = 1 / (1 + |hit_dice - level|).
-     * Monsters near the player's level are favoured but no monster is excluded.
+     * Monsters near the player's level are favoured. The boss (a monster marked
+     * "boss" in monsters.json) is never one of them: it waits at the end of the set.
      */
     generateMonster() {
         const lvl = this.player?.level ?? 1;
         const recent = this.recent_monsters;
-        const weights = this.monsters.map(monster => {
+        const ordinary = this.monsters.filter(m => !m.boss);
+        const pool = ordinary.length ? ordinary : this.monsters;
+        const weights = pool.map(monster => {
             const levelWeight = 1 / (1 + Math.abs(monster.hit_dice - lvl));
             const recentIndex = recent.lastIndexOf(monster.monster_name);
             if (recentIndex === -1) return levelWeight;
@@ -1218,14 +1228,14 @@ export class GameModel {
         });
         const total   = weights.reduce((a, b) => a + b, 0);
         let r = Math.random() * total;
-        for (let i = 0; i < this.monsters.length; i++) {
+        for (let i = 0; i < pool.length; i++) {
             r -= weights[i];
             if (r <= 0) {
-                this._rememberMonster(this.monsters[i].monster_name);
-                return new Monster(this.monsters[i]);
+                this._rememberMonster(pool[i].monster_name);
+                return new Monster(pool[i]);
             }
         }
-        const fallback = this.monsters[this.monsters.length - 1];
+        const fallback = pool[pool.length - 1];
         this._rememberMonster(fallback.monster_name);
         return new Monster(fallback);
     }
@@ -1270,14 +1280,17 @@ export class GameModel {
      * it's mastered. attack_die still lets the dragon punish wrong answers.
      */
     _spawnBoss(queueLen) {
+        // Drawn as the monster marked "boss" in monsters.json, the Recursion Wyrm:
+        // a dragon made of dragons, all the way down.
+        const looks = (this.monsters || []).find(m => m.boss);
         return {
             monster_name:        "The Recursive Dragon",
             initial_description: "the hoarder of half-learned ideas",
             hit_dice:            5,
             attack_die:          8,
             defense:             Infinity,
-            image:               "quantum_dragon.png",
-            sprite:              (this.monsters || []).find(m => m.image === "quantum_dragon.png")?.sprite || null,
+            image:               looks?.image || BOSS_IMAGE,
+            sprite:              looks?.sprite || null,
             hit_points:          queueLen,
             max_hit_points:      queueLen,
             xp_value:            0,
@@ -1519,6 +1532,8 @@ export class GameModel {
      */
     _finalizeTurn({ xpGained, requeue, historyEntry, isPerfect }) {
         const resolvedQuestion = this.current_question;
+        const startLevel       = this.player.level;
+        const startHp          = this.player.hit_points;
         const startMaxHp       = this.player.max_hit_points;
         const startBaseDefense = this.player.base_defense;
         const startRevives     = this.player.revive_charges;
@@ -1532,10 +1547,21 @@ export class GameModel {
         this.player.xp += xpGained;
         const levelsGained = this.checkLevelUp();
 
+        // What the level-up screen shows: each gain as before and after.
         const levelUpRewards = levelsGained > 0 ? {
             hp_gained:      this.player.max_hit_points - startMaxHp,
             defense_gained: this.player.base_defense   - startBaseDefense,
             revive_gained:  this.player.revive_charges - startRevives,
+            from_level:     startLevel,
+            to_level:       this.player.level,
+            hp_before:      startHp,
+            hp_after:       this.player.hit_points,
+            max_hp_before:  startMaxHp,
+            max_hp_after:   this.player.max_hit_points,
+            defense_before: startBaseDefense,
+            defense_after:  this.player.base_defense,
+            revives_before: startRevives,
+            revives_after:  this.player.revive_charges,
         } : null;
 
         if (requeue) {
@@ -2766,8 +2792,11 @@ export class GameModel {
     /**
      * Apply XP gains and roll up any level-ups. Each level-up grants:
      *   - +1 revive charge
-     *   - +2 max HP (and current HP grows by the same amount)
-     *   - +1 base defense at every 5th level (5, 10, 15…)
+     *   - +2 max HP, and HP restored to full
+     *   - +1 base defense every 5 levels (at 6, 11, 16…)
+     * A hero knocked out in the same round is not healed back up by it (they
+     * keep only the 2 HP of growth, as before): a level is a reward, and must
+     * not quietly undo a defeat the round has just shown.
      */
     checkLevelUp() {
         let levelsGained = 0;
@@ -2777,7 +2806,10 @@ export class GameModel {
             this.player.xp_to_next_level = Player.xpToNext(this.player.level);
 
             const newMaxHp = Player.maxHpForLevel(this.player.level);
-            this.player.hit_points     += (newMaxHp - this.player.max_hit_points);
+            const standing = this.player.hit_points > 0;
+            this.player.hit_points      = standing
+                ? newMaxHp
+                : this.player.hit_points + (newMaxHp - this.player.max_hit_points);
             this.player.max_hit_points  = newMaxHp;
 
             this.player.base_defense    = Player.baseDefenseForLevel(this.player.level);

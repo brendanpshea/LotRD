@@ -34,7 +34,8 @@ export const SFX = {
   drop:     [.6, 0, 560, .01, .03, .12, 1, 1, , , 560, .04],                      // a beaten monster drops an item
   // Outside the fight.
   wrong:    [.6, 0, 160, 0, .08, .12, 2, 1, , , , , , , , .1],                    // a miss with nothing to show for it
-  levelUp:  [.8, 0, 392, .01, .36, .2, 1, 1, , , 98, .09, .09],
+  fanfare:  [.5, 0, 523.25, .005, .05, .12, 1, 1.6],                            // one note of the level-up fanfare (C5)...
+  fanfareEnd: [.6, 0, 1046.5, .01, .22, .5, 1, 1.6],                            // ...and its last, held (C6)
   victory:  [1, 0, 330, .02, .5, .2, 1, 1, , , 165, .15, .15, , , , .12],
   gameOver: [1, 0, 300, .05, .5, .4, 2, 1, , , -40, .2, .2],
   // Presses, kept well under the fight (pressSound, ui.js).
@@ -45,6 +46,10 @@ export const SFX = {
 };
 
 const MASTER = 0.3;      // ZzFX's own master volume
+// The level-up fanfare: [playback rate of the C5 note, seconds from the start].
+// 1, 1.26 and 1.5 are a major chord (C E G); the held C6 follows.
+export const FANFARE = [[1, 0], [1.2599, 0.09], [1.4983, 0.18]];
+export const FANFARE_END_AT = 0.29;
 const IDLE_MS = 120000;  // no press for this long: release the audio, so the device and the computer can sleep
 const LATE_MS = 120;     // a sound still waiting on the audio device after this long is dropped
 
@@ -82,7 +87,18 @@ export class SoundSystem {
     this._start(ctx => this._source(ctx, toBuffer(ctx, params), nudge(params)));
   }
 
-  levelUp()  { this.play("levelUp"); }
+  /**
+   * A level gained: a rising fanfare, C E G and the C above, held. One note's
+   * samples played at the rates of the chord, each started on the audio clock so
+   * the notes cannot drift apart.
+   */
+  levelUp() {
+    this._start(ctx => {
+      const note = this._buffer(ctx, "fanfare");
+      for (const [rate, at] of FANFARE) this._source(ctx, note, rate, at);
+      this._source(ctx, this._buffer(ctx, "fanfareEnd"), 1, FANFARE_END_AT);
+    });
+  }
   victory()  { this.play("victory"); }
   gameOver() { this.play("gameOver"); }
 
@@ -147,7 +163,7 @@ export class SoundSystem {
     return buffer;
   }
 
-  _source(ctx, buffer, rate) {
+  _source(ctx, buffer, rate, at = 0) {
     if (!this._master) {
       this._master = ctx.createGain();
       this._master.gain.value = MASTER;
@@ -157,7 +173,7 @@ export class SoundSystem {
     src.buffer = buffer;
     src.playbackRate.value = rate;
     src.connect(this._master);
-    src.start();
+    src.start(at > 0 ? ctx.currentTime + at : 0);
   }
 }
 

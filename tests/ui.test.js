@@ -9,7 +9,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { GameUI, pressSound } from '../src/ui.js';
+import { GameUI, pressSound, emphasisParts } from '../src/ui.js';
 import { highlightPython } from '../src/highlight.js';
 import { SFX } from '../src/sound.js';
 
@@ -245,6 +245,29 @@ describe('editor layers stay in lockstep', () => {
         `${rule.selector} bolds text the textarea draws at normal weight`);
       assert.ok(!/font-style:\s*italic|font-style:\s*oblique/.test(rule.body),
         `${rule.selector} slants text the textarea draws upright`);
+    }
+  });
+});
+
+// The dragon's lines mark a word to stress as *this*; on screen it is italic,
+// never a pair of asterisks.
+describe("the dragon's emphasis", () => {
+  it('splits a line into plain runs and the *stressed* words', () => {
+    assert.deepEqual(emphasisParts('Oh. *Oh.* A new one.'),
+      [{ text: 'Oh. ', em: false }, { text: 'Oh.', em: true }, { text: ' A new one.', em: false }]);
+    assert.deepEqual(emphasisParts('No stress at all'), [{ text: 'No stress at all', em: false }]);
+    assert.deepEqual(emphasisParts(''), []);
+  });
+
+  it('reads nothing else as markup: a lone asterisk stays an asterisk', () => {
+    assert.deepEqual(emphasisParts('2 * 3 <b>'), [{ text: '2 * 3 <b>', em: false }]);
+  });
+
+  it('leaves no asterisk on screen in any of the dragon\'s lines', () => {
+    const lines = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'assets', 'dragon_lines.json'), 'utf-8'));
+    for (const line of lines) {
+      const shown = emphasisParts(line.text).map(p => p.text).join('');
+      assert.ok(!shown.includes('*'), `${line.id}: an asterisk would show: ${line.text}`);
     }
   });
 });

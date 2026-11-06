@@ -12,8 +12,9 @@ on a home screen, in a dock, on a splash screen and in a tab.
     apple-touch-icon.png         180px, for iOS, which rounds the corners itself
     favicon-32.png               the browser tab
 
-The dragon is the standing pose (the first frame) of images/sprites/quantum_dragon.webp,
-the art the retrieval boss uses. The sprite is about 160px tall, so for the large icons
+The dragon is the standing pose (the first frame) of images/sprites/recursion_wyrm.webp,
+the Recursion Wyrm, which is how the end-of-set boss is drawn (it is marked "boss" in
+assets/monsters.json). The sprite is about 160px tall, so for the large icons
 it is first enlarged by a whole number with nearest-neighbour (each pixel becomes a
 block, as pixel art should) and then brought to its final size with Lanczos, which keeps
 edges clean where a direct resize would blur them.
@@ -28,7 +29,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parent.parent
-SPRITE = REPO / "images" / "sprites" / "quantum_dragon.webp"
+SPRITE = REPO / "images" / "sprites" / "recursion_wyrm.webp"
 OUT = REPO / "icons"
 
 BACKGROUND = (3, 9, 3, 255)      # body background, #030903

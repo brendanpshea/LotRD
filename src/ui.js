@@ -3,7 +3,7 @@ import {
   fillBlankLengthHint,
 } from "./util.js";
 import { highlightJava, highlightPython } from "./highlight.js";
-import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem } from "./model.js";
+import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem, BOSS_IMAGE } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
 import { Narrator, sceneHasNarration, stopNarration } from "./narration.js";
 import { HEROES, chosenHero, chooseHero, heroChosen } from "./heroes.js";
@@ -66,6 +66,18 @@ const $ = (root, sel) => root.querySelector(sel);
  * Submitting an answer or using an item makes no click, since the fight that
  * follows has sounds of its own.
  */
+/**
+ * A line of the dragon's (assets/dragon_lines.json), split into plain runs and
+ * the *emphasised* words, which the lines mark as *this*. Returns
+ * [{ text, em }]; nothing else in the text is read as markup.
+ */
+export function emphasisParts(text) {
+  return String(text ?? "").split(/(\*[^*\n]+\*)/).filter(Boolean).map(part =>
+    part.length > 2 && part.startsWith("*") && part.endsWith("*")
+      ? { text: part.slice(1, -1), em: true }
+      : { text: part, em: false });
+}
+
 export function pressSound(target) {
   const button = target?.closest?.("button");
   if (!button || button.matches(".submit-btn, .inv-slot")) return null;
@@ -477,6 +489,16 @@ export class GameUI {
    * sentence. Built from nodes, not HTML, so nothing else in the text can be
    * read as markup.
    */
+  /** A line of the dragon's as nodes, its *emphasis* in italics. */
+  _dragonLine(text) {
+    return emphasisParts(text).map(({ text: run, em }) => {
+      if (!em) return document.createTextNode(run);
+      const el = document.createElement("em");
+      el.textContent = run;
+      return el;
+    });
+  }
+
   _withMarkup(text) {
     return String(text ?? "").split(/(\*\*.+?\*\*|`[^`]+`)/).map(part => {
       if (part.length > 4 && part.startsWith("**") && part.endsWith("**")) {
@@ -3245,22 +3267,52 @@ export class GameUI {
     }, { signal: this._kbAbort.signal });
   }
 
+  /**
+   * A level gained: the hero in a burst of light, the new level and title, and
+   * each gain as before → after. Rare enough to deserve its own moment.
+   */
   showLevelUp(levelsGained, rewards, continueCallback) {
     this._clearKeyboard();
     const p = this.model.player;
     renderTemplate(this.root, "tpl-levelup");
+    const r = rewards || {};
+    const from = r.from_level ?? p.level - levelsGained;
+    $(this.root, "[data-ref=levelFrom]").textContent = from;
     $(this.root, "[data-ref=level]").textContent = p.level;
     $(this.root, "[data-ref=levelTitle]").textContent = getLevelTitle(p.level);
-    $(this.root, "[data-ref=levelsGainedText]").textContent = levelsGained > 1 ? `${levelsGained} levels gained!` : "";
+    $(this.root, "[data-ref=newTitle]").hidden = getLevelTitle(from) === getLevelTitle(p.level);
+    $(this.root, "[data-ref=levelsGainedText]").textContent = levelsGained > 1 ? `${levelsGained} levels at once!` : "";
 
+    const hero = chosenHero();
+    const heroEl = $(this.root, "[data-ref=levelUpHero]");
+    this._setSprite(heroEl, `images/sprites/${hero.sprite}`, true);
+
+    // Each gain: an icon, what it is, and the number before and after.
     const rewardsEl = $(this.root, "[data-ref=levelUpRewards]");
-    if (rewardsEl) {
-      const parts = [];
-      if (rewards?.hp_gained > 0) parts.push(`+${rewards.hp_gained} max HP`);
-      if (rewards?.defense_gained > 0) parts.push(`+${rewards.defense_gained} defense`);
-      if (rewards?.revive_gained > 0) parts.push(`+${rewards.revive_gained} revive charge${rewards.revive_gained > 1 ? "s" : ""} ⚗️`);
-      rewardsEl.textContent = parts.length ? parts.join(" · ") : "";
-    }
+    const add = (icon, label, before, after, note = "") => {
+      const li = document.createElement("li");
+      li.className = "level-up-reward";
+      const mark = document.createElement("span");
+      mark.className = "level-up-reward-icon";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = icon;
+      const name = document.createElement("span");
+      name.className = "level-up-reward-name";
+      name.textContent = label;
+      const change = document.createElement("span");
+      change.className = "level-up-reward-change";
+      change.textContent = note || `${before} → ${after}`;
+      li.append(mark, name, change);
+      rewardsEl.appendChild(li);
+    };
+    if (r.hp_gained > 0) add("❤️", "Max HP", r.max_hp_before, r.max_hp_after);
+    if (r.hp_after > (r.hp_before ?? 0) + (r.hp_gained ?? 0)) add("✨", "HP restored", null, null, `full: ${r.hp_after}`);
+    if (r.defense_gained > 0) add("🛡️", "Defense", r.defense_before, r.defense_after);
+    if (r.revive_gained > 0) add("⚗️", "Revive charges", r.revives_before, r.revives_after);
+
+    const toNext = Math.max(0, p.xp_to_next_level - p.xp);
+    $(this.root, "[data-ref=levelUpNext]").textContent = `Next level in ${toNext} XP`;
+
     const cont = $(this.root, "[data-action=continue]");
     cont.addEventListener("click", () => continueCallback());
     cont.focus();
@@ -3276,15 +3328,13 @@ export class GameUI {
   /** Intro screen for the end-of-set retrieval boss. `count` = concepts to master. */
   showBossIntro(count, dragonLine, onContinue) {
     this._clearKeyboard();
-    const safeLine = dragonLine ? this._esc(dragonLine) : null;
     this.root.innerHTML = `
       <div class="bbs-container">
-        <div class="section center">
-          <img src="images/monsters/quantum_dragon.png" alt="The Recursive Dragon"
-               style="max-width:160px;image-rendering:pixelated;">
+        <div class="section center boss-intro-art">
+          <span class="sprite boss-intro-sprite" role="img" aria-label="The Recursive Dragon"></span>
         </div>
         <div class="section red bold center">🐉 The Recursive Dragon blocks your path!</div>
-        ${safeLine ? `<div class="section dragon-speech">“${safeLine}”</div>` : ""}
+        ${dragonLine ? `<div class="section dragon-speech"></div>` : ""}
         <div class="section">
           It has hoarded <span class="yellow bold">${count}</span> idea${count === 1 ? "" : "s"} you stumbled on this run.
           Master ${count === 1 ? "it" : "them all"} to break free. Miss one and the dragon bites —
@@ -3294,6 +3344,13 @@ export class GameUI {
           <button class="action-button" data-action="boss-begin">Face the Dragon ⚔️</button>
         </div>
       </div>`;
+    const speech = this.root.querySelector(".dragon-speech");
+    if (speech) speech.append("“", ...this._dragonLine(dragonLine), "”");
+    // The boss's own sprite, standing; its old single picture if it has none.
+    const looks = (this.model?.monsters || []).find(m => m.boss);
+    const art = this.root.querySelector(".boss-intro-sprite");
+    if (looks?.sprite) this._setSprite(art, `images/sprites/${looks.sprite}`, true);
+    else this._setSprite(art, `images/monsters/${looks?.image || BOSS_IMAGE}`, false);
     const btn = this.root.querySelector("[data-action=boss-begin]");
     if (btn) { btn.addEventListener("click", () => onContinue()); btn.focus(); }
   }
@@ -3304,7 +3361,7 @@ export class GameUI {
     renderTemplate(this.root, "tpl-victory");
     if (dragonLine) {
       const d = $(this.root, "[data-ref=dragonSpeech]");
-      if (d) { d.textContent = dragonLine; d.hidden = false; }
+      if (d) { d.replaceChildren(...this._dragonLine(dragonLine)); d.hidden = false; }
     }
     $(this.root, "[data-ref=victoryStats]").innerHTML = `
       All questions answered!<br>
@@ -3328,7 +3385,7 @@ export class GameUI {
     renderTemplate(this.root, "tpl-no-questions");
     if (dragonLine) {
       const d = $(this.root, "[data-ref=dragonSpeech]");
-      if (d) { d.textContent = dragonLine; d.hidden = false; }
+      if (d) { d.replaceChildren(...this._dragonLine(dragonLine)); d.hidden = false; }
     }
     $(this.root, "[data-ref=finalStats]").innerHTML = `
       <span class='bold'>Final Stats:</span><br>

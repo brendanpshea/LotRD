@@ -4,7 +4,7 @@
 // sounds themselves: every one builds, is audible, and is short.
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { SoundSystem, SFX } from '../src/sound.js';
+import { SoundSystem, SFX, FANFARE, FANFARE_END_AT } from '../src/sound.js';
 import { buildSamples, ZZFX_SAMPLE_RATE } from '../src/zzfx.js';
 
 /**
@@ -44,7 +44,7 @@ class FakeContext {
   }
   createBufferSource() {
     const src = { buffer: null, playbackRate: { value: 1 }, connect() {},
-      start: () => this.started.push(`sound of ${src.buffer.length}`) };
+      start: (when = 0) => { this.started.push(`sound of ${src.buffer.length}`); (this.at ||= []).push([when, src.playbackRate.value]); } };
     return src;
   }
 }
@@ -133,4 +133,28 @@ describe('the sounds', () => {
       assert.ok(peak > 0.1, `peak ${peak}: too quiet to hear`);
     });
   }
+});
+
+describe('the level-up fanfare', () => {
+  afterEach(() => sounds?._sleep());
+  let sounds;
+
+  it('plays its notes rising, each started on the audio clock, the held note last', async () => {
+    FakeContext.made = [];
+    FakeContext.wakeMs = 0;
+    sounds = new SoundSystem();
+    press();
+    await until(5);
+    const ctx = FakeContext.made[0];
+    ctx.currentTime = 10;
+    sounds.levelUp();
+    const notes = ctx.at;
+    assert.equal(notes.length, FANFARE.length + 1, 'every note of the chord, and the held one');
+    const starts = notes.map(([when]) => when);
+    assert.deepEqual(starts, [...starts].sort((a, b) => a - b), 'the notes start in order');
+    assert.equal(starts[0], 0, 'the first note starts at once');
+    assert.ok(Math.abs(starts.at(-1) - (10 + FANFARE_END_AT)) < 1e-9, 'the held note comes last, on the audio clock');
+    const rates = notes.slice(0, FANFARE.length).map(([, rate]) => rate);
+    assert.deepEqual(rates, [...rates].sort((a, b) => a - b), 'the chord rises');
+  });
 });

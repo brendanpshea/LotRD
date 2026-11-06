@@ -13,7 +13,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 1. Open `index.html` in a browser (or serve the folder with any static file server).
 2. From the main menu, choose a topic and question set.
 3. Each encounter presents a question. Answer correctly to damage the monster; wrong answers let the monster hit back.
-4. Defeat monsters to earn XP and level up. Each level grants a **revive charge** (⚗️) — when your HP hits 0, a charge is consumed to restore 10 HP. With none left, you go back to the last **checkpoint** and redo the questions since then.
+4. Every answer earns XP, and a level comes about once a set. Each level restores your HP to full and grants a **revive charge** (⚗️) — when your HP hits 0, a charge is consumed to restore 10 HP. With none left, you go back to the last **checkpoint** and redo the questions since then.
 5. Your **player level persists globally** across all question sets. Finishing a set by defeating the last monster or exhausting all remaining questions counts as clearing it. Progress auto-saves to `localStorage`.
 
 ### Keyboard Shortcuts
@@ -44,9 +44,9 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Encounter screen** — kept short above the question, which D2L's embedded view used to push off the bottom: the set's name and the streak share a line, a monster's flavour text shows on hover over its name (or a tap on the name unfolds it), the item slots sit side by side, and the journey bar is the foot of the same card. A short window (720px or less) also gets a smaller stage and less frame. The retrieval boss keeps its line always visible, since there it reports concepts remaining rather than flavour
 - **Sound effects** — Web Audio API; toggle with 🔊 button in toolbar
 - **Streak bonuses** — consecutive perfect answers multiply player damage (1.25×, 1.5×, 2×)
-- **Global level** — player level and revive charges persist across all question sets
+- **Global level** — player level and revive charges persist across all question sets. A level is rare (300 XP for the first, 15% more for each after: about one a set early on) and gets a screen of its own: the hero in a burst of light, the new level and title, each gain as before → after, and a fanfare
 - **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat; with none left, a full run goes back to its last checkpoint
-- **Retrieval boss** — when the questions run out, anything missed during the run comes back as the Recursive Dragon's HP bar; each concept only leaves the bar once it's answered cleanly (a flawless run skips the fight)
+- **Retrieval boss** — when the questions run out, anything missed during the run comes back as the Recursive Dragon's HP bar. The dragon is drawn as the Recursion Wyrm, the monster marked `"boss": true` in `assets/monsters.json`, which is never met mid-set; each concept only leaves the bar once it's answered cleanly (a flawless run skips the fight)
 - **Monster fights** — a monster has a d10 of HP per level plus eight more, so it takes about five answers to beat (it was about two). Every monster beaten drops an item and gives back a quarter of your max HP
 - **Items** — two inventory slots (`Q`/`W`) hold drops from defeated monsters: heals, shields, 2× damage/XP, and a Mulligan that rewinds one wrong answer
 - **Spaced review** — once a set reaches Master rank, it becomes "due" again on an expanding schedule (first ~21 days after mastery, then 60) and offers a short 5-question refresher; below Master, the rank trials are the spaced re-encounters
@@ -290,7 +290,7 @@ A scene can also be **narrated** (so far: every scene in Computing Concepts 6 to
 
 However wrong one answer is, the monster rolls at most **2** dice for it (`MAX_MONSTER_DICE`), so no single answer can take a fresh 20-HP hero to zero. Beating a monster restores **25%** of max HP (`KILL_HEAL_SHARE`), not after the dragon.
 
-Final failure on fill-blank, dynamic numeric, code-trace, and code-line keeps partial credit based on best similarity or numeric closeness and re-queues the question. Streak multipliers (consecutive perfect answers): 3–4 = 1.25×, 5–9 = 1.5×, 10+ = 2×. Monster defense reduces player damage and player base defense reduces monster damage, but a blow that was earned always lands for at least 1 (`landed`): a wrong answer always draws a counterattack, and a partly right one shows both fighters striking. Dice never hurt the dragon. The hero's attack die is a fixed d6; max HP starts at 20 and base defense at 1. Each level-up grants a revive charge and +2 max HP, plus +1 base defense at every 5th level.
+Final failure on fill-blank, dynamic numeric, code-trace, and code-line keeps partial credit based on best similarity or numeric closeness and re-queues the question. Streak multipliers (consecutive perfect answers): 3–4 = 1.25×, 5–9 = 1.5×, 10+ = 2×. Monster defense reduces player damage and player base defense reduces monster damage, but a blow that was earned always lands for at least 1 (`landed`): a wrong answer always draws a counterattack, and a partly right one shows both fighters striking. Dice never hurt the dragon. The hero's attack die is a fixed d6; max HP starts at 20 and base defense at 1. Each level-up grants a revive charge, +2 max HP and HP restored to full (not for a hero knocked out in that same round), plus +1 base defense every 5 levels (at 6, 11, 16…).
 
 ---
 
@@ -480,7 +480,7 @@ The website is a progressive web app. `index.html` links `manifest.webmanifest` 
 - **Network first, always.** Online, every request goes to the server exactly as it would without the worker, and the answer is kept for later; the kept copy is used only when the network is not there. So a deploy reaches students at once, as before, and nothing needs bumping. Changing `CACHE` in `sw.js` only makes browsers drop what an older version kept.
 - **Progress is not in it.** Progress stays in `localStorage`, which the worker never touches. Installing does not move or copy it: on Android and desktop the installed app shares it with the browser, but on iOS an app added to the home screen starts with storage of its own, separate from Safari's.
 - **Not in LMS packages.** A package's files are the LMS's to serve and replace, so `SCORM/build.py` removes the `<!-- pwa: … <!-- /pwa -->` block from its `index.html`, and `src/pwa.js` registers nothing on a page that carries the SCORM shim or sits in a frame. The browser tests load the shim, so no worker runs in them either.
-- **The icons** are drawn by `python tools/pwa_icons.py` from the standing pose of `images/sprites/quantum_dragon.webp`; run it again only if that sprite changes.
+- **The icons** are drawn by `python tools/pwa_icons.py` from the standing pose of `images/sprites/recursion_wyrm.webp`, the boss; run it again only if that sprite changes.
 
 `tests/pwa.test.js` checks the manifest and its icons, that every file `sw.js` precaches exists and every module of the game is among them, how `sw.js` answers online, offline and on an update (against a stand-in cache), and that `src/pwa.js` registers only on the website.
 

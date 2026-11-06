@@ -290,6 +290,15 @@ describe('monsters.json', () => {
     }
   });
 
+  it('marks exactly one monster as the boss, drawn with a sprite, and never mid-set', () => {
+    // The end-of-set boss (the Recursive Dragon) is drawn as this monster, and
+    // generateMonster leaves it out, so it is met only at the end.
+    const bosses = monsters.filter(m => m.boss !== undefined);
+    assert.deepEqual(bosses.map(m => m.monster_name), ['Recursion Wyrm']);
+    assert.equal(bosses[0].boss, true);
+    assert.ok(bosses[0].sprite && existsSync(join(ROOT, 'images', 'sprites', bosses[0].sprite)));
+  });
+
   it('every hero\'s sprite exists on disk', () => {
     assert.ok(HEROES.length > 0);
     for (const h of HEROES) {
