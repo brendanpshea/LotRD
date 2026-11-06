@@ -6,7 +6,7 @@
 
 ## File Format Overview
 
-Each question set is a **JSON array** of question objects saved in `question_sets/`. Nine structured question types are documented below (plus the non-question NPC teaching scene), with multiple-choice split into single-answer and multi-answer variants:
+Each question set is a **JSON array** of question objects saved in `question_sets/`. Ten structured question types are documented below (plus the non-question NPC teaching scene), with multiple-choice split into single-answer and multi-answer variants:
 
 | Type | `type` field | Selection UI | Best for |
 |------|-------------|-------------|----------|
@@ -17,6 +17,7 @@ Each question set is a **JSON array** of question objects saved in `question_set
 | Code Line | `"code_line"` | Text input + token-Wordle | Writing one line of code/command |
 | Ordering | `"ordering"` | Tap-to-sequence | Process steps, algorithm stages, Parsons-style code arrangement |
 | Multi-Blank Cloze | `"cloze"` | Inline text inputs | Synthesis: several related terms held in contrast in one passage |
+| Rule Table | `"rule_table"` | A table of dropdowns and boxes, rows reorderable | Performance-based tasks: firewall rules, RACI charts, risk registers, settings forms |
 | Write the Code | `"code_write"` | Code editor + test table | Writing a whole small function or class, run against real test cases (Python, or Java with `"language": "java"`) |
 | NPC Teaching Scene | `"npc_demo"` | Dialogue walkthrough | Worked examples immediately before a paired question (not a question itself) |
 
@@ -27,6 +28,7 @@ A good problem set uses a **mix of all types**. Aim for roughly:
 - 10–20% matching
 - a few ordering questions where the material has a real sequence
 - 1–2 multi-blank cloze items per set, for synthesis of contrasting ideas
+- a rule table where the course's exam has performance-based questions (one per SecurityX set; Network+ next)
 - write-the-code problems where the set's job is writing Python, kept in their own set for now
 - 1–3 NPC scenes per set, each directly followed by its paired question
 
@@ -1103,6 +1105,61 @@ One file per database, shared by every problem that uses it — so the schema ca
 ```
 
 At least three datasets; the first is the one shown. Each must satisfy its own foreign keys. Make the hidden ones different in *kind*, not just in names: fewer rows, a tie, a value on a boundary, a row with nothing matching it in the other table.
+
+---
+
+## Type 12: Rule Table (`rule_table`)
+
+A table the student completes, the shape of many CompTIA performance-based questions: a firewall's rules, a RACI chart, a risk register, a set of permissions, a server's settings. Some cells are shown, some are dropdowns, some are typed; optionally the rows must also be put in order.
+
+### Schema
+
+```json
+{
+  "type": "rule_table",
+  "question": "Policy: the jump host may reach the servers on TCP 22; staff may not reach the servers; everything else is denied. The firewall uses the first rule that matches. Choose each action, then order the rules.",
+  "columns": [
+    { "header": "Source" },
+    { "header": "Destination" },
+    { "header": "Port" },
+    { "header": "Action", "options": ["Allow", "Deny"] }
+  ],
+  "rows": [
+    ["10.20.0.50 (jump host)", "10.0.2.0/24 (servers)", "TCP 22", { "answer": "Allow" }],
+    ["10.20.0.0/24 (staff)",   "10.0.2.0/24 (servers)", "Any",    { "answer": "Deny" }],
+    ["Any",                    "Any",                   "Any",    { "answer": "Deny" }]
+  ],
+  "reorder": true,
+  "before": [[0, 1], [1, 2]],
+  "feedback": "First match wins, so the jump host's allow must sit above the staff deny..."
+}
+```
+
+### Rules
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `columns` | yes | 2–6, each `{ "header" }`, optionally with `options` (2+ different strings), which makes every editable cell in the column a dropdown |
+| `rows` | yes | 2–8 rows, one cell per column. Rows must not read alike: a row is named in feedback by its shown cells |
+| a shown cell | | A string |
+| a dropdown cell | | `{ "answer": "Deny" }`, choosing from the column's `options`, or its own `{ "answer": ..., "options": [...] }` (a settings form, where each row has different choices) |
+| a typed cell | | `{ "accept": ["10.0.5.0/24", ...] }`, optional `case_sensitive`. Matched ignoring case and extra spaces, with **no** typo forgiveness (one wrong digit is a different address), so list every fair way of writing it (`12000`, `12,000`, `$12,000`). The answer must fit in 20 characters |
+| `reorder` | no | `true`: rows start shuffled and are moved with ↑ and ↓; their order is graded |
+| `before` | no | With `reorder`: the pairs `[earlier, later]` whose order matters, as authored row numbers counted from 0, written earlier-first (so the authored order is always a right answer). Leave it out and the authored order is the only right one |
+
+`data.test.js` checks all of this, and needs at least two graded parts.
+
+### Grading
+
+Every editable cell is a part, and with `reorder` so is every `before` pair. The share right is scaled to a fixed budget of four dice (as for write-the-code), so a twelve-cell table hits no harder than a four-cell one; anything wrong always draws a counterattack. The results list each part as right or wrong, by row name and column ("Any · Any — Action: chose "Allow" — correct: "Deny""), and the question re-queues unless every part is right. XP is 15, as for write-the-code.
+
+### Writing Good Rule Tables
+
+1. **The stem holds the rules; the table applies them.** A rule table tests judgement, so every cell must follow from the scenario's stated policy plus what the set has taught: "Policy: ...", "Highrook's rules: ...". If two answers fit a cell, the stem is missing a rule.
+2. **Use `before` for real constraints only.** In a firewall, only rules that can match the same packet need an order; say which with `before`, and let the rest fall where they may. A student who puts two independent allows the other way round has not made a mistake.
+3. **Keep a table phone-sized**: no more than about twelve editable cells, and short headers. On a phone each row becomes a card with every cell labelled by its column header.
+4. **Feedback explains the policy, cell by cell where it matters**: why the specific rule must precede the general one, why this role is Accountable and that one only Informed.
+5. **One per set is plenty** where the exam has performance-based questions. It is a long question; place it at the end of the block whose scene taught what it applies, never between a scene and the question it prepares.
 
 ---
 

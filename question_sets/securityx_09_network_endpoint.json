@@ -529,6 +529,78 @@
     "feedback": "A stateful firewall that sees only one direction treats the other direction's packets as not belonging to any known connection and drops them - the signature of asymmetric routing. An MTU problem hits only large packets, a DNS failure prevents connecting at all rather than stalling midstream, and a cert mismatch is a TLS-layer error, not a routing one."
   },
   {
+    "type": "rule_table",
+    "question": "Highrook's branch firewall filters traffic from the branch LAN into the data centre, using the first rule that matches. Policy: the jump host (10.20.0.50, which sits inside the staff subnet) may reach the server subnet on TCP 22; staff may reach the web proxy on TCP 3128; staff may not reach the servers at all; everything else is denied. Choose each rule's action, then put the rules in an order that enforces the policy.",
+    "columns": [
+      {
+        "header": "Source"
+      },
+      {
+        "header": "Destination"
+      },
+      {
+        "header": "Port"
+      },
+      {
+        "header": "Action",
+        "options": [
+          "Allow",
+          "Deny"
+        ]
+      }
+    ],
+    "rows": [
+      [
+        "10.20.0.50 (jump host)",
+        "10.0.2.0/24 (servers)",
+        "TCP 22",
+        {
+          "answer": "Allow"
+        }
+      ],
+      [
+        "10.20.0.0/24 (staff)",
+        "10.0.2.0/24 (servers)",
+        "Any",
+        {
+          "answer": "Deny"
+        }
+      ],
+      [
+        "10.20.0.0/24 (staff)",
+        "10.0.1.10 (proxy)",
+        "TCP 3128",
+        {
+          "answer": "Allow"
+        }
+      ],
+      [
+        "Any",
+        "Any",
+        "Any",
+        {
+          "answer": "Deny"
+        }
+      ]
+    ],
+    "reorder": true,
+    "before": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "feedback": "A first-match firewall stops at the first rule a packet fits, so order is part of the policy. The jump host is inside 10.20.0.0/24, so its SSH allow must sit above the staff-to-servers deny; below it, the deny would match first and the jump host could never reach a server. The deny-all must be last, or every rule beneath it is dead. The proxy allow and the staff-to-servers deny never match the same traffic, so either may come first."
+  },
+  {
     "question": "A penetration tester at Forgeworks demonstrates VLAN hopping, reaching a segment that should be unreachable from the user access port. Which combination of switch settings BEST prevents both switch-spoofing and double-tagging VLAN hopping?",
     "correct": [
       "Set access ports to a fixed access mode, turn DTP off, and use an unused, dedicated native VLAN on trunks"
@@ -904,7 +976,7 @@
     "feedback": "SPF checks the connecting server and breaks when mail is forwarded; DKIM signs the message and its key is published in DNS, so it survives forwarding unless the content is altered. DMARC ties whichever one passes back to the visible From domain."
   },
   {
-    "question": "A bulk-mail vendor sends campaigns whose visible From address is @verona-health.org. The messages pass SPF and DKIM, but for the vendor's own sending domain, not for verona-health.org. Under verona-health.org's DMARC policy of p=reject, what happens, and why?",
+    "question": "A bulk-mail vendor sends campaigns whose visible From address is @greycloak-apothecary.org. The messages pass SPF and DKIM, but for the vendor's own sending domain, not for greycloak-apothecary.org. Under greycloak-apothecary.org's DMARC policy of p=reject, what happens, and why?",
     "correct": [
       "They are rejected: the passes are not aligned, because neither authenticated domain matches the From domain"
     ],
@@ -913,7 +985,7 @@
       "They are delivered: the vendor is a legitimate sender, so alignment is waived",
       "They are quarantined: a vendor mismatch downgrades reject to quarantine"
     ],
-    "feedback": "DMARC needs an aligned pass - the authenticated domain must match the visible From domain. The vendor's own-domain passes do not align with verona-health.org, so p=reject refuses them. The fix is to give the vendor a DKIM key for verona-health.org (or a delegated subdomain), not to weaken the policy."
+    "feedback": "DMARC needs an aligned pass - the authenticated domain must match the visible From domain. The vendor's own-domain passes do not align with greycloak-apothecary.org, so p=reject refuses them. The fix is to give the vendor a DKIM key for greycloak-apothecary.org (or a delegated subdomain), not to weaken the policy."
   },
   {
     "type": "matching",

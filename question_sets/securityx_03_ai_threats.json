@@ -1395,5 +1395,77 @@
       "Ban AI use across the hospital until regulators publish AI-specific rules"
     ],
     "feedback": "The plan has three moves: stop the exposure (block public AI for the subnet with firewall and endpoint DLP), set the rules (an AUP addendum on PHI, with training), and provide a safe alternative (an internal model with no internet route). Isolation alone is not enough: an internal model can still leak to the wrong internal user, so it needs RBAC, MFA, query logging, de-identification where possible and a DPIA. An opt-out changes future training at best and does not recall data already sent. A blanket ban stalls the research and breeds shadow IT."
+  },
+  {
+    "type": "rule_table",
+    "question": "Greycloak is giving its patient-portal support agent, an LLM, its tools. Rules: the agent gets the least access each task needs; it may look up appointment times but not change them; it has no reason to see clinical notes; it may open and update tickets freely; and any action that moves money or changes a record outside the ticket queue needs a person to approve it. Set each tool's access and approval.",
+    "columns": [
+      {
+        "header": "Tool"
+      },
+      {
+        "header": "Access",
+        "options": [
+          "None",
+          "Read-only",
+          "Read and write"
+        ]
+      },
+      {
+        "header": "Human approval",
+        "options": [
+          "Required",
+          "Not required"
+        ]
+      }
+    ],
+    "rows": [
+      [
+        "Knowledge-base search",
+        {
+          "answer": "Read-only"
+        },
+        {
+          "answer": "Not required"
+        }
+      ],
+      [
+        "Appointment lookup",
+        {
+          "answer": "Read-only"
+        },
+        {
+          "answer": "Not required"
+        }
+      ],
+      [
+        "Support ticket queue",
+        {
+          "answer": "Read and write"
+        },
+        {
+          "answer": "Not required"
+        }
+      ],
+      [
+        "Refunds up to $50",
+        {
+          "answer": "Read and write"
+        },
+        {
+          "answer": "Required"
+        }
+      ],
+      [
+        "Clinical notes (EHR)",
+        {
+          "answer": "None"
+        },
+        {
+          "answer": "Not required"
+        }
+      ]
+    ],
+    "feedback": "Excessive agency is an agent that can do more than its job needs, so each tool gets the least it requires: search and appointment lookup are read-only, the ticket queue is the agent's own workspace, and clinical notes get nothing, since a prompt injection cannot leak what the agent cannot read. A refund moves money, so the agent may propose one but a person approves it before it runs. Approval only means something where the agent can act; with no access to the EHR there is nothing to approve."
   }
 ]

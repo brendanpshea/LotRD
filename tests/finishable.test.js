@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { GameModel } from '../src/model.js';
+import { GameModel, ruleTableCell } from '../src/model.js';
 
 const url = p => new URL(p, import.meta.url);
 const readJSON = p => JSON.parse(readFileSync(url(p), 'utf-8'));
@@ -34,6 +34,21 @@ function answer(gm, correct) {
     case 'cloze': {
       const good = q.blanks.map(b => b.accept[0]);
       return gm.evaluateCloze(correct ? good : good.map(() => 'nope'));
+    }
+    case 'rule_table': {
+      // Right: the authored order, every cell its answer. Wrong: the rows
+      // reversed, every choice another option, every typed cell nonsense.
+      const order = q.rows.map((_, i) => i);
+      if (!correct) order.reverse();
+      return gm.evaluateRuleTable(order.map(row => ({
+        row,
+        values: q.rows[row].map((_, c) => {
+          const cell = ruleTableCell(q, row, c);
+          if (cell.kind === 'choice') return correct ? cell.answer : cell.options.find(o => o !== cell.answer);
+          if (cell.kind === 'typed') return correct ? cell.accept[0] : 'nope';
+          return null;
+        }),
+      })));
     }
     case 'ordering':
       return gm.evaluateOrdering(correct ? q.items : [...q.items].reverse());

@@ -3,7 +3,8 @@ import {
   fillBlankLengthHint,
 } from "./util.js";
 import { highlightJava, highlightPython } from "./highlight.js";
-import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem, BOSS_IMAGE } from "./model.js";
+import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem, BOSS_IMAGE,
+  ruleTableCell, ruleTableOrderRules, ruleTableRowLabel } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
 import { Narrator, sceneHasNarration, stopNarration } from "./narration.js";
 import { HEROES, chosenHero, chooseHero, heroChosen } from "./heroes.js";
@@ -2244,6 +2245,162 @@ export class GameUI {
     this._attachInventoryHandlers();
     this._bindInventoryHotkeys(this._kbAbort.signal);
     this._renderProgress(this.root);
+  }
+
+  /**
+   * A rule table: complete its cells (a dropdown, or something typed) and, if it
+   * asks, put its rows in order with ↑ and ↓. Each row is a <tr> that carries
+   * its authored number, so moving one moves what was entered in it too. On a
+   * phone each row becomes a card, every cell labelled with its column.
+   */
+  showEncounterRuleTable() {
+    this._clearKeyboard();
+    const q = this.model.current_question;
+    renderTemplate(this.root, "tpl-encounter-rule-table");
+    this._renderFigure(this.root, q);
+    this._populateEncounterHeader(this.root);
+    $(this.root, "[data-ref=qText]").textContent = q.question;
+
+    const columns = q.columns || [];
+    const rows = q.rows || [];
+    const reorder = !!q.reorder;
+    $(this.root, "[data-ref=ruleTableLabel]").textContent =
+      reorder ? "Complete the table and put its rows in order:" : "Complete the table:";
+    $(this.root, "[data-ref=ruleTableHint]").textContent = reorder
+      ? "Move a row with ↑ and ↓. The top row comes first."
+      : "";
+
+    const table = $(this.root, "[data-ref=ruleTable]");
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    const th = text => {
+      const cell = document.createElement("th");
+      cell.scope = "col";
+      cell.textContent = text;
+      headRow.appendChild(cell);
+    };
+    if (reorder) th("#");
+    columns.forEach(col => th(col.header));
+    if (reorder) th("Move");
+    head.appendChild(headRow);
+    table.appendChild(head);
+    const body = document.createElement("tbody");
+    table.appendChild(body);
+
+    // Shuffled only when the order is part of the question, and never already right.
+    let order = rows.map((_, i) => i);
+    if (reorder) {
+      const rules = ruleTableOrderRules(q);
+      const solved = o => rules.every(([a, b]) => o.indexOf(a) < o.indexOf(b));
+      for (let guard = 0; guard < 20 && solved(order); guard++) order = shuffle(order);
+    }
+
+    const renumber = () => {
+      [...body.rows].forEach((tr, i) => {
+        const num = tr.querySelector(".rule-table-num");
+        if (num) num.textContent = String(i + 1);
+        tr.querySelector("[data-move=up]")?.toggleAttribute("disabled", i === 0);
+        tr.querySelector("[data-move=down]")?.toggleAttribute("disabled", i === body.rows.length - 1);
+      });
+    };
+
+    const move = (tr, dir, button) => {
+      const sibling = dir < 0 ? tr.previousElementSibling : tr.nextElementSibling;
+      if (!sibling) return;
+      body.insertBefore(dir < 0 ? tr : sibling, dir < 0 ? sibling : tr);
+      renumber();
+      const again = tr.querySelector(`[data-move=${button}]`);
+      (again && !again.disabled ? again : tr.querySelector("[data-move]:not([disabled])"))?.focus();
+    };
+
+    const fields = [];
+    order.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.dataset.row = String(r);
+      if (reorder) {
+        const num = document.createElement("td");
+        num.className = "rule-table-num";
+        num.dataset.label = "#";
+        tr.appendChild(num);
+      }
+      columns.forEach((col, c) => {
+        const td = document.createElement("td");
+        td.dataset.label = col.header;
+        const cell = ruleTableCell(q, r, c);
+        const name = `${col.header}, row ${r + 1}`;
+        if (cell.kind === "fixed") {
+          td.textContent = cell.text;
+          td.className = "rule-table-fixed";
+        } else if (cell.kind === "choice") {
+          const sel = document.createElement("select");
+          sel.className = "rule-table-select";
+          sel.dataset.col = String(c);
+          sel.setAttribute("aria-label", name);
+          const none = document.createElement("option");
+          none.value = "";
+          none.textContent = "—";
+          sel.appendChild(none);
+          for (const opt of cell.options) {
+            const o = document.createElement("option");
+            o.value = opt;
+            o.textContent = opt;
+            sel.appendChild(o);
+          }
+          td.appendChild(sel);
+          fields.push(sel);
+        } else {
+          const input = document.createElement("input");
+          input.type = "text";
+          input.className = "rule-table-input";
+          input.dataset.col = String(c);
+          input.autocomplete = "off";
+          input.spellcheck = false;
+          input.setAttribute("autocapitalize", "off");
+          input.setAttribute("aria-label", name);
+          td.appendChild(input);
+          fields.push(input);
+        }
+        tr.appendChild(td);
+      });
+      if (reorder) {
+        const td = document.createElement("td");
+        td.className = "rule-table-move";
+        td.dataset.label = "Move";
+        for (const [dir, arrow, word] of [[-1, "↑", "up"], [1, "↓", "down"]]) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "rule-table-move-btn";
+          b.dataset.move = word;
+          b.textContent = arrow;
+          b.setAttribute("aria-label", `Move ${ruleTableRowLabel(q, r)} ${word}`);
+          b.addEventListener("click", () => move(tr, dir, word));
+          td.appendChild(b);
+        }
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    });
+    renumber();
+
+    const submitBtn = $(this.root, "[data-action=submit]");
+    submitBtn.addEventListener("click", () => {
+      if (fields.some(f => !String(f.value).trim())) {
+        this.showFeedbackInline("Fill in every cell before submitting.");
+        return;
+      }
+      const answer = [...body.rows].map(tr => {
+        const values = [];
+        tr.querySelectorAll("[data-col]").forEach(f => { values[Number(f.dataset.col)] = f.value; });
+        return { row: Number(tr.dataset.row), values };
+      });
+      this.controller.submitRuleTable(answer);
+    });
+
+    this._kbAbort = new AbortController();
+    this._attachInventoryHandlers();
+    this._bindInventoryHotkeys(this._kbAbort.signal);
+    this._renderProgress(this.root);
+    (fields[0] || body.querySelector("button"))?.focus();
   }
 
   /**

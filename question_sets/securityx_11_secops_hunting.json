@@ -495,6 +495,69 @@
     "feedback": "Other Security events arrive, so collection works, yet not a single 4720 exists: Windows is not writing the event, because account-management auditing is off. A rule is only as good as the telemetry behind it. The filter removes only svc-idm-provision; 'selection or not filter_idm' would fire on nearly everything; and Sigma rules are converted by tooling such as sigma-cli, not rewritten by hand."
   },
   {
+    "type": "rule_table",
+    "question": "Kaeli is triaging the morning queue. Her rules: a true positive is escalated; a false positive from a rule that will keep firing on the same benign activity is tuned (for example, an allowlist entry); a one-off false positive is closed with a note. Give each alert a verdict and a next step.",
+    "columns": [
+      {
+        "header": "Alert"
+      },
+      {
+        "header": "Verdict",
+        "options": [
+          "True positive",
+          "False positive"
+        ]
+      },
+      {
+        "header": "Next step",
+        "options": [
+          "Escalate",
+          "Tune the rule",
+          "Close"
+        ]
+      }
+    ],
+    "rows": [
+      [
+        "Sign-ins from Chicago and Lagos 20 minutes apart; the Lagos session added an inbox forwarding rule",
+        {
+          "answer": "True positive"
+        },
+        {
+          "answer": "Escalate"
+        }
+      ],
+      [
+        "Port scan from 10.0.4.12, the vulnerability scanner, inside its weekly window",
+        {
+          "answer": "False positive"
+        },
+        {
+          "answer": "Tune the rule"
+        }
+      ],
+      [
+        "winword.exe spawned powershell.exe with an encoded command on a finance PC",
+        {
+          "answer": "True positive"
+        },
+        {
+          "answer": "Escalate"
+        }
+      ],
+      [
+        "Six failed logins, then success, for a user who had just changed her password",
+        {
+          "answer": "False positive"
+        },
+        {
+          "answer": "Close"
+        }
+      ]
+    ],
+    "feedback": "A false positive is an alert on benign activity. Impossible travel followed by a new forwarding rule is a classic account takeover, and an Office app launching encoded PowerShell is a classic macro dropper: both are true positives to escalate. The scheduled scanner is benign and will trip the rule every week, so it belongs on the known-noise allowlist. A few failed logins after a password change is benign and unlikely to repeat, so it is closed with a note rather than weakening the rule."
+  },
+  {
     "type": "npc_demo",
     "question": "NPC: More sources, and the numbers that matter",
     "npc": "kaelen",

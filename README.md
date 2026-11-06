@@ -28,7 +28,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 
 ## Features
 
-- **Ten question formats** plus NPC teaching scenes (described below)
+- **Eleven question formats** plus NPC teaching scenes (described below)
 - **Main menu**, built to get a newcomer started: a two-line welcome; **Continue** for anything under way; progress in one line (level, accuracy, sets cleared, and the score once there is one, with how it is worked out folded beneath); and one **Courses** panel, a row per course with a one-line description (`description` on a topic in `catalog.json`), how far along it is, and one button for where to go next (`▶ Start`, `▶ Next` or `▶ Resume`). Each course's full set list, with every set's rank and trial, folds away beneath it, and a search box finds a set by name. How to play and the hero picker are folded at the foot.
 - **Lesson intros** — sets can declare an `intro` (story + learning objectives) in `catalog.json`, shown before the run starts
 - **Sequential first pass** — full runs present questions in authored order (the set is written as a progression, and NPC scenes precede their paired questions); missed questions still requeue, and reviews/trials shuffle their samples
@@ -231,6 +231,34 @@ Any question may carry a listing, shown as a code panel between its stem and its
 - **Graded per blank in one submission** — no three-attempt loop. Each correct blank rolls an attack die, each wrong one rolls a monster die, and the question re-queues unless all are right. A one-character typo on a long case-insensitive answer is still forgiven.
 - `Enter` advances to the next blank and submits from the last one.
 
+### Rule Table (`rule_table`)
+
+The performance-based question CompTIA exams are known for: a table to complete, such as a firewall's rules, a RACI chart, a risk register or a settings form.
+
+```json
+{
+  "type": "rule_table",
+  "question": "Policy: ... The firewall uses the first rule that matches. Choose each action, then order the rules.",
+  "columns": [
+    { "header": "Source" }, { "header": "Destination" }, { "header": "Port" },
+    { "header": "Action", "options": ["Allow", "Deny"] }
+  ],
+  "rows": [
+    ["10.20.0.50 (jump host)", "10.0.2.0/24 (servers)", "TCP 22", { "answer": "Allow" }],
+    ["10.20.0.0/24 (staff)", "10.0.2.0/24 (servers)", "Any", { "answer": "Deny" }],
+    ["Any", "Any", "Any", { "answer": "Deny" }]
+  ],
+  "reorder": true,
+  "before": [[0, 1], [1, 2]],
+  "feedback": "..."
+}
+```
+
+- A cell is shown text, a dropdown (`{ "answer": ... }`, with its column's `options` or its own), or something typed (`{ "accept": [...] }`, matched ignoring case and spaces, with no typo forgiveness: one wrong digit is a different address).
+- With `"reorder": true` the rows start shuffled and the student moves them with ↑ and ↓. `before` lists the pairs of rows whose order matters, as authored row numbers; without it, the authored order is required.
+- **Graded per part in one submission**: each editable cell and each order rule. The share right is scaled to a fixed budget of four dice, as for write-the-code, so a big table does not hit harder than a small one, and anything wrong always draws a counterattack. It re-queues unless every part is right.
+- On a phone each row becomes a card, with every cell labelled by its column.
+
 ### Write the Code (`code_write`)
 
 A CodingBat-style problem: the signature is fixed and shown above the box, the student writes the **body**, and the code is run against a table of test cases.
@@ -307,6 +335,7 @@ A scene can also be **narrated** (so far: every scene in Computing Concepts 6 to
 | Any typed answer: out of tries, or given up | — | 1 monster roll |
 | Matching / ordering / cloze: each correct pair, position or blank | 1 attack roll (d6) × streak multiplier | — |
 | Matching / ordering / cloze: each wrong one | — | 1 monster roll |
+| Rule table: the share of parts right (cells, and order rules) | that share of 4 attack rolls | the rest of the 4 as monster rolls; at least 1 if anything is wrong |
 
 However wrong one answer is, the monster rolls at most **2** dice for it (`MAX_MONSTER_DICE`), so no single answer can take a fresh 20-HP hero to zero. Beating a monster restores **25%** of max HP (`KILL_HEAL_SHARE`), not after the dragon.
 
@@ -444,18 +473,18 @@ matches the number of questions actually in each file.
 | Networking | Services, Performance & Wireless Troubleshooting | 30 |
 | Networking | Tools & Device Commands | 33 |
 | SecurityX / CASP+ | SecurityX Review Mix | 30 (random mix) |
-| SecurityX / CASP+ | Security Governance, Compliance & Ethics | 44 |
-| SecurityX / CASP+ | Risk Management & Threat Modeling | 43 |
-| SecurityX / CASP+ | AI Threats & Governance | 44 |
-| SecurityX / CASP+ | Security Architecture & Zero Trust | 44 |
-| SecurityX / CASP+ | Identity & Access Management | 44 |
-| SecurityX / CASP+ | Secure Systems Lifecycle & Hardware Assurance | 44 |
-| SecurityX / CASP+ | Enterprise Cloud & Hybrid Security | 43 |
-| SecurityX / CASP+ | Cryptography & PKI | 44 |
-| SecurityX / CASP+ | Network, Endpoint & Infrastructure Engineering | 44 |
-| SecurityX / CASP+ | Specialized, OT & Legacy Systems | 43 |
-| SecurityX / CASP+ | Security Operations, Monitoring & Threat Hunting | 44 |
-| SecurityX / CASP+ | Vulnerability Management, Automation & Incident Response | 44 |
+| SecurityX / CASP+ | Security Governance, Compliance & Ethics | 45 |
+| SecurityX / CASP+ | Risk Management & Threat Modeling | 44 |
+| SecurityX / CASP+ | AI Threats & Governance | 45 |
+| SecurityX / CASP+ | Security Architecture & Zero Trust | 45 |
+| SecurityX / CASP+ | Identity & Access Management | 45 |
+| SecurityX / CASP+ | Secure Systems Lifecycle & Hardware Assurance | 45 |
+| SecurityX / CASP+ | Enterprise Cloud & Hybrid Security | 44 |
+| SecurityX / CASP+ | Cryptography & PKI | 45 |
+| SecurityX / CASP+ | Network, Endpoint & Infrastructure Engineering | 45 |
+| SecurityX / CASP+ | Specialized, OT & Legacy Systems | 44 |
+| SecurityX / CASP+ | Security Operations, Monitoring & Threat Hunting | 45 |
+| SecurityX / CASP+ | Vulnerability Management, Automation & Incident Response | 45 |
 
 ---
 

@@ -848,6 +848,89 @@
     "feedback": "Attestation is evidence that can be checked: a boot-chain measurement recorded in the TPM and compared with approved values, or a valid certificate proving membership of the expected management domain. A hostname and an IP address are naming and location, which anyone controlling the machine or the network can arrange. A self-report from the workload's own agent is a claim, and a compromised workload can make it."
   },
   {
+    "type": "rule_table",
+    "question": "Highrook's policy decision point applies these rules to every request, wherever it comes from: internal apps need a managed, compliant device and MFA; when MFA is the only thing missing, it asks for it (step-up) rather than refusing; the payment admin console also needs a device that passed attestation; and an unmanaged device may reach webmail only, after MFA. Decide each request.",
+    "columns": [
+      {
+        "header": "User"
+      },
+      {
+        "header": "Device"
+      },
+      {
+        "header": "MFA done"
+      },
+      {
+        "header": "Resource"
+      },
+      {
+        "header": "Decision",
+        "options": [
+          "Allow",
+          "Step-up MFA",
+          "Deny"
+        ]
+      }
+    ],
+    "rows": [
+      [
+        "Analyst",
+        "Managed, compliant",
+        "Yes",
+        "HR portal",
+        {
+          "answer": "Allow"
+        }
+      ],
+      [
+        "Analyst",
+        "Managed, compliant",
+        "No",
+        "Wiki",
+        {
+          "answer": "Step-up MFA"
+        }
+      ],
+      [
+        "Analyst",
+        "Managed, EDR stopped",
+        "Yes",
+        "Expense app",
+        {
+          "answer": "Deny"
+        }
+      ],
+      [
+        "Contractor",
+        "Unmanaged laptop",
+        "Yes",
+        "HR portal",
+        {
+          "answer": "Deny"
+        }
+      ],
+      [
+        "Contractor",
+        "Unmanaged laptop",
+        "No",
+        "Webmail",
+        {
+          "answer": "Step-up MFA"
+        }
+      ],
+      [
+        "Admin",
+        "Managed, attestation failed",
+        "Yes",
+        "Payment admin",
+        {
+          "answer": "Deny"
+        }
+      ]
+    ],
+    "feedback": "Zero Trust decides on identity and device state, not on where the request came from. A compliant managed device with MFA is allowed; the same device without MFA is stepped up, because MFA is the only gap. A stopped EDR agent makes the device non-compliant, which no prompt can fix, so it is denied. An unmanaged laptop never reaches internal apps, but may reach webmail once MFA is done. The payment console's extra condition, attestation, failed, so even an admin with MFA is denied."
+  },
+  {
     "type": "npc_demo",
     "question": "NPC: Dividing the inside, dissolving the edge",
     "npc": "tariq",

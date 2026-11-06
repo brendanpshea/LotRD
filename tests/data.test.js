@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { pickClozeBlank, evaluateDynamicExpression, tokenize } from '../src/model.js';
+import { pickClozeBlank, evaluateDynamicExpression, tokenize, ruleTableCell, ruleTableBlanks, ruleTableOrderRules, ruleTableRowLabel } from '../src/model.js';
 import { HEROES } from '../src/heroes.js';
 import { clipName, sceneLines } from '../src/narration.js';
 import { runProblem, isScriptProblem, parseSignature, fromJson, pyRepr } from '../src/pytiny.js';
@@ -633,6 +633,64 @@ describe('Question set file validation', () => {
               assert.ok(refs.includes(bi),
                 `${label}: blanks[${bi - 1}] has no {{${bi}}} placeholder in the question`);
             }
+          } else if (type === 'rule_table') {
+            // A table to complete: see "Rule Table" in the writing guide.
+            const cols = q.columns;
+            assert.ok(Array.isArray(cols) && cols.length >= 2 && cols.length <= 6,
+              `${label}: rule_table needs 2 to 6 columns (a phone shows each row as a card of that many lines)`);
+            for (const [ci, col] of cols.entries()) {
+              assert.ok(col && typeof col.header === 'string' && col.header.trim(), `${label}: column ${ci + 1} needs a header`);
+              if (col.options !== undefined) {
+                assert.ok(Array.isArray(col.options) && col.options.length >= 2 && new Set(col.options).size === col.options.length
+                  && col.options.every(o => typeof o === 'string' && o.trim()),
+                  `${label}: column ${ci + 1}'s options must be 2 or more different, non-empty strings`);
+              }
+            }
+            assert.ok(Array.isArray(q.rows) && q.rows.length >= 2 && q.rows.length <= 8,
+              `${label}: rule_table needs 2 to 8 rows`);
+            let graded = 0;
+            for (const [ri, row] of q.rows.entries()) {
+              assert.ok(Array.isArray(row) && row.length === cols.length,
+                `${label}: row ${ri + 1} must have one cell per column (${cols.length})`);
+              for (const [ci, cell] of row.entries()) {
+                const where = `${label}: row ${ri + 1}, ${cols[ci].header}`;
+                if (typeof cell === 'string') continue;
+                assert.ok(cell && typeof cell === 'object' && !Array.isArray(cell), `${where}: a cell is text, { answer } or { accept }`);
+                graded++;
+                if ('accept' in cell) {
+                  assert.ok(!('answer' in cell), `${where}: a cell is typed ({ accept }) or chosen ({ answer }), not both`);
+                  assert.ok(Array.isArray(cell.accept) && cell.accept.length > 0 && cell.accept.every(a => typeof a === 'string' && a.trim()),
+                    `${where}: accept must list the answers to take, as non-empty strings`);
+                  const shortest = Math.min(...cell.accept.map(a => a.trim().length));
+                  assert.ok(shortest <= 20, `${where}: a typed cell's answer must be 20 characters or fewer`);
+                } else {
+                  const options = cell.options ?? cols[ci].options;
+                  assert.ok(Array.isArray(options) && options.length >= 2,
+                    `${where}: a chosen cell needs options, on its column or on itself`);
+                  if (cell.options !== undefined) {
+                    assert.ok(new Set(cell.options).size === cell.options.length && cell.options.every(o => typeof o === 'string' && o.trim()),
+                      `${where}: the cell's options must be different, non-empty strings`);
+                  }
+                  assert.ok(options.includes(cell.answer), `${where}: answer "${cell.answer}" is not one of its options`);
+                }
+              }
+            }
+            if ('reorder' in q) assert.equal(typeof q.reorder, 'boolean', `${label}: reorder is true or false`);
+            const labels = q.rows.map((_, ri) => ruleTableRowLabel(q, ri));
+            assert.equal(new Set(labels).size, labels.length,
+              `${label}: two rows show the same text, so neither the student nor the feedback can tell them apart`);
+            if (q.before !== undefined) {
+              assert.ok(q.reorder === true, `${label}: "before" only means something with reorder: true`);
+              assert.ok(Array.isArray(q.before) && q.before.length > 0, `${label}: before is a list of [earlier, later] row pairs`);
+              const n = q.rows.length;
+              for (const pair of q.before) {
+                assert.ok(Array.isArray(pair) && pair.length === 2 && pair.every(i => Number.isInteger(i) && i >= 0 && i < n) && pair[0] !== pair[1],
+                  `${label}: before pair ${JSON.stringify(pair)} must name two different rows, counted from 0`);
+                assert.ok(pair[0] < pair[1], `${label}: before pair ${JSON.stringify(pair)}: rows are written in a right order, so the earlier comes first`);
+              }
+            }
+            graded += ruleTableOrderRules(q).length;
+            assert.ok(graded >= 2, `${label}: a rule_table needs at least 2 graded parts (cells to fill, or an order)`);
           } else if (type === 'code_write' && q.language === 'java' && isJavaClassProblem(q)) {
             // A Java class problem: graded by short scripts, because what a method does shows only in
             // what the object has become. Either one method of a class that is given (scaffold, and
@@ -1558,7 +1616,7 @@ describe('Arithmetic shown in questions is actually correct', () => {
 describe('Audit checks', () => {
   const index = loadJSON('question_sets/index.json');
   const MEETS_AUDIT_STANDARD = setId => /^java_(?!lab_)|^computing_concepts_(0[456789]|1[0-6])_|^techplus_|^securityx_/.test(setId);
-  const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'code_write', 'sql_write']);
+  const REPEAT_RESISTANT = new Set(['dynamic_numeric', 'code_trace', 'code_line', 'cloze', 'ordering', 'rule_table', 'code_write', 'sql_write']);
   const questionsOf = setId => loadJSON(`question_sets/${setId}`).filter(q => q.type !== 'npc_demo');
 
   it('no question points at code it does not show', () => {
@@ -1767,6 +1825,7 @@ describe('Pictures in questions (figure)', () => {
   /** The answers a question must not give away in its picture's alt text or caption. */
   function answersOf(q) {
     if (q.type === 'cloze') return (q.blanks || []).flatMap(b => b.accept || []);
+    if (q.type === 'rule_table') return ruleTableBlanks(q).flatMap(([r, c]) => { const cell = ruleTableCell(q, r, c); return cell.kind === 'typed' ? cell.accept : [cell.answer]; });
     if (q.type === 'fill_blank' || q.type === undefined || q.type === 'multiple_choice') return q.correct || [];
     return [];
   }

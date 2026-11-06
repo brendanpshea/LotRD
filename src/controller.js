@@ -964,6 +964,8 @@ export class GameController {
       this.ui.showEncounterOrdering();
     } else if (qtype === "cloze") {
       this.ui.showEncounterCloze();
+    } else if (qtype === "rule_table") {
+      this.ui.showEncounterRuleTable();
     } else if (qtype === "code_write") {
       this.ui.showEncounterCodeWrite();
     } else if (qtype === "sql_write") {
@@ -1108,6 +1110,11 @@ export class GameController {
   submitCloze(typedAnswers) {
     if (!this.model.current_question) return;
     this._evaluateWithMulligan(() => this.model.evaluateCloze(typedAnswers));
+  }
+
+  submitRuleTable(rows) {
+    if (!this.model.current_question) return;
+    this._evaluateWithMulligan(() => this.model.evaluateRuleTable(rows));
   }
 
   submitCodeWrite(bodyText) {

@@ -507,6 +507,76 @@
     "feedback": "With all 30 in one CVSS band, the severity score cannot separate them; it measures how bad a flaw would be, not how likely it is to be exploited here. EPSS estimates exploitation likelihood, the KEV catalog records flaws already exploited in the wild, and reachability asks whether the vulnerable code even runs in this deployment. Scanner order reflects nothing about risk."
   },
   {
+    "type": "rule_table",
+    "question": "Maven is laying out Cinderpost's pipeline gates. Each gate can run only once what it inspects exists: source exists from the first commit, the dependency list once the build resolves it, a running application once the build is deployed to staging, and the signed release image only at the end. Say what each gate inspects, then put the gates in an order the pipeline can actually run.",
+    "columns": [
+      {
+        "header": "Gate"
+      },
+      {
+        "header": "Inspects",
+        "options": [
+          "Source code",
+          "Third-party packages",
+          "Running application",
+          "Release artifact"
+        ]
+      }
+    ],
+    "rows": [
+      [
+        "Secret scanning",
+        {
+          "answer": "Source code"
+        }
+      ],
+      [
+        "SAST",
+        {
+          "answer": "Source code"
+        }
+      ],
+      [
+        "SCA",
+        {
+          "answer": "Third-party packages"
+        }
+      ],
+      [
+        "DAST",
+        {
+          "answer": "Running application"
+        }
+      ],
+      [
+        "Signature verification at deploy",
+        {
+          "answer": "Release artifact"
+        }
+      ]
+    ],
+    "reorder": true,
+    "before": [
+      [
+        0,
+        3
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "feedback": "Static gates read what is written: secret scanning and SAST read the source, and SCA reads the dependency list (the SBOM) for known-vulnerable components. They can run in any order among themselves, as early as possible. DAST attacks a running application, so it must wait for the deploy to staging. Signature verification checks the signed artifact as production pulls it, so it comes last."
+  },
+  {
     "type": "npc_demo",
     "question": "NPC: What is inside it, and who built it",
     "npc": "flint",

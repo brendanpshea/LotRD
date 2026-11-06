@@ -1274,5 +1274,63 @@
       "An API gateway signing thousands of tokens a second: RSA-2048"
     ],
     "feedback": "RSA suits sign rarely, verify often: a monthly firmware signature checked on millions of devices spends nearly all its cost on verification, where RSA is faster. Elliptic curves suit servers that sign constantly, so the token gateway should use Ed25519. The mirrored pairings put each workload on the algorithm that is slow at the operation it repeats. Both choices are classical and quantum-vulnerable, so each also needs a path to ML-DSA."
+  },
+  {
+    "type": "rule_table",
+    "question": "Iolen is hardening Highrook's customer API endpoint. Requirements: some partners' clients still need TLS 1.2, but nothing older is allowed; a stolen server key must not decrypt recorded past sessions; only authenticated encryption is allowed; and clients must get fresh revocation status without contacting the CA themselves. Choose each setting.",
+    "columns": [
+      {
+        "header": "Setting"
+      },
+      {
+        "header": "Value"
+      }
+    ],
+    "rows": [
+      [
+        "Protocol versions",
+        {
+          "answer": "TLS 1.2 and 1.3 only",
+          "options": [
+            "TLS 1.0 and later",
+            "TLS 1.2 and 1.3 only",
+            "TLS 1.3 only"
+          ]
+        }
+      ],
+      [
+        "Key exchange",
+        {
+          "answer": "ECDHE",
+          "options": [
+            "Static RSA",
+            "ECDHE"
+          ]
+        }
+      ],
+      [
+        "Bulk cipher",
+        {
+          "answer": "AES-256-GCM",
+          "options": [
+            "AES-256-CBC with HMAC-SHA1",
+            "AES-256-GCM",
+            "3DES-CBC"
+          ]
+        }
+      ],
+      [
+        "Revocation status",
+        {
+          "answer": "OCSP stapling",
+          "options": [
+            "None",
+            "CRL download by clients",
+            "OCSP stapling"
+          ]
+        }
+      ]
+    ],
+    "feedback": "TLS 1.3 alone would lock out the partners who still need 1.2, and anything older than 1.2 is not allowed, so 1.2 and 1.3 only. ECDHE makes a fresh key for every session, which gives forward secrecy; with static RSA, a stolen server key decrypts every recorded session. AES-GCM is an AEAD cipher; CBC with a separate HMAC is not, and 3DES is obsolete. OCSP stapling has the server attach a recent, CA-signed status to the handshake, so clients neither download CRLs nor ask the CA."
   }
 ]

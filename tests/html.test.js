@@ -26,7 +26,7 @@ describe('HTML template integrity', () => {
     const expected = [
       'tpl-main-menu', 'tpl-initial', 'tpl-encounter',
       'tpl-encounter-fill-blank', 'tpl-encounter-code-line', 'tpl-encounter-code-trace',
-      'tpl-encounter-matching', 'tpl-encounter-ordering', 'tpl-encounter-cloze',
+      'tpl-encounter-matching', 'tpl-encounter-ordering', 'tpl-encounter-cloze', 'tpl-encounter-rule-table',
       'tpl-encounter-code-write',
       'tpl-npc-scene', 'tpl-encounter-chrome',
       'tpl-results', 'tpl-levelup', 'tpl-victory',

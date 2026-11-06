@@ -2,6 +2,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { rollDice, Player, Monster, GameModel, BOSS_IMAGE,
+         ruleTableCell, ruleTableBlanks, ruleTableOrderRules, ruleTableRowLabel, RULE_TABLE_HIT_BUDGET,
          levenshtein, levenshteinSimilarity, wordleFeedback,
          tokenize, tokenSimilarity, tokenWordleFeedback,
          CL_MAX_ATTEMPTS, pickClozeBlank, parseClozeSegments,
@@ -2560,5 +2561,123 @@ describe('a level-up reports each gain as before and after', () => {
     const turn = gm._finalizeTurn({ xpGained: 10, requeue: false, historyEntry: {}, isPerfect: true });
     assert.equal(turn.levelsGained, 0);
     assert.equal(turn.levelUpRewards, null);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Rule tables
+// ────────────────────────────────────────────────────────────────────────────────
+describe('rule tables (type "rule_table")', () => {
+  // An ACL: the guest deny must precede the broad allow, and every rule the
+  // closing deny-all; the two allows may come in either order.
+  const ACL = () => ({
+    type: 'rule_table',
+    question: 'Complete the ACL.',
+    columns: [{ header: 'Source' }, { header: 'Port' }, { header: 'Action', options: ['Allow', 'Deny'] }],
+    rows: [
+      ['Guest Wi-Fi', 'Any', { answer: 'Deny' }],
+      ['Admin subnet', '22', { answer: 'Allow' }],
+      ['Any', '443', { answer: 'Allow' }],
+      ['Any', 'Any', { answer: 'Deny' }],
+    ],
+    reorder: true,
+    before: [[0, 1], [0, 2], [1, 3], [2, 3]],
+    feedback: 'Specific before general; deny-all last.',
+  });
+  const KEY = { 0: 'Deny', 1: 'Allow', 2: 'Allow', 3: 'Deny' };
+  const answer = (order, override = {}) =>
+    order.map(row => ({ row, values: [null, null, override[row] ?? KEY[row]] }));
+  const started = q => {
+    const gm = new GameModel([q], SAMPLE_MONSTERS, null, null, { sequential: true });
+    gm.nextEncounter();
+    gm.current_monster.hit_points = 999;
+    return gm;
+  };
+
+  it('reads its cells: shown text, a choice from the column, something typed', () => {
+    const q = { rows: [['a', { answer: 'X' }, { accept: ['10.0.0.0/8'] }]], columns: [{}, { options: ['X', 'Y'] }, {}] };
+    assert.deepEqual(ruleTableCell(q, 0, 0), { kind: 'fixed', text: 'a' });
+    assert.deepEqual(ruleTableCell(q, 0, 1), { kind: 'choice', options: ['X', 'Y'], answer: 'X' });
+    assert.deepEqual(ruleTableCell(q, 0, 2), { kind: 'typed', accept: ['10.0.0.0/8'], caseSensitive: false });
+    assert.deepEqual(ruleTableBlanks(q), [[0, 1], [0, 2]]);
+  });
+
+  it('a cell may carry options of its own, as a settings form needs', () => {
+    const q = { columns: [{}, { options: ['A', 'B'] }], rows: [['Protocol', { answer: 'TLS 1.3', options: ['TLS 1.0', 'TLS 1.3'] }]] };
+    assert.deepEqual(ruleTableCell(q, 0, 1).options, ['TLS 1.0', 'TLS 1.3']);
+  });
+
+  it('names a row by what it shows', () => {
+    assert.equal(ruleTableRowLabel(ACL(), 1), 'Admin subnet · 22');
+    assert.equal(ruleTableRowLabel({ rows: [[{ answer: 'x' }]] }, 0), 'Row 1');
+  });
+
+  it('with no "before" pairs, the authored order is the order', () => {
+    const q = { ...ACL(), before: undefined };
+    assert.deepEqual(ruleTableOrderRules(q), [[0, 1], [1, 2], [2, 3]]);
+    assert.deepEqual(ruleTableOrderRules({ ...ACL(), reorder: false }), []);
+  });
+
+  it('every cell right, in the authored order, is perfect and does not requeue', () => {
+    const gm = started(ACL());
+    const res = gm.evaluateRuleTable(answer([0, 1, 2, 3]));
+    assert.equal(res.question_repeated, false);
+    assert.equal(res.incorrectSelections.length, 0);
+    assert.equal(res.correctSelections.length, 4 + 4, 'four cells and four order rules');
+    assert.equal(res.perItemScoring, true);
+    assert.equal(gm.answer_history[0].was_perfect, true);
+  });
+
+  it('any order the "before" pairs allow is right: the two allows may swap', () => {
+    const gm = started(ACL());
+    assert.equal(gm.evaluateRuleTable(answer([0, 2, 1, 3])).question_repeated, false);
+  });
+
+  it('a broken order rule is a wrong part, and names both rows', () => {
+    const gm = started(ACL());
+    const res = gm.evaluateRuleTable(answer([1, 0, 2, 3]));
+    assert.equal(res.question_repeated, true);
+    assert.deepEqual(res.incorrectSelections, ['Order: "Guest Wi-Fi · Any" must come before "Admin subnet · 22"']);
+  });
+
+  it('a wrong cell says what was chosen and what was right, and draws a counterattack', () => {
+    const gm = started(ACL());
+    const hp = gm.player.hit_points;
+    const res = gm.evaluateRuleTable(answer([0, 1, 2, 3], { 3: 'Allow' }));
+    assert.equal(res.question_repeated, true);
+    assert.deepEqual(res.incorrectSelections, ['Any · Any — Action: chose "Allow" — correct: "Deny"']);
+    assert.ok(gm.player.hit_points < hp, 'seven parts of eight right still costs a blow');
+    assert.equal(gm.player.total_correct, 7);
+    assert.equal(gm.player.total_incorrect, 1);
+  });
+
+  it('typed cells ignore case and spacing, but forgive no typo: one digit is another address', () => {
+    const q = {
+      type: 'rule_table', question: 'Address the hosts.',
+      columns: [{ header: 'Host' }, { header: 'Subnet' }],
+      rows: [['Web', { accept: ['10.0.5.0/24'] }], ['DB', { accept: ['VLAN 30'] }]],
+    };
+    assert.equal(started(q).evaluateRuleTable([{ row: 0, values: [null, ' 10.0.5.0/24 '] }, { row: 1, values: [null, 'vlan   30'] }]).question_repeated, false);
+    const res = started(q).evaluateRuleTable([{ row: 0, values: [null, '10.0.6.0/24'] }, { row: 1, values: [null, 'VLAN 30'] }]);
+    assert.deepEqual(res.incorrectSelections, ['Web — Subnet: wrote "10.0.6.0/24" — correct: "10.0.5.0/24"']);
+  });
+
+  it('records the table as it should be and as given, a row to a line', () => {
+    const gm = started(ACL());
+    gm.evaluateRuleTable(answer([0, 1, 2, 3], { 0: 'Allow' }));
+    const h = gm.answer_history[0];
+    assert.equal(h.correct_answers[0], '1. Guest Wi-Fi | Any | Deny');
+    assert.equal(h.selected[0], '1. Guest Wi-Fi | Any | Allow');
+    assert.equal(h.was_perfect, false);
+  });
+
+  it('a missed table comes back in the retrieval boss', () => {
+    const gm = started(ACL());
+    gm.evaluateRuleTable(answer([3, 2, 1, 0]));
+    assert.equal(gm._buildBossQueue().length, 1);
+  });
+
+  it('is worth a fixed budget of dice, however many cells it has', () => {
+    assert.equal(RULE_TABLE_HIT_BUDGET, 4);
   });
 });

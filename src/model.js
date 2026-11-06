@@ -65,6 +65,71 @@ export function codeWriteKind(question) {
  */
 export const CODE_WRITE_HIT_BUDGET = 4;
 
+// ─── Rule tables (type "rule_table") ─────────────────────────────────────────
+// A table the student completes: a firewall's rules, a RACI chart, a settings
+// form. Each cell is text that is shown, a dropdown ({ answer }, with the
+// column's or its own `options`), or something typed ({ accept }). With
+// `reorder`, the rows start shuffled and their order is graded too, by `before`
+// pairs ([earlier, later], as authored row numbers counted from 0), or, with no
+// pairs given, by the authored order itself.
+
+/**
+ * How many attack dice a rule table is worth in total, split by the share of
+ * its parts that were right — as for write-the-code, so a table of twelve cells
+ * does not hit three times as hard as one of four.
+ */
+export const RULE_TABLE_HIT_BUDGET = 4;
+
+/** What cell [row][col] of a rule table is: shown text, a choice, or something typed. */
+export function ruleTableCell(question, row, col) {
+    const cell = question?.rows?.[row]?.[col];
+    if (cell === null || typeof cell !== "object") return { kind: "fixed", text: String(cell ?? "") };
+    if (Array.isArray(cell.accept)) {
+        return { kind: "typed", accept: cell.accept, caseSensitive: cell.case_sensitive === true };
+    }
+    const options = cell.options || question.columns?.[col]?.options || [];
+    return { kind: "choice", options, answer: cell.answer };
+}
+
+/** Every editable cell, as [row, col], in reading order. */
+export function ruleTableBlanks(question) {
+    const out = [];
+    (question?.rows || []).forEach((cells, r) => cells.forEach((_, c) => {
+        if (ruleTableCell(question, r, c).kind !== "fixed") out.push([r, c]);
+    }));
+    return out;
+}
+
+/** The order the rows must keep, as [earlier, later] pairs of authored row numbers. */
+export function ruleTableOrderRules(question) {
+    if (!question?.reorder) return [];
+    if (Array.isArray(question.before) && question.before.length) return question.before;
+    const n = (question.rows || []).length;
+    return Array.from({ length: Math.max(0, n - 1) }, (_, i) => [i, i + 1]);
+}
+
+/** A row's name in feedback: what it shows, or its number if it shows nothing. */
+export function ruleTableRowLabel(question, row) {
+    const shown = (question?.rows?.[row] || [])
+        .map((_, c) => ruleTableCell(question, row, c))
+        .filter(cell => cell.kind === "fixed" && cell.text.trim())
+        .map(cell => cell.text.trim());
+    return shown.length ? shown.join(" · ") : `Row ${row + 1}`;
+}
+
+/** Whether a typed or chosen value is the cell's answer: exact, ignoring spaces and (unless asked) case. */
+export function ruleTableCellRight(cell, value) {
+    const norm = s => {
+        const t = String(s ?? "").trim().replace(/\s+/g, " ");
+        return cell.caseSensitive ? t : t.toLowerCase();
+    };
+    const given = norm(value);
+    if (!given) return false;
+    if (cell.kind === "choice") return given === norm(cell.answer);
+    if (cell.kind === "typed") return cell.accept.some(a => norm(a) === given);
+    return true;
+}
+
 /** The full worked answer for a code_write question: its signature plus body. */
 export function codeWriteSolutionText(question) {
     const body = String(question?.solution ?? "").replace(/\r\n?/g, "\n");
@@ -2626,6 +2691,100 @@ export class GameModel {
             historyEntry: this._buildHistoryEntry({
                 correctAnswers: items.map((it, i) => `${i + 1}. ${it}`),
                 selected: chosen.map((it, i) => `${i + 1}. ${it}`),
+                correctSelections,
+                incorrectSelections,
+                missedCorrect: [],
+                isPerfect,
+            }),
+        });
+
+        return {
+            ...turn,
+            correctSelections,
+            incorrectSelections,
+            missedCorrect: [],
+            perItemScoring: true,
+            feedback: q.feedback || null,
+        };
+    }
+
+    /**
+     * Evaluate a rule table. `rows` is the student's table, top to bottom:
+     * [{ row: authored row number, values: [what is in each cell, by column] }]
+     * (values for shown cells are ignored). Each editable cell is one part, and
+     * with `reorder` so is each order rule. Hits are scaled to
+     * RULE_TABLE_HIT_BUDGET; the question re-queues unless every part is right.
+     */
+    evaluateRuleTable(rows) {
+        if (!this.current_question) return null;
+        const q = this.current_question;
+        const n = (q.rows || []).length;
+        const given = Array.isArray(rows) && rows.length === n ? rows : (q.rows || []).map((_, row) => ({ row, values: [] }));
+        const valueAt = new Map(given.map(entry => [entry.row, entry.values || []]));
+        const header = c => q.columns?.[c]?.header || `Column ${c + 1}`;
+
+        const correctSelections   = [];
+        const incorrectSelections = [];
+        let right = 0;
+        let parts = 0;
+
+        for (const [r, c] of ruleTableBlanks(q)) {
+            const cell = ruleTableCell(q, r, c);
+            const value = valueAt.get(r)?.[c];
+            const label = `${ruleTableRowLabel(q, r)} — ${header(c)}`;
+            parts++;
+            if (ruleTableCellRight(cell, value)) {
+                right++;
+                correctSelections.push(`${label}: ${value}`);
+            } else {
+                const want = cell.kind === "choice" ? cell.answer : cell.accept[0];
+                const verb = cell.kind === "choice" ? "chose" : "wrote";
+                incorrectSelections.push(`${label}: ${verb} "${String(value ?? "").trim() || "(nothing)"}" — correct: "${want}"`);
+            }
+        }
+
+        const position = new Map(given.map((entry, i) => [entry.row, i]));
+        for (const [before, after] of ruleTableOrderRules(q)) {
+            const a = ruleTableRowLabel(q, before);
+            const b = ruleTableRowLabel(q, after);
+            parts++;
+            if (position.get(before) < position.get(after)) {
+                right++;
+                correctSelections.push(`Order: "${a}" comes before "${b}"`);
+            } else {
+                incorrectSelections.push(`Order: "${a}" must come before "${b}"`);
+            }
+        }
+
+        const wrong = parts - right;
+        const isPerfect = parts > 0 && wrong === 0;
+        this.player.total_correct   += right;
+        this.player.total_incorrect += wrong;
+
+        const accuracy = parts > 0 ? right / parts : 0;
+        // Anything wrong always draws a counterattack, however small a share of the table it is.
+        const playerHits = isPerfect
+            ? RULE_TABLE_HIT_BUDGET
+            : Math.min(RULE_TABLE_HIT_BUDGET - 1, Math.round(RULE_TABLE_HIT_BUDGET * accuracy));
+
+        // The table as it should be, and as given, a row to a line.
+        const rowText = (r, values) => q.rows[r].map((_, c) => {
+            const cell = ruleTableCell(q, r, c);
+            if (cell.kind === "fixed") return cell.text;
+            if (!values) return cell.kind === "choice" ? cell.answer : cell.accept[0];
+            return String(values[c] ?? "").trim() || "(nothing)";
+        }).join(" | ");
+
+        const turn = this._resolveDamage({
+            playerHits,
+            monsterHits: RULE_TABLE_HIT_BUDGET - playerHits,
+            isPerfect,
+            partialFraction: accuracy,
+            xpGained: 15,
+            requeue: !isPerfect,
+            historyEntry: this._buildHistoryEntry({
+                correctAnswers: q.rows.map((_, r) => `${r + 1}. ${rowText(r, null)}`),
+                selected: given.map((entry, i) => `${i + 1}. ${rowText(entry.row, entry.values || [])}`),
                 correctSelections,
                 incorrectSelections,
                 missedCorrect: [],
