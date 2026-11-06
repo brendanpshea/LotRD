@@ -38,6 +38,7 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Global stats** — `lotrd_global` accumulates lifetime totals across all sets
 - **Session review** — question-by-question pass/fail breakdown with export to `.txt`
 - **Direct-link support** — instructors can share `?set=filename.json` URLs
+- **Installable as an app** — the website is a progressive web app: Chrome and Edge offer *Install* in the address bar (or the menu on Android), and Safari on iOS adds it with *Share → Add to Home Screen*. Installed, it opens in its own window with the Recursive Dragon as its icon, and works offline for every set already played once online. See [Installing as an app](#installing-as-an-app)
 - **Battle stage** — your hero (chosen on the main menu, from six) faces the monster, each over its own HP bar. The fight plays out instead of being described: the hero lunges and the monster reels, the monster counters, a defeated monster flashes and vanishes, a knocked-out hero falls (and gets back up on a revive), and items show their effect — a heal glows, an armed Firewall Shard is a bubble that bursts when it blocks, a Stack Mirror sends the blow back, a Logic Bomb is thrown. A click or keypress skips to the results; nothing moves under reduced motion. An answer right the first time gets no results screen: a short note over the fight says what it did, and the next question follows by itself (a click or key moves on sooner). Anything with a mistake in it, and every write-the-code answer, still gets the full screen with its explanation. Sprites are three-pose strips (stand, attack, recoil) in `images/sprites/`, cut from generated sheets — see [Sprites](#sprites)
 - **Checkpoints** — dying in a full run sends you back to the last checkpoint, not the start: every teaching scene, and every 12 questions where there is none. HP is restored and the questions since the checkpoint are asked again; level, XP, items, and the record of what you missed are kept. In the retrieval boss, the fight starts over. Rank trials and reviews have no checkpoints — a death still ends them
 - **Encounter screen** — kept short above the question, which D2L's embedded view used to push off the bottom: the set's name and the streak share a line, a monster's flavour text shows on hover over its name (or a tap on the name unfolds it), the item slots sit side by side, and the journey bar is the foot of the same card. A short window (720px or less) also gets a smaller stage and less frame. The retrieval boss keeps its line always visible, since there it reports concepts remaining rather than flavour
@@ -298,8 +299,12 @@ Final failure on fill-blank, dynamic numeric, code-trace, and code-line keeps pa
 ```
 index.html          — All HTML templates (SPA; templates are <template> elements)
 styles.css          — BBS-style dark-green terminal theme
+manifest.webmanifest — The web app manifest: name, colours and icons when installed as an app
+sw.js               — The service worker: network first, so the game opens offline (see Installing as an app)
+icons/              — The app icons, drawn from the Recursive Dragon's sprite by tools/pwa_icons.py
 src/
-  main.js           — Entry point; instantiates GameController
+  main.js           — Entry point; instantiates GameController and registers the service worker
+  pwa.js            — Registers sw.js on the website only: never in an LMS package or a frame
   app.js            — Barrel module that re-exports the main runtime classes
   controller.js     — GameController; game flow, persistence, item drops, review-set launch
   ui.js             — GameUI; all screen rendering, keyboard handling, encounter/results screens
@@ -467,9 +472,23 @@ A monster without a `"sprite"` still works: the stage shows its old picture, fra
 
 ---
 
+## Installing as an App
+
+The website is a progressive web app. `index.html` links `manifest.webmanifest` (the name, the dark theme, and the icons in `icons/`), and `src/pwa.js` registers the service worker, `sw.js`.
+
+- **What it caches.** On install it keeps what the game needs to open: the page, every module in `src/`, the catalog and the menu's data (the `PRECACHE` list in `sw.js`). A set, its pictures and its sprites are kept the first time they load, so a set played once online can be played offline. Narration clips are not cached.
+- **Network first, always.** Online, every request goes to the server exactly as it would without the worker, and the answer is kept for later; the kept copy is used only when the network is not there. So a deploy reaches students at once, as before, and nothing needs bumping. Changing `CACHE` in `sw.js` only makes browsers drop what an older version kept.
+- **Progress is not in it.** Progress stays in `localStorage`, which the worker never touches. Installing does not move or copy it: on Android and desktop the installed app shares it with the browser, but on iOS an app added to the home screen starts with storage of its own, separate from Safari's.
+- **Not in LMS packages.** A package's files are the LMS's to serve and replace, so `SCORM/build.py` removes the `<!-- pwa: … <!-- /pwa -->` block from its `index.html`, and `src/pwa.js` registers nothing on a page that carries the SCORM shim or sits in a frame. The browser tests load the shim, so no worker runs in them either.
+- **The icons** are drawn by `python tools/pwa_icons.py` from the standing pose of `images/sprites/quantum_dragon.webp`; run it again only if that sprite changes.
+
+`tests/pwa.test.js` checks the manifest and its icons, that every file `sw.js` precaches exists and every module of the game is among them, how `sw.js` answers online, offline and on an update (against a stand-in cache), and that `src/pwa.js` registers only on the website.
+
+---
+
 ## Releasing Updated Content
 
-- Question-set JSON files are fetched with `cache: "no-store"`, so browsers should re-request fresh content instead of reusing a stale cached copy.
+- Question-set JSON files are fetched with `cache: "no-store"`, so browsers should re-request fresh content instead of reusing a stale cached copy. The service worker is network first, so it never stands in their way (see [Installing as an App](#installing-as-an-app)).
 - In-progress runs are restored from `localStorage`. If you change question content and want existing browsers to discard old in-progress snapshots, bump `SAVE_DATA_VERSION` in [src/controller.js](src/controller.js).
 - Global progress and completed-set records are preserved; only `lotrd_save_*` keys are invalidated by a save-data version bump.
 
@@ -533,6 +552,7 @@ activity there — is written down as a test as well, so that it stays the only 
 | `data.test.js` | All JSON files — required fields, type constraints, dynamic-question schema, image files exist, catalog/index consistency, question-count and duplicate-text checks |
 | `html.test.js` | HTML/template cross-checks — template IDs, data-ref/data-action usage, stale code checks, accessibility, CSS classes |
 | `util.test.js` | Shuffle and the spaced-review interval schedule |
+| `pwa.test.js` | Installing as an app — the manifest and icons, the service worker's precache list and how it answers online and offline, and that it is registered only on the website, never in an LMS package |
 | `pytiny.test.js` | The Python subset used by write-the-code questions — parsing, evaluation, the runaway-program limits, and the wording of every student-facing error |
 | `jtiny.test.js` | The Java subset used by Java write-the-code questions — the results table, error wording and line numbers, pasted methods and classes, and the runaway-program limits |
 | `jtiny-differential.test.js` | The same Java against `javac` and the JVM: hand-written cases, programs that must not compile, and generated arithmetic, method bodies and type puzzles. Skipped, loudly, without a JDK 25 (`LOTRD_JAVA` names one); CI requires it |

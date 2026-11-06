@@ -30,7 +30,8 @@ The build:
 - Copies only the pictures (figures/) those sets use, each with its credit file.
 - Copies only the narration clips (narration/) those sets' scenes speak.
 - Patches index.html: title, intro copy, and a <script> tag for the SCORM
-  shim.
+  shim; and removes the block that makes the website installable as an app
+  (a package's files are the LMS's to serve, so it registers no service worker).
 - Generates imsmanifest.xml from the template.
 - Zips it all.
 """
@@ -58,6 +59,8 @@ DIST = ROOT / "dist"
 # Kept in step with index.html by tests/html.test.js.
 MAIN_SCRIPT_TAG = '<script type="module" src="src/main.js"></script>'
 SHIM_SCRIPT_TAG = '<script src="scorm-shim.js"></script>'
+# The <head> block that links the web app manifest and the icons (see sw.js).
+PWA_BLOCK = re.compile(r"[ \t]*<!-- pwa:.*?<!-- /pwa -->\n?", re.DOTALL)
 
 GAME_DIRS = ["src", "assets", "images"]
 GAME_FILES = ["index.html", "styles.css"]
@@ -385,6 +388,14 @@ def patch_index_html(build_dir: Path, config: dict) -> None:
             rf"\g<1>{intro}\g<2>",
             html, count=1, flags=re.DOTALL,
         )
+
+    # The website is installable as an app; a package is not. Without the manifest
+    # link, src/pwa.js registers no service worker, and nothing asks for the
+    # manifest or icons, which a package does not carry.
+    html, found = PWA_BLOCK.subn("", html)
+    if found != 1:
+        raise SystemExit("index.html should hold exactly one <!-- pwa: ... <!-- /pwa --> block "
+                         f"for build.py to remove; it holds {found}.")
 
     # Inject the SCORM shim before the main module script. BEFORE matters: the
     # shim restores the student's progress from the LMS while it is evaluated,
