@@ -1857,6 +1857,8 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
           if (QUOTED.test(text)) bad.push(`${setId}[${i}] ${part}: speech in quotation marks: ${text.slice(0, 60)}`);
           if (TAGGED.test(text)) bad.push(`${setId}[${i}] ${part}: a dialogue tag: ${text.slice(0, 60)}`);
           if (DESCRIBED.test(text)) bad.push(`${setId}[${i}] ${part}: describes the mentor instead of letting them speak: ${text.slice(0, 60)}`);
+          // "This scene covers X, Y and Z" reads out a table of contents; a teacher just starts.
+          if (/\b(?:this|the|next) (?:scene|demonstration)\b/i.test(text)) bad.push(`${setId}[${i}] ${part}: talks about "this scene" instead of getting on with it: ${text.slice(0, 60)}`);
         }
       });
     }
