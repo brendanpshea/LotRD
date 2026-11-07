@@ -52,13 +52,13 @@
             "say": "**CVE**, Common Vulnerabilities and Exposures, gives each publicly disclosed flaw a unique ID."
           },
           {
-            "say": "So every scanner, advisory and patch note calls Heartbleed `CVE-2014-0160`."
+            "say": "So every scanner, advisory and patch note calls the Heartbleed flaw `CVE-2014-0160`."
           },
           {
             "say": "A CVE ID names a flaw; it does not grade it. A separate score, **CVSS**, rates severity from 0 to 10."
           }
         ],
-        "say": "**CVE**, Common Vulnerabilities and Exposures, gives each publicly disclosed flaw a unique ID. So every scanner, advisory and patch note calls Heartbleed `CVE-2014-0160`. A CVE ID names a flaw; it does not grade it. A separate score, **CVSS**, rates severity from 0 to 10."
+        "say": "**CVE**, Common Vulnerabilities and Exposures, gives each publicly disclosed flaw a unique ID. So every scanner, advisory and patch note calls the Heartbleed flaw `CVE-2014-0160`. A CVE ID names a flaw; it does not grade it. A separate score, **CVSS**, rates severity from 0 to 10."
       },
       {
         "beats": [
@@ -243,23 +243,17 @@
       {
         "beats": [
           {
-            "say": "Data **in transit** is crossing a network; TLS, IPsec and SSH encrypt it."
+            "say": "Data **in transit** is crossing a network. TLS, IPsec and SSH are protocols that encrypt it."
           },
           {
-            "say": "Data **at rest** sits on storage; full-disk encryption protects it."
+            "say": "Data **at rest** sits on storage. Full-disk encryption, such as BitLocker, protects it."
           },
           {
-            "say": "Data **in use** is in memory, being processed as plaintext."
-          },
-          {
-            "say": "A **trusted execution environment**, a protected enclave in the CPU, hides even that: **confidential computing**."
-          },
-          {
-            "code": "in transit\n  crossing a network\n  TLS, IPsec, SSH\nat rest\n  on storage: disk\n  (BitLocker), database,\n  backup\nin use\n  in memory, plaintext\n  hidden by an enclave",
-            "language": "three states of data"
+            "code": "in transit\n  crossing a network\n  TLS, IPsec, SSH\nat rest\n  on storage: disk\n  (BitLocker), database,\n  backup",
+            "language": "two of the three states"
           }
         ],
-        "say": "Data **in transit** is crossing a network; TLS, IPsec and SSH encrypt it. Data **at rest** sits on storage; full-disk encryption protects it. Data **in use** is in memory, being processed as plaintext. A **trusted execution environment**, a protected enclave in the CPU, hides even that: **confidential computing**.",
+        "say": "Data **in transit** is crossing a network. TLS, IPsec and SSH are protocols that encrypt it. Data **at rest** sits on storage. Full-disk encryption, such as BitLocker, protects it.",
         "check": {
           "prompt": "A backup tape rides in a courier's van to the off-site vault. Which kind of encryption protects the data on it?",
           "answer": "At-rest encryption of the tape: it is stored data, even on the move",
@@ -269,6 +263,41 @@
           ],
           "why": "In transit means crossing a network. A tape in a van is storage that happens to be moving, so it is protected only if the tape itself is encrypted at rest, which is exactly what matters if the van is stolen."
         }
+      },
+      {
+        "beats": [
+          {
+            "say": "Data **in use** is in memory, being processed as readable plaintext."
+          },
+          {
+            "say": "A **trusted execution environment** is a sealed area inside the CPU that other software cannot look into."
+          },
+          {
+            "say": "Using one to protect data in use is **confidential computing**."
+          },
+          {
+            "code": "in use\n  in memory, plaintext\n  sealed CPU area",
+            "language": "the third state"
+          }
+        ],
+        "say": "Data **in use** is in memory, being processed as readable plaintext. A **trusted execution environment** is a sealed area inside the CPU that other software cannot look into. Using one to protect data in use is **confidential computing**."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **key pair** is two linked keys."
+          },
+          {
+            "say": "The **public key** can be shared with anyone; the **private key** stays secret."
+          },
+          {
+            "say": "What one key locks, only the other unlocks."
+          },
+          {
+            "say": "A signature made with the private key can be checked by anyone with the public key."
+          }
+        ],
+        "say": "A **key pair** is two linked keys. The **public key** can be shared with anyone; the **private key** stays secret. What one key locks, only the other unlocks. A signature made with the private key can be checked by anyone with the public key."
       },
       {
         "beats": [
@@ -322,37 +351,6 @@
           }
         ],
         "say": "Every browser and operating system ships a **trust store**: the root CAs, or **trust authorities**, it believes. A server's certificate is usually signed by an intermediate CA, and the intermediate by a root. The client checks each signature up the chain until it reaches a root in its store."
-      },
-      {
-        "beats": [
-          {
-            "say": "Notice that the root signs itself: it is trusted not because of who signed it, but because it is in the store."
-          },
-          {
-            "say": "A company can run its own **internal CA** and push that CA's root into every company device's store."
-          }
-        ],
-        "say": "Notice that the root signs itself: it is trusted not because of who signed it, but because it is in the store. A company can run its own **internal CA** and push that CA's root into every company device's store."
-      },
-      {
-        "beats": [
-          {
-            "say": "A **self-signed certificate** is signed by its own key, with no CA above it."
-          },
-          {
-            "say": "A new switch makes one for its web console at first boot, and browsers warn about it."
-          }
-        ],
-        "say": "A **self-signed certificate** is signed by its own key, with no CA above it. A new switch makes one for its web console at first boot, and browsers warn about it.",
-        "check": {
-          "prompt": "The session to that switch is still encrypted. So what is the warning actually about?",
-          "answer": "No authority the browser trusts vouches for who holds the key",
-          "wrong": [
-            "The traffic stays in cleartext until the user accepts the warning",
-            "The key in a self-signed certificate is too short for TLS"
-          ],
-          "why": "The encryption works just as it does with a CA-signed certificate. What is missing is a trusted third party's word that the key belongs to that switch, so an impersonator's certificate would look the same. Fine in a lab, or once the certificate is added to each client's trust store."
-        }
       }
     ],
     "outro": "Next, Silverkeep's customer records are protected three different ways. Fill in the state each protection covers."
@@ -413,6 +411,49 @@
       "Encrypt each file before upload, so it arrives as ciphertext"
     ],
     "feedback": "The requirement is about data in use: while the job runs, the records sit decrypted in memory, and a trusted execution environment keeps them hidden even from the host's administrators. Clinic-managed keys protect the volumes at rest, TLS protects the connections in transit, and encrypting files before upload protects them only until the job decrypts them to work on them."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: What happens when a certificate has no authority above it?",
+    "npc": "val",
+    "intro": "Every chain of certificates has to end somewhere, and the last link can't be signed by anyone above it. That is fine for the roots in a trust store, and a problem for the certificate a new switch makes for itself. Browsers treat the two very differently.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A root CA's certificate is signed by its own key."
+          },
+          {
+            "say": "It is trusted not because of who signed it, but because it sits in the trust store."
+          },
+          {
+            "say": "A company can run its own **internal CA** and push that CA's root into every company device's store."
+          }
+        ],
+        "say": "A root CA's certificate is signed by its own key. It is trusted not because of who signed it, but because it sits in the trust store. A company can run its own **internal CA** and push that CA's root into every company device's store."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **self-signed certificate** is signed by its own key, with no CA above it."
+          },
+          {
+            "say": "A new switch makes one for its web console at first boot, and browsers warn about it."
+          }
+        ],
+        "say": "A **self-signed certificate** is signed by its own key, with no CA above it. A new switch makes one for its web console at first boot, and browsers warn about it.",
+        "check": {
+          "prompt": "The session to that switch is still encrypted. So what is the warning actually about?",
+          "answer": "No authority the browser trusts vouches for who holds the key",
+          "wrong": [
+            "The traffic stays in cleartext until the user accepts the warning",
+            "The key in a self-signed certificate is too short for TLS"
+          ],
+          "why": "The encryption works just as it does with a CA-signed certificate. What is missing is a trusted third party's word that the key belongs to that switch, so an impersonator's certificate would look the same. Fine in a lab, or once the certificate is added to each client's trust store."
+        }
+      }
+    ],
+    "outro": "Next, Brom's internal wiki shows a warning in every staff browser. Pick the best way to remove it."
   },
   {
     "question": "Brom sets up an internal wiki with a self-signed certificate, and every staff browser shows a warning. Which action BEST removes the warning without weakening security?",
@@ -489,13 +530,13 @@
             "say": "Telnet on TCP 23 becomes **SSH** on TCP 22: the same remote command line, encrypted."
           },
           {
-            "say": "The server proves itself by its host key."
+            "say": "The server proves itself by its **host key**, a key pair that identifies that server."
           },
           {
             "say": "HTTP on TCP 80 becomes **HTTPS**, HTTP inside TLS, on TCP 443."
           }
         ],
-        "say": "Telnet on TCP 23 becomes **SSH** on TCP 22: the same remote command line, encrypted. The server proves itself by its host key. HTTP on TCP 80 becomes **HTTPS**, HTTP inside TLS, on TCP 443."
+        "say": "Telnet on TCP 23 becomes **SSH** on TCP 22: the same remote command line, encrypted. The server proves itself by its **host key**, a key pair that identifies that server. HTTP on TCP 80 becomes **HTTPS**, HTTP inside TLS, on TCP 443."
       },
       {
         "beats": [
@@ -844,13 +885,13 @@
             "say": "**SAML**, Security Assertion Markup Language, is the classic standard for web SSO."
           },
           {
-            "say": "The IdP hands the application a signed XML **assertion**: who the user is, and how and when they logged in."
+            "say": "The IdP hands the application a signed **assertion**, an XML message saying who the user is, and how and when they logged in."
           },
           {
             "say": "The app trusts it because it holds the IdP's certificate and checks the signature."
           }
         ],
-        "say": "**SAML**, Security Assertion Markup Language, is the classic standard for web SSO. The IdP hands the application a signed XML **assertion**: who the user is, and how and when they logged in. The app trusts it because it holds the IdP's certificate and checks the signature."
+        "say": "**SAML**, Security Assertion Markup Language, is the classic standard for web SSO. The IdP hands the application a signed **assertion**, an XML message saying who the user is, and how and when they logged in. The app trusts it because it holds the IdP's certificate and checks the signature."
       },
       {
         "beats": [
@@ -1363,7 +1404,7 @@
     "type": "npc_demo",
     "question": "NPC: Which rules must you follow, and how do you handle risk?",
     "npc": "val",
-    "intro": "Some security decisions are made before you arrive: a law sets how a clinic handles patient records, and a contract with the card industry sets how a shop handles payments. The rest are yours to make, and they all come down to what you do about each risk. We'll take the ones made for you first.",
+    "intro": "Some security decisions are made before you arrive: a law sets how a clinic handles patient records, and a contract with the card industry sets how a shop handles payments. Who enforces those rules, and where your own devices fit in, comes next. We'll start with the rules themselves.",
     "steps": [
       {
         "beats": [
@@ -1375,19 +1416,24 @@
           },
           {
             "say": "**HIPAA** protects patients' health information in the US."
+          }
+        ],
+        "say": "**Regulations** carry legal force. **GDPR** protects the personal data of people in the EU. **HIPAA** protects patients' health information in the US."
+      },
+      {
+        "beats": [
+          {
+            "say": "**PCI DSS**, the Payment Card Industry Data Security Standard, is the card industry's own rulebook, enforced by contract."
           },
           {
-            "say": "**PCI DSS** is the card industry's standard, enforced by contract."
-          },
-          {
-            "say": "**SOX** governs US public companies' financial reporting controls."
+            "say": "**SOX**, the Sarbanes-Oxley Act, governs US public companies' financial reporting controls."
           },
           {
             "code": "GDPR     EU personal data\nHIPAA    US health records\nPCI DSS  card data\nSOX      financial reports",
             "language": "what each protects"
           }
         ],
-        "say": "**Regulations** carry legal force. **GDPR** protects the personal data of people in the EU. **HIPAA** protects patients' health information in the US. **PCI DSS** is the card industry's standard, enforced by contract. **SOX** governs US public companies' financial reporting controls."
+        "say": "**PCI DSS**, the Payment Card Industry Data Security Standard, is the card industry's own rulebook, enforced by contract. **SOX**, the Sarbanes-Oxley Act, governs US public companies' financial reporting controls."
       },
       {
         "beats": [
@@ -1429,63 +1475,6 @@
             "Nothing, since the company does not own the phone"
           ],
           "why": "The signed BYOD policy gives the company the right to remove its own data, and the separate container makes that possible without touching anything personal. A full wipe would destroy the owner's data; wiping nothing would let company data walk out of the door."
-        }
-      },
-      {
-        "beats": [
-          {
-            "say": "A **framework** is a set of security practices, not a law."
-          },
-          {
-            "say": "The **NIST Cybersecurity Framework** sorts the work into six functions."
-          },
-          {
-            "code": "Govern\nIdentify\nProtect\nDetect\nRespond\nRecover",
-            "language": "NIST functions"
-          },
-          {
-            "say": "**ISO/IEC 27001** is a standard an organization can be certified against."
-          },
-          {
-            "say": "The **CIS Controls** are a prioritized list of safeguards."
-          },
-          {
-            "say": "Regulations say what to protect; frameworks help organize how."
-          }
-        ],
-        "say": "A **framework** is a set of security practices, not a law. The **NIST Cybersecurity Framework** sorts the work into six functions. **ISO/IEC 27001** is a standard an organization can be certified against. The **CIS Controls** are a prioritized list of safeguards. Regulations say what to protect; frameworks help organize how."
-      },
-      {
-        "beats": [
-          {
-            "say": "**Mitigation** lowers the likelihood or impact with a control."
-          },
-          {
-            "say": "**Avoidance** removes the risky activity altogether."
-          },
-          {
-            "say": "**Transference** shifts the financial impact elsewhere, often via **cyber insurance**."
-          },
-          {
-            "say": "**Acceptance** is knowingly living with a risk, signed off by its owner."
-          },
-          {
-            "say": "What is left after any of the four is **residual risk**."
-          },
-          {
-            "code": "mitigation\n  patch, MFA, backup\navoidance\n  retire the service\ntransference\n  insurance, contract\nacceptance\n  fixing costs more",
-            "language": "four choices for a risk"
-          }
-        ],
-        "say": "**Mitigation** lowers the likelihood or impact with a control. **Avoidance** removes the risky activity altogether. **Transference** shifts the financial impact elsewhere, often via **cyber insurance**. **Acceptance** is knowingly living with a risk, signed off by its owner. What is left after any of the four is **residual risk**.",
-        "check": {
-          "prompt": "Silverkeep insures its customer portal. If the portal is breached, what has the policy taken off Silverkeep's hands?",
-          "answer": "Part of the financial loss, not the blame or the duty to protect",
-          "wrong": [
-            "All of the risk, so the portal no longer needs its controls",
-            "The damage to its reputation, since the insurer answers the press"
-          ],
-          "why": "Insurance pays money. Customers and regulators still hold Silverkeep accountable, and insurers expect the controls to stay. Even the money is partial: the **deductible**, the part of each claim the insured pays first, stays with Silverkeep."
         }
       }
     ],
@@ -1531,6 +1520,83 @@
       }
     ],
     "feedback": "GDPR follows EU residents' personal data around the world; HIPAA covers US health information; PCI DSS is the card industry's contractual standard for cardholder data; and SOX holds US public companies to controls over their financial reporting. Many organizations face several at once."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do frameworks help, and what can you do about a risk?",
+    "npc": "val",
+    "intro": "Laws and contracts say what you must do, but not how to organize the work, and frameworks help with that. Once the risks are on the table, there are only four things you can do about each one.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A **framework** is a set of security practices, not a law."
+          },
+          {
+            "say": "The **NIST Cybersecurity Framework** sorts the work into six functions."
+          },
+          {
+            "code": "Govern\nIdentify\nProtect\nDetect\nRespond\nRecover",
+            "language": "NIST functions"
+          },
+          {
+            "say": "**ISO/IEC 27001** is a standard an organization can be certified against."
+          },
+          {
+            "say": "The **CIS Controls** are a prioritized list of safeguards."
+          },
+          {
+            "say": "Regulations say what to protect; frameworks help organize how."
+          }
+        ],
+        "say": "A **framework** is a set of security practices, not a law. The **NIST Cybersecurity Framework** sorts the work into six functions. **ISO/IEC 27001** is a standard an organization can be certified against. The **CIS Controls** are a prioritized list of safeguards. Regulations say what to protect; frameworks help organize how."
+      },
+      {
+        "beats": [
+          {
+            "say": "Once a risk is found, you have four ways to answer it."
+          },
+          {
+            "say": "**Mitigation** lowers the likelihood or impact with a control."
+          },
+          {
+            "say": "**Avoidance** removes the risky activity altogether."
+          },
+          {
+            "say": "**Transference** shifts the financial impact elsewhere, often via **cyber insurance**."
+          }
+        ],
+        "say": "Once a risk is found, you have four ways to answer it. **Mitigation** lowers the likelihood or impact with a control. **Avoidance** removes the risky activity altogether. **Transference** shifts the financial impact elsewhere, often via **cyber insurance**."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Acceptance** is knowingly living with a risk, signed off by its owner."
+          },
+          {
+            "say": "What is left after any of the four is **residual risk**."
+          },
+          {
+            "say": "Side by side, with an example of each:"
+          },
+          {
+            "code": "mitigation\n  patch, MFA, backup\navoidance\n  retire the service\ntransference\n  insurance, contract\nacceptance\n  fixing costs more",
+            "language": "four choices for a risk"
+          }
+        ],
+        "say": "**Acceptance** is knowingly living with a risk, signed off by its owner. What is left after any of the four is **residual risk**. Side by side, with an example of each:",
+        "check": {
+          "prompt": "Silverkeep insures its customer portal. If the portal is breached, what has the policy taken off Silverkeep's hands?",
+          "answer": "Part of the financial loss, not the blame or the duty to protect",
+          "wrong": [
+            "All of the risk, so the portal no longer needs its controls",
+            "The damage to its reputation, since the insurer answers the press"
+          ],
+          "why": "Insurance pays money. Customers and regulators still hold Silverkeep accountable, and insurers expect the controls to stay. Even the money is partial: the **deductible**, the part of each claim the insured pays first, stays with Silverkeep."
+        }
+      }
+    ],
+    "outro": "Next, a security lead needs one structure to organize the whole security program around. Pick the one that fits."
   },
   {
     "question": "Silverkeep's security lead wants one structure to organize the whole security program around, which can then be mapped to PCI DSS and GDPR. Which of these are frameworks that could fill that role?",
