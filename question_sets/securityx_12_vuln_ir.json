@@ -6,10 +6,12 @@
     "intro": "I'm Val, the Guild's Ward-Smith. Someone uploads a picture to your site, and your server ends up running a command hidden in the file's name. A stranger's data has been read as instructions, and requests get abused in several other ways too. Each has its own family and its own fix, so let's start with the one behind that upload.",
     "steps": [
       {
-        "say": "**Injection** happens when untrusted input reaches an interpreter, such as a SQL engine, a shell or an LDAP directory, and is read as part of the command. The shell sees the semicolon and runs a second command that nobody wrote into the program.",
         "beats": [
           {
-            "say": "**Injection** happens when untrusted input reaches an interpreter, such as a SQL engine, a shell or an LDAP directory, and is read as part of the command."
+            "say": "An **interpreter** is a program that runs text as commands, such as a SQL engine or a shell."
+          },
+          {
+            "say": "**Injection** is untrusted input that reaches an interpreter and is read as part of the command."
           },
           {
             "code": "# thumbnail service: builds a shell command from the upload's name\nos.system(\"convert \" + filename + \" thumb.png\")",
@@ -20,9 +22,10 @@
             "language": "typed as the filename"
           },
           {
-            "say": "The shell sees the semicolon and runs a second command that nobody wrote into the program."
+            "say": "The shell sees the semicolon and runs a second command nobody wrote."
           }
         ],
+        "say": "An **interpreter** is a program that runs text as commands, such as a SQL engine or a shell. **Injection** is untrusted input that reaches an interpreter and is read as part of the command. The shell sees the semicolon and runs a second command nobody wrote.",
         "check": {
           "prompt": "Which change removes the root cause, not just this one payload?",
           "answer": "Call the converter through an API that takes arguments and never starts a shell",
@@ -34,37 +37,65 @@
         }
       },
       {
-        "say": "That is the rule for every interpreter: keep data separate from code. For SQL, use a **parameterized query** (a prepared statement): the query travels with a `?` placeholder, and the value is bound separately. Add **input validation** with an allow-list: accept only what you expect, such as a filename of letters, digits and `.png`. Validation narrows the input; separation is what stops it running. The browser is an interpreter too. **Cross-site scripting (XSS)** echoes input into a page unencoded, so the attacker's script runs in the victim's session. Stored XSS sits in the database, like a forum post; reflected XSS arrives in a link. The fix is **output encoding**: convert special characters to HTML entities as each value is written into the page, so `<` becomes `&lt;` and a script tag arrives as plain text.",
         "beats": [
           {
-            "say": "That is the rule for every interpreter: keep data separate from code. For SQL, use a **parameterized query** (a prepared statement): the query travels with a `?` placeholder, and the value is bound separately."
+            "say": "The rule for every interpreter: keep data separate from code."
+          },
+          {
+            "say": "For SQL, a **parameterized query** sends the query with a `?` placeholder and binds the value separately."
           },
           {
             "code": "cur.execute(\"SELECT * FROM users WHERE name = ?\", (name,))",
             "language": "python"
           },
           {
-            "say": "Add **input validation** with an allow-list: accept only what you expect, such as a filename of letters, digits and `.png`. Validation narrows the input; separation is what stops it running."
+            "say": "**Input validation** accepts only what you expect, such as letters, digits and `.png`."
           },
           {
-            "say": "The browser is an interpreter too. **Cross-site scripting (XSS)** echoes input into a page unencoded, so the attacker's script runs in the victim's session. Stored XSS sits in the database, like a forum post; reflected XSS arrives in a link."
-          },
-          {
-            "say": "The fix is **output encoding**: convert special characters to HTML entities as each value is written into the page, so `<` becomes `&lt;` and a script tag arrives as plain text."
+            "say": "Validation narrows the input; separation is what stops it running."
           }
-        ]
+        ],
+        "say": "The rule for every interpreter: keep data separate from code. For SQL, a **parameterized query** sends the query with a `?` placeholder and binds the value separately. **Input validation** accepts only what you expect, such as letters, digits and `.png`. Validation narrows the input; separation is what stops it running."
       },
       {
-        "say": "Two flaws share the word forgery and are easy to mix up. In **cross-site request forgery (CSRF)**, a page on another site makes a logged-in victim's browser send a request, and the session cookie rides along automatically. No attacker script runs on the target site. The fix is an unpredictable **CSRF token** in each form, which the server checks, plus `SameSite` cookies. In **server-side request forgery (SSRF)**, the server itself is tricked into fetching a URL the attacker chose, often an internal service or the cloud metadata endpoint. The fix: allow-list where the server may connect, block internal and metadata addresses, and on AWS require token-based **IMDSv2**.",
         "beats": [
           {
-            "say": "Two flaws share the word forgery and are easy to mix up. In **cross-site request forgery (CSRF)**, a page on another site makes a logged-in victim's browser send a request, and the session cookie rides along automatically."
+            "say": "The browser is an interpreter too."
           },
           {
-            "say": "No attacker script runs on the target site. The fix is an unpredictable **CSRF token** in each form, which the server checks, plus `SameSite` cookies."
+            "say": "**Cross-site scripting** (XSS) echoes input into a page unencoded, so the attacker's script runs in the victim's session."
           },
           {
-            "say": "In **server-side request forgery (SSRF)**, the server itself is tricked into fetching a URL the attacker chose, often an internal service or the cloud metadata endpoint."
+            "say": "Stored XSS sits in the database; reflected XSS arrives in a link."
+          },
+          {
+            "say": "The fix is **output encoding**: convert special characters as each value is written."
+          },
+          {
+            "code": "<script>   becomes\n&lt;script&gt;  as text",
+            "language": "output encoding"
+          }
+        ],
+        "say": "The browser is an interpreter too. **Cross-site scripting** (XSS) echoes input into a page unencoded, so the attacker's script runs in the victim's session. Stored XSS sits in the database; reflected XSS arrives in a link. The fix is **output encoding**: convert special characters as each value is written."
+      },
+      {
+        "beats": [
+          {
+            "say": "In **cross-site request forgery** (CSRF), a page on another site makes a logged-in victim's browser send a request."
+          },
+          {
+            "say": "The session cookie rides along automatically; no attacker script runs on the target."
+          },
+          {
+            "say": "The fix is an unpredictable **CSRF token** in each form that the server checks, plus `SameSite` cookies."
+          }
+        ],
+        "say": "In **cross-site request forgery** (CSRF), a page on another site makes a logged-in victim's browser send a request. The session cookie rides along automatically; no attacker script runs on the target. The fix is an unpredictable **CSRF token** in each form that the server checks, plus `SameSite` cookies."
+      },
+      {
+        "beats": [
+          {
+            "say": "In **server-side request forgery** (SSRF), the server itself is tricked into fetching a URL the attacker chose."
           },
           {
             "figure": {
@@ -75,9 +106,13 @@
             }
           },
           {
-            "say": "The fix: allow-list where the server may connect, block internal and metadata addresses, and on AWS require token-based **IMDSv2**."
+            "say": "Often the target is an internal service or the cloud metadata endpoint."
+          },
+          {
+            "say": "The fix: allow-list where the server may connect, block internal addresses, and on AWS require token-based **IMDSv2**."
           }
         ],
+        "say": "In **server-side request forgery** (SSRF), the server itself is tricked into fetching a URL the attacker chose. Often the target is an internal service or the cloud metadata endpoint. The fix: allow-list where the server may connect, block internal addresses, and on AWS require token-based **IMDSv2**.",
         "check": {
           "prompt": "A bank customer, still logged in, opens a post on an outside forum that silently submits the bank's transfer form. Which class is it, and what stops it?",
           "answer": "CSRF, stopped by a per-form token the bank verifies",
@@ -89,19 +124,22 @@
         }
       },
       {
-        "say": "**Insecure deserialization** is the last family here. Native formats such as Python's `pickle` rebuild live objects, so whoever controls the bytes can make the loader run code. The fix is to stop deserializing untrusted data natively at all: use a data-only format such as JSON, checked against a strict schema.",
         "beats": [
           {
-            "say": "**Insecure deserialization** is the last family here. Native formats such as Python's `pickle` rebuild live objects, so whoever controls the bytes can make the loader run code."
+            "say": "**Deserialization** turns saved bytes back into live objects."
+          },
+          {
+            "say": "In native formats such as Python's `pickle`, whoever controls the bytes can make the loader run code: **insecure deserialization**."
           },
           {
             "code": "session = pickle.loads(base64.b64decode(request.cookies[\"session\"]))",
             "language": "python"
           },
           {
-            "say": "The fix is to stop deserializing untrusted data natively at all: use a data-only format such as JSON, checked against a strict schema."
+            "say": "The fix: use a data-only format such as JSON, checked against a strict schema."
           }
-        ]
+        ],
+        "say": "**Deserialization** turns saved bytes back into live objects. In native formats such as Python's `pickle`, whoever controls the bytes can make the loader run code: **insecure deserialization**. The fix: use a data-only format such as JSON, checked against a strict schema."
       }
     ],
     "outro": "Next, a Java service reads a cookie that comes straight back from the user's browser. Name the family first, then the fix."
@@ -182,10 +220,12 @@
     "intro": "A program can check every input perfectly and still be beaten, because some flaws need no clever input at all. They hide in when things happen, or in a setting nobody changed from the default. Each has a design habit that prevents it, and timing is the easiest one to see.",
     "steps": [
       {
-        "say": "A **race condition** is a bug whose result depends on timing. The common form is **time of check to time of use (TOCTOU)**: the state changes between checking it and acting on it. In the gap, another user plants a link named `report.txt` that points at a system file, and the root job writes straight through it.",
         "beats": [
           {
-            "say": "A **race condition** is a bug whose result depends on timing. The common form is **time of check to time of use (TOCTOU)**: the state changes between checking it and acting on it."
+            "say": "A **race condition** is a bug whose result depends on timing."
+          },
+          {
+            "say": "In **time of check to time of use** (TOCTOU), the state changes between checking it and acting on it."
           },
           {
             "code": "# runs as root\nif not os.path.exists(\"/tmp/report.txt\"):   # check\n    f = open(\"/tmp/report.txt\", \"w\")         # use",
@@ -200,9 +240,10 @@
             }
           },
           {
-            "say": "In the gap, another user plants a link named `report.txt` that points at a system file, and the root job writes straight through it."
+            "say": "In the gap, another user plants a link named `report.txt` pointing at a system file."
           }
         ],
+        "say": "A **race condition** is a bug whose result depends on timing. In **time of check to time of use** (TOCTOU), the state changes between checking it and acting on it. In the gap, another user plants a link named `report.txt` pointing at a system file.",
         "check": {
           "prompt": "Which fix closes the gap?",
           "answer": "Create the file in one step that fails if it already exists",
@@ -214,58 +255,91 @@
         }
       },
       {
-        "say": "That is an **atomic function**: it finishes as one indivisible step. A **thread-safe function** behaves correctly when many threads call it at once. **Memory unsafety**, such as buffer overflows, use-after-free and integer overflows, is endemic in C and C++. A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`. Memory-safe languages such as Rust and Go remove the whole class. Where code cannot be rewritten, ASLR, stack canaries and non-executable memory raise the attacker's cost. **Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()`, or MD5 for passwords. Static analysis finds them, and modern replacements fix them.",
         "beats": [
           {
-            "say": "That is an **atomic function**: it finishes as one indivisible step. A **thread-safe function** behaves correctly when many threads call it at once."
+            "say": "An **atomic function** finishes as one indivisible step."
           },
           {
-            "say": "**Memory unsafety**, such as buffer overflows, use-after-free and integer overflows, is endemic in C and C++. A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`."
+            "say": "A **thread-safe function** behaves correctly when many threads call it at once."
           },
           {
-            "say": "Memory-safe languages such as Rust and Go remove the whole class. Where code cannot be rewritten, ASLR, stack canaries and non-executable memory raise the attacker's cost."
+            "say": "**Memory unsafety** means bugs like buffer overflows, use-after-free and integer overflows, common in C and C++."
           },
           {
-            "say": "**Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()`, or MD5 for passwords. Static analysis finds them, and modern replacements fix them."
-          }
-        ]
-      },
-      {
-        "say": "Many breaches need no bad code at all. **Insecure configuration** means default passwords, a public storage bucket, root login over SSH, or a cloud role granted `*:*`. **Directory service misconfiguration** is the same failure in Active Directory or LDAP, such as anonymous binds or weak ACLs. Directory audits, a tiered admin model and LDAP signing fix it. **Embedded secrets** are keys and passwords committed into code or config. Fetch them from a secrets manager at runtime, scan commits for secrets before they are pushed, and use **key rotation** so a leaked key stops working. **End-of-life** software gets no more patches: upgrade or retire it, or isolate it behind compensating controls. **Weak ciphers** such as RC4, 3DES and TLS 1.0 give way to TLS 1.2 or later.",
-        "beats": [
-          {
-            "say": "Many breaches need no bad code at all. **Insecure configuration** means default passwords, a public storage bucket, root login over SSH, or a cloud role granted `*:*`."
-          },
-          {
-            "say": "**Directory service misconfiguration** is the same failure in Active Directory or LDAP, such as anonymous binds or weak ACLs. Directory audits, a tiered admin model and LDAP signing fix it."
-          },
-          {
-            "say": "**Embedded secrets** are keys and passwords committed into code or config. Fetch them from a secrets manager at runtime, scan commits for secrets before they are pushed, and use **key rotation** so a leaked key stops working."
-          },
-          {
-            "say": "**End-of-life** software gets no more patches: upgrade or retire it, or isolate it behind compensating controls. **Weak ciphers** such as RC4, 3DES and TLS 1.0 give way to TLS 1.2 or later."
-          }
-        ]
-      },
-      {
-        "say": "**Poisoning** corrupts trusted data at its source, such as a DNS cache, a package repository or ML training data. Signed, pinned packages and data validation resist it. An **implant** is malicious code or hardware planted on a system, such as a web shell or a firmware implant. Secure boot, code signing and supply-chain vetting resist it. A **confused deputy** is a privileged program tricked into using its authority for a caller. The cure is **least privilege**, and checking the original caller's rights rather than the program's. Two more design habits: **least functionality**, turning off every service and feature you do not need, and **defense in depth**, layering controls so one failure is not a breach. Last, fail in the right direction. A **fail-secure** design defaults to locked and denied when it breaks. A **fail-safe** design protects people instead, like a fire door that unlocks when the power fails.",
-        "beats": [
-          {
-            "say": "**Poisoning** corrupts trusted data at its source, such as a DNS cache, a package repository or ML training data. Signed, pinned packages and data validation resist it."
-          },
-          {
-            "say": "An **implant** is malicious code or hardware planted on a system, such as a web shell or a firmware implant. Secure boot, code signing and supply-chain vetting resist it."
-          },
-          {
-            "say": "A **confused deputy** is a privileged program tricked into using its authority for a caller. The cure is **least privilege**, and checking the original caller's rights rather than the program's."
-          },
-          {
-            "say": "Two more design habits: **least functionality**, turning off every service and feature you do not need, and **defense in depth**, layering controls so one failure is not a breach."
-          },
-          {
-            "say": "Last, fail in the right direction. A **fail-secure** design defaults to locked and denied when it breaks. A **fail-safe** design protects people instead, like a fire door that unlocks when the power fails."
+            "say": "A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`."
           }
         ],
+        "say": "An **atomic function** finishes as one indivisible step. A **thread-safe function** behaves correctly when many threads call it at once. **Memory unsafety** means bugs like buffer overflows, use-after-free and integer overflows, common in C and C++. A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`."
+      },
+      {
+        "beats": [
+          {
+            "say": "Memory-safe languages such as Rust and Go remove the whole class."
+          },
+          {
+            "say": "Where code can't change, randomized addresses (ASLR), stack canaries and non-executable memory raise the attacker's cost."
+          },
+          {
+            "say": "**Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()` or MD5 for passwords."
+          }
+        ],
+        "say": "Memory-safe languages such as Rust and Go remove the whole class. Where code can't change, randomized addresses (ASLR), stack canaries and non-executable memory raise the attacker's cost. **Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()` or MD5 for passwords."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Insecure configuration** means risky settings left in place."
+          },
+          {
+            "say": "**Directory service misconfiguration** is the same failure in Active Directory or LDAP."
+          },
+          {
+            "say": "**End-of-life** software gets no more patches."
+          },
+          {
+            "say": "**Weak ciphers** are outdated encryption."
+          },
+          {
+            "code": "config: harden, audit\ndirectory: audits,\n  tiered admin,\n  LDAP signing\nend-of-life: upgrade,\n  retire, or isolate\nweak ciphers: RC4, 3DES,\n  TLS 1.0 give way to\n  TLS 1.2 or later",
+            "language": "flaw: its fix"
+          }
+        ],
+        "say": "**Insecure configuration** means risky settings left in place. **Directory service misconfiguration** is the same failure in Active Directory or LDAP. **End-of-life** software gets no more patches. **Weak ciphers** are outdated encryption."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Embedded secrets** are keys and passwords committed into code or config."
+          },
+          {
+            "say": "With **key rotation**, a leaked key soon stops working."
+          },
+          {
+            "say": "**Poisoning** corrupts trusted data at its source, like a package repository."
+          },
+          {
+            "say": "An **implant** is malicious code or hardware planted on a system."
+          }
+        ],
+        "say": "**Embedded secrets** are keys and passwords committed into code or config. With **key rotation**, a leaked key soon stops working. **Poisoning** corrupts trusted data at its source, like a package repository. An **implant** is malicious code or hardware planted on a system."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **confused deputy** is a privileged program tricked into using its authority for a caller; the cure is **least privilege**."
+          },
+          {
+            "code": "secrets:\n  secrets manager, commit\n  scanning\npoisoning:\n  signed, pinned packages,\n  data validation\nimplant:\n  secure boot, code signing,\n  supply-chain vetting\nconfused deputy:\n  check the original\n  caller's rights",
+            "language": "flaw: its fix"
+          },
+          {
+            "say": "**Least functionality** turns off what you don't need; **defense in depth** layers controls."
+          },
+          {
+            "say": "A **fail-secure** design locks up when it breaks; **fail-safe** protects people, like a door that unlocks."
+          }
+        ],
+        "say": "A **confused deputy** is a privileged program tricked into using its authority for a caller; the cure is **least privilege**. **Least functionality** turns off what you don't need; **defense in depth** layers controls. A **fail-secure** design locks up when it breaks; **fail-safe** protects people, like a door that unlocks.",
         "check": {
           "prompt": "The policy engine behind a firewall crashes. Which behaviour is fail-secure?",
           "answer": "Drop all traffic until the engine is back",
@@ -365,21 +439,43 @@
     "intro": "The morning a serious flaw goes public, every manager asks the same thing: are we running it? If nobody knows what's inside your software, finding out can take weeks, and attackers won't wait that long. The flaw that taught everyone this arrived in December 2021, and its story shows what went wrong.",
     "steps": [
       {
-        "say": "In December 2021, Log4Shell (CVE-2021-44228, CVSS 10.0) let attackers run code on a server just by getting a crafted string into its logs. The flaw was in Log4j, a Java logging library inside thousands of products. A **Software Bill of Materials (SBoM)** is a machine-readable inventory of every component and version in a product, including **transitive dependencies** pulled in by other libraries. SPDX and CycloneDX are the common formats. Searching your SBoMs answers \"are we affected?\" in hours instead of weeks, and dependency scanners in the CI/CD pipeline keep that answer current. A **Vulnerability Exploitability eXchange (VEX)** statement is a vendor's verdict for one product, such as \"not affected: the vulnerable code is never called\".",
         "beats": [
           {
-            "say": "In December 2021, Log4Shell (CVE-2021-44228, CVSS 10.0) let attackers run code on a server just by getting a crafted string into its logs. The flaw was in Log4j, a Java logging library inside thousands of products."
+            "say": "Log4Shell hid in Log4j, a Java logging library inside thousands of products."
           },
           {
-            "say": "A **Software Bill of Materials (SBoM)** is a machine-readable inventory of every component and version in a product, including **transitive dependencies** pulled in by other libraries. SPDX and CycloneDX are the common formats."
+            "code": "CVE-2021-44228\nCVSS 10.0\ncrafted string in logs\nruns code on server",
+            "language": "Log4Shell"
           },
           {
-            "say": "Searching your SBoMs answers \"are we affected?\" in hours instead of weeks, and dependency scanners in the CI/CD pipeline keep that answer current."
+            "say": "A **Software Bill of Materials** (SBoM) lists every component and version in a product."
           },
           {
-            "say": "A **Vulnerability Exploitability eXchange (VEX)** statement is a vendor's verdict for one product, such as \"not affected: the vulnerable code is never called\"."
+            "say": "That includes **transitive dependencies**: libraries pulled in by other libraries."
+          },
+          {
+            "say": "Searching SBoMs answers 'are we affected?' in hours, not weeks."
+          },
+          {
+            "code": "SPDX\nCycloneDX",
+            "language": "common SBoM formats"
           }
         ],
+        "say": "Log4Shell hid in Log4j, a Java logging library inside thousands of products. A **Software Bill of Materials** (SBoM) lists every component and version in a product. That includes **transitive dependencies**: libraries pulled in by other libraries. Searching SBoMs answers 'are we affected?' in hours, not weeks."
+      },
+      {
+        "beats": [
+          {
+            "say": "**CVE** gives each public flaw one ID, such as CVE-2021-44228."
+          },
+          {
+            "say": "**CVE Numbering Authorities** (CNAs), such as vendors and national CERTs, assign them."
+          },
+          {
+            "say": "A **Vulnerability Exploitability eXchange** (VEX) statement is a vendor's verdict for one product, such as 'not affected: the vulnerable code is never called'."
+          }
+        ],
+        "say": "**CVE** gives each public flaw one ID, such as CVE-2021-44228. **CVE Numbering Authorities** (CNAs), such as vendors and national CERTs, assign them. A **Vulnerability Exploitability eXchange** (VEX) statement is a vendor's verdict for one product, such as 'not affected: the vulnerable code is never called'.",
         "check": {
           "prompt": "Your SBoMs show the vulnerable library in 40 apps. One of them is a vendor product whose VEX says not affected. What does that change?",
           "answer": "That one product drops down the list; the other 39 still need checking",
@@ -391,45 +487,54 @@
         }
       },
       {
-        "say": "**Common Vulnerabilities and Exposures (CVE)** gives each public flaw one ID, such as CVE-2021-44228, assigned by **CVE Numbering Authorities (CNAs)** such as vendors and national CERTs. The **Common Vulnerability Scoring System (CVSS)** rates severity from 0 to 10: Low 0.1 to 3.9, Medium 4.0 to 6.9, High 7.0 to 8.9, Critical 9.0 to 10.0. A **vector string** records the metrics behind the score. Read it pair by pair: Attack Vector Network, Attack Complexity Low, Privileges Required None, User Interaction None, Scope Unchanged, then High impact on confidentiality, integrity and availability. That vector scores 9.8. Other values: `AV` can be `A` (adjacent network, the same segment), `L` (local) or `P` (physical); `PR` can be `L` or `H`; `UI:R` means a victim must act; `S:C` means the impact crosses into another component; each impact is `N`, `L` or `H`.",
         "beats": [
           {
-            "say": "**Common Vulnerabilities and Exposures (CVE)** gives each public flaw one ID, such as CVE-2021-44228, assigned by **CVE Numbering Authorities (CNAs)** such as vendors and national CERTs."
+            "say": "**CVSS**, the Common Vulnerability Scoring System, rates severity from 0 to 10."
           },
           {
-            "say": "The **Common Vulnerability Scoring System (CVSS)** rates severity from 0 to 10: Low 0.1 to 3.9, Medium 4.0 to 6.9, High 7.0 to 8.9, Critical 9.0 to 10.0. A **vector string** records the metrics behind the score."
+            "code": "0.1 - 3.9   Low\n4.0 - 6.9   Medium\n7.0 - 8.9   High\n9.0 - 10.0  Critical",
+            "language": "CVSS severity"
           },
           {
-            "code": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-            "language": "CVSS v3.1 vector"
+            "say": "A **vector string** records the metrics behind the score."
           },
           {
-            "say": "Read it pair by pair: Attack Vector Network, Attack Complexity Low, Privileges Required None, User Interaction None, Scope Unchanged, then High impact on confidentiality, integrity and availability. That vector scores 9.8."
+            "code": "CVSS:3.1/AV:N/AC:L/PR:N/\nUI:N/S:U/C:H/I:H/A:H",
+            "language": "one vector, wrapped"
           },
           {
-            "say": "Other values: `AV` can be `A` (adjacent network, the same segment), `L` (local) or `P` (physical); `PR` can be `L` or `H`; `UI:R` means a victim must act; `S:C` means the impact crosses into another component; each impact is `N`, `L` or `H`."
-          }
-        ]
-      },
-      {
-        "say": "Those are **base metrics**: the flaw in the abstract. The temporal group, called **Threat** in CVSS v4.0, adds whether a reliable exploit exists, and the **environmental** group adjusts for how much the asset matters to you. Most published scores are base only, labelled CVSS-B in v4.0. And CVSS measures severity, not how likely an attack is. So rank with evidence of exploitation too. CISA's **Known Exploited Vulnerabilities (KEV)** catalog lists CVEs being exploited in the wild: a patch-these-first list. FIRST's **Exploit Prediction Scoring System (EPSS)** estimates the probability that a CVE will be exploited within the next 30 days. CISA's **SSVC** decision tree weighs exploitation, whether it can be automated, technical impact, and mission and well-being impact to output Track, Track*, Attend or Act. Then add your own context: internet exposure, asset criticality and compensating controls.",
-        "beats": [
-          {
-            "say": "Those are **base metrics**: the flaw in the abstract. The temporal group, called **Threat** in CVSS v4.0, adds whether a reliable exploit exists, and the **environmental** group adjusts for how much the asset matters to you."
+            "code": "AV:N  vector: network\nAC:L  complexity: low\nPR:N  privileges: none\nUI:N  user action: none\nS:U   scope: unchanged\nC:H   confidentiality: high\nI:H   integrity: high\nA:H   availability: high",
+            "language": "decoding it"
           },
           {
-            "say": "Most published scores are base only, labelled CVSS-B in v4.0. And CVSS measures severity, not how likely an attack is."
+            "say": "Read it pair by pair; this vector scores 9.8."
           },
           {
-            "say": "So rank with evidence of exploitation too. CISA's **Known Exploited Vulnerabilities (KEV)** catalog lists CVEs being exploited in the wild: a patch-these-first list."
+            "say": "Those are **base metrics**: the flaw in the abstract."
           },
           {
-            "say": "FIRST's **Exploit Prediction Scoring System (EPSS)** estimates the probability that a CVE will be exploited within the next 30 days."
+            "say": "CVSS measures severity, not how likely an attack is."
           },
           {
-            "say": "CISA's **SSVC** decision tree weighs exploitation, whether it can be automated, technical impact, and mission and well-being impact to output Track, Track*, Attend or Act. Then add your own context: internet exposure, asset criticality and compensating controls."
+            "code": "AV  N, A (same segment),\n    L, P (physical)\nPR  N, L, H\nUI  N, R (victim acts)\nS   U, C (spills into\n    another component)\nC/I/A  N, L, H",
+            "language": "other values"
           }
         ],
+        "say": "**CVSS**, the Common Vulnerability Scoring System, rates severity from 0 to 10. A **vector string** records the metrics behind the score. Read it pair by pair; this vector scores 9.8. Those are **base metrics**: the flaw in the abstract. CVSS measures severity, not how likely an attack is."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Threat** metrics add whether an exploit exists; **environmental** metrics, how much the asset matters to you."
+          },
+          {
+            "say": "CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now: patch these first."
+          },
+          {
+            "say": "FIRST's **EPSS** estimates the chance of exploitation in the next 30 days."
+          }
+        ],
+        "say": "**Threat** metrics add whether an exploit exists; **environmental** metrics, how much the asset matters to you. CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now: patch these first. FIRST's **EPSS** estimates the chance of exploitation in the next 30 days.",
         "check": {
           "prompt": "Flaw A scores 9.8, with an EPSS near zero and no KEV entry. Flaw B scores 6.5 and is in KEV. Both sit on internet-facing servers. Which do you patch first?",
           "answer": "B, because KEV shows attackers are using it now",
@@ -441,13 +546,9 @@
         }
       },
       {
-        "say": "The **Security Content Automation Protocol (SCAP)** is NIST's suite of standards that lets scanners act on machine-readable policy. CVE and CVSS are two of its parts; three more do the checking. **Common Platform Enumeration (CPE)** names products and versions precisely. **XCCDF** encodes a checklist, such as a CIS Benchmark, in XML. **OVAL** is the XML language for the system-state checks a scanner runs. A **credentialed scan** logs in with a dedicated, least-privilege scan account and reads installed packages and settings directly. An unauthenticated scan infers from banners and responses, so it misses many OS-level flaws. Results go on **dashboards**: open findings by severity and asset group, scan coverage, mean time to remediate, findings past deadline. Watch the trend: a rising total means findings arrive faster than they are fixed.",
         "beats": [
           {
-            "say": "The **Security Content Automation Protocol (SCAP)** is NIST's suite of standards that lets scanners act on machine-readable policy. CVE and CVSS are two of its parts; three more do the checking."
-          },
-          {
-            "say": "**Common Platform Enumeration (CPE)** names products and versions precisely. **XCCDF** encodes a checklist, such as a CIS Benchmark, in XML. **OVAL** is the XML language for the system-state checks a scanner runs."
+            "say": "The **Security Content Automation Protocol** (SCAP) lets scanners act on machine-readable policy. CVE and CVSS are two of its parts."
           },
           {
             "figure": {
@@ -458,12 +559,33 @@
             }
           },
           {
-            "say": "A **credentialed scan** logs in with a dedicated, least-privilege scan account and reads installed packages and settings directly. An unauthenticated scan infers from banners and responses, so it misses many OS-level flaws."
+            "say": "**CPE** names products and versions precisely."
           },
           {
-            "say": "Results go on **dashboards**: open findings by severity and asset group, scan coverage, mean time to remediate, findings past deadline. Watch the trend: a rising total means findings arrive faster than they are fixed."
+            "say": "**XCCDF** encodes a checklist, such as a CIS Benchmark."
+          },
+          {
+            "say": "**OVAL** holds the system-state checks a scanner runs."
           }
-        ]
+        ],
+        "say": "The **Security Content Automation Protocol** (SCAP) lets scanners act on machine-readable policy. CVE and CVSS are two of its parts. **CPE** names products and versions precisely. **XCCDF** encodes a checklist, such as a CIS Benchmark. **OVAL** holds the system-state checks a scanner runs."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **credentialed scan** logs in with a least-privilege account and reads packages and settings directly."
+          },
+          {
+            "say": "An unauthenticated scan only infers from banners, so it misses flaws."
+          },
+          {
+            "say": "Dashboards show open findings by severity, coverage and mean time to remediate."
+          },
+          {
+            "say": "A rising total means findings arrive faster than they are fixed."
+          }
+        ],
+        "say": "A **credentialed scan** logs in with a least-privilege account and reads packages and settings directly. An unauthenticated scan only infers from banners, so it misses flaws. Dashboards show open findings by severity, coverage and mean time to remediate. A rising total means findings arrive faster than they are fixed."
       }
     ],
     "outro": "Now a scanner reports a CVSS vector for a building controller. Read every pair before you judge what it says."
@@ -683,22 +805,46 @@
     "intro": "I'm Professor Flint. A SOC with four analysts and ten thousand machines can't check them by hand, not even once a month. So the work gets written down as code, and the code runs whether anyone is awake or not. It's usually written in a handful of languages, so those come first.",
     "steps": [
       {
-        "say": "Three languages carry most security automation: **Python** for HTTP, cloud SDKs such as `boto3` and vendor APIs; **PowerShell** for Windows and Microsoft 365; **Bash** for Linux, CI/CD pipelines and container entrypoints. The first way to start a script is a schedule. On Linux that is a **cron job**: five time fields, then the command. That line pulls a threat-intel feed of **indicators of compromise (IOCs)**, such as known-bad IPs, domains and file hashes, at 02:00 every day. A `*` means every value of its field, and day-of-week counts from 0 for Sunday.",
         "beats": [
           {
-            "say": "Three languages carry most security automation: **Python** for HTTP, cloud SDKs such as `boto3` and vendor APIs; **PowerShell** for Windows and Microsoft 365; **Bash** for Linux, CI/CD pipelines and container entrypoints."
+            "say": "Three languages carry most security automation."
           },
           {
-            "say": "The first way to start a script is a schedule. On Linux that is a **cron job**: five time fields, then the command."
+            "code": "Python      web, cloud SDKs\nPowerShell  Windows, M365\nBash        Linux, pipelines",
+            "language": "language: its job"
+          },
+          {
+            "say": "**Python** drives web services and cloud kits such as `boto3`."
+          },
+          {
+            "say": "**PowerShell** drives Windows and Microsoft 365."
+          },
+          {
+            "say": "**Bash** drives Linux, CI/CD pipelines and containers."
+          },
+          {
+            "say": "The simplest trigger is a schedule: on Linux, a **cron job**."
+          }
+        ],
+        "say": "Three languages carry most security automation. **Python** drives web services and cloud kits such as `boto3`. **PowerShell** drives Windows and Microsoft 365. **Bash** drives Linux, CI/CD pipelines and containers. The simplest trigger is a schedule: on Linux, a **cron job**."
+      },
+      {
+        "beats": [
+          {
+            "say": "A cron line has five time fields, then the command."
           },
           {
             "code": "# minute hour day-of-month month day-of-week  command\n  0      2    *            *     *            /opt/ioc/pull_feed.py",
             "language": "crontab"
           },
           {
-            "say": "That line pulls a threat-intel feed of **indicators of compromise (IOCs)**, such as known-bad IPs, domains and file hashes, at 02:00 every day. A `*` means every value of its field, and day-of-week counts from 0 for Sunday."
+            "say": "That line pulls a feed of **indicators of compromise** (IOCs), such as known-bad IPs and file hashes, at 02:00 daily."
+          },
+          {
+            "say": "A `*` means every value; day-of-week counts from 0 for Sunday."
           }
         ],
+        "say": "A cron line has five time fields, then the command. That line pulls a feed of **indicators of compromise** (IOCs), such as known-bad IPs and file hashes, at 02:00 daily. A `*` means every value; day-of-week counts from 0 for Sunday.",
         "check": {
           "prompt": "Which line runs the same script at 02:00 on Mondays only?",
           "answer": "`0 2 * * 1 /opt/ioc/pull_feed.py`",
@@ -710,14 +856,21 @@
         }
       },
       {
-        "say": "The second way is an **event-based trigger**: the script fires the moment something happens, such as a cloud rule that runs a function when an IAM role is changed, or a SIEM, the platform that gathers logs and raises alerts, firing an alert. The common wiring is a **webhook**: when an event occurs, one system POSTs a small JSON message to a URL that another system exposes. From there the script chains tools through their **APIs and SDKs**: it isolates each affected host through the API of the EDR (endpoint detection and response) tool, then opens one ticket with the host list and a timestamp. A webhook endpoint is attack surface in its own right. Authenticate callers with signed payloads or mutual TLS, and validate what they send before acting on it.",
         "beats": [
           {
-            "say": "The second way is an **event-based trigger**: the script fires the moment something happens, such as a cloud rule that runs a function when an IAM role is changed, or a SIEM, the platform that gathers logs and raises alerts, firing an alert."
+            "say": "An **event-based trigger** fires a script the moment something happens, such as a SIEM alert."
           },
           {
-            "say": "The common wiring is a **webhook**: when an event occurs, one system POSTs a small JSON message to a URL that another system exposes."
+            "say": "The common wiring is a **webhook**: a small JSON message sent to a URL another system exposes."
           },
+          {
+            "say": "An **API** lets one program call another; an **SDK** is a kit for doing it from code."
+          }
+        ],
+        "say": "An **event-based trigger** fires a script the moment something happens, such as a SIEM alert. The common wiring is a **webhook**: a small JSON message sent to a URL another system exposes. An **API** lets one program call another; an **SDK** is a kit for doing it from code."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=TB; s [label=\"SIEM\\nhigh-severity alert\"]; c [label=\"containment\\nservice\"]; e [label=\"EDR API:\\nisolate hosts\"]; t [label=\"ticket API:\\nopen one ticket\"]; s -> c [label=\" webhook POST\\n signed JSON\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; c -> e; c -> t; }",
@@ -727,30 +880,31 @@
             }
           },
           {
-            "say": "From there the script chains tools through their **APIs and SDKs**: it isolates each affected host through the API of the EDR (endpoint detection and response) tool, then opens one ticket with the host list and a timestamp."
+            "say": "Here the script isolates each affected host through the EDR tool's API, then opens one ticket."
           },
           {
-            "say": "A webhook endpoint is attack surface in its own right. Authenticate callers with signed payloads or mutual TLS, and validate what they send before acting on it."
+            "say": "A webhook endpoint is attack surface: authenticate callers with signed payloads or mutual TLS, and validate input."
           }
-        ]
+        ],
+        "say": "Here the script isolates each affected host through the EDR tool's API, then opens one ticket. A webhook endpoint is attack surface: authenticate callers with signed payloads or mutual TLS, and validate input."
       },
       {
-        "say": "**Infrastructure as code (IaC)** tools such as Terraform and CloudFormation declare infrastructure in version-controlled files. Because the file exists before the server does, a **pre-deployment scan** with a tool such as Checkov or Trivy can fail the pipeline on that open-to-the-world SSH rule. **Drift detection** compares the declared state with what is actually running, and flags or reverts changes made by hand.",
         "beats": [
           {
-            "say": "**Infrastructure as code (IaC)** tools such as Terraform and CloudFormation declare infrastructure in version-controlled files."
+            "say": "**Infrastructure as code** (IaC) declares infrastructure in version-controlled files, such as Terraform."
           },
           {
             "code": "resource \"aws_security_group_rule\" \"ssh\" {\n  type        = \"ingress\"\n  from_port   = 22\n  to_port     = 22\n  protocol    = \"tcp\"\n  cidr_blocks = [\"0.0.0.0/0\"]\n}",
             "language": "terraform"
           },
           {
-            "say": "Because the file exists before the server does, a **pre-deployment scan** with a tool such as Checkov or Trivy can fail the pipeline on that open-to-the-world SSH rule."
+            "say": "Because the file exists first, a **pre-deployment scan** can fail the pipeline on that open-to-the-world SSH rule."
           },
           {
-            "say": "**Drift detection** compares the declared state with what is actually running, and flags or reverts changes made by hand."
+            "say": "**Drift detection** compares declared state with what is running, and flags hand changes."
           }
         ],
+        "say": "**Infrastructure as code** (IaC) declares infrastructure in version-controlled files, such as Terraform. Because the file exists first, a **pre-deployment scan** can fail the pipeline on that open-to-the-world SSH rule. **Drift detection** compares declared state with what is running, and flags hand changes.",
         "check": {
           "prompt": "The rule is fixed in the file and deployed. Months later, an engineer opens SSH to the world again in the cloud console. Which control notices?",
           "answer": "Drift detection, because the live rule no longer matches the file",
@@ -762,18 +916,22 @@
         }
       },
       {
-        "say": "**Configuration management** tools such as Ansible, Chef and Puppet push and enforce a desired state on systems already running, such as the same SSH hardening on every Linux server. All of these read **configuration files** in plain text: YAML for Kubernetes manifests, Ansible playbooks and CI pipelines; JSON for cloud templates and API payloads; XML for SCAP content; TOML for Python and Rust project settings. Plain text can be versioned and reviewed. But one misplaced indent in YAML can silently attach a setting to the wrong block, so lint and schema-validate before you deploy.",
         "beats": [
           {
-            "say": "**Configuration management** tools such as Ansible, Chef and Puppet push and enforce a desired state on systems already running, such as the same SSH hardening on every Linux server."
+            "say": "**Configuration management** tools such as Ansible push a desired state onto running systems."
           },
           {
-            "say": "All of these read **configuration files** in plain text: YAML for Kubernetes manifests, Ansible playbooks and CI pipelines; JSON for cloud templates and API payloads; XML for SCAP content; TOML for Python and Rust project settings."
+            "say": "Automation reads **configuration files**, plain text in four common formats."
           },
           {
-            "say": "Plain text can be versioned and reviewed. But one misplaced indent in YAML can silently attach a setting to the wrong block, so lint and schema-validate before you deploy."
+            "code": "YAML  Kubernetes, Ansible,\n      CI pipelines\nJSON  cloud templates,\n      API payloads\nXML   SCAP content\nTOML  Python, Rust settings",
+            "language": "format: typical use"
+          },
+          {
+            "say": "One misplaced YAML indent can attach a setting to the wrong block, so lint and validate first."
           }
-        ]
+        ],
+        "say": "**Configuration management** tools such as Ansible push a desired state onto running systems. Automation reads **configuration files**, plain text in four common formats. One misplaced YAML indent can attach a setting to the wrong block, so lint and validate first."
       }
     ],
     "outro": "A pull request is waiting, with a risky Terraform file in it. Decide which control should catch it, and when."
@@ -841,27 +999,26 @@
     "type": "npc_demo",
     "question": "NPC: How far should security automation go on its own?",
     "npc": "flint",
-    "intro": "A script that locks a stolen account in ten seconds is a gift, until the day it locks the wrong one at three in the morning. Automation does exactly what it's told, as fast as it's told, whether or not anyone is watching. So the hard part isn't writing it; it's deciding what it may do alone. The platform that runs it is where that decision gets made.",
+    "intro": "A script that locks a stolen account in ten seconds is a gift, until the day it locks the wrong one at three in the morning. Automation does exactly what it's told, as fast as it's told, whether or not anyone is watching. So the hard part is deciding what it may do alone. That decision lives in one platform.",
     "steps": [
       {
-        "say": "**Security orchestration, automation and response (SOAR)** platforms chain security tools' APIs together when a SIEM alert fires. A **playbook** is the automated logic: when this alert fires, do this, then that. A **runbook** is the documented manual procedure an analyst follows when automation is not enough or a human decision is needed. When a playbook acts on its own, isolating a host or disabling an account without waiting for anyone, that is **auto-containment**.",
         "beats": [
           {
-            "say": "**Security orchestration, automation and response (SOAR)** platforms chain security tools' APIs together when a SIEM alert fires."
+            "say": "**SOAR** (security orchestration, automation and response) platforms chain security tools together when a SIEM alert fires."
           },
           {
-            "say": "A **playbook** is the automated logic: when this alert fires, do this, then that. A **runbook** is the documented manual procedure an analyst follows when automation is not enough or a human decision is needed."
+            "say": "A **playbook** is the automated logic: when this alert fires, do this, then that."
           },
           {
-            "say": "When a playbook acts on its own, isolating a host or disabling an account without waiting for anyone, that is **auto-containment**."
+            "say": "A **runbook** is the written manual procedure an analyst follows when a human decision is needed."
           }
-        ]
+        ],
+        "say": "**SOAR** (security orchestration, automation and response) platforms chain security tools together when a SIEM alert fires. A **playbook** is the automated logic: when this alert fires, do this, then that. A **runbook** is the written manual procedure an analyst follows when a human decision is needed."
       },
       {
-        "say": "Here is a phishing playbook. It runs the steps a tired analyst would, in the same order, in seconds. By hand, that triage takes 20 to 45 minutes per alert; the playbook finishes in under a minute. That shrinks **mean time to respond (MTTR)**, the average time from detection to containment. Some vendors expand MTTR as mean time to recover, remediate or resolve, so check which one a dashboard means.",
         "beats": [
           {
-            "say": "Here is a phishing playbook. It runs the steps a tired analyst would, in the same order, in seconds."
+            "say": "When a playbook acts on its own, isolating a host or disabling an account with no one approving it, that is **auto-containment**."
           },
           {
             "figure": {
@@ -872,12 +1029,13 @@
             }
           },
           {
-            "say": "By hand, that triage takes 20 to 45 minutes per alert; the playbook finishes in under a minute. That shrinks **mean time to respond (MTTR)**, the average time from detection to containment."
+            "say": "By hand, triage takes 20 to 45 minutes; the playbook takes under a minute."
           },
           {
-            "say": "Some vendors expand MTTR as mean time to recover, remediate or resolve, so check which one a dashboard means."
+            "say": "That shrinks **mean time to respond (MTTR)**: the average time from detection to containment."
           }
         ],
+        "say": "When a playbook acts on its own, isolating a host or disabling an account with no one approving it, that is **auto-containment**. By hand, triage takes 20 to 45 minutes; the playbook takes under a minute. That shrinks **mean time to respond (MTTR)**: the average time from detection to containment.",
         "check": {
           "prompt": "Analysts used to spend 30 minutes on each of 40 phishing alerts a week. About how many analyst-hours a week does the playbook hand back?",
           "answer": "About 20",
@@ -889,28 +1047,30 @@
         }
       },
       {
-        "say": "Auto-containment needs guardrails. Keep playbooks in version control, test them against historical alerts, and review them as the environment changes: stale logic that blocks on its own can do more harm than none. Two guardrails matter most. **Scope conditions** keep a playbook away from accounts and hosts where its action would do harm, and an **approval gate** makes a person confirm high-impact actions, such as isolating a production server. **Generative AI** gets the same rule. Let it draft detection rules in Sigma or KQL, summarize alert chains and write first drafts of reports and runbook updates. But it can hallucinate a CVE, so a person confirms any containment it suggests, its code is reviewed and tested like a stranger's, and secrets and sensitive logs stay out of external AI services. This one fired on an account HR was quietly investigating. The sign-out alert on his phone told him something was up, and he powered off his laptop, losing everything in its memory.",
         "beats": [
           {
-            "say": "Auto-containment needs guardrails. Keep playbooks in version control, test them against historical alerts, and review them as the environment changes: stale logic that blocks on its own can do more harm than none."
+            "say": "Keep playbooks in version control, test them on old alerts, and review them as things change."
           },
           {
-            "say": "Two guardrails matter most. **Scope conditions** keep a playbook away from accounts and hosts where its action would do harm, and an **approval gate** makes a person confirm high-impact actions, such as isolating a production server."
+            "say": "**Scope conditions** keep a playbook away from accounts and hosts where its action would do harm."
           },
           {
-            "say": "**Generative AI** gets the same rule. Let it draft detection rules in Sigma or KQL, summarize alert chains and write first drafts of reports and runbook updates."
-          },
-          {
-            "say": "But it can hallucinate a CVE, so a person confirms any containment it suggests, its code is reviewed and tested like a stranger's, and secrets and sensitive logs stay out of external AI services."
-          },
+            "say": "An **approval gate** makes a person confirm high-impact actions, such as isolating a production server."
+          }
+        ],
+        "say": "Keep playbooks in version control, test them on old alerts, and review them as things change. **Scope conditions** keep a playbook away from accounts and hosts where its action would do harm. An **approval gate** makes a person confirm high-impact actions, such as isolating a production server."
+      },
+      {
+        "beats": [
           {
             "code": "playbook: cred-stuffing-v3\ntrigger: siem.alert.tag == \"credential_stuffing_suspected\"\nsteps:\n  - ad.disable_account(user)\n  - entra.revoke_sessions(user)\n  - ad.force_password_reset(user)\n  - itsm.create_ticket(sev: high)\n  - page(oncall)",
             "language": "playbook excerpt"
           },
           {
-            "say": "This one fired on an account HR was quietly investigating. The sign-out alert on his phone told him something was up, and he powered off his laptop, losing everything in its memory."
+            "say": "This one fired on an account HR was quietly investigating; the user powered off his laptop, losing its memory."
           }
         ],
+        "say": "This one fired on an account HR was quietly investigating; the user powered off his laptop, losing its memory.",
         "check": {
           "prompt": "What was the playbook missing?",
           "answer": "A scope condition that sends accounts under HR or legal review to a runbook",
@@ -922,21 +1082,36 @@
         }
       },
       {
-        "say": "**Automated patching** closes the loop from finding to fix at every layer: the operating system, application software, the hypervisor, firmware, and the **system images** new machines are built from. Run it safely: keep a rollback path, patch a pilot group first, roll out in maintenance windows, then confirm with a follow-up scan. A KEV-listed flaw earns an out-of-band emergency patch. For images and containers, rebuild and redeploy rather than patch in place. That is **immutable infrastructure**: running systems never drift from their image. A system that cannot be patched is isolated behind compensating controls. Security tools can run as **ephemeral containers** too: start a scanner container on each pipeline push, write a JSON report, throw the container away. The tooling stays isolated, versioned and reproducible.",
         "beats": [
           {
-            "say": "**Automated patching** closes the loop from finding to fix at every layer: the operating system, application software, the hypervisor, firmware, and the **system images** new machines are built from."
+            "say": "**Generative AI** gets the same rule: let it draft rules, summarize alerts and write first drafts."
           },
           {
-            "say": "Run it safely: keep a rollback path, patch a pilot group first, roll out in maintenance windows, then confirm with a follow-up scan. A KEV-listed flaw earns an out-of-band emergency patch."
-          },
-          {
-            "say": "For images and containers, rebuild and redeploy rather than patch in place. That is **immutable infrastructure**: running systems never drift from their image. A system that cannot be patched is isolated behind compensating controls."
-          },
-          {
-            "say": "Security tools can run as **ephemeral containers** too: start a scanner container on each pipeline push, write a JSON report, throw the container away. The tooling stays isolated, versioned and reproducible."
+            "say": "But it can hallucinate, so a person confirms any containment it suggests, and secrets stay out of external AI services."
           }
-        ]
+        ],
+        "say": "**Generative AI** gets the same rule: let it draft rules, summarize alerts and write first drafts. But it can hallucinate, so a person confirms any containment it suggests, and secrets stay out of external AI services."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Automated patching** covers every layer in the table."
+          },
+          {
+            "code": "operating system\napplications\nhypervisor\nfirmware\nsystem images (the\n  templates new machines\n  are built from)",
+            "language": "what gets patched"
+          },
+          {
+            "say": "Roll out safely: keep a rollback path, patch a pilot group first, use maintenance windows, then confirm with a follow-up scan."
+          },
+          {
+            "say": "A KEV-listed flaw earns an emergency patch."
+          },
+          {
+            "say": "**Immutable infrastructure**: rebuild and redeploy images instead of patching in place."
+          }
+        ],
+        "say": "**Automated patching** covers every layer in the table. Roll out safely: keep a rollback path, patch a pilot group first, use maintenance windows, then confirm with a follow-up scan. A KEV-listed flaw earns an emergency patch. **Immutable infrastructure**: rebuild and redeploy images instead of patching in place."
       }
     ],
     "outro": "Here is another playbook, drawn as a flow. Find where a person has to step in."
@@ -1067,13 +1242,12 @@
     "type": "npc_demo",
     "question": "NPC: In what order do you handle a security incident?",
     "npc": "val",
-    "intro": "Picture an analyst who spots an intruder on a mail server and rebuilds it within the hour. The server is clean, but the evidence is gone, and nobody knows how the intruder got in or whether they're still inside. In a response, the order of the work matters as much as the work, and that begins with what the work actually is.",
+    "intro": "Picture an analyst who spots an intruder on a mail server and rebuilds it within the hour. The server is clean, but the evidence is gone, and nobody knows how the intruder got in. In a response, order matters as much as the work, and that begins with what the work is.",
     "steps": [
       {
-        "say": "**Incident response (IR)** is the organized work of detecting, containing, eradicating and recovering from an incident while preserving evidence and learning from it. The classic model, from NIST SP 800-61 Rev. 2, has four phases. Analysis and containment loop back and forth as new evidence turns up, and lessons learned feed the next round of preparation. **Detection and analysis** confirms the alert and scopes the incident: how many systems are affected, whether the attacker still has access, and what data may be exposed. In April 2025, **SP 800-61 Rev. 3** replaced it with a CSF 2.0 profile: Govern, Identify and Protect cover preparation; Detect, Respond and Recover cover the incident; lessons flow back as Improvement.",
         "beats": [
           {
-            "say": "**Incident response (IR)** is the organized work of detecting, containing, eradicating and recovering from an incident while preserving evidence and learning from it."
+            "say": "**Incident response** (IR) is the organized work of handling an attack, from detection to recovery, while keeping evidence."
           },
           {
             "figure": {
@@ -1084,58 +1258,80 @@
             }
           },
           {
-            "say": "The classic model, from NIST SP 800-61 Rev. 2, has four phases. Analysis and containment loop back and forth as new evidence turns up, and lessons learned feed the next round of preparation."
+            "say": "The classic NIST model has four phases, and analysis and containment loop back as evidence turns up."
           },
           {
-            "say": "**Detection and analysis** confirms the alert and scopes the incident: how many systems are affected, whether the attacker still has access, and what data may be exposed."
-          },
-          {
-            "say": "In April 2025, **SP 800-61 Rev. 3** replaced it with a CSF 2.0 profile: Govern, Identify and Protect cover preparation; Detect, Respond and Recover cover the incident; lessons flow back as Improvement."
-          }
-        ]
-      },
-      {
-        "say": "**Preparation** comes before any incident: a board-approved IR plan that says who can declare one, and playbooks and runbooks that can still be reached when the network is down. Add an **out-of-band** call tree on personal phones or an encrypted messaging app, since corporate email may be the compromised system, and a **jump bag** of write-blockers, bootable forensic media and clean drives. Bring legal in before any incident. GDPR expects notice to the regulator within 72 hours of becoming aware of a breach that puts people at risk; a U.S. public company files a Form 8-K within four business days of judging an incident material. Counsel also issues a **legal hold** when litigation is likely: routine deletion of the relevant logs, mail and files is suspended until the hold is lifted. Then practise. A **tabletop exercise** talks a scenario through; a **functional exercise** has responders use their real tools, such as isolating a test host. A **full-scale exercise** tests people, process and technology together, sometimes against a red or purple team playing the attacker.",
-        "beats": [
-          {
-            "say": "**Preparation** comes before any incident: a board-approved IR plan that says who can declare one, and playbooks and runbooks that can still be reached when the network is down."
-          },
-          {
-            "say": "Add an **out-of-band** call tree on personal phones or an encrypted messaging app, since corporate email may be the compromised system, and a **jump bag** of write-blockers, bootable forensic media and clean drives."
-          },
-          {
-            "say": "Bring legal in before any incident. GDPR expects notice to the regulator within 72 hours of becoming aware of a breach that puts people at risk; a U.S. public company files a Form 8-K within four business days of judging an incident material."
-          },
-          {
-            "say": "Counsel also issues a **legal hold** when litigation is likely: routine deletion of the relevant logs, mail and files is suspended until the hold is lifted."
-          },
-          {
-            "say": "Then practise. A **tabletop exercise** talks a scenario through; a **functional exercise** has responders use their real tools, such as isolating a test host."
-          },
-          {
-            "say": "A **full-scale exercise** tests people, process and technology together, sometimes against a red or purple team playing the attacker."
-          }
-        ]
-      },
-      {
-        "say": "**Containment** stops the spread: isolate hosts through EDR, block the attacker's command-and-control (C2) address and domain, disable compromised accounts. It does not clean yet, because cleaning too fast destroys evidence. One exception to moving fast is an **insider threat**. Acting visibly tips the insider off, so scope quietly first, with HR and legal involved from the start. Insiders are usually found by **UEBA**, which compares behaviour with the user's peer group, and by data loss prevention (DLP) signals: bulk cloud uploads, USB writes where none belong, mass mail to personal addresses. **Eradication** removes the attacker: the malware, persistence such as scheduled tasks, and the way in, by patching the flaw and resetting harvested credentials. **Recovery** rebuilds from known-good images or backups, verifies the data, and watches closely for recurrence over the first 30 days.",
-        "beats": [
-          {
-            "say": "**Containment** stops the spread: isolate hosts through EDR, block the attacker's command-and-control (C2) address and domain, disable compromised accounts. It does not clean yet, because cleaning too fast destroys evidence."
-          },
-          {
-            "say": "One exception to moving fast is an **insider threat**. Acting visibly tips the insider off, so scope quietly first, with HR and legal involved from the start."
-          },
-          {
-            "say": "Insiders are usually found by **UEBA**, which compares behaviour with the user's peer group, and by data loss prevention (DLP) signals: bulk cloud uploads, USB writes where none belong, mass mail to personal addresses."
-          },
-          {
-            "say": "**Eradication** removes the attacker: the malware, persistence such as scheduled tasks, and the way in, by patching the flaw and resetting harvested credentials."
-          },
-          {
-            "say": "**Recovery** rebuilds from known-good images or backups, verifies the data, and watches closely for recurrence over the first 30 days."
+            "say": "**Detection and analysis** confirms the alert and scopes the incident."
           }
         ],
+        "say": "**Incident response** (IR) is the organized work of handling an attack, from detection to recovery, while keeping evidence. The classic NIST model has four phases, and analysis and containment loop back as evidence turns up. **Detection and analysis** confirms the alert and scopes the incident."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Preparation** comes first: a board-approved plan saying who can declare an incident, plus playbooks and runbooks reachable when the network is down."
+          },
+          {
+            "say": "Add an **out-of-band** call tree on personal phones, since corporate email may be compromised, and a **jump bag** of forensic tools."
+          },
+          {
+            "code": "write-blockers\nbootable forensic media\nclean drives",
+            "language": "jump bag"
+          }
+        ],
+        "say": "**Preparation** comes first: a board-approved plan saying who can declare an incident, plus playbooks and runbooks reachable when the network is down. Add an **out-of-band** call tree on personal phones, since corporate email may be compromised, and a **jump bag** of forensic tools."
+      },
+      {
+        "beats": [
+          {
+            "say": "Bring legal in early; notice deadlines start when you become aware."
+          },
+          {
+            "code": "GDPR regulator notice:\n  within 72 hours\nUS Form 8-K (material):\n  within 4 business days",
+            "language": "notice deadlines"
+          },
+          {
+            "say": "A **legal hold** suspends routine deletion of relevant logs, mail and files when litigation is likely."
+          },
+          {
+            "say": "Then practise. A **tabletop exercise** talks a scenario through."
+          },
+          {
+            "say": "A **functional exercise** has responders use real tools; a **full-scale exercise** tests everything together."
+          }
+        ],
+        "say": "Bring legal in early; notice deadlines start when you become aware. A **legal hold** suspends routine deletion of relevant logs, mail and files when litigation is likely. Then practise. A **tabletop exercise** talks a scenario through. A **functional exercise** has responders use real tools; a **full-scale exercise** tests everything together."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Containment** stops the spread: isolate hosts, block the attacker's command-and-control (C2) address, disable compromised accounts."
+          },
+          {
+            "say": "It does not clean yet: that destroys evidence."
+          },
+          {
+            "say": "An **insider threat** is the exception: scope quietly with HR and legal, so you don't tip them off."
+          },
+          {
+            "say": "**UEBA** usually spots insiders by comparing them with peers."
+          }
+        ],
+        "say": "**Containment** stops the spread: isolate hosts, block the attacker's command-and-control (C2) address, disable compromised accounts. It does not clean yet: that destroys evidence. An **insider threat** is the exception: scope quietly with HR and legal, so you don't tip them off. **UEBA** usually spots insiders by comparing them with peers."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Eradication** removes the attacker: malware, persistence such as scheduled tasks, and the way in."
+          },
+          {
+            "say": "**Recovery** rebuilds from known-good images or backups, verifies the data, and watches for recurrence."
+          },
+          {
+            "say": "Afterward, hold a **lessons-learned meeting** within two weeks and write a **post-incident report** with an owner for every fix."
+          }
+        ],
+        "say": "**Eradication** removes the attacker: malware, persistence such as scheduled tasks, and the way in. **Recovery** rebuilds from known-good images or backups, verifies the data, and watches for recurrence. Afterward, hold a **lessons-learned meeting** within two weeks and write a **post-incident report** with an owner for every fix.",
         "check": {
           "prompt": "Leadership wants the isolated hosts restored from last night's backup straight away. What is the risk?",
           "answer": "Restoring before eradication brings back a system the attacker can still reach",
@@ -1147,21 +1343,18 @@
         }
       },
       {
-        "say": "Analysis and the review both lean on **timeline reconstruction**: merge events from every source into one ordered story, working outward from the earliest known malicious event. Normalize every timestamp to UTC and allow for clock skew first, or events from a source that logs local time land in the wrong place. Tools such as Plaso build one super timeline. Hold the **lessons-learned meeting** within two weeks of closing the incident, and write a **post-incident report (PIR)**, also called an after-action report, that assigns an owner to every fix. Its core is **root cause analysis (RCA)**, which asks why, not just what. Keep asking why, the five whys, until you reach a cause you can fix.",
         "beats": [
           {
-            "say": "Analysis and the review both lean on **timeline reconstruction**: merge events from every source into one ordered story, working outward from the earliest known malicious event."
+            "say": "**Timeline reconstruction** merges events from every source into one ordered story, from the earliest malicious event."
           },
           {
-            "say": "Normalize every timestamp to UTC and allow for clock skew first, or events from a source that logs local time land in the wrong place. Tools such as Plaso build one super timeline."
+            "say": "Convert every timestamp to UTC and allow for clock skew first."
           },
           {
-            "say": "Hold the **lessons-learned meeting** within two weeks of closing the incident, and write a **post-incident report (PIR)**, also called an after-action report, that assigns an owner to every fix."
-          },
-          {
-            "say": "Its core is **root cause analysis (RCA)**, which asks why, not just what. Keep asking why, the five whys, until you reach a cause you can fix."
+            "say": "**Root cause analysis** (RCA) asks why, not just what: keep asking why until you reach a cause you can fix."
           }
         ],
+        "say": "**Timeline reconstruction** merges events from every source into one ordered story, from the earliest malicious event. Convert every timestamp to UTC and allow for clock skew first. **Root cause analysis** (RCA) asks why, not just what: keep asking why until you reach a cause you can fix.",
         "check": {
           "prompt": "A review finds that a user opened an invoice macro, that the macro ran because policy allowed macros in files from the internet, and that the attacker then moved laterally. Which is the root cause to fix?",
           "answer": "The policy that allowed macros from internet files",
@@ -1307,27 +1500,40 @@
     "intro": "A strange file turns up on a shared drive, and nobody knows what it does. Double-click it on an ordinary PC and you've handed the attacker a second machine. Evidence handled carelessly can't be trusted afterwards, so the same care runs through the whole investigation. For the file, that means finding out what it does somewhere it can't hurt anything.",
     "steps": [
       {
-        "say": "Start with the sample. A **malware sandbox** detonates a suspicious file in an isolated environment and records what it does, such as network connections, registry changes and dropped files, with no risk to production. From the report you extract IOCs: IP addresses, domains, file hashes, registry keys and command-line patterns to block and hunt for across the fleet. When the report is not enough, **reverse engineering** takes the sample apart. Static analysis reads it without running it: a **disassembler** turns machine code into assembly, and a **decompiler** rebuilds C-like source. Managed **bytecode**, such as Java or .NET, decompiles to near-original source; a native **binary** is far harder. Dynamic analysis runs the sample under a debugger or in the sandbox. Code-similarity measures such as fuzzy hashes link a sample to known **variants**, and **code stylometry** studies coding habits to suggest an author. Attackers plant false flags, so treat attribution as a probability.",
         "beats": [
           {
-            "say": "Start with the sample. A **malware sandbox** detonates a suspicious file in an isolated environment and records what it does, such as network connections, registry changes and dropped files, with no risk to production."
+            "say": "A **malware sandbox** runs a file in isolation and records what it does."
           },
           {
-            "say": "From the report you extract IOCs: IP addresses, domains, file hashes, registry keys and command-line patterns to block and hunt for across the fleet."
+            "say": "Extract IOCs from its report to block and hunt for: addresses, domains, hashes."
           },
           {
-            "say": "When the report is not enough, **reverse engineering** takes the sample apart. Static analysis reads it without running it: a **disassembler** turns machine code into assembly, and a **decompiler** rebuilds C-like source."
-          },
-          {
-            "say": "Managed **bytecode**, such as Java or .NET, decompiles to near-original source; a native **binary** is far harder. Dynamic analysis runs the sample under a debugger or in the sandbox."
-          },
-          {
-            "say": "Code-similarity measures such as fuzzy hashes link a sample to known **variants**, and **code stylometry** studies coding habits to suggest an author. Attackers plant false flags, so treat attribution as a probability."
+            "say": "Fuzzy hashes link a sample to known **variants**; **code stylometry** studies coding habits to suggest an author."
           }
-        ]
+        ],
+        "say": "A **malware sandbox** runs a file in isolation and records what it does. Extract IOCs from its report to block and hunt for: addresses, domains, hashes. Fuzzy hashes link a sample to known **variants**; **code stylometry** studies coding habits to suggest an author."
       },
       {
-        "say": "On a live host, collect in the **order of volatility**: what vanishes first is captured first. **Volatile evidence** disappears at power-off: RAM, running processes, open connections, logged-in sessions. **Non-volatile evidence** persists: the disk, file-system artifacts, log files. So do not reboot. A memory dump can hold decrypted keys, credentials and malware that never touched the disk. Capture the live state too. On Windows, `netstat -an` lists every connection and listening port in numeric form, the `-o` switch adds the ID of the process that owns each, and `tasklist /v` lists the processes.",
+        "beats": [
+          {
+            "say": "**Reverse engineering** takes a sample apart."
+          },
+          {
+            "say": "**Static analysis** reads it without running it."
+          },
+          {
+            "say": "**Dynamic analysis** runs it in the sandbox or under a debugger."
+          },
+          {
+            "say": "A **disassembler** turns machine code into assembly; a **decompiler** rebuilds C-like source."
+          },
+          {
+            "say": "Managed **bytecode** (Java, .NET) decompiles to near-original source; a native **binary** is far harder."
+          }
+        ],
+        "say": "**Reverse engineering** takes a sample apart. **Static analysis** reads it without running it. **Dynamic analysis** runs it in the sandbox or under a debugger. A **disassembler** turns machine code into assembly; a **decompiler** rebuilds C-like source. Managed **bytecode** (Java, .NET) decompiles to near-original source; a native **binary** is far harder."
+      },
+      {
         "beats": [
           {
             "say": "On a live host, collect in the **order of volatility**: what vanishes first is captured first."
@@ -1341,15 +1547,13 @@
             }
           },
           {
-            "say": "**Volatile evidence** disappears at power-off: RAM, running processes, open connections, logged-in sessions. **Non-volatile evidence** persists: the disk, file-system artifacts, log files."
+            "say": "**Volatile evidence** vanishes at power-off; **non-volatile evidence** persists: disk, logs."
           },
           {
-            "say": "So do not reboot. A memory dump can hold decrypted keys, credentials and malware that never touched the disk."
-          },
-          {
-            "say": "Capture the live state too. On Windows, `netstat -an` lists every connection and listening port in numeric form, the `-o` switch adds the ID of the process that owns each, and `tasklist /v` lists the processes."
+            "say": "So never reboot: RAM may hold keys, passwords and malware that never touched the disk."
           }
         ],
+        "say": "On a live host, collect in the **order of volatility**: what vanishes first is captured first. **Volatile evidence** vanishes at power-off; **non-volatile evidence** persists: disk, logs. So never reboot: RAM may hold keys, passwords and malware that never touched the disk.",
         "check": {
           "prompt": "A laptop with full-disk encryption is still running. Why does capturing memory matter even more here?",
           "answer": "The decryption key may be in RAM, and once powered off the disk may be unreadable",
@@ -1361,45 +1565,57 @@
         }
       },
       {
-        "say": "For the disk, attach a **write-blocker** so nothing can be written to the original, then take a bit-for-bit image. Hash with SHA-256 before and after acquisition: matching hashes prove the image is an exact, unaltered copy. Deleted files can often be **carved** out of unallocated space by searching it for known file signatures, although SSD TRIM and full-disk encryption can defeat that. **Chain of custody** is the documented, unbroken record of who collected each item, when, from what source, under what hash, and who had it afterwards. A gap or a missing hash can make the findings inadmissible.",
         "beats": [
           {
-            "say": "For the disk, attach a **write-blocker** so nothing can be written to the original, then take a bit-for-bit image."
+            "say": "On Windows, `netstat -an` lists every connection and listening port in numeric form; `-o` adds each owner's process ID."
+          },
+          {
+            "say": "A **write-blocker** keeps the original disk from being written to while you take a bit-for-bit image."
           },
           {
             "code": "dd if=/dev/sdb of=/evidence/host-disk.img bs=4M conv=noerror,sync\nsha256sum /evidence/host-disk.img > host-disk.sha256",
             "language": "bash"
           },
           {
-            "say": "Hash with SHA-256 before and after acquisition: matching hashes prove the image is an exact, unaltered copy."
-          },
-          {
-            "say": "Deleted files can often be **carved** out of unallocated space by searching it for known file signatures, although SSD TRIM and full-disk encryption can defeat that."
-          },
-          {
-            "say": "**Chain of custody** is the documented, unbroken record of who collected each item, when, from what source, under what hash, and who had it afterwards. A gap or a missing hash can make the findings inadmissible."
+            "say": "Matching SHA-256 hashes before and after prove the image is an exact copy."
           }
-        ]
+        ],
+        "say": "On Windows, `netstat -an` lists every connection and listening port in numeric form; `-o` adds each owner's process ID. A **write-blocker** keeps the original disk from being written to while you take a bit-for-bit image. Matching SHA-256 hashes before and after prove the image is an exact copy."
       },
       {
-        "say": "Look past the one disk. On the **network**, a full packet capture (PCAP) shows everything but costs storage; NetFlow, or VPC flow logs in a cloud, keeps only addresses, ports, protocol and byte counts. On the **host**: registry run keys and USB history, Prefetch files that prove a program ran even after it was deleted, shell history, and scheduled tasks and cron jobs. In **metadata**: a photo's EXIF can hold GPS and the device model, an Office file its author, and audio or video its creation details. An email header's `Received` lines, read bottom-up, trace every server that handled the message. In the **cloud**: disk snapshots, the control-plane audit log (CloudTrail, the Kubernetes audit log) for every API call, and for short-lived containers a **cloud workload protection platform (CWPP)** agent's record of runtime activity. And for a locked or damaged phone, **JTAG** or ISP (in-system programming) reads the raw flash straight from the circuit board, bypassing the operating system.",
         "beats": [
           {
-            "say": "Look past the one disk. On the **network**, a full packet capture (PCAP) shows everything but costs storage; NetFlow, or VPC flow logs in a cloud, keeps only addresses, ports, protocol and byte counts."
+            "say": "Deleted files can often be **carved** out of unallocated space by searching for known file signatures."
           },
           {
-            "say": "On the **host**: registry run keys and USB history, Prefetch files that prove a program ran even after it was deleted, shell history, and scheduled tasks and cron jobs."
+            "say": "**Chain of custody** is the unbroken record of who collected each item, when, from what, under what hash, and who held it after."
           },
           {
-            "say": "In **metadata**: a photo's EXIF can hold GPS and the device model, an Office file its author, and audio or video its creation details. An email header's `Received` lines, read bottom-up, trace every server that handled the message."
-          },
-          {
-            "say": "In the **cloud**: disk snapshots, the control-plane audit log (CloudTrail, the Kubernetes audit log) for every API call, and for short-lived containers a **cloud workload protection platform (CWPP)** agent's record of runtime activity."
-          },
-          {
-            "say": "And for a locked or damaged phone, **JTAG** or ISP (in-system programming) reads the raw flash straight from the circuit board, bypassing the operating system."
+            "say": "A gap or missing hash can make findings inadmissible."
           }
-        ]
+        ],
+        "say": "Deleted files can often be **carved** out of unallocated space by searching for known file signatures. **Chain of custody** is the unbroken record of who collected each item, when, from what, under what hash, and who held it after. A gap or missing hash can make findings inadmissible."
+      },
+      {
+        "beats": [
+          {
+            "code": "network: PCAP, NetFlow\nhost: registry, USB,\n  Prefetch, shell history\nmetadata: EXIF, email\n  headers\ncloud: snapshots, audit\n  log, CWPP agent\nlocked phone: JTAG or ISP",
+            "language": "where to look"
+          },
+          {
+            "say": "A full packet capture (**PCAP**) shows everything; **NetFlow** keeps addresses and counts."
+          },
+          {
+            "say": "**Prefetch** files prove a program ran, even after it was deleted."
+          },
+          {
+            "say": "**EXIF** can hold a photo's GPS; email `Received` lines, read bottom-up, trace each server."
+          },
+          {
+            "say": "A **cloud workload protection platform (CWPP)** agent logs activity in short-lived containers."
+          }
+        ],
+        "say": "A full packet capture (**PCAP**) shows everything; **NetFlow** keeps addresses and counts. **Prefetch** files prove a program ran, even after it was deleted. **EXIF** can hold a photo's GPS; email `Received` lines, read bottom-up, trace each server. A **cloud workload protection platform (CWPP)** agent logs activity in short-lived containers."
       }
     ],
     "outro": "Now a compromised Linux server is still running. Put the acquisition steps in the order they should happen."

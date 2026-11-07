@@ -6,11 +6,7 @@
     "intro": "I'm Master Kaelen, the Grand Archivist. A busy firewall writes millions of lines a day, and on its own each one says almost nothing. Before an analyst sees a single alert, those lines pass through a chain of steps, and an attack slips through whichever step breaks. Let's start with the system that runs that chain.",
     "steps": [
       {
-        "say": "A **SIEM** (security information and event management platform) turns logs from every corner of the network into alerts an analyst can act on. It works as a pipeline of five stages. **Collection** gathers the raw logs: syslog from network gear, Windows events through forwarding, cloud audit logs, and EDR telemetry pulled by API.",
         "beats": [
-          {
-            "say": "A **SIEM** (security information and event management platform) turns logs from every corner of the network into alerts an analyst can act on. It works as a pipeline of five stages."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.3; ranksep=0.4; src [label=\"Log sources\"]; c [label=\"1 Collect\"]; n [label=\"2 Normalize\\n& enrich\"]; s [label=\"3 Store\\n& index\"]; d [label=\"4 Correlate\\n& detect\"]; a [label=\"5 Alert,\\ndashboard,\\nSOAR\"]; { rank=same; src -> c -> n; } { rank=same; a -> d [dir=back]; d -> s [dir=back]; } n -> s; }",
@@ -20,58 +16,106 @@
             }
           },
           {
-            "say": "**Collection** gathers the raw logs: syslog from network gear, Windows events through forwarding, cloud audit logs, and EDR telemetry pulled by API."
-          }
-        ]
-      },
-      {
-        "say": "Every product names its fields its own way. **Normalization** parses each raw record into one shared schema, such as ECS or OCSF, so the same fact has the same field name everywhere. **Enrichment** then adds what the raw line lacks: the address's country (GeoIP), the asset's criticality, the user's role, any match against threat intelligence.",
-        "beats": [
-          {
-            "say": "Every product names its fields its own way. **Normalization** parses each raw record into one shared schema, such as ECS or OCSF, so the same fact has the same field name everywhere."
+            "say": "A **SIEM** gathers logs from across a network and turns them into alerts. The name is short for security information and event management."
           },
           {
-            "code": "EDR raw:     src_ip=10.4.2.17   user=CORP\\jdoe\nCloud raw:   sourceIPAddress=10.4.2.17   userName=jdoe\nnormalized:  source.ip=10.4.2.17   user.name=jdoe",
-            "language": "two sources, one schema"
-          },
-          {
-            "say": "**Enrichment** then adds what the raw line lacks: the address's country (GeoIP), the asset's criticality, the user's role, any match against threat intelligence."
+            "say": "It works as a pipeline of five stages, shown in the picture."
           }
         ],
+        "say": "A **SIEM** gathers logs from across a network and turns them into alerts. The name is short for security information and event management. It works as a pipeline of five stages, shown in the picture."
+      },
+      {
+        "beats": [
+          {
+            "say": "Stage 1, **collection**, pulls in the raw logs."
+          },
+          {
+            "say": "Network gear sends them by **syslog**, a standard way to ship logs. Windows machines forward their own events."
+          },
+          {
+            "say": "Cloud audit logs record who did what. **EDR** (endpoint detection and response) tools report what runs on each computer."
+          }
+        ],
+        "say": "Stage 1, **collection**, pulls in the raw logs. Network gear sends them by **syslog**, a standard way to ship logs. Windows machines forward their own events. Cloud audit logs record who did what. **EDR** (endpoint detection and response) tools report what runs on each computer."
+      },
+      {
+        "beats": [
+          {
+            "say": "Every product names its fields its own way."
+          },
+          {
+            "say": "**Normalization** rewrites each record into one shared layout, so the same fact gets the same field name everywhere."
+          },
+          {
+            "code": "EDR:    src_ip=10.4.2.17\n        user=CORP\\jdoe\nCloud:  sourceIPAddress=\n          10.4.2.17\n        userName=jdoe\nnormalized:\n  source.ip=10.4.2.17\n  user.name=jdoe",
+            "language": "two sources, one layout"
+          },
+          {
+            "say": "That layout is a **schema**; common ones are ECS and OCSF."
+          }
+        ],
+        "say": "Every product names its fields its own way. **Normalization** rewrites each record into one shared layout, so the same fact gets the same field name everywhere. That layout is a **schema**; common ones are ECS and OCSF."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Enrichment** adds what the raw line lacks."
+          },
+          {
+            "say": "Examples: the country behind an address (**GeoIP**), how critical the machine is, and the user's role."
+          },
+          {
+            "say": "It can also add whether an address is on a known-bad list from threat intelligence."
+          }
+        ],
+        "say": "**Enrichment** adds what the raw line lacks. Examples: the country behind an address (**GeoIP**), how critical the machine is, and the user's role. It can also add whether an address is on a known-bad list from threat intelligence.",
         "check": {
           "prompt": "Analysts can't join an Okta sign-in to the EDR events from the same laptop: one logs the user as `actor.alternateId`, the other as `UserName`. Which stage is failing?",
           "answer": "Normalization: the two fields were never mapped to one",
           "wrong": [
             "Collection: one of the two sources isn't arriving",
-            "Correlation: the join rule itself is written badly"
+            "The rule that joins them is written badly"
           ],
           "why": "Both records arrived, so collection worked, and no join can match fields that mean the same thing under different names. Mapping both to one schema field is normalization's job."
         }
       },
       {
-        "say": "Normalized events land in a searchable index, in tiers: **hot** storage (fast and costly) for recent days, **warm** for months, and **cold** archive for years of compliance retention. **Retention** is set by regulation, contract and investigation needs. Intruders can hide for months, so a store that keeps only weeks destroys the evidence a later hunt will need.",
         "beats": [
           {
-            "say": "Normalized events land in a searchable index, in tiers: **hot** storage (fast and costly) for recent days, **warm** for months, and **cold** archive for years of compliance retention."
+            "say": "Stage 3 stores events in a searchable index, in tiers by age."
           },
           {
-            "say": "**Retention** is set by regulation, contract and investigation needs. Intruders can hide for months, so a store that keeps only weeks destroys the evidence a later hunt will need."
+            "code": "hot   recent days, costly\nwarm  months, slower\ncold  years, archive",
+            "language": "storage tiers"
+          },
+          {
+            "say": "**Hot** is recent days; **warm** is months."
+          },
+          {
+            "say": "**Cold** is years of archive."
+          },
+          {
+            "say": "**Retention** is how long logs are kept, set by law, contracts and investigation needs."
+          },
+          {
+            "say": "Intruders hide for months, so weeks of logs destroy later evidence."
           }
-        ]
+        ],
+        "say": "Stage 3 stores events in a searchable index, in tiers by age. **Hot** is recent days; **warm** is months. **Cold** is years of archive. **Retention** is how long logs are kept, set by law, contracts and investigation needs. Intruders hide for months, so weeks of logs destroy later evidence."
       },
       {
-        "say": "**Correlation** joins several events into one higher-level alert, such as a burst of failed logons followed by a success from the same address. Rules do the correlating, and behavioral models flag what no rule anticipated. Last, alerts reach the analyst queue, trends reach **dashboards**, and the most common patterns trigger **SOAR** (security orchestration, automation and response) playbooks.",
         "beats": [
           {
-            "say": "**Correlation** joins several events into one higher-level alert, such as a burst of failed logons followed by a success from the same address."
+            "say": "Stage 4, **correlation**, joins events into one alert, such as many failed logons then a success from one address."
           },
           {
-            "say": "Rules do the correlating, and behavioral models flag what no rule anticipated."
+            "say": "Rules do the joining; behavior models catch what no rule foresaw."
           },
           {
-            "say": "Last, alerts reach the analyst queue, trends reach **dashboards**, and the most common patterns trigger **SOAR** (security orchestration, automation and response) playbooks."
+            "say": "Alerts go to analysts and trends to **dashboards**. **SOAR** (security orchestration, automation and response) playbooks automate common responses."
           }
-        ]
+        ],
+        "say": "Stage 4, **correlation**, joins events into one alert, such as many failed logons then a success from one address. Rules do the joining; behavior models catch what no rule foresaw. Alerts go to analysts and trends to **dashboards**. **SOAR** (security orchestration, automation and response) playbooks automate common responses."
       }
     ],
     "outro": "Here is the same pipeline with its stages lettered, and a hunt that can't find any old records. Find the stage where the fault lies."
@@ -165,25 +209,33 @@
     "intro": "Sixty failed logons on a file server overnight could be one user who forgot a password, or an attacker working down your staff list. Each event on its own looks dull; read in order, they tell you which it was. The trick is knowing how Windows labels each one.",
     "steps": [
       {
-        "say": "Windows writes every security event with a numbered **event ID**. Four of them tell most logon stories. A `4672` appears beside a `4624` when the account that logged on holds admin-level rights. It records privilege; it is not evidence of an exploit.",
         "beats": [
           {
-            "say": "Windows writes every security event with a numbered **event ID**. Four of them tell most logon stories."
+            "say": "Windows writes every security event with a numbered **event ID**; four tell most logon stories."
           },
           {
-            "code": "4625  An account failed to log on\n4624  An account was successfully logged on\n4672  Special privileges assigned to new logon\n4720  A user account was created",
+            "code": "4625  failed logon\n4624  successful logon\n4672  admin-level rights\n4720  account created",
             "language": "Windows Security log"
           },
           {
-            "say": "A `4672` appears beside a `4624` when the account that logged on holds admin-level rights. It records privilege; it is not evidence of an exploit."
+            "say": "`4625` is a failed logon; `4624` is a successful one."
+          },
+          {
+            "say": "`4672` shows up beside a `4624` when the account has admin-level rights."
+          },
+          {
+            "say": "It records privilege, not an exploit."
+          },
+          {
+            "say": "`4720` means a new account was created."
           }
-        ]
+        ],
+        "say": "Windows writes every security event with a numbered **event ID**; four tell most logon stories. `4625` is a failed logon; `4624` is a successful one. `4672` shows up beside a `4624` when the account has admin-level rights. It records privilege, not an exploit. `4720` means a new account was created."
       },
       {
-        "say": "Here is one night on file server FS01, in time order. One address tries one password across many accounts: **password spraying**.",
         "beats": [
           {
-            "say": "Here is one night on file server FS01, in time order. One address tries one password across many accounts: **password spraying**."
+            "say": "Here is one night on file server FS01, in time order."
           },
           {
             "figure": {
@@ -192,8 +244,12 @@
               "caption": "FS01, one night",
               "src": "_dot/d9ac78a7e44abfa5.svg"
             }
+          },
+          {
+            "say": "One address tries one password on many accounts: **password spraying**."
           }
         ],
+        "say": "Here is one night on file server FS01, in time order. One address tries one password on many accounts: **password spraying**.",
         "check": {
           "prompt": "What does the `4624` from 203.0.113.50, just after the burst, tell you?",
           "answer": "One guess worked: the spray found a real password",
@@ -205,30 +261,53 @@
         }
       },
       {
-        "say": "A **correlation rule** encodes that story: many failures from one source, then a success from the same source within minutes, raised higher when a `4672` shows admin rights. Before a rule exists, you can ask the raw log directly. `grep` prints the lines that contain a pattern; `-c` counts them instead, and `-v` keeps only the lines that do NOT match.",
         "beats": [
           {
-            "say": "A **correlation rule** encodes that story: many failures from one source, then a success from the same source within minutes, raised higher when a `4672` shows admin rights."
+            "say": "A **correlation rule** encodes a story like this one."
           },
           {
-            "say": "Before a rule exists, you can ask the raw log directly. `grep` prints the lines that contain a pattern; `-c` counts them instead, and `-v` keeps only the lines that do NOT match."
+            "say": "Many failures from one source, then a success from it within minutes."
           },
           {
-            "code": "$ grep -c 4625 fs01.log\n60\n$ grep -v 4625 fs01.log\n01:07  4624  m.ostrova  203.0.113.50\n01:07  4672  m.ostrova",
-            "language": "bash, on FS01's exported log"
+            "say": "Add a `4672`, which shows admin rights, and the alert's severity rises."
           }
-        ]
+        ],
+        "say": "A **correlation rule** encodes a story like this one. Many failures from one source, then a success from it within minutes. Add a `4672`, which shows admin rights, and the alert's severity rises."
       },
       {
-        "say": "Two data faults distort every count. **Event duplication** is one event arriving twice through overlapping collectors, so counts double and rules fire twice; deduplicate on a stable event ID. **Non-reporting devices** are the reverse: a source that has gone silent raises no alerts, which looks like safety. Alert when its heartbeat stops.",
         "beats": [
           {
-            "say": "Two data faults distort every count. **Event duplication** is one event arriving twice through overlapping collectors, so counts double and rules fire twice; deduplicate on a stable event ID."
+            "say": "Before any rule exists, you can ask the raw log directly."
           },
           {
-            "say": "**Non-reporting devices** are the reverse: a source that has gone silent raises no alerts, which looks like safety. Alert when its heartbeat stops."
+            "say": "`grep` prints the lines that contain a pattern."
+          },
+          {
+            "say": "`-c` counts matching lines instead, and `-v` keeps only lines that do NOT match."
+          },
+          {
+            "code": "$ grep -c 4625 fs01.log\n60\n$ grep -v 4625 fs01.log\n01:07  4624  m.ostrova\n01:07  4672  m.ostrova",
+            "language": "bash, on FS01's log"
           }
-        ]
+        ],
+        "say": "Before any rule exists, you can ask the raw log directly. `grep` prints the lines that contain a pattern. `-c` counts matching lines instead, and `-v` keeps only lines that do NOT match."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Event duplication** is one event arriving twice through overlapping collectors."
+          },
+          {
+            "say": "Counts double and rules fire twice; deduplicate on a stable event ID."
+          },
+          {
+            "say": "**Non-reporting devices** are the reverse: a source that goes silent raises no alerts, which looks like safety."
+          },
+          {
+            "say": "Alert when its heartbeat stops."
+          }
+        ],
+        "say": "**Event duplication** is one event arriving twice through overlapping collectors. Counts double and rules fire twice; deduplicate on a stable event ID. **Non-reporting devices** are the reverse: a source that goes silent raises no alerts, which looks like safety. Alert when its heartbeat stops."
       }
     ],
     "outro": "Now a jump host logs seven minutes of events, and one of its event IDs never came up in FS01's night. Pick the reading they best support."
@@ -283,11 +362,7 @@
     "intro": "I'm Val, the Guild's Ward-Smith. Picture one analyst starting a shift with four hundred alerts in the queue, nearly all of them harmless. By the fortieth false alarm she's clicking past them unread, and the real attack is waiting further down. So before anything else, you need words for the two ways a detection can be wrong.",
     "steps": [
       {
-        "say": "A **false positive** is an alert on benign activity. A **false negative** is a real attack that raises no alert; it is the worse error, because nobody ever sees it. Score every rule by its **false-positive rate (FPR)**: of the alerts it raised, the share that triage closed as benign. A rule that is wrong 95% of the time teaches analysts to ignore it. Tune it or retire it, but tune with care: over-tuning is how false negatives are made.",
         "beats": [
-          {
-            "say": "A **false positive** is an alert on benign activity. A **false negative** is a real attack that raises no alert; it is the worse error, because nobody ever sees it."
-          },
           {
             "figure": {
               "dot": "digraph { m [shape=plaintext, style=\"\", label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"4\" CELLPADDING=\"8\" COLOR=\"#00c840\"><TR><TD BORDER=\"0\"></TD><TD BORDER=\"0\">real attack</TD><TD BORDER=\"0\">benign activity</TD></TR><TR><TD BORDER=\"0\">alert</TD><TD>true positive</TD><TD><FONT COLOR=\"#ffd86b\">false positive</FONT><BR/><FONT POINT-SIZE=\"10\">noise</FONT></TD></TR><TR><TD BORDER=\"0\">no alert</TD><TD><FONT COLOR=\"#ffd86b\">false negative</FONT><BR/><FONT POINT-SIZE=\"10\">unseen miss</FONT></TD><TD>true negative</TD></TR></TABLE>>]; }",
@@ -297,68 +372,103 @@
             }
           },
           {
-            "say": "Score every rule by its **false-positive rate (FPR)**: of the alerts it raised, the share that triage closed as benign."
+            "say": "A **false positive** is an alert on harmless activity."
           },
           {
-            "code": "rule:           Office app spawns PowerShell\nalerts raised:  200\nclosed benign:  190\nFPR:            190 / 200 = 95%",
-            "language": "rule scorecard, last 30 days"
+            "say": "A **false negative** is a real attack that raises no alert, which is worse: nobody sees it."
           },
           {
-            "say": "A rule that is wrong 95% of the time teaches analysts to ignore it. Tune it or retire it, but tune with care: over-tuning is how false negatives are made."
+            "say": "Score a rule by its **false-positive rate** (FPR): the share of its alerts closed as harmless."
+          },
+          {
+            "code": "alerts raised:  200\nclosed benign:  190\nFPR: 190 / 200 = 95%",
+            "language": "rule scorecard, 30 days"
           }
-        ]
+        ],
+        "say": "A **false positive** is an alert on harmless activity. A **false negative** is a real attack that raises no alert, which is worse: nobody sees it. Score a rule by its **false-positive rate** (FPR): the share of its alerts closed as harmless."
       },
       {
-        "say": "Cut noise before it reaches anyone. **Audit log reduction** trims logs at the agent or forwarder to the records that matter, dropping nothing with detection or forensic value. Then keep a **known-noise allowlist**: the sanctioned vulnerability scanner, approved penetration tests, developer experiments. Expected activity should not trip rules.",
         "beats": [
           {
-            "say": "Cut noise before it reaches anyone. **Audit log reduction** trims logs at the agent or forwarder to the records that matter, dropping nothing with detection or forensic value."
+            "say": "A rule wrong that often teaches analysts to ignore it. Tune or retire it, but carefully: over-tuning creates false negatives."
           },
           {
-            "say": "Then keep a **known-noise allowlist**: the sanctioned vulnerability scanner, approved penetration tests, developer experiments. Expected activity should not trip rules."
+            "say": "**Audit log reduction** trims logs at the source to what matters."
+          },
+          {
+            "say": "A **known-noise allowlist** names expected activity, like the approved scanner, so it trips no rules."
           }
-        ]
+        ],
+        "say": "A rule wrong that often teaches analysts to ignore it. Tune or retire it, but carefully: over-tuning creates false negatives. **Audit log reduction** trims logs at the source to what matters. A **known-noise allowlist** names expected activity, like the approved scanner, so it trips no rules."
       },
       {
-        "say": "Treat rules as **detection-as-code**: kept in Git, peer-reviewed, tested against old logs, versioned, and retired when they stop earning their keep. A new rule earns trust in stages, starting silent, in log-only mode. Write rules in **Sigma**, a vendor-neutral YAML rule format that a converter turns into each SIEM's own query language. `logsource` names the telemetry the rule needs; if that telemetry is never logged or collected, the rule can never fire. `condition` joins the match to its filter, so the approved script is excluded.",
         "beats": [
           {
-            "say": "Treat rules as **detection-as-code**: kept in Git, peer-reviewed, tested against old logs, versioned, and retired when they stop earning their keep."
+            "say": "Treat rules as **detection-as-code**: written like software, kept in Git and versioned."
           },
           {
-            "say": "A new rule earns trust in stages, starting silent, in log-only mode."
+            "say": "Each change is peer-reviewed and tested against old logs."
           },
           {
-            "say": "Write rules in **Sigma**, a vendor-neutral YAML rule format that a converter turns into each SIEM's own query language."
+            "say": "A new rule starts silent, in log-only mode, and earns trust in stages."
+          },
+          {
+            "say": "A rule that stops earning its keep is retired."
+          }
+        ],
+        "say": "Treat rules as **detection-as-code**: written like software, kept in Git and versioned. Each change is peer-reviewed and tested against old logs. A new rule starts silent, in log-only mode, and earns trust in stages. A rule that stops earning its keep is retired."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Sigma** is a vendor-neutral rule format; a converter turns it into each SIEM's own query language."
           },
           {
             "code": "title: Office App Spawns PowerShell\nlogsource:\n    product: windows\n    category: process_creation\ndetection:\n    selection:\n        ParentImage|endswith: '\\WINWORD.EXE'\n        Image|endswith: '\\powershell.exe'\n    filter_approved:\n        CommandLine|contains: 'Approved-Report.ps1'\n    condition: selection and not filter_approved\nfalsepositives:\n    - Approved document macros\nlevel: high",
             "language": "Sigma rule (YAML)"
           },
           {
-            "say": "`logsource` names the telemetry the rule needs; if that telemetry is never logged or collected, the rule can never fire. `condition` joins the match to its filter, so the approved script is excluded."
-          }
-        ]
-      },
-      {
-        "say": "Rank what's left by context: the asset's **criticality** and type, and the privilege of the account involved. Then the **data classification** of what the host holds, the likely **impact**, and the **residual risk** left after other controls. The same rule firing on a domain controller under a domain-admin account outranks it firing on a lobby kiosk under a guest account. Category matters too. A **malware alert**, an EDR or sandbox verdict on a file or process, usually means compromise in progress: contain the host. A **vulnerability alert**, a scanner finding, means exposure: route it to remediation on a deadline set by its severity and whether it is known to be exploited.",
-        "beats": [
-          {
-            "say": "Rank what's left by context: the asset's **criticality** and type, and the privilege of the account involved."
+            "say": "`logsource` names the telemetry the rule needs. If that is never logged, the rule can never fire."
           },
           {
-            "say": "Then the **data classification** of what the host holds, the likely **impact**, and the **residual risk** left after other controls."
-          },
-          {
-            "say": "The same rule firing on a domain controller under a domain-admin account outranks it firing on a lobby kiosk under a guest account."
-          },
-          {
-            "say": "Category matters too. A **malware alert**, an EDR or sandbox verdict on a file or process, usually means compromise in progress: contain the host."
-          },
-          {
-            "say": "A **vulnerability alert**, a scanner finding, means exposure: route it to remediation on a deadline set by its severity and whether it is known to be exploited."
+            "say": "`condition` joins the match to its filter, so the approved script is excluded."
           }
         ],
+        "say": "**Sigma** is a vendor-neutral rule format; a converter turns it into each SIEM's own query language. `logsource` names the telemetry the rule needs. If that is never logged, the rule can never fire. `condition` joins the match to its filter, so the approved script is excluded."
+      },
+      {
+        "beats": [
+          {
+            "say": "Rank what is left by context: the asset's **criticality**, type, and the account's privilege."
+          },
+          {
+            "say": "Add the **data classification** of what the host holds, and the likely **impact**."
+          },
+          {
+            "say": "**Residual risk** is what remains after other controls."
+          },
+          {
+            "say": "A domain controller under a domain admin outranks a lobby kiosk under a guest."
+          }
+        ],
+        "say": "Rank what is left by context: the asset's **criticality**, type, and the account's privilege. Add the **data classification** of what the host holds, and the likely **impact**. **Residual risk** is what remains after other controls. A domain controller under a domain admin outranks a lobby kiosk under a guest."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **malware alert** is a verdict from endpoint security that a file or process is hostile."
+          },
+          {
+            "say": "It usually means compromise in progress: contain the host."
+          },
+          {
+            "say": "A **vulnerability alert** is a scanner finding of exposure."
+          },
+          {
+            "say": "Fix it on a deadline set by its severity and known exploitation."
+          }
+        ],
+        "say": "A **malware alert** is a verdict from endpoint security that a file or process is hostile. It usually means compromise in progress: contain the host. A **vulnerability alert** is a scanner finding of exposure. Fix it on a deadline set by its severity and known exploitation.",
         "check": {
           "prompt": "EDR reports a process encrypting files on a payroll laptop; a scanner reports an unpatched, high-severity flaw on a test VM. Which comes first?",
           "answer": "The payroll laptop: that verdict means an attack in progress",
@@ -564,28 +674,58 @@
     "intro": "A stolen password rarely shows up in one log alone. One trace lands in the sign-in records and another in the mail system, and only a SIEM that collects both can join them into an alert. Which sources you collect decides which stories you can ever tell.",
     "steps": [
       {
-        "say": "Each source answers a different question, so every source you add, and parse well, widens what you can see. Add posture: vulnerability scans with **CVE details** (severity, known exploitation), and **CSPM** (cloud security posture management) findings on cloud settings. Add outside eyes: **bug-bounty** reports from outside researchers, and third-party or SaaS-provider logs and breach notices.",
         "beats": [
           {
-            "say": "Each source answers a different question, so every source you add, and parse well, widens what you can see."
+            "say": "Each log source answers a different question."
           },
           {
-            "code": "EDR / OS logs          which process ran, wrote, connected\nfirewall, VPN, proxy   how traffic moved in and out\nDNS resolver           which domains each host looked up\nidentity provider      who signed in, and from where\ncloud control plane    which API calls changed what\napplication logs       how business logic was used or abused\nDLP                    what data left, and by which route",
-            "language": "sources and the question each answers"
+            "code": "EDR        what ran\nfirewall   traffic in/out\nDNS        domains looked up\nidentity   who signed in\ncloud API  what changed\napp logs   app actions\nDLP        what data left",
+            "language": "source: its question"
           },
           {
-            "say": "Add posture: vulnerability scans with **CVE details** (severity, known exploitation), and **CSPM** (cloud security posture management) findings on cloud settings."
+            "say": "**EDR** (endpoint detection and response) tools watch each computer's processes."
           },
           {
-            "say": "Add outside eyes: **bug-bounty** reports from outside researchers, and third-party or SaaS-provider logs and breach notices."
+            "say": "**DLP** (data loss prevention) watches data leaving."
+          },
+          {
+            "say": "A **DNS** resolver turns names into addresses, so its logs show what each host looked up."
           }
-        ]
+        ],
+        "say": "Each log source answers a different question. **EDR** (endpoint detection and response) tools watch each computer's processes. **DLP** (data loss prevention) watches data leaving. A **DNS** resolver turns names into addresses, so its logs show what each host looked up."
       },
       {
-        "say": "Joined on one user, ordinary events become strong. Watch three events on one account within fifteen minutes. Alone, each is common: people travel, make mail rules, approve apps. Together on one account, they nearly prove a stolen credential, the pattern of **business email compromise**.",
         "beats": [
           {
-            "say": "Joined on one user, ordinary events become strong. Watch three events on one account within fifteen minutes."
+            "say": "An **identity provider** handles sign-ins, so its logs show who signed in, and from where."
+          },
+          {
+            "say": "The **cloud control plane** is where API calls change cloud settings, and each call is logged."
+          },
+          {
+            "say": "Application logs show how the app's own logic was used or abused."
+          }
+        ],
+        "say": "An **identity provider** handles sign-ins, so its logs show who signed in, and from where. The **cloud control plane** is where API calls change cloud settings, and each call is logged. Application logs show how the app's own logic was used or abused."
+      },
+      {
+        "beats": [
+          {
+            "say": "Scan reports carry **CVE details**: a known flaw's public ID, its severity, and whether attackers exploit it."
+          },
+          {
+            "say": "**CSPM** (cloud security posture management) checks cloud settings for risky choices."
+          },
+          {
+            "say": "**Bug-bounty** reports bring in outside researchers' findings; SaaS providers add their own logs and breach notices."
+          }
+        ],
+        "say": "Scan reports carry **CVE details**: a known flaw's public ID, its severity, and whether attackers exploit it. **CSPM** (cloud security posture management) checks cloud settings for risky choices. **Bug-bounty** reports bring in outside researchers' findings; SaaS providers add their own logs and breach notices."
+      },
+      {
+        "beats": [
+          {
+            "say": "Joined on one user, ordinary events become strong."
           },
           {
             "figure": {
@@ -596,9 +736,13 @@
             }
           },
           {
-            "say": "Alone, each is common: people travel, make mail rules, approve apps. Together on one account, they nearly prove a stolen credential, the pattern of **business email compromise**."
+            "say": "Alone, each is common: people travel, make mail rules, approve apps."
+          },
+          {
+            "say": "Together on one account within fifteen minutes, they nearly prove a stolen credential: **business email compromise**."
           }
         ],
+        "say": "Joined on one user, ordinary events become strong. Alone, each is common: people travel, make mail rules, approve apps. Together on one account within fifteen minutes, they nearly prove a stolen credential: **business email compromise**.",
         "check": {
           "prompt": "All three events happened to one user, but the rule never fired. The IdP logs `alice@highrook.example`, the mail audit logs `ALICE`, the OAuth log an object GUID. Why?",
           "answer": "No shared user field: the join key was never normalized",
@@ -610,33 +754,39 @@
         }
       },
       {
-        "say": "Judge a SOC by outcomes. **Mean time to detect (MTTD)** is the average time from the start of an intrusion to its discovery. **Mean time to respond (MTTR)** is the average from discovery to response. Notice what an average can't see: an intrusion nobody has found yet is in neither number.",
         "beats": [
           {
-            "say": "Judge a SOC by outcomes. **Mean time to detect (MTTD)** is the average time from the start of an intrusion to its discovery. **Mean time to respond (MTTR)** is the average from discovery to response."
+            "say": "**Mean time to detect** (MTTD) is the average time from the start of an intrusion to its discovery."
           },
           {
-            "code": "incident   intrusion -> detected   detected -> contained\nINC-1      30 h                    4 h\nINC-2      12 h                    2 h\nINC-3      18 h                    6 h\n\nMTTD = (30 + 12 + 18) / 3 = 20 h\nMTTR = (4 + 2 + 6) / 3 = 4 h",
+            "say": "**Mean time to respond** (MTTR) is the average from discovery to response."
+          },
+          {
+            "code": "incident  found  contained\nINC-1     30 h   4 h\nINC-2     12 h   2 h\nINC-3     18 h   6 h\nMTTD = (30+12+18)/3 = 20 h\nMTTR = (4+2+6)/3 = 4 h",
             "language": "this quarter's incidents"
           },
           {
-            "say": "Notice what an average can't see: an intrusion nobody has found yet is in neither number."
-          }
-        ]
-      },
-      {
-        "say": "**Operational dashboards** serve analysts on shift: the live alert queue, the age of open cases, today's noisiest rules. **Executive dashboards** serve leadership: MTTD and MTTR trends, alert volume by severity, incidents by type, and coverage against **MITRE ATT&CK**, the public catalog of attacker techniques. Resist **vanity metrics** such as events processed per day. They grow with the data, not with the defenders' skill.",
-        "beats": [
-          {
-            "say": "**Operational dashboards** serve analysts on shift: the live alert queue, the age of open cases, today's noisiest rules."
-          },
-          {
-            "say": "**Executive dashboards** serve leadership: MTTD and MTTR trends, alert volume by severity, incidents by type, and coverage against **MITRE ATT&CK**, the public catalog of attacker techniques."
-          },
-          {
-            "say": "Resist **vanity metrics** such as events processed per day. They grow with the data, not with the defenders' skill."
+            "say": "An average can't see an intruder nobody has found yet."
           }
         ],
+        "say": "**Mean time to detect** (MTTD) is the average time from the start of an intrusion to its discovery. **Mean time to respond** (MTTR) is the average from discovery to response. An average can't see an intruder nobody has found yet."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Operational dashboards** serve analysts on shift: live queue, case ages."
+          },
+          {
+            "say": "**Executive dashboards** serve leadership: MTTD and MTTR trends, volume, coverage."
+          },
+          {
+            "say": "Coverage is measured against **MITRE ATT&CK**, a public catalog of attacker techniques."
+          },
+          {
+            "say": "Avoid **vanity metrics**, such as events processed per day: they grow with data, not skill."
+          }
+        ],
+        "say": "**Operational dashboards** serve analysts on shift: live queue, case ages. **Executive dashboards** serve leadership: MTTD and MTTR trends, volume, coverage. Coverage is measured against **MITRE ATT&CK**, a public catalog of attacker techniques. Avoid **vanity metrics**, such as events processed per day: they grow with data, not skill.",
         "check": {
           "prompt": "The board asks whether the SOC is getting better. Which chart answers that?",
           "answer": "MTTD and MTTR by quarter, split by severity",
@@ -749,27 +899,44 @@
     "intro": "An attacker who signs in with a stolen password trips no rule, because to every system it's a valid login. What gives them away is that they don't behave like the person whose password they stole. To notice that, you first have to learn what normal looks like for each account and each machine.",
     "steps": [
       {
-        "say": "**UEBA** (user and entity behavior analytics) learns a baseline for each entity from its own history, then flags statistically significant departures from it. It grew out of user-only **UBA**. Now entities include hosts, service accounts, applications and IoT devices, each with its own normal. A user's baseline is login hours, places and devices; a host's, its usual processes; a network segment's, its normal flows; an application's, its usual callers. Baselines adapt as things change, because a static threshold goes stale fast.",
         "beats": [
           {
-            "say": "**UEBA** (user and entity behavior analytics) learns a baseline for each entity from its own history, then flags statistically significant departures from it."
+            "say": "**UEBA** (user and entity behavior analytics) learns what is normal for each entity, then flags big departures."
           },
           {
-            "say": "It grew out of user-only **UBA**. Now entities include hosts, service accounts, applications and IoT devices, each with its own normal."
+            "say": "An **entity** is anything with habits of its own: a user, host, service account or app."
           },
           {
-            "say": "A user's baseline is login hours, places and devices; a host's, its usual processes; a network segment's, its normal flows; an application's, its usual callers."
+            "say": "That learned normal is its **baseline**."
           },
           {
-            "say": "Baselines adapt as things change, because a static threshold goes stale fast."
+            "say": "UEBA grew out of **UBA**, which tracked only users."
           }
-        ]
+        ],
+        "say": "**UEBA** (user and entity behavior analytics) learns what is normal for each entity, then flags big departures. An **entity** is anything with habits of its own: a user, host, service account or app. That learned normal is its **baseline**. UEBA grew out of **UBA**, which tracked only users."
       },
       {
-        "say": "**Peer-group analysis** compares a user with others in the same role. A finance analyst opening engineering source control may be authorized, but no other finance analyst does it. Each anomaly adds to the entity's **risk score**. None crosses the line alone; together they do, and the analyst sees every anomaly that built the score.",
         "beats": [
           {
-            "say": "**Peer-group analysis** compares a user with others in the same role. A finance analyst opening engineering source control may be authorized, but no other finance analyst does it."
+            "say": "Each kind of entity has its own baseline."
+          },
+          {
+            "code": "user     hours, places,\n         devices\nhost     usual processes\nnetwork  normal flows\napp      usual callers",
+            "language": "what each baseline holds"
+          },
+          {
+            "say": "Baselines adapt as things change, because a fixed threshold goes stale fast."
+          }
+        ],
+        "say": "Each kind of entity has its own baseline. Baselines adapt as things change, because a fixed threshold goes stale fast."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Peer-group analysis** compares a user with others in the same role: a finance analyst in engineering source control stands out."
+          },
+          {
+            "say": "Each anomaly adds points to the entity's **risk score**."
           },
           {
             "figure": {
@@ -780,24 +947,28 @@
             }
           },
           {
-            "say": "Each anomaly adds to the entity's **risk score**. None crosses the line alone; together they do, and the analyst sees every anomaly that built the score."
+            "say": "None crosses the line alone; together they do, and the analyst sees every anomaly behind the score."
           }
-        ]
+        ],
+        "say": "**Peer-group analysis** compares a user with others in the same role: a finance analyst in engineering source control stands out. Each anomaly adds points to the entity's **risk score**. None crosses the line alone; together they do, and the analyst sees every anomaly behind the score."
       },
       {
-        "say": "A classic UEBA alert is **impossible travel**: two sign-ins on one account from places too far apart to cover in the time between them. First rule out benign causes: a corporate VPN or cloud proxy can place a genuine sign-in far from the user. Then weigh the device and the network.",
         "beats": [
           {
-            "say": "A classic UEBA alert is **impossible travel**: two sign-ins on one account from places too far apart to cover in the time between them."
+            "say": "An **impossible travel** alert fires when two sign-ins on one account are too far apart to fly between in the time."
           },
           {
-            "code": "user: r.okafor\n10:02  sign-in OK  Toronto, CA  enrolled laptop     home ISP\n10:31  sign-in OK  Warsaw, PL   never-seen device   hosting provider\nflight time needed: ~9 h    time between: 29 min",
+            "code": "user: r.okafor\n10:02 Toronto, CA\n  enrolled laptop, home ISP\n10:31 Warsaw, PL\n  never-seen device,\n  hosting provider\nflight ~9 h, gap 29 min",
             "language": "UEBA alert"
           },
           {
-            "say": "First rule out benign causes: a corporate VPN or cloud proxy can place a genuine sign-in far from the user. Then weigh the device and the network."
+            "say": "First rule out benign causes: a corporate VPN or cloud proxy can place a real sign-in far from the user."
+          },
+          {
+            "say": "Then weigh the device and the network."
           }
         ],
+        "say": "An **impossible travel** alert fires when two sign-ins on one account are too far apart to fly between in the time. First rule out benign causes: a corporate VPN or cloud proxy can place a real sign-in far from the user. Then weigh the device and the network.",
         "check": {
           "prompt": "Highrook has no VPN exit anywhere in Poland. What is the best reading of this alert?",
           "answer": "The Warsaw sign-in is probably someone else using her password",
@@ -809,18 +980,35 @@
         }
       },
       {
-        "say": "Baselines catch what no one could name in advance. A service account should act like a service, so one making an interactive logon is an anomaly even with valid credentials. UEBA shines against three threats: **compromised credentials** (valid login, wrong behavior) and **insider threats** (legitimate access, abnormal use). The third is **lateral movement**: a foothold host reaching systems it never reached before.",
         "beats": [
           {
-            "say": "Baselines catch what no one could name in advance. A service account should act like a service, so one making an interactive logon is an anomaly even with valid credentials."
+            "say": "A service account should act like a service."
           },
           {
-            "say": "UEBA shines against three threats: **compromised credentials** (valid login, wrong behavior) and **insider threats** (legitimate access, abnormal use)."
+            "say": "So an interactive logon from one is an anomaly even with valid credentials."
           },
           {
-            "say": "The third is **lateral movement**: a foothold host reaching systems it never reached before."
+            "say": "Baselines catch what nobody could name in advance."
           }
-        ]
+        ],
+        "say": "A service account should act like a service. So an interactive logon from one is an anomaly even with valid credentials. Baselines catch what nobody could name in advance."
+      },
+      {
+        "beats": [
+          {
+            "say": "UEBA is built for three threats."
+          },
+          {
+            "say": "**Compromised credentials**: a valid login with the wrong behavior."
+          },
+          {
+            "say": "**Insider threats**: legitimate access, abnormal use."
+          },
+          {
+            "say": "**Lateral movement**: a foothold host reaching systems it never reached before."
+          }
+        ],
+        "say": "UEBA is built for three threats. **Compromised credentials**: a valid login with the wrong behavior. **Insider threats**: legitimate access, abnormal use. **Lateral movement**: a foothold host reaching systems it never reached before."
       }
     ],
     "outro": "Next is another impossible-travel alert, with one more fact about the network to weigh. Choose the best response."
@@ -897,39 +1085,47 @@
     "intro": "Some intruders sit inside a network for months and never trip a single alarm. Waiting for an alert won't find them, so someone has to go looking on purpose. That search has a name, and a way of telling whether it's paying off.",
     "steps": [
       {
-        "say": "**Threat hunting** is a proactive search for an adversary already inside. Its yardstick is **dwell time**: how long an intruder stays before being detected. A hunt starts from a **hypothesis**, a testable claim: if an adversary used technique X, it would leave artifact Y. It ends in one of three ways: an incident, a new detection rule, or a documented record of coverage.",
         "beats": [
           {
-            "say": "**Threat hunting** is a proactive search for an adversary already inside. Its yardstick is **dwell time**: how long an intruder stays before being detected."
+            "say": "**Threat hunting** is searching on purpose for an intruder who is already inside."
           },
           {
-            "say": "A hunt starts from a **hypothesis**, a testable claim: if an adversary used technique X, it would leave artifact Y."
+            "say": "Its yardstick is **dwell time**: how long an intruder stays before anyone detects them."
           },
           {
-            "say": "It ends in one of three ways: an incident, a new detection rule, or a documented record of coverage."
+            "say": "A hunt starts from a **hypothesis**: a testable guess that a technique would leave a trace."
           }
-        ]
+        ],
+        "say": "**Threat hunting** is searching on purpose for an intruder who is already inside. Its yardstick is **dwell time**: how long an intruder stays before anyone detects them. A hunt starts from a **hypothesis**: a testable guess that a technique would leave a trace."
       },
       {
-        "say": "Hunts chase **indicators of attack (IoAs)**: behavior, such as a process reading LSASS memory, where Windows keeps logon secrets, to steal credentials. Those behaviors are the adversary's **TTPs**: tactics, techniques and procedures. **Indicators of compromise (IoCs)**, such as one known-bad IP address or file hash, still help, but attackers swap them cheaply, so they go stale fast. Here is a hunt for a **command-and-control (C2)** implant, malware that phones home to its operator on a timer.",
         "beats": [
           {
-            "say": "Hunts chase **indicators of attack (IoAs)**: behavior, such as a process reading LSASS memory, where Windows keeps logon secrets, to steal credentials."
+            "say": "An **indicator of attack** (IoA) is a behavior, such as a process reading the memory where Windows keeps logon secrets."
           },
           {
-            "say": "Those behaviors are the adversary's **TTPs**: tactics, techniques and procedures."
+            "say": "Such behaviors are the attacker's **TTPs**: tactics, techniques and procedures."
           },
           {
-            "say": "**Indicators of compromise (IoCs)**, such as one known-bad IP address or file hash, still help, but attackers swap them cheaply, so they go stale fast."
+            "say": "An **indicator of compromise** (IoC) is a single trace, like a known-bad IP address or file hash."
+          }
+        ],
+        "say": "An **indicator of attack** (IoA) is a behavior, such as a process reading the memory where Windows keeps logon secrets. Such behaviors are the attacker's **TTPs**: tactics, techniques and procedures. An **indicator of compromise** (IoC) is a single trace, like a known-bad IP address or file hash."
+      },
+      {
+        "beats": [
+          {
+            "say": "Attackers swap IoCs cheaply, so they go stale fast."
           },
           {
-            "say": "Here is a hunt for a **command-and-control (C2)** implant, malware that phones home to its operator on a timer."
+            "say": "Here is a hunt for a **command-and-control** (C2) implant: malware that phones home to its operator on a timer."
           },
           {
-            "code": "Hypothesis  A C2 implant beacons home on a fixed sleep timer\nTelemetry   netflow and DNS logs, last 30 days\nTest        hosts whose outbound HTTPS to one destination\n            repeats at near-regular intervals\nTooling     RITA, which scores Zeek network logs for beaconing",
+            "code": "Hypothesis\n  C2 implant beacons home\n  on a fixed sleep timer\nTelemetry\n  netflow and DNS, 30 days\nTest\n  outbound HTTPS to one\n  destination at regular\n  intervals\nTool\n  RITA scores Zeek logs\n  for beaconing",
             "language": "hunt plan"
           }
         ],
+        "say": "Attackers swap IoCs cheaply, so they go stale fast. Here is a hunt for a **command-and-control** (C2) implant: malware that phones home to its operator on a timer.",
         "check": {
           "prompt": "The test finds nothing on any host. Was the hunt wasted?",
           "answer": "No: save the query as a rule and record the coverage",
@@ -941,27 +1137,26 @@
         }
       },
       {
-        "say": "**Internal reconnaissance** means mapping your own network as an intruder would: asset lists, Active Directory, which hosts can reach which. Whatever you can discover from inside, an attacker on a foothold can too. It also means watching for the intruder's own discovery, such as a workstation suddenly probing whole subnets. In an **adversary emulation** engagement, a red or purple team replays a named threat actor's ATT&CK techniques, with tools such as MITRE Caldera or Atomic Red Team. Every technique that raises no alert is a detection gap, and a ready-made hunt hypothesis.",
         "beats": [
           {
-            "say": "**Internal reconnaissance** means mapping your own network as an intruder would: asset lists, Active Directory, which hosts can reach which."
+            "say": "**Internal reconnaissance** is mapping your own network the way an intruder would."
           },
           {
-            "say": "Whatever you can discover from inside, an attacker on a foothold can too. It also means watching for the intruder's own discovery, such as a workstation suddenly probing whole subnets."
+            "say": "Watch for it: a workstation probing whole subnets."
           },
           {
-            "say": "In an **adversary emulation** engagement, a red or purple team replays a named threat actor's ATT&CK techniques, with tools such as MITRE Caldera or Atomic Red Team."
+            "say": "In an **adversary emulation**, a red or purple team replays a real attacker's techniques."
           },
           {
-            "say": "Every technique that raises no alert is a detection gap, and a ready-made hunt hypothesis."
+            "say": "Any technique that raises no alert is a gap, and a ready-made hunt."
           }
-        ]
+        ],
+        "say": "**Internal reconnaissance** is mapping your own network the way an intruder would. Watch for it: a workstation probing whole subnets. In an **adversary emulation**, a red or purple team replays a real attacker's techniques. Any technique that raises no alert is a gap, and a ready-made hunt."
       },
       {
-        "say": "Deception gives the cleanest signal of all, because no legitimate user has any reason to touch a decoy. A **honeypot** is one decoy system; a **honeynet** is an isolated network of them. **Low-interaction** honeypots emulate a few services and catch automated scans. **High-interaction** honeypots are real systems that reveal an intruder's tradecraft, but they must be contained so they can't become a pivot. A **honey token** (or honey credential) is a decoy secret, such as a fake cloud key in a home directory. Once scanners are allowlisted, any use of it is a high-confidence alert.",
         "beats": [
           {
-            "say": "Deception gives the cleanest signal of all, because no legitimate user has any reason to touch a decoy."
+            "say": "A **honeypot** is a decoy system no legitimate user has reason to touch. A **honeynet** is an isolated network of them."
           },
           {
             "figure": {
@@ -972,18 +1167,27 @@
             }
           },
           {
-            "say": "A **honeypot** is one decoy system; a **honeynet** is an isolated network of them."
+            "say": "**Low-interaction** honeypots only emulate a few services, catching automated scans."
           },
           {
-            "say": "**Low-interaction** honeypots emulate a few services and catch automated scans."
-          },
-          {
-            "say": "**High-interaction** honeypots are real systems that reveal an intruder's tradecraft, but they must be contained so they can't become a pivot."
-          },
-          {
-            "say": "A **honey token** (or honey credential) is a decoy secret, such as a fake cloud key in a home directory. Once scanners are allowlisted, any use of it is a high-confidence alert."
+            "say": "**High-interaction** ones are real systems: they reveal methods, but must be contained."
           }
-        ]
+        ],
+        "say": "A **honeypot** is a decoy system no legitimate user has reason to touch. A **honeynet** is an isolated network of them. **Low-interaction** honeypots only emulate a few services, catching automated scans. **High-interaction** ones are real systems: they reveal methods, but must be contained."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **honey token** is a decoy secret, such as a fake cloud key in a home directory."
+          },
+          {
+            "say": "Once scanners are allowlisted, any use of it is a high-confidence alert."
+          },
+          {
+            "say": "Whatever you hunt with, a hunt ends in an incident, a new rule, or a record of coverage."
+          }
+        ],
+        "say": "A **honey token** is a decoy secret, such as a fake cloud key in a home directory. Once scanners are allowlisted, any use of it is a high-confidence alert. Whatever you hunt with, a hunt ends in an incident, a new rule, or a record of coverage."
       }
     ],
     "outro": "Now you have a hypothesis about a different technique. Choose the telemetry and the test that would check it."
@@ -1125,37 +1329,61 @@
     "intro": "The crew that hits your bank on Tuesday may have hit another bank on Monday with the same tools. If that bank's defenders share what they saw, you can be ready before the attack arrives. That only works if you know what counts as intelligence and where it comes from.",
     "steps": [
       {
-        "say": "**Threat intelligence** is refined information about adversaries: their tools, infrastructure, targets and TTPs. It comes from many kinds of source. An **ISAC** (information sharing and analysis center) is a members-only community for one sector, so its warnings fit your threats closely. **OSINT** is open-source intelligence: anything public. Weigh track record, freshness and corroboration. The **Admiralty system** grades a source A (completely reliable) to F (cannot be judged), and its information 1 (confirmed) to 6 (cannot be judged). Guard your own work (**OPSEC**): look into suspect domains only from isolated systems, and watch the dark web passively, since posing as a buyer carries legal and OPSEC risk. Label what you share with the **Traffic Light Protocol (TLP)**: TLP:RED for named recipients only, then AMBER+STRICT, AMBER and GREEN, out to TLP:CLEAR for public release.",
         "beats": [
           {
-            "say": "**Threat intelligence** is refined information about adversaries: their tools, infrastructure, targets and TTPs. It comes from many kinds of source."
+            "say": "**Threat intelligence** is refined information about adversaries: their tools, infrastructure and targets."
           },
           {
-            "code": "OSINT        public feeds, vendor blogs, CISA advisories\ncommercial   paid vendor feeds with curated context\ngovernment   CISA's Automated Indicator Sharing (AIS)\nISACs        sector groups such as FS-ISAC, H-ISAC\ninternal     your own incidents, hunts and honeynets\ndark web     forums selling stolen logins or access",
+            "code": "OSINT       public sources\ncommercial  paid feeds\ngovernment  CISA's AIS\nISACs       sector groups\ninternal    own incidents\ndark web    stolen logins",
             "language": "intelligence sources"
           },
           {
-            "say": "An **ISAC** (information sharing and analysis center) is a members-only community for one sector, so its warnings fit your threats closely. **OSINT** is open-source intelligence: anything public."
+            "say": "An **ISAC** (information sharing and analysis center) is a members-only community for one sector."
           },
           {
-            "say": "Weigh track record, freshness and corroboration. The **Admiralty system** grades a source A (completely reliable) to F (cannot be judged), and its information 1 (confirmed) to 6 (cannot be judged)."
+            "say": "**OSINT** is open-source intelligence: anything public."
           },
           {
-            "say": "Guard your own work (**OPSEC**): look into suspect domains only from isolated systems, and watch the dark web passively, since posing as a buyer carries legal and OPSEC risk."
-          },
-          {
-            "say": "Label what you share with the **Traffic Light Protocol (TLP)**: TLP:RED for named recipients only, then AMBER+STRICT, AMBER and GREEN, out to TLP:CLEAR for public release."
+            "say": "CISA's **AIS** is the government's Automated Indicator Sharing feed."
           }
-        ]
+        ],
+        "say": "**Threat intelligence** is refined information about adversaries: their tools, infrastructure and targets. An **ISAC** (information sharing and analysis center) is a members-only community for one sector. **OSINT** is open-source intelligence: anything public. CISA's **AIS** is the government's Automated Indicator Sharing feed."
       },
       {
-        "say": "Shared indicators travel as **STIX**, a JSON data model for intelligence, carried over **TAXII**, an HTTPS REST protocol organised into collections: the letter, and the post that delivers it. A **threat intelligence platform (TIP)** sits in the middle. It pulls STIX bundles over TAXII, then deduplicates, scores and ages the indicators. It pushes only high-confidence indicators to firewalls, DNS resolvers and EDR, adds context to SIEM alerts, and records each match the SOC sees as a **sighting** to share back. A raw feed wired straight to a blocklist will, sooner or later, block a cloud provider, a customer's mail server, or your own VPN.",
         "beats": [
           {
-            "say": "Shared indicators travel as **STIX**, a JSON data model for intelligence, carried over **TAXII**, an HTTPS REST protocol organised into collections: the letter, and the post that delivers it."
+            "say": "Weigh a source's track record, freshness and corroboration."
           },
           {
-            "say": "A **threat intelligence platform (TIP)** sits in the middle. It pulls STIX bundles over TAXII, then deduplicates, scores and ages the indicators."
+            "say": "The **Admiralty system** grades the source A to F and its information 1 to 6."
+          },
+          {
+            "code": "source reliability\nA  completely reliable\nF  cannot be judged\ninformation accuracy\n1  confirmed\n6  cannot be judged",
+            "language": "Admiralty system"
+          },
+          {
+            "say": "Guard your own work (**OPSEC**): study suspect domains only from isolated systems."
+          },
+          {
+            "say": "Label what you share with the **Traffic Light Protocol** (TLP)."
+          },
+          {
+            "code": "RED           named people\nAMBER+STRICT  org only\nAMBER         org and clients\nGREEN         community\nCLEAR         public",
+            "language": "TLP, most to least secret"
+          }
+        ],
+        "say": "Weigh a source's track record, freshness and corroboration. The **Admiralty system** grades the source A to F and its information 1 to 6. Guard your own work (**OPSEC**): study suspect domains only from isolated systems. Label what you share with the **Traffic Light Protocol** (TLP)."
+      },
+      {
+        "beats": [
+          {
+            "say": "**STIX** is a standard format for describing intelligence: the letter."
+          },
+          {
+            "say": "**TAXII** is the HTTPS service that carries it: the post."
+          },
+          {
+            "say": "A **threat intelligence platform** (TIP) pulls both in, then deduplicates, scores and ages indicators."
           },
           {
             "figure": {
@@ -1164,14 +1392,20 @@
               "caption": "A TIP at the centre",
               "src": "_dot/9b1621e72a1433b1.svg"
             }
-          },
-          {
-            "say": "It pushes only high-confidence indicators to firewalls, DNS resolvers and EDR, adds context to SIEM alerts, and records each match the SOC sees as a **sighting** to share back."
-          },
-          {
-            "say": "A raw feed wired straight to a blocklist will, sooner or later, block a cloud provider, a customer's mail server, or your own VPN."
           }
         ],
+        "say": "**STIX** is a standard format for describing intelligence: the letter. **TAXII** is the HTTPS service that carries it: the post. A **threat intelligence platform** (TIP) pulls both in, then deduplicates, scores and ages indicators."
+      },
+      {
+        "beats": [
+          {
+            "say": "It sends only high-confidence indicators to blocklists, and shares each **sighting** back."
+          },
+          {
+            "say": "Wiring a raw feed straight to a blocklist will eventually block something innocent, like your own VPN."
+          }
+        ],
+        "say": "It sends only high-confidence indicators to blocklists, and shares each **sighting** back. Wiring a raw feed straight to a blocklist will eventually block something innocent, like your own VPN.",
         "check": {
           "prompt": "An IP indicator was first and last seen in 2021. What should the TIP do with it today?",
           "answer": "Age it out, or score it down to context only",
@@ -1183,32 +1417,38 @@
         }
       },
       {
-        "say": "Three open rule languages carry shared detections: **Sigma** for log events, **YARA** for patterns inside files, and **Snort** (or Suricata) for network packets. **RITA** is different: it scores Zeek network logs for beaconing, with no signature at all. Read a Snort header left to right: action, protocol, source address and port, the direction arrow, then destination address and port. Options follow in parentheses. `sid` is the rule's ID, 1,000,000 and up for local rules, and `rev` is its revision.",
         "beats": [
           {
-            "say": "Three open rule languages carry shared detections: **Sigma** for log events, **YARA** for patterns inside files, and **Snort** (or Suricata) for network packets."
+            "say": "Open rule languages carry shared detections, each aimed at different data."
           },
           {
-            "say": "**RITA** is different: it scores Zeek network logs for beaconing, with no signature at all."
+            "say": "**Sigma** matches log events."
+          },
+          {
+            "say": "**YARA** matches patterns in files."
+          },
+          {
+            "say": "**Snort** matches network packets."
+          },
+          {
+            "say": "**RITA** scores Zeek network logs for beaconing, with no signature."
           },
           {
             "code": "alert tcp $HOME_NET any -> $EXTERNAL_NET 4444 (msg:\"Outbound to common reverse-shell port\"; flow:to_server,established; sid:1000001; rev:1;)",
             "language": "Snort rule"
           },
           {
-            "say": "Read a Snort header left to right: action, protocol, source address and port, the direction arrow, then destination address and port."
+            "code": "alert      action\ntcp        protocol\n$HOME_NET  source address\nany        source port\n->         direction\n$EXTERNAL_NET\n           destination\n4444       destination port\nsid        rule ID (1000000+\n           is local)\nrev        revision",
+            "language": "reading the Snort rule"
           },
           {
-            "say": "Options follow in parentheses. `sid` is the rule's ID, 1,000,000 and up for local rules, and `rev` is its revision."
+            "say": "Read it left to right, as the table shows."
           }
-        ]
+        ],
+        "say": "Open rule languages carry shared detections, each aimed at different data. **Sigma** matches log events. **YARA** matches patterns in files. **Snort** matches network packets. **RITA** scores Zeek network logs for beaconing, with no signature. Read it left to right, as the table shows."
       },
       {
-        "say": "Files get their own language. Here is a YARA rule for a fake browser-update loader. A YARA rule has `meta` notes, `strings` to look for, and a `condition` that says when to fire. `uint16(0) == 0x5A4D` means the file starts with MZ, a Windows executable; `2 of ($s*)` means at least two strings whose names start with `$s`.",
         "beats": [
-          {
-            "say": "Files get their own language. Here is a YARA rule for a fake browser-update loader."
-          },
           {
             "code": "rule Loader_FakeBrowserUpdate\n{\n    meta:\n        description = \"Fake browser-update loader\"\n    strings:\n        $s1 = \"Your browser is out of date\" ascii nocase\n        $s2 = \"Install update now\" ascii nocase\n        $s3 = \"update-cdn-check\" ascii\n        $hex = { 4C 6F 61 64 65 72 }   // \"Loader\"\n    condition:\n        uint16(0) == 0x5A4D and 2 of ($s*) and $hex\n}",
             "language": "YARA rule"
@@ -1217,9 +1457,13 @@
             "say": "A YARA rule has `meta` notes, `strings` to look for, and a `condition` that says when to fire."
           },
           {
-            "say": "`uint16(0) == 0x5A4D` means the file starts with MZ, a Windows executable; `2 of ($s*)` means at least two strings whose names start with `$s`."
+            "say": "`uint16(0) == 0x5A4D` means the file starts with MZ, a Windows executable."
+          },
+          {
+            "say": "`2 of ($s*)` means at least two strings whose names start with `$s`."
           }
         ],
+        "say": "A YARA rule has `meta` notes, `strings` to look for, and a `condition` that says when to fire. `uint16(0) == 0x5A4D` means the file starts with MZ, a Windows executable. `2 of ($s*)` means at least two strings whose names start with `$s`.",
         "check": {
           "prompt": "A Windows executable contains `$s1` and `$hex`, and nothing else from the rule. Does the rule fire?",
           "answer": "No: it needs two of the `$s` strings",

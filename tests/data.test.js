@@ -1950,7 +1950,7 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
 
   // Frames a beginner can read (WRITING_GUIDE: Beats a beginner can read). Sets move
   // to this as their scenes are rewritten.
-  const LIGHT_FRAMES = setId => /^netplus_01_/.test(setId);
+  const LIGHT_FRAMES = setId => /^netplus_0[1567]_|^securityx_1[12]_/.test(setId);
   const wordCount = s => s.replace(/[*`]/g, '').split(/\s+/).filter(Boolean).length;
 
   it('a rewritten set keeps each frame light: short beats, few new terms, 50 words on screen', () => {
