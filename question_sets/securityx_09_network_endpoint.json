@@ -3,34 +3,47 @@
     "type": "npc_demo",
     "question": "NPC: How do you track your systems and change them safely?",
     "npc": "val",
-    "intro": "I'm Val, the Guild's Ward-Smith. At two in the morning, someone tweaks a firewall rule to end an outage, and six months later nobody can say why it's there. Multiply that by a few thousand systems and you no longer know what your network looks like, let alone how to defend it. It all begins with the path a change should take before anyone makes it.",
+    "intro": "I'm Val, the Guild's Ward-Smith. At two in the morning, someone tweaks a firewall rule to end an outage, and six months later nobody can say why it's there. Multiply that by a few thousand systems and you no longer know what your network looks like. It all begins with the path a change should take before anyone makes it.",
     "steps": [
       {
         "beats": [
           {
-            "say": "A **change** is any edit to production: a firewall rule, a patch, a route. **Change management** is the formal path a change takes before it is made."
+            "say": "A **change** is any edit to production: a firewall rule, a patch, a route."
           },
           {
-            "say": "Four steps: request and impact assessment, approval by a **Change Advisory Board** (CAB), a scheduled implementation window, and a post-implementation review recorded against the ticket."
+            "say": "**Change management** is the formal path a change takes before it is made."
+          },
+          {
+            "code": "1 request and impact\n  assessment\n2 approval by the CAB\n3 scheduled window\n4 post-implementation\n  review, on the ticket",
+            "language": "the four steps"
+          },
+          {
+            "say": "Approval comes from a **Change Advisory Board (CAB)**."
+          },
+          {
+            "say": "The review is recorded against the ticket."
           }
         ],
-        "say": "A **change** is any edit to production: a firewall rule, a patch, a route. **Change management** is the formal path a change takes before it is made. Four steps: request and impact assessment, approval by a **Change Advisory Board** (CAB), a scheduled implementation window, and a post-implementation review recorded against the ticket."
+        "say": "A **change** is any edit to production: a firewall rule, a patch, a route. **Change management** is the formal path a change takes before it is made. Approval comes from a **Change Advisory Board (CAB)**. The review is recorded against the ticket."
       },
       {
         "beats": [
           {
-            "say": "**Configuration management** is the data side: each system has a declared desired state from a hardened **baseline**, such as a CIS Benchmark, and any unapproved departure from it is **configuration drift**."
+            "say": "**Configuration management** records how each system should be set up."
+          },
+          {
+            "say": "That declared state comes from a hardened **baseline**, such as a CIS Benchmark."
+          },
+          {
+            "say": "Any unapproved departure from it is **configuration drift**."
           }
         ],
-        "say": "**Configuration management** is the data side: each system has a declared desired state from a hardened **baseline**, such as a CIS Benchmark, and any unapproved departure from it is **configuration drift**."
+        "say": "**Configuration management** records how each system should be set up. That declared state comes from a hardened **baseline**, such as a CIS Benchmark. Any unapproved departure from it is **configuration drift**."
       },
       {
         "beats": [
           {
-            "say": "The system of record for all of it is the **CMDB**: every asset is a configuration item with attributes and links to other items."
-          },
-          {
-            "say": "An **inventory** is only the raw list of what exists; the CMDB adds owner, VLAN, patch group, and compliance scope. Neither stays honest by hand, so mature teams reconcile it automatically against cloud APIs, Active Directory, the EDR console, and MDM enrollment."
+            "say": "The system of record for all of it is the **configuration management database (CMDB)**."
           },
           {
             "figure": {
@@ -41,9 +54,31 @@
             }
           },
           {
+            "say": "Each asset is an item with attributes and links to other items."
+          },
+          {
             "say": "A good record answers, six months later, why a rule exists in one click."
           }
         ],
+        "say": "The system of record for all of it is the **configuration management database (CMDB)**. Each asset is an item with attributes and links to other items. A good record answers, six months later, why a rule exists in one click."
+      },
+      {
+        "beats": [
+          {
+            "say": "An **inventory** is only the raw list of what exists."
+          },
+          {
+            "say": "The CMDB adds owner, VLAN, patch group and compliance scope."
+          },
+          {
+            "say": "Neither stays honest by hand, so mature teams reconcile it automatically against sources like these."
+          },
+          {
+            "code": "cloud APIs\n  every cloud asset\nActive Directory\n  domain computers\nEDR console\n  endpoints with an agent\nMDM enrollment\n  enrolled phones",
+            "language": "discovery sources"
+          }
+        ],
+        "say": "An **inventory** is only the raw list of what exists. The CMDB adds owner, VLAN, patch group and compliance scope. Neither stays honest by hand, so mature teams reconcile it automatically against sources like these.",
         "check": {
           "prompt": "An auditor asks who owns a server and which compliance scope it is in. The inventory lists the server. Is that enough?",
           "answer": "No: owner and scope live in the CMDB, not the inventory",
@@ -52,8 +87,7 @@
             "Yes, as long as the server also appears in the EDR console"
           ],
           "why": "An inventory only says the server exists. The CMDB holds it as a configuration item with an owner, relationships and compliance scope, which is why the two are reconciled against each other."
-        },
-        "say": "The system of record for all of it is the **CMDB**: every asset is a configuration item with attributes and links to other items. An **inventory** is only the raw list of what exists; the CMDB adds owner, VLAN, patch group, and compliance scope. Neither stays honest by hand, so mature teams reconcile it automatically against cloud APIs, Active Directory, the EDR console, and MDM enrollment. A good record answers, six months later, why a rule exists in one click."
+        }
       }
     ],
     "outro": "Next, servers turn up in two other tools but not in the CMDB. Decide what that gap tells you."
@@ -142,7 +176,22 @@
       {
         "beats": [
           {
-            "say": "**Traditional antivirus** matches files against a database of known-bad hashes. Fast and quiet, but blind to anything new: a freshly compiled implant, a fileless payload, an attack using only built-in tools."
+            "say": "**Traditional antivirus** compares each file's fingerprint, its hash, with a database of known-bad ones."
+          },
+          {
+            "say": "That is fast and quiet, but blind to anything new."
+          },
+          {
+            "code": "blind to\n  a freshly compiled\n  implant\n  a fileless payload\n  an attack using only\n  built-in tools",
+            "language": "what AV misses"
+          }
+        ],
+        "say": "**Traditional antivirus** compares each file's fingerprint, its hash, with a database of known-bad ones. That is fast and quiet, but blind to anything new."
+      },
+      {
+        "beats": [
+          {
+            "say": "**EDR** (endpoint detection and response) records what each computer does: processes, network connections, file and registry changes."
           },
           {
             "figure": {
@@ -151,27 +200,33 @@
               "caption": "two different questions",
               "src": "_dot/248dbda04d3a3a3f.svg"
             }
-          }
-        ],
-        "say": "**Traditional antivirus** matches files against a database of known-bad hashes. Fast and quiet, but blind to anything new: a freshly compiled implant, a fileless payload, an attack using only built-in tools."
-      },
-      {
-        "beats": [
-          {
-            "say": "**EDR** streams continuous telemetry from every endpoint - process creations, network connections, file and registry operations - to a cloud backend that looks for suspicious *sequences*, not just bad files."
           },
           {
-            "say": "Watch a real sequence. A macro-enabled document spawns `powershell.exe`; that PowerShell reaches out to an external IP; it downloads and runs a payload. No single step is damning."
+            "say": "A cloud backend looks for suspicious *sequences*, not just bad files."
           }
         ],
-        "say": "**EDR** streams continuous telemetry from every endpoint - process creations, network connections, file and registry operations - to a cloud backend that looks for suspicious *sequences*, not just bad files. Watch a real sequence. A macro-enabled document spawns `powershell.exe`; that PowerShell reaches out to an external IP; it downloads and runs a payload. No single step is damning."
+        "say": "**EDR** (endpoint detection and response) records what each computer does: processes, network connections, file and registry changes. A cloud backend looks for suspicious *sequences*, not just bad files."
       },
       {
         "beats": [
           {
-            "say": "Signature AV cannot express 'a document spawned PowerShell that then fetched code': a sequence is not a file it can hash. A behaviour-based backend fingerprints the whole chain instead."
+            "say": "Watch a real sequence, step by step."
+          },
+          {
+            "code": "1 a macro document starts\n  powershell.exe\n2 PowerShell reaches out\n  to an external IP\n3 it downloads and runs\n  a payload",
+            "language": "one attack chain"
+          },
+          {
+            "say": "No single step is damning on its own."
+          },
+          {
+            "say": "Antivirus cannot hash a sequence, since it is not a file."
+          },
+          {
+            "say": "A behaviour-based backend fingerprints the whole chain instead."
           }
         ],
+        "say": "Watch a real sequence, step by step. No single step is damning on its own. Antivirus cannot hash a sequence, since it is not a file. A behaviour-based backend fingerprints the whole chain instead.",
         "check": {
           "prompt": "An attacker runs the exact same download-and-execute chain but recompiles the payload so its hash is brand new. Which detection still fires?",
           "answer": "EDR: the behaviour sequence is unchanged even though the file hash is new",
@@ -180,22 +235,44 @@
             "Neither: a new hash defeats every endpoint control equally"
           ],
           "why": "A new hash defeats hash matching, but the suspicious process lineage and network behaviour are identical, so the behaviour-based model still catches it."
-        },
-        "say": "Signature AV cannot express 'a document spawned PowerShell that then fetched code': a sequence is not a file it can hash. A behaviour-based backend fingerprints the whole chain instead."
+        }
       },
       {
         "beats": [
           {
-            "say": "Two older host terms still turn up in audits. A **HIDS** only detects and alerts on host activity; a **HIPS** can also block it - the host-level echo of network IDS versus IPS. Modern EDR folds both in."
+            "say": "A **HIDS** only detects and alerts on host activity."
           },
           {
-            "say": "A **host firewall** does something different again: it filters packets per host, so a workstation can refuse SMB or RDP from a peer workstation even when the network's internal policy is permissive."
+            "say": "A **HIPS** can also block it."
           },
           {
-            "say": "Three more host controls shrink what an attacker can do: **endpoint privilege management** removes standing admin rights, **application allowlisting** runs only approved programs, and **browser isolation** renders web pages away from the device."
+            "say": "Modern EDR folds both in."
+          },
+          {
+            "say": "A **host firewall** filters packets per host."
+          },
+          {
+            "say": "So a workstation can refuse SMB (file sharing) or RDP (remote desktop) from a peer, even if the network allows it."
           }
         ],
-        "say": "Two older host terms still turn up in audits. A **HIDS** only detects and alerts on host activity; a **HIPS** can also block it - the host-level echo of network IDS versus IPS. Modern EDR folds both in. A **host firewall** does something different again: it filters packets per host, so a workstation can refuse SMB or RDP from a peer workstation even when the network's internal policy is permissive. Three more host controls shrink what an attacker can do: **endpoint privilege management** removes standing admin rights, **application allowlisting** runs only approved programs, and **browser isolation** renders web pages away from the device."
+        "say": "A **HIDS** only detects and alerts on host activity. A **HIPS** can also block it. Modern EDR folds both in. A **host firewall** filters packets per host. So a workstation can refuse SMB (file sharing) or RDP (remote desktop) from a peer, even if the network allows it."
+      },
+      {
+        "beats": [
+          {
+            "say": "Three more host controls shrink what an attacker can do."
+          },
+          {
+            "say": "**Endpoint privilege management** removes standing admin rights."
+          },
+          {
+            "say": "**Application allowlisting** runs only approved programs."
+          },
+          {
+            "say": "**Browser isolation** renders web pages away from the device."
+          }
+        ],
+        "say": "Three more host controls shrink what an attacker can do. **Endpoint privilege management** removes standing admin rights. **Application allowlisting** runs only approved programs. **Browser isolation** renders web pages away from the device."
       }
     ],
     "outro": "Your turn: an attacker runs code without ever writing a new file to disk. Decide which capability would most likely have caught it."
@@ -298,35 +375,52 @@
       {
         "beats": [
           {
-            "say": "Least privilege, allowlisting, and mandatory access control all cut the attacker's options after they land. The Linux one worth drilling is **SELinux**."
+            "say": "On Linux, the control worth drilling is **SELinux**."
           },
           {
-            "say": "SELinux is **mandatory access control**: each process runs under a policy that limits the files, sockets, and capabilities it may touch, so a compromised service cannot freely read `/etc/shadow` even as root."
+            "say": "It is **mandatory access control**: each process runs under a policy limiting the files, sockets and capabilities it may touch."
+          },
+          {
+            "say": "So a compromised service cannot freely read `/etc/shadow`, even as root."
           }
         ],
-        "say": "Least privilege, allowlisting, and mandatory access control all cut the attacker's options after they land. The Linux one worth drilling is **SELinux**. SELinux is **mandatory access control**: each process runs under a policy that limits the files, sockets, and capabilities it may touch, so a compromised service cannot freely read `/etc/shadow` even as root."
+        "say": "On Linux, the control worth drilling is **SELinux**. It is **mandatory access control**: each process runs under a policy limiting the files, sockets and capabilities it may touch. So a compromised service cannot freely read `/etc/shadow`, even as root."
       },
       {
         "beats": [
           {
-            "say": "SELinux has three modes. `getenforce` prints the current one."
+            "say": "SELinux has three modes."
+          },
+          {
+            "code": "mode        effect\nEnforcing   blocks, logs\nPermissive  logs only\nDisabled    off entirely",
+            "language": "SELinux modes"
+          },
+          {
+            "say": "**Enforcing** blocks and logs denials."
+          },
+          {
+            "say": "**Permissive** only logs them."
+          },
+          {
+            "say": "**Disabled** turns it off."
           },
           {
             "code": "$ getenforce\nEnforcing",
-            "language": "shell"
+            "language": "current mode"
           },
           {
-            "say": "**Enforcing** blocks and logs denials. **Permissive** only logs them, blocking nothing. **Disabled** turns it off entirely. `setenforce` flips between enforcing and permissive at runtime."
+            "say": "`getenforce` prints the current mode, and `setenforce` flips between enforcing and permissive while running."
           }
         ],
-        "say": "SELinux has three modes. `getenforce` prints the current one. **Enforcing** blocks and logs denials. **Permissive** only logs them, blocking nothing. **Disabled** turns it off entirely. `setenforce` flips between enforcing and permissive at runtime."
+        "say": "SELinux has three modes. **Enforcing** blocks and logs denials. **Permissive** only logs them. **Disabled** turns it off. `getenforce` prints the current mode, and `setenforce` flips between enforcing and permissive while running."
       },
       {
         "beats": [
           {
-            "say": "The classic mistake comes when an application breaks, a denial shows in the log, and someone reaches for `setenforce 0`."
+            "say": "The classic mistake: an application breaks, a denial shows in the log, and someone reaches for `setenforce 0`."
           }
         ],
+        "say": "The classic mistake: an application breaks, a denial shows in the log, and someone reaches for `setenforce 0`.",
         "check": {
           "prompt": "A service is denied access it legitimately needs, and a teammate proposes setenforce 0 to make the error go away. What does that command actually do?",
           "answer": "Drops the entire host to permissive, so SELinux logs denials but blocks nothing",
@@ -335,16 +429,25 @@
             "Permanently disables SELinux so it stays off after the next reboot"
           ],
           "why": "`setenforce 0` is host-wide and temporary: every confined process stops being blocked, not only the failing one, until enforcement is switched back on or the host reboots."
-        },
-        "say": "The classic mistake comes when an application breaks, a denial shows in the log, and someone reaches for `setenforce 0`."
+        }
       },
       {
         "beats": [
           {
-            "say": "The same idea on Windows is **Attack Surface Reduction**: Defender **ASR rules** block risky behaviours like Office spawning child processes or credential theft from LSASS. Cheap, broad, and often disabled because they break a vendor tool - so test new rules in audit mode first."
+            "say": "The same idea on Windows is **Attack Surface Reduction**: Defender **ASR rules** block risky behaviours."
+          },
+          {
+            "code": "ASR rules block\n  Office spawning child\n  processes\n  credential theft from\n  LSASS, the process\n  holding logon secrets",
+            "language": "examples"
+          },
+          {
+            "say": "They are cheap and broad, but often disabled because they break a vendor tool."
+          },
+          {
+            "say": "So test new rules in audit mode first."
           }
         ],
-        "say": "The same idea on Windows is **Attack Surface Reduction**: Defender **ASR rules** block risky behaviours like Office spawning child processes or credential theft from LSASS. Cheap, broad, and often disabled because they break a vendor tool - so test new rules in audit mode first."
+        "say": "The same idea on Windows is **Attack Surface Reduction**: Defender **ASR rules** block risky behaviours. They are cheap and broad, but often disabled because they break a vendor tool. So test new rules in audit mode first."
       }
     ],
     "outro": "Next, an application is failing on SELinux denials just before a demo. Choose the response that fixes it and keeps the host protected."
@@ -415,12 +518,30 @@
       {
         "beats": [
           {
-            "say": "An **IDS** inspects a copy of traffic and alerts; an **IPS** sits inline and can drop. A **false positive** is legitimate traffic that matches an attack signature - an internal vulnerability scanner trips dozens of rules."
+            "say": "An **IDS** inspects a copy of the traffic and alerts."
           },
           {
-            "say": "The fix is scoped: suppress the *specific expected rules* for the scanner's address. Suppressing *all* alerts from that host blinds you to a real attacker who later lands on it."
+            "say": "An **IPS** sits inline and can drop traffic."
+          },
+          {
+            "say": "A **false positive** is legitimate traffic that matches an attack signature."
+          },
+          {
+            "say": "An internal vulnerability scanner trips dozens of rules."
           }
         ],
+        "say": "An **IDS** inspects a copy of the traffic and alerts. An **IPS** sits inline and can drop traffic. A **false positive** is legitimate traffic that matches an attack signature. An internal vulnerability scanner trips dozens of rules."
+      },
+      {
+        "beats": [
+          {
+            "say": "The fix is scoped: suppress the specific expected rules for the scanner's address."
+          },
+          {
+            "say": "Suppressing all alerts from that host blinds you to a real attacker who later lands on it."
+          }
+        ],
+        "say": "The fix is scoped: suppress the specific expected rules for the scanner's address. Suppressing all alerts from that host blinds you to a real attacker who later lands on it.",
         "check": {
           "prompt": "An attack crosses the IPS inside a TLS session it cannot decrypt, and no alert fires. What kind of failure is that?",
           "answer": "A false negative: a real attack the sensor missed",
@@ -429,31 +550,77 @@
             "A true negative: no attack, so no alert"
           ],
           "why": "A false negative is a real attack with no alert, the worse failure because nothing prompts anyone to look. A sensor misses what it cannot read, cannot see, or has no rule for."
-        },
-        "say": "An **IDS** inspects a copy of traffic and alerts; an **IPS** sits inline and can drop. A **false positive** is legitimate traffic that matches an attack signature - an internal vulnerability scanner trips dozens of rules. The fix is scoped: suppress the *specific expected rules* for the scanner's address. Suppressing *all* alerts from that host blinds you to a real attacker who later lands on it."
+        }
       },
       {
         "beats": [
           {
-            "say": "**Placement** matters as much as rules. An IPS at the internet edge sees north-south traffic but cannot see two servers talking inside one VLAN. East-west visibility needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point."
+            "say": "**Placement** matters as much as rules."
           },
           {
-            "say": "Switches fail quietly too. **VLAN hopping** abuses loose trunk settings: **switch spoofing** negotiates a trunk through **DTP**, the auto-trunking protocol, and **double tagging** abuses the **native VLAN**, the one a trunk carries untagged."
+            "say": "An IPS at the internet edge sees **north-south** traffic, in and out of the network."
           },
           {
-            "say": "Routers that believe any neighbour invite **insecure routing**: unauthenticated OSPF or RIP, BGP with no prefix filters or **RPKI** origin checks, and IP source routing, which lets the sender pick the path. Each lets an attacker pull traffic through a device they control."
+            "say": "It cannot see two servers talking inside one network segment: **east-west** traffic."
+          },
+          {
+            "say": "That needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point."
           }
         ],
-        "say": "**Placement** matters as much as rules. An IPS at the internet edge sees north-south traffic but cannot see two servers talking inside one VLAN. East-west visibility needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point. Switches fail quietly too. **VLAN hopping** abuses loose trunk settings: **switch spoofing** negotiates a trunk through **DTP**, the auto-trunking protocol, and **double tagging** abuses the **native VLAN**, the one a trunk carries untagged. Routers that believe any neighbour invite **insecure routing**: unauthenticated OSPF or RIP, BGP with no prefix filters or **RPKI** origin checks, and IP source routing, which lets the sender pick the path. Each lets an attacker pull traffic through a device they control."
+        "say": "**Placement** matters as much as rules. An IPS at the internet edge sees **north-south** traffic, in and out of the network. It cannot see two servers talking inside one network segment: **east-west** traffic. That needs internal sensors, host-based detection, or segmentation that forces traffic past an inspection point."
       },
       {
         "beats": [
           {
-            "say": "Access lists are evaluated top-down, **first match wins**. Here is a short list:"
+            "say": "A **VLAN** splits one switch into separate virtual networks."
+          },
+          {
+            "say": "**VLAN hopping** abuses loose switch settings to reach another one."
+          },
+          {
+            "say": "A link carrying many VLANs is a trunk."
+          },
+          {
+            "say": "**Switch spoofing** negotiates a trunk through **DTP**, the auto-trunking protocol."
+          },
+          {
+            "say": "**Double tagging** abuses the **native VLAN**, the one a trunk carries untagged."
+          }
+        ],
+        "say": "A **VLAN** splits one switch into separate virtual networks. **VLAN hopping** abuses loose switch settings to reach another one. A link carrying many VLANs is a trunk. **Switch spoofing** negotiates a trunk through **DTP**, the auto-trunking protocol. **Double tagging** abuses the **native VLAN**, the one a trunk carries untagged."
+      },
+      {
+        "beats": [
+          {
+            "say": "Routers that trust any neighbour invite **insecure routing**."
+          },
+          {
+            "say": "OSPF and RIP are routing protocols that can run unauthenticated."
+          },
+          {
+            "say": "**BGP** is the internet's routing protocol; **RPKI** checks who may originate a route."
+          },
+          {
+            "say": "**Source routing** lets the sender pick the path."
+          },
+          {
+            "say": "Each lets an attacker steer traffic through their device."
+          },
+          {
+            "code": "unauthenticated OSPF, RIP\nBGP: no prefix filters,\n  no RPKI checks\nIP source routing",
+            "language": "insecure routing"
+          }
+        ],
+        "say": "Routers that trust any neighbour invite **insecure routing**. OSPF and RIP are routing protocols that can run unauthenticated. **BGP** is the internet's routing protocol; **RPKI** checks who may originate a route. **Source routing** lets the sender pick the path. Each lets an attacker steer traffic through their device."
+      },
+      {
+        "beats": [
+          {
+            "say": "Access lists are evaluated top-down: **first match wins**."
           },
           {
             "code": "10 permit tcp 10.0.0.0/24 any eq 443\n20 deny   ip host 10.0.0.9 any\n30 deny   ip any any log",
-            "language": "access list"
+            "language": "a short list"
           },
           {
             "figure": {
@@ -464,9 +631,13 @@
             }
           },
           {
-            "say": "Rule 10 permits the whole `/24` to port 443. Rule 20 tries to block host `10.0.0.9`. Because 10 is above 20, the host is still allowed to 443 - the match stops at rule 10, and rule 20 never runs for that traffic."
+            "say": "Rule 10 permits the whole `/24` network to port 443. Rule 20 tries to block host `10.0.0.9`."
+          },
+          {
+            "say": "Rule 10 is above rule 20, so the host is still allowed to 443, and rule 20 never runs for that traffic."
           }
         ],
+        "say": "Access lists are evaluated top-down: **first match wins**. Rule 10 permits the whole `/24` network to port 443. Rule 20 tries to block host `10.0.0.9`. Rule 10 is above rule 20, so the host is still allowed to 443, and rule 20 never runs for that traffic.",
         "check": {
           "prompt": "Host 10.0.0.9 now tries SSH, port 22, to a server. Which rule decides what happens?",
           "answer": "Rule 20: rule 10 covers only port 443, so 20 matches first",
@@ -475,8 +646,7 @@
             "Rule 30: the catch-all handles every non-443 packet"
           ],
           "why": "First match means the first rule whose every condition fits. Port 22 fails rule 10's port condition, so evaluation moves on, and rule 20's deny for the host fits."
-        },
-        "say": "Access lists are evaluated top-down, **first match wins**. Here is a short list: Rule 10 permits the whole `/24` to port 443. Rule 20 tries to block host `10.0.0.9`. Because 10 is above 20, the host is still allowed to 443 - the match stops at rule 10, and rule 20 never runs for that traffic."
+        }
       }
     ],
     "outro": "Now arrange a short access list so it does what its author intended."
@@ -730,26 +900,51 @@
       {
         "beats": [
           {
-            "say": "A client asks a resolver, which asks an authoritative nameserver. A normal query is for one record:"
+            "say": "A client asks a **resolver**, which asks an **authoritative nameserver**."
+          },
+          {
+            "say": "A normal query asks for one record."
           },
           {
             "code": "$ dig A web.example @ns1.example",
-            "language": "shell"
+            "language": "a DNS query"
           },
           {
-            "say": "The `@ns1.example` part picks which server to ask. Without protection, any answer along the path can be forged: that is **DNS cache poisoning**."
-          },
-          {
-            "say": "Resolvers fight it by randomizing query IDs, source ports and even the letter case of the name, and DNSSEC validation rejects forged answers outright."
+            "say": "The `@ns1.example` part picks which server to ask."
           }
         ],
-        "say": "A client asks a resolver, which asks an authoritative nameserver. A normal query is for one record: The `@ns1.example` part picks which server to ask. Without protection, any answer along the path can be forged: that is **DNS cache poisoning**. Resolvers fight it by randomizing query IDs, source ports and even the letter case of the name, and DNSSEC validation rejects forged answers outright."
+        "say": "A client asks a **resolver**, which asks an **authoritative nameserver**. A normal query asks for one record. The `@ns1.example` part picks which server to ask."
       },
       {
         "beats": [
           {
-            "say": "**DNSSEC** signs records so a validating resolver rejects forged answers. It gives authenticity and integrity, not confidentiality - the queries stay readable. **DoH** and **DoT** (DNS over HTTPS and over TLS) encrypt the query itself for privacy, a different goal."
+            "say": "Without protection, any answer along the path can be forged: **DNS cache poisoning**."
           },
+          {
+            "say": "Resolvers fight it by randomizing query IDs, source ports and even the letter case of the name."
+          }
+        ],
+        "say": "Without protection, any answer along the path can be forged: **DNS cache poisoning**. Resolvers fight it by randomizing query IDs, source ports and even the letter case of the name."
+      },
+      {
+        "beats": [
+          {
+            "say": "**DNSSEC** signs records, so a validating resolver rejects forged answers outright."
+          },
+          {
+            "say": "It gives authenticity and integrity, not confidentiality: queries stay readable."
+          },
+          {
+            "say": "**DoH** and **DoT**, DNS over HTTPS and over TLS, encrypt the query itself for privacy."
+          },
+          {
+            "say": "That is a different goal."
+          }
+        ],
+        "say": "**DNSSEC** signs records, so a validating resolver rejects forged answers outright. It gives authenticity and integrity, not confidentiality: queries stay readable. **DoH** and **DoT**, DNS over HTTPS and over TLS, encrypt the query itself for privacy. That is a different goal."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; cl[label=\"client\"]; rec[label=\"resolver\"]; auth[label=\"authoritative\\nnameserver\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; atk[label=\"attacker\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; cl->rec[label=\" query\"]; rec->auth[label=\" lookup\"]; atk->auth[label=\" AXFR?\"]; }",
@@ -757,19 +952,18 @@
               "caption": "who is allowed to ask the nameserver?",
               "src": "_dot/7d69ddf75beb8e68.svg"
             }
-          }
-        ],
-        "say": "**DNSSEC** signs records so a validating resolver rejects forged answers. It gives authenticity and integrity, not confidentiality - the queries stay readable. **DoH** and **DoT** (DNS over HTTPS and over TLS) encrypt the query itself for privacy, a different goal."
-      },
-      {
-        "beats": [
-          {
-            "say": "A **zone transfer** (AXFR) is the bulk replication of an entire zone between authoritative servers."
           },
           {
-            "say": "Left open to anyone, an AXFR hands an attacker every record in the zone - the whole internal naming map and host inventory. It is a recurring penetration-test finding."
+            "say": "A **zone** is the set of records a nameserver holds for a domain."
+          },
+          {
+            "say": "A **zone transfer** (AXFR) is the bulk copy of a whole zone between authoritative servers."
+          },
+          {
+            "say": "Left open to anyone, it hands an attacker every record: the internal naming map and host inventory."
           }
         ],
+        "say": "A **zone** is the set of records a nameserver holds for a domain. A **zone transfer** (AXFR) is the bulk copy of a whole zone between authoritative servers. Left open to anyone, it hands an attacker every record: the internal naming map and host inventory.",
         "check": {
           "prompt": "Which machines should a nameserver accept AXFR requests from?",
           "answer": "Only its real secondary servers, checked by IP or TSIG key",
@@ -778,8 +972,7 @@
             "Anyone: the zone's records are published in DNS anyway"
           ],
           "why": "Secondaries need the whole zone to replicate it, and nobody else does. Restrict transfers by source IP or a shared **TSIG** key: single records may be public, but the complete list is free reconnaissance."
-        },
-        "say": "A **zone transfer** (AXFR) is the bulk replication of an entire zone between authoritative servers. Left open to anyone, an AXFR hands an attacker every record in the zone - the whole internal naming map and host inventory. It is a recurring penetration-test finding."
+        }
       }
     ],
     "outro": "Your turn to make the request that pulls an entire zone."
@@ -900,24 +1093,49 @@
     "type": "npc_demo",
     "question": "NPC: How do you stop others sending mail as your domain?",
     "npc": "tariq",
-    "intro": "Anyone with a mail server can send a message that claims to come from your payroll team, because email was built with no way to check the sender. The fix was bolted on later, as records a domain publishes in DNS, and they only protect you when they work together. Each record says something different, and the first job is telling them apart.",
+    "intro": "Anyone with a mail server can send a message that claims to come from your payroll team, because email was built with no way to check the sender. The fix was added later, as records a domain publishes in DNS. They only protect you when they work together, so the first job is telling them apart.",
     "steps": [
       {
         "beats": [
           {
-            "say": "Three DNS records protect a domain. **SPF** lists the IPs allowed to send, checked against the envelope sender. **DKIM** signs the message with a key whose public half is in DNS. **DMARC** ties both to the visible `From:` domain and sets the policy."
+            "say": "**SPF** lists the IP addresses allowed to send for a domain."
           },
           {
-            "code": "acme.test                   TXT \"v=spf1 ip4:203.0.113.20 -all\"\nsel._domainkey.acme.test    TXT \"v=DKIM1; k=rsa; p=MIIB...\"\n_dmarc.acme.test            TXT \"v=DMARC1; p=reject; rua=mailto:dmarc@acme.test\"",
-            "language": "DNS records"
+            "say": "It is checked against the envelope sender, the address used behind the scenes."
+          },
+          {
+            "code": "acme.test  TXT \"v=spf1 ip4:203.0.113.20 -all\"",
+            "language": "an SPF record"
+          },
+          {
+            "say": "The `-all` is a hard fail for any other IP."
           }
         ],
-        "say": "Three DNS records protect a domain. **SPF** lists the IPs allowed to send, checked against the envelope sender. **DKIM** signs the message with a key whose public half is in DNS. **DMARC** ties both to the visible `From:` domain and sets the policy."
+        "say": "**SPF** lists the IP addresses allowed to send for a domain. It is checked against the envelope sender, the address used behind the scenes. The `-all` is a hard fail for any other IP."
       },
       {
         "beats": [
           {
-            "say": "The key word is **alignment**. A message passes DMARC only if SPF *or* DKIM passes *and* the domain it authenticated matches the visible `From:` domain."
+            "say": "**DKIM** signs the message with a key whose public half is in DNS."
+          },
+          {
+            "code": "sel._domainkey.acme.test\n  TXT \"v=DKIM1; k=rsa; p=MIIB...\"",
+            "language": "a DKIM record"
+          },
+          {
+            "say": "**DMARC** ties those checks to the visible `From:` domain, the one the reader sees, and sets the policy."
+          },
+          {
+            "code": "_dmarc.acme.test\n  TXT \"v=DMARC1; p=reject;\n  rua=mailto:dmarc@acme.test\"",
+            "language": "a DMARC record"
+          }
+        ],
+        "say": "**DKIM** signs the message with a key whose public half is in DNS. **DMARC** ties those checks to the visible `From:` domain, the one the reader sees, and sets the policy."
+      },
+      {
+        "beats": [
+          {
+            "say": "The key word is **alignment**."
           },
           {
             "figure": {
@@ -928,9 +1146,21 @@
             }
           },
           {
-            "say": "The `-all` in SPF is a hard fail for any other IP. The DMARC `p=reject` tells receivers to refuse a message with no aligned pass; domains usually start at `p=none` to read reports first."
+            "say": "A message passes DMARC only if SPF or DKIM passes, and the domain it authenticated matches the visible `From:` domain."
           }
         ],
+        "say": "The key word is **alignment**. A message passes DMARC only if SPF or DKIM passes, and the domain it authenticated matches the visible `From:` domain."
+      },
+      {
+        "beats": [
+          {
+            "say": "`p=reject` tells receivers to refuse a message with no aligned pass."
+          },
+          {
+            "say": "Domains usually start at `p=none` to read reports first."
+          }
+        ],
+        "say": "`p=reject` tells receivers to refuse a message with no aligned pass. Domains usually start at `p=none` to read reports first.",
         "check": {
           "prompt": "A VPS sends mail with From: cfo@acme.test, but its envelope sender is the attacker's own domain, which passes that domain's SPF. Under acme.test's p=reject, is it delivered?",
           "answer": "No - the SPF pass is for the attacker's domain, so it is not aligned with the From domain",
@@ -939,8 +1169,7 @@
             "Yes - the From header is correctly formatted"
           ],
           "why": "DMARC requires the authenticated domain to match the visible From domain. A pass for the wrong domain is not aligned, so p=reject applies."
-        },
-        "say": "The key word is **alignment**. A message passes DMARC only if SPF *or* DKIM passes *and* the domain it authenticated matches the visible `From:` domain. The `-all` in SPF is a hard fail for any other IP. The DMARC `p=reject` tells receivers to refuse a message with no aligned pass; domains usually start at `p=none` to read reports first."
+        }
       }
     ],
     "outro": "Now walk the checks in the order a receiver runs them."
@@ -1107,18 +1336,36 @@
       {
         "beats": [
           {
-            "say": "**MDM** - and the broader **UEM** - is a central control plane over enrolled devices: it pushes Wi-Fi, VPN, and certificate profiles, manages apps, and enforces compliance."
+            "say": "**MDM**, mobile device management, is a central console over enrolled phones."
           },
           {
-            "say": "**Conditional access** consumes that posture at sign-in: encryption on, current OS, no jailbreak, a threat-defense agent reporting. A non-compliant device is blocked before it authenticates."
+            "say": "It pushes Wi-Fi, VPN and certificate profiles, manages apps and enforces compliance."
+          },
+          {
+            "say": "The broader **UEM**, unified endpoint management, covers laptops too."
           }
         ],
-        "say": "**MDM** - and the broader **UEM** - is a central control plane over enrolled devices: it pushes Wi-Fi, VPN, and certificate profiles, manages apps, and enforces compliance. **Conditional access** consumes that posture at sign-in: encryption on, current OS, no jailbreak, a threat-defense agent reporting. A non-compliant device is blocked before it authenticates."
+        "say": "**MDM**, mobile device management, is a central console over enrolled phones. It pushes Wi-Fi, VPN and certificate profiles, manages apps and enforces compliance. The broader **UEM**, unified endpoint management, covers laptops too."
       },
       {
         "beats": [
           {
-            "say": "On a personal device the company uses **app containerization**: work mail and files live in a sandbox (an Android work profile, Apple User Enrollment, or Intune App Protection), separated from personal photos and contacts."
+            "say": "**Conditional access** checks a device's posture at sign-in."
+          },
+          {
+            "code": "posture checked\n  encryption on\n  current OS\n  no jailbreak\n  threat-defense agent\n  reporting",
+            "language": "device posture"
+          },
+          {
+            "say": "A non-compliant device is blocked before it authenticates."
+          }
+        ],
+        "say": "**Conditional access** checks a device's posture at sign-in. A non-compliant device is blocked before it authenticates."
+      },
+      {
+        "beats": [
+          {
+            "say": "On a personal device the company uses **app containerization**."
           },
           {
             "figure": {
@@ -1127,9 +1374,15 @@
               "caption": "two zones on one device",
               "src": "_dot/e3eb759e8a7191f9.svg"
             }
+          },
+          {
+            "say": "Work mail and files live in a sandbox, separate from personal photos and contacts."
+          },
+          {
+            "say": "Examples are an Android work profile, Apple User Enrollment and Intune App Protection."
           }
         ],
-        "say": "On a personal device the company uses **app containerization**: work mail and files live in a sandbox (an Android work profile, Apple User Enrollment, or Intune App Protection), separated from personal photos and contacts.",
+        "say": "On a personal device the company uses **app containerization**. Work mail and files live in a sandbox, separate from personal photos and contacts. Examples are an Android work profile, Apple User Enrollment and Intune App Protection.",
         "check": {
           "prompt": "A clinician copies a patient note from work mail and tries to paste it into a personal chat app. What should happen?",
           "answer": "The paste is blocked: work data may not leave the container",
@@ -1143,10 +1396,13 @@
       {
         "beats": [
           {
-            "say": "**Selective wipe** removes only the work container on demand - not the user's personal data. That one capability is what makes BYOD acceptable to legal and to employees."
+            "say": "**Selective wipe** removes only the work container on demand, not the user's personal data."
+          },
+          {
+            "say": "That one capability is what makes BYOD, bring your own device, acceptable to legal and to employees."
           }
         ],
-        "say": "**Selective wipe** removes only the work container on demand - not the user's personal data. That one capability is what makes BYOD acceptable to legal and to employees."
+        "say": "**Selective wipe** removes only the work container on demand, not the user's personal data. That one capability is what makes BYOD, bring your own device, acceptable to legal and to employees."
       }
     ],
     "outro": "Next, an enrolled personal phone is lost while it's switched off. Decide what a wipe command will actually do."
