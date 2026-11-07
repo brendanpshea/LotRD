@@ -8,6 +8,20 @@
       {
         "beats": [
           {
+            "say": "A **key pair** is two linked keys, made together."
+          },
+          {
+            "say": "The **public key** goes to everyone; the **private key** never leaves its owner."
+          },
+          {
+            "say": "Data signed with the private key can be checked by anyone holding the public key."
+          }
+        ],
+        "say": "A **key pair** is two linked keys, made together. The **public key** goes to everyone; the **private key** never leaves its owner. Data signed with the private key can be checked by anyone holding the public key."
+      },
+      {
+        "beats": [
+          {
             "say": "A **digital certificate** is a signed note that a public key belongs to a named owner, its **subject**."
           },
           {
@@ -57,7 +71,28 @@
           }
         ],
         "say": "Steal the root's key and everything beneath it is worthless. So the root stays **offline** in a vault, out only for a rare signing **ceremony**. Its key lives in a **hardware security module (HSM)**, a tamper-resistant device that never releases keys. A company can run its own private CA too."
-      },
+      }
+    ],
+    "outro": "Next is a hierarchy that grew the wrong way, with a new contract to satisfy. Decide what it should become."
+  },
+  {
+    "question": "Stormhall Aegis runs one online root CA that signs every server and laptop certificate directly, several hundred a day. A new contract requires that the trust anchor be unreachable from any network, and issuance must stay same-day. Which redesign BEST meets both requirements?",
+    "correct": [
+      "Take the root offline and have it sign an online issuing CA for daily requests"
+    ],
+    "incorrect": [
+      "Keep the root online, but move its private key into an HSM with strict access control",
+      "Add a second online root, so either can keep issuing if the other is compromised",
+      "Keep the root offline and power it up each morning in a ceremony to sign that day's queue"
+    ],
+    "feedback": "An offline root that signs an online issuing (intermediate) CA keeps the trust anchor unreachable while the intermediate handles same-day issuance; if the intermediate is ever compromised, the root revokes it and signs a new one. An HSM stops the key being copied out, but the root is still online, which the contract forbids. A second online root doubles the exposure instead of removing it. Powering the root up every morning makes 'offline' a daily network event and turns a rare ceremony into routine."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How does a server get its certificate?",
+    "npc": "val",
+    "intro": "A root locked in a vault can't sign a thousand server certificates a day. So daily work goes to a chain of helpers, and every request has to be checked before anyone signs it. Let's follow one request from first step to a running server.",
+    "steps": [
       {
         "beats": [
           {
@@ -65,12 +100,9 @@
           },
           {
             "say": "It issues the **leaf** certificates that servers and people present."
-          },
-          {
-            "say": "To get one, the subscriber sends a **certificate signing request (CSR)**: a public key and wanted names, signed with the private key."
           }
         ],
-        "say": "Day-to-day work goes to an **intermediate**, or **issuing CA**, whose certificate the root signed. It issues the **leaf** certificates that servers and people present. To get one, the subscriber sends a **certificate signing request (CSR)**: a public key and wanted names, signed with the private key.",
+        "say": "Day-to-day work goes to an **intermediate**, or **issuing CA**, whose certificate the root signed. It issues the **leaf** certificates that servers and people present.",
         "check": {
           "prompt": "An issuing CA's private key is stolen. What contains the damage?",
           "answer": "Revoke that intermediate, and have the root sign a replacement",
@@ -80,6 +112,17 @@
           ],
           "why": "The root's key is untouched, so the root can revoke the intermediate it signed and certify a new one. The damage stays inside the branch the stolen key controlled."
         }
+      },
+      {
+        "beats": [
+          {
+            "say": "To get one, the **subscriber**, whoever wants the certificate, sends a **certificate signing request (CSR)**."
+          },
+          {
+            "say": "A CSR holds the public key and wanted names, signed with the private key."
+          }
+        ],
+        "say": "To get one, the **subscriber**, whoever wants the certificate, sends a **certificate signing request (CSR)**. A CSR holds the public key and wanted names, signed with the private key."
       },
       {
         "beats": [
@@ -105,7 +148,7 @@
       {
         "beats": [
           {
-            "say": "The subscriber presents the certificate until near its end date, then **renews** it."
+            "say": "Near its end date the subscriber **renews** it."
           },
           {
             "say": "If the private key leaks first, the CA **revokes** it."
@@ -121,22 +164,10 @@
             "say": "Nobody renews that often by hand, so **ACME** lets a server prove it controls its domain and renew itself."
           }
         ],
-        "say": "The subscriber presents the certificate until near its end date, then **renews** it. If the private key leaks first, the CA **revokes** it. Lifetimes are shrinking, as the table shows. Nobody renews that often by hand, so **ACME** lets a server prove it controls its domain and renew itself."
+        "say": "Near its end date the subscriber **renews** it. If the private key leaks first, the CA **revokes** it. Lifetimes are shrinking, as the table shows. Nobody renews that often by hand, so **ACME** lets a server prove it controls its domain and renew itself."
       }
     ],
-    "outro": "Next is a hierarchy that grew the wrong way, with a new contract to satisfy. Decide what it should become."
-  },
-  {
-    "question": "Stormhall Aegis runs one online root CA that signs every server and laptop certificate directly, several hundred a day. A new contract requires that the trust anchor be unreachable from any network, and issuance must stay same-day. Which redesign BEST meets both requirements?",
-    "correct": [
-      "Take the root offline and have it sign an online issuing CA for daily requests"
-    ],
-    "incorrect": [
-      "Keep the root online, but move its private key into an HSM with strict access control",
-      "Add a second online root, so either can keep issuing if the other is compromised",
-      "Keep the root offline and power it up each morning in a ceremony to sign that day's queue"
-    ],
-    "feedback": "An offline root that signs an online issuing (intermediate) CA keeps the trust anchor unreachable while the intermediate handles same-day issuance; if the intermediate is ever compromised, the root revokes it and signs a new one. An HSM stops the key being copied out, but the root is still online, which the contract forbids. A second online root doubles the exposure instead of removing it. Powering the root up every morning makes 'offline' a daily network event and turns a rare ceremony into routine."
+    "outro": "Next, a file reaches the RA, signed by its owner's private key but by no CA. Name the file."
   },
   {
     "type": "fill_blank",
@@ -197,7 +228,7 @@
     "type": "npc_demo",
     "question": "NPC: What do the fields in a certificate tell you?",
     "npc": "val",
-    "intro": "Click the padlock in a browser and you'll find a certificate with a page of fields most people never read. Those fields aren't decoration: each one is a rule, and the client enforces it whatever the site's owner intended. So it pays to know what each field is for.",
+    "intro": "Click the padlock in a browser, the sign that **TLS** is encrypting the connection, and you'll find a certificate with a page of fields most people never read. Those fields aren't decoration: each one is a rule, and the client enforces it whatever the site's owner intended. So it pays to know what each field is for.",
     "steps": [
       {
         "beats": [
@@ -224,17 +255,17 @@
             "language": "the SAN field"
           },
           {
-            "say": "Browsers ignore the old Common Name (CN) field entirely."
+            "say": "Browsers ignore the old **Common Name (CN)** field entirely."
           },
           {
-            "say": "A **wildcard** such as `*.apps.example.org` stands for exactly one label in that position."
+            "say": "A **wildcard** such as `*.apps.example.org` stands for exactly one **label**, one part between dots."
           },
           {
             "code": "crm.apps.example.org yes\napps.example.org no\neu.crm.apps.example.org no",
             "language": "matches of the wildcard"
           }
         ],
-        "say": "The **Subject Alternative Name (SAN)** lists every hostname the certificate is valid for. Browsers ignore the old Common Name (CN) field entirely. A **wildcard** such as `*.apps.example.org` stands for exactly one label in that position.",
+        "say": "The **Subject Alternative Name (SAN)** lists every hostname the certificate is valid for. Browsers ignore the old **Common Name (CN)** field entirely. A **wildcard** such as `*.apps.example.org` stands for exactly one **label**, one part between dots.",
         "check": {
           "prompt": "A browser opens `https://billing.example.org`. Does this certificate cover it?",
           "answer": "No: no SAN entry matches that name",
@@ -434,13 +465,13 @@
       {
         "beats": [
           {
-            "say": "Each live query adds a round trip and tells the CA which site you are visiting."
+            "say": "Each live query adds a delay and tells the CA which site you are visiting."
           },
           {
             "say": "Worse, browsers **soft-fail**: if the responder does not answer, the connection goes ahead as if the certificate were fine."
           }
         ],
-        "say": "Each live query adds a round trip and tells the CA which site you are visiting. Worse, browsers **soft-fail**: if the responder does not answer, the connection goes ahead as if the certificate were fine."
+        "say": "Each live query adds a delay and tells the CA which site you are visiting. Worse, browsers **soft-fail**: if the responder does not answer, the connection goes ahead as if the certificate were fine."
       },
       {
         "beats": [
@@ -459,10 +490,10 @@
             "say": "On a schedule, it fetches a fresh, CA-signed status answer for its own certificate."
           },
           {
-            "say": "It attaches that answer to every TLS handshake."
+            "say": "It attaches that answer to every TLS **handshake**, the exchange that sets up a secure connection."
           }
         ],
-        "say": "**OCSP stapling** moves the question to the server. On a schedule, it fetches a fresh, CA-signed status answer for its own certificate. It attaches that answer to every TLS handshake.",
+        "say": "**OCSP stapling** moves the question to the server. On a schedule, it fetches a fresh, CA-signed status answer for its own certificate. It attaches that answer to every TLS **handshake**, the exchange that sets up a secure connection.",
         "check": {
           "prompt": "The response the server staples was fetched yesterday. How can the client tell it is still current?",
           "answer": "The CA signed a validity window into the response",
@@ -479,44 +510,21 @@
             "say": "Since 2024, public TLS CAs must publish CRLs, while OCSP is optional."
           },
           {
-            "say": "Let's Encrypt shut its OCSP responders down in 2025, and browsers now download revocation data in bulk."
-          },
+            "say": "Let's Encrypt, a free automated CA, shut its OCSP responders down in 2025, and browsers now download revocation data in bulk."
+          }
+        ],
+        "say": "Since 2024, public TLS CAs must publish CRLs, while OCSP is optional. Let's Encrypt, a free automated CA, shut its OCSP responders down in 2025, and browsers now download revocation data in bulk."
+      },
+      {
+        "beats": [
           {
-            "say": "The deeper fix is a short-lived certificate: it bounds how long a stolen key stays useful."
+            "say": "The deeper fix is a **short-lived certificate**: it bounds how long a stolen key stays useful."
           },
           {
             "say": "Automation makes replacing one routine."
           }
         ],
-        "say": "Since 2024, public TLS CAs must publish CRLs, while OCSP is optional. Let's Encrypt shut its OCSP responders down in 2025, and browsers now download revocation data in bulk. The deeper fix is a short-lived certificate: it bounds how long a stolen key stays useful. Automation makes replacing one routine."
-      },
-      {
-        "beats": [
-          {
-            "say": "In 2011 attackers broke into the Dutch CA **DigiNotar** and issued hundreds of rogue certificates."
-          },
-          {
-            "say": "One, for `*.google.com`, was used to read Gmail in Iran. Every browser trusted them."
-          },
-          {
-            "say": "Chrome caught it because it **pinned** Google's keys: it hard-coded the expected public key and refused any other."
-          }
-        ],
-        "say": "In 2011 attackers broke into the Dutch CA **DigiNotar** and issued hundreds of rogue certificates. One, for `*.google.com`, was used to read Gmail in Iran. Every browser trusted them. Chrome caught it because it **pinned** Google's keys: it hard-coded the expected public key and refused any other."
-      },
-      {
-        "beats": [
-          {
-            "say": "Pinning stops rogue CAs, but an unplanned key change locks out your own users."
-          },
-          {
-            "say": "The lasting answer was **Certificate Transparency (CT)**: public logs of issued certificates, where entries can only be added."
-          },
-          {
-            "say": "Browsers demand proof of logging, so a domain owner can spot certificates it never requested."
-          }
-        ],
-        "say": "Pinning stops rogue CAs, but an unplanned key change locks out your own users. The lasting answer was **Certificate Transparency (CT)**: public logs of issued certificates, where entries can only be added. Browsers demand proof of logging, so a domain owner can spot certificates it never requested."
+        "say": "The deeper fix is a **short-lived certificate**: it bounds how long a stolen key stays useful. Automation makes replacing one routine."
       }
     ],
     "outro": "Next, revocation checks are slowing every connection to an API, and an outage once took it down. Choose the change that fixes both."
@@ -560,6 +568,57 @@
     "feedback": "A CRL (certificate revocation list) is the original mechanism: complete, but large and fetched by every relying party. OCSP (Online Certificate Status Protocol) checks one certificate in real time, at the cost of a round trip and a privacy leak to the CA. OCSP stapling moves that query to the server, which staples the CA-signed response to its handshake. Public CAs now must publish CRLs while OCSP is optional, and short lifetimes make all three matter less."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: What if a trusted CA itself gets hacked?",
+    "npc": "val",
+    "intro": "Revocation assumes the CA is honest. In 2011 one CA could not protect its own systems, and what came out of the breach looked as real to every browser as any genuine certificate. So how do you defend against a CA you already trust?",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "In 2011 attackers broke into the Dutch CA **DigiNotar** and issued hundreds of rogue certificates."
+          },
+          {
+            "say": "One, for `*.google.com`, was used to read Gmail in Iran. Every browser trusted them."
+          }
+        ],
+        "say": "In 2011 attackers broke into the Dutch CA **DigiNotar** and issued hundreds of rogue certificates. One, for `*.google.com`, was used to read Gmail in Iran. Every browser trusted them."
+      },
+      {
+        "beats": [
+          {
+            "say": "Chrome caught it because it **pinned** Google's keys: it hard-coded the expected public key and refused any other."
+          }
+        ],
+        "say": "Chrome caught it because it **pinned** Google's keys: it hard-coded the expected public key and refused any other.",
+        "check": {
+          "prompt": "A company pins its API's server key, then replaces that key without telling its clients. What happens to the pinned clients?",
+          "answer": "They refuse to connect, since the key is not the expected one",
+          "wrong": [
+            "They fall back to the CA check and keep working",
+            "They accept the new key after showing a warning"
+          ],
+          "why": "A pinned client has the expected key hard-coded and refuses any other, so an unplanned key change locks out your own users until the clients are updated."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Pinning stops rogue CAs, but an unplanned key change locks out your own users."
+          },
+          {
+            "say": "The lasting answer was **Certificate Transparency (CT)**: public logs of issued certificates, where entries can only be added."
+          },
+          {
+            "say": "Browsers demand proof of logging, so a domain owner can spot certificates it never requested."
+          }
+        ],
+        "say": "Pinning stops rogue CAs, but an unplanned key change locks out your own users. The lasting answer was **Certificate Transparency (CT)**: public logs of issued certificates, where entries can only be added. Browsers demand proof of logging, so a domain owner can spot certificates it never requested."
+      }
+    ],
+    "outro": "Next, Selene wants a control that would reveal such a certificate within hours. Choose the best fit."
+  },
+  {
     "question": "After reading about DigiNotar, Selene asks for a control that would reveal, within hours, a certificate for any Highrook Conclave domain issued by any public CA without Highrook's request. Which control BEST fits?",
     "correct": [
       "Monitor Certificate Transparency logs for new certificates naming Highrook domains"
@@ -594,19 +653,27 @@
       {
         "beats": [
           {
-            "say": "**Data at rest** sits on disks, backups and object storage."
+            "say": "**Data at rest** is stored data: on disks, backups and cloud storage."
           },
           {
-            "say": "**Symmetric** encryption, one shared key such as AES-256, protects it."
+            "say": "**Symmetric** encryption uses one shared key to lock and unlock, as in AES-256."
           },
           {
             "say": "Keys are held in a **key management service (KMS)** or an HSM."
-          },
-          {
-            "say": "Full-disk encryption and a database's **transparent data encryption (TDE)** guard against a stolen disk or backup."
           }
         ],
-        "say": "**Data at rest** sits on disks, backups and object storage. **Symmetric** encryption, one shared key such as AES-256, protects it. Keys are held in a **key management service (KMS)** or an HSM. Full-disk encryption and a database's **transparent data encryption (TDE)** guard against a stolen disk or backup."
+        "say": "**Data at rest** is stored data: on disks, backups and cloud storage. **Symmetric** encryption uses one shared key to lock and unlock, as in AES-256. Keys are held in a **key management service (KMS)** or an HSM."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Full-disk encryption** scrambles a whole drive, so a stolen disk or laptop is unreadable."
+          },
+          {
+            "say": "A database's **transparent data encryption (TDE)** does the same for its files and backups."
+          }
+        ],
+        "say": "**Full-disk encryption** scrambles a whole drive, so a stolen disk or laptop is unreadable. A database's **transparent data encryption (TDE)** does the same for its files and backups."
       },
       {
         "beats": [
@@ -614,8 +681,8 @@
             "say": "Regulators reward encryption at rest too."
           },
           {
-            "code": "Rule         Says\nHIPAA, GDPR  breach rules\n             ease if so\nPCI DSS      stored cards\n             unreadable\nUS federal   FIPS 140-3\n             modules",
-            "language": "regulators and stored data"
+            "code": "Rule     Says\nHIPAA    US health law:\n         breach rules\n         ease if encrypted\nGDPR     EU privacy law:\n         same relief\nPCI DSS  card rules:\n         stored numbers\n         unreadable\nUS gov   FIPS 140-3\n         modules",
+            "language": "what regulators say"
           },
           {
             "say": "So a stolen laptop is a data-at-rest problem."
@@ -642,68 +709,41 @@
             "language": "tools for data in transit"
           },
           {
-            "say": "**IPsec** builds **encrypted tunnels**."
+            "say": "**IPsec** builds **encrypted tunnels** between sites, or for remote users."
           },
           {
-            "say": "TLS uses both key families."
-          },
-          {
-            "say": "**Asymmetric** cryptography, a public and private pair, proves the server's identity and agrees a fresh session key."
-          },
-          {
-            "say": "Far faster symmetric encryption does the rest."
+            "say": "**S/MIME** and **PGP** protect email end to end, from sender to reader."
           }
         ],
-        "say": "**Data in transit** crosses networks; the table lists the tools. **IPsec** builds **encrypted tunnels**. TLS uses both key families. **Asymmetric** cryptography, a public and private pair, proves the server's identity and agrees a fresh session key. Far faster symmetric encryption does the rest."
+        "say": "**Data in transit** crosses networks; the table lists the tools. **IPsec** builds **encrypted tunnels** between sites, or for remote users. **S/MIME** and **PGP** protect email end to end, from sender to reader."
       },
       {
         "beats": [
           {
-            "say": "**Data in use** sits decrypted in memory, where a malicious admin, kernel-level attacker or cloud insider can read it."
+            "say": "TLS uses two kinds of cryptography."
           },
           {
-            "say": "**Confidential computing** runs the work in a hardware **trusted execution environment (TEE)**, such as Intel TDX."
+            "say": "**Asymmetric** cryptography, a public and private key pair, proves the server's identity and agrees a fresh session key."
           },
           {
-            "say": "Its memory is isolated, usually encrypted, even from the host OS and hypervisor."
+            "say": "Far faster symmetric encryption, one shared key, does the rest."
           }
         ],
-        "say": "**Data in use** sits decrypted in memory, where a malicious admin, kernel-level attacker or cloud insider can read it. **Confidential computing** runs the work in a hardware **trusted execution environment (TEE)**, such as Intel TDX. Its memory is isolated, usually encrypted, even from the host OS and hypervisor."
+        "say": "TLS uses two kinds of cryptography. **Asymmetric** cryptography, a public and private key pair, proves the server's identity and agrees a fresh session key. Far faster symmetric encryption, one shared key, does the rest."
       },
       {
         "beats": [
           {
-            "say": "**Homomorphic encryption (HE)** computes on ciphertext without decrypting it."
+            "say": "**Data in use** sits decrypted in memory, where a malicious admin or cloud insider can read it."
           },
           {
-            "say": "Fully homomorphic schemes allow any computation but run orders of magnitude slower."
+            "say": "**Confidential computing** runs the work in a hardware **trusted execution environment (TEE)**."
           },
           {
-            "say": "**Secure multiparty computation (SMPC)** lets several parties compute a joint result without seeing each other's inputs."
-          },
-          {
-            "say": "It does not rely on trusting any one party's hardware."
+            "say": "Its memory is isolated, usually encrypted, even from the host OS and the hypervisor that runs virtual machines."
           }
         ],
-        "say": "**Homomorphic encryption (HE)** computes on ciphertext without decrypting it. Fully homomorphic schemes allow any computation but run orders of magnitude slower. **Secure multiparty computation (SMPC)** lets several parties compute a joint result without seeing each other's inputs. It does not rely on trusting any one party's hardware."
-      },
-      {
-        "beats": [
-          {
-            "say": "At the end of data's life, **sanitization** makes recovery infeasible, at one of NIST's three levels."
-          },
-          {
-            "code": "Level    Method\nclear    overwrite once\n         (magnetic disks)\npurge    drive's erase,\n         crypto erase,\n         degaussing\ndestroy  shred, incinerate",
-            "language": "NIST sanitization levels"
-          },
-          {
-            "say": "An SSD hides data in spare cells, so use its own sanitize command; degaussing works only on magnetic media."
-          },
-          {
-            "say": "**Cryptographic erase** destroys the key, not the data: without it, the ciphertext is noise."
-          }
-        ],
-        "say": "At the end of data's life, **sanitization** makes recovery infeasible, at one of NIST's three levels. An SSD hides data in spare cells, so use its own sanitize command; degaussing works only on magnetic media. **Cryptographic erase** destroys the key, not the data: without it, the ciphertext is noise."
+        "say": "**Data in use** sits decrypted in memory, where a malicious admin or cloud insider can read it. **Confidential computing** runs the work in a hardware **trusted execution environment (TEE)**. Its memory is isolated, usually encrypted, even from the host OS and the hypervisor that runs virtual machines."
       }
     ],
     "outro": "Now match each requirement to the protection its state calls for."
@@ -753,6 +793,69 @@
     "feedback": "TLS takes the trust properties of public-key cryptography and the speed of symmetric cryptography. An asymmetric step (the certificate plus a key exchange) proves the server's identity and agrees a fresh key; then AES-GCM or ChaCha20-Poly1305 encrypts the bulk at gigabytes per second. Asymmetric operations are far too slow to run on every record. A key both sides share cannot prove which side is the server, and pre-installed shared keys are the very key-distribution problem PKI exists to solve."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How do you compute on secrets, and destroy them for good?",
+    "npc": "val",
+    "intro": "Encryption has one more trick and one more ending. Sometimes you need an answer from data you must not decrypt, and sometimes the right move is to make sure nobody can ever read it again. Both are harder than they sound.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Homomorphic encryption (HE)** computes on **ciphertext**, the encrypted form, without decrypting it."
+          },
+          {
+            "say": "Fully homomorphic schemes allow any computation but run orders of magnitude slower."
+          }
+        ],
+        "say": "**Homomorphic encryption (HE)** computes on **ciphertext**, the encrypted form, without decrypting it. Fully homomorphic schemes allow any computation but run orders of magnitude slower."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Secure multiparty computation (SMPC)** lets several parties compute a joint result without seeing each other's inputs."
+          },
+          {
+            "say": "It does not rely on trusting any one party's hardware."
+          }
+        ],
+        "say": "**Secure multiparty computation (SMPC)** lets several parties compute a joint result without seeing each other's inputs. It does not rely on trusting any one party's hardware."
+      },
+      {
+        "beats": [
+          {
+            "say": "At the end of data's life, **sanitization** makes recovery infeasible, at one of the three levels set by NIST, the US standards agency."
+          },
+          {
+            "code": "Level    Method\nclear    overwrite once\n         (magnetic disks)\npurge    drive's erase,\n         crypto erase,\n         degaussing\ndestroy  shred, incinerate",
+            "language": "NIST sanitization levels"
+          }
+        ],
+        "say": "At the end of data's life, **sanitization** makes recovery infeasible, at one of the three levels set by NIST, the US standards agency."
+      },
+      {
+        "beats": [
+          {
+            "say": "An SSD hides data in spare cells, so use its own sanitize command; degaussing works only on magnetic media."
+          },
+          {
+            "say": "**Cryptographic erase** destroys the key, not the data: without it, the ciphertext is noise."
+          }
+        ],
+        "say": "An SSD hides data in spare cells, so use its own sanitize command; degaussing works only on magnetic media. **Cryptographic erase** destroys the key, not the data: without it, the ciphertext is noise.",
+        "check": {
+          "prompt": "A laptop's disk was fully encrypted from day one, and it must be retired today. What is the fastest sound way to make its data unrecoverable?",
+          "answer": "Destroy the encryption key for good",
+          "wrong": [
+            "Delete every file and empty the trash",
+            "Wipe the encrypted volume with one pass of zeros"
+          ],
+          "why": "Without the key the ciphertext is noise, so destroying the key sanitizes the disk at once. Deleting files only removes the pointers, and the SSD's spare cells can still hold the data."
+        }
+      }
+    ],
+    "outro": "Next, 300 retired laptops are about to be sold. Choose the method that fits."
+  },
+  {
     "question": "Wyrmkeep Logistics is selling 300 retired laptops whose SSDs held shipment manifests. The drives must leave intact and reusable, and the data must be unrecoverable. Which method BEST fits?",
     "correct": [
       "Run each drive's built-in sanitize command, or cryptographically erase its key"
@@ -773,7 +876,10 @@
       {
         "beats": [
           {
-            "say": "**Anonymization** strips identity for good, yet many datasets fell to **linkage attacks**, joined with other data."
+            "say": "**Anonymization** strips identity for good, yet many datasets fell to **linkage attacks**."
+          },
+          {
+            "say": "A linkage attack joins a dataset with other data to name people again."
           },
           {
             "say": "**Pseudonymization** swaps identifiers for stand-ins, so analytics still work."
@@ -782,7 +888,7 @@
             "say": "Anyone holding the mapping table can reverse it."
           }
         ],
-        "say": "**Anonymization** strips identity for good, yet many datasets fell to **linkage attacks**, joined with other data. **Pseudonymization** swaps identifiers for stand-ins, so analytics still work. Anyone holding the mapping table can reverse it."
+        "say": "**Anonymization** strips identity for good, yet many datasets fell to **linkage attacks**. A linkage attack joins a dataset with other data to name people again. **Pseudonymization** swaps identifiers for stand-ins, so analytics still work. Anyone holding the mapping table can reverse it."
       },
       {
         "beats": [
@@ -790,17 +896,28 @@
             "say": "**Tokenization** swaps a card number for a **token** with no mathematical link to it."
           },
           {
-            "say": "Only a separate **token vault** maps back, so systems that see only tokens can drop out of PCI DSS scope."
+            "say": "Only a separate **token vault** maps back."
           },
           {
-            "code": "data masking\n  part shown, e.g.\n  ****-****-****-1234\nobfuscation\n  hard to read, no\n  maths guarantee",
+            "say": "So systems that see only tokens can drop out of **PCI DSS** scope, the card industry's security rules."
+          }
+        ],
+        "say": "**Tokenization** swaps a card number for a **token** with no mathematical link to it. Only a separate **token vault** maps back. So systems that see only tokens can drop out of **PCI DSS** scope, the card industry's security rules."
+      },
+      {
+        "beats": [
+          {
+            "say": "Two cheaper tricks look similar but are not cryptography."
+          },
+          {
+            "code": "data masking\n  part shown, e.g.\n  ****-****-****-1234\nobfuscation\n  hard to read, no\n  math guarantee",
             "language": "two look-alikes"
           },
           {
-            "say": "**Data masking** and **obfuscation** are not cryptography."
+            "say": "**Data masking** and **obfuscation** only change how data looks."
           }
         ],
-        "say": "**Tokenization** swaps a card number for a **token** with no mathematical link to it. Only a separate **token vault** maps back, so systems that see only tokens can drop out of PCI DSS scope. **Data masking** and **obfuscation** are not cryptography.",
+        "say": "Two cheaper tricks look similar but are not cryptography. **Data masking** and **obfuscation** only change how data looks.",
         "check": {
           "prompt": "Which change takes a reporting system out of PCI DSS scope?",
           "answer": "Feeding it tokens instead of card numbers",
@@ -814,7 +931,7 @@
       {
         "beats": [
           {
-            "say": "**Hashing** turns any input into a fixed-length digest that cannot be reversed in practice."
+            "say": "**Hashing** turns any input into a fixed-length **digest**, a fingerprint that cannot be reversed in practice."
           },
           {
             "say": "Change one bit and the digest changes completely."
@@ -825,7 +942,12 @@
           {
             "code": "$ openssl dgst -sha256 release.tar.gz\nSHA2-256(release.tar.gz)= 9f2c41d0...e41b",
             "language": "hashing a file"
-          },
+          }
+        ],
+        "say": "**Hashing** turns any input into a fixed-length **digest**, a fingerprint that cannot be reversed in practice. Change one bit and the digest changes completely. Use SHA-256 or stronger; MD5 and SHA-1 are broken."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.35; ranksep=0.35; subgraph cluster_s { label=\"signer\"; color=\"#5aaa5a\"; d [label=\"release file\"]; h [label=\"SHA-256\\ndigest\"]; sig [label=\"signature\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; d -> h [label=\" hash\"]; h -> sig [label=\" sign with\\n private key\"]; } subgraph cluster_v { label=\"verifier\"; color=\"#5aaa5a\"; h2 [label=\"fresh digest\\nof the file\"]; ok [label=\"match?\\nthen valid\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; h2 -> ok; } sig -> ok [label=\" check with\\n public key\"]; }",
@@ -836,15 +958,15 @@
           },
           {
             "say": "A **digital signature** signs that digest with a private key, and anyone can check it with the public key."
+          },
+          {
+            "say": "A signature also gives **non-repudiation**: the signer cannot credibly deny it, if only they held the key."
           }
         ],
-        "say": "**Hashing** turns any input into a fixed-length digest that cannot be reversed in practice. Change one bit and the digest changes completely. Use SHA-256 or stronger; MD5 and SHA-1 are broken. A **digital signature** signs that digest with a private key, and anyone can check it with the public key."
+        "say": "A **digital signature** signs that digest with a private key, and anyone can check it with the public key. A signature also gives **non-repudiation**: the signer cannot credibly deny it, if only they held the key."
       },
       {
         "beats": [
-          {
-            "say": "A signature also gives **non-repudiation**: the signer cannot credibly deny it, if only they held the key."
-          },
           {
             "say": "Put each record's hash into the next and you get a tamper-evident **immutable ledger**."
           },
@@ -855,56 +977,11 @@
             "say": "Public **blockchains** and **permissioned ledgers** run it two ways."
           },
           {
-            "code": "public blockchain\n  open consensus; anyone\n  may write\npermissioned ledger\n  same chain, known\n  parties only",
+            "code": "public blockchain\n  anyone may join and\n  write\npermissioned ledger\n  same chain, known\n  parties only",
             "language": "who may write"
           }
         ],
-        "say": "A signature also gives **non-repudiation**: the signer cannot credibly deny it, if only they held the key. Put each record's hash into the next and you get a tamper-evident **immutable ledger**. Edit one entry and every later hash breaks. Public **blockchains** and **permissioned ledgers** run it two ways."
-      },
-      {
-        "beats": [
-          {
-            "say": "**S/MIME** uses CA certificates."
-          },
-          {
-            "say": "**PGP** uses a **web of trust**."
-          },
-          {
-            "say": "**Code signing** lets the OS check a release."
-          },
-          {
-            "say": "**Sigstore** signs with short-lived certificates and a public log."
-          },
-          {
-            "say": "**In-toto** records build steps; an **SBOM** lists components."
-          },
-          {
-            "say": "Formats like JOSE, COSE and CMS keep **serialization** consistent."
-          },
-          {
-            "code": "S/MIME    CA certificates\nPGP       users sign keys\ncode      OS checks a\nsigning   release first\nSigstore  brief certs +\n          public log\nin-toto   each build step\nSBOM      every component\nJOSE COSE CMS: same bytes\n          everywhere",
-            "language": "signing tools"
-          }
-        ],
-        "say": "**S/MIME** uses CA certificates. **PGP** uses a **web of trust**. **Code signing** lets the OS check a release. **Sigstore** signs with short-lived certificates and a public log. **In-toto** records build steps; an **SBOM** lists components. Formats like JOSE, COSE and CMS keep **serialization** consistent."
-      },
-      {
-        "beats": [
-          {
-            "say": "**FIDO2/WebAuthn**, sold as **passkeys**, makes login passwordless: a device signs a challenge bound to the site's real address."
-          },
-          {
-            "say": "The server stores only the public key, so a breach leaks nothing reusable."
-          },
-          {
-            "say": "**Decentralized** and **centralized key management** differ in where keys live."
-          },
-          {
-            "code": "decentral  keys on devices\n  no single failure\n  point; harder recovery\ncentral    HSM or KMS\n  risk and control\n  concentrated",
-            "language": "where keys live"
-          }
-        ],
-        "say": "**FIDO2/WebAuthn**, sold as **passkeys**, makes login passwordless: a device signs a challenge bound to the site's real address. The server stores only the public key, so a breach leaks nothing reusable. **Decentralized** and **centralized key management** differ in where keys live."
+        "say": "Put each record's hash into the next and you get a tamper-evident **immutable ledger**. Edit one entry and every later hash breaks. Public **blockchains** and **permissioned ledgers** run it two ways."
       }
     ],
     "outro": "Now follow card numbers through a real flow and decide what stays in scope."
@@ -969,6 +1046,106 @@
     ],
     "case_sensitive": true,
     "feedback": "openssl dgst -sha256 f (or the shorthand openssl sha256 f) prints the file's SHA-256 digest. A digest changes completely if one bit of the input changes, so a match shows the file is the one the vendor described. Notice where the comparison value comes from: signed release notes. A bare hash posted beside the file on the same server proves nothing if an attacker can replace both."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Who vouches for signed email, signed software and passkeys?",
+    "npc": "val",
+    "intro": "An email from a procurement officer, a software update and a login to your bank each claim to come from someone. A signature only helps if you know whose key made it, and there are several ways to find out. Let's start with email.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**S/MIME** secures email with certificates from a CA you already trust."
+          },
+          {
+            "say": "**PGP** has no CA: people sign each other's keys, forming a **web of trust**."
+          }
+        ],
+        "say": "**S/MIME** secures email with certificates from a CA you already trust. **PGP** has no CA: people sign each other's keys, forming a **web of trust**."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Code signing** lets an operating system check a release's signature before running it."
+          },
+          {
+            "say": "**Sigstore** gives short-lived certificates tied to a login identity, and records every signature in a public log."
+          },
+          {
+            "say": "Its signing tool is **Cosign**."
+          }
+        ],
+        "say": "**Code signing** lets an operating system check a release's signature before running it. **Sigstore** gives short-lived certificates tied to a login identity, and records every signature in a public log. Its signing tool is **Cosign**."
+      },
+      {
+        "beats": [
+          {
+            "say": "**In-toto** records each build step as a signed statement, an **attestation**."
+          },
+          {
+            "say": "An **SBOM** (software bill of materials) lists every component inside a piece of software."
+          }
+        ],
+        "say": "**In-toto** records each build step as a signed statement, an **attestation**. An **SBOM** (software bill of materials) lists every component inside a piece of software."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Serialization** turns data into bytes, and a signature covers those exact bytes."
+          },
+          {
+            "say": "If two systems write the same data differently, a valid signature fails."
+          },
+          {
+            "say": "**JOSE** (for JSON) and **COSE** (for compact binary data) fix one layout."
+          },
+          {
+            "say": "**CMS** is the layout S/MIME uses."
+          }
+        ],
+        "say": "**Serialization** turns data into bytes, and a signature covers those exact bytes. If two systems write the same data differently, a valid signature fails. **JOSE** (for JSON) and **COSE** (for compact binary data) fix one layout. **CMS** is the layout S/MIME uses."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **passkey** is a login without a password: your device signs a challenge bound to the site's real address."
+          },
+          {
+            "say": "The standards behind it are **FIDO2** and **WebAuthn**."
+          },
+          {
+            "say": "The server stores only the public key, so a breach leaks nothing reusable."
+          }
+        ],
+        "say": "A **passkey** is a login without a password: your device signs a challenge bound to the site's real address. The standards behind it are **FIDO2** and **WebAuthn**. The server stores only the public key, so a breach leaks nothing reusable.",
+        "check": {
+          "prompt": "A user is lured to a look-alike site and approves a passkey login there. What does the look-alike site get?",
+          "answer": "Nothing it can use at the real site",
+          "wrong": [
+            "The user's private key",
+            "A signed login it can replay at the real site"
+          ],
+          "why": "The signed challenge is bound to the address it was made for, so it is useless at the real site, and the private key never leaves the user's device."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "**Decentralized key management** keeps keys on the devices that use them."
+          },
+          {
+            "say": "**Centralized key management** holds them in one HSM or KMS."
+          },
+          {
+            "code": "decentral  keys on devices\n  no single failure\n  point; harder recovery\ncentral    HSM or KMS\n  risk and control\n  concentrated",
+            "language": "where keys live"
+          }
+        ],
+        "say": "**Decentralized key management** keeps keys on the devices that use them. **Centralized key management** holds them in one HSM or KMS."
+      }
+    ],
+    "outro": "Next, an officer may later deny approving a contract, and the signed email has to hold up. Choose the design that meets the need."
   },
   {
     "question": "Thornwood Civic Trust needs signed email from its procurement officers that will hold up if an officer later denies approving a contract. It already runs an enterprise CA, and all staff use the same corporate mail client. Which design BEST meets the need?",
@@ -1046,12 +1223,20 @@
               "caption": "two keys, two jobs",
               "src": "_dot/ccb825b974ab67cd.svg"
             }
-          },
-          {
-            "say": "A **key encryption key (KEK)** that never leaves the KMS wraps the DEK."
           }
         ],
-        "say": "Encrypting 100 GB under one master key is awkward: it must stay online, and rotating it means re-encrypting everything. **Envelope encryption** splits the job in two. A fresh **data encryption key (DEK)** encrypts the object locally. A **key encryption key (KEK)** that never leaves the KMS wraps the DEK.",
+        "say": "Encrypting 100 GB under one master key is awkward: it must stay online, and rotating it means re-encrypting everything. **Envelope encryption** splits the job in two. A fresh **data encryption key (DEK)** encrypts the object locally."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **key encryption key (KEK)** that never leaves the KMS **wraps**, meaning encrypts, the DEK."
+          },
+          {
+            "say": "The wrapped DEK is stored beside the object."
+          }
+        ],
+        "say": "A **key encryption key (KEK)** that never leaves the KMS **wraps**, meaning encrypts, the DEK. The wrapped DEK is stored beside the object.",
         "check": {
           "prompt": "Policy says the KEK rotates every year. What does rotation have to touch?",
           "answer": "Only the small wrapped DEKs, which get re-wrapped",
@@ -1065,20 +1250,28 @@
       {
         "beats": [
           {
-            "say": "**Authenticated encryption with associated data (AEAD)** gives confidentiality and integrity in one step."
+            "say": "**Authenticated encryption with associated data (AEAD)** gives confidentiality (secrecy) and integrity (tamper detection) in one step."
           },
           {
             "code": "mode        verdict\nAES-GCM     AEAD: use\nChaCha20-   AEAD: use\n Poly1305\nCBC, CTR    no integrity\n            check\nECB         avoid",
             "language": "encryption modes"
           },
           {
-            "say": "Older designs bolted a separate integrity check onto CBC and bred bugs such as padding oracles."
-          },
-          {
-            "say": "AEAD's one sharp edge: reusing a **nonce** under the same AES-GCM key destroys both properties."
+            "say": "Older modes such as CBC need a separate integrity check bolted on."
           }
         ],
-        "say": "**Authenticated encryption with associated data (AEAD)** gives confidentiality and integrity in one step. Older designs bolted a separate integrity check onto CBC and bred bugs such as padding oracles. AEAD's one sharp edge: reusing a **nonce** under the same AES-GCM key destroys both properties."
+        "say": "**Authenticated encryption with associated data (AEAD)** gives confidentiality (secrecy) and integrity (tamper detection) in one step. Older modes such as CBC need a separate integrity check bolted on."
+      },
+      {
+        "beats": [
+          {
+            "say": "That bolted-on check bred bugs such as **padding oracles**, where error messages help an attacker decrypt."
+          },
+          {
+            "say": "AEAD's one sharp edge: reusing a **nonce**, a number meant to be used once, under the same AES-GCM key destroys both properties."
+          }
+        ],
+        "say": "That bolted-on check bred bugs such as **padding oracles**, where error messages help an attacker decrypt. AEAD's one sharp edge: reusing a **nonce**, a number meant to be used once, under the same AES-GCM key destroys both properties."
       },
       {
         "beats": [
@@ -1093,58 +1286,6 @@
           }
         ],
         "say": "The **one-time pad** is the one provably unbreakable cipher. It mixes the message, bit by bit (XOR), with a truly random key as long as itself, used once. Delivering and never reusing such keys is impractical, so AES and ChaCha20 do the real work."
-      },
-      {
-        "beats": [
-          {
-            "say": "**Hardware acceleration** sets the speed."
-          },
-          {
-            "say": "AES-NI on x86 and the ARMv8 Cryptography Extension run AES-GCM at gigabytes per second per core."
-          },
-          {
-            "say": "Without them, ChaCha20-Poly1305 is faster."
-          },
-          {
-            "say": "Sensors, smart cards and RFID tags may not afford AES at all."
-          },
-          {
-            "say": "For them NIST standardized **lightweight cryptography**: the **Ascon** family, in SP 800-232."
-          }
-        ],
-        "say": "**Hardware acceleration** sets the speed. AES-NI on x86 and the ARMv8 Cryptography Extension run AES-GCM at gigabytes per second per core. Without them, ChaCha20-Poly1305 is faster. Sensors, smart cards and RFID tags may not afford AES at all. For them NIST standardized **lightweight cryptography**: the **Ascon** family, in SP 800-232."
-      },
-      {
-        "beats": [
-          {
-            "say": "**Key stretching** makes each password guess deliberately slow and memory-hungry."
-          },
-          {
-            "code": "key stretching\n  PBKDF2\n  bcrypt\n  scrypt\n  Argon2id: first choice",
-            "language": "stretching methods"
-          },
-          {
-            "say": "It adds no entropy: a weak password stays weak, only slower to crack."
-          },
-          {
-            "say": "A unique random **salt** per password stops one guess being tested against every account at once."
-          }
-        ],
-        "say": "**Key stretching** makes each password guess deliberately slow and memory-hungry. It adds no entropy: a weak password stays weak, only slower to crack. A unique random **salt** per password stops one guess being tested against every account at once."
-      },
-      {
-        "beats": [
-          {
-            "say": "**Key splitting**, Shamir's Secret Sharing, cuts a secret into n shares."
-          },
-          {
-            "say": "Any k of them, the **threshold**, rebuild it; fewer than k reveal nothing."
-          },
-          {
-            "say": "It guards HSM administrator quorums and root CA recovery keys."
-          }
-        ],
-        "say": "**Key splitting**, Shamir's Secret Sharing, cuts a secret into n shares. Any k of them, the **threshold**, rebuild it; fewer than k reveal nothing. It guards HSM administrator quorums and root CA recovery keys."
       }
     ],
     "outro": "Now put the life of one object under envelope encryption in order, from upload to a later download."
@@ -1213,6 +1354,81 @@
       "Frequency analysis of the ciphertext will reveal the random key over time"
     ],
     "feedback": "The pitch describes a one-time pad, which has provably perfect secrecy: brute force, frequency analysis and quantum computers all get nothing, because every plaintext of that length is equally likely. Its weakness is operational. Every byte of traffic needs a byte of truly random key delivered securely in advance, and reusing any part of a pad leaks the XOR of two plaintexts. XOR is easy to undo only with the key in hand. That is why AES and ChaCha20 are the practical substitutes."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you guard passwords, secrets and tiny devices?",
+    "npc": "val",
+    "intro": "Not every device can afford AES, and not every secret is a random key. Passwords are guessable, and a root key held by one person is a single point of failure. So each of these jobs has its own tool.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Hardware acceleration** is built-in processor support for crypto, and it sets the speed."
+          },
+          {
+            "say": "AES-NI on x86 and the ARMv8 Cryptography Extension speed up AES, reaching gigabytes per second per core."
+          },
+          {
+            "say": "Without them, ChaCha20-Poly1305 is faster."
+          }
+        ],
+        "say": "**Hardware acceleration** is built-in processor support for crypto, and it sets the speed. AES-NI on x86 and the ARMv8 Cryptography Extension speed up AES, reaching gigabytes per second per core. Without them, ChaCha20-Poly1305 is faster."
+      },
+      {
+        "beats": [
+          {
+            "say": "Sensors, smart cards and RFID tags may not afford AES at all."
+          },
+          {
+            "say": "For them NIST standardized **lightweight cryptography**: the **Ascon** family, in SP 800-232."
+          }
+        ],
+        "say": "Sensors, smart cards and RFID tags may not afford AES at all. For them NIST standardized **lightweight cryptography**: the **Ascon** family, in SP 800-232."
+      },
+      {
+        "beats": [
+          {
+            "say": "Systems store passwords as hashes. **Key stretching** makes each guess against one deliberately slow and memory-hungry."
+          },
+          {
+            "code": "key stretching\n  PBKDF2\n  bcrypt\n  scrypt\n  Argon2id: first choice",
+            "language": "stretching methods"
+          },
+          {
+            "say": "It adds no **entropy**, meaning unpredictability: a weak password stays weak, only slower to crack."
+          },
+          {
+            "say": "A unique random **salt** per password stops one guess being tested against every account at once."
+          }
+        ],
+        "say": "Systems store passwords as hashes. **Key stretching** makes each guess against one deliberately slow and memory-hungry. It adds no **entropy**, meaning unpredictability: a weak password stays weak, only slower to crack. A unique random **salt** per password stops one guess being tested against every account at once."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Key splitting**, Shamir's Secret Sharing, cuts a secret into n shares."
+          },
+          {
+            "say": "Any k of them, the **threshold**, rebuild it; fewer than k reveal nothing."
+          },
+          {
+            "say": "It guards root CA recovery keys, and HSM admin groups where several people must agree."
+          }
+        ],
+        "say": "**Key splitting**, Shamir's Secret Sharing, cuts a secret into n shares. Any k of them, the **threshold**, rebuild it; fewer than k reveal nothing. It guards root CA recovery keys, and HSM admin groups where several people must agree.",
+        "check": {
+          "prompt": "A secret is split into 7 shares with a threshold of 4. Three people pool their shares. What do they learn?",
+          "answer": "Nothing about the secret",
+          "wrong": [
+            "Three sevenths of the secret",
+            "Enough to guess it, since 3 is close to 4"
+          ],
+          "why": "Fewer shares than the threshold reveal nothing at all, not even part of the secret. A fourth share would reveal all of it."
+        }
+      }
+    ],
+    "outro": "Next, a maker of tiny battery-powered sensors needs a NIST-approved choice. Decide what fits them."
   },
   {
     "question": "Forgeworks Industrial is adding authenticated encryption to battery-powered vibration sensors whose tiny microcontrollers have no AES instructions and cannot spare the memory for a full AES implementation. Auditors want a NIST standard. Which choice BEST fits?",
@@ -1328,10 +1544,10 @@
             "say": "Each session's keys come from **ephemeral** key shares, made fresh and deleted afterward."
           },
           {
-            "say": "The exchange is Diffie-Hellman, written (EC)DHE."
+            "say": "**Diffie-Hellman**, written (EC)DHE when ephemeral, lets two sides agree on a secret key in public."
           }
         ],
-        "say": "**Forward secrecy** means a stolen long-term key cannot unlock past sessions. Each session's keys come from **ephemeral** key shares, made fresh and deleted afterward. The exchange is Diffie-Hellman, written (EC)DHE."
+        "say": "**Forward secrecy** means a stolen long-term key cannot unlock past sessions. Each session's keys come from **ephemeral** key shares, made fresh and deleted afterward. **Diffie-Hellman**, written (EC)DHE when ephemeral, lets two sides agree on a secret key in public."
       },
       {
         "beats": [
@@ -1345,13 +1561,13 @@
             "say": "TLS 1.3 removed static RSA."
           },
           {
-            "say": "Its `ClientHello` and `ServerHello` carry ephemeral key shares."
+            "say": "Its handshake messages `ClientHello` and `ServerHello` carry ephemeral key shares."
           },
           {
             "say": "The certificate's key only signs the handshake."
           }
         ],
-        "say": "The older way, **static RSA** key exchange, had the client encrypt the session secret under the server's public key. Steal that key later, and every recording opens. TLS 1.3 removed static RSA. Its `ClientHello` and `ServerHello` carry ephemeral key shares. The certificate's key only signs the handshake.",
+        "say": "The older way, **static RSA** key exchange, had the client encrypt the session secret under the server's public key. Steal that key later, and every recording opens. TLS 1.3 removed static RSA. Its handshake messages `ClientHello` and `ServerHello` carry ephemeral key shares. The certificate's key only signs the handshake.",
         "check": {
           "prompt": "An attacker recorded a TLS 1.3 session last month and has now stolen the server's private key. What does the key give them?",
           "answer": "The power to impersonate the server, but not to read the recording",
@@ -1365,7 +1581,7 @@
       {
         "beats": [
           {
-            "say": "**Shor's algorithm** solves factoring and discrete logarithms, breaking RSA, Diffie-Hellman and elliptic curves."
+            "say": "**Shor's algorithm**, on a large quantum computer, solves the math problems under RSA, Diffie-Hellman and elliptic curves."
           },
           {
             "say": "**Grover's algorithm** only roughly halves a symmetric key's strength."
@@ -1378,70 +1594,7 @@
             "say": "No such machine exists yet, but an adversary can record traffic today and decrypt it once one does: **harvest now, decrypt later**."
           }
         ],
-        "say": "**Shor's algorithm** solves factoring and discrete logarithms, breaking RSA, Diffie-Hellman and elliptic curves. **Grover's algorithm** only roughly halves a symmetric key's strength. No such machine exists yet, but an adversary can record traffic today and decrypt it once one does: **harvest now, decrypt later**."
-      },
-      {
-        "beats": [
-          {
-            "say": "**Post-quantum cryptography (PQC)** is public-key cryptography built on problems quantum computers are not known to solve."
-          },
-          {
-            "say": "NIST finalized three standards in August 2024."
-          },
-          {
-            "code": "FIPS 203  ML-KEM\n  ex-Kyber, lattice:\n  replaces DH exchange\nFIPS 204  ML-DSA\n  ex-Dilithium, lattice:\n  general signatures\nFIPS 205  SLH-DSA\n  ex-SPHINCS+, hash-based:\n  slower, larger, careful",
-            "language": "the three standards"
-          },
-          {
-            "say": "**ML-KEM** replaces key exchange."
-          },
-          {
-            "say": "**ML-DSA** and **SLH-DSA** are signatures."
-          },
-          {
-            "say": "Two more are coming: **HQC**, a code-based backup, and **FN-DSA**, a compact lattice signature."
-          }
-        ],
-        "say": "**Post-quantum cryptography (PQC)** is public-key cryptography built on problems quantum computers are not known to solve. NIST finalized three standards in August 2024. **ML-KEM** replaces key exchange. **ML-DSA** and **SLH-DSA** are signatures. Two more are coming: **HQC**, a code-based backup, and **FN-DSA**, a compact lattice signature."
-      },
-      {
-        "beats": [
-          {
-            "say": "The price is size, as the table shows."
-          },
-          {
-            "code": "key exchange\n  X25519: 32 B\n  ML-KEM-768: 1,184 B\nsignature\n  ECDSA P-256: 64 B\n  ML-DSA-65: 3,309 B",
-            "language": "bytes on the wire"
-          },
-          {
-            "say": "Browsers and CDNs already negotiate **hybrid** key exchange: X25519 and ML-KEM-768 in one handshake (`X25519MLKEM768`)."
-          },
-          {
-            "say": "The session holds if either algorithm falls."
-          }
-        ],
-        "say": "The price is size, as the table shows. Browsers and CDNs already negotiate **hybrid** key exchange: X25519 and ML-KEM-768 in one handshake (`X25519MLKEM768`). The session holds if either algorithm falls."
-      },
-      {
-        "beats": [
-          {
-            "say": "Migration starts with an **inventory** of every place classical public-key cryptography hides."
-          },
-          {
-            "say": "Then **cryptographic agility**: making algorithms configurable, not hard-coded."
-          },
-          {
-            "code": "1 inventory\n2 cryptographic agility\n3 key exchange first\n  (harvest now, decrypt\n  later hits secrecy)\n4 signatures: roots and\n  firmware keys first\n5 RSA, ECDSA:\n  deprecated after 2030,\n  disallowed after 2035",
-            "language": "migration order"
-          },
-          {
-            "say": "Key exchange moves first, and signatures follow."
-          },
-          {
-            "say": "NIST plans to deprecate RSA and ECDSA after 2030 and disallow them after 2035."
-          }
-        ],
-        "say": "Migration starts with an **inventory** of every place classical public-key cryptography hides. Then **cryptographic agility**: making algorithms configurable, not hard-coded. Key exchange moves first, and signatures follow. NIST plans to deprecate RSA and ECDSA after 2030 and disallow them after 2035."
+        "say": "**Shor's algorithm**, on a large quantum computer, solves the math problems under RSA, Diffie-Hellman and elliptic curves. **Grover's algorithm** only roughly halves a symmetric key's strength. No such machine exists yet, but an adversary can record traffic today and decrypt it once one does: **harvest now, decrypt later**."
       }
     ],
     "outro": "First, an attacker holds six months of recordings and has just stolen the server's key. Work out exactly which sessions are exposed."
@@ -1497,6 +1650,103 @@
       }
     ],
     "feedback": "Shor's algorithm solves factoring and discrete logarithms in polynomial time, which is fatal to every classical public-key scheme, ephemeral (EC)DHE included. Grover's algorithm gives only a square-root speedup on search, so a 128-bit key offers about 64 bits against it and a 256-bit key about 128. Hence the advice: prefer AES-256 and SHA-384 or stronger, and replace the public-key algorithms."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: What replaces RSA and Diffie-Hellman after quantum computers?",
+    "npc": "val",
+    "intro": "Quantum computers threaten the public-key tools the internet relies on, and the replacements are already standardized. They are bigger, and they arrive in a particular order. Let's meet the ones that matter.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Post-quantum cryptography (PQC)** is public-key cryptography built on problems quantum computers are not known to solve."
+          },
+          {
+            "say": "NIST finalized three standards in August 2024."
+          },
+          {
+            "code": "FIPS 203  ML-KEM\n  ex-Kyber, lattice:\n  replaces DH exchange\nFIPS 204  ML-DSA\n  ex-Dilithium, lattice:\n  general signatures\nFIPS 205  SLH-DSA\n  ex-SPHINCS+, hash-based:\n  slower, larger, careful",
+            "language": "the three standards"
+          }
+        ],
+        "say": "**Post-quantum cryptography (PQC)** is public-key cryptography built on problems quantum computers are not known to solve. NIST finalized three standards in August 2024."
+      },
+      {
+        "beats": [
+          {
+            "say": "**ML-KEM**, a key encapsulation mechanism, replaces Diffie-Hellman key exchange."
+          },
+          {
+            "say": "**ML-DSA** and **SLH-DSA** are signatures."
+          },
+          {
+            "say": "Most rest on **lattices**, a kind of geometry puzzle; SLH-DSA relies only on hashing."
+          }
+        ],
+        "say": "**ML-KEM**, a key encapsulation mechanism, replaces Diffie-Hellman key exchange. **ML-DSA** and **SLH-DSA** are signatures. Most rest on **lattices**, a kind of geometry puzzle; SLH-DSA relies only on hashing."
+      },
+      {
+        "beats": [
+          {
+            "say": "**HQC**, a backup built on error-correcting codes, is coming."
+          },
+          {
+            "say": "**FN-DSA**, a compact lattice signature, is coming too."
+          }
+        ],
+        "say": "**HQC**, a backup built on error-correcting codes, is coming. **FN-DSA**, a compact lattice signature, is coming too."
+      },
+      {
+        "beats": [
+          {
+            "say": "The price is size, as the table shows."
+          },
+          {
+            "code": "key exchange\n  X25519: 32 B\n  ML-KEM-768: 1,184 B\nsignature\n  ECDSA P-256: 64 B\n  ML-DSA-65: 3,309 B",
+            "language": "bytes on the wire"
+          },
+          {
+            "say": "Browsers and CDNs already negotiate **hybrid** key exchange: X25519 and ML-KEM-768 in one handshake (`X25519MLKEM768`)."
+          },
+          {
+            "say": "The session stays safe as long as either algorithm holds."
+          }
+        ],
+        "say": "The price is size, as the table shows. Browsers and CDNs already negotiate **hybrid** key exchange: X25519 and ML-KEM-768 in one handshake (`X25519MLKEM768`). The session stays safe as long as either algorithm holds.",
+        "check": {
+          "prompt": "Recorded sessions used hybrid X25519MLKEM768. Years later, someone breaks X25519 but not ML-KEM. Can they read the recordings?",
+          "answer": "No: they would have to break ML-KEM too",
+          "wrong": [
+            "Yes: the weaker algorithm decides the strength",
+            "Yes: hybrid sessions fall back to X25519 alone"
+          ],
+          "why": "The session key depends on both exchanges, so the attacker needs both broken. That is why hybrid is the safe step while confidence in the new algorithms grows."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "Migration starts with an **inventory** of every place classical public-key cryptography hides."
+          },
+          {
+            "say": "Then **cryptographic agility**: making algorithms configurable, not hard-coded."
+          },
+          {
+            "code": "1 inventory\n2 cryptographic agility\n3 key exchange first\n  (harvest now, decrypt\n  later hits secrecy)\n4 signatures: roots and\n  firmware keys first\n5 RSA, ECDSA:\n  deprecated after 2030,\n  disallowed after 2035",
+            "language": "migration order"
+          },
+          {
+            "say": "Key exchange moves first, and signatures follow."
+          },
+          {
+            "say": "NIST plans to deprecate RSA and ECDSA after 2030 and disallow them after 2035."
+          }
+        ],
+        "say": "Migration starts with an **inventory** of every place classical public-key cryptography hides. Then **cryptographic agility**: making algorithms configurable, not hard-coded. Key exchange moves first, and signatures follow. NIST plans to deprecate RSA and ECDSA after 2030 and disallow them after 2035."
+      }
+    ],
+    "outro": "Next, five post-quantum names, five descriptions. Match each name to its description."
   },
   {
     "type": "matching",

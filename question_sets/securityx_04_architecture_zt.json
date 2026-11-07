@@ -6,32 +6,39 @@
     "intro": "I'm Tariq, the Guild's Beacon-Courier. Put a blocking device on the wrong link and one bad rule becomes an outage; put a sensor on the wrong link and it watches traffic nobody cares about. Every control has to live somewhere, and the spot decides what it can do. So I always start by finding the lines where trust changes.",
     "steps": [
       {
-        "say": "A **trust boundary** is where traffic you trust meets traffic you don't. Before I place any control, I ask four questions about the spot. A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries: internet to the DMZ (the zone for public-facing servers), partners to the extranet built for them, users to a sensitive data zone. It does not understand application logic, though. Treat it as the only layer of defense and you have one wall with nothing behind it.",
         "beats": [
           {
-            "say": "A **trust boundary** is where traffic you trust meets traffic you don't. Before I place any control, I ask four questions about the spot."
+            "say": "A **trust boundary** is where traffic you trust meets traffic you don't."
           },
           {
-            "code": "1. Boundary:     do trusted and untrusted traffic meet here?\n2. Tolerance:    can the business absorb latency or blocking?\n3. Visibility:   will this spot give useful telemetry, or noise?\n4. Blast radius: if this layer fails, how much is exposed?",
+            "say": "Before placing a control, ask four questions about the spot."
+          },
+          {
+            "say": "A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries."
+          },
+          {
+            "code": "1 Boundary: do trusted\n  and untrusted traffic\n  meet here?\n2 Tolerance: can the\n  business absorb delay\n  or blocking?\n3 Visibility: does it\n  show useful traffic,\n  or just noise?\n4 Blast radius: if this\n  layer fails, how much\n  is exposed?",
             "language": "placement questions"
-          },
-          {
-            "say": "A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries: internet to the DMZ (the zone for public-facing servers), partners to the extranet built for them, users to a sensitive data zone."
-          },
-          {
-            "say": "It does not understand application logic, though. Treat it as the only layer of defense and you have one wall with nothing behind it."
           }
-        ]
+        ],
+        "say": "A **trust boundary** is where traffic you trust meets traffic you don't. Before placing a control, ask four questions about the spot. A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries."
       },
       {
-        "say": "An **intrusion prevention system (IPS)** sits **inline**: every packet passes through it, so it can block an attack as it happens. That power is also its risk. A badly tuned signature, or a box that fails, drops legitimate traffic and causes an outage, so an IPS goes where blocking is worth that risk and a team can tune it. An **intrusion detection system (IDS)** works **out of band**. A **network tap** copies a link's traffic to it without sitting in the path, so the IDS can alert but never block. An IDS earns its keep only if someone investigates what it raises. Otherwise it makes elegant dashboards and nothing else.",
         "beats": [
           {
-            "say": "An **intrusion prevention system (IPS)** sits **inline**: every packet passes through it, so it can block an attack as it happens."
+            "say": "Firewalls sit between the internet and a **DMZ**, a zone for public-facing servers."
           },
           {
-            "say": "That power is also its risk. A badly tuned signature, or a box that fails, drops legitimate traffic and causes an outage, so an IPS goes where blocking is worth that risk and a team can tune it."
+            "say": "Others guard an **extranet**, a zone shared with partners, and a sensitive data zone."
           },
+          {
+            "say": "It does not understand application logic; as the only layer it is one wall with nothing behind it."
+          }
+        ],
+        "say": "Firewalls sit between the internet and a **DMZ**, a zone for public-facing servers. Others guard an **extranet**, a zone shared with partners, and a sensitive data zone. It does not understand application logic; as the only layer it is one wall with nothing behind it."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=LR; nodesep=0.3; ranksep=0.35; i [label=\"internet\"]; p [label=\"IPS\\n(inline)\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; w [label=\"web\\nservers\"]; i -> p -> w; a [label=\"app tier\"]; t [label=\"tap\", shape=circle, margin=\"0.03\"]; d [label=\"DB tier\"]; s [label=\"IDS\\n(out of band)\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; a -> t -> d; t -> s [style=dashed, label=\" copy\"]; }",
@@ -41,12 +48,19 @@
             }
           },
           {
-            "say": "An **intrusion detection system (IDS)** works **out of band**. A **network tap** copies a link's traffic to it without sitting in the path, so the IDS can alert but never block."
+            "say": "An **intrusion prevention system (IPS)** sits **inline**, in the path, so it can block attacks."
           },
           {
-            "say": "An IDS earns its keep only if someone investigates what it raises. Otherwise it makes elegant dashboards and nothing else."
+            "say": "A bad rule or failed box drops good traffic: place it where that is worth it."
+          },
+          {
+            "say": "An **intrusion detection system (IDS)** works **out of band**."
+          },
+          {
+            "say": "A **network tap** copies traffic to it: it only alerts."
           }
         ],
+        "say": "An **intrusion prevention system (IPS)** sits **inline**, in the path, so it can block attacks. A bad rule or failed box drops good traffic: place it where that is worth it. An **intrusion detection system (IDS)** works **out of band**. A **network tap** copies traffic to it: it only alerts.",
         "check": {
           "prompt": "A plant's robot-controller segment cannot tolerate a dropped packet, and no signatures have been tuned on its traffic yet. What fits there first?",
           "answer": "An IDS fed by a tap on that segment",
@@ -58,35 +72,49 @@
         }
       },
       {
-        "say": "**Network access control (NAC)** sits at the switch port and the wireless edge, where a device first joins. It checks identity, certificates, or **posture** (patch level, security agent, configuration), then decides which network the device gets. That makes NAC an early gatekeeper, not a substitute for segmentation deeper in: a device that passed the check at 9:00 can be compromised by 11:00. A **VPN** is another placement trap. The tunnel gives encrypted transport, not trust: a user who builds one should not inherit the whole internal network.",
         "beats": [
           {
-            "say": "**Network access control (NAC)** sits at the switch port and the wireless edge, where a device first joins."
+            "say": "**Network access control (NAC)** sits where a device first joins: the switch port or wireless edge."
           },
           {
-            "say": "It checks identity, certificates, or **posture** (patch level, security agent, configuration), then decides which network the device gets."
+            "say": "It checks identity, certificates or **posture** (patch level, agent, configuration) before assigning a network."
           },
           {
-            "say": "That makes NAC an early gatekeeper, not a substitute for segmentation deeper in: a device that passed the check at 9:00 can be compromised by 11:00."
-          },
-          {
-            "say": "A **VPN** is another placement trap. The tunnel gives encrypted transport, not trust: a user who builds one should not inherit the whole internal network."
+            "say": "A device clean at 9:00 can be compromised by 11:00, so NAC does not replace keeping devices in separate zones."
           }
-        ]
+        ],
+        "say": "**Network access control (NAC)** sits where a device first joins: the switch port or wireless edge. It checks identity, certificates or **posture** (patch level, agent, configuration) before assigning a network. A device clean at 9:00 can be compromised by 11:00, so NAC does not replace keeping devices in separate zones."
       },
       {
-        "say": "Visibility tools need placing too. A **collector** gathers logs, flow records, or packet copies from many sources into one place for analysis. **East-west** traffic, between internal systems, is the part most often missed. A collector fed only perimeter logs, with no identity-provider events or cloud telemetry, gives a false sense of coverage. **Vulnerability scanners** follow the same logic. An internal scanner must sit where it can reach the servers without being blocked; an external scanner runs from the internet, to show what an attacker sees.",
         "beats": [
           {
-            "say": "Visibility tools need placing too. A **collector** gathers logs, flow records, or packet copies from many sources into one place for analysis."
+            "say": "Visibility tools need placing too. A **collector** gathers logs and copies of traffic from many sources into one place."
           },
           {
-            "say": "**East-west** traffic, between internal systems, is the part most often missed. A collector fed only perimeter logs, with no identity-provider events or cloud telemetry, gives a false sense of coverage."
+            "say": "**East-west** traffic, between internal systems, is the part most often missed."
           },
           {
-            "say": "**Vulnerability scanners** follow the same logic. An internal scanner must sit where it can reach the servers without being blocked; an external scanner runs from the internet, to show what an attacker sees."
+            "say": "A collector fed only by logs from the network's outer edge gives a false sense of coverage."
           }
-        ]
+        ],
+        "say": "Visibility tools need placing too. A **collector** gathers logs and copies of traffic from many sources into one place. **East-west** traffic, between internal systems, is the part most often missed. A collector fed only by logs from the network's outer edge gives a false sense of coverage."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **VPN** is an encrypted tunnel into a network."
+          },
+          {
+            "say": "Its tunnel is encrypted but not trusted, so users should not inherit the whole internal network."
+          },
+          {
+            "say": "**Vulnerability scanners** probe servers for known weaknesses."
+          },
+          {
+            "say": "Internal ones need an unblocked path; external ones run from the internet, as an attacker would."
+          }
+        ],
+        "say": "A **VPN** is an encrypted tunnel into a network. Its tunnel is encrypted but not trusted, so users should not inherit the whole internal network. **Vulnerability scanners** probe servers for known weaknesses. Internal ones need an unblocked path; external ones run from the internet, as an attacker would."
       }
     ],
     "outro": "Now a different link, with a different appetite for risk. Decide which deployment fits it."
@@ -166,17 +194,10 @@
     "type": "npc_demo",
     "question": "NPC: What goes between a client and a server, and why?",
     "npc": "tariq",
-    "intro": "A request from a laptop to a web app can pass through several boxes on the way, and they're easy to mix up because they all sit in the middle. The useful question is never which one is best, but which side it works for: the people sending requests, or the servers answering them. Let's start with the side closest to the user.",
+    "intro": "A request from a laptop to a web app can pass through several boxes, and they are easy to mix up because they all sit in the middle. The useful question is which side each works for: the people sending requests, or the servers answering them. Let's start with the side closest to the user.",
     "steps": [
       {
-        "say": "A **forward proxy** stands in front of users. Their outbound requests pass through it, so it can enforce acceptable use, inspect TLS, run suspicious downloads in a sandbox, and stop data leaving. A **reverse proxy** stands in front of servers. Inbound requests reach it first; it terminates TLS, spreads requests across servers as a load balancer does, and hides the backend from direct exposure.",
         "beats": [
-          {
-            "say": "A **forward proxy** stands in front of users. Their outbound requests pass through it, so it can enforce acceptable use, inspect TLS, run suspicious downloads in a sandbox, and stop data leaving."
-          },
-          {
-            "say": "A **reverse proxy** stands in front of servers. Inbound requests reach it first; it terminates TLS, spreads requests across servers as a load balancer does, and hides the backend from direct exposure."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.35; ranksep=0.35; s [label=\"staff\\nlaptops\"]; f [label=\"forward\\nproxy\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; i [label=\"internet\"]; r [label=\"reverse\\nproxy\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; v [label=\"company\\nservers\"]; {rank=same; s; f;} {rank=same; r; v;} s -> f; f -> i; i -> r; r -> v; }",
@@ -184,45 +205,96 @@
               "caption": "the same middleman idea, on opposite sides",
               "src": "_dot/2c86825c61302036.svg"
             }
-          }
-        ]
-      },
-      {
-        "say": "A **web application firewall (WAF)** works at the application layer. It understands web attacks, such as SQL injection, cross-site scripting, and bot abuse, that an edge firewall's address-and-port rules cannot see. It belongs in front of internet-facing apps, APIs, and portals that take untrusted input. Deployed with default rules and no knowledge of the app, it mostly produces noise.",
-        "beats": [
-          {
-            "say": "A **web application firewall (WAF)** works at the application layer. It understands web attacks, such as SQL injection, cross-site scripting, and bot abuse, that an edge firewall's address-and-port rules cannot see."
           },
           {
-            "say": "It belongs in front of internet-facing apps, APIs, and portals that take untrusted input. Deployed with default rules and no knowledge of the app, it mostly produces noise."
-          }
-        ]
-      },
-      {
-        "say": "An **API gateway** fronts machine-to-machine calls from mobile apps, partners, and automations. An API is a programmable trust boundary, not just another web page. Callers prove who they are with a **signed token** carried in each request, or with **mutual TLS**, where both sides present certificates.",
-        "beats": [
-          {
-            "say": "An **API gateway** fronts machine-to-machine calls from mobile apps, partners, and automations. An API is a programmable trust boundary, not just another web page."
+            "say": "A **forward proxy** stands in front of users: their outbound requests pass through it."
           },
           {
-            "code": "authenticate the caller\nauthorize the action\nvalidate the request (schema, size)\nrate-limit each caller\nmanage API versions\nlog who called what, and the result",
-            "language": "API gateway jobs"
+            "say": "A **reverse proxy** stands in front of servers: inbound requests reach it first."
           },
           {
-            "say": "Callers prove who they are with a **signed token** carried in each request, or with **mutual TLS**, where both sides present certificates."
-          }
-        ]
-      },
-      {
-        "say": "A **content delivery network (CDN)** moves some controls to the edge. It caches static content, absorbs denial-of-service floods, and can run WAF rules before traffic ever reaches you. The server the CDN fetches from is the **origin**. Moving controls outward does not retire the origin's own security.",
-        "beats": [
-          {
-            "say": "A **content delivery network (CDN)** moves some controls to the edge. It caches static content, absorbs denial-of-service floods, and can run WAF rules before traffic ever reaches you."
+            "say": "Either can decrypt **TLS**, the encryption on web traffic, so it can inspect what passes."
           },
           {
-            "say": "The server the CDN fetches from is the **origin**. Moving controls outward does not retire the origin's own security."
+            "code": "forward proxy:\n  enforce acceptable use\n  inspect TLS (encryption)\n  sandbox downloads\n  stop data leaving\nreverse proxy:\n  terminate TLS\n  spread requests\n  hide the backend",
+            "language": "what each proxy does"
           }
         ],
+        "say": "A **forward proxy** stands in front of users: their outbound requests pass through it. A **reverse proxy** stands in front of servers: inbound requests reach it first. Either can decrypt **TLS**, the encryption on web traffic, so it can inspect what passes."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **web application firewall (WAF)** reads the web requests themselves."
+          },
+          {
+            "say": "An edge firewall works only from addresses and ports, so it misses web attacks."
+          },
+          {
+            "say": "A WAF catches **SQL injection**, which slips database commands into a form field."
+          },
+          {
+            "say": "It also catches **cross-site scripting**, which makes a page run an attacker's script."
+          }
+        ],
+        "say": "A **web application firewall (WAF)** reads the web requests themselves. An edge firewall works only from addresses and ports, so it misses web attacks. A WAF catches **SQL injection**, which slips database commands into a form field. It also catches **cross-site scripting**, which makes a page run an attacker's script."
+      },
+      {
+        "beats": [
+          {
+            "say": "It also spots **bots**, scripts that hammer a login or checkout page."
+          },
+          {
+            "say": "Put it in front of web apps and portals that take untrusted input."
+          },
+          {
+            "say": "With default rules it mostly makes noise."
+          }
+        ],
+        "say": "It also spots **bots**, scripts that hammer a login or checkout page. Put it in front of web apps and portals that take untrusted input. With default rules it mostly makes noise."
+      },
+      {
+        "beats": [
+          {
+            "say": "An **API** is how one program calls another for data or actions."
+          },
+          {
+            "say": "An **API gateway** fronts those calls from mobile apps, partners and automations."
+          },
+          {
+            "say": "An API is a programmable trust boundary, not just another web page."
+          },
+          {
+            "code": "authenticate the caller\nauthorize the action\nvalidate the request\n  (format, size)\nrate-limit each caller\nmanage API versions\nlog who called what,\n  and the result",
+            "language": "API gateway jobs"
+          }
+        ],
+        "say": "An **API** is how one program calls another for data or actions. An **API gateway** fronts those calls from mobile apps, partners and automations. An API is a programmable trust boundary, not just another web page."
+      },
+      {
+        "beats": [
+          {
+            "say": "Callers prove who they are with a **signed token**, a digitally signed pass sent with each request."
+          },
+          {
+            "say": "Or with **mutual TLS**, where both sides show each other certificates, digital IDs."
+          }
+        ],
+        "say": "Callers prove who they are with a **signed token**, a digitally signed pass sent with each request. Or with **mutual TLS**, where both sides show each other certificates, digital IDs."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **content delivery network (CDN)** keeps cached copies of content on servers near users, at the edge."
+          },
+          {
+            "say": "It can soak up floods of junk traffic and run WAF rules first."
+          },
+          {
+            "say": "The server the CDN fetches from is the **origin**; its own security still matters."
+          }
+        ],
+        "say": "A **content delivery network (CDN)** keeps cached copies of content on servers near users, at the edge. It can soak up floods of junk traffic and run WAF rules first. The server the CDN fetches from is the **origin**; its own security still matters.",
         "check": {
           "prompt": "An attacker learns the origin server's real IP address. What happens to the CDN's protection?",
           "answer": "It is bypassed: requests go straight to the origin",
@@ -344,27 +416,34 @@
     "intro": "Every system fails eventually; what matters is whether one broken server takes the whole service down with it. You can design for that, and a surprising amount of the design comes down to simple arithmetic. Let's begin with the box that decides which server gets each request.",
     "steps": [
       {
-        "say": "**Load balancing** spreads requests across several nodes. **Health checks** pull a failing node out of rotation, so one broken server does not stop the service. The balancer is a security component, not just plumbing. It often terminates TLS, and it can steer traffic away from a compromised node so defenders can isolate it without an outage. A balancer also lets you scale out. **Horizontal scaling** adds nodes; **vertical scaling** makes one node bigger, which is simpler but means a bigger loss when that one node fails. Pool nodes can be **non-persistent**: rebuilt from a known-good image, or discarded after use, so an intruder's foothold does not survive the next rebuild. Not everything can be stateless. A **persistent** system, such as the database, keeps its state over time, so it stays tightly segmented and closely monitored instead.",
         "beats": [
           {
-            "say": "**Load balancing** spreads requests across several nodes. **Health checks** pull a failing node out of rotation, so one broken server does not stop the service."
+            "say": "**Load balancing** spreads requests across several **nodes**, meaning servers."
           },
           {
-            "say": "The balancer is a security component, not just plumbing. It often terminates TLS, and it can steer traffic away from a compromised node so defenders can isolate it without an outage."
+            "say": "**Health checks** pull a failing node out of rotation."
           },
           {
-            "say": "A balancer also lets you scale out. **Horizontal scaling** adds nodes; **vertical scaling** makes one node bigger, which is simpler but means a bigger loss when that one node fails."
-          },
-          {
-            "say": "Pool nodes can be **non-persistent**: rebuilt from a known-good image, or discarded after use, so an intruder's foothold does not survive the next rebuild."
-          },
-          {
-            "say": "Not everything can be stateless. A **persistent** system, such as the database, keeps its state over time, so it stays tightly segmented and closely monitored instead."
+            "say": "It is a security component too: it often decrypts TLS, and can steer traffic from a compromised node so defenders can isolate it."
           }
-        ]
+        ],
+        "say": "**Load balancing** spreads requests across several **nodes**, meaning servers. **Health checks** pull a failing node out of rotation. It is a security component too: it often decrypts TLS, and can steer traffic from a compromised node so defenders can isolate it."
       },
       {
-        "say": "In **active-active**, every node carries live traffic. Capacity is fully used and failover is fast, but the survivors need spare room to absorb a lost node, and state must stay in sync. In **active-passive**, a standby waits. Failover logic is simpler, but a standby that is rarely exercised can hide a **dormant failure**, such as an expired certificate, until the day you need it. Now size an active-active pool. Peak load is 2,000 requests per second, each node carries 600, and the pool must still carry the peak after losing any one node.",
+        "beats": [
+          {
+            "say": "**Horizontal scaling** adds nodes; **vertical scaling** enlarges one node: simpler, but a bigger loss if it fails."
+          },
+          {
+            "say": "**Non-persistent** nodes are rebuilt from a known-good image or discarded, so an intruder's foothold does not survive."
+          },
+          {
+            "say": "A **persistent** system, such as the database, keeps its state, so it is walled off tightly."
+          }
+        ],
+        "say": "**Horizontal scaling** adds nodes; **vertical scaling** enlarges one node: simpler, but a bigger loss if it fails. **Non-persistent** nodes are rebuilt from a known-good image or discarded, so an intruder's foothold does not survive. A **persistent** system, such as the database, keeps its state, so it is walled off tightly."
+      },
+      {
         "beats": [
           {
             "figure": {
@@ -375,15 +454,35 @@
             }
           },
           {
-            "say": "In **active-active**, every node carries live traffic. Capacity is fully used and failover is fast, but the survivors need spare room to absorb a lost node, and state must stay in sync."
+            "say": "In **active-active**, every node carries live traffic."
           },
           {
-            "say": "In **active-passive**, a standby waits. Failover logic is simpler, but a standby that is rarely exercised can hide a **dormant failure**, such as an expired certificate, until the day you need it."
+            "say": "When one fails, the rest absorb its load: that **failover** is fast."
           },
           {
-            "say": "Now size an active-active pool. Peak load is 2,000 requests per second, each node carries 600, and the pool must still carry the peak after losing any one node."
+            "say": "Survivors need spare capacity, and the nodes' data must stay in sync."
           }
         ],
+        "say": "In **active-active**, every node carries live traffic. When one fails, the rest absorb its load: that **failover** is fast. Survivors need spare capacity, and the nodes' data must stay in sync."
+      },
+      {
+        "beats": [
+          {
+            "say": "In **active-passive**, a standby waits for the primary to fail, which keeps failover simple."
+          },
+          {
+            "say": "But a rarely tested standby can hide a **dormant failure**, such as an expired certificate."
+          }
+        ],
+        "say": "In **active-passive**, a standby waits for the primary to fail, which keeps failover simple. But a rarely tested standby can hide a **dormant failure**, such as an expired certificate."
+      },
+      {
+        "beats": [
+          {
+            "say": "Size an active-active pool: peak load is 2,000 requests a second, each node carries 600, and the pool must survive losing any node."
+          }
+        ],
+        "say": "Size an active-active pool: peak load is 2,000 requests a second, each node carries 600, and the pool must survive losing any node.",
         "check": {
           "prompt": "How many nodes does the pool need?",
           "answer": "5: four carry the peak, and a fifth covers a loss",
@@ -395,48 +494,18 @@
         }
       },
       {
-        "say": "A request that must pass several components in a row is up only when every one of them is up. For components that fail independently, multiply their availabilities. The chain is weaker than its weakest link. A component that every path needs, with no redundant partner, is a **single point of failure**, which is why balancers are deployed as redundant pairs. Geography hides the same trap. Multi-region design adds latency, data-sovereignty, and key-management complexity. And it is still fragile if every region depends on one global identity service, certificate authority (CA), or management plane.",
         "beats": [
           {
-            "say": "A request that must pass several components in a row is up only when every one of them is up. For components that fail independently, multiply their availabilities."
+            "say": "A **multi-region** design runs the service in several geographic regions."
           },
           {
-            "code": "CDN          99.99%\nbalancer     99.95%\napp tier     99.90%\n\n0.9999 x 0.9995 x 0.9990 = 0.9984\nwhole path   99.84%",
-            "language": "availability in series"
+            "say": "It adds delay, country-specific data laws and harder encryption-key management."
           },
           {
-            "say": "The chain is weaker than its weakest link. A component that every path needs, with no redundant partner, is a **single point of failure**, which is why balancers are deployed as redundant pairs."
-          },
-          {
-            "say": "Geography hides the same trap. Multi-region design adds latency, data-sovereignty, and key-management complexity."
-          },
-          {
-            "say": "And it is still fragile if every region depends on one global identity service, certificate authority (CA), or management plane."
-          }
-        ]
-      },
-      {
-        "say": "**Recoverability** is restoring business function after failure. It needs more than backups: a tested recovery order, because the identity provider, DNS, secrets store, and database often must come back in a set sequence. Two targets bound the plan. The **recovery time objective (RTO)** is how long restoration may take; the **recovery point objective (RPO)** is how much data loss, measured in time, is tolerable. A copy protects you only once it is safe off-site. If snapshots run every 4 hours and reach the second site 20 minutes after each is taken, a failure just before the next copy lands loses up to 4 hours 20 minutes of data.",
-        "beats": [
-          {
-            "say": "**Recoverability** is restoring business function after failure. It needs more than backups: a tested recovery order, because the identity provider, DNS, secrets store, and database often must come back in a set sequence."
-          },
-          {
-            "say": "Two targets bound the plan. The **recovery time objective (RTO)** is how long restoration may take; the **recovery point objective (RPO)** is how much data loss, measured in time, is tolerable."
-          },
-          {
-            "say": "A copy protects you only once it is safe off-site. If snapshots run every 4 hours and reach the second site 20 minutes after each is taken, a failure just before the next copy lands loses up to 4 hours 20 minutes of data."
+            "say": "It is still fragile if every region depends on one shared identity service, certificate authority (the issuer of certificates) or management system."
           }
         ],
-        "check": {
-          "prompt": "Snapshots run every 6 hours and reach the second site 30 minutes after each is taken. The RPO is 4 hours. Does the design meet it?",
-          "answer": "No: the worst case loses up to 6.5 hours of data",
-          "wrong": [
-            "Yes: on average only about 3 hours are lost",
-            "Yes: the RPO limits restore time, not data loss"
-          ],
-          "why": "RPO is judged on the worst case, not the average. A failure just before the next copy lands loses everything since the last safe copy: 6 hours plus the 30-minute transfer. And RPO is about data loss; restore time is the RTO."
-        }
+        "say": "A **multi-region** design runs the service in several geographic regions. It adds delay, country-specific data laws and harder encryption-key management. It is still fragile if every region depends on one shared identity service, certificate authority (the issuer of certificates) or management system."
       }
     ],
     "outro": "Next comes a settlement service whose standby site failed its last failover test. Choose the design that fits what leadership now wants."
@@ -536,6 +605,79 @@
       "tolerance_abs": 0
     },
     "feedback_template": "Carrying {{peak}} requests per second at {{cap}} per node takes {{need}} nodes (round up, since a fraction of a node cannot carry load). Active-active must also survive losing one, so add a spare: {{expected}} nodes, and any {{need}} survivors still carry {{carry}} requests per second."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do failures add up across a chain of parts?",
+    "npc": "tariq",
+    "intro": "A shopper's order passes through a CDN, a load balancer and an app tier, and each one is up almost all the time. Yet the whole path is down more often than any single part. That gap comes from simple arithmetic, and so does planning how completely and how fast you recover.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Availability** is the share of time a component works."
+          },
+          {
+            "say": "A request through several components in a row works only when all do, so multiply their availabilities."
+          },
+          {
+            "code": "CDN          99.99%\nbalancer     99.95%\napp tier     99.90%\n\n0.9999 x 0.9995 x 0.9990\n  = 0.9984\nwhole path   99.84%",
+            "language": "availability in series"
+          }
+        ],
+        "say": "**Availability** is the share of time a component works. A request through several components in a row works only when all do, so multiply their availabilities."
+      },
+      {
+        "beats": [
+          {
+            "say": "The chain is weaker than its weakest link."
+          },
+          {
+            "say": "A component every path needs, with no redundant partner, is a **single point of failure**, so balancers come in redundant pairs."
+          }
+        ],
+        "say": "The chain is weaker than its weakest link. A component every path needs, with no redundant partner, is a **single point of failure**, so balancers come in redundant pairs."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Recoverability** is restoring business function after a failure, in a tested order."
+          },
+          {
+            "say": "The **recovery time objective (RTO)** is how long restoring may take."
+          },
+          {
+            "say": "The **recovery point objective (RPO)** is how much data loss, in time, is tolerable."
+          },
+          {
+            "code": "restore in order:\n  a system comes back\n  only after what it\n  depends on",
+            "language": "recovery"
+          }
+        ],
+        "say": "**Recoverability** is restoring business function after a failure, in a tested order. The **recovery time objective (RTO)** is how long restoring may take. The **recovery point objective (RPO)** is how much data loss, in time, is tolerable."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **snapshot** is a saved copy of data at one moment."
+          },
+          {
+            "say": "Snapshots every 4 hours that reach site two 20 minutes later can lose up to 4 hours 20 minutes of data."
+          }
+        ],
+        "say": "A **snapshot** is a saved copy of data at one moment. Snapshots every 4 hours that reach site two 20 minutes later can lose up to 4 hours 20 minutes of data.",
+        "check": {
+          "prompt": "Snapshots run every 6 hours and reach the second site 30 minutes after each is taken. The RPO is 4 hours. Does the design meet it?",
+          "answer": "No: the worst case loses up to 6.5 hours of data",
+          "wrong": [
+            "Yes: on average only about 3 hours are lost",
+            "Yes: the RPO limits restore time, not data loss"
+          ],
+          "why": "RPO is judged on the worst case, not the average. A failure just before the next copy lands loses everything since the last safe copy: 6 hours plus the 30-minute transfer. And RPO is about data loss; restore time is the RTO."
+        }
+      }
+    ],
+    "outro": "Next, four components sit in a row between customers and a trading firm's orders. Work out how available the whole path is."
   },
   {
     "type": "dynamic_numeric",
@@ -643,17 +785,7 @@
     "intro": "I'm Val, the Guild's Ward-Smith. For years, being plugged into the office network was enough to be trusted, so one compromised laptop on the inside could reach almost anything. The model that replaced that habit still says yes or no to every request; what changed is how it decides.",
     "steps": [
       {
-        "say": "In **Zero Trust**, access is granted per request, from verified identity, device posture, context, and the resource asked for. Network location alone earns nothing. NIST SP 800-207 splits every access decision into two roles. The **policy decision point (PDP)** weighs the request against policy and returns allow or deny. The **policy enforcement point (PEP)** sits in the data path in front of the resource, as a gateway, reverse proxy, or agent, and applies that answer. NIST divides the PDP once more: a **policy engine** makes the decision, and a **policy administrator** tells the PEP to open or tear down the session.",
         "beats": [
-          {
-            "say": "In **Zero Trust**, access is granted per request, from verified identity, device posture, context, and the resource asked for. Network location alone earns nothing."
-          },
-          {
-            "say": "NIST SP 800-207 splits every access decision into two roles. The **policy decision point (PDP)** weighs the request against policy and returns allow or deny."
-          },
-          {
-            "say": "The **policy enforcement point (PEP)** sits in the data path in front of the resource, as a gateway, reverse proxy, or agent, and applies that answer."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.5; ranksep=0.35; s [label=\"subject\\n(user, device)\"]; pep [label=\"PEP\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r [label=\"resource\"]; pdp [label=\"PDP\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; s -> pep [label=\" request\"]; pep -> r [label=\" if allowed\"]; pep -> pdp [dir=both, style=dashed, label=\"ask, then\\nallow or deny\"]; {rank=same; pep; pdp;} }",
@@ -663,20 +795,41 @@
             }
           },
           {
-            "say": "NIST divides the PDP once more: a **policy engine** makes the decision, and a **policy administrator** tells the PEP to open or tear down the session."
-          }
-        ]
-      },
-      {
-        "say": "NIST calls an area where entities are trusted by default after one initial check an **implicit trust zone**, and advises keeping it as small as possible. The PEP's place in the path has a consequence. A resource with no PEP in front of it never consults the PDP, however healthy the PDP is: it cannot rule on a request it never sees.",
-        "beats": [
-          {
-            "say": "NIST calls an area where entities are trusted by default after one initial check an **implicit trust zone**, and advises keeping it as small as possible."
+            "say": "In **Zero Trust**, access is granted per request, from verified identity, device health, context and the resource asked for."
           },
           {
-            "say": "The PEP's place in the path has a consequence. A resource with no PEP in front of it never consults the PDP, however healthy the PDP is: it cannot rule on a request it never sees."
+            "say": "NIST, the US standards agency, splits each decision in two roles in its guide SP 800-207."
+          },
+          {
+            "say": "The **policy decision point (PDP)** weighs the request against policy and returns allow or deny."
           }
         ],
+        "say": "In **Zero Trust**, access is granted per request, from verified identity, device health, context and the resource asked for. NIST, the US standards agency, splits each decision in two roles in its guide SP 800-207. The **policy decision point (PDP)** weighs the request against policy and returns allow or deny."
+      },
+      {
+        "beats": [
+          {
+            "say": "The **policy enforcement point (PEP)** sits in front of the resource, in the path requests take, and applies that answer."
+          },
+          {
+            "say": "NIST splits the PDP once more."
+          },
+          {
+            "say": "A **policy engine** makes the decision; a **policy administrator** tells the PEP to open or tear down a session."
+          }
+        ],
+        "say": "The **policy enforcement point (PEP)** sits in front of the resource, in the path requests take, and applies that answer. NIST splits the PDP once more. A **policy engine** makes the decision; a **policy administrator** tells the PEP to open or tear down a session."
+      },
+      {
+        "beats": [
+          {
+            "say": "NIST calls an area where entities are trusted by default after one initial check an **implicit trust zone**, and advises keeping it small."
+          },
+          {
+            "say": "A resource with no PEP in front of it never consults the PDP: it cannot rule on a request it never sees."
+          }
+        ],
+        "say": "NIST calls an area where entities are trusted by default after one initial check an **implicit trust zone**, and advises keeping it small. A resource with no PEP in front of it never consults the PDP: it cannot rule on a request it never sees.",
         "check": {
           "prompt": "A legacy app is kept reachable over the old VPN, with no gateway in front of it, as a temporary exception. What has the exception created?",
           "answer": "An implicit trust zone: connecting is enough",
@@ -685,68 +838,6 @@
             "A PDP failure: its decisions are wrong"
           ],
           "why": "Nothing intercepts requests to that app, so no policy decision is ever made. Anyone who reaches the VPN is trusted by default, which is exactly what Zero Trust exists to remove."
-        }
-      },
-      {
-        "say": "Logging in once and trusting the session all day is the old model. **Continuous authorization** keeps checking whether the conditions that justified access are still true. When context changes, the policy reacts: **step-up MFA** (an extra factor demanded mid-session), reduced privilege, session isolation, or termination. That is **context-based reauthentication**: stronger proof exactly when risk justifies it. Signals include **impossible travel** (one session in two places too far apart to be real), anonymizing networks, device compliance, time, and resource sensitivity. Prompts at random moments only train users to resent security, so the architect designs a few meaningful decision points.",
-        "beats": [
-          {
-            "say": "Logging in once and trusting the session all day is the old model. **Continuous authorization** keeps checking whether the conditions that justified access are still true."
-          },
-          {
-            "code": "08:55  login        Chicago    managed laptop   MFA passed\n09:10  CRM          Chicago    managed laptop   allowed\n11:40  billing API  Bucharest  unknown host     same token",
-            "language": "session timeline"
-          },
-          {
-            "say": "When context changes, the policy reacts: **step-up MFA** (an extra factor demanded mid-session), reduced privilege, session isolation, or termination."
-          },
-          {
-            "say": "That is **context-based reauthentication**: stronger proof exactly when risk justifies it."
-          },
-          {
-            "say": "Signals include **impossible travel** (one session in two places too far apart to be real), anonymizing networks, device compliance, time, and resource sensitivity."
-          },
-          {
-            "say": "Prompts at random moments only train users to resent security, so the architect designs a few meaningful decision points."
-          }
-        ],
-        "check": {
-          "prompt": "What in that timeline should change the decision at 11:40?",
-          "answer": "Impossible travel, plus a sensitive API, on one token",
-          "wrong": [
-            "The CRM access at 09:10 from the same laptop",
-            "The age of the MFA prompt passed at 08:55"
-          ],
-          "why": "The morning was ordinary. At 11:40 the same token appears an ocean away within hours and asks for billing, so the policy should demand step-up MFA and block the call if it fails."
-        }
-      },
-      {
-        "say": "Narrow trust starts with knowing what is asking. **Asset identification** and a reliable inventory come first: is this a managed laptop, a personal tablet, or a forgotten development VM? **Attestation** is evidence that a device or workload is in a trustworthy state: say, a boot-chain measurement recorded in its **TPM**, the chip that stores those measurements. Approved code and valid certificates from an expected management domain count too. Without attestation you are trusting claims rather than evidence. Then frame each grant as a **subject-object relationship**. The subject is the requester: a user, device, service account, or workload. The object is what it wants: a share, API, console, or key. Ask what exact relationship this subject should have with this object, under which conditions, for how long. That is **least privilege**: a helpdesk technician may reset passwords but not read mailboxes.",
-        "beats": [
-          {
-            "say": "Narrow trust starts with knowing what is asking. **Asset identification** and a reliable inventory come first: is this a managed laptop, a personal tablet, or a forgotten development VM?"
-          },
-          {
-            "say": "**Attestation** is evidence that a device or workload is in a trustworthy state: say, a boot-chain measurement recorded in its **TPM**, the chip that stores those measurements."
-          },
-          {
-            "say": "Approved code and valid certificates from an expected management domain count too. Without attestation you are trusting claims rather than evidence."
-          },
-          {
-            "say": "Then frame each grant as a **subject-object relationship**. The subject is the requester: a user, device, service account, or workload. The object is what it wants: a share, API, console, or key."
-          },
-          {
-            "say": "Ask what exact relationship this subject should have with this object, under which conditions, for how long. That is **least privilege**: a helpdesk technician may reset passwords but not read mailboxes."
-          }
-        ],
-        "check": {
-          "prompt": "A build pipeline must deploy code to staging. Which grant fits the subject-object model?",
-          "answer": "Deploy to staging only, for the pipeline's own identity",
-          "wrong": [
-            "Admin on staging and production, so builds never fail",
-            "Network access to the whole build subnet"
-          ],
-          "why": "The subject is the pipeline's identity and the object is staging; nothing more is needed. Production admin and subnet-wide reach are the broad inheritance that turns one compromised pipeline into a path to everything."
         }
       }
     ],
@@ -795,6 +886,94 @@
       }
     ],
     "feedback": "The PDP decides and the PEP enforces. Because only the PEP sits in the traffic, a path that skips it is never put to the PDP, and whatever lies on that path is trusted by default: an implicit trust zone, which NIST advises keeping as small as possible."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How does Zero Trust keep trust narrow after the first yes?",
+    "npc": "val",
+    "intro": "A login at 8:55 says little about a request at 11:40, yet most stolen sessions look fine when they begin. So a yes can't be a one-time gate: the decision has to keep watching, and it has to be precise about who may touch what.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Trusting a session all day after one login is the old model."
+          },
+          {
+            "say": "**Continuous authorization** keeps checking that the conditions for access still hold."
+          },
+          {
+            "say": "**MFA** (multifactor authentication) is a second proof, like a phone prompt."
+          },
+          {
+            "say": "**Impossible travel** is one session in two places too far apart to be real."
+          },
+          {
+            "code": "08:55 login, Chicago\n  managed laptop, MFA ok\n09:10 CRM, Chicago\n  managed laptop: allowed\n11:40 billing API,\n  Bucharest, unknown host\n  same token",
+            "language": "session timeline"
+          }
+        ],
+        "say": "Trusting a session all day after one login is the old model. **Continuous authorization** keeps checking that the conditions for access still hold. **MFA** (multifactor authentication) is a second proof, like a phone prompt. **Impossible travel** is one session in two places too far apart to be real.",
+        "check": {
+          "prompt": "What in that timeline should change the decision at 11:40?",
+          "answer": "Impossible travel, plus a sensitive API, on one token",
+          "wrong": [
+            "The CRM access at 09:10 from the same laptop",
+            "The age of the MFA prompt passed at 08:55"
+          ],
+          "why": "The morning was ordinary. At 11:40 the same token appears an ocean away within hours and asks for billing, so the policy should demand step-up MFA and block the call if it fails."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "When context changes, the policy reacts: **step-up MFA** (an extra proof demanded mid-session), less privilege, isolation or termination."
+          },
+          {
+            "say": "That is **context-based reauthentication**: stronger proof exactly when risk justifies it."
+          }
+        ],
+        "say": "When context changes, the policy reacts: **step-up MFA** (an extra proof demanded mid-session), less privilege, isolation or termination. That is **context-based reauthentication**: stronger proof exactly when risk justifies it."
+      },
+      {
+        "beats": [
+          {
+            "say": "Narrow trust starts with knowing what is asking: **asset identification**, a reliable inventory."
+          },
+          {
+            "say": "**Attestation** is evidence a device is trustworthy, such as a record of what loaded at startup, kept in its **TPM**, a security chip."
+          }
+        ],
+        "say": "Narrow trust starts with knowing what is asking: **asset identification**, a reliable inventory. **Attestation** is evidence a device is trustworthy, such as a record of what loaded at startup, kept in its **TPM**, a security chip."
+      },
+      {
+        "beats": [
+          {
+            "say": "Frame each grant as a **subject-object relationship**."
+          },
+          {
+            "code": "subject: who asks\n  a user, a device, or\n  a program's own account\nobject: what it wants\n  file share, API,\n  console, key",
+            "language": "subject and object"
+          },
+          {
+            "say": "Ask what exact relationship this subject should have with this object, under which conditions, for how long."
+          },
+          {
+            "say": "That is **least privilege**: a helpdesk technician may reset passwords but not read mailboxes."
+          }
+        ],
+        "say": "Frame each grant as a **subject-object relationship**. Ask what exact relationship this subject should have with this object, under which conditions, for how long. That is **least privilege**: a helpdesk technician may reset passwords but not read mailboxes.",
+        "check": {
+          "prompt": "A build pipeline must deploy code to staging. Which grant fits the subject-object model?",
+          "answer": "Deploy to staging only, for the pipeline's own identity",
+          "wrong": [
+            "Admin on staging and production, so builds never fail",
+            "Network access to the whole build subnet"
+          ],
+          "why": "The subject is the pipeline's identity and the object is staging; nothing more is needed. Production admin and subnet-wide reach are the broad inheritance that turns one compromised pipeline into a path to everything."
+        }
+      }
+    ],
+    "outro": "Next, a trader's session turns up from another country. Choose the policy that stops misuse without bothering everyone else."
   },
   {
     "question": "Marketstone's traders sign in with MFA at 08:00 on managed laptops. At 13:10, one trader's session token is presented from another country, through an anonymizing proxy, against the wire-approval API. The design goal is to stop misuse without interrupting traders whose context has not changed. Which policy BEST fits?",
@@ -937,14 +1116,7 @@
     "intro": "The old network had one hard edge and a soft inside, so anyone who got past the edge could wander freely. Now staff work from anywhere and the apps live in the cloud, so the edge has holes everywhere. So let's start inside, with how to stop one break-in from spreading.",
     "steps": [
       {
-        "say": "**Segmentation** separates an environment into zones, enforced by firewalls or access control lists (**ACLs**), so a compromise in one zone cannot freely reach another. The aim is to stop **lateral movement**: an attacker's sideways steps from one compromised system to the next, mostly over east-west traffic. **Microsegmentation** goes finer. Policy is written per workload, keyed to workload identity, labels, or tags instead of subnet lines, so it follows workloads that move between hosts faster than diagrams are updated. **Software-defined networking (SDN)** makes that practical: it separates the **control plane**, which decides where traffic should go, from the **data plane**, which forwards it, so segmentation is set in software.",
         "beats": [
-          {
-            "say": "**Segmentation** separates an environment into zones, enforced by firewalls or access control lists (**ACLs**), so a compromise in one zone cannot freely reach another."
-          },
-          {
-            "say": "The aim is to stop **lateral movement**: an attacker's sideways steps from one compromised system to the next, mostly over east-west traffic."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.3; ranksep=0.4; subgraph cluster_z { label=\"one zone\"; color=\"#5aaa5a\"; w1 [label=\"web\"]; a1 [label=\"app\"]; d1 [label=\"db\"]; w1 -> a1 [dir=both]; a1 -> d1 [dir=both]; w1 -> d1 [dir=both]; } subgraph cluster_m { label=\"microsegmented\"; color=\"#5aaa5a\"; w2 [label=\"web\"]; a2 [label=\"app\"]; d2 [label=\"db\"]; w2 -> a2 [label=\" allowed\"]; a2 -> d2 [label=\" allowed\"]; w2 -> d2 [style=dashed, color=\"#ffb300\", fontcolor=\"#ffd86b\", label=\" blocked\"]; } }",
@@ -954,26 +1126,52 @@
             }
           },
           {
-            "say": "**Microsegmentation** goes finer. Policy is written per workload, keyed to workload identity, labels, or tags instead of subnet lines, so it follows workloads that move between hosts faster than diagrams are updated."
+            "say": "**Segmentation** separates a network into zones, so a compromise in one cannot freely reach another."
           },
           {
-            "say": "**Software-defined networking (SDN)** makes that practical: it separates the **control plane**, which decides where traffic should go, from the **data plane**, which forwards it, so segmentation is set in software."
-          }
-        ]
-      },
-      {
-        "say": "Zero Trust treats a VPN as transport, not trust. **Zero Trust Network Access (ZTNA)** is the alternative to broad VPN access: a broker authenticates the user and device, then connects them to one specific application, never to the network. An **always-on VPN** connects automatically whenever a managed device is online, so users cannot forget or skip it. That suits devices that must receive policy and send telemetry while off-network. It still has to sit alongside segmentation and per-application authorization.",
-        "beats": [
-          {
-            "say": "Zero Trust treats a VPN as transport, not trust. **Zero Trust Network Access (ZTNA)** is the alternative to broad VPN access: a broker authenticates the user and device, then connects them to one specific application, never to the network."
+            "say": "Firewalls or **ACLs**, lists of allow and deny rules on devices, enforce the zone borders."
           },
           {
-            "say": "An **always-on VPN** connects automatically whenever a managed device is online, so users cannot forget or skip it."
-          },
-          {
-            "say": "That suits devices that must receive policy and send telemetry while off-network. It still has to sit alongside segmentation and per-application authorization."
+            "say": "The aim is to stop **lateral movement**: an attacker's sideways steps from one system to the next."
           }
         ],
+        "say": "**Segmentation** separates a network into zones, so a compromise in one cannot freely reach another. Firewalls or **ACLs**, lists of allow and deny rules on devices, enforce the zone borders. The aim is to stop **lateral movement**: an attacker's sideways steps from one system to the next."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Microsegmentation** goes finer: one policy per **workload**, meaning each app or server."
+          },
+          {
+            "say": "It is keyed to identity or labels, not network addresses, so it follows workloads that move."
+          }
+        ],
+        "say": "**Microsegmentation** goes finer: one policy per **workload**, meaning each app or server. It is keyed to identity or labels, not network addresses, so it follows workloads that move."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Software-defined networking (SDN)** makes that practical by setting segmentation in software."
+          },
+          {
+            "say": "It separates the **control plane**, which decides where traffic goes, from the **data plane**, which forwards it."
+          }
+        ],
+        "say": "**Software-defined networking (SDN)** makes that practical by setting segmentation in software. It separates the **control plane**, which decides where traffic goes, from the **data plane**, which forwards it."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Zero Trust Network Access (ZTNA)** replaces broad VPN access: a broker authenticates user and device, then connects them to one application, never the network."
+          },
+          {
+            "say": "An **always-on VPN** connects automatically whenever a managed device is online."
+          },
+          {
+            "say": "That suits off-network devices that must get policy and report status; it still needs segmentation."
+          }
+        ],
+        "say": "**Zero Trust Network Access (ZTNA)** replaces broad VPN access: a broker authenticates user and device, then connects them to one application, never the network. An **always-on VPN** connects automatically whenever a managed device is online. That suits off-network devices that must get policy and report status; it still needs segmentation.",
         "check": {
           "prompt": "A contractor needs one ticketing app from their own laptop. Which access gives them the least network reach?",
           "answer": "ZTNA brokered to that one application",
@@ -985,48 +1183,19 @@
         }
       },
       {
-        "say": "Machine calls need the same scrutiny. Internal APIs often expose sensitive functions because developers assume only trusted callers can reach them: the very assumption Zero Trust rejects. Where the trust boundary sits matters as much as the mechanism: decide whether each API is internet-facing, partner-facing, private, or reachable only through a gateway.",
         "beats": [
           {
-            "say": "Machine calls need the same scrutiny. Internal APIs often expose sensitive functions because developers assume only trusted callers can reach them: the very assumption Zero Trust rejects."
+            "say": "Internal APIs often expose sensitive functions because developers assume only trusted callers reach them, which Zero Trust rejects."
           },
           {
-            "code": "caller identity    signed token or mutual TLS\nauthorization      per action, not per API\ninput validation   schema, parameters, size\nrate limiting      degrade gracefully under load\nlogging            who called what, when, result",
-            "language": "minimum API validation stack"
+            "code": "caller identity\n  signed token or mTLS\nauthorization\n  per action, not per API\ninput validation\n  format, parameters, size\nrate limiting\n  cap calls per caller\n  degrade gracefully\nlogging\n  who, what, when, result",
+            "language": "minimum API validation"
           },
           {
-            "say": "Where the trust boundary sits matters as much as the mechanism: decide whether each API is internet-facing, partner-facing, private, or reachable only through a gateway."
+            "say": "Decide whether each API is internet-facing, partner-facing, private or gateway-only."
           }
-        ]
-      },
-      {
-        "say": "**Deperimeterization** is accepting that security can no longer hang on one network edge. Controls move closer to the subject, the object, and the interaction itself. **SD-WAN** (software-defined wide area network) steers traffic between branches, sites, and cloud over encrypted tunnels, picking the best link for each application. Its security value is consistent policy and visibility across all those routes. **SASE** (secure access service edge) is a cloud-delivered service: SD-WAN paired with a **security service edge (SSE)**. The SSE bundles a secure web gateway (SWG) that filters web traffic, a cloud access security broker (CASB) that governs SaaS use, ZTNA, and often firewall-as-a-service. Those services run at points of presence near the user, so traffic is inspected close to where it starts instead of detouring (**hairpinning**) through headquarters. SASE can deliver Zero Trust enforcement, but it is not a synonym for it. One warning: SASE, SD-WAN, and SDN all centralize policy. If the policy model is weak, automation simply distributes the mistake faster.",
-        "beats": [
-          {
-            "say": "**Deperimeterization** is accepting that security can no longer hang on one network edge. Controls move closer to the subject, the object, and the interaction itself."
-          },
-          {
-            "say": "**SD-WAN** (software-defined wide area network) steers traffic between branches, sites, and cloud over encrypted tunnels, picking the best link for each application."
-          },
-          {
-            "say": "Its security value is consistent policy and visibility across all those routes."
-          },
-          {
-            "say": "**SASE** (secure access service edge) is a cloud-delivered service: SD-WAN paired with a **security service edge (SSE)**."
-          },
-          {
-            "say": "The SSE bundles a secure web gateway (SWG) that filters web traffic, a cloud access security broker (CASB) that governs SaaS use, ZTNA, and often firewall-as-a-service."
-          },
-          {
-            "say": "Those services run at points of presence near the user, so traffic is inspected close to where it starts instead of detouring (**hairpinning**) through headquarters."
-          },
-          {
-            "say": "SASE can deliver Zero Trust enforcement, but it is not a synonym for it."
-          },
-          {
-            "say": "One warning: SASE, SD-WAN, and SDN all centralize policy. If the policy model is weak, automation simply distributes the mistake faster."
-          }
-        ]
+        ],
+        "say": "Internal APIs often expose sensitive functions because developers assume only trusted callers reach them, which Zero Trust rejects. Decide whether each API is internet-facing, partner-facing, private or gateway-only."
       }
     ],
     "outro": "Next, red-team testers walk across a flat clinical network whose virtual machines move between hosts every week. Choose the control that limits their path."
@@ -1056,6 +1225,74 @@
       "Rely on the edge firewall, since the API has no internet-facing address"
     ],
     "feedback": "The minimum stack is caller identity (mutual TLS or a signed token), authorization by action, input and schema validation, rate limiting, and logging tied to the caller. Skipping authentication for internal callers and relying on the edge firewall both trust network location, the assumption Zero Trust rejects and the reason this API was exposed. Passing unexpected parameters through is the opposite of schema validation: malformed or surprising input should fail safely."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you secure branches and remote users with no central edge?",
+    "npc": "tariq",
+    "intro": "Branch offices and remote staff used to send everything back to headquarters to be inspected on the way out. That detour is slow, and it still treats headquarters as the edge. So the controls have to move out to where people and sites actually are.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Deperimeterization** is accepting that security can no longer hang on one network edge."
+          },
+          {
+            "say": "Controls move closer to the one asking, the thing asked for, and the request itself."
+          }
+        ],
+        "say": "**Deperimeterization** is accepting that security can no longer hang on one network edge. Controls move closer to the one asking, the thing asked for, and the request itself."
+      },
+      {
+        "beats": [
+          {
+            "say": "**SD-WAN** (software-defined wide area network) steers traffic between branches, sites and cloud over encrypted tunnels."
+          },
+          {
+            "say": "It picks the best link for each application, with consistent policy and visibility."
+          }
+        ],
+        "say": "**SD-WAN** (software-defined wide area network) steers traffic between branches, sites and cloud over encrypted tunnels. It picks the best link for each application, with consistent policy and visibility."
+      },
+      {
+        "beats": [
+          {
+            "say": "**SASE** (secure access service edge) is cloud-delivered SD-WAN plus a **security service edge (SSE)**."
+          },
+          {
+            "say": "The SSE bundles a **secure web gateway**, which filters web traffic, and ZTNA."
+          },
+          {
+            "say": "It adds a **CASB**, which governs SaaS use (software rented online), and often a firewall as a service."
+          }
+        ],
+        "say": "**SASE** (secure access service edge) is cloud-delivered SD-WAN plus a **security service edge (SSE)**. The SSE bundles a **secure web gateway**, which filters web traffic, and ZTNA. It adds a **CASB**, which governs SaaS use (software rented online), and often a firewall as a service."
+      },
+      {
+        "beats": [
+          {
+            "say": "SSE services run at **points of presence**, cloud sites near the user, and inspect traffic early."
+          },
+          {
+            "say": "That avoids **hairpinning**: detouring traffic through headquarters before it goes out."
+          },
+          {
+            "say": "SASE can deliver Zero Trust but is not a synonym: central policy spreads a weak model's mistakes faster."
+          }
+        ],
+        "say": "SSE services run at **points of presence**, cloud sites near the user, and inspect traffic early. That avoids **hairpinning**: detouring traffic through headquarters before it goes out. SASE can deliver Zero Trust but is not a synonym: central policy spreads a weak model's mistakes faster.",
+        "check": {
+          "prompt": "A firm has SD-WAN steering branch traffic over encrypted tunnels, but nothing filters web content or SaaS use. Which half of SASE is missing?",
+          "answer": "The security service edge (SSE)",
+          "wrong": [
+            "More SD-WAN links between the branches",
+            "Segmentation inside each branch"
+          ],
+          "why": "SD-WAN only steers and encrypts the path. Filtering web traffic, governing SaaS and brokering application access are the SSE's jobs, and SASE needs both halves."
+        }
+      }
+    ],
+    "outro": "Next, a manufacturer needs both halves of this picture, plus a way to separate its data center's planes. Fill in the missing names in its design."
   },
   {
     "type": "cloze",
@@ -1134,19 +1371,15 @@
     "intro": "A boundary nobody watches can be crossed without anyone noticing. So an architect decides two things about every boundary: what it guards, and where the evidence of a crossing would show up. The most valuable things get the tightest zones, so that's where to begin.",
     "steps": [
       {
-        "say": "A **secure zone** holds high-value assets behind tightly controlled entry points: a management network, a payment-card environment, a regulated-data enclave. A **data perimeter** is the set of guardrails that keeps data within trusted identities, trusted devices and networks, and approved destinations, wherever the data lives. **System components** such as identity providers, gateways, policy engines, and management consoles are boundaries too: whoever controls them can rewrite the rules for everything else. So they live in a secure zone of their own, reached only through a **jump host**: a hardened server that admins log in to first.",
         "beats": [
           {
-            "say": "A **secure zone** holds high-value assets behind tightly controlled entry points: a management network, a payment-card environment, a regulated-data enclave."
+            "say": "A **secure zone** holds high-value assets behind controlled entry points."
           },
           {
-            "say": "A **data perimeter** is the set of guardrails that keeps data within trusted identities, trusted devices and networks, and approved destinations, wherever the data lives."
+            "say": "**System components**, such as the identity provider that signs users in, are boundaries too."
           },
           {
-            "say": "**System components** such as identity providers, gateways, policy engines, and management consoles are boundaries too: whoever controls them can rewrite the rules for everything else."
-          },
-          {
-            "say": "So they live in a secure zone of their own, reached only through a **jump host**: a hardened server that admins log in to first."
+            "say": "So they sit behind a **jump host**, a hardened server admins log in to first."
           },
           {
             "figure": {
@@ -1155,66 +1388,85 @@
               "caption": "the components that set the rules, walled off",
               "src": "_dot/002ef95cb254a7ca.svg"
             }
-          },
-          {
-            "code": "physical     who can touch it?       badges, cages, cameras\nnetwork      which systems talk?     firewalls, segmentation, NAC\napplication  which functions run?    WAF, API gateway, app authz\nidentity     which subject, object?  MFA, per-request authorization\ndata         where may data move?    DLP, encryption, tagging\noperational  how is it observed?     SIEM, collectors, assessments",
-            "language": "boundary types"
-          }
-        ]
-      },
-      {
-        "say": "**Attack surface management** continuously finds what is exposed: internet-visible services, exposed APIs, cloud assets, forgotten subdomains, open storage buckets. Finding is only the start; then you reduce. Decommission what is unneeded, harden what stays, and run **vulnerability management**: find weaknesses, prioritize them, and fix them before attackers exploit them. **Hardening** removes unnecessary function: unused services, open ports, permissive ACLs, legacy ciphers, default credentials. Each one left behind is an invitation. **Legacy components** that cannot be patched get isolated, wrapped behind a controlled gateway, replaced, or instrumented. The worst option is leaving them in place and pretending they still fit. **Defense-in-depth** means each layer covers a different failure mode. If the WAF misses a payload, input validation still helps; if an admin account is abused, logging and anomaly detection still raise an alert.",
-        "beats": [
-          {
-            "say": "**Attack surface management** continuously finds what is exposed: internet-visible services, exposed APIs, cloud assets, forgotten subdomains, open storage buckets."
-          },
-          {
-            "say": "Finding is only the start; then you reduce. Decommission what is unneeded, harden what stays, and run **vulnerability management**: find weaknesses, prioritize them, and fix them before attackers exploit them."
-          },
-          {
-            "say": "**Hardening** removes unnecessary function: unused services, open ports, permissive ACLs, legacy ciphers, default credentials. Each one left behind is an invitation."
-          },
-          {
-            "say": "**Legacy components** that cannot be patched get isolated, wrapped behind a controlled gateway, replaced, or instrumented. The worst option is leaving them in place and pretending they still fit."
-          },
-          {
-            "say": "**Defense-in-depth** means each layer covers a different failure mode. If the WAF misses a payload, input validation still helps; if an admin account is abused, logging and anomaly detection still raise an alert."
-          }
-        ]
-      },
-      {
-        "say": "**Centralized logging** brings identity events, admin actions, API calls, DLP alerts, and endpoint and network telemetry into one place, so an attack can be reconstructed end to end. That place is usually a **SIEM** (security information and event management platform). It also makes **threat hunting** possible: a hunter forms a hypothesis, such as a stolen service account in use, and searches retained telemetry for evidence that no alert raised. **Continuous monitoring** watches the choke points (identity providers, API gateways, privileged access paths, management networks), because point-in-time reviews miss drift. **Alerting** needs architectural context. A failed login on the public portal is routine; the same failed login on the domain-administration plane is not.",
-        "beats": [
-          {
-            "say": "**Centralized logging** brings identity events, admin actions, API calls, DLP alerts, and endpoint and network telemetry into one place, so an attack can be reconstructed end to end."
-          },
-          {
-            "say": "That place is usually a **SIEM** (security information and event management platform)."
-          },
-          {
-            "say": "It also makes **threat hunting** possible: a hunter forms a hypothesis, such as a stolen service account in use, and searches retained telemetry for evidence that no alert raised."
-          },
-          {
-            "say": "**Continuous monitoring** watches the choke points (identity providers, API gateways, privileged access paths, management networks), because point-in-time reviews miss drift."
-          },
-          {
-            "say": "**Alerting** needs architectural context. A failed login on the public portal is routine; the same failed login on the domain-administration plane is not."
-          }
-        ]
-      },
-      {
-        "say": "**Sensor placement** decides which hypotheses you can ever test. Sensors only at the perimeter miss lateral movement; sensors only on endpoints miss cloud control-plane changes and API abuse. Mature designs combine viewpoints: endpoint sensors, network telemetry, identity logs, cloud audit trails, DLP events, and application logs. Place them around the identity provider, the jump hosts, the cloud management plane, and east-west application traffic.",
-        "beats": [
-          {
-            "say": "**Sensor placement** decides which hypotheses you can ever test. Sensors only at the perimeter miss lateral movement; sensors only on endpoints miss cloud control-plane changes and API abuse."
-          },
-          {
-            "say": "Mature designs combine viewpoints: endpoint sensors, network telemetry, identity logs, cloud audit trails, DLP events, and application logs."
-          },
-          {
-            "say": "Place them around the identity provider, the jump hosts, the cloud management plane, and east-west application traffic."
           }
         ],
+        "say": "A **secure zone** holds high-value assets behind controlled entry points. **System components**, such as the identity provider that signs users in, are boundaries too. So they sit behind a **jump host**, a hardened server admins log in to first."
+      },
+      {
+        "beats": [
+          {
+            "say": "Each boundary type asks its own question."
+          },
+          {
+            "code": "physical: who can touch\n  it? badges, cameras\nnetwork: which systems\n  talk? firewalls, NAC\napplication: which\n  functions run? WAF\nidentity: who may act\n  on what? MFA, access\n  checks\ndata: where may it\n  move? leak prevention,\n  encryption, tags\noperational: how is\n  it watched? logging",
+            "language": "boundary types"
+          },
+          {
+            "say": "A **data perimeter** is guardrails keeping data with trusted identities, devices and approved destinations."
+          },
+          {
+            "say": "**Defense-in-depth** means each layer covers a different failure mode: if the WAF misses a payload, input validation still helps."
+          }
+        ],
+        "say": "Each boundary type asks its own question. A **data perimeter** is guardrails keeping data with trusted identities, devices and approved destinations. **Defense-in-depth** means each layer covers a different failure mode: if the WAF misses a payload, input validation still helps."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Attack surface management** continuously finds what is exposed: services, APIs, cloud assets, forgotten web addresses."
+          },
+          {
+            "say": "Then reduce it: decommission what is unneeded and run **vulnerability management**: find, prioritize and fix weaknesses."
+          },
+          {
+            "say": "**Hardening** removes unnecessary function; **legacy components** that cannot be patched need other care."
+          },
+          {
+            "code": "hardening removes:\n  unused services\n  open ports\n  permissive ACLs\n  old encryption settings\n  default credentials\nlegacy, unpatchable:\n  isolate, wrap in a\n  gateway, replace, or\n  add monitoring",
+            "language": "reducing the surface"
+          }
+        ],
+        "say": "**Attack surface management** continuously finds what is exposed: services, APIs, cloud assets, forgotten web addresses. Then reduce it: decommission what is unneeded and run **vulnerability management**: find, prioritize and fix weaknesses. **Hardening** removes unnecessary function; **legacy components** that cannot be patched need other care."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Centralized logging** gathers identity events, admin actions and API calls in one place, to rebuild attacks."
+          },
+          {
+            "say": "A **SIEM** (security information and event management) usually does this."
+          },
+          {
+            "say": "**Threat hunting** tests a guess (hypothesis), such as a stolen **service account** (a program's own login) in use, in logs no alert flagged."
+          }
+        ],
+        "say": "**Centralized logging** gathers identity events, admin actions and API calls in one place, to rebuild attacks. A **SIEM** (security information and event management) usually does this. **Threat hunting** tests a guess (hypothesis), such as a stolen **service account** (a program's own login) in use, in logs no alert flagged."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Continuous monitoring** watches the choke points: identity providers, API gateways, privileged access paths and management networks."
+          },
+          {
+            "say": "**Alerting** needs architectural context: a failed login on the public portal is routine, on the systems that control every account it is not."
+          }
+        ],
+        "say": "**Continuous monitoring** watches the choke points: identity providers, API gateways, privileged access paths and management networks. **Alerting** needs architectural context: a failed login on the public portal is routine, on the systems that control every account it is not."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Sensor placement** decides which hypotheses you can test: edge-only sensors miss lateral movement; endpoint-only sensors miss changes made through the cloud's management interface."
+          },
+          {
+            "code": "combine viewpoints:\n  endpoint sensors\n  network traffic data\n  identity logs\n  cloud audit trails\n  leak-prevention alerts\n  application logs",
+            "language": "mature designs"
+          },
+          {
+            "say": "Place them around the identity provider, jump hosts, cloud management plane and east-west traffic."
+          }
+        ],
+        "say": "**Sensor placement** decides which hypotheses you can test: edge-only sensors miss lateral movement; endpoint-only sensors miss changes made through the cloud's management interface. Place them around the identity provider, jump hosts, cloud management plane and east-west traffic.",
         "check": {
           "prompt": "A hunter suspects someone is changing cloud resources with a stolen API key. Which source can confirm it?",
           "answer": "The cloud provider's audit trail of control-plane calls",
@@ -1343,38 +1595,37 @@
     "intro": "A hospital's patient records and its cafeteria menu can sit on the same file server, and the server can't tell them apart. Lock both down like patient records and simple work grinds to a halt; treat both like the menu and the records leak. So protection starts with deciding how sensitive each piece of data is.",
     "steps": [
       {
-        "say": "A **classification model** defines sensitivity categories, such as public, internal, confidential, and restricted, so systems know that a payment record and a marketing brochure need different handling. **Data labeling** makes the classification visible: in a document, an email, a cloud object, or a database field. A **tagging strategy** goes further: machine-readable metadata that automation acts on. A tagged resource can trigger encryption, retention rules, stricter sharing, or DLP policy by itself. The more policy runs from tags, the less it depends on someone remembering, which matters most when data flows across on-premises systems, SaaS, and cloud storage.",
         "beats": [
           {
-            "say": "A **classification model** defines sensitivity categories, such as public, internal, confidential, and restricted, so systems know that a payment record and a marketing brochure need different handling."
+            "say": "A **classification model** defines sensitivity categories, so systems know a payment record and a brochure need different handling."
           },
           {
-            "say": "**Data labeling** makes the classification visible: in a document, an email, a cloud object, or a database field."
-          },
-          {
-            "say": "A **tagging strategy** goes further: machine-readable metadata that automation acts on. A tagged resource can trigger encryption, retention rules, stricter sharing, or DLP policy by itself."
-          },
-          {
-            "code": "object:  q3-claims-export.csv\ntags:\n  classification: restricted\n  data-type:      health records\n  owner:          claims-ops",
-            "language": "object metadata"
-          },
-          {
-            "say": "The more policy runs from tags, the less it depends on someone remembering, which matters most when data flows across on-premises systems, SaaS, and cloud storage."
+            "code": "public\ninternal\nconfidential\nrestricted",
+            "language": "sensitivity categories"
           }
-        ]
+        ],
+        "say": "A **classification model** defines sensitivity categories, so systems know a payment record and a brochure need different handling."
       },
       {
-        "say": "**Data loss prevention (DLP)** works best spread across the architecture, not as one box. **DLP at rest** protects known stored data on shares, buckets, databases, and endpoints. **Data discovery** continuously scans repositories for sensitive patterns, such as card numbers or national ID numbers, that nobody knew were there. You cannot protect data you do not know you have. **DLP in transit** inspects data moving through email, web traffic, APIs, chat, and sync channels, using gateways, proxies, and a CASB for SaaS. Endpoint agents cover data **in use**: copying, printing, screenshots.",
         "beats": [
           {
-            "say": "**Data loss prevention (DLP)** works best spread across the architecture, not as one box. **DLP at rest** protects known stored data on shares, buckets, databases, and endpoints."
+            "say": "**Data labeling** makes the classification visible, in a document, email, cloud object or database field."
           },
           {
-            "say": "**Data discovery** continuously scans repositories for sensitive patterns, such as card numbers or national ID numbers, that nobody knew were there. You cannot protect data you do not know you have."
+            "say": "A **tagging strategy** adds machine-readable metadata that automation acts on."
           },
           {
-            "say": "**DLP in transit** inspects data moving through email, web traffic, APIs, chat, and sync channels, using gateways, proxies, and a CASB for SaaS. Endpoint agents cover data **in use**: copying, printing, screenshots."
+            "say": "A tag can trigger encryption, retention (how long data is kept), sharing limits or leak prevention."
           },
+          {
+            "code": "object:\n  q3-claims-export.csv\ntags:\n  classification:\n    restricted\n  data-type:\n    health records\n  owner: claims-ops",
+            "language": "object metadata"
+          }
+        ],
+        "say": "**Data labeling** makes the classification visible, in a document, email, cloud object or database field. A **tagging strategy** adds machine-readable metadata that automation acts on. A tag can trigger encryption, retention (how long data is kept), sharing limits or leak prevention."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.4; ranksep=0.35; st [label=\"shares, buckets,\\ndatabases\\n(at rest)\"]; ep [label=\"endpoint\\n(in use)\"]; gw [label=\"email, web,\\nAPI gateways\\n(in transit)\"]; ds [label=\"discovery\\nscan\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; {rank=same; ds; st;} ds -> st [style=dashed, label=\" scans\"]; st -> ep [label=\" opened\"]; ep -> gw [label=\" leaves\"]; }",
@@ -1382,8 +1633,18 @@
               "caption": "where each kind of DLP watches",
               "src": "_dot/377ba97737981724.svg"
             }
+          },
+          {
+            "say": "**Data loss prevention (DLP)** stops sensitive data leaving, and works best spread across the architecture."
+          },
+          {
+            "say": "**DLP at rest** protects known stored data on file shares, cloud storage, databases and endpoints."
+          },
+          {
+            "say": "**Data discovery** scans repositories for sensitive patterns, such as card numbers, that nobody knew were there."
           }
         ],
+        "say": "**Data loss prevention (DLP)** stops sensitive data leaving, and works best spread across the architecture. **DLP at rest** protects known stored data on file shares, cloud storage, databases and endpoints. **Data discovery** scans repositories for sensitive patterns, such as card numbers, that nobody knew were there.",
         "check": {
           "prompt": "A scan turns up 4,000 files of card numbers in a storage bucket nobody remembered. Which DLP job found them?",
           "answer": "Data discovery",
@@ -1395,54 +1656,51 @@
         }
       },
       {
-        "say": "DLP has to balance three needs: accurate identification, usable workflows, and the right action, whether block, warn, encrypt, quarantine, or simply log. If the official way to share sensitive data is clumsy, users build **shadow processes** around it, and the DLP fails without the tool ever being weak. It must also interoperate. **Interoperability** is a security issue: a DLP tool that cannot read classification tags or send alerts to the SIEM is deployed but strategically disconnected. In **hybrid** estates the test is consistency. A rule enforced in one SaaS suite but not in a cloud bucket is not a strategy; decide which policies follow the user, the workload, and the data. Every partner connection, webhook, and SaaS connector is a boundary crossing. **Third-party integrations** get least privilege, explicit contracts, validation, and logging, and no more trust than their purpose requires.",
         "beats": [
           {
-            "say": "DLP has to balance three needs: accurate identification, usable workflows, and the right action, whether block, warn, encrypt, quarantine, or simply log."
+            "figure": {
+              "dot": "digraph { rankdir=TB; nodesep=0.4; ranksep=0.35; st [label=\"shares, buckets,\\ndatabases\\n(at rest)\"]; ep [label=\"endpoint\\n(in use)\"]; gw [label=\"email, web,\\nAPI gateways\\n(in transit)\"]; ds [label=\"discovery\\nscan\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; {rank=same; ds; st;} ds -> st [style=dashed, label=\" scans\"]; st -> ep [label=\" opened\"]; ep -> gw [label=\" leaves\"]; }",
+              "alt": "Stored data in shares, buckets and databases is opened on an endpoint, where it is in use, and leaves through email, web or API gateways, where it is in transit. A discovery scan points at the stored data with a dashed arrow.",
+              "caption": "where each kind of DLP watches",
+              "src": "_dot/377ba97737981724.svg"
+            }
           },
           {
-            "say": "If the official way to share sensitive data is clumsy, users build **shadow processes** around it, and the DLP fails without the tool ever being weak."
+            "say": "**DLP in transit** inspects data moving through email, web traffic, APIs, chat and file sync, using gateways, proxies and a CASB for cloud apps."
           },
           {
-            "say": "It must also interoperate. **Interoperability** is a security issue: a DLP tool that cannot read classification tags or send alerts to the SIEM is deployed but strategically disconnected."
-          },
-          {
-            "say": "In **hybrid** estates the test is consistency. A rule enforced in one SaaS suite but not in a cloud bucket is not a strategy; decide which policies follow the user, the workload, and the data."
-          },
-          {
-            "say": "Every partner connection, webhook, and SaaS connector is a boundary crossing. **Third-party integrations** get least privilege, explicit contracts, validation, and logging, and no more trust than their purpose requires."
-          }
-        ]
-      },
-      {
-        "say": "**Control effectiveness** is shown by evidence, not diagrams. **Assessments** check that the intended design exists in practice; **scanning** reveals exposed assets, weak ciphers, and drift from baseline. **Metrics** show whether risk is moving over time. Count volume and you learn little: a thousand blocked requests says almost nothing. CISA's Zero Trust Maturity Model is measured the same way. It scores five pillars (Identity, Devices, Networks, Applications and Workloads, and Data) at four stages: traditional, initial, advanced, optimal. That is why Zero Trust is a maturity journey, measured pillar by pillar, not a switch you flip.",
-        "beats": [
-          {
-            "say": "**Control effectiveness** is shown by evidence, not diagrams. **Assessments** check that the intended design exists in practice; **scanning** reveals exposed assets, weak ciphers, and drift from baseline."
-          },
-          {
-            "say": "**Metrics** show whether risk is moving over time. Count volume and you learn little: a thousand blocked requests says almost nothing."
-          },
-          {
-            "code": "accounts with standing admin access\n  January   60\n  June      42\nreduction = (60 - 42) / 60 = 30%",
-            "language": "a risk-movement metric"
-          },
-          {
-            "say": "CISA's Zero Trust Maturity Model is measured the same way. It scores five pillars (Identity, Devices, Networks, Applications and Workloads, and Data) at four stages: traditional, initial, advanced, optimal."
-          },
-          {
-            "say": "That is why Zero Trust is a maturity journey, measured pillar by pillar, not a switch you flip."
+            "say": "Endpoint agents cover data **in use**: copying, printing, screenshots."
           }
         ],
-        "check": {
-          "prompt": "Which of these shows risk moving, rather than activity piling up?",
-          "answer": "Mean time to revoke privileged access",
-          "wrong": [
-            "Number of DLP alerts raised this month",
-            "Number of vulnerability scans completed"
-          ],
-          "why": "A falling time to revoke privilege means exposure is shrinking. Alert and scan counts measure how busy the tools were, not whether the organization is any safer."
-        }
+        "say": "**DLP in transit** inspects data moving through email, web traffic, APIs, chat and file sync, using gateways, proxies and a CASB for cloud apps. Endpoint agents cover data **in use**: copying, printing, screenshots."
+      },
+      {
+        "beats": [
+          {
+            "say": "If the official way to share sensitive data is clumsy, users build **shadow processes** around it."
+          },
+          {
+            "say": "**Interoperability** is a security issue: a DLP tool that cannot read tags or alert the SIEM is deployed but disconnected."
+          },
+          {
+            "say": "DLP must identify accurately, fit workflows and pick the right action."
+          }
+        ],
+        "say": "If the official way to share sensitive data is clumsy, users build **shadow processes** around it. **Interoperability** is a security issue: a DLP tool that cannot read tags or alert the SIEM is deployed but disconnected. DLP must identify accurately, fit workflows and pick the right action."
+      },
+      {
+        "beats": [
+          {
+            "say": "In **hybrid** estates, part on-premises and part cloud, the test is consistency."
+          },
+          {
+            "say": "A rule enforced in one cloud-app suite but not in cloud storage is no strategy."
+          },
+          {
+            "say": "Every link to a partner or outside service crosses a boundary: **third-party integrations** get least privilege, contracts, validation and logging."
+          }
+        ],
+        "say": "In **hybrid** estates, part on-premises and part cloud, the test is consistency. A rule enforced in one cloud-app suite but not in cloud storage is no strategy. Every link to a partner or outside service crosses a boundary: **third-party integrations** get least privilege, contracts, validation and logging."
       }
     ],
     "outro": "Back to where we began: a company marks its sensitive files, but none of its systems act on the marking. Choose the change that makes the architecture enforce it."
@@ -1486,6 +1744,68 @@
       }
     ],
     "feedback": "Data moving through email is in transit; a stored file on a share is at rest; an open record on an endpoint is in use; and a scan that finds sensitive data nobody knew about is discovery. Discovery feeds the other three, because unknown data cannot be protected in any state."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you show a Zero Trust program is working?",
+    "npc": "val",
+    "intro": "A design that looks perfect on paper tells you nothing about whether it works in practice, and a dashboard full of big numbers can hide that. So the evidence has to be chosen as carefully as the design was, starting with how you check the controls at all.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Control effectiveness** is whether controls really work, and it takes evidence, not diagrams."
+          },
+          {
+            "say": "**Assessments** check that the intended design exists in practice."
+          },
+          {
+            "say": "**Scanning** reveals exposed assets, weak encryption and drift, settings that wander from the baseline."
+          }
+        ],
+        "say": "**Control effectiveness** is whether controls really work, and it takes evidence, not diagrams. **Assessments** check that the intended design exists in practice. **Scanning** reveals exposed assets, weak encryption and drift, settings that wander from the baseline."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Metrics** show whether risk is moving; counting volume tells you little."
+          },
+          {
+            "code": "accounts with standing\nadmin access\n  January   60\n  June      42\nreduction\n  = (60 - 42) / 60 = 30%",
+            "language": "a risk-movement metric"
+          }
+        ],
+        "say": "**Metrics** show whether risk is moving; counting volume tells you little.",
+        "check": {
+          "prompt": "Which of these shows risk moving, rather than activity piling up?",
+          "answer": "Mean time to revoke privileged access",
+          "wrong": [
+            "Number of DLP alerts raised this month",
+            "Number of vulnerability scans completed"
+          ],
+          "why": "A falling time to revoke privilege means exposure is shrinking. Alert and scan counts measure how busy the tools were, not whether the organization is any safer."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "CISA, the US cybersecurity agency, publishes a **Zero Trust Maturity Model**."
+          },
+          {
+            "say": "It scores five pillars, each at one of four stages."
+          },
+          {
+            "code": "CISA Zero Trust model\n5 pillars: Identity,\n  Devices, Networks,\n  Applications and\n  Workloads, Data\n4 stages: traditional,\n  initial, advanced,\n  optimal",
+            "language": "maturity model"
+          },
+          {
+            "say": "Zero Trust is a maturity journey, measured pillar by pillar, not a switch."
+          }
+        ],
+        "say": "CISA, the US cybersecurity agency, publishes a **Zero Trust Maturity Model**. It scores five pillars, each at one of four stages. Zero Trust is a maturity journey, measured pillar by pillar, not a switch."
+      }
+    ],
+    "outro": "Next, CISA's model scores each pillar at one of four stages. Put those stages in order."
   },
   {
     "type": "ordering",
