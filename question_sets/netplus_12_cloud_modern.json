@@ -706,14 +706,19 @@
       {
         "beats": [
           {
-            "code": "public    anyone who pays\nprivate   one organization\n  on premises or hosted\ncommunity a defined group\nhybrid    mixed models",
-            "language": "deployment models"
-          },
-          {
             "say": "A **public cloud** is open to anyone who pays."
           },
           {
             "say": "It is **multitenant**: many customers, or **tenants**, share its hosts, kept apart by software."
+          }
+        ],
+        "say": "A **public cloud** is open to anyone who pays. It is **multitenant**: many customers, or **tenants**, share its hosts, kept apart by software."
+      },
+      {
+        "beats": [
+          {
+            "code": "public    anyone who pays\nprivate   one organization\n  on premises or hosted\ncommunity a defined group\nhybrid    mixed models",
+            "language": "deployment models"
           },
           {
             "say": "A **private cloud** serves one organization only. A **community cloud** is shared by a defined group, such as hospitals."
@@ -722,7 +727,7 @@
             "say": "A **hybrid cloud** joins two or more."
           }
         ],
-        "say": "A **public cloud** is open to anyone who pays. It is **multitenant**: many customers, or **tenants**, share its hosts, kept apart by software. A **private cloud** serves one organization only. A **community cloud** is shared by a defined group, such as hospitals. A **hybrid cloud** joins two or more.",
+        "say": "A **private cloud** serves one organization only. A **community cloud** is shared by a defined group, such as hospitals. A **hybrid cloud** joins two or more.",
         "check": {
           "prompt": "Three county governments share a cloud built to their common security rules and closed to everyone else. Which model is it?",
           "answer": "Community",
@@ -784,56 +789,6 @@
             "2"
           ],
           "why": "1,800 ÷ 500 is 3.6, and a server cannot be part-launched, so the group rounds up to 4. When load falls back to 900, elasticity shrinks it to 2."
-        }
-      },
-      {
-        "beats": [
-          {
-            "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network."
-          },
-          {
-            "say": "A site-to-site **VPN** is an encrypted tunnel from your data center across the internet: cheap and quick, but only as steady as the internet."
-          }
-        ],
-        "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network. A site-to-site **VPN** is an encrypted tunnel from your data center across the internet: cheap and quick, but only as steady as the internet."
-      },
-      {
-        "beats": [
-          {
-            "say": "A **cloud interconnect** is a dedicated private circuit into the provider's network, bypassing the internet."
-          },
-          {
-            "say": "It gives steady bandwidth and latency, but costs more and can take weeks to set up."
-          }
-        ],
-        "say": "A **cloud interconnect** is a dedicated private circuit into the provider's network, bypassing the internet. It gives steady bandwidth and latency, but costs more and can take weeks to set up."
-      },
-      {
-        "beats": [
-          {
-            "figure": {
-              "dot": "graph { rankdir=TB; nodesep=0.5; ranksep=0.55; dc[label=\"your data\\ncenter\"]; A[label=\"VPC A\"]; B[label=\"VPC B\"]; C[label=\"VPC C\"]; dc--A[label=\"VPN over\\nthe internet \"]; dc--A[label=\" interconnect\\n (private)\"]; A--B[label=\" peering\"]; B--C[label=\" peering\"]; A--C[style=dashed, color=\"#ffb300\", fontcolor=\"#ffd86b\", label=\" no path\\n through B\", constraint=false]; }",
-              "alt": "A data center box at the top has two lines down to VPC A, one marked VPN over the internet and one marked interconnect. Below, VPC A is peered to VPC B and B to VPC C; a dashed highlighted curve from A to C reads no path through B.",
-              "caption": "three ways in, and a peering that stops",
-              "src": "_dot/030130a49c8aa53f.svg"
-            }
-          },
-          {
-            "say": "**Peering** joins two VPCs so they route to each other privately."
-          },
-          {
-            "say": "It is **non-transitive**: if A peers with B and B peers with C, A still cannot reach C through B."
-          }
-        ],
-        "say": "**Peering** joins two VPCs so they route to each other privately. It is **non-transitive**: if A peers with B and B peers with C, A still cannot reach C through B.",
-        "check": {
-          "prompt": "VPC A must reach VPC C in that layout. What is the fix?",
-          "answer": "Peer A with C, or attach all three to a transit hub",
-          "wrong": [
-            "Turn on routing in B so it forwards for its peers",
-            "Nothing: B already relays traffic between its peers"
-          ],
-          "why": "A peering carries traffic only between the two networks it joins; B will not forward for A. Either add a direct A-to-C peering, or attach every VPC to a **transit gateway**, a hub that does route between them: hub-and-spoke again."
         }
       }
     ],
@@ -939,6 +894,65 @@
       }
     ],
     "feedback": "Multitenancy is many customers on shared infrastructure, isolated from each other. Scalability is the capacity to grow; elasticity is growing and shrinking automatically with demand, which is what makes pay-per-use pricing work."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How does your network reach into the cloud?",
+    "npc": "tariq",
+    "intro": "Once a workload runs in the cloud, it still has to talk to your offices and to other cloud networks. There are three ways in, each with a different price in money, time and steadiness, and one connection that doesn't behave the way you'd expect.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network."
+          },
+          {
+            "say": "A site-to-site **VPN** is an encrypted tunnel from your data center across the internet: cheap and quick, but only as steady as the internet."
+          }
+        ],
+        "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network. A site-to-site **VPN** is an encrypted tunnel from your data center across the internet: cheap and quick, but only as steady as the internet."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **cloud interconnect** is a dedicated private circuit into the provider's network, bypassing the internet."
+          },
+          {
+            "say": "It gives steady bandwidth and latency, but costs more and can take weeks to set up."
+          }
+        ],
+        "say": "A **cloud interconnect** is a dedicated private circuit into the provider's network, bypassing the internet. It gives steady bandwidth and latency, but costs more and can take weeks to set up."
+      },
+      {
+        "beats": [
+          {
+            "figure": {
+              "dot": "graph { rankdir=TB; nodesep=0.5; ranksep=0.55; dc[label=\"your data\\ncenter\"]; A[label=\"VPC A\"]; B[label=\"VPC B\"]; C[label=\"VPC C\"]; dc--A[label=\"VPN over\\nthe internet \"]; dc--A[label=\" interconnect\\n (private)\"]; A--B[label=\" peering\"]; B--C[label=\" peering\"]; A--C[style=dashed, color=\"#ffb300\", fontcolor=\"#ffd86b\", label=\" no path\\n through B\", constraint=false]; }",
+              "alt": "A data center box at the top has two lines down to VPC A, one marked VPN over the internet and one marked interconnect. Below, VPC A is peered to VPC B and B to VPC C; a dashed highlighted curve from A to C reads no path through B.",
+              "caption": "three ways in, and a peering that stops",
+              "src": "_dot/030130a49c8aa53f.svg"
+            }
+          },
+          {
+            "say": "**Peering** joins two VPCs so they route to each other privately."
+          },
+          {
+            "say": "It is **non-transitive**: if A peers with B and B peers with C, A still cannot reach C through B."
+          }
+        ],
+        "say": "**Peering** joins two VPCs so they route to each other privately. It is **non-transitive**: if A peers with B and B peers with C, A still cannot reach C through B.",
+        "check": {
+          "prompt": "VPC A must reach VPC C in that layout. What is the fix?",
+          "answer": "Peer A with C, or attach all three to a transit hub",
+          "wrong": [
+            "Turn on routing in B so it forwards for its peers",
+            "Nothing: B already relays traffic between its peers"
+          ],
+          "why": "A peering carries traffic only between the two networks it joins; B will not forward for A. Either add a direct A-to-C peering, or attach every VPC to a **transit gateway**, a hub that does route between them: hub-and-spoke again."
+        }
+      }
+    ],
+    "outro": "Next, a diagram shows every peering connection between Silverkeep's VPCs. Decide which networks the application can reach."
   },
   {
     "question": "Zinna Arc's application runs in VPC P. The diagram shows every peering connection between Silverkeep's VPCs, and there is no transit hub. Which VPCs can the application reach privately?",

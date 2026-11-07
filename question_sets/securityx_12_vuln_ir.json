@@ -81,16 +81,16 @@
       {
         "beats": [
           {
-            "say": "In **cross-site request forgery** (CSRF), a page on another site makes a logged-in victim's browser send a request."
+            "say": "In **cross-site request forgery** (CSRF), another site makes a logged-in victim's browser send a request."
           },
           {
             "say": "The session cookie rides along automatically; no attacker script runs on the target."
           },
           {
-            "say": "The fix is an unpredictable **CSRF token** in each form that the server checks, plus `SameSite` cookies."
+            "say": "The fix is a secret **CSRF token** in each form that the server checks, and `SameSite` cookies the browser won't send cross-site."
           }
         ],
-        "say": "In **cross-site request forgery** (CSRF), a page on another site makes a logged-in victim's browser send a request. The session cookie rides along automatically; no attacker script runs on the target. The fix is an unpredictable **CSRF token** in each form that the server checks, plus `SameSite` cookies."
+        "say": "In **cross-site request forgery** (CSRF), another site makes a logged-in victim's browser send a request. The session cookie rides along automatically; no attacker script runs on the target. The fix is a secret **CSRF token** in each form that the server checks, and `SameSite` cookies the browser won't send cross-site."
       },
       {
         "beats": [
@@ -106,13 +106,13 @@
             }
           },
           {
-            "say": "Often the target is an internal service or the cloud metadata endpoint."
+            "say": "Often the target is an internal service or the cloud metadata endpoint, which hands out credentials."
           },
           {
             "say": "The fix: allow-list where the server may connect, block internal addresses, and on AWS require token-based **IMDSv2**."
           }
         ],
-        "say": "In **server-side request forgery** (SSRF), the server itself is tricked into fetching a URL the attacker chose. Often the target is an internal service or the cloud metadata endpoint. The fix: allow-list where the server may connect, block internal addresses, and on AWS require token-based **IMDSv2**.",
+        "say": "In **server-side request forgery** (SSRF), the server itself is tricked into fetching a URL the attacker chose. Often the target is an internal service or the cloud metadata endpoint, which hands out credentials. The fix: allow-list where the server may connect, block internal addresses, and on AWS require token-based **IMDSv2**.",
         "check": {
           "prompt": "A bank customer, still logged in, opens a post on an outside forum that silently submits the bank's transfer form. Which class is it, and what stops it?",
           "answer": "CSRF, stopped by a per-form token the bank verifies",
@@ -260,16 +260,16 @@
             "say": "An **atomic function** finishes as one indivisible step."
           },
           {
-            "say": "A **thread-safe function** behaves correctly when many threads call it at once."
+            "say": "A **thread-safe function** stays correct when many threads (parallel tasks) run it at once."
           },
           {
-            "say": "**Memory unsafety** means bugs like buffer overflows, use-after-free and integer overflows, common in C and C++."
+            "say": "**Memory unsafety** means code that touches memory it shouldn't: buffer overflows, use-after-free, integer overflows."
           },
           {
             "say": "A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`."
           }
         ],
-        "say": "An **atomic function** finishes as one indivisible step. A **thread-safe function** behaves correctly when many threads call it at once. **Memory unsafety** means bugs like buffer overflows, use-after-free and integer overflows, common in C and C++. A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`."
+        "say": "An **atomic function** finishes as one indivisible step. A **thread-safe function** stays correct when many threads (parallel tasks) run it at once. **Memory unsafety** means code that touches memory it shouldn't: buffer overflows, use-after-free, integer overflows. A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`."
       },
       {
         "beats": [
@@ -277,13 +277,13 @@
             "say": "Memory-safe languages such as Rust and Go remove the whole class."
           },
           {
-            "say": "Where code can't change, randomized addresses (ASLR), stack canaries and non-executable memory raise the attacker's cost."
+            "say": "Where code can't change, **ASLR**, which randomizes memory addresses, plus stack canaries and non-executable memory raise the attacker's cost."
           },
           {
             "say": "**Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()` or MD5 for passwords."
           }
         ],
-        "say": "Memory-safe languages such as Rust and Go remove the whole class. Where code can't change, randomized addresses (ASLR), stack canaries and non-executable memory raise the attacker's cost. **Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()` or MD5 for passwords."
+        "say": "Memory-safe languages such as Rust and Go remove the whole class. Where code can't change, **ASLR**, which randomizes memory addresses, plus stack canaries and non-executable memory raise the attacker's cost. **Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()` or MD5 for passwords."
       },
       {
         "beats": [
@@ -291,7 +291,7 @@
             "say": "**Insecure configuration** means risky settings left in place."
           },
           {
-            "say": "**Directory service misconfiguration** is the same failure in Active Directory or LDAP."
+            "say": "**Directory service misconfiguration** is the same failure in account servers such as Active Directory or LDAP."
           },
           {
             "say": "**End-of-life** software gets no more patches."
@@ -304,7 +304,7 @@
             "language": "flaw: its fix"
           }
         ],
-        "say": "**Insecure configuration** means risky settings left in place. **Directory service misconfiguration** is the same failure in Active Directory or LDAP. **End-of-life** software gets no more patches. **Weak ciphers** are outdated encryption."
+        "say": "**Insecure configuration** means risky settings left in place. **Directory service misconfiguration** is the same failure in account servers such as Active Directory or LDAP. **End-of-life** software gets no more patches. **Weak ciphers** are outdated encryption."
       },
       {
         "beats": [
@@ -326,29 +326,17 @@
       {
         "beats": [
           {
-            "say": "A **confused deputy** is a privileged program tricked into using its authority for a caller; the cure is **least privilege**."
+            "say": "A **confused deputy** is a privileged program that a caller tricks into misusing its authority."
+          },
+          {
+            "say": "The table shows the usual fix for each of the last four flaws."
           },
           {
             "code": "secrets:\n  secrets manager, commit\n  scanning\npoisoning:\n  signed, pinned packages,\n  data validation\nimplant:\n  secure boot, code signing,\n  supply-chain vetting\nconfused deputy:\n  check the original\n  caller's rights",
             "language": "flaw: its fix"
-          },
-          {
-            "say": "**Least functionality** turns off what you don't need; **defense in depth** layers controls."
-          },
-          {
-            "say": "A **fail-secure** design locks up when it breaks; **fail-safe** protects people, like a door that unlocks."
           }
         ],
-        "say": "A **confused deputy** is a privileged program tricked into using its authority for a caller; the cure is **least privilege**. **Least functionality** turns off what you don't need; **defense in depth** layers controls. A **fail-secure** design locks up when it breaks; **fail-safe** protects people, like a door that unlocks.",
-        "check": {
-          "prompt": "The policy engine behind a firewall crashes. Which behaviour is fail-secure?",
-          "answer": "Drop all traffic until the engine is back",
-          "wrong": [
-            "Pass all traffic so the business keeps running",
-            "Unlock the server-room doors so staff can leave"
-          ],
-          "why": "Fail-secure keeps the protected thing protected, even at a cost to availability. Passing everything is failing open; unlocking doors for people is fail-safe, which is about life safety."
-        }
+        "say": "A **confused deputy** is a privileged program that a caller tricks into misusing its authority. The table shows the usual fix for each of the last four flaws."
       }
     ],
     "outro": "A bank's withdrawal handler runs on many threads at once, and two withdrawals both succeed. Choose the fix that removes the flaw."
@@ -406,6 +394,52 @@
     ],
     "case_sensitive": false,
     "feedback": "strcpy() copies without checking the destination's size, and SHA-1 no longer resists collisions, so both are deprecated functions, like gets() and MD5 for passwords. Static analysis finds them; the fix is a bounded copy function and a current hash algorithm."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: What design habits keep a system safe when something breaks?",
+    "npc": "val",
+    "intro": "Fixing flaws one at a time never ends, so good designs also limit what any single flaw can do. A few habits do that, from how much access a program gets to what happens when a control itself crashes. You'll meet the habits first, then the crash case.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**Least privilege** means every program and person gets only the access the job needs."
+          },
+          {
+            "say": "**Least functionality** turns off everything you don't need."
+          },
+          {
+            "say": "**Defense in depth** layers controls, so one failure doesn't expose everything."
+          }
+        ],
+        "say": "**Least privilege** means every program and person gets only the access the job needs. **Least functionality** turns off everything you don't need. **Defense in depth** layers controls, so one failure doesn't expose everything."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **fail-secure** design locks up when it breaks."
+          },
+          {
+            "say": "A **fail-safe** design protects people, like a door that unlocks."
+          },
+          {
+            "say": "A control that fails open lets everything through when it breaks."
+          }
+        ],
+        "say": "A **fail-secure** design locks up when it breaks. A **fail-safe** design protects people, like a door that unlocks. A control that fails open lets everything through when it breaks.",
+        "check": {
+          "prompt": "The policy engine behind a firewall crashes. Which behaviour is fail-secure?",
+          "answer": "Drop all traffic until the engine is back",
+          "wrong": [
+            "Pass all traffic so the business keeps running",
+            "Unlock the server-room doors so staff can leave"
+          ],
+          "why": "Fail-secure keeps the protected thing protected, even at a cost to availability. Passing everything is failing open; unlocking doors for people is fail-safe, which is about life safety."
+        }
+      }
+    ],
+    "outro": "Next, a security team reviews how each control behaves when something it depends on fails. Pick the ones that are fail-secure."
   },
   {
     "question": "Magister Orin Vale is reviewing how controls at Highrook Conclave behave when something they depend on fails. Which behaviours are fail-secure?",
@@ -469,13 +503,13 @@
             "say": "**CVE** gives each public flaw one ID, such as CVE-2021-44228."
           },
           {
-            "say": "**CVE Numbering Authorities** (CNAs), such as vendors and national CERTs, assign them."
+            "say": "**CVE Numbering Authorities** (CNAs), such as vendors and national CERTs (emergency response teams), assign them."
           },
           {
             "say": "A **Vulnerability Exploitability eXchange** (VEX) statement is a vendor's verdict for one product, such as 'not affected: the vulnerable code is never called'."
           }
         ],
-        "say": "**CVE** gives each public flaw one ID, such as CVE-2021-44228. **CVE Numbering Authorities** (CNAs), such as vendors and national CERTs, assign them. A **Vulnerability Exploitability eXchange** (VEX) statement is a vendor's verdict for one product, such as 'not affected: the vulnerable code is never called'.",
+        "say": "**CVE** gives each public flaw one ID, such as CVE-2021-44228. **CVE Numbering Authorities** (CNAs), such as vendors and national CERTs (emergency response teams), assign them. A **Vulnerability Exploitability eXchange** (VEX) statement is a vendor's verdict for one product, such as 'not affected: the vulnerable code is never called'.",
         "check": {
           "prompt": "Your SBoMs show the vulnerable library in 40 apps. One of them is a vendor product whose VEX says not affected. What does that change?",
           "answer": "That one product drops down the list; the other 39 still need checking",
@@ -576,7 +610,7 @@
             "say": "A **credentialed scan** logs in with a least-privilege account and reads packages and settings directly."
           },
           {
-            "say": "An unauthenticated scan only infers from banners, so it misses flaws."
+            "say": "An unauthenticated scan only guesses from banners, so it misses flaws."
           },
           {
             "say": "Dashboards show open findings by severity, coverage and mean time to remediate."
@@ -585,7 +619,7 @@
             "say": "A rising total means findings arrive faster than they are fixed."
           }
         ],
-        "say": "A **credentialed scan** logs in with a least-privilege account and reads packages and settings directly. An unauthenticated scan only infers from banners, so it misses flaws. Dashboards show open findings by severity, coverage and mean time to remediate. A rising total means findings arrive faster than they are fixed."
+        "say": "A **credentialed scan** logs in with a least-privilege account and reads packages and settings directly. An unauthenticated scan only guesses from banners, so it misses flaws. Dashboards show open findings by severity, coverage and mean time to remediate. A rising total means findings arrive faster than they are fixed."
       }
     ],
     "outro": "Now a scanner reports a CVSS vector for a building controller. Read every pair before you judge what it says."
@@ -1084,13 +1118,13 @@
       {
         "beats": [
           {
-            "say": "**Generative AI** gets the same rule: let it draft rules, summarize alerts and write first drafts."
+            "say": "**Generative AI** may draft rules, summarize alerts and write first drafts, but not act on its own."
           },
           {
-            "say": "But it can hallucinate, so a person confirms any containment it suggests, and secrets stay out of external AI services."
+            "say": "It can hallucinate, stating falsehoods with confidence, so a person confirms any containment it suggests, and secrets stay out of external AI services."
           }
         ],
-        "say": "**Generative AI** gets the same rule: let it draft rules, summarize alerts and write first drafts. But it can hallucinate, so a person confirms any containment it suggests, and secrets stay out of external AI services."
+        "say": "**Generative AI** may draft rules, summarize alerts and write first drafts, but not act on its own. It can hallucinate, stating falsehoods with confidence, so a person confirms any containment it suggests, and secrets stay out of external AI services."
       },
       {
         "beats": [
@@ -1287,20 +1321,20 @@
             "say": "Bring legal in early; notice deadlines start when you become aware."
           },
           {
-            "code": "GDPR regulator notice:\n  within 72 hours\nUS Form 8-K (material):\n  within 4 business days",
+            "code": "EU GDPR regulator notice:\n  within 72 hours\nUS SEC 8-K (material):\n  within 4 business days",
             "language": "notice deadlines"
           },
           {
             "say": "A **legal hold** suspends routine deletion of relevant logs, mail and files when litigation is likely."
           },
           {
-            "say": "Then practise. A **tabletop exercise** talks a scenario through."
+            "say": "Then practice. A **tabletop exercise** talks a scenario through."
           },
           {
             "say": "A **functional exercise** has responders use real tools; a **full-scale exercise** tests everything together."
           }
         ],
-        "say": "Bring legal in early; notice deadlines start when you become aware. A **legal hold** suspends routine deletion of relevant logs, mail and files when litigation is likely. Then practise. A **tabletop exercise** talks a scenario through. A **functional exercise** has responders use real tools; a **full-scale exercise** tests everything together."
+        "say": "Bring legal in early; notice deadlines start when you become aware. A **legal hold** suspends routine deletion of relevant logs, mail and files when litigation is likely. Then practice. A **tabletop exercise** talks a scenario through. A **functional exercise** has responders use real tools; a **full-scale exercise** tests everything together."
       },
       {
         "beats": [
@@ -1497,42 +1531,8 @@
     "type": "npc_demo",
     "question": "NPC: How do you investigate an attack without spoiling the evidence?",
     "npc": "val",
-    "intro": "A strange file turns up on a shared drive, and nobody knows what it does. Double-click it on an ordinary PC and you've handed the attacker a second machine. Evidence handled carelessly can't be trusted afterwards, so the same care runs through the whole investigation. For the file, that means finding out what it does somewhere it can't hurt anything.",
+    "intro": "A laptop in the middle of an attack is a crime scene that changes every second. Reboot it and its memory is gone; copy its disk carelessly and the copy can't be trusted afterwards. The care has to begin before the first command, so let's start with what disappears first.",
     "steps": [
-      {
-        "beats": [
-          {
-            "say": "A **malware sandbox** runs a file in isolation and records what it does."
-          },
-          {
-            "say": "Extract IOCs from its report to block and hunt for: addresses, domains, hashes."
-          },
-          {
-            "say": "Fuzzy hashes link a sample to known **variants**; **code stylometry** studies coding habits to suggest an author."
-          }
-        ],
-        "say": "A **malware sandbox** runs a file in isolation and records what it does. Extract IOCs from its report to block and hunt for: addresses, domains, hashes. Fuzzy hashes link a sample to known **variants**; **code stylometry** studies coding habits to suggest an author."
-      },
-      {
-        "beats": [
-          {
-            "say": "**Reverse engineering** takes a sample apart."
-          },
-          {
-            "say": "**Static analysis** reads it without running it."
-          },
-          {
-            "say": "**Dynamic analysis** runs it in the sandbox or under a debugger."
-          },
-          {
-            "say": "A **disassembler** turns machine code into assembly; a **decompiler** rebuilds C-like source."
-          },
-          {
-            "say": "Managed **bytecode** (Java, .NET) decompiles to near-original source; a native **binary** is far harder."
-          }
-        ],
-        "say": "**Reverse engineering** takes a sample apart. **Static analysis** reads it without running it. **Dynamic analysis** runs it in the sandbox or under a debugger. A **disassembler** turns machine code into assembly; a **decompiler** rebuilds C-like source. Managed **bytecode** (Java, .NET) decompiles to near-original source; a native **binary** is far harder."
-      },
       {
         "beats": [
           {
@@ -1725,6 +1725,69 @@
       "alt": "An arrow runs from the internet into a dashed pod inside a worker-node zone that also holds box C. Box A hangs off the internet by a dotted line, and boxes B and D sit below the zone, joined to it by dotted lines.",
       "src": "_dot/4e6efd7a97f4907e.svg"
     }
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you find out what a strange file does?",
+    "npc": "val",
+    "intro": "A strange file turns up on a shared drive, and nobody knows what it does. Double-click it on an ordinary PC and you've handed the attacker a second machine. So you find out what it does somewhere it can't hurt anything.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A **malware sandbox** runs a file in isolation and records what it does."
+          },
+          {
+            "say": "Extract IOCs from its report: addresses, domains, hashes."
+          },
+          {
+            "say": "A **fuzzy hash** scores how similar two files are, linking a sample to known **variants**."
+          },
+          {
+            "say": "**Code stylometry** studies coding habits to suggest an author."
+          }
+        ],
+        "say": "A **malware sandbox** runs a file in isolation and records what it does. Extract IOCs from its report: addresses, domains, hashes. A **fuzzy hash** scores how similar two files are, linking a sample to known **variants**. **Code stylometry** studies coding habits to suggest an author."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Reverse engineering** takes a sample apart."
+          },
+          {
+            "say": "**Static analysis** reads it without running it."
+          },
+          {
+            "say": "**Dynamic analysis** runs it in the sandbox or under a debugger, a tool that pauses code step by step."
+          }
+        ],
+        "say": "**Reverse engineering** takes a sample apart. **Static analysis** reads it without running it. **Dynamic analysis** runs it in the sandbox or under a debugger, a tool that pauses code step by step.",
+        "check": {
+          "prompt": "A sample only decrypts its payload while it is running. Which analysis reveals that payload?",
+          "answer": "Dynamic analysis, running it in the sandbox",
+          "wrong": [
+            "Static analysis, reading the code without running it",
+            "Extracting IOCs from the file name"
+          ],
+          "why": "If the payload exists only in memory at run time, reading the file shows just the encrypted blob. Running it in a sandbox lets you watch the decrypted payload appear."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "A **disassembler** turns machine code into assembly, a readable list of CPU instructions; a **decompiler** rebuilds C-like source."
+          },
+          {
+            "say": "**Bytecode**, the half-compiled form Java and .NET use, decompiles to near-original source."
+          },
+          {
+            "say": "A native **binary**, compiled straight to machine code, is far harder."
+          }
+        ],
+        "say": "A **disassembler** turns machine code into assembly, a readable list of CPU instructions; a **decompiler** rebuilds C-like source. **Bytecode**, the half-compiled form Java and .NET use, decompiles to near-original source. A native **binary**, compiled straight to machine code, is far harder."
+      }
+    ],
+    "outro": "Next, a team is analyzing a new loader. Judge which statements about their analysis are correct."
   },
   {
     "question": "Kaeli's team is analysing a new loader. Which statements about their analysis are correct?",
