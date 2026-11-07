@@ -6,15 +6,18 @@
     "intro": "I'm Professor Flint. Ask a team whether their app is secure and they'll say yes; ask where that's written down and the room goes quiet. Security nobody wrote down rarely gets built, and code nobody checked slips into the main branch unseen. Fixing both starts with the difference between what a system does and how well it does it.",
     "steps": [
       {
-        "say": "A **functional requirement** says what the system does: users can reset their password through an emailed link. A **non-functional requirement** says how well it must behave on a quality such as performance, reliability or security: session tokens expire after 30 minutes of inactivity.",
         "beats": [
           {
             "say": "A **functional requirement** says what the system does: users can reset their password through an emailed link."
           },
           {
-            "say": "A **non-functional requirement** says how well it must behave on a quality such as performance, reliability or security: session tokens expire after 30 minutes of inactivity."
+            "say": "A **non-functional requirement** says how well it must behave, on a quality such as performance, reliability or security."
+          },
+          {
+            "say": "For example: session tokens expire after 30 minutes of inactivity."
           }
         ],
+        "say": "A **functional requirement** says what the system does: users can reset their password through an emailed link. A **non-functional requirement** says how well it must behave, on a quality such as performance, reliability or security. For example: session tokens expire after 30 minutes of inactivity.",
         "check": {
           "prompt": "Which of these is a non-functional security requirement?",
           "answer": "Every failed login is logged to the central SIEM",
@@ -26,57 +29,89 @@
         }
       },
       {
-        "say": "A security requirement also needs a test a pipeline can run. \"The system must be secure\" is not a requirement, because nothing can check it. A build can verify that one automatically. Writing such **acceptance criteria** before development starts is what makes a requirement real. Controls add friction, so settle the **security versus usability trade-off** on purpose. The right balance depends on the system's sensitivity and its **threat model**: who might attack it, and how. An internet-facing payment portal and an internal wiki deserve different answers, and the decision belongs in writing.",
         "beats": [
           {
-            "say": "A security requirement also needs a test a pipeline can run. \"The system must be secure\" is not a requirement, because nothing can check it."
+            "say": "A security requirement also needs a test that runs automatically on every build."
           },
           {
-            "code": "Every HTTP response must include Strict-Transport-Security\nwith max-age of at least 31536000 seconds (365 days).",
+            "say": "\"The system must be secure\" is not a requirement, because nothing can check it."
+          },
+          {
+            "code": "Every HTTP response must\ninclude\nStrict-Transport-Security\nwith max-age of at least\n31536000 seconds\n(365 days).",
             "language": "requirement with acceptance criteria"
           },
           {
-            "say": "A build can verify that one automatically. Writing such **acceptance criteria** before development starts is what makes a requirement real."
+            "say": "A build can verify that one automatically."
           },
           {
-            "say": "Controls add friction, so settle the **security versus usability trade-off** on purpose. The right balance depends on the system's sensitivity and its **threat model**: who might attack it, and how."
-          },
-          {
-            "say": "An internet-facing payment portal and an internal wiki deserve different answers, and the decision belongs in writing."
+            "say": "Writing such **acceptance criteria** before development starts is what makes a requirement real."
           }
-        ]
+        ],
+        "say": "A security requirement also needs a test that runs automatically on every build. \"The system must be secure\" is not a requirement, because nothing can check it. A build can verify that one automatically. Writing such **acceptance criteria** before development starts is what makes a requirement real."
       },
       {
-        "say": "**Coding standards** are the team's written rules for how code is written: input validation, error handling, logging format, which cryptographic functions are allowed. A **linter** enforces them automatically, flagging hardcoded secrets, missing sanitization or deprecated crypto before the code ever runs. A flaw caught as it is typed is the cheapest flaw there is.",
         "beats": [
           {
-            "say": "**Coding standards** are the team's written rules for how code is written: input validation, error handling, logging format, which cryptographic functions are allowed."
+            "say": "Controls add friction, so settle the **security versus usability trade-off** on purpose."
           },
           {
-            "say": "A **linter** enforces them automatically, flagging hardcoded secrets, missing sanitization or deprecated crypto before the code ever runs. A flaw caught as it is typed is the cheapest flaw there is."
+            "say": "The right balance depends on the system's sensitivity and its **threat model**: who might attack it, and how."
+          },
+          {
+            "say": "A payment portal and an internal wiki deserve different answers, and the decision belongs in writing."
           }
-        ]
+        ],
+        "say": "Controls add friction, so settle the **security versus usability trade-off** on purpose. The right balance depends on the system's sensitivity and its **threat model**: who might attack it, and how. A payment portal and an internal wiki deserve different answers, and the decision belongs in writing."
       },
       {
-        "say": "A linter checks code; it cannot make a second person read it. **Branch protection** is a set of repository rules the platform enforces before any merge. No direct pushes, one reviewer, a green pipeline, and every commit signed with the developer's GPG or SSH key, so authorship cannot be spoofed.",
         "beats": [
           {
-            "say": "A linter checks code; it cannot make a second person read it. **Branch protection** is a set of repository rules the platform enforces before any merge."
+            "code": "input validation\nerror handling\nlogging format\nallowed cryptography",
+            "language": "what standards cover"
+          },
+          {
+            "say": "**Coding standards** are the team's written rules for how code is written."
+          },
+          {
+            "say": "A **linter** enforces them automatically, before the code ever runs."
+          },
+          {
+            "say": "It flags hardcoded secrets, missing sanitization or deprecated crypto. A flaw caught as it is typed is the cheapest there is."
+          }
+        ],
+        "say": "**Coding standards** are the team's written rules for how code is written. A **linter** enforces them automatically, before the code ever runs. It flags hardcoded secrets, missing sanitization or deprecated crypto. A flaw caught as it is typed is the cheapest there is."
+      },
+      {
+        "say": "A linter checks code; it cannot make a second person read it. **Branch protection** is a set of rules the code host enforces before any change reaches the `main` branch.",
+        "beats": [
+          {
+            "say": "A linter checks code; it cannot make a second person read it."
+          },
+          {
+            "say": "**Branch protection** is a set of rules the code host enforces before any change reaches the `main` branch."
           },
           {
             "code": "branch: main\n  require_pull_request:       true\n  required_approving_reviews: 1\n  required_status_checks:     [build, lint, unit-tests]\n  require_signed_commits:     true\n  enforce_admins:             true",
             "language": "branch protection rule"
-          },
-          {
-            "say": "No direct pushes, one reviewer, a green pipeline, and every commit signed with the developer's GPG or SSH key, so authorship cannot be spoofed."
-          },
+          }
+        ]
+      },
+      {
+        "say": "No direct pushes to `main`. A **pull request**, a proposed change others review, needs one reviewer and passing build, lint and test checks. Each **commit**, a saved change, is signed with the developer's GPG or SSH key, so authorship cannot be spoofed.",
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.4; ranksep=0.3; c [label=\"signed commit\"]; pr [label=\"pull request\"]; g [label=\"1 review +\\nbuild, lint, tests\"]; m [label=\"main\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; c -> pr; pr -> g; g -> m; c -> m [style=dashed, arrowhead=tee, label=\" direct push,\\n refused\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
-              "alt": "A signed commit goes to a pull request, then through one review and the build, lint and test checks, and only then into main. A dashed, highlighted line straight from the commit to main ends in a bar and is labelled direct push, refused.",
+              "alt": "A signed commit goes to a pull request, then through one review and the build, lint and test checks, and only then into main. A dashed, highlighted line straight from the commit to main ends in a bar and is labeled direct push, refused.",
               "caption": "the only way into main",
               "src": "_dot/6f70b0aa05b9d464.svg"
             }
+          },
+          {
+            "say": "No direct pushes to `main`. A **pull request**, a proposed change others review, needs one reviewer and passing build, lint and test checks."
+          },
+          {
+            "say": "Each **commit**, a saved change, is signed with the developer's GPG or SSH key, so authorship cannot be spoofed."
           }
         ],
         "check": {
@@ -168,39 +203,50 @@
     "intro": "On a busy Friday, the check that gets skipped is usually the security one, because someone is waiting to ship. A pipeline never gets busy: it runs every change through the same checks, in the same order, every time. Follow one change on its way to production and you'll see where the security checks sit.",
     "steps": [
       {
-        "say": "**Continuous integration and continuous deployment (CI/CD)** builds, tests and deploys software automatically every time code merges. For security, picture five stages. A failed check halts the run and sends the finding back to the developer with enough context to fix it.",
         "beats": [
-          {
-            "say": "**Continuous integration and continuous deployment (CI/CD)** builds, tests and deploys software automatically every time code merges. For security, picture five stages."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.3; ranksep=0.25; p [label=\"Plan\\nrequirements\"]; c [label=\"Code\\nlint, review\"]; b [label=\"Build\\ndependencies\"]; t [label=\"Test\\nscans, tests\"]; d [label=\"Deploy\\nsign-off, canary\"]; p -> c; c -> b; b -> t; t -> d; t -> c [style=dashed, constraint=false, label=\" findings\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
-              "alt": "Five boxes in a column: Plan, Code, Build, Test and Deploy, each with a short note, and a dashed arrow from Test back up to Code labelled findings.",
+              "alt": "Five boxes in a column: Plan, Code, Build, Test and Deploy, each with a short note, and a dashed arrow from Test back up to Code labeled findings.",
               "caption": "five stages, each with gates",
               "src": "_dot/92839389856a22d1.svg"
             }
           },
           {
-            "say": "A failed check halts the run and sends the finding back to the developer with enough context to fix it."
+            "say": "**Continuous integration and continuous deployment (CI/CD)** builds, tests and deploys software automatically every time code merges."
+          },
+          {
+            "say": "For security, picture five stages. A failed check halts the run and sends the finding back to the developer."
           }
-        ]
+        ],
+        "say": "**Continuous integration and continuous deployment (CI/CD)** builds, tests and deploys software automatically every time code merges. For security, picture five stages. A failed check halts the run and sends the finding back to the developer."
       },
       {
-        "say": "A **unit test** checks one small function on its own: does the input validator reject a null byte? An **integration test** checks components working together, which is where a missing authorization check between two services shows up. A **regression test** proves a change broke nothing that used to work, old security fixes included. If version 2.3 fixed an injection flaw, a test for that input runs on every later build.",
         "beats": [
           {
             "say": "A **unit test** checks one small function on its own: does the input validator reject a null byte?"
           },
           {
             "say": "An **integration test** checks components working together, which is where a missing authorization check between two services shows up."
+          }
+        ],
+        "say": "A **unit test** checks one small function on its own: does the input validator reject a null byte? An **integration test** checks components working together, which is where a missing authorization check between two services shows up."
+      },
+      {
+        "say": "A **regression test** proves a change broke nothing that used to work, old security fixes included. If version 2.3 fixed an injection flaw, a test for that input runs on every later build. Testing, fixing and testing again, automatically, is **automated test and retest**.",
+        "beats": [
+          {
+            "say": "A **regression test** proves a change broke nothing that used to work, old security fixes included."
           },
           {
-            "say": "A **regression test** proves a change broke nothing that used to work, old security fixes included. If version 2.3 fixed an injection flaw, a test for that input runs on every later build."
+            "say": "If version 2.3 fixed an injection flaw, a test for that input runs on every later build."
+          },
+          {
+            "say": "Testing, fixing and testing again, automatically, is **automated test and retest**."
           }
         ],
         "check": {
-          "prompt": "A fix has merged for a finding. Under **automated test and retest**, when is the finding closed?",
+          "prompt": "A fix has merged for a finding. Under automated test and retest, when is the finding closed?",
           "answer": "When the test that exposed it reruns and passes",
           "wrong": [
             "When the developer marks the ticket resolved",
@@ -210,29 +256,44 @@
         }
       },
       {
-        "say": "A **canary deployment** sends the new version to a small slice of users first, say five percent, and watches for anomalies before going wider. It is not a scanner. Paired with security monitoring, it limits the **blast radius** of a flaw that slipped past testing: one user in twenty meets it, not all of them.",
         "beats": [
           {
-            "say": "A **canary deployment** sends the new version to a small slice of users first, say five percent, and watches for anomalies before going wider."
+            "say": "A **canary deployment** sends the new version to a small slice of users first, and watches for anomalies before going wider."
           },
           {
-            "say": "It is not a scanner. Paired with security monitoring, it limits the **blast radius** of a flaw that slipped past testing: one user in twenty meets it, not all of them."
+            "say": "It is not a scanner. It limits the **blast radius** of a flaw that slipped past testing: one user in twenty meets it, not all."
           }
-        ]
+        ],
+        "say": "A **canary deployment** sends the new version to a small slice of users first, and watches for anomalies before going wider. It is not a scanner. It limits the **blast radius** of a flaw that slipped past testing: one user in twenty meets it, not all."
       },
       {
-        "say": "**Continuous improvement** closes the loop: a finding that keeps coming back becomes a new lint rule, a new regression test or a training topic, so the pipeline tightens where the team keeps slipping. The pipeline holds signing keys and deployment credentials, so guard it like production: least-privilege build runners, and secrets fetched from a vault rather than stored in pipeline settings. Its outputs should be signed and **attested**: shipped with a signed record of how and where each was built.",
         "beats": [
           {
-            "say": "**Continuous improvement** closes the loop: a finding that keeps coming back becomes a new lint rule, a new regression test or a training topic, so the pipeline tightens where the team keeps slipping."
+            "code": "Recurring finding becomes\n a lint rule\n a regression test\n a training topic",
+            "language": "closing the loop"
           },
           {
-            "say": "The pipeline holds signing keys and deployment credentials, so guard it like production: least-privilege build runners, and secrets fetched from a vault rather than stored in pipeline settings."
+            "say": "**Continuous improvement** closes the loop: a finding that keeps coming back changes the pipeline."
           },
           {
-            "say": "Its outputs should be signed and **attested**: shipped with a signed record of how and where each was built."
+            "say": "So the pipeline tightens where the team keeps slipping."
           }
-        ]
+        ],
+        "say": "**Continuous improvement** closes the loop: a finding that keeps coming back changes the pipeline. So the pipeline tightens where the team keeps slipping."
+      },
+      {
+        "beats": [
+          {
+            "say": "The pipeline holds signing keys and deployment credentials, so guard it like production."
+          },
+          {
+            "say": "Build runners get only what each job needs, and secrets come from a vault, not pipeline settings."
+          },
+          {
+            "say": "Outputs should be signed and **attested**: shipped with a signed record of how and where each was built."
+          }
+        ],
+        "say": "The pipeline holds signing keys and deployment credentials, so guard it like production. Build runners get only what each job needs, and secrets come from a vault, not pipeline settings. Outputs should be signed and **attested**: shipped with a signed record of how and where each was built."
       }
     ],
     "outro": "Next come five testing activities and five failures. Match each activity to the failure it's built to catch."
@@ -317,43 +378,80 @@
     "type": "npc_demo",
     "question": "NPC: What does each testing tool catch, and what slips by?",
     "npc": "flint",
-    "intro": "A scanner that reports nothing hasn't proved your code is safe; it has only told you that nothing it can see is wrong. Each tool looks from a particular place, and where it stands decides which flaws it finds and which it never will. They're easiest to compare in order, so begin with the earliest, which reads the code while it's still just text.",
+    "intro": "A scanner that reports nothing hasn't proved your code is safe; it has only told you that nothing it can see is wrong. Each tool looks from a particular place, and where it stands decides which flaws it finds and which it never will. Let's begin with the earliest, which reads the code while it's still just text.",
     "steps": [
       {
-        "say": "**Static application security testing (SAST)** reads source code, bytecode or binaries without running them, hunting known flaw patterns such as injection or weak crypto. A live database password, rated Low: SAST ranks the pattern, not the damage, so a human still triages. Without runtime context it also raises **false positives**, and developers who drown in them stop reading. The fix reads the value from the environment at run time and fails loudly if it is missing; a secrets manager supplies it at deploy.",
         "beats": [
           {
-            "say": "**Static application security testing (SAST)** reads source code, bytecode or binaries without running them, hunting known flaw patterns such as injection or weak crypto."
+            "say": "**Static application security testing (SAST)** reads code without running it, hunting known flaw patterns such as injection or weak crypto."
           },
           {
             "code": ">> Issue: [B105:hardcoded_password_string]\n   Possible hardcoded password: 'admin1234'\n   Severity: Low   Confidence: Medium\n   Location: app/config.py:14:14",
             "language": "SAST finding (Bandit, Python)"
           },
           {
-            "say": "A live database password, rated Low: SAST ranks the pattern, not the damage, so a human still triages. Without runtime context it also raises **false positives**, and developers who drown in them stop reading."
+            "say": "It is rated Low, yet it is a live password: SAST ranks the pattern, not the damage, so a human still triages."
+          }
+        ],
+        "say": "**Static application security testing (SAST)** reads code without running it, hunting known flaw patterns such as injection or weak crypto. It is rated Low, yet it is a live password: SAST ranks the pattern, not the damage, so a human still triages."
+      },
+      {
+        "beats": [
+          {
+            "say": "Without running the app, SAST raises **false positives**, and developers who drown in them stop reading."
           },
           {
-            "say": "The fix reads the value from the environment at run time and fails loudly if it is missing; a secrets manager supplies it at deploy."
+            "say": "The fix reads the value from the environment at run time and fails loudly if it is missing."
           },
           {
             "code": "DB_PASSWORD = os.environ[\"DB_PASSWORD\"]",
             "language": "python"
+          },
+          {
+            "say": "A secrets manager supplies it at deploy."
           }
-        ]
+        ],
+        "say": "Without running the app, SAST raises **false positives**, and developers who drown in them stop reading. The fix reads the value from the environment at run time and fails loudly if it is missing. A secrets manager supplies it at deploy."
       },
       {
-        "say": "**Dynamic application security testing (DAST)** attacks the running app from outside, with no source code, the way an attacker would. It finds what appears only at run time: misconfigured servers and headers, session and authentication flaws. It needs a live environment, runs slower, and misses paths its probes never reach. **Interactive application security testing (IAST)** puts an agent inside the app while tests exercise it, so it can name the function, the tainted data flow and the line.",
         "beats": [
           {
             "say": "**Dynamic application security testing (DAST)** attacks the running app from outside, with no source code, the way an attacker would."
           },
           {
-            "say": "It finds what appears only at run time: misconfigured servers and headers, session and authentication flaws. It needs a live environment, runs slower, and misses paths its probes never reach."
+            "say": "It finds what appears only at run time: misconfigured servers and headers, session and authentication flaws."
           },
           {
-            "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests exercise it, so it can name the function, the tainted data flow and the line."
+            "say": "It needs a live environment, runs slower, and misses paths its probes never reach."
           }
         ],
+        "say": "**Dynamic application security testing (DAST)** attacks the running app from outside, with no source code, the way an attacker would. It finds what appears only at run time: misconfigured servers and headers, session and authentication flaws. It needs a live environment, runs slower, and misses paths its probes never reach."
+      },
+      {
+        "beats": [
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; nodesep=0.25; ranksep=0.3; sast [label=\"SAST\"]; src [label=\"source\\ncode\"]; dast [label=\"DAST\\n(outside)\"]; iast [label=\"IAST\\n(inside)\"]; app1 [label=\"running app\\nin staging\"]; rasp [label=\"RASP\\n(inside)\"]; app2 [label=\"running app\\nin production\"]; sast -> src [label=\" reads\"]; src -> app1 [style=dashed, label=\" build\"]; dast -> app1 [label=\" attacks\"]; iast -> app1 [label=\" watches\"]; app1 -> app2 [style=dashed, label=\" release\"]; rasp -> app2 [label=\" blocks\"]; { rank=same; src; dast; iast; } }",
+              "alt": "SAST reads the source code, which a dashed arrow builds into the running app in staging. DAST, from outside, attacks that staging app and IAST, from inside, watches it. A dashed arrow releases it to the running app in production, where RASP, from inside, blocks.",
+              "caption": "where each tool looks",
+              "src": "_dot/11ba0d99d3ebbb63.svg"
+            }
+          },
+          {
+            "code": "RASP costs\n latency\n one more component\n false positives that\n can break real users",
+            "language": "RASP's price"
+          },
+          {
+            "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line."
+          },
+          {
+            "say": "**Runtime application self-protection (RASP)** puts a similar agent in production, ending requests that look like injection."
+          },
+          {
+            "say": "Treat RASP as defense in depth, not a substitute for fixing code."
+          }
+        ],
+        "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line. **Runtime application self-protection (RASP)** puts a similar agent in production, ending requests that look like injection. Treat RASP as defense in depth, not a substitute for fixing code.",
         "check": {
           "prompt": "An IAST agent reports nothing on the password-reset code. What is the likeliest reason?",
           "answer": "No test ever exercised that code path",
@@ -363,42 +461,6 @@
           ],
           "why": "IAST sees only the code your tests actually run. An untested path is invisible to it, however flawed."
         }
-      },
-      {
-        "say": "**Runtime application self-protection (RASP)** puts a similar agent in production. If input is about to reach a query in a way that looks like injection, it can end the request, log it and alert. It costs latency, adds a component to maintain and trust, and its false positives can break real users. Treat it as defense in depth once SAST and DAST have cut the flaw count, not as a substitute for fixing code.",
-        "beats": [
-          {
-            "say": "**Runtime application self-protection (RASP)** puts a similar agent in production. If input is about to reach a query in a way that looks like injection, it can end the request, log it and alert."
-          },
-          {
-            "say": "It costs latency, adds a component to maintain and trust, and its false positives can break real users. Treat it as defense in depth once SAST and DAST have cut the flaw count, not as a substitute for fixing code."
-          },
-          {
-            "figure": {
-              "dot": "digraph { rankdir=TB; nodesep=0.25; ranksep=0.3; sast [label=\"SAST\"]; src [label=\"source\\ncode\"]; dast [label=\"DAST\\n(outside)\"]; iast [label=\"IAST\\n(inside)\"]; app1 [label=\"running app\\nin staging\"]; rasp [label=\"RASP\\n(inside)\"]; app2 [label=\"running app\\nin production\"]; sast -> src [label=\" reads\"]; src -> app1 [style=dashed, label=\" build\"]; dast -> app1 [label=\" attacks\"]; iast -> app1 [label=\" watches\"]; app1 -> app2 [style=dashed, label=\" release\"]; rasp -> app2 [label=\" blocks\"]; { rank=same; src; dast; iast; } }",
-              "alt": "SAST reads the source code, which a dashed arrow builds into the running app in staging. DAST, from outside, attacks that staging app and IAST, from inside, watches it. A dashed arrow releases it to the running app in production, where RASP, from inside, blocks.",
-              "caption": "where each tool looks",
-              "src": "_dot/11ba0d99d3ebbb63.svg"
-            }
-          }
-        ]
-      },
-      {
-        "say": "**Vulnerability analysis** turns findings into a fix order. It weighs a severity score (CVSS), the likelihood of exploitation (EPSS) and CISA's Known Exploited Vulnerabilities (KEV) catalog. Then it asks whether the flaw is even reachable in your deployment, because not every critical CVE is exploitable where you run it. **Formal methods** go furthest: a mathematical specification, then a proof that the code satisfies it for every input. They are costly, so they appear where failure is unacceptable. The seL4 microkernel has a machine-checked proof of correctness, and TLS 1.3 was formally analyzed while it was being designed.",
-        "beats": [
-          {
-            "say": "**Vulnerability analysis** turns findings into a fix order. It weighs a severity score (CVSS), the likelihood of exploitation (EPSS) and CISA's Known Exploited Vulnerabilities (KEV) catalog."
-          },
-          {
-            "say": "Then it asks whether the flaw is even reachable in your deployment, because not every critical CVE is exploitable where you run it."
-          },
-          {
-            "say": "**Formal methods** go furthest: a mathematical specification, then a proof that the code satisfies it for every input. They are costly, so they appear where failure is unacceptable."
-          },
-          {
-            "say": "The seL4 microkernel has a machine-checked proof of correctness, and TLS 1.3 was formally analyzed while it was being designed."
-          }
-        ]
       }
     ],
     "outro": "Next, a different team runs three of these tools on one release. Name each tool from what it saw."
@@ -430,6 +492,70 @@
       }
     ],
     "feedback": "SAST is static: it examines code without executing it, which makes it fast but blind to runtime context. DAST is dynamic and external: it sees only what an attacker sees, so it finds runtime issues such as cookie and header misconfigurations. IAST is the agent inside the running app during testing, which is why it can point to the function, data flow and line, but only for code the tests exercise."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you rank flaws, and what can prove code correct?",
+    "npc": "flint",
+    "intro": "A scanner can hand you thirty critical findings and a week to fix six, so something has to say which six come first. And for the few systems where even a clean scan isn't enough, there's a technique that goes further than testing.",
+    "steps": [
+      {
+        "say": "**Vulnerability analysis** turns findings into a fix order. Each known flaw has a public ID, a **CVE**; **CVSS** scores how severe it is. **EPSS** scores how likely it is to be exploited. CISA, the US cyber agency, keeps a **Known Exploited Vulnerabilities (KEV)** list of flaws attackers use now.",
+        "beats": [
+          {
+            "code": "CVSS  how severe\nEPSS  how likely to be\n      exploited\nKEV   CISA list of flaws\n      exploited now\nReachable here?",
+            "language": "ranking a fix order"
+          },
+          {
+            "say": "**Vulnerability analysis** turns findings into a fix order."
+          },
+          {
+            "say": "Each known flaw has a public ID, a **CVE**; **CVSS** scores how severe it is."
+          },
+          {
+            "say": "**EPSS** scores how likely it is to be exploited."
+          },
+          {
+            "say": "CISA, the US cyber agency, keeps a **Known Exploited Vulnerabilities (KEV)** list of flaws attackers use now."
+          }
+        ]
+      },
+      {
+        "say": "Last, ask whether the flaw is reachable in your deployment. Not every critical CVE is exploitable where you run it: the vulnerable code may never be called.",
+        "beats": [
+          {
+            "say": "Last, ask whether the flaw is reachable in your deployment."
+          },
+          {
+            "say": "Not every critical CVE is exploitable where you run it: the vulnerable code may never be called."
+          }
+        ],
+        "check": {
+          "prompt": "Two third-party flaws share a critical CVSS score, and only one is on CISA's KEV list. Everything else is equal. Which do you fix first?",
+          "answer": "The one on the KEV list, since attackers are already using it",
+          "wrong": [
+            "Either one, since the same CVSS score means the same urgency",
+            "The one the scanner listed first"
+          ],
+          "why": "CVSS says how bad a flaw could be, not whether anyone is using it. A KEV listing means exploitation is happening now, so it breaks the tie."
+        }
+      },
+      {
+        "say": "**Formal methods** go furthest: a mathematical specification, then a proof that the code satisfies it for every input. They are costly, so they appear where failure is unacceptable. The seL4 microkernel, a tiny OS core, has a machine-checked proof of correctness. TLS 1.3 was formally analyzed during design.",
+        "beats": [
+          {
+            "say": "**Formal methods** go furthest: a mathematical specification, then a proof that the code satisfies it for every input."
+          },
+          {
+            "say": "They are costly, so they appear where failure is unacceptable."
+          },
+          {
+            "say": "The seL4 microkernel, a tiny OS core, has a machine-checked proof of correctness. TLS 1.3 was formally analyzed during design."
+          }
+        ]
+      }
+    ],
+    "outro": "Next, five techniques and five descriptions of what each one examines. Match them up."
   },
   {
     "type": "matching",
@@ -583,13 +709,34 @@
     "intro": "Open almost any application and much of the code inside was written by strangers: open-source maintainers and vendors you've never met. When one of them ships a flaw, the first question is whether you're running it, and plenty of teams can't answer for weeks. The first job is simply knowing what's in your build, and one tool does exactly that.",
     "steps": [
       {
-        "say": "**Software composition analysis (SCA)** inventories the third-party packages in your dependency tree at build time and checks them against vulnerability databases, license rules and end-of-life dates. A **software bill of materials (SBOM)** is the machine-readable ingredient list: every component, version, license and origin, in a standard format such as SPDX or CycloneDX.",
         "beats": [
           {
-            "say": "**Software composition analysis (SCA)** inventories the third-party packages in your dependency tree at build time and checks them against vulnerability databases, license rules and end-of-life dates."
+            "say": "**Software composition analysis (SCA)** lists the third-party packages in your build."
           },
           {
-            "say": "A **software bill of materials (SBOM)** is the machine-readable ingredient list: every component, version, license and origin, in a standard format such as SPDX or CycloneDX."
+            "code": "It checks them against\n vulnerability databases\n license rules\n end-of-life dates",
+            "language": "what SCA checks"
+          },
+          {
+            "say": "A **software bill of materials (SBOM)** is the machine-readable ingredient list: every component, version, license and origin."
+          },
+          {
+            "say": "Standard formats include SPDX and CycloneDX."
+          }
+        ],
+        "say": "**Software composition analysis (SCA)** lists the third-party packages in your build. A **software bill of materials (SBOM)** is the machine-readable ingredient list: every component, version, license and origin. Standard formats include SPDX and CycloneDX."
+      },
+      {
+        "say": "Packages pull in other packages, a **dependency tree**. A package you never chose, pulled in by another, is a **transitive dependency**. This SBOM excerpt records who depends on whom.",
+        "beats": [
+          {
+            "say": "Packages pull in other packages, a **dependency tree**."
+          },
+          {
+            "say": "A package you never chose, pulled in by another, is a **transitive dependency**."
+          },
+          {
+            "say": "This SBOM excerpt records who depends on whom."
           },
           {
             "code": "\"components\": [\n  { \"name\": \"lanternrouter\", \"version\": \"4.2.0\" },\n  { \"name\": \"quillqs\",       \"version\": \"1.0.3\" }\n],\n\"dependencies\": [\n  { \"ref\": \"app\",           \"dependsOn\": [\"lanternrouter\"] },\n  { \"ref\": \"lanternrouter\", \"dependsOn\": [\"quillqs\"] }\n]",
@@ -603,24 +750,25 @@
             "No, only direct dependencies ship",
             "Only if SAST flags the app's own code"
           ],
-          "why": "The dependencies list runs from app to `lanternrouter` to `quillqs`. A **transitive dependency** ships just like a direct one, and an SBOM is what makes it visible."
+          "why": "The dependencies list runs from app to `lanternrouter` to `quillqs`. A transitive dependency ships just like a direct one, and an SBOM is what makes it visible."
         }
       },
       {
-        "say": "In December 2021, Log4Shell (CVE-2021-44228) let attackers run code on servers through Log4j, a Java logging library, just by getting a crafted string logged. It scored the maximum CVSS of 10.0. Teams with current SBOMs or SCA inventories answered \"are we exposed?\" in hours. Others spent weeks digging through JAR files nested inside JAR files. **Software supply chain risk management** covers code from outside: open-source packages, commercial software, SDKs and contractor code. **Dependency pinning** fixes a known-good version in a lockfile that records hashes, so updates happen on purpose. **Signed artifacts** prove a package or image came from its publisher unaltered.",
         "beats": [
           {
-            "say": "In December 2021, Log4Shell (CVE-2021-44228) let attackers run code on servers through Log4j, a Java logging library, just by getting a crafted string logged. It scored the maximum CVSS of 10.0."
+            "say": "In December 2021, Log4Shell (CVE-2021-44228, a flaw's public ID) let attackers run code on servers through Log4j, a Java logging library."
           },
           {
-            "say": "Teams with current SBOMs or SCA inventories answered \"are we exposed?\" in hours. Others spent weeks digging through JAR files nested inside JAR files."
+            "say": "A crafted string, once logged, was enough: CVSS 10.0, the maximum."
           },
           {
-            "say": "**Software supply chain risk management** covers code from outside: open-source packages, commercial software, SDKs and contractor code."
-          },
-          {
-            "say": "**Dependency pinning** fixes a known-good version in a lockfile that records hashes, so updates happen on purpose. **Signed artifacts** prove a package or image came from its publisher unaltered."
-          },
+            "say": "Teams with current SBOMs or SCA inventories answered \"are we exposed?\" in hours. Others spent weeks."
+          }
+        ],
+        "say": "In December 2021, Log4Shell (CVE-2021-44228, a flaw's public ID) let attackers run code on servers through Log4j, a Java logging library. A crafted string, once logged, was enough: CVSS 10.0, the maximum. Teams with current SBOMs or SCA inventories answered \"are we exposed?\" in hours. Others spent weeks."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.3; ranksep=0.25; src [label=\"source code\"]; bld [label=\"build system\"]; sgn [label=\"sign with\\nvendor key\"]; art [label=\"signed artifact\"]; cus [label=\"customer verifies\\nsignature\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; src -> bld; bld -> sgn; sgn -> art; art -> cus; }",
@@ -628,20 +776,41 @@
               "caption": "where the signature is applied",
               "src": "_dot/2be1bcd2647a8251.svg"
             }
+          },
+          {
+            "code": "Outside code\n open-source packages\n commercial software\n SDKs\n contractor code",
+            "language": "supply chain scope"
+          },
+          {
+            "say": "**Software supply chain risk management** covers code from outside."
+          },
+          {
+            "say": "**Dependency pinning** fixes a known-good version in a lockfile that records hashes, so updates happen on purpose."
+          },
+          {
+            "say": "**Signed artifacts** prove a package or image came from its publisher unaltered."
           }
-        ]
+        ],
+        "say": "**Software supply chain risk management** covers code from outside. **Dependency pinning** fixes a known-good version in a lockfile that records hashes, so updates happen on purpose. **Signed artifacts** prove a package or image came from its publisher unaltered."
       },
       {
-        "say": "**Provenance** records where code came from, who built it and on what infrastructure. The SLSA framework grades how trustworthy a build's provenance is. **Vendor security assessments** belong in procurement: does the supplier run a vulnerability disclosure program, ship SBOMs, and patch critical flaws quickly? NIST's Secure Software Development Framework (SSDF) treats provenance, dependency control and supplier review as core practice, not optional extras.",
+        "say": "**Provenance** records where code came from, who built it and on what infrastructure. The **SLSA** framework (Supply-chain Levels for Software Artifacts) grades how trustworthy a build's provenance is. **Vendor security assessments** belong in procurement. NIST's Secure Software Development Framework (SSDF) treats provenance, dependency control and supplier review as core practice.",
         "beats": [
           {
-            "say": "**Provenance** records where code came from, who built it and on what infrastructure. The SLSA framework grades how trustworthy a build's provenance is."
+            "code": "Ask suppliers\n vulnerability disclosure\n program?\n SBOMs shipped?\n critical flaws patched\n quickly?",
+            "language": "vendor assessment"
           },
           {
-            "say": "**Vendor security assessments** belong in procurement: does the supplier run a vulnerability disclosure program, ship SBOMs, and patch critical flaws quickly?"
+            "say": "**Provenance** records where code came from, who built it and on what infrastructure."
           },
           {
-            "say": "NIST's Secure Software Development Framework (SSDF) treats provenance, dependency control and supplier review as core practice, not optional extras."
+            "say": "The **SLSA** framework (Supply-chain Levels for Software Artifacts) grades how trustworthy a build's provenance is."
+          },
+          {
+            "say": "**Vendor security assessments** belong in procurement."
+          },
+          {
+            "say": "NIST's Secure Software Development Framework (SSDF) treats provenance, dependency control and supplier review as core practice."
           }
         ],
         "check": {
@@ -655,21 +824,22 @@
         }
       },
       {
-        "say": "Every product has an **end-of-life (EOL)** date, after which its vendor ships no more security fixes. Windows 10 reached end of support in October 2025. Plan EOL at procurement: record the date, the replacement path, and the **compensating controls** to use if replacement slips, typically segmentation, closer monitoring and fewer inbound paths. It bites hardest in industrial gear, where a controller's patches stop years before the plant does. An EOL system that must keep running is a risk acceptance decision: quantify it, get a senior executive to sign it, and revisit it rather than letting it quietly persist.",
         "beats": [
           {
-            "say": "Every product has an **end-of-life (EOL)** date, after which its vendor ships no more security fixes. Windows 10 reached end of support in October 2025."
+            "code": "Compensating controls\n segmentation\n closer monitoring\n fewer inbound paths\n\nWindows 10: support\n ended October 2025",
+            "language": "end of life"
           },
           {
-            "say": "Plan EOL at procurement: record the date, the replacement path, and the **compensating controls** to use if replacement slips, typically segmentation, closer monitoring and fewer inbound paths."
+            "say": "Every product has an **end-of-life (EOL)** date, after which its vendor ships no security fixes."
           },
           {
-            "say": "It bites hardest in industrial gear, where a controller's patches stop years before the plant does."
+            "say": "Record the EOL date, the replacement path and the **compensating controls** for if replacement slips."
           },
           {
-            "say": "An EOL system that must keep running is a risk acceptance decision: quantify it, get a senior executive to sign it, and revisit it rather than letting it quietly persist."
+            "say": "Keeping an EOL system running is a **risk acceptance**: quantify it, get a senior executive to sign it, revisit it."
           }
-        ]
+        ],
+        "say": "Every product has an **end-of-life (EOL)** date, after which its vendor ships no security fixes. Record the EOL date, the replacement path and the **compensating controls** for if replacement slips. Keeping an EOL system running is a **risk acceptance**: quantify it, get a senior executive to sign it, revisit it."
       }
     ],
     "outro": "Next, an advisory comes out while a vendor's SBOM is open in front of you. Decide whether the vendor's product is exposed."
@@ -765,25 +935,36 @@
     "intro": "I'm Ada, the Chief Artificer. Picture a laptop that arrives with one chip quietly swapped somewhere between the factory and your desk. Every patch and password you add now sits on top of the attacker's work. That's why trust in hardware starts long before anyone switches it on, with the road it took to reach you.",
     "steps": [
       {
-        "say": "A motherboard is designed by one company, made by a second, assembled by a third and shipped by a fourth. Each hand-off is a chance for a counterfeit part, modified firmware or an implant. So buy through authorized channels, inspect **tamper-evident packaging**, and at deployment compare the firmware with the vendor's **golden hash**, the published hash of the genuine image. Some assurance happens before a device ships. **FIPS 140-3** sets requirements for cryptographic modules; those that pass accredited lab testing are listed as validated. **Common Criteria** (ISO/IEC 15408) is broader: a product is evaluated against a standard **Protection Profile** or the vendor's own **Security Target**, with independently audited results.",
         "beats": [
           {
-            "say": "A motherboard is designed by one company, made by a second, assembled by a third and shipped by a fourth. Each hand-off is a chance for a counterfeit part, modified firmware or an implant."
+            "code": "$ sha256sum nic-fw-2.4.bin\n4b1e9c...a07d\ngolden hash: 4b1e9c...a07d\nmatch",
+            "language": "firmware check"
           },
           {
-            "say": "So buy through authorized channels, inspect **tamper-evident packaging**, and at deployment compare the firmware with the vendor's **golden hash**, the published hash of the genuine image."
+            "say": "A motherboard is designed, made, assembled and shipped by four companies."
           },
           {
-            "code": "$ sha256sum nic-fw-2.4.bin\n4b1e9c...a07d  nic-fw-2.4.bin\nvendor golden hash: 4b1e9c...a07d   match",
-            "language": "firmware check at deployment"
+            "say": "Each hand-off invites counterfeit parts, modified firmware or implants. Buy from authorized channels; inspect **tamper-evident packaging**."
           },
           {
-            "say": "Some assurance happens before a device ships. **FIPS 140-3** sets requirements for cryptographic modules; those that pass accredited lab testing are listed as validated."
-          },
-          {
-            "say": "**Common Criteria** (ISO/IEC 15408) is broader: a product is evaluated against a standard **Protection Profile** or the vendor's own **Security Target**, with independently audited results."
+            "say": "Compare the firmware's hash, a file's fingerprint, with the vendor's **golden hash**, the published hash of the genuine image."
           }
         ],
+        "say": "A motherboard is designed, made, assembled and shipped by four companies. Each hand-off invites counterfeit parts, modified firmware or implants. Buy from authorized channels; inspect **tamper-evident packaging**. Compare the firmware's hash, a file's fingerprint, with the vendor's **golden hash**, the published hash of the genuine image."
+      },
+      {
+        "beats": [
+          {
+            "say": "**FIPS 140-3** sets requirements for cryptographic modules; those that pass accredited lab testing are listed as validated."
+          },
+          {
+            "say": "**Common Criteria** is broader, with independently audited results."
+          },
+          {
+            "say": "A product is judged against a standard **Protection Profile** or the vendor's own **Security Target**."
+          }
+        ],
+        "say": "**FIPS 140-3** sets requirements for cryptographic modules; those that pass accredited lab testing are listed as validated. **Common Criteria** is broader, with independently audited results. A product is judged against a standard **Protection Profile** or the vendor's own **Security Target**.",
         "check": {
           "prompt": "A module was validated two years ago, and the vendor has shipped three firmware updates since. What does the validation tell you about today's firmware?",
           "answer": "Little: a certification is a point-in-time snapshot",
@@ -795,82 +976,41 @@
         }
       },
       {
-        "say": "A **Trusted Platform Module (TPM)** is a dedicated security chip on most enterprise laptops, desktops and servers; TPM 2.0 is current, and Windows 11 requires it. Keys generated inside it cannot be extracted, even by a kernel **rootkit**, though malware on a running host may still ask the TPM to use a key. Its **Platform Configuration Registers (PCRs)** collect a hash of each boot component. The TPM can sign a report of them, a **quote**, so a remote verifier can check how the machine booted: **attestation**. It can also **seal** a key to PCR values. BitLocker seals its disk key to PCR 7, the Secure Boot state, and PCR 11; move the drive or change the boot path, and the TPM keeps the key. TPM-only unlock still releases the key to anyone who boots the intact machine, so high-security deployments add a **pre-boot PIN**.",
         "beats": [
           {
-            "say": "A **Trusted Platform Module (TPM)** is a dedicated security chip on most enterprise laptops, desktops and servers; TPM 2.0 is current, and Windows 11 requires it."
+            "code": "A TPM can\n make keys it never\n  exports\n hash each boot step\n  into PCRs\n seal a key to them",
+            "language": "what a TPM does"
           },
           {
-            "say": "Keys generated inside it cannot be extracted, even by a kernel **rootkit**, though malware on a running host may still ask the TPM to use a key."
+            "say": "A **Trusted Platform Module (TPM)** is a security chip in most laptops and servers."
           },
           {
-            "say": "Its **Platform Configuration Registers (PCRs)** collect a hash of each boot component. The TPM can sign a report of them, a **quote**, so a remote verifier can check how the machine booted: **attestation**."
+            "say": "Keys made inside it cannot be extracted."
           },
           {
-            "say": "It can also **seal** a key to PCR values. BitLocker seals its disk key to PCR 7, the Secure Boot state, and PCR 11; move the drive or change the boot path, and the TPM keeps the key."
+            "say": "Its **Platform Configuration Registers (PCRs)** hold a hash of each boot step."
           },
           {
-            "say": "TPM-only unlock still releases the key to anyone who boots the intact machine, so high-security deployments add a **pre-boot PIN**."
-          }
-        ]
-      },
-      {
-        "say": "A **Hardware Security Module (HSM)** is shared, physically hardened infrastructure for high-value, high-volume cryptography: PKI root keys, payment keys, code-signing keys. It signs and encrypts internally, and if someone opens it, it **zeroizes**: it destroys its stored keys. A **virtual TPM (vTPM)** is what the hypervisor gives a virtual machine, so it gets measured boot, sealed disk keys and attestation. Its secrets rest on the hypervisor and, ideally, the host's physical TPM. The hypervisor also enforces **virtual hardware** controls that a guest cannot override: memory isolation between VMs, and virtual-switch rules such as MAC pinning and no promiscuous mode. It can encrypt VM disks with keys from an external key manager, so a copy of the storage file exposes nothing.",
-        "beats": [
-          {
-            "say": "A **Hardware Security Module (HSM)** is shared, physically hardened infrastructure for high-value, high-volume cryptography: PKI root keys, payment keys, code-signing keys."
-          },
-          {
-            "say": "It signs and encrypts internally, and if someone opens it, it **zeroizes**: it destroys its stored keys."
-          },
-          {
-            "say": "A **virtual TPM (vTPM)** is what the hypervisor gives a virtual machine, so it gets measured boot, sealed disk keys and attestation. Its secrets rest on the hypervisor and, ideally, the host's physical TPM."
-          },
-          {
-            "figure": {
-              "dot": "digraph { rankdir=LR; nodesep=0.25; ranksep=0.4; ca [label=\"CA\"]; sig [label=\"signing\\nservice\"]; hsm [label=\"HSM\\nappliance\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; subgraph cluster_h { label=\"server host\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; vm1 [label=\"VM 1\\nvTPM\"]; vm2 [label=\"VM 2\\nvTPM\"]; htpm [label=\"host TPM\"]; } subgraph cluster_l { label=\"laptop\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; tpm [label=\"TPM chip\"]; } vm1 -> htpm [style=dashed]; vm2 -> htpm [style=dashed]; ca -> hsm; sig -> hsm; }",
-              "alt": "Top: a laptop box holding a TPM chip. Middle: a server host box where VM 1 and VM 2 each have a vTPM, joined by dashed arrows to the host TPM. Bottom: a separate HSM appliance that both a CA and a signing service point to.",
-              "caption": "per device, per VM, and shared",
-              "src": "_dot/771bff24f1b6c501.svg"
-            }
-          },
-          {
-            "say": "The hypervisor also enforces **virtual hardware** controls that a guest cannot override: memory isolation between VMs, and virtual-switch rules such as MAC pinning and no promiscuous mode."
-          },
-          {
-            "say": "It can encrypt VM disks with keys from an external key manager, so a copy of the storage file exposes nothing."
+            "say": "It can **seal** a key to those hashes: change the boot path and it withholds the key."
           }
         ],
-        "check": {
-          "prompt": "A tenant with root inside a VM turns on promiscuous mode for its virtual NIC. What decides whether it sees other VMs' traffic?",
-          "answer": "The hypervisor's virtual-switch policy",
-          "wrong": [
-            "The guest operating system's firewall",
-            "The keys sealed in the guest's vTPM"
-          ],
-          "why": "Virtual hardware is enforced below the guest. If the virtual switch forbids promiscuous mode, the guest's own setting changes nothing."
-        }
+        "say": "A **Trusted Platform Module (TPM)** is a security chip in most laptops and servers. Keys made inside it cannot be extracted. Its **Platform Configuration Registers (PCRs)** hold a hash of each boot step. It can **seal** a key to those hashes: change the boot path and it withholds the key."
       },
       {
-        "say": "A **security coprocessor** is a separate processor with its own protected memory and firmware that handles keys so the main CPU never sees them. Apple's Secure Enclave processor, Google's Titan and Microsoft's Pluton are examples. In small IoT devices, a **secure element** chip does the same job. **CPU security extensions** build protection into the main processor instead. Intel SGX lets an application run code in a **secure enclave**. The CPU keeps enclave memory encrypted in RAM and decrypts it only inside itself, so even the OS and the hypervisor cannot read it. Confidential-computing features such as AMD SEV-SNP and Intel TDX shield a whole virtual machine the same way, from the hypervisor and the cloud operator. One design rule ties these together: a secret generated outside the device and then injected has already been exposed. Generate keys inside the hardware that will protect them.",
+        "say": "A **Hardware Security Module (HSM)** is shared, hardened hardware for high-value cryptography, such as root and signing keys. If someone opens it, it **zeroizes**: it destroys its stored keys. Where a TPM guards one device, an HSM serves a whole organization.",
         "beats": [
           {
-            "say": "A **security coprocessor** is a separate processor with its own protected memory and firmware that handles keys so the main CPU never sees them."
+            "code": "HSM  shared, hardened box\n     for root and signing\n     keys\nTPM  one chip per device",
+            "language": "HSM and TPM"
           },
           {
-            "say": "Apple's Secure Enclave processor, Google's Titan and Microsoft's Pluton are examples. In small IoT devices, a **secure element** chip does the same job."
+            "say": "A **Hardware Security Module (HSM)** is shared, hardened hardware for high-value cryptography, such as root and signing keys."
           },
           {
-            "say": "**CPU security extensions** build protection into the main processor instead. Intel SGX lets an application run code in a **secure enclave**."
+            "say": "If someone opens it, it **zeroizes**: it destroys its stored keys."
           },
           {
-            "say": "The CPU keeps enclave memory encrypted in RAM and decrypts it only inside itself, so even the OS and the hypervisor cannot read it."
-          },
-          {
-            "say": "Confidential-computing features such as AMD SEV-SNP and Intel TDX shield a whole virtual machine the same way, from the hypervisor and the cloud operator."
-          },
-          {
-            "say": "One design rule ties these together: a secret generated outside the device and then injected has already been exposed. Generate keys inside the hardware that will protect them."
+            "say": "Where a TPM guards one device, an HSM serves a whole organization."
           }
         ]
       }
@@ -901,6 +1041,82 @@
       "Choose either one, because both certifications attest to validated cryptography"
     ],
     "feedback": "Validated cryptography is what FIPS 140-3 governs: modules that pass accredited lab testing are listed as validated. A validation is a point-in-time snapshot, so newer firmware is not automatically the validated configuration; make sure the version in service is the one listed. Common Criteria is the broader scheme, but breadth is not the requirement: vendor A was evaluated against its own Security Target, the vendor's claim set, not listed as a validated cryptographic module, so the two certifications are not interchangeable."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do virtual machines and enclaves get trusted hardware?",
+    "npc": "ada",
+    "intro": "A server in the cloud has no chip you can hold, and its tenants share one physical host. So how does a virtual machine get the protections a laptop's chip provides? And what if the host's own administrators are the threat?",
+    "steps": [
+      {
+        "say": "A **hypervisor** is the software that runs several virtual machines on one host. A **virtual TPM (vTPM)** is the TPM function the hypervisor gives each VM. A TPM can sign a report of its boot hashes. That proof of boot state is **attestation**.",
+        "beats": [
+          {
+            "figure": {
+              "dot": "digraph { rankdir=LR; nodesep=0.25; ranksep=0.4; ca [label=\"CA\"]; sig [label=\"signing\\nservice\"]; hsm [label=\"HSM\\nappliance\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; subgraph cluster_h { label=\"server host\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; vm1 [label=\"VM 1\\nvTPM\"]; vm2 [label=\"VM 2\\nvTPM\"]; htpm [label=\"host TPM\"]; } subgraph cluster_l { label=\"laptop\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; tpm [label=\"TPM chip\"]; } vm1 -> htpm [style=dashed]; vm2 -> htpm [style=dashed]; ca -> hsm; sig -> hsm; }",
+              "alt": "Top: a laptop box holding a TPM chip. Middle: a server host box where VM 1 and VM 2 each have a vTPM, joined by dashed arrows to the host TPM. Bottom: a separate HSM appliance that both a CA and a signing service point to.",
+              "caption": "per device, per VM, and shared",
+              "src": "_dot/771bff24f1b6c501.svg"
+            }
+          },
+          {
+            "say": "A **hypervisor** is the software that runs several virtual machines on one host."
+          },
+          {
+            "say": "A **virtual TPM (vTPM)** is the TPM function the hypervisor gives each VM."
+          },
+          {
+            "say": "A TPM can sign a report of its boot hashes. That proof of boot state is **attestation**."
+          }
+        ]
+      },
+      {
+        "say": "The hypervisor enforces **virtual hardware** controls that a guest cannot override. Promiscuous mode lets a network card read traffic meant for others; the virtual switch can forbid it. It can also encrypt VM disks with keys from an external key manager, so a copy of the storage file exposes nothing.",
+        "beats": [
+          {
+            "code": "Hypervisor enforces\n memory isolation\n  between VMs\n virtual-switch rules:\n  MAC pinning, no\n  promiscuous mode",
+            "language": "virtual hardware"
+          },
+          {
+            "say": "The hypervisor enforces **virtual hardware** controls that a guest cannot override."
+          },
+          {
+            "say": "Promiscuous mode lets a network card read traffic meant for others; the virtual switch can forbid it."
+          },
+          {
+            "say": "It can also encrypt VM disks with keys from an external key manager, so a copy of the storage file exposes nothing."
+          }
+        ],
+        "check": {
+          "prompt": "A tenant with root inside a VM turns on promiscuous mode for its virtual NIC. What decides whether it sees other VMs' traffic?",
+          "answer": "The hypervisor's virtual-switch policy",
+          "wrong": [
+            "The guest operating system's firewall",
+            "The keys sealed in the guest's vTPM"
+          ],
+          "why": "Virtual hardware is enforced below the guest. If the virtual switch forbids promiscuous mode, the guest's own setting changes nothing."
+        }
+      },
+      {
+        "say": "A **security coprocessor** keeps keys in a separate chip, so the main CPU never sees them. A **secure enclave**, such as Intel SGX, keeps memory encrypted in RAM, so even the OS and hypervisor cannot read it. **Confidential computing** shields a whole VM, even from the cloud operator.",
+        "beats": [
+          {
+            "code": "Coprocessors\n Apple Secure Enclave\n Google Titan\n Microsoft Pluton\nSmall IoT devices\n a secure element\nWhole-VM shielding\n AMD SEV-SNP, Intel TDX\nRule: make keys inside\n the hardware",
+            "language": "hardware that guards keys"
+          },
+          {
+            "say": "A **security coprocessor** keeps keys in a separate chip, so the main CPU never sees them."
+          },
+          {
+            "say": "A **secure enclave**, such as Intel SGX, keeps memory encrypted in RAM, so even the OS and hypervisor cannot read it."
+          },
+          {
+            "say": "**Confidential computing** shields a whole VM, even from the cloud operator."
+          }
+        ]
+      }
+    ],
+    "outro": "Next, a design review assigns three roots of trust to three kinds of hardware. Fill in each blank."
   },
   {
     "type": "cloze",
@@ -992,26 +1208,43 @@
     "intro": "Reinstall the operating system on an infected machine and you'd expect the infection to be gone. But some malware lives below the operating system, in the code that runs at power-on, and survives the reinstall untouched. So startup needs guards of its own, and the two main ones do different jobs. The first refuses to run anything it can't verify.",
     "steps": [
       {
-        "say": "**Secure Boot** is a UEFI firmware feature: the system runs only boot software signed by a key in an approved database. On many Linux systems the chain runs through a small vendor-signed loader called **shim**. The firmware holds the **db** of trusted signing certificates and the **dbx** of revoked ones. Each stage checks the next stage's signature, and a failure halts the boot instead of loading the component. So a **bootkit**, a malicious replacement bootloader, is rejected. The **Platform Key (PK)** and **Key Exchange Keys (KEKs)**, enrolled by the hardware vendor, control who may change those databases.",
         "beats": [
-          {
-            "say": "**Secure Boot** is a UEFI firmware feature: the system runs only boot software signed by a key in an approved database. On many Linux systems the chain runs through a small vendor-signed loader called **shim**."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.3; ranksep=0.3; fw [label=\"UEFI firmware\\n(db, dbx)\"]; shim [label=\"shim\\n(vendor-signed)\"]; grub [label=\"GRUB\\nbootloader\"]; k [label=\"Linux kernel\"]; m [label=\"kernel modules\"]; fw -> shim [label=\" verifies\"]; shim -> grub [label=\" verifies\"]; grub -> k [label=\" verifies\"]; k -> m [label=\" verifies\"]; }",
-              "alt": "Five boxes in a column: UEFI firmware holding db and dbx, then shim, the GRUB bootloader, the Linux kernel and kernel modules. Each arrow down is labelled verifies.",
+              "alt": "Five boxes in a column: UEFI firmware holding db and dbx, then shim, the GRUB bootloader, the Linux kernel and kernel modules. Each arrow down is labeled verifies.",
               "caption": "each stage checks the next",
               "src": "_dot/bc635d9a76ea8590.svg"
             }
           },
           {
-            "say": "The firmware holds the **db** of trusted signing certificates and the **dbx** of revoked ones. Each stage checks the next stage's signature, and a failure halts the boot instead of loading the component."
+            "say": "**Secure Boot** is a feature of the **UEFI** firmware, the code that runs at power-on."
           },
           {
-            "say": "So a **bootkit**, a malicious replacement bootloader, is rejected. The **Platform Key (PK)** and **Key Exchange Keys (KEKs)**, enrolled by the hardware vendor, control who may change those databases."
+            "say": "It runs only boot software signed by an approved key."
+          },
+          {
+            "say": "Each stage checks the next one's signature; a failure halts the boot."
+          },
+          {
+            "say": "On Linux the chain often runs through **shim**, a small vendor-signed loader."
           }
         ],
+        "say": "**Secure Boot** is a feature of the **UEFI** firmware, the code that runs at power-on. It runs only boot software signed by an approved key. Each stage checks the next one's signature; a failure halts the boot. On Linux the chain often runs through **shim**, a small vendor-signed loader."
+      },
+      {
+        "beats": [
+          {
+            "say": "The firmware keeps the **db**, the trusted signing certificates, and the **dbx**, the revoked ones."
+          },
+          {
+            "say": "So a **bootkit**, a malicious replacement bootloader, is rejected."
+          },
+          {
+            "say": "The **Platform Key (PK)** and **Key Exchange Keys (KEKs)** control who may change them."
+          }
+        ],
+        "say": "The firmware keeps the **db**, the trusted signing certificates, and the **dbx**, the revoked ones. So a **bootkit**, a malicious replacement bootloader, is rejected. The **Platform Key (PK)** and **Key Exchange Keys (KEKs)** control who may change them.",
         "check": {
           "prompt": "BlackLotus bypassed Secure Boot on fully patched Windows 11 by loading an older boot component that was validly signed but vulnerable. What should have stopped it?",
           "answer": "A dbx update that revoked that component",
@@ -1023,14 +1256,7 @@
         }
       },
       {
-        "say": "**Measured Boot** does a different job: it blocks nothing and records everything. Starting from immutable boot code, each stage hashes the next component before running it. That hash is **extended** into a TPM PCR: the new value is the hash of the old value joined to the new measurement. Software can extend a boot PCR but cannot set it, so the record cannot be quietly rewritten until a reboot starts it fresh.",
         "beats": [
-          {
-            "say": "**Measured Boot** does a different job: it blocks nothing and records everything. Starting from immutable boot code, each stage hashes the next component before running it."
-          },
-          {
-            "say": "That hash is **extended** into a TPM PCR: the new value is the hash of the old value joined to the new measurement."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.3; ranksep=0.3; z [label=\"PCR at reset\\n00...00\"]; e1 [label=\"extend\\nfirmware hash\"]; e2 [label=\"extend\\nbootloader hash\"]; e3 [label=\"extend\\nkernel hash\"]; f [label=\"final PCR value\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; z -> e1; e1 -> e2; e2 -> e3; e3 -> f; }",
@@ -1040,9 +1266,16 @@
             }
           },
           {
-            "say": "Software can extend a boot PCR but cannot set it, so the record cannot be quietly rewritten until a reboot starts it fresh."
+            "say": "**Measured Boot** blocks nothing and records everything: each stage hashes the next before running it."
+          },
+          {
+            "say": "Each hash is **extended** into a PCR: new value = hash of old value plus new measurement."
+          },
+          {
+            "say": "Software can extend a PCR but never set it, so the record cannot be rewritten until a reboot."
           }
         ],
+        "say": "**Measured Boot** blocks nothing and records everything: each stage hashes the next before running it. Each hash is **extended** into a PCR: new value = hash of old value plus new measurement. Software can extend a PCR but never set it, so the record cannot be rewritten until a reboot.",
         "check": {
           "prompt": "A tampered bootloader is measured as it loads, and later extends the genuine kernel hash as usual. Does the final PCR match the known-good value?",
           "answer": "No, the tampered hash is already folded in",
@@ -1054,48 +1287,36 @@
         }
       },
       {
-        "say": "**Remote attestation** puts the record to work. A verifier asks the TPM for a signed quote of its PCRs and compares them with known-good values. The quote's signing key is rooted in the TPM's manufacturer-provisioned **endorsement key**, so a forged quote fails verification. On a PC, PCR 0 covers the core UEFI firmware, PCR 4 the boot manager code, and PCR 7 the Secure Boot state: which keys and policy are in force. Here the boot manager changed. Measured Boot alone only produces evidence. Gate access on it, so a host whose PCRs show a modified kernel never receives a key, and it becomes preventive.",
+        "say": "Secure Boot is enforced by the firmware, so it cannot vouch for the firmware itself. A **UEFI implant** is malware inside that firmware: it survives OS reinstalls and drive replacement. **LoJax**, found in 2018 and linked to the APT28 group, was the first UEFI rootkit seen in the wild.",
         "beats": [
           {
-            "say": "**Remote attestation** puts the record to work. A verifier asks the TPM for a signed quote of its PCRs and compares them with known-good values."
+            "say": "Secure Boot is enforced by the firmware, so it cannot vouch for the firmware itself."
           },
           {
-            "say": "The quote's signing key is rooted in the TPM's manufacturer-provisioned **endorsement key**, so a forged quote fails verification."
+            "say": "A **UEFI implant** is malware inside that firmware: it survives OS reinstalls and drive replacement."
           },
           {
-            "code": "PCR  expected   quoted\n 0   3d4f...91a2  3d4f...91a2\n 4   a81c...07be  6f02...d3e1   MISMATCH\n 7   5be0...c3d9  5be0...c3d9",
-            "language": "attestation result"
+            "say": "**LoJax**, found in 2018 and linked to the APT28 group, was the first UEFI rootkit seen in the wild."
           },
           {
-            "say": "On a PC, PCR 0 covers the core UEFI firmware, PCR 4 the boot manager code, and PCR 7 the Secure Boot state: which keys and policy are in force. Here the boot manager changed."
-          },
-          {
-            "say": "Measured Boot alone only produces evidence. Gate access on it, so a host whose PCRs show a modified kernel never receives a key, and it becomes preventive."
+            "code": "Defenses\n signed firmware updates\n from verified sources\n admin-password and\n physical-presence locks",
+            "language": "firmware defenses"
           }
         ]
       },
       {
-        "say": "Secure Boot is enforced by the firmware, so it cannot vouch for the firmware itself. UEFI malware survives OS reinstalls and even drive replacement. LoJax, found in 2018 and attributed to APT28, was the first UEFI rootkit seen in the wild. Defences: apply firmware updates only as signed capsule files through verified channels, and keep physical-presence and admin-password protections on firmware settings. Add hardware-verified startup such as **Intel Boot Guard**, which checks that the initial boot block is signed by the manufacturer's key, whose hash is fused into the chipset at manufacture. Detection is not recovery. **Self-healing hardware** also restores a known-good image: NIST SP 800-193 frames firmware resiliency as protect, detect and recover. HP Sure Start, or a server's **baseboard management controller (BMC)**, can reflash firmware from a protected golden copy.",
         "beats": [
           {
-            "say": "Secure Boot is enforced by the firmware, so it cannot vouch for the firmware itself. UEFI malware survives OS reinstalls and even drive replacement."
+            "say": "**Intel Boot Guard** checks the first boot block against the manufacturer's key, whose hash is fused into the chipset."
           },
           {
-            "say": "LoJax, found in 2018 and attributed to APT28, was the first UEFI rootkit seen in the wild."
+            "say": "**Self-healing hardware** restores a known-good image: NIST SP 800-193 says protect, detect, recover."
           },
           {
-            "say": "Defences: apply firmware updates only as signed capsule files through verified channels, and keep physical-presence and admin-password protections on firmware settings."
-          },
-          {
-            "say": "Add hardware-verified startup such as **Intel Boot Guard**, which checks that the initial boot block is signed by the manufacturer's key, whose hash is fused into the chipset at manufacture."
-          },
-          {
-            "say": "Detection is not recovery. **Self-healing hardware** also restores a known-good image: NIST SP 800-193 frames firmware resiliency as protect, detect and recover."
-          },
-          {
-            "say": "HP Sure Start, or a server's **baseboard management controller (BMC)**, can reflash firmware from a protected golden copy."
+            "say": "HP Sure Start or a server's **baseboard management controller (BMC)** can reflash firmware from a golden copy."
           }
-        ]
+        ],
+        "say": "**Intel Boot Guard** checks the first boot block against the manufacturer's key, whose hash is fused into the chipset. **Self-healing hardware** restores a known-good image: NIST SP 800-193 says protect, detect, recover. HP Sure Start or a server's **baseboard management controller (BMC)** can reflash firmware from a golden copy."
       }
     ],
     "outro": "Next is a laptop with Boot Guard and Secure Boot turned on. Put its chain of trust in order, from power-on to a running system."
@@ -1129,6 +1350,54 @@
       "caption": "one server's boot chain",
       "src": "_dot/0961e2a1f736909d.svg"
     }
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How can another system check what a machine booted?",
+    "npc": "ada",
+    "intro": "A record of how a machine booted does nothing until someone reads it, and the reader must be sure the record is real. That job falls to a second party, and to a signature the machine itself can't forge.",
+    "steps": [
+      {
+        "say": "A verifier asks the TPM for a signed **quote**, a report of its PCR values. It compares the quote with known-good values: **remote attestation**.",
+        "beats": [
+          {
+            "say": "A verifier asks the TPM for a signed **quote**, a report of its PCR values."
+          },
+          {
+            "say": "It compares the quote with known-good values: **remote attestation**."
+          },
+          {
+            "code": "PCR  expected   quoted\n 0   3d4f...91a2  3d4f...91a2\n 4   a81c...07be  6f02...d3e1   MISMATCH\n 7   5be0...c3d9  5be0...c3d9",
+            "language": "attestation result"
+          },
+          {
+            "code": "PCR 0  core UEFI firmware\nPCR 4  boot manager\nPCR 7  Secure Boot state",
+            "language": "what the PCRs cover"
+          }
+        ],
+        "check": {
+          "prompt": "What does this quote tell the verifier?",
+          "answer": "The boot manager differs from the known-good one",
+          "wrong": [
+            "The core firmware was modified",
+            "Secure Boot was switched off"
+          ],
+          "why": "PCR 4 holds the boot manager's hash, and it is the only mismatch. PCR 0 (core firmware) and PCR 7 (Secure Boot state) both match."
+        }
+      },
+      {
+        "say": "The quote's signing key traces to the TPM's manufacturer-made **endorsement key**, so a forged quote fails. Gate access on the result, and Measured Boot, which only produces evidence, becomes preventive.",
+        "beats": [
+          {
+            "say": "The quote's signing key traces to the TPM's manufacturer-made **endorsement key**, so a forged quote fails."
+          },
+          {
+            "say": "Gate access on the result, and Measured Boot, which only produces evidence, becomes preventive."
+          }
+        ]
+      }
+    ],
+    "outro": "Next, a sentence about booting has four blanks. Fill in each mechanism by what it does."
   },
   {
     "type": "cloze",
@@ -1212,47 +1481,69 @@
     "intro": "Most controls assume the attacker is out on the network somewhere. Give that attacker a few minutes in the same room as the machine, and they can reach parts of it that no software is watching. The quietest trick hides on a cable between two parts.",
     "steps": [
       {
-        "say": "**Shimming** means slipping a thin layer between two components to intercept or alter what passes: a board inline on a keyboard cable logging keystrokes, or one on a SATA cable rewriting disk writes. The vendor-signed boot shim is a legitimate part of the boot chain; a malicious shim is software or hardware inserted without authorization. USB carries broad default trust. A **HID attack** (a Rubber Ducky) is a device that presents itself as a keyboard and types a payload faster than anyone can watch. **BadUSB** rewrites a USB device's controller firmware so it can pose as any class: keyboard, network adapter or storage. Controls: disable unused ports, use **USB device allow listing** so only approved device identifiers are recognized, use data blockers or charge-only cables, and lock ports on high-security machines.",
+        "say": "**Shimming** slips a thin layer between two components to intercept or alter what passes. A board inline on a keyboard cable can log keystrokes. A **HID attack** makes a USB device pose as a keyboard; **BadUSB** rewrites a device's firmware so it can pose as anything.",
         "beats": [
           {
-            "say": "**Shimming** means slipping a thin layer between two components to intercept or alter what passes: a board inline on a keyboard cable logging keystrokes, or one on a SATA cable rewriting disk writes."
+            "say": "**Shimming** slips a thin layer between two components to intercept or alter what passes."
           },
           {
-            "say": "The vendor-signed boot shim is a legitimate part of the boot chain; a malicious shim is software or hardware inserted without authorization."
+            "say": "A board inline on a keyboard cable can log keystrokes."
           },
           {
-            "say": "USB carries broad default trust. A **HID attack** (a Rubber Ducky) is a device that presents itself as a keyboard and types a payload faster than anyone can watch."
+            "say": "A **HID attack** makes a USB device pose as a keyboard; **BadUSB** rewrites a device's firmware so it can pose as anything."
           },
           {
-            "say": "**BadUSB** rewrites a USB device's controller firmware so it can pose as any class: keyboard, network adapter or storage."
-          },
-          {
-            "say": "Controls: disable unused ports, use **USB device allow listing** so only approved device identifiers are recognized, use data blockers or charge-only cables, and lock ports on high-security machines."
+            "code": "HID attack\n device poses as a\n keyboard (Rubber\n Ducky), types a payload\n faster than you can see\nBadUSB\n rewritten firmware lets\n it pose as any class\nBoot shim: vendor-signed,\n legitimate. A malicious\n shim is not.",
+            "language": "shims and USB tricks"
           }
         ]
       },
       {
-        "say": "The **evil maid attack**: brief access to an unattended, powered-off laptop, say in a hotel room, long enough to boot from a USB stick, plant a bootkit, read the disk or add an implant. **Host-based encryption** such as BitLocker or Linux dm-crypt is done by the OS before data reaches the disk. A **self-encrypting drive (SED)** does it in the drive's own controller with no CPU cost, usually under the TCG Opal standard with a pre-boot unlock. An SED's signature benefit is **cryptographic erasure**: delete its internal key and every sector becomes unreadable at once. But an SED trusts its own firmware completely, and researchers have found drives that reported encryption as active while their data stayed recoverable. So verify an SED's claims independently, or layer host-based encryption on top. Against the evil maid: Secure Boot and Measured Boot with a TPM-plus-PIN unlock, plus chassis intrusion switches and tamper-evident seals.",
         "beats": [
           {
-            "say": "The **evil maid attack**: brief access to an unattended, powered-off laptop, say in a hotel room, long enough to boot from a USB stick, plant a bootkit, read the disk or add an implant."
+            "code": "Disable unused ports\nUSB allow listing\nData blockers, or\n charge-only cables\nLock ports (high\n security)",
+            "language": "USB controls"
           },
           {
-            "say": "**Host-based encryption** such as BitLocker or Linux dm-crypt is done by the OS before data reaches the disk."
+            "say": "**USB device allow listing** recognizes only approved device identifiers."
           },
           {
-            "say": "A **self-encrypting drive (SED)** does it in the drive's own controller with no CPU cost, usually under the TCG Opal standard with a pre-boot unlock."
+            "say": "The **evil maid attack** is brief access to an unattended, powered-off laptop: boot a USB stick, plant a bootkit or read the disk."
           },
           {
-            "say": "An SED's signature benefit is **cryptographic erasure**: delete its internal key and every sector becomes unreadable at once."
-          },
-          {
-            "say": "But an SED trusts its own firmware completely, and researchers have found drives that reported encryption as active while their data stayed recoverable."
-          },
-          {
-            "say": "So verify an SED's claims independently, or layer host-based encryption on top. Against the evil maid: Secure Boot and Measured Boot with a TPM-plus-PIN unlock, plus chassis intrusion switches and tamper-evident seals."
+            "say": "**Tamper detection** tells you it happened: a chassis intrusion switch logs a flag, and seals show removal."
           }
         ],
+        "say": "**USB device allow listing** recognizes only approved device identifiers. The **evil maid attack** is brief access to an unattended, powered-off laptop: boot a USB stick, plant a bootkit or read the disk. **Tamper detection** tells you it happened: a chassis intrusion switch logs a flag, and seals show removal."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Host-based encryption**, such as BitLocker, is done by the operating system before data reaches the disk."
+          },
+          {
+            "say": "A **self-encrypting drive (SED)** does it in the drive's own controller, with no CPU cost."
+          },
+          {
+            "say": "Its signature benefit is **cryptographic erasure**: delete its internal key and every sector becomes unreadable at once."
+          }
+        ],
+        "say": "**Host-based encryption**, such as BitLocker, is done by the operating system before data reaches the disk. A **self-encrypting drive (SED)** does it in the drive's own controller, with no CPU cost. Its signature benefit is **cryptographic erasure**: delete its internal key and every sector becomes unreadable at once."
+      },
+      {
+        "beats": [
+          {
+            "code": "SED claims: verify them,\n or layer host-based\n encryption on top\nEvil maid defenses\n Secure and Measured\n Boot, TPM plus PIN\n intrusion switch, seals",
+            "language": "defenses"
+          },
+          {
+            "say": "An SED trusts its own firmware completely, and some drives reported encryption as active while data stayed recoverable."
+          },
+          {
+            "say": "A **pre-boot PIN** is typed before the OS starts, and unlocks the TPM's key."
+          }
+        ],
+        "say": "An SED trusts its own firmware completely, and some drives reported encryption as active while data stayed recoverable. A **pre-boot PIN** is typed before the OS starts, and unlocks the TPM's key.",
         "check": {
           "prompt": "A laptop uses TPM-only BitLocker. What does adding a pre-boot PIN defend against?",
           "answer": "A thief who boots the stolen, unmodified laptop",
@@ -1262,66 +1553,6 @@
           ],
           "why": "Moving the drive or changing the boot path already changes the PCRs, so the TPM withholds the key. TPM-only unlock still releases the key to anyone who boots the intact machine; the PIN closes that gap."
         }
-      },
-      {
-        "say": "With the machine running, attackers go for **memory**. **Direct memory access (DMA)** lets some peripherals read and write RAM without the CPU, so a malicious device can lift keys straight out of memory. An **IOMMU** (input/output memory management unit) counters it by limiting which memory regions each DMA-capable device may touch. A **cold boot attack** exploits DRAM keeping its contents for seconds to minutes after power-off, longer when chilled: pull the modules, dump them, find the disk key. TPM sealing does not help, because the unlocked disk key sits in RAM. Hardware memory encryption (AMD SME, Intel TME), memory wiping at restart, soldered RAM, and shutting down instead of sleeping do. **Rowhammer** hammers one DRAM row until bits flip in its neighbour, corrupting memory the attacker has no right to touch; it has been used to climb from user to kernel privilege.",
-        "beats": [
-          {
-            "say": "With the machine running, attackers go for **memory**. **Direct memory access (DMA)** lets some peripherals read and write RAM without the CPU, so a malicious device can lift keys straight out of memory."
-          },
-          {
-            "figure": {
-              "dot": "digraph { rankdir=TB; nodesep=0.5; ranksep=0.4; dev [label=\"PCIe or\\nThunderbolt device\"]; cpu [label=\"CPU\"]; ram [label=\"RAM\\ndisk key, credentials\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; dev -> ram [label=\" DMA:\\n reads directly\"]; cpu -> ram; { rank=same; dev; cpu; } }",
-              "alt": "A PCIe or Thunderbolt device and the CPU sit side by side; each has its own arrow to RAM, which holds the disk key and credentials. The device's arrow is labelled DMA, reads directly.",
-              "caption": "the device never asks the CPU",
-              "src": "_dot/c1aebc9226a6080d.svg"
-            }
-          },
-          {
-            "say": "An **IOMMU** (input/output memory management unit) counters it by limiting which memory regions each DMA-capable device may touch."
-          },
-          {
-            "say": "A **cold boot attack** exploits DRAM keeping its contents for seconds to minutes after power-off, longer when chilled: pull the modules, dump them, find the disk key."
-          },
-          {
-            "say": "TPM sealing does not help, because the unlocked disk key sits in RAM. Hardware memory encryption (AMD SME, Intel TME), memory wiping at restart, soldered RAM, and shutting down instead of sleeping do."
-          },
-          {
-            "say": "**Rowhammer** hammers one DRAM row until bits flip in its neighbour, corrupting memory the attacker has no right to touch; it has been used to climb from user to kernel privilege."
-          }
-        ],
-        "check": {
-          "prompt": "A docking station quietly copies a laptop's RAM while the CPU is busy elsewhere. Which attack is this?",
-          "answer": "A DMA attack",
-          "wrong": [
-            "A cold boot attack",
-            "A Rowhammer attack"
-          ],
-          "why": "The dock is a peripheral reading memory directly, without the CPU, on a running machine. Cold boot needs the RAM removed after power-off; Rowhammer flips bits by hammering rows from software."
-        }
-      },
-      {
-        "say": "Some attacks work at a distance. **Electromagnetic interference (EMI)**, accidental or deliberate, disrupts electronics: it can flip bits, reset microcontrollers or corrupt data on a bus. An **electromagnetic pulse (EMP)** is strong enough to damage or destroy circuits, from a high-altitude nuclear burst to a small EMP gun at close range. Faraday cages, shielded rooms and EMP-hardened equipment mitigate both. **TEMPEST** is the opposite problem: information leaking through the emissions that screens, keyboards and cables give off. TEMPEST-certified equipment is shielded to push them below what can be intercepted. **Tamper detection** tells you an attack happened: a chassis intrusion switch logs a flag in the BIOS event log, and tamper-evident seals show removal. PCR mismatches give a logical signal, and an HSM that senses heat, voltage or penetration zeroizes its keys.",
-        "beats": [
-          {
-            "say": "Some attacks work at a distance. **Electromagnetic interference (EMI)**, accidental or deliberate, disrupts electronics: it can flip bits, reset microcontrollers or corrupt data on a bus."
-          },
-          {
-            "say": "An **electromagnetic pulse (EMP)** is strong enough to damage or destroy circuits, from a high-altitude nuclear burst to a small EMP gun at close range."
-          },
-          {
-            "say": "Faraday cages, shielded rooms and EMP-hardened equipment mitigate both."
-          },
-          {
-            "say": "**TEMPEST** is the opposite problem: information leaking through the emissions that screens, keyboards and cables give off. TEMPEST-certified equipment is shielded to push them below what can be intercepted."
-          },
-          {
-            "say": "**Tamper detection** tells you an attack happened: a chassis intrusion switch logs a flag in the BIOS event log, and tamper-evident seals show removal."
-          },
-          {
-            "say": "PCR mismatches give a logical signal, and an HSM that senses heat, voltage or penetration zeroizes its keys."
-          }
-        ]
       }
     ],
     "outro": "Next, a visitor's free USB drive turns out not to be what it seems. Choose the control that stops it without locking out the staff's own devices."
@@ -1337,6 +1568,87 @@
       "Full-disk encryption on each PC, so a stolen drive reveals nothing at rest"
     ],
     "feedback": "This is a HID attack: the device presents as a keyboard, so blocking mass storage misses it entirely. Allow listing recognizes only approved device identifiers, which keeps the staff scanners working and refuses the rogue keyboard. Charge-only cables would also cut off the approved scanners, which need a data connection. Disk encryption protects data at rest, not a live keyboard typing commands."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do attackers get at memory and electronics?",
+    "npc": "ada",
+    "intro": "So far the attacker needed hands on the ports or the disk. But memory and electronics leak too: a plug-in device can read RAM behind the CPU's back, a chilled chip can keep its contents, and a monitor can broadcast what it shows.",
+    "steps": [
+      {
+        "say": "**Direct memory access (DMA)** lets some peripherals read and write RAM without the CPU, so a malicious device can lift keys from memory. An **IOMMU** limits which memory regions each DMA-capable device may touch.",
+        "beats": [
+          {
+            "figure": {
+              "dot": "digraph { rankdir=TB; nodesep=0.5; ranksep=0.4; dev [label=\"PCIe or\\nThunderbolt device\"]; cpu [label=\"CPU\"]; ram [label=\"RAM\\ndisk key, credentials\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; dev -> ram [label=\" DMA:\\n reads directly\"]; cpu -> ram; { rank=same; dev; cpu; } }",
+              "alt": "A PCIe or Thunderbolt device and the CPU sit side by side; each has its own arrow to RAM, which holds the disk key and credentials. The device's arrow is labeled DMA, reads directly.",
+              "caption": "the device never asks the CPU",
+              "src": "_dot/c1aebc9226a6080d.svg"
+            }
+          },
+          {
+            "say": "**Direct memory access (DMA)** lets some peripherals read and write RAM without the CPU, so a malicious device can lift keys from memory."
+          },
+          {
+            "say": "An **IOMMU** limits which memory regions each DMA-capable device may touch."
+          }
+        ]
+      },
+      {
+        "say": "A **cold boot attack** dumps RAM after power-off, because DRAM keeps its contents for a while. TPM sealing cannot stop a cold boot: the unlocked disk key sits in RAM. Shutting down, not sleeping, clears the key from RAM.",
+        "beats": [
+          {
+            "code": "Cold boot defenses\n hardware memory\n  encryption (SME, TME)\n wipe memory at restart\n soldered RAM\n shut down, not sleep",
+            "language": "against cold boot"
+          },
+          {
+            "say": "A **cold boot attack** dumps RAM after power-off, because DRAM keeps its contents for a while."
+          },
+          {
+            "say": "TPM sealing cannot stop a cold boot: the unlocked disk key sits in RAM."
+          },
+          {
+            "say": "Shutting down, not sleeping, clears the key from RAM."
+          }
+        ]
+      },
+      {
+        "say": "**Rowhammer** hammers one DRAM row until bits flip in its neighbor, corrupting memory the attacker cannot touch. **EMI**, interference, disrupts electronics; an **EMP**, a pulse, can destroy circuits.",
+        "beats": [
+          {
+            "say": "**Rowhammer** hammers one DRAM row until bits flip in its neighbor, corrupting memory the attacker cannot touch."
+          },
+          {
+            "say": "**EMI**, interference, disrupts electronics; an **EMP**, a pulse, can destroy circuits."
+          }
+        ]
+      },
+      {
+        "say": "**TEMPEST** is information leaking through emissions. Shielded rooms, cages and certified gear defend against all three.",
+        "beats": [
+          {
+            "code": "EMI, EMP\n Faraday cages, shielded\n rooms, hardened gear\nTEMPEST\n certified, shielded gear\nOther tamper signals\n PCR mismatch; an HSM\n that senses heat,\n voltage or penetration\n zeroizes its keys",
+            "language": "radio and tamper"
+          },
+          {
+            "say": "**TEMPEST** is information leaking through emissions."
+          },
+          {
+            "say": "Shielded rooms, cages and certified gear defend against all three."
+          }
+        ],
+        "check": {
+          "prompt": "A docking station quietly copies a laptop's RAM while the CPU is busy elsewhere. Which attack is this?",
+          "answer": "A DMA attack",
+          "wrong": [
+            "A cold boot attack",
+            "A Rowhammer attack"
+          ],
+          "why": "The dock is a peripheral reading memory directly, without the CPU, on a running machine. Cold boot needs the RAM removed after power-off; Rowhammer flips bits by hammering rows from software."
+        }
+      }
+    ],
+    "outro": "Next, six pieces of evidence and six attacks. Match each piece to the attack it points to."
   },
   {
     "type": "matching",
