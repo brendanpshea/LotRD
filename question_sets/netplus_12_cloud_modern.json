@@ -6,12 +6,23 @@
     "intro": "I'm Tariq, the Beacon-Courier. Before anyone pulls a cable, someone decides which boxes connect to which, and that shape decides how much one broken link can cost you. Changing it later can mean re-cabling a building, so it pays to choose well at the start. Let's begin with the simplest shape there is, the one in every wiring closet.",
     "steps": [
       {
-        "say": "In a **star**, every device cables to one central device: each PC in a closet plugs into the same switch. Across a WAN the same shape is called **hub-and-spoke**: each branch has one link, to headquarters, the hub.",
         "beats": [
           {
-            "say": "In a **star**, every device cables to one central device: each PC in a closet plugs into the same switch. Across a WAN the same shape is called **hub-and-spoke**: each branch has one link, to headquarters, the hub."
+            "figure": {
+              "dot": "graph { rankdir=TB; nodesep=0.4; node[shape=box]; hq[label=\"HQ (hub)\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; b1[label=\"branch 1\"]; b2[label=\"branch 2\"]; b3[label=\"branch 3\"]; b4[label=\"branch 4\"]; hq--b1; hq--b2; hq--b3; hq--b4; }",
+              "alt": "A box labeled HQ, the hub, in the middle with four lines out to branch 1, 2, 3 and 4. The branches have no lines between them.",
+              "caption": "hub-and-spoke: one link per branch",
+              "src": "_dot/b871367ed408c73c.svg"
+            }
+          },
+          {
+            "say": "In a **star**, every device cables to one central device: each PC in a closet plugs into the same switch."
+          },
+          {
+            "say": "Across a WAN the same shape is called **hub-and-spoke**: each branch has one link, to headquarters, the hub."
           }
         ],
+        "say": "In a **star**, every device cables to one central device: each PC in a closet plugs into the same switch. Across a WAN the same shape is called **hub-and-spoke**: each branch has one link, to headquarters, the hub.",
         "check": {
           "prompt": "Five branches each link only to headquarters. A file goes from branch 2 to branch 4. What path does it take?",
           "answer": "Branch 2 to headquarters, then on to branch 4",
@@ -23,18 +34,30 @@
         }
       },
       {
-        "say": "A **mesh** links sites to each other directly. In a **full mesh** every site has its own link to every other, so no single failure cuts anyone off. The bill grows fast. Each of n sites links to the other n − 1, and each link has two ends, so a full mesh needs n × (n − 1) ÷ 2 links. A **partial mesh** keeps only the links that earn their cost, such as a direct link between two data centers, and sends the rest through a hub.",
         "beats": [
           {
-            "say": "A **mesh** links sites to each other directly. In a **full mesh** every site has its own link to every other, so no single failure cuts anyone off."
+            "figure": {
+              "dot": "graph { nodesep=0.7; ranksep=0.7; node[shape=box]; a[label=\"site A\"]; b[label=\"site B\"]; c[label=\"site C\"]; d[label=\"site D\"]; a--b; a--c; a--d; b--c; b--d; c--d; }",
+              "alt": "Four sites, A to D, with a line between every pair of them: six lines in all.",
+              "caption": "a full mesh of four sites",
+              "src": "_dot/a0e610c2bccd5290.svg"
+            }
           },
           {
-            "say": "The bill grows fast. Each of n sites links to the other n − 1, and each link has two ends, so a full mesh needs n × (n − 1) ÷ 2 links."
+            "say": "A **mesh** links sites directly. In a **full mesh** every site links to every other, so no single failure cuts anyone off."
           },
           {
-            "say": "A **partial mesh** keeps only the links that earn their cost, such as a direct link between two data centers, and sends the rest through a hub."
+            "say": "The bill grows fast, as the table shows."
+          },
+          {
+            "code": "n sites: n - 1 links each\nlink = two ends, so\n  links = n x (n - 1) / 2\n4 sites: 4 x 3 / 2 = 6",
+            "language": "counting full-mesh links"
+          },
+          {
+            "say": "A **partial mesh** keeps only the links that earn their cost, such as one between two data centers."
           }
         ],
+        "say": "A **mesh** links sites directly. In a **full mesh** every site links to every other, so no single failure cuts anyone off. The bill grows fast, as the table shows. A **partial mesh** keeps only the links that earn their cost, such as one between two data centers.",
         "check": {
           "prompt": "A full mesh joins 6 sites. How many links does it need?",
           "answer": "15",
@@ -46,14 +69,7 @@
         }
       },
       {
-        "say": "A campus is built in layers. In a **three-tier** design, the **access** layer is where PCs, phones and access points plug in. The **distribution** layer aggregates the access switches and applies policy, such as routing between VLANs. The **core** is a fast backbone joining the distribution blocks, kept free of heavy policy so it can simply move traffic. One building rarely needs a separate core. A **two-tier** design, also called a **collapsed core**, merges core and distribution into one layer above the access switches.",
         "beats": [
-          {
-            "say": "A campus is built in layers. In a **three-tier** design, the **access** layer is where PCs, phones and access points plug in."
-          },
-          {
-            "say": "The **distribution** layer aggregates the access switches and applies policy, such as routing between VLANs. The **core** is a fast backbone joining the distribution blocks, kept free of heavy policy so it can simply move traffic."
-          },
           {
             "figure": {
               "dot": "graph { rankdir=TB; nodesep=0.3; ranksep=\"0.8 equally\"; subgraph cluster_core { label=\"core\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; fontcolor=\"#c8ffb0\"; {rank=same; c1[label=\"core-1\"]; c2[label=\"core-2\"];} } subgraph cluster_dist { label=\"distribution\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; fontcolor=\"#c8ffb0\"; {rank=same; d1[label=\"dist-1\"]; d2[label=\"dist-2\"]; d1--d2[style=invis];} } subgraph cluster_acc { label=\"access\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; fontcolor=\"#c8ffb0\"; {rank=same; a1[label=\"acc-1\"]; a2[label=\"acc-2\"]; a3[label=\"acc-3\"]; a4[label=\"acc-4\"]; a1--a2--a3--a4[style=invis];} } c1--c2; c1--d1; c1--d2; c2--d1; c2--d2; d1--a1; d1--a2; d2--a3; d2--a4; }",
@@ -63,19 +79,44 @@
             }
           },
           {
-            "say": "One building rarely needs a separate core. A **two-tier** design, also called a **collapsed core**, merges core and distribution into one layer above the access switches."
+            "say": "In a **three-tier** campus, the **access** layer is where PCs, phones and access points plug in."
+          },
+          {
+            "say": "The **distribution** layer joins the access switches and applies policy, such as routing between VLANs."
           }
-        ]
+        ],
+        "say": "In a **three-tier** campus, the **access** layer is where PCs, phones and access points plug in. The **distribution** layer joins the access switches and applies policy, such as routing between VLANs."
       },
       {
-        "say": "Inside a data center, watch which way traffic flows. Traffic entering or leaving, such as a customer on the internet reaching a web server, is **north-south**. Traffic between servers inside, such as that web server querying its database, is **east-west**. Modern applications are mostly east-west, and **spine-and-leaf** is built for that. Servers plug into **leaf** switches, usually one at the top of each rack; every leaf links to every **spine**, and leaves never link to each other, nor spines to spines. To add bandwidth, add a spine and link it to every leaf. To add ports, add a leaf and link it to every spine.",
         "beats": [
           {
-            "say": "Inside a data center, watch which way traffic flows. Traffic entering or leaving, such as a customer on the internet reaching a web server, is **north-south**. Traffic between servers inside, such as that web server querying its database, is **east-west**."
+            "say": "The **core** is a fast backbone joining the distribution blocks, kept free of heavy policy."
           },
           {
-            "say": "Modern applications are mostly east-west, and **spine-and-leaf** is built for that. Servers plug into **leaf** switches, usually one at the top of each rack; every leaf links to every **spine**, and leaves never link to each other, nor spines to spines."
+            "say": "One building rarely needs a separate core. A **two-tier** design, also called a **collapsed core**, merges core and distribution."
+          }
+        ],
+        "say": "The **core** is a fast backbone joining the distribution blocks, kept free of heavy policy. One building rarely needs a separate core. A **two-tier** design, also called a **collapsed core**, merges core and distribution."
+      },
+      {
+        "beats": [
+          {
+            "say": "Inside a data center, watch which way traffic flows."
           },
+          {
+            "say": "Traffic entering or leaving, such as a remote worker reaching an internal server, is **north-south**."
+          },
+          {
+            "say": "Traffic between servers inside, such as one asking a storage server for a file, is **east-west**."
+          },
+          {
+            "say": "Modern applications are mostly east-west."
+          }
+        ],
+        "say": "Inside a data center, watch which way traffic flows. Traffic entering or leaving, such as a remote worker reaching an internal server, is **north-south**. Traffic between servers inside, such as one asking a storage server for a file, is **east-west**. Modern applications are mostly east-west."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "graph { rankdir=TB; nodesep=0.3; ranksep=0.45; {rank=same; s1[label=\"spine-1\"]; s2[label=\"spine-2\"]; s1--s2[style=invis];} {rank=same; l1[label=\"leaf-1\"]; l2[label=\"leaf-2\"]; l3[label=\"leaf-3\"]; l4[label=\"leaf-4\"]; l1--l2--l3--l4[style=invis];} web[label=\"web\\nserver\"]; db[label=\"database\"]; s1--l1; s1--l2; s1--l3; s1--l4; s2--l1; s2--l2; s2--l3; s2--l4; l1--web; l3--db; }",
@@ -85,9 +126,19 @@
             }
           },
           {
-            "say": "To add bandwidth, add a spine and link it to every leaf. To add ports, add a leaf and link it to every spine."
+            "say": "**Spine-and-leaf** is built for that."
+          },
+          {
+            "say": "Servers plug into **leaf** switches, usually one per rack."
+          },
+          {
+            "say": "Every leaf links to every **spine**; leaves never link to each other, nor spines to spines."
+          },
+          {
+            "say": "A new spine adds bandwidth and a new leaf adds ports, each linked to every switch on the other tier."
           }
         ],
+        "say": "**Spine-and-leaf** is built for that. Servers plug into **leaf** switches, usually one per rack. Every leaf links to every **spine**; leaves never link to each other, nor spines to spines. A new spine adds bandwidth and a new leaf adds ports, each linked to every switch on the other tier.",
         "check": {
           "prompt": "The web server on leaf-1 queries the database on leaf-3. Which way does that flow, and which switches does it cross?",
           "answer": "East-west: leaf-1, one spine, then leaf-3",
@@ -231,14 +282,7 @@
     "intro": "A stranger reading your website and an employee filing expenses both reach your servers, but you'd never let them reach the same ones. So an organization keeps separate networks for separate audiences and guards each one differently. The one your own staff use every day comes first.",
     "steps": [
       {
-        "say": "An **intranet** is a private set of services, such as the HR portal, for the organization's own staff only. An **extranet** opens a controlled slice of it to named outsiders, such as suppliers, who must sign in. A **DMZ**, or screened subnet, is a buffer zone between the internet and the inside. Public-facing servers, such as the website and the mail relay, live there, so a compromised one is still outside the internal network.",
         "beats": [
-          {
-            "say": "An **intranet** is a private set of services, such as the HR portal, for the organization's own staff only. An **extranet** opens a controlled slice of it to named outsiders, such as suppliers, who must sign in."
-          },
-          {
-            "say": "A **DMZ**, or screened subnet, is a buffer zone between the internet and the inside. Public-facing servers, such as the website and the mail relay, live there, so a compromised one is still outside the internal network."
-          },
           {
             "figure": {
               "dot": "graph { rankdir=TB; nodesep=0.3; ranksep=0.4; inet[label=\"internet\", shape=ellipse]; fw[label=\"firewall\"]; subgraph cluster_dmz { label=\"DMZ\"; style=\"rounded,dashed\"; color=\"#ffb300\"; fontcolor=\"#ffd86b\"; web[label=\"web server\"]; mail[label=\"mail relay\"]; } subgraph cluster_in { label=\"internal LAN\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; fontcolor=\"#c8ffb0\"; pcs[label=\"staff PCs\"]; hr[label=\"HR portal\\n(intranet)\"]; } inet--fw; fw--web; fw--mail; fw--pcs; fw--hr; }",
@@ -246,8 +290,18 @@
               "caption": "one firewall, two zones",
               "src": "_dot/499302cf5a414fcb.svg"
             }
+          },
+          {
+            "say": "An **intranet** is a private set of services, such as the HR portal, for staff only."
+          },
+          {
+            "say": "An **extranet** opens a controlled slice to named outsiders, such as suppliers, who must sign in."
+          },
+          {
+            "say": "A **DMZ**, or screened subnet, is a buffer zone between the internet and the inside, for public-facing servers."
           }
         ],
+        "say": "An **intranet** is a private set of services, such as the HR portal, for staff only. An **extranet** opens a controlled slice to named outsiders, such as suppliers, who must sign in. A **DMZ**, or screened subnet, is a buffer zone between the internet and the inside, for public-facing servers.",
         "check": {
           "prompt": "A supplier signs in to check its own orders in Silverkeep's inventory system. What type of network is that?",
           "answer": "An extranet: named outsiders, signed in, limited access",
@@ -259,18 +313,18 @@
         }
       },
       {
-        "say": "**IoT**, the Internet of Things, means everyday devices with a network connection: cameras, badge readers, thermostats, smart TVs. Many ship with weak default passwords and are rarely patched, so they get a VLAN of their own. **Operational technology** (OT) controls physical things: valves, motors, conveyor belts. **SCADA**, supervisory control and data acquisition, is the OT that supervises a process spread over a wide area, such as a pipeline or a power grid. A SCADA control center collects readings from remote controllers in the field and sends commands back. In OT, safety and availability come first: one careless reboot can stop a production line.",
         "beats": [
           {
-            "say": "**IoT**, the Internet of Things, means everyday devices with a network connection: cameras, badge readers, thermostats, smart TVs. Many ship with weak default passwords and are rarely patched, so they get a VLAN of their own."
+            "say": "**IoT**, the Internet of Things, means everyday devices with a network connection, such as cameras and smart TVs."
           },
           {
-            "say": "**Operational technology** (OT) controls physical things: valves, motors, conveyor belts. **SCADA**, supervisory control and data acquisition, is the OT that supervises a process spread over a wide area, such as a pipeline or a power grid."
+            "say": "Many ship with weak default passwords and are rarely patched."
           },
           {
-            "say": "A SCADA control center collects readings from remote controllers in the field and sends commands back. In OT, safety and availability come first: one careless reboot can stop a production line."
+            "say": "So they get a VLAN of their own."
           }
         ],
+        "say": "**IoT**, the Internet of Things, means everyday devices with a network connection, such as cameras and smart TVs. Many ship with weak default passwords and are rarely patched. So they get a VLAN of their own.",
         "check": {
           "prompt": "A new smart TV in the boardroom still has its factory password. Where should it be connected?",
           "answer": "On the IoT VLAN, kept apart from staff PCs and servers",
@@ -282,15 +336,35 @@
         }
       },
       {
-        "say": "An **air-gapped** network has no connection to any other network, wired or wireless. Data crosses the gap only on removable media, so the media become the thing to control. A **wireless bridge** joins two wired networks over a radio link, usually point-to-point between directional antennas, such as across a road between two buildings where trenching for fiber would cost too much.",
         "beats": [
           {
-            "say": "An **air-gapped** network has no connection to any other network, wired or wireless. Data crosses the gap only on removable media, so the media become the thing to control."
+            "say": "**Operational technology** (OT) runs physical things, such as valves and motors."
           },
           {
-            "say": "A **wireless bridge** joins two wired networks over a radio link, usually point-to-point between directional antennas, such as across a road between two buildings where trenching for fiber would cost too much."
+            "say": "**SCADA**, supervisory control and data acquisition, is OT that supervises a widespread process."
+          },
+          {
+            "say": "A control center collects readings from remote controllers and sends commands back."
+          },
+          {
+            "say": "In OT, safety and availability come first: a careless reboot can halt a line."
           }
         ],
+        "say": "**Operational technology** (OT) runs physical things, such as valves and motors. **SCADA**, supervisory control and data acquisition, is OT that supervises a widespread process. A control center collects readings from remote controllers and sends commands back. In OT, safety and availability come first: a careless reboot can halt a line."
+      },
+      {
+        "beats": [
+          {
+            "say": "An **air-gapped** network has no connection to any other network, wired or wireless."
+          },
+          {
+            "say": "Data crosses only on removable media, so the media become the thing to control."
+          },
+          {
+            "say": "A **wireless bridge** joins two wired networks over a radio link, such as across a road."
+          }
+        ],
+        "say": "An **air-gapped** network has no connection to any other network, wired or wireless. Data crosses only on removable media, so the media become the thing to control. A **wireless bridge** joins two wired networks over a radio link, such as across a road.",
         "check": {
           "prompt": "An air-gapped control network needs a firmware update from the vendor's website. How does it get there?",
           "answer": "Downloaded elsewhere, scanned, and carried in on approved media",
@@ -302,18 +376,35 @@
         }
       },
       {
-        "say": "Public servers face the whole world, and much of the world is far away. A **content delivery network** (CDN) keeps copies of their content on **edge servers** in many cities. Each request goes to a nearby edge, usually steered there by DNS. On a **cache hit** the edge answers at once. On a **cache miss** it fetches the file from the **origin**, the site's own server, keeps a copy, and serves it. Users get lower latency, and the origin carries a fraction of the load. Pages built for one user, such as a shopping basket, still go back to the origin.",
         "beats": [
           {
-            "say": "Public servers face the whole world, and much of the world is far away. A **content delivery network** (CDN) keeps copies of their content on **edge servers** in many cities."
+            "say": "A **content delivery network** (CDN) keeps copies of a site's content on **edge servers** in many cities."
           },
           {
-            "say": "Each request goes to a nearby edge, usually steered there by DNS. On a **cache hit** the edge answers at once. On a **cache miss** it fetches the file from the **origin**, the site's own server, keeps a copy, and serves it."
+            "say": "Each request goes to a nearby edge, usually steered there by DNS."
           },
           {
-            "say": "Users get lower latency, and the origin carries a fraction of the load. Pages built for one user, such as a shopping basket, still go back to the origin."
+            "say": "On a **cache hit**, the edge already has the file and answers at once."
           }
         ],
+        "say": "A **content delivery network** (CDN) keeps copies of a site's content on **edge servers** in many cities. Each request goes to a nearby edge, usually steered there by DNS. On a **cache hit**, the edge already has the file and answers at once."
+      },
+      {
+        "beats": [
+          {
+            "say": "On a **cache miss**, the edge fetches the file from the **origin**, the site's own server."
+          },
+          {
+            "say": "It keeps a copy, then serves it."
+          },
+          {
+            "say": "Users get lower latency, and the origin carries less load."
+          },
+          {
+            "say": "Pages built for one user, such as a shopping basket, still go to the origin."
+          }
+        ],
+        "say": "On a **cache miss**, the edge fetches the file from the **origin**, the site's own server. It keeps a copy, then serves it. Users get lower latency, and the origin carries less load. Pages built for one user, such as a shopping basket, still go to the origin.",
         "check": {
           "prompt": "The website's logo is changed at the origin, but users keep seeing the old one for an hour. Why?",
           "answer": "The edges serve their cached copy until it expires",
@@ -432,21 +523,32 @@
     "type": "npc_demo",
     "question": "NPC: How can one physical server run many machines?",
     "npc": "tariq",
-    "intro": "One physical server in a data center can carry dozens of servers at once, and each of them behaves as if it had the hardware to itself. That's why a new server, or even a new firewall, can be running in minutes instead of arriving in a box. All of it rests on one piece of software that does the sharing.",
+    "intro": "One physical server in a data center can carry dozens of servers at once, and each behaves as if it had the hardware to itself. That's why a new server, or even a new firewall, can be running in minutes instead of arriving in a box. All of it rests on one piece of sharing software.",
     "steps": [
       {
-        "say": "A **hypervisor** lets one physical host run many **virtual machines** (VMs). Each VM has its own guest operating system, and the hypervisor keeps them isolated from each other. A **Type 1**, or **bare-metal**, hypervisor runs straight on the hardware, as data center hosts do. A **Type 2**, or **hosted**, hypervisor runs as an application on a desktop operating system, handy for a lab on a laptop. Inside the host, a **virtual switch** connects the VMs to each other and, through the host's physical network cards, to the real network.",
         "beats": [
           {
-            "say": "A **hypervisor** lets one physical host run many **virtual machines** (VMs). Each VM has its own guest operating system, and the hypervisor keeps them isolated from each other."
+            "say": "A **hypervisor** lets one physical host run many **virtual machines** (VMs)."
           },
           {
-            "say": "A **Type 1**, or **bare-metal**, hypervisor runs straight on the hardware, as data center hosts do. A **Type 2**, or **hosted**, hypervisor runs as an application on a desktop operating system, handy for a lab on a laptop."
-          },
-          {
-            "say": "Inside the host, a **virtual switch** connects the VMs to each other and, through the host's physical network cards, to the real network."
+            "say": "Each VM has its own **guest OS**, the operating system inside it, and the hypervisor keeps the VMs isolated."
           }
         ],
+        "say": "A **hypervisor** lets one physical host run many **virtual machines** (VMs). Each VM has its own **guest OS**, the operating system inside it, and the hypervisor keeps the VMs isolated."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **Type 1**, or **bare-metal**, hypervisor runs straight on the hardware, as data center hosts do."
+          },
+          {
+            "say": "A **Type 2**, or **hosted**, hypervisor runs as an application on a desktop operating system."
+          },
+          {
+            "say": "That suits a lab on a laptop."
+          }
+        ],
+        "say": "A **Type 1**, or **bare-metal**, hypervisor runs straight on the hardware, as data center hosts do. A **Type 2**, or **hosted**, hypervisor runs as an application on a desktop operating system. That suits a lab on a laptop.",
         "check": {
           "prompt": "Brom wants to try a firewall image on his Windows laptop without wiping it. Which hypervisor fits?",
           "answer": "Type 2, running as an application on Windows",
@@ -458,11 +560,18 @@
         }
       },
       {
-        "say": "A **container** packages an application with its libraries but shares the host's operating system **kernel**, the core of the OS. With no guest OS to boot, it is small, starts in seconds, and runs the same on a laptop as in the cloud. **Microservices** split one big application into small services, each doing one job, such as login, search or payments. They talk to each other over the network through **APIs**, interfaces built for programs, and each usually runs in containers of its own.",
         "beats": [
           {
-            "say": "A **container** packages an application with its libraries but shares the host's operating system **kernel**, the core of the OS. With no guest OS to boot, it is small, starts in seconds, and runs the same on a laptop as in the cloud."
+            "say": "Inside the host, a **virtual switch** connects the VMs to each other."
           },
+          {
+            "say": "Through the host's physical network cards, it also reaches the real network."
+          }
+        ],
+        "say": "Inside the host, a **virtual switch** connects the VMs to each other. Through the host's physical network cards, it also reaches the real network."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=BT; nodesep=0.2; ranksep=0.2; edge[arrowhead=none]; subgraph cluster_vm { label=\"virtual machines\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; fontcolor=\"#c8ffb0\"; hw1[label=\"hardware\"]; hv[label=\"hypervisor\"]; g1[label=\"guest OS\"]; g2[label=\"guest OS\"]; v1[label=\"app\"]; v2[label=\"app\"]; hw1->hv; hv->g1; hv->g2; g1->v1; g2->v2; } subgraph cluster_ct { label=\"containers\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; fontcolor=\"#c8ffb0\"; hw2[label=\"hardware\"]; os[label=\"host OS\\nkernel\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; eng[label=\"container\\nengine\"]; k1[label=\"app + libs\"]; k2[label=\"app + libs\"]; hw2->os; os->eng; eng->k1; eng->k2; } }",
@@ -472,9 +581,30 @@
             }
           },
           {
-            "say": "**Microservices** split one big application into small services, each doing one job, such as login, search or payments. They talk to each other over the network through **APIs**, interfaces built for programs, and each usually runs in containers of its own."
+            "say": "A **container** packages an application with its libraries."
+          },
+          {
+            "say": "It shares the host's operating system **kernel**, the core of the OS."
+          },
+          {
+            "say": "With no guest OS to boot, it is small, starts in seconds, and runs the same on a laptop as in the cloud."
           }
         ],
+        "say": "A **container** packages an application with its libraries. It shares the host's operating system **kernel**, the core of the OS. With no guest OS to boot, it is small, starts in seconds, and runs the same on a laptop as in the cloud."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Microservices** split one big application into small services, each doing one job, such as login or search."
+          },
+          {
+            "say": "They talk to each other over the network through **APIs**, interfaces built for programs."
+          },
+          {
+            "say": "Each usually runs in containers of its own."
+          }
+        ],
+        "say": "**Microservices** split one big application into small services, each doing one job, such as login or search. They talk to each other over the network through **APIs**, interfaces built for programs. Each usually runs in containers of its own.",
         "check": {
           "prompt": "During a sale only the checkout service is overloaded. In a microservices design, what is scaled out?",
           "answer": "Just checkout, by running more of its containers",
@@ -486,15 +616,18 @@
         }
       },
       {
-        "say": "**Network function virtualization** (NFV) does the same for network gear. A firewall, router, load balancer or WAN optimizer runs as software, a **virtual network function** (VNF), on an ordinary server instead of a dedicated box. A new branch firewall becomes a VM you deploy in minutes, not an appliance you order, ship and rack.",
         "beats": [
           {
-            "say": "**Network function virtualization** (NFV) does the same for network gear. A firewall, router, load balancer or WAN optimizer runs as software, a **virtual network function** (VNF), on an ordinary server instead of a dedicated box."
+            "say": "**Network function virtualization** (NFV) does the same for network gear."
           },
           {
-            "say": "A new branch firewall becomes a VM you deploy in minutes, not an appliance you order, ship and rack."
+            "say": "A firewall or router can run as software, a **virtual network function** (VNF), on an ordinary server."
+          },
+          {
+            "say": "A new branch firewall is a VM deployed in minutes, not an appliance to order, ship and rack."
           }
         ],
+        "say": "**Network function virtualization** (NFV) does the same for network gear. A firewall or router can run as software, a **virtual network function** (VNF), on an ordinary server. A new branch firewall is a VM deployed in minutes, not an appliance to order, ship and rack.",
         "check": {
           "prompt": "A virtual router and a virtual firewall run on the same host. The host's power supply fails. What happens?",
           "answer": "Both functions go down together",
@@ -571,18 +704,25 @@
     "intro": "Move a server to the cloud and it runs on hardware you'll never see, in a building you'll never enter. That raises fair questions: who else is on that hardware, and which parts of the job are still yours? The first one depends on which kind of cloud you rent.",
     "steps": [
       {
-        "say": "A **public cloud** is run by a provider for anyone who pays. It is **multitenant**: many customers, called **tenants**, share the same physical hosts, kept apart by isolation in software. A **private cloud** serves one organization only, either **on premises** in its own data center or hosted for it by a third party. A **community cloud** is shared by several organizations with the same needs, such as hospitals under the same regulations. A **hybrid cloud** joins two or more of these, for example private for patient records and public for the website, with workloads able to move between them.",
         "beats": [
           {
-            "say": "A **public cloud** is run by a provider for anyone who pays. It is **multitenant**: many customers, called **tenants**, share the same physical hosts, kept apart by isolation in software."
+            "code": "public    anyone who pays\nprivate   one organization\n  on premises or hosted\ncommunity a defined group\nhybrid    mixed models",
+            "language": "deployment models"
           },
           {
-            "say": "A **private cloud** serves one organization only, either **on premises** in its own data center or hosted for it by a third party. A **community cloud** is shared by several organizations with the same needs, such as hospitals under the same regulations."
+            "say": "A **public cloud** is open to anyone who pays."
           },
           {
-            "say": "A **hybrid cloud** joins two or more of these, for example private for patient records and public for the website, with workloads able to move between them."
+            "say": "It is **multitenant**: many customers, or **tenants**, share its hosts, kept apart by software."
+          },
+          {
+            "say": "A **private cloud** serves one organization only. A **community cloud** is shared by a defined group, such as hospitals."
+          },
+          {
+            "say": "A **hybrid cloud** joins two or more."
           }
         ],
+        "say": "A **public cloud** is open to anyone who pays. It is **multitenant**: many customers, or **tenants**, share its hosts, kept apart by software. A **private cloud** serves one organization only. A **community cloud** is shared by a defined group, such as hospitals. A **hybrid cloud** joins two or more.",
         "check": {
           "prompt": "Three county governments share a cloud built to their common security rules and closed to everyone else. Which model is it?",
           "answer": "Community",
@@ -594,15 +734,22 @@
         }
       },
       {
-        "say": "Service models say how much of the stack the provider runs. In **IaaS**, infrastructure as a service, you rent virtual machines, storage and networks, and install and patch the operating system yourself. In **PaaS**, platform as a service, the provider also runs the OS and the runtime, and you deploy only your code. In **SaaS**, software as a service, you just use a finished application, such as hosted email, and manage only your users and data.",
         "beats": [
           {
-            "say": "Service models say how much of the stack the provider runs. In **IaaS**, infrastructure as a service, you rent virtual machines, storage and networks, and install and patch the operating system yourself."
+            "code": "the provider runs:\nIaaS  hardware\nPaaS  + OS and runtime\nSaaS  + the application",
+            "language": "service models"
           },
           {
-            "say": "In **PaaS**, platform as a service, the provider also runs the OS and the runtime, and you deploy only your code. In **SaaS**, software as a service, you just use a finished application, such as hosted email, and manage only your users and data."
+            "say": "In **IaaS**, infrastructure as a service, you rent VMs and patch the OS yourself."
+          },
+          {
+            "say": "In **PaaS**, platform as a service, the provider also runs the OS. You deploy only code."
+          },
+          {
+            "say": "In **SaaS**, software as a service, you just use the finished app and manage your users and data."
           }
         ],
+        "say": "In **IaaS**, infrastructure as a service, you rent VMs and patch the OS yourself. In **PaaS**, platform as a service, the provider also runs the OS. You deploy only code. In **SaaS**, software as a service, you just use the finished app and manage your users and data.",
         "check": {
           "prompt": "A critical flaw is announced in the operating system of your IaaS VMs. Who installs the patch?",
           "answer": "You do: in IaaS the guest OS is yours",
@@ -614,18 +761,21 @@
         }
       },
       {
-        "say": "**Scalability** is the ability to add capacity as demand grows: **scale up** to a bigger VM, or **scale out** to more VMs. **Elasticity** adds two things: it happens automatically, and in both directions. Capacity is added as load rises and released as it falls, so you pay only for what you use. An **autoscaling** rule might say: run enough web servers that none handles more than 500 requests per second.",
         "beats": [
           {
-            "say": "**Scalability** is the ability to add capacity as demand grows: **scale up** to a bigger VM, or **scale out** to more VMs."
+            "say": "**Scalability** is the ability to add capacity as demand grows."
           },
           {
-            "say": "**Elasticity** adds two things: it happens automatically, and in both directions. Capacity is added as load rises and released as it falls, so you pay only for what you use."
+            "say": "You **scale up** to a bigger VM, or **scale out** to more VMs."
           },
           {
-            "say": "An **autoscaling** rule might say: run enough web servers that none handles more than 500 requests per second."
+            "say": "**Elasticity** adds two things: it is automatic, and it works in both directions."
+          },
+          {
+            "say": "An **autoscaling** rule might be: no web server handles over 500 requests per second."
           }
         ],
+        "say": "**Scalability** is the ability to add capacity as demand grows. You **scale up** to a bigger VM, or **scale out** to more VMs. **Elasticity** adds two things: it is automatic, and it works in both directions. An **autoscaling** rule might be: no web server handles over 500 requests per second.",
         "check": {
           "prompt": "Under that rule, load reaches 1,800 requests per second. How many web servers run?",
           "answer": "4",
@@ -637,20 +787,29 @@
         }
       },
       {
-        "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network. Two kinds of link reach a VPC from your data center, and a third joins VPCs to each other. A site-to-site **VPN** runs an encrypted IPsec tunnel across the internet: cheap and quick to set up, but only as steady as the internet path. A **cloud interconnect** is a dedicated private circuit from your network straight into the provider's, bypassing the internet, for steady bandwidth and latency. It costs more and can take weeks to set up. **Peering** joins two VPCs so they route to each other privately. Peering is **non-transitive**: if A peers with B and B peers with C, A still cannot reach C through B.",
         "beats": [
           {
-            "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network. Two kinds of link reach a VPC from your data center, and a third joins VPCs to each other."
+            "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network."
           },
           {
-            "say": "A site-to-site **VPN** runs an encrypted IPsec tunnel across the internet: cheap and quick to set up, but only as steady as the internet path."
+            "say": "A site-to-site **VPN** is an encrypted tunnel from your data center across the internet: cheap and quick, but only as steady as the internet."
+          }
+        ],
+        "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network. A site-to-site **VPN** is an encrypted tunnel from your data center across the internet: cheap and quick, but only as steady as the internet."
+      },
+      {
+        "beats": [
+          {
+            "say": "A **cloud interconnect** is a dedicated private circuit into the provider's network, bypassing the internet."
           },
           {
-            "say": "A **cloud interconnect** is a dedicated private circuit from your network straight into the provider's, bypassing the internet, for steady bandwidth and latency. It costs more and can take weeks to set up."
-          },
-          {
-            "say": "**Peering** joins two VPCs so they route to each other privately. Peering is **non-transitive**: if A peers with B and B peers with C, A still cannot reach C through B."
-          },
+            "say": "It gives steady bandwidth and latency, but costs more and can take weeks to set up."
+          }
+        ],
+        "say": "A **cloud interconnect** is a dedicated private circuit into the provider's network, bypassing the internet. It gives steady bandwidth and latency, but costs more and can take weeks to set up."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "graph { rankdir=TB; nodesep=0.5; ranksep=0.55; dc[label=\"your data\\ncenter\"]; A[label=\"VPC A\"]; B[label=\"VPC B\"]; C[label=\"VPC C\"]; dc--A[label=\"VPN over\\nthe internet \"]; dc--A[label=\" interconnect\\n (private)\"]; A--B[label=\" peering\"]; B--C[label=\" peering\"]; A--C[style=dashed, color=\"#ffb300\", fontcolor=\"#ffd86b\", label=\" no path\\n through B\", constraint=false]; }",
@@ -658,8 +817,15 @@
               "caption": "three ways in, and a peering that stops",
               "src": "_dot/030130a49c8aa53f.svg"
             }
+          },
+          {
+            "say": "**Peering** joins two VPCs so they route to each other privately."
+          },
+          {
+            "say": "It is **non-transitive**: if A peers with B and B peers with C, A still cannot reach C through B."
           }
         ],
+        "say": "**Peering** joins two VPCs so they route to each other privately. It is **non-transitive**: if A peers with B and B peers with C, A still cannot reach C through B.",
         "check": {
           "prompt": "VPC A must reach VPC C in that layout. What is the fix?",
           "answer": "Peer A with C, or attach all three to a transit hub",
@@ -808,14 +974,10 @@
     "type": "npc_demo",
     "question": "NPC: How does software reshape a network without new cables?",
     "npc": "tariq",
-    "intro": "Moving a cable in a data center takes a ticket and a maintenance window, but the networks that run over those cables don't have to wait for either. Once the network itself is run by software, you can lay a new network on top of the old one, or steer a whole WAN from one console. The first trick is carrying a LAN across a routed network.",
+    "intro": "Moving a cable in a data center takes a ticket and a maintenance window, but the networks over those cables don't have to wait. Once software runs the network, you can lay a new network on top of the old one, or steer a whole WAN from one console. The first trick is carrying a LAN across a routed network.",
     "steps": [
       {
-        "say": "**VXLAN** carries Layer 2 across a Layer 3 network. The original Ethernet frame is wrapped whole in a VXLAN header, then UDP on port 4789, then a new outer IP header. That is **Layer 2 encapsulation**, often called MAC-in-UDP. The wrapping and unwrapping is done by a **VTEP**, a VXLAN tunnel endpoint, in a leaf switch or a hypervisor. The routed network the outer packets cross is the **underlay**; the Layer 2 segments riding on it are the **overlay**. Each segment is numbered by a 24-bit **VNI**, so there can be about 16 million of them, where 802.1Q VLAN tags allow 4,094. That is why multitenant data centers and clouds use VXLAN.",
         "beats": [
-          {
-            "say": "**VXLAN** carries Layer 2 across a Layer 3 network. The original Ethernet frame is wrapped whole in a VXLAN header, then UDP on port 4789, then a new outer IP header. That is **Layer 2 encapsulation**, often called MAC-in-UDP."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=LR; nodesep=0.1; ranksep=0.05; edge[style=invis]; subgraph cluster_w { label=\"added by the VTEP: 50 bytes\"; style=\"rounded,dashed\"; color=\"#ffb300\"; fontcolor=\"#ffd86b\"; oe[label=\"outer\\nEthernet\"]; oip[label=\"outer\\nIP\"]; udp[label=\"UDP\\n4789\"]; vx[label=\"VXLAN\\nVNI\"]; } fr[label=\"original\\nEthernet\\nframe\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; oe->oip->udp->vx->fr; }",
@@ -825,12 +987,19 @@
             }
           },
           {
-            "say": "The wrapping and unwrapping is done by a **VTEP**, a VXLAN tunnel endpoint, in a leaf switch or a hypervisor. The routed network the outer packets cross is the **underlay**; the Layer 2 segments riding on it are the **overlay**."
+            "say": "**VXLAN** carries Layer 2 across a Layer 3 network."
           },
           {
-            "say": "Each segment is numbered by a 24-bit **VNI**, so there can be about 16 million of them, where 802.1Q VLAN tags allow 4,094. That is why multitenant data centers and clouds use VXLAN."
+            "say": "It wraps the original Ethernet frame whole in a VXLAN header, UDP port 4789, and a new outer IP header."
+          },
+          {
+            "say": "A **VTEP**, a VXLAN tunnel endpoint, does the wrapping and unwrapping."
+          },
+          {
+            "say": "The wrapper adds 50 bytes to each frame."
           }
         ],
+        "say": "**VXLAN** carries Layer 2 across a Layer 3 network. It wraps the original Ethernet frame whole in a VXLAN header, UDP port 4789, and a new outer IP header. A **VTEP**, a VXLAN tunnel endpoint, does the wrapping and unwrapping. The wrapper adds 50 bytes to each frame.",
         "check": {
           "prompt": "The wrapper adds 50 bytes to each frame, and the servers send standard 1,500-byte packets. What must the underlay's MTU, the largest packet its links will carry, be?",
           "answer": "At least 1,550 bytes",
@@ -842,12 +1011,25 @@
         }
       },
       {
-        "say": "Stretch an overlay between two data centers across a routed WAN and you have a **data center interconnect** (DCI): one Layer 2 segment that exists at both sites.",
         "beats": [
           {
-            "say": "Stretch an overlay between two data centers across a routed WAN and you have a **data center interconnect** (DCI): one Layer 2 segment that exists at both sites."
+            "say": "The routed network the outer packets cross is the **underlay**."
+          },
+          {
+            "say": "The Layer 2 segments riding on it are the **overlay**."
+          },
+          {
+            "say": "A 24-bit **VNI** numbers each segment."
+          },
+          {
+            "code": "          IDs\nVLAN tag  4,094 (12-bit)\nVXLAN VNI 16 million\n          (24-bit)",
+            "language": "segment numbers"
+          },
+          {
+            "say": "Stretch an overlay across two data centers and you get a **data center interconnect** (DCI): one segment at both sites."
           }
         ],
+        "say": "The routed network the outer packets cross is the **underlay**. The Layer 2 segments riding on it are the **overlay**. A 24-bit **VNI** numbers each segment. Stretch an overlay across two data centers and you get a **data center interconnect** (DCI): one segment at both sites.",
         "check": {
           "prompt": "A VM is live-migrated, moved while still running, from site 1 to site 2 across the DCI. What happens to its IP address?",
           "answer": "It keeps it: its subnet exists at both sites",
@@ -859,14 +1041,24 @@
         }
       },
       {
-        "say": "Every network device has a **control plane**, which decides where traffic should go by building tables such as the routing table, and a **data plane**, which forwards each packet using those tables. The **management plane** is how you configure and monitor it. **Software-defined networking** (SDN) moves the control plane's decisions into a central **controller**. The controller programs the devices through **southbound** APIs, and takes requests from apps and scripts through **northbound** APIs.",
         "beats": [
           {
-            "say": "Every network device has a **control plane**, which decides where traffic should go by building tables such as the routing table, and a **data plane**, which forwards each packet using those tables. The **management plane** is how you configure and monitor it."
+            "say": "Every network device has a **control plane**, which builds the tables that decide where traffic goes."
           },
           {
-            "say": "**Software-defined networking** (SDN) moves the control plane's decisions into a central **controller**. The controller programs the devices through **southbound** APIs, and takes requests from apps and scripts through **northbound** APIs."
+            "say": "Its **data plane** forwards each packet using those tables."
           },
+          {
+            "say": "The **management plane** is how you configure and monitor it."
+          },
+          {
+            "say": "**Software-defined networking** (SDN) moves the control plane into a central **controller**."
+          }
+        ],
+        "say": "Every network device has a **control plane**, which builds the tables that decide where traffic goes. Its **data plane** forwards each packet using those tables. The **management plane** is how you configure and monitor it. **Software-defined networking** (SDN) moves the control plane into a central **controller**."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.3; ranksep=0.45; apps[label=\"apps and\\nscripts\"]; ctl[label=\"SDN controller\\n(control plane)\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; s1[label=\"switch\\n(data plane)\"]; s2[label=\"switch\\n(data plane)\"]; s3[label=\"switch\\n(data plane)\"]; apps->ctl[label=\" northbound API\"]; ctl->s1; ctl->s2[label=\" southbound API\"]; ctl->s3; }",
@@ -874,8 +1066,15 @@
               "caption": "one controller, many switches",
               "src": "_dot/7dfbfa4ee79f01eb.svg"
             }
+          },
+          {
+            "say": "The controller programs the devices through **southbound** APIs."
+          },
+          {
+            "say": "It takes requests from apps and scripts through **northbound** APIs."
           }
         ],
+        "say": "The controller programs the devices through **southbound** APIs. It takes requests from apps and scripts through **northbound** APIs.",
         "check": {
           "prompt": "The controller decides to steer one flow through a different switch. In the switches, which plane carries out that change?",
           "answer": "The data plane, which forwards the packets",
@@ -887,24 +1086,25 @@
         }
       },
       {
-        "say": "**SD-WAN** applies the same idea to the WAN. An edge device at each site builds encrypted tunnels over every link it has, and a central controller decides which traffic uses which tunnel. It is **transport agnostic**: the overlay runs the same over **MPLS**, a carrier's private WAN service, broadband internet, LTE, 5G or satellite. It is **application aware**: it recognizes each application and measures each path's latency, loss and **jitter**, the variation in delay, then sends each application down the path its policy names. **Central policy management** means a rule written once on the controller reaches every site. **Zero-touch provisioning** means a new edge device is shipped to a branch and plugged in by anyone. It gets an address, calls home to the controller, proves its identity with its certificate, and downloads its own configuration.",
         "beats": [
           {
-            "say": "**SD-WAN** applies the same idea to the WAN. An edge device at each site builds encrypted tunnels over every link it has, and a central controller decides which traffic uses which tunnel."
+            "say": "**SD-WAN** applies the same idea to the WAN."
           },
           {
-            "say": "It is **transport agnostic**: the overlay runs the same over **MPLS**, a carrier's private WAN service, broadband internet, LTE, 5G or satellite."
+            "say": "An edge device at each site builds encrypted tunnels over every link it has."
           },
           {
-            "say": "It is **application aware**: it recognizes each application and measures each path's latency, loss and **jitter**, the variation in delay, then sends each application down the path its policy names."
+            "say": "A central controller decides which traffic uses which tunnel."
           },
           {
-            "say": "**Central policy management** means a rule written once on the controller reaches every site."
+            "code": "links an edge can use\nMPLS (a carrier's\n  private WAN service)\nbroadband internet\nLTE or 5G\nsatellite",
+            "language": "any transport"
           },
           {
-            "say": "**Zero-touch provisioning** means a new edge device is shipped to a branch and plugged in by anyone. It gets an address, calls home to the controller, proves its identity with its certificate, and downloads its own configuration."
+            "say": "It is **transport agnostic**: the overlay runs the same over any of these links."
           }
         ],
+        "say": "**SD-WAN** applies the same idea to the WAN. An edge device at each site builds encrypted tunnels over every link it has. A central controller decides which traffic uses which tunnel. It is **transport agnostic**: the overlay runs the same over any of these links.",
         "check": {
           "prompt": "A new branch has no MPLS service in its town, only broadband and LTE. Can it join the SD-WAN?",
           "answer": "Yes: the overlay runs over whatever links the site has",
@@ -914,6 +1114,24 @@
           ],
           "why": "Transport agnostic means the tunnels don't care what carries them. Many branches run SD-WAN over broadband, with LTE as the backup."
         }
+      },
+      {
+        "beats": [
+          {
+            "say": "It is **application aware**: it measures each path's latency, loss and **jitter**, the variation in delay, and steers each application by policy."
+          },
+          {
+            "say": "**Central policy management** means a rule written once reaches every site."
+          },
+          {
+            "say": "**Zero-touch provisioning** means anyone can plug in a new edge device, and it sets itself up."
+          },
+          {
+            "code": "zero-touch setup\n1 get an address\n2 call the controller\n3 prove identity\n  (certificate)\n4 download config",
+            "language": "a new edge device"
+          }
+        ],
+        "say": "It is **application aware**: it measures each path's latency, loss and **jitter**, the variation in delay, and steers each application by policy. **Central policy management** means a rule written once reaches every site. **Zero-touch provisioning** means anyone can plug in a new edge device, and it sets itself up."
       }
     ],
     "outro": "Next, two cloud tenants use the same VLAN number, yet their traffic never mixes. Name what keeps them apart."
@@ -1109,25 +1327,32 @@
     "type": "npc_demo",
     "question": "NPC: How do you manage a network with code?",
     "npc": "flint",
-    "intro": "I'm Professor Flint. Type the same change into forty switches by hand and, somewhere around the twenty-third, you'll get one wrong without noticing. Programs don't get tired, so the better way is to let them make the change, and to keep a record of exactly what they were told. Before a program can change anything, though, it needs a way to talk to the device.",
+    "intro": "I'm Professor Flint. Type the same change into forty switches by hand and, somewhere around the twenty-third, you'll get one wrong without noticing. Programs don't get tired, so let them make the change, and keep a record of exactly what they were told. First, a program needs a way to talk to the device.",
     "steps": [
       {
-        "say": "An **API**, application programming interface, is a door built for programs rather than people. Controllers, clouds and most modern network gear have one. **REST** is the most common style. Each thing is a URL, and HTTP methods act on it: `GET` reads, `POST` creates, `PUT` replaces, `PATCH` changes part of it, and `DELETE` removes it. Replies are usually JSON, and each request stands alone. **SOAP** is older and stricter: every message is an XML document inside a SOAP envelope, checked against a formal contract. **GraphQL** works differently again: one endpoint, and a query shaped like the answer you want.",
         "beats": [
           {
-            "say": "An **API**, application programming interface, is a door built for programs rather than people. Controllers, clouds and most modern network gear have one."
+            "say": "An **API** is a door built for programs, not people."
           },
           {
-            "say": "**REST** is the most common style. Each thing is a URL, and HTTP methods act on it: `GET` reads, `POST` creates, `PUT` replaces, `PATCH` changes part of it, and `DELETE` removes it. Replies are usually JSON, and each request stands alone."
+            "say": "**REST** is the common style: each thing has a URL, and HTTP methods act on it."
+          },
+          {
+            "code": "method  does\nGET     reads\nPOST    creates\nPUT     replaces\nPATCH   changes part\nDELETE  removes",
+            "language": "HTTP methods"
           },
           {
             "code": "GET /api/v1/devices/sw-07\n\n200 OK\n{\"hostname\": \"sw-07\", \"os\": \"17.9.4\",\n \"vlans\": [10, 20], \"uptime\": \"41d\"}",
             "language": "a REST call and its reply"
           },
           {
-            "say": "**SOAP** is older and stricter: every message is an XML document inside a SOAP envelope, checked against a formal contract. **GraphQL** works differently again: one endpoint, and a query shaped like the answer you want."
+            "say": "**SOAP** is older: each message is an XML document in an envelope."
+          },
+          {
+            "say": "**GraphQL** has one endpoint; the query is shaped like the answer."
           }
         ],
+        "say": "An **API** is a door built for programs, not people. **REST** is the common style: each thing has a URL, and HTTP methods act on it. **SOAP** is older: each message is an XML document in an envelope. **GraphQL** has one endpoint; the query is shaped like the answer.",
         "check": {
           "prompt": "A dashboard needs only the hostname and OS version of 500 switches, and the REST API returns dozens of fields for each. Which style lets it ask for just those two?",
           "answer": "GraphQL: the query lists only the fields it wants",
@@ -1139,22 +1364,18 @@
         }
       },
       {
-        "say": "**Infrastructure as code** (IaC) means the network's intended state lives in files: VLANs, interfaces, ACLs, cloud subnets. A tool reads the files and makes the devices match. The files are built from reusable parts. A **template** is a config with blanks, such as hostname and VLANs, filled in per site. A **playbook** is a list of tasks run in order against a group of devices, and each task can be reused in other playbooks. Which devices are in `branch_switches`? An **inventory** says. A **dynamic inventory** is built at run time from a **source of truth**, such as the IPAM, the system that tracks every address, so a switch added yesterday is included today without anyone editing a list.",
         "beats": [
           {
-            "say": "**Infrastructure as code** (IaC) means the network's intended state lives in files: VLANs, interfaces, ACLs, cloud subnets. A tool reads the files and makes the devices match."
+            "say": "**Infrastructure as code** (IaC) keeps the network's intended state in files, such as VLANs and ACLs."
           },
           {
-            "say": "The files are built from reusable parts. A **template** is a config with blanks, such as hostname and VLANs, filled in per site. A **playbook** is a list of tasks run in order against a group of devices, and each task can be reused in other playbooks."
+            "say": "A tool reads the files and makes the devices match."
           },
           {
-            "code": "- name: Branch switch baseline\n  hosts: branch_switches\n  tasks:\n    - name: Set the NTP server\n      ntp_server: 10.0.0.5\n    - name: Make sure VLAN 30 exists\n      vlan: { id: 30, name: CAMERAS }",
-            "language": "a playbook, simplified"
-          },
-          {
-            "say": "Which devices are in `branch_switches`? An **inventory** says. A **dynamic inventory** is built at run time from a **source of truth**, such as the IPAM, the system that tracks every address, so a switch added yesterday is included today without anyone editing a list."
+            "say": "A **template** is a config with blanks, such as hostname and VLANs, filled in per site."
           }
         ],
+        "say": "**Infrastructure as code** (IaC) keeps the network's intended state in files, such as VLANs and ACLs. A tool reads the files and makes the devices match. A **template** is a config with blanks, such as hostname and VLANs, filled in per site.",
         "check": {
           "prompt": "Forty branch switches need the same baseline, but each has its own hostname and VLAN numbers. What do you write?",
           "answer": "One template, filled in from each site's variables",
@@ -1166,18 +1387,40 @@
         }
       },
       {
-        "say": "Someone fixes an outage at 2 a.m. by typing into a switch and never updates the files. Now the running config differs from the code: that is **configuration drift**. Because the files say what should be there, a tool can compare every device against them, a **compliance** check, and report or reverse the drift. Good automation is **idempotent**: running the same playbook again changes only what differs, and nothing if everything already matches. The same machinery handles **upgrades**: check the device, copy the new image, verify its hash, reload, and check again, a batch at a time, so the whole network is never down at once.",
         "beats": [
           {
-            "say": "Someone fixes an outage at 2 a.m. by typing into a switch and never updates the files. Now the running config differs from the code: that is **configuration drift**."
+            "say": "A **playbook** is a list of tasks run in order on a group of devices."
           },
           {
-            "say": "Because the files say what should be there, a tool can compare every device against them, a **compliance** check, and report or reverse the drift. Good automation is **idempotent**: running the same playbook again changes only what differs, and nothing if everything already matches."
+            "code": "- name: Branch switch baseline\n  hosts: branch_switches\n  tasks:\n    - name: Set the NTP server\n      ntp_server: 10.0.0.5\n    - name: Make sure VLAN 30 exists\n      vlan: { id: 30, name: CAMERAS }",
+            "language": "a playbook, simplified"
           },
           {
-            "say": "The same machinery handles **upgrades**: check the device, copy the new image, verify its hash, reload, and check again, a batch at a time, so the whole network is never down at once."
+            "say": "A **dynamic inventory** lists those devices at run time, from a **source of truth**, such as the IPAM, the system that tracks every address."
+          },
+          {
+            "say": "Playbooks handle **upgrades** too."
+          },
+          {
+            "code": "upgrade, a batch at a time\n1 check the device\n2 copy the new image\n3 verify its hash\n4 reload\n5 check again",
+            "language": "an upgrade"
           }
         ],
+        "say": "A **playbook** is a list of tasks run in order on a group of devices. A **dynamic inventory** lists those devices at run time, from a **source of truth**, such as the IPAM, the system that tracks every address. Playbooks handle **upgrades** too."
+      },
+      {
+        "beats": [
+          {
+            "say": "Someone fixes an outage at 2 a.m. by hand. Now the running config differs from the files: **configuration drift**."
+          },
+          {
+            "say": "A **compliance** check compares every device with the files and reports or reverses drift."
+          },
+          {
+            "say": "Good automation is **idempotent**: running it again changes only what differs."
+          }
+        ],
+        "say": "Someone fixes an outage at 2 a.m. by hand. Now the running config differs from the files: **configuration drift**. A **compliance** check compares every device with the files and reports or reverses drift. Good automation is **idempotent**: running it again changes only what differs.",
         "check": {
           "prompt": "Yesterday a playbook changed 12 switches. Nobody has touched them since, and it runs again today. How many does it change?",
           "answer": "None: they already match the files",
@@ -1189,17 +1432,25 @@
         }
       },
       {
-        "say": "The files live under **version control**, such as Git: each change is a **commit** that records who changed what, when and why, and any earlier version can be restored. The team shares one **central repository**, the authoritative copy. `git clone` makes your own full copy of it and remembers the central one as the **remote** named `origin`; `git pull` brings in teammates' new commits, and `git push` sends yours back. Work happens on a **branch**, a separate line of commits that leaves `main` untouched; `git switch -c` and a name, or the older `git checkout -b`, creates one and moves onto it. A **merge request**, or pull request, asks for a review before the branch is **merged** back. If two branches changed the same lines of a file, Git cannot pick a winner. It stops the merge and marks the **conflict** in the file:",
         "beats": [
           {
-            "say": "The files live under **version control**, such as Git: each change is a **commit** that records who changed what, when and why, and any earlier version can be restored."
+            "say": "The files live under **version control**, such as Git: each change is a **commit** recording who, what, when and why."
           },
           {
-            "say": "The team shares one **central repository**, the authoritative copy. `git clone` makes your own full copy of it and remembers the central one as the **remote** named `origin`; `git pull` brings in teammates' new commits, and `git push` sends yours back."
+            "say": "The team shares one **central repository**. `git clone` copies it and remembers it as the **remote** `origin`."
           },
           {
-            "say": "Work happens on a **branch**, a separate line of commits that leaves `main` untouched; `git switch -c` and a name, or the older `git checkout -b`, creates one and moves onto it. A **merge request**, or pull request, asks for a review before the branch is **merged** back."
+            "code": "git clone  copy the repo\ngit pull   bring in new\n           commits\ngit push   send yours\ngit switch -c NAME\ngit checkout -b NAME\n  (older, same effect)",
+            "language": "git commands"
           },
+          {
+            "say": "Pull brings in teammates' commits, and push sends yours back."
+          }
+        ],
+        "say": "The files live under **version control**, such as Git: each change is a **commit** recording who, what, when and why. The team shares one **central repository**. `git clone` copies it and remembers it as the **remote** `origin`. Pull brings in teammates' commits, and push sends yours back."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=LR; nodesep=0.3; ranksep=0.35; subgraph cluster_main { label=\"main\"; style=\"rounded,dashed\"; color=\"#5aaa5a\"; fontcolor=\"#c8ffb0\"; m1[label=\"c1\"]; m2[label=\"c2\"]; m3[label=\"c3\"]; mm[label=\"merge\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; } subgraph cluster_br { label=\"branch: vlan-fix\"; style=\"rounded,dashed\"; color=\"#ffb300\"; fontcolor=\"#ffd86b\"; b1[label=\"edit\\nVLAN\"]; b2[label=\"fix\\ntypo\"]; } m1->m2->m3->mm; m2->b1->b2->mm; }",
@@ -1209,13 +1460,20 @@
             }
           },
           {
-            "say": "If two branches changed the same lines of a file, Git cannot pick a winner. It stops the merge and marks the **conflict** in the file:"
+            "say": "Work happens on a **branch**, a separate line of commits that leaves `main` untouched."
+          },
+          {
+            "say": "A **merge request** asks for review before the branch is **merged** back."
+          },
+          {
+            "say": "If two branches changed the same lines, Git stops and marks the **conflict**:"
           },
           {
             "code": "interface Gi1/0/48\n<<<<<<< HEAD\n description Uplink to core-1\n=======\n description Uplink to core-2\n>>>>>>> brom-uplink",
             "language": "a file after a merge conflict"
           }
         ],
+        "say": "Work happens on a **branch**, a separate line of commits that leaves `main` untouched. A **merge request** asks for review before the branch is **merged** back. If two branches changed the same lines, Git stops and marks the **conflict**:",
         "check": {
           "prompt": "What has to happen before that merge can finish?",
           "answer": "A person keeps the right line, deletes the markers, and commits",
@@ -1321,17 +1579,32 @@
     "intro": "I'm Val, the Ward-Smith. For years the hard part was getting past the firewall; once a laptop was on the LAN, it could reach almost everything. So one stolen laptop, plugged in at a quiet desk, could open every door in the building. Zero Trust was built to stop exactly that, so let's start with the one thing it refuses to assume.",
     "steps": [
       {
-        "say": "**Zero Trust** grants no trust for being inside the network. Every request, from the office or a café, is authenticated and authorized before it reaches anything. **Policy-based authentication** means policy decides how strongly to check: a password and MFA for the wiki, a hardware security key for an admin console. **Authorization** is decided per request and per resource. A **policy engine** makes the decision, and a **policy enforcement point**, a gateway in front of the application, allows or blocks the request.",
         "beats": [
           {
-            "say": "**Zero Trust** grants no trust for being inside the network. Every request, from the office or a café, is authenticated and authorized before it reaches anything."
+            "say": "**Zero Trust** grants no trust for being inside the network."
           },
           {
-            "say": "**Policy-based authentication** means policy decides how strongly to check: a password and MFA for the wiki, a hardware security key for an admin console."
+            "say": "Every request, from the office or a café, is authenticated and authorized before it reaches anything."
+          }
+        ],
+        "say": "**Zero Trust** grants no trust for being inside the network. Every request, from the office or a café, is authenticated and authorized before it reaches anything."
+      },
+      {
+        "beats": [
+          {
+            "say": "**Policy-based authentication** means policy decides how strongly to check."
           },
           {
-            "say": "**Authorization** is decided per request and per resource. A **policy engine** makes the decision, and a **policy enforcement point**, a gateway in front of the application, allows or blocks the request."
+            "say": "A password and MFA suit the wiki; an admin console needs a hardware security key."
           },
+          {
+            "say": "**Authorization** is decided per request and per resource."
+          }
+        ],
+        "say": "**Policy-based authentication** means policy decides how strongly to check. A password and MFA suit the wiki; an admin console needs a hardware security key. **Authorization** is decided per request and per resource."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=LR; nodesep=0.35; ranksep=0.5; dev[label=\"user's\\ndevice\"]; pep[label=\"enforcement\\npoint\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; app[label=\"app\"]; pe[label=\"policy\\nengine\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; idp[label=\"identity\\n+ MFA\"]; edr[label=\"device\\nhealth (EDR)\"]; dev->pep->app; pep->pe[dir=both, style=dashed, label=\" allow?\"]; idp->pe; edr->pe; {rank=same; pep; pe;} }",
@@ -1339,8 +1612,15 @@
               "caption": "every request asks first",
               "src": "_dot/fad6377a65eaf7a2.svg"
             }
+          },
+          {
+            "say": "A **policy engine** makes the decision."
+          },
+          {
+            "say": "A **policy enforcement point**, a gateway in front of the application, allows or blocks the request."
           }
         ],
+        "say": "A **policy engine** makes the decision. A **policy enforcement point**, a gateway in front of the application, allows or blocks the request.",
         "check": {
           "prompt": "A user passed MFA this morning. At noon she opens the HR portal's admin page. What does Zero Trust do with that request?",
           "answer": "Checks it against policy before letting it through",
@@ -1352,26 +1632,40 @@
         }
       },
       {
-        "say": "**Context-aware policies** weigh more than identity: the device's health, or **posture**, such as patched, encrypted and running its **EDR** agent, the software that watches for attacks; the location; the time; and how unusual the request is. So one user can be allowed from a managed laptop, asked for MFA again from a new country, and refused from an unmanaged phone.",
         "beats": [
           {
-            "say": "**Context-aware policies** weigh more than identity: the device's health, or **posture**, such as patched, encrypted and running its **EDR** agent, the software that watches for attacks; the location; the time; and how unusual the request is."
+            "say": "**Context-aware policies** weigh more than who you are."
           },
           {
-            "say": "So one user can be allowed from a managed laptop, asked for MFA again from a new country, and refused from an unmanaged phone."
-          }
-        ]
-      },
-      {
-        "say": "**Least privileged network access** gives each user the specific applications they need, not the network those applications sit on. A VPN that drops a user onto the whole LAN is the opposite. Zero Trust network access does it with **microtunneling**: a separate encrypted tunnel from the user's device to each application it may use, so the rest of the network is not even visible.",
-        "beats": [
-          {
-            "say": "**Least privileged network access** gives each user the specific applications they need, not the network those applications sit on. A VPN that drops a user onto the whole LAN is the opposite."
+            "code": "context checked\ndevice health\nlocation\ntime of day\nhow unusual the request is",
+            "language": "beyond identity"
           },
           {
-            "say": "Zero Trust network access does it with **microtunneling**: a separate encrypted tunnel from the user's device to each application it may use, so the rest of the network is not even visible."
+            "say": "The device's health is its **posture**, and **EDR** is the software on it that watches for attacks."
+          },
+          {
+            "say": "So the same user gets different answers:"
+          },
+          {
+            "code": "managed laptop  allow\nnew country     MFA again\nunmanaged phone refuse",
+            "language": "one user, three answers"
           }
         ],
+        "say": "**Context-aware policies** weigh more than who you are. The device's health is its **posture**, and **EDR** is the software on it that watches for attacks. So the same user gets different answers:"
+      },
+      {
+        "beats": [
+          {
+            "say": "**Least privileged network access** gives each user only the applications they need, not the whole network."
+          },
+          {
+            "say": "A VPN that drops a user onto the whole LAN is the opposite."
+          },
+          {
+            "say": "A **microtunnel** is a separate encrypted tunnel to one application, so the rest of the network is not even visible."
+          }
+        ],
+        "say": "**Least privileged network access** gives each user only the applications they need, not the whole network. A VPN that drops a user onto the whole LAN is the opposite. A **microtunnel** is a separate encrypted tunnel to one application, so the rest of the network is not even visible.",
         "check": {
           "prompt": "A contractor's laptop is infected after he connects. He has a microtunnel to the ticket system only. What can the malware reach?",
           "answer": "Only the ticket system, through that one tunnel",
@@ -1383,15 +1677,22 @@
         }
       },
       {
-        "say": "No single product does all this. Zero Trust is built from **integrated solutions**: the identity provider, device management and EDR, the access gateways, and the monitoring tools all feed signals to the same policy engine. When the EDR flags a laptop, the policy engine hears it, and that laptop's next request is refused everywhere at once.",
         "beats": [
           {
-            "say": "No single product does all this. Zero Trust is built from **integrated solutions**: the identity provider, device management and EDR, the access gateways, and the monitoring tools all feed signals to the same policy engine."
+            "say": "No single product does all this."
           },
           {
-            "say": "When the EDR flags a laptop, the policy engine hears it, and that laptop's next request is refused everywhere at once."
+            "say": "**Integrated solutions** feed their signals to one policy engine."
+          },
+          {
+            "code": "signals into one engine\nidentity provider\ndevice management, EDR\naccess gateways\nmonitoring tools",
+            "language": "integrated solutions"
+          },
+          {
+            "say": "When EDR flags a laptop, that laptop's next request is refused everywhere at once."
           }
-        ]
+        ],
+        "say": "No single product does all this. **Integrated solutions** feed their signals to one policy engine. When EDR flags a laptop, that laptop's next request is refused everywhere at once."
       }
     ],
     "outro": "Next comes a list of statements about access. Pick every one that is a Zero Trust principle."

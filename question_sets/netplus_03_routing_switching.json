@@ -8,42 +8,58 @@
       {
         "beats": [
           {
-            "say": "A **routing table**, also called the IP route table, lists destination prefixes. For each one it names the next hop, or the exit interface, that leads there."
+            "say": "A **routing table** is the list a router checks for every packet."
+          },
+          {
+            "say": "Each line names a destination network and its **next hop**: the neighbor router to hand the packet to."
           },
           {
             "code": "R1# show ip route\nGateway of last resort is 203.0.113.1 to network 0.0.0.0\n\nS*  0.0.0.0/0 [1/0] via 203.0.113.1\nC   10.10.0.0/24 is directly connected, Gi0/1\nL   10.10.0.1/32 is directly connected, Gi0/1\nS   10.50.0.0/16 [1/0] via 10.10.0.2\nO   172.16.8.0/22 [110/20] via 10.10.0.3, Gi0/1",
             "language": "Cisco IOS output"
           },
           {
-            "say": "The letter on the left is where the route came from. The bracket holds two numbers we'll use later: [administrative distance/metric]."
+            "say": "The letter on the left shows where each route came from."
+          },
+          {
+            "say": "The bracket holds two numbers we meet later."
           }
         ],
-        "say": "A **routing table**, also called the IP route table, lists destination prefixes. For each one it names the next hop, or the exit interface, that leads there. The letter on the left is where the route came from. The bracket holds two numbers we'll use later: [administrative distance/metric]."
+        "say": "A **routing table** is the list a router checks for every packet. Each line names a destination network and its **next hop**: the neighbor router to hand the packet to. The letter on the left shows where each route came from. The bracket holds two numbers we meet later."
       },
       {
         "beats": [
           {
-            "say": "A **connected route** (C) appears by itself once an interface has an address and its link is up. L marks the router's own address on that subnet."
+            "say": "A **connected route** (C) appears by itself once an interface has an address and its link is up."
           },
           {
-            "say": "A **static route** (S) is typed in by an administrator. `ip route 10.50.0.0 255.255.0.0 10.10.0.2` gives the destination, its mask, then the next hop."
+            "say": "L marks the router's own address."
           },
           {
-            "say": "Static routes are simple and predictable, but they don't learn. If the path beyond that next hop breaks, the route stays, and traffic keeps going there."
+            "say": "A **static route** (S) is typed in by an administrator:"
+          },
+          {
+            "code": "ip route 10.50.0.0 255.255.0.0 10.10.0.2",
+            "language": "destination, mask, next hop"
+          },
+          {
+            "say": "Static routes don't learn: if the path beyond that next hop breaks, the route stays."
           }
         ],
-        "say": "A **connected route** (C) appears by itself once an interface has an address and its link is up. L marks the router's own address on that subnet. A **static route** (S) is typed in by an administrator. `ip route 10.50.0.0 255.255.0.0 10.10.0.2` gives the destination, its mask, then the next hop. Static routes are simple and predictable, but they don't learn. If the path beyond that next hop breaks, the route stays, and traffic keeps going there."
+        "say": "A **connected route** (C) appears by itself once an interface has an address and its link is up. L marks the router's own address. A **static route** (S) is typed in by an administrator: Static routes don't learn: if the path beyond that next hop breaks, the route stays."
       },
       {
         "beats": [
           {
-            "say": "The **default route**, 0.0.0.0/0 (`::/0` in IPv6), has a prefix length of zero, so it matches every destination. The router uses it only when nothing more specific matches."
+            "say": "The **default route**, `0.0.0.0/0` (`::/0` in IPv6), has a prefix length of zero, so it matches every destination."
           },
           {
-            "say": "Its next hop is the **gateway of last resort**. A branch with one ISP link may need little more than this one line."
+            "say": "The router uses it only when nothing more specific matches."
+          },
+          {
+            "say": "Its next hop is the **gateway of last resort**."
           }
         ],
-        "say": "The **default route**, 0.0.0.0/0 (`::/0` in IPv6), has a prefix length of zero, so it matches every destination. The router uses it only when nothing more specific matches. Its next hop is the **gateway of last resort**. A branch with one ISP link may need little more than this one line.",
+        "say": "The **default route**, `0.0.0.0/0` (`::/0` in IPv6), has a prefix length of zero, so it matches every destination. The router uses it only when nothing more specific matches. Its next hop is the **gateway of last resort**.",
         "check": {
           "prompt": "R1 has a default route and a static route for 10.50.0.0/16 via 10.10.0.2. A packet arrives for 10.50.200.1. Which route forwards it?",
           "answer": "The static route, via 10.10.0.2",
@@ -68,19 +84,24 @@
             }
           },
           {
-            "say": "**Route announcement** is that exchange: each router advertises the prefixes it can reach, and its neighbors install them and pass them on."
-          },
+            "say": "**Route announcement** is that exchange: each router advertises the prefixes it can reach, and neighbors install them and pass them on."
+          }
+        ],
+        "say": "A **dynamic route** (O here, for OSPF) is learned from a neighbor by a **routing protocol**, not typed in. **Route announcement** is that exchange: each router advertises the prefixes it can reach, and neighbors install them and pass them on."
+      },
+      {
+        "beats": [
           {
             "say": "If a link fails, its routes are withdrawn, and the routers converge on another path."
           },
           {
-            "say": "The internet works the same way: an organization announces its public prefix to its ISPs so the world can reach it."
+            "say": "The internet works the same way: organizations announce their public prefixes to their internet service providers (ISPs)."
           },
           {
-            "say": "A static route isn't announced, though, unless you tell a routing protocol to redistribute it."
+            "say": "A static route isn't announced unless redistributed into a routing protocol."
           }
         ],
-        "say": "A **dynamic route** (O here, for OSPF) is learned from a neighbor by a **routing protocol**, not typed in. **Route announcement** is that exchange: each router advertises the prefixes it can reach, and its neighbors install them and pass them on. If a link fails, its routes are withdrawn, and the routers converge on another path. The internet works the same way: an organization announces its public prefix to its ISPs so the world can reach it. A static route isn't announced, though, unless you tell a routing protocol to redistribute it."
+        "say": "If a link fails, its routes are withdrawn, and the routers converge on another path. The internet works the same way: organizations announce their public prefixes to their internet service providers (ISPs). A static route isn't announced unless redistributed into a routing protocol."
       }
     ],
     "outro": "Next, Brom shows you the routing table from the Ember Forge branch router. Work out what the router does with one arriving packet."
@@ -159,17 +180,20 @@
       {
         "beats": [
           {
-            "say": "First test: **prefix length**. Of all the routes that match the destination, the one with the longest prefix, the most specific, wins. That's **longest prefix match**."
+            "say": "First test: **prefix length**. Among matching routes, the longest prefix, the most specific, wins."
+          },
+          {
+            "say": "That is **longest prefix match**."
           },
           {
             "code": "D   10.40.0.0/16  [90/3072] via 10.0.0.6\nO   10.40.7.0/24  [110/30]  via 10.0.0.2\nS*  0.0.0.0/0     [1/0]     via 203.0.113.1",
             "language": "R2's routing table"
           },
           {
-            "say": "A packet for 10.40.7.9 matches all three lines. The /24 is the longest, so the packet goes to 10.0.0.2, even though the EIGRP line has the lower first number."
+            "say": "A packet for 10.40.7.9 matches all three lines. The /24 is longest, so it goes to 10.0.0.2."
           }
         ],
-        "say": "First test: **prefix length**. Of all the routes that match the destination, the one with the longest prefix, the most specific, wins. That's **longest prefix match**. A packet for 10.40.7.9 matches all three lines. The /24 is the longest, so the packet goes to 10.0.0.2, even though the EIGRP line has the lower first number.",
+        "say": "First test: **prefix length**. Among matching routes, the longest prefix, the most specific, wins. That is **longest prefix match**. A packet for 10.40.7.9 matches all three lines. The /24 is longest, so it goes to 10.0.0.2.",
         "check": {
           "prompt": "Same table. Which line forwards a packet for 10.40.9.1?",
           "answer": "The /16 EIGRP route, via 10.0.0.6",
@@ -183,23 +207,35 @@
       {
         "beats": [
           {
-            "say": "Second test, only for routes to the very same prefix from different sources: **administrative distance** (AD), how far the router trusts each source. Lower wins."
+            "say": "Second test, for routes to the very same prefix from different sources."
           },
           {
-            "code": "Connected          0\nStatic             1\neBGP              20\nEIGRP (internal)  90\nOSPF             110\niBGP             200",
+            "say": "Each source has an **administrative distance** (AD): how far the router trusts it. Lower wins."
+          },
+          {
+            "code": "source            AD\nConnected          0\nStatic             1\neBGP              20\nEIGRP (internal)  90\nOSPF             110\niBGP             200",
             "language": "Cisco default AD"
           },
           {
-            "say": "So if EIGRP and OSPF both offer 10.40.7.0/24, EIGRP's copy goes in the table: 90 beats 110."
-          },
-          {
-            "say": "You can give a static route a high AD on purpose: `ip route 10.60.0.0 255.255.0.0 10.0.0.9 200`."
-          },
-          {
-            "say": "It waits behind any dynamic route to that prefix and takes over only if that route disappears: a **floating static route**."
+            "say": "If EIGRP and OSPF both offer 10.40.7.0/24, EIGRP's copy wins: 90 beats 110."
           }
         ],
-        "say": "Second test, only for routes to the very same prefix from different sources: **administrative distance** (AD), how far the router trusts each source. Lower wins. So if EIGRP and OSPF both offer 10.40.7.0/24, EIGRP's copy goes in the table: 90 beats 110. You can give a static route a high AD on purpose: `ip route 10.60.0.0 255.255.0.0 10.0.0.9 200`. It waits behind any dynamic route to that prefix and takes over only if that route disappears: a **floating static route**."
+        "say": "Second test, for routes to the very same prefix from different sources. Each source has an **administrative distance** (AD): how far the router trusts it. Lower wins. If EIGRP and OSPF both offer 10.40.7.0/24, EIGRP's copy wins: 90 beats 110."
+      },
+      {
+        "beats": [
+          {
+            "say": "You can give a static route a high AD on purpose:"
+          },
+          {
+            "code": "ip route 10.60.0.0 255.255.0.0 10.0.0.9 200",
+            "language": "the 200 is the AD"
+          },
+          {
+            "say": "It waits behind any dynamic route to that prefix, and takes over only if that route disappears: a **floating static route**."
+          }
+        ],
+        "say": "You can give a static route a high AD on purpose: It waits behind any dynamic route to that prefix, and takes over only if that route disappears: a **floating static route**."
       },
       {
         "beats": [
@@ -207,16 +243,26 @@
             "say": "Third test, only between paths from the same protocol: the **metric**. The best metric wins."
           },
           {
-            "say": "Each protocol measures in its own way: OSPF adds up link costs, EIGRP weighs bandwidth and delay, and BGP compares path **attributes**."
+            "code": "OSPF   adds up link costs\nEIGRP  bandwidth and delay\nBGP    path attributes",
+            "language": "how each protocol measures"
           },
           {
-            "say": "Metrics from different protocols are never compared with each other; that's AD's job. If two paths tie on metric, both can be installed to share the traffic: **equal-cost multipath** (ECMP)."
+            "say": "BGP compares path **attributes**."
+          },
+          {
+            "say": "Metrics from different protocols are never compared: that is AD's job."
+          },
+          {
+            "say": "If two paths tie on metric, both can be installed to share traffic: **equal-cost multipath** (ECMP)."
           }
         ],
-        "say": "Third test, only between paths from the same protocol: the **metric**. The best metric wins. Each protocol measures in its own way: OSPF adds up link costs, EIGRP weighs bandwidth and delay, and BGP compares path **attributes**. Metrics from different protocols are never compared with each other; that's AD's job. If two paths tie on metric, both can be installed to share the traffic: **equal-cost multipath** (ECMP)."
+        "say": "Third test, only between paths from the same protocol: the **metric**. The best metric wins. BGP compares path **attributes**. Metrics from different protocols are never compared: that is AD's job. If two paths tie on metric, both can be installed to share traffic: **equal-cost multipath** (ECMP)."
       },
       {
         "beats": [
+          {
+            "say": "So the order is fixed: prefix length, then AD, then metric."
+          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; node[shape=box]; m[label=\"routes that\\nmatch\"]; p[label=\"1. longest\\nprefix\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; a[label=\"2. lowest AD\"]; mt[label=\"3. best metric\"]; e[label=\"still tied:\\nshare (ECMP)\"]; m->p; p->a[label=\" same prefix?\"]; a->mt[label=\" same source?\"]; mt->e[label=\" equal?\"]; }",
@@ -226,7 +272,7 @@
             }
           },
           {
-            "say": "So the order is fixed: prefix length, then AD, then metric. A later test only breaks a tie the earlier one left."
+            "say": "A later test only breaks a tie the earlier one left."
           }
         ],
         "say": "So the order is fixed: prefix length, then AD, then metric. A later test only breaks a tie the earlier one left.",
@@ -357,13 +403,28 @@
       {
         "beats": [
           {
-            "say": "An **interior gateway protocol** (IGP) routes inside one organization. An exterior one routes between organizations, each an **autonomous system** (AS) with its own AS number."
+            "say": "An **interior gateway protocol** (IGP) routes inside one organization."
           },
           {
-            "say": "**OSPF** (Open Shortest Path First) is an open-standard **link-state** IGP. Each router floods **link-state advertisements** (LSAs) about its links."
+            "say": "An exterior one routes between organizations, each an **autonomous system** (AS) with its own AS number."
           },
           {
-            "say": "So every router in an **area** holds the same map, and each runs Dijkstra's shortest path first (SPF) algorithm on it."
+            "code": "OSPF   inside, open\nEIGRP  inside, Cisco\nBGP    between ASes",
+            "language": "where each one runs"
+          }
+        ],
+        "say": "An **interior gateway protocol** (IGP) routes inside one organization. An exterior one routes between organizations, each an **autonomous system** (AS) with its own AS number."
+      },
+      {
+        "beats": [
+          {
+            "say": "**OSPF** (Open Shortest Path First) is an open-standard **link-state** protocol."
+          },
+          {
+            "say": "Each router floods **link-state advertisements** (LSAs) about its links."
+          },
+          {
+            "say": "Each router in an **area** holds the same map, and runs Dijkstra's shortest path first on it."
           },
           {
             "figure": {
@@ -377,22 +438,25 @@
             "say": "Areas keep each map small, and every area attaches to the backbone, **area 0**."
           }
         ],
-        "say": "An **interior gateway protocol** (IGP) routes inside one organization. An exterior one routes between organizations, each an **autonomous system** (AS) with its own AS number. **OSPF** (Open Shortest Path First) is an open-standard **link-state** IGP. Each router floods **link-state advertisements** (LSAs) about its links. So every router in an **area** holds the same map, and each runs Dijkstra's shortest path first (SPF) algorithm on it. Areas keep each map small, and every area attaches to the backbone, **area 0**."
+        "say": "**OSPF** (Open Shortest Path First) is an open-standard **link-state** protocol. Each router floods **link-state advertisements** (LSAs) about its links. Each router in an **area** holds the same map, and runs Dijkstra's shortest path first on it. Areas keep each map small, and every area attaches to the backbone, **area 0**."
       },
       {
         "beats": [
           {
-            "say": "OSPF's metric is **cost**. A link's cost is commonly the reference bandwidth divided by the link's bandwidth, and a path costs the sum of its links."
+            "say": "OSPF's metric is **cost**. A link's cost is commonly a reference bandwidth divided by the link's bandwidth."
           },
           {
-            "code": "10 Gbps link     cost 1\n1 Gbps link      cost 10\n100 Mbps link    cost 100",
+            "say": "A path costs the sum of its links."
+          },
+          {
+            "code": "link        cost\n10 Gbps       1\n1 Gbps       10\n100 Mbps    100",
             "language": "cost, 10 Gbps reference"
           },
           {
-            "say": "Many routers default to a 100 Mbps reference, which gives every link of 100 Mbps or faster a cost of 1. That's why networks raise it."
+            "say": "Many routers default to a 100 Mbps reference, so every link of 100 Mbps or faster costs 1. That's why networks raise it."
           }
         ],
-        "say": "OSPF's metric is **cost**. A link's cost is commonly the reference bandwidth divided by the link's bandwidth, and a path costs the sum of its links. Many routers default to a 100 Mbps reference, which gives every link of 100 Mbps or faster a cost of 1. That's why networks raise it.",
+        "say": "OSPF's metric is **cost**. A link's cost is commonly a reference bandwidth divided by the link's bandwidth. A path costs the sum of its links. Many routers default to a 100 Mbps reference, so every link of 100 Mbps or faster costs 1. That's why networks raise it.",
         "check": {
           "prompt": "With the 10 Gbps reference, path X crosses two 1 Gbps links and path Y crosses one 100 Mbps link. Which does OSPF install?",
           "answer": "Path X, at cost 20 against 100",
@@ -406,27 +470,27 @@
       {
         "beats": [
           {
-            "say": "**EIGRP** (Enhanced Interior Gateway Routing Protocol) was developed by Cisco and runs mostly on Cisco routers."
+            "say": "**EIGRP**, Enhanced Interior Gateway Routing Protocol, is Cisco-developed and runs mostly on Cisco routers."
           },
           {
             "say": "It's an **advanced distance-vector** protocol: neighbors share their best routes, not a whole map."
           },
           {
-            "say": "Its metric combines the slowest bandwidth along the path with the total delay."
+            "say": "Its metric combines the slowest bandwidth with the total delay."
           },
           {
-            "say": "Its DUAL algorithm also keeps a precomputed loop-free backup, the **feasible successor**, so it can switch paths almost at once."
+            "say": "DUAL also keeps a loop-free backup path ready, the **feasible successor**."
           }
         ],
-        "say": "**EIGRP** (Enhanced Interior Gateway Routing Protocol) was developed by Cisco and runs mostly on Cisco routers. It's an **advanced distance-vector** protocol: neighbors share their best routes, not a whole map. Its metric combines the slowest bandwidth along the path with the total delay. Its DUAL algorithm also keeps a precomputed loop-free backup, the **feasible successor**, so it can switch paths almost at once."
+        "say": "**EIGRP**, Enhanced Interior Gateway Routing Protocol, is Cisco-developed and runs mostly on Cisco routers. It's an **advanced distance-vector** protocol: neighbors share their best routes, not a whole map. Its metric combines the slowest bandwidth with the total delay. DUAL also keeps a loop-free backup path ready, the **feasible successor**."
       },
       {
         "beats": [
           {
-            "say": "**BGP** (Border Gateway Protocol) is the **path-vector** protocol that runs between autonomous systems. Peers are configured by hand and talk over TCP port 179."
+            "say": "**BGP** (Border Gateway Protocol) is the **path-vector** protocol that runs between autonomous systems."
           },
           {
-            "say": "Every BGP route carries its **AS path**, the list of ASes it has crossed."
+            "say": "Peers are set up by hand and talk over TCP port 179."
           },
           {
             "figure": {
@@ -437,16 +501,27 @@
             }
           },
           {
-            "say": "BGP has no single metric. It compares path **attributes** in a set order."
-          },
-          {
-            "say": "Near the top is the highest **local preference**, your own policy; then the shortest AS path; later the lowest **MED** (multi-exit discriminator), a hint the neighboring AS sends."
-          },
-          {
-            "say": "eBGP, between ASes, has AD 20; iBGP, inside one AS, has AD 200."
+            "say": "Every BGP route carries its **AS path**, the list of ASes it has crossed."
           }
         ],
-        "say": "**BGP** (Border Gateway Protocol) is the **path-vector** protocol that runs between autonomous systems. Peers are configured by hand and talk over TCP port 179. Every BGP route carries its **AS path**, the list of ASes it has crossed. BGP has no single metric. It compares path **attributes** in a set order. Near the top is the highest **local preference**, your own policy; then the shortest AS path; later the lowest **MED** (multi-exit discriminator), a hint the neighboring AS sends. eBGP, between ASes, has AD 20; iBGP, inside one AS, has AD 200."
+        "say": "**BGP** (Border Gateway Protocol) is the **path-vector** protocol that runs between autonomous systems. Peers are set up by hand and talk over TCP port 179. Every BGP route carries its **AS path**, the list of ASes it has crossed."
+      },
+      {
+        "beats": [
+          {
+            "say": "BGP has no single metric: it compares path **attributes** in order."
+          },
+          {
+            "say": "First the highest **local preference**, your own policy; then the shortest AS path."
+          },
+          {
+            "say": "Later, the lowest **MED** (multi-exit discriminator), a hint from the neighboring AS."
+          },
+          {
+            "say": "eBGP, between ASes, has AD 20; iBGP, inside one AS, 200."
+          }
+        ],
+        "say": "BGP has no single metric: it compares path **attributes** in order. First the highest **local preference**, your own policy; then the shortest AS path. Later, the lowest **MED** (multi-exit discriminator), a hint from the neighboring AS. eBGP, between ASes, has AD 20; iBGP, inside one AS, 200."
       }
     ],
     "outro": "Next, Captain Doran is planning routing for a campus with two ISPs. Choose the pairing of protocols that fits."
@@ -573,33 +648,38 @@
           },
           {
             "say": "A host's private address is its **inside local** address; the public address that stands for it outside is its **inside global** address."
-          },
+          }
+        ],
+        "say": "**NAT** (network address translation) rewrites addresses as packets cross the router. A host's private address is its **inside local** address; the public address that stands for it outside is its **inside global** address."
+      },
+      {
+        "beats": [
           {
             "say": "**Static NAT** maps one private address to one public address permanently, so hosts on the internet can open connections to it."
           },
           {
             "say": "**Dynamic NAT** lends public addresses from a pool, one per host while it's busy."
+          },
+          {
+            "say": "**PAT** (port address translation, or NAT overload) lets many hosts share one public address."
           }
         ],
-        "say": "**NAT** (network address translation) rewrites addresses as packets cross the router. A host's private address is its **inside local** address; the public address that stands for it outside is its **inside global** address. **Static NAT** maps one private address to one public address permanently, so hosts on the internet can open connections to it. **Dynamic NAT** lends public addresses from a pool, one per host while it's busy."
+        "say": "**Static NAT** maps one private address to one public address permanently, so hosts on the internet can open connections to it. **Dynamic NAT** lends public addresses from a pool, one per host while it's busy. **PAT** (port address translation, or NAT overload) lets many hosts share one public address."
       },
       {
         "beats": [
           {
-            "say": "**PAT** (port address translation, also called NAT overload) lets many hosts share one public address."
+            "say": "The router also rewrites each flow's source port, and records the pair in its translation table so replies find their way back."
           },
           {
-            "say": "The router rewrites each flow's source port too, and records the pair in its translation table so replies find their way back."
-          },
-          {
-            "code": "Pro Inside global      Inside local      Outside local     Outside global\ntcp 203.0.113.9:40001  10.0.1.21:50111   192.0.2.80:443    192.0.2.80:443\ntcp 203.0.113.9:40002  10.0.1.22:50111   192.0.2.80:443    192.0.2.80:443",
+            "code": "Pro Inside global      Inside local\ntcp 203.0.113.9:40001  10.0.1.21:50111\ntcp 203.0.113.9:40002  10.0.1.22:50111",
             "language": "show ip nat translations"
           },
           {
-            "say": "On Cisco routers you mark the LAN side with `ip nat inside` and the internet side with `ip nat outside`, so the router knows which way to translate."
+            "say": "On Cisco routers, mark the LAN side `ip nat inside` and the internet side `ip nat outside`."
           }
         ],
-        "say": "**PAT** (port address translation, also called NAT overload) lets many hosts share one public address. The router rewrites each flow's source port too, and records the pair in its translation table so replies find their way back. On Cisco routers you mark the LAN side with `ip nat inside` and the internet side with `ip nat outside`, so the router knows which way to translate.",
+        "say": "The router also rewrites each flow's source port, and records the pair in its translation table so replies find their way back. On Cisco routers, mark the LAN side `ip nat inside` and the internet side `ip nat outside`.",
         "check": {
           "prompt": "A reply from 192.0.2.80:443 arrives for 203.0.113.9:40002. Where does the router send it?",
           "answer": "To 10.0.1.22, port 50111",
@@ -616,7 +696,7 @@
             "say": "Now the gateway. Hosts know only one default gateway address."
           },
           {
-            "say": "A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** and a virtual MAC: the **active** router answers for them, and the **standby** waits."
+            "say": "A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** address and a virtual MAC."
           },
           {
             "figure": {
@@ -627,10 +707,13 @@
             }
           },
           {
-            "say": "**HSRP** is Cisco's FHRP, **VRRP** is the open standard, and Cisco's GLBP also spreads hosts across both routers. The router with the highest **priority** becomes active."
+            "say": "The **active** router answers for them; the **standby** waits."
+          },
+          {
+            "say": "The router with the highest **priority** becomes active."
           }
         ],
-        "say": "Now the gateway. Hosts know only one default gateway address. A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** and a virtual MAC: the **active** router answers for them, and the **standby** waits. **HSRP** is Cisco's FHRP, **VRRP** is the open standard, and Cisco's GLBP also spreads hosts across both routers. The router with the highest **priority** becomes active.",
+        "say": "Now the gateway. Hosts know only one default gateway address. A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** address and a virtual MAC. The **active** router answers for them; the **standby** waits. The router with the highest **priority** becomes active.",
         "check": {
           "prompt": "R1 (10.0.20.2) is active for virtual IP 10.0.20.1, and R2 (10.0.20.3) is standby. What gateway should DHCP give the hosts?",
           "answer": "10.0.20.1, the virtual IP",
@@ -644,16 +727,27 @@
       {
         "beats": [
           {
-            "say": "The routers exchange hellos. If the standby stops hearing them for the hold time, it becomes active and takes over the virtual IP and MAC."
+            "say": "The routers exchange hellos. If the standby stops hearing them, it becomes active and takes over the virtual IP and MAC."
           },
           {
             "say": "It sends a **gratuitous ARP** so the switches learn which port the virtual MAC is on now."
           },
           {
-            "say": "The hosts change nothing. With **preemption** set, a higher-priority router that comes back takes the active role again; without it, the role stays where it is."
+            "say": "The hosts change nothing."
           }
         ],
-        "say": "The routers exchange hellos. If the standby stops hearing them for the hold time, it becomes active and takes over the virtual IP and MAC. It sends a **gratuitous ARP** so the switches learn which port the virtual MAC is on now. The hosts change nothing. With **preemption** set, a higher-priority router that comes back takes the active role again; without it, the role stays where it is."
+        "say": "The routers exchange hellos. If the standby stops hearing them, it becomes active and takes over the virtual IP and MAC. It sends a **gratuitous ARP** so the switches learn which port the virtual MAC is on now. The hosts change nothing."
+      },
+      {
+        "beats": [
+          {
+            "say": "**HSRP** is Cisco's FHRP, and **VRRP** is the open standard. Cisco's GLBP also spreads hosts across both routers."
+          },
+          {
+            "say": "With **preemption** set, a higher-priority router that comes back takes the active role again; without it, the role stays where it is."
+          }
+        ],
+        "say": "**HSRP** is Cisco's FHRP, and **VRRP** is the open standard. Cisco's GLBP also spreads hosts across both routers. With **preemption** set, a higher-priority router that comes back takes the active role again; without it, the role stays where it is."
       }
     ],
     "outro": "Next, Silverkeep's edge router shows its translations, and someone on the internet tries to connect in. Pick the attempt the router will forward."
@@ -719,23 +813,16 @@
       {
         "beats": [
           {
-            "say": "A **VLAN** (virtual LAN) is a separate broadcast domain inside the switches. Hosts in VLAN 10 and VLAN 20 can't reach each other at Layer 2, even on the same switch."
+            "say": "A **VLAN** (virtual LAN) is a separate broadcast domain inside the switches."
+          },
+          {
+            "say": "Hosts in different VLANs can't reach each other at Layer 2, even on one switch."
           },
           {
             "say": "Every port starts in the **default VLAN**, VLAN 1, which can't be deleted."
-          },
-          {
-            "say": "The **management VLAN** holds the switch's own IP address for SSH and monitoring; good practice gives it a VLAN of its own, not VLAN 1."
-          },
-          {
-            "code": "VLAN Name      Status    Ports\n1    default   active    Gi1/0/9\n10   SALES     active    Gi1/0/1, Gi1/0/2\n30   GUEST     active    Gi1/0/5",
-            "language": "show vlan brief"
-          },
-          {
-            "say": "Notice the uplink, Gi1/0/24, isn't listed. A trunk belongs to many VLANs, so `show interfaces trunk` reports it instead."
           }
         ],
-        "say": "A **VLAN** (virtual LAN) is a separate broadcast domain inside the switches. Hosts in VLAN 10 and VLAN 20 can't reach each other at Layer 2, even on the same switch. Every port starts in the **default VLAN**, VLAN 1, which can't be deleted. The **management VLAN** holds the switch's own IP address for SSH and monitoring; good practice gives it a VLAN of its own, not VLAN 1. Notice the uplink, Gi1/0/24, isn't listed. A trunk belongs to many VLANs, so `show interfaces trunk` reports it instead."
+        "say": "A **VLAN** (virtual LAN) is a separate broadcast domain inside the switches. Hosts in different VLANs can't reach each other at Layer 2, even on one switch. Every port starts in the **default VLAN**, VLAN 1, which can't be deleted."
       },
       {
         "beats": [
@@ -743,31 +830,49 @@
             "say": "An **access port** belongs to one VLAN and sends its frames **untagged**: the PC never knows which VLAN it is in."
           },
           {
-            "say": "A **trunk port** carries many VLANs over one link, so each frame is **tagged** using **802.1Q**: 4 bytes added to the Ethernet header, holding a 12-bit VLAN ID (1 to 4094 are usable)."
+            "say": "The **management VLAN** holds the switch's own IP address; good practice gives it a VLAN of its own, not VLAN 1."
           },
           {
-            "code": "interface Gi1/0/1\n switchport mode access\n switchport access vlan 10\n!\ninterface Gi1/0/24\n switchport mode trunk\n switchport trunk allowed vlan 10,30,99\n switchport trunk native vlan 999",
-            "language": "Cisco IOS switch"
-          },
-          {
-            "say": "Wireless APs join VLANs too: each **SSID**, the network name a Wi-Fi client picks from a list, can be bridged to a VLAN of its own."
+            "code": "VLAN Name      Status    Ports\n1    default   active    Gi1/0/9\n10   SALES     active    Gi1/0/1, Gi1/0/2\n30   GUEST     active    Gi1/0/5",
+            "language": "show vlan brief"
           }
         ],
-        "say": "An **access port** belongs to one VLAN and sends its frames **untagged**: the PC never knows which VLAN it is in. A **trunk port** carries many VLANs over one link, so each frame is **tagged** using **802.1Q**: 4 bytes added to the Ethernet header, holding a 12-bit VLAN ID (1 to 4094 are usable). Wireless APs join VLANs too: each **SSID**, the network name a Wi-Fi client picks from a list, can be bridged to a VLAN of its own."
+        "say": "An **access port** belongs to one VLAN and sends its frames **untagged**: the PC never knows which VLAN it is in. The **management VLAN** holds the switch's own IP address; good practice gives it a VLAN of its own, not VLAN 1."
       },
       {
         "beats": [
           {
-            "say": "One VLAN on a trunk travels untagged: the **native VLAN**, VLAN 1 unless you change it. Both ends of the trunk must agree on it."
+            "say": "A **trunk port** carries many VLANs over one link."
           },
           {
-            "say": "If they don't, an untagged frame leaves one switch from one VLAN and lands in a different VLAN on the other."
+            "say": "Frames on a trunk are **tagged** with their VLAN."
           },
           {
-            "say": "Good practice: set the native VLAN to an unused VLAN, such as 999, on every trunk, and allow only the VLANs the link needs."
+            "say": "The tag follows **802.1Q**: 4 bytes holding a 12-bit VLAN ID, 1 to 4094."
+          },
+          {
+            "say": "Trunk Gi1/0/24 is missing from `show vlan brief`; `show interfaces trunk` lists trunks."
+          },
+          {
+            "code": "interface Gi1/0/1\n switchport mode access\n switchport access vlan 10\n!\ninterface Gi1/0/24\n switchport mode trunk\n switchport trunk allowed vlan 10,30,99\n switchport trunk native vlan 999",
+            "language": "Cisco IOS switch"
           }
         ],
-        "say": "One VLAN on a trunk travels untagged: the **native VLAN**, VLAN 1 unless you change it. Both ends of the trunk must agree on it. If they don't, an untagged frame leaves one switch from one VLAN and lands in a different VLAN on the other. Good practice: set the native VLAN to an unused VLAN, such as 999, on every trunk, and allow only the VLANs the link needs.",
+        "say": "A **trunk port** carries many VLANs over one link. Frames on a trunk are **tagged** with their VLAN. The tag follows **802.1Q**: 4 bytes holding a 12-bit VLAN ID, 1 to 4094. Trunk Gi1/0/24 is missing from `show vlan brief`; `show interfaces trunk` lists trunks."
+      },
+      {
+        "beats": [
+          {
+            "say": "One VLAN on a trunk travels untagged: the **native VLAN**, VLAN 1 unless changed."
+          },
+          {
+            "say": "Both ends must agree. If not, an untagged frame leaves one VLAN and lands in another."
+          },
+          {
+            "say": "Good practice: an unused native VLAN such as 999, and only needed VLANs allowed."
+          }
+        ],
+        "say": "One VLAN on a trunk travels untagged: the **native VLAN**, VLAN 1 unless changed. Both ends must agree. If not, an untagged frame leaves one VLAN and lands in another. Good practice: an unused native VLAN such as 999, and only needed VLANs allowed.",
         "check": {
           "prompt": "SW1's end of a trunk uses native VLAN 10; SW2's end uses native VLAN 20. An untagged VLAN 10 frame crosses from SW1. Where does SW2 put it?",
           "answer": "In VLAN 20, SW2's own native VLAN",
@@ -784,7 +889,7 @@
             "say": "Traffic between VLANs needs a Layer 3 hop. In a **router on a stick**, one router port trunks to the switch."
           },
           {
-            "say": "That port is split into **sub-interfaces**, one per VLAN, each with its VLAN tag and that VLAN's gateway address."
+            "say": "That port is split into **sub-interfaces**, one per VLAN, each with its tag and that VLAN's gateway address."
           },
           {
             "code": "interface Gi0/0.10\n encapsulation dot1Q 10\n ip address 10.0.10.1 255.255.255.0",
@@ -797,15 +902,27 @@
               "caption": "router on a stick",
               "src": "_dot/804b49046c9c94b7.svg"
             }
-          },
-          {
-            "say": "A multilayer switch can route internally instead, with a **switch virtual interface** (SVI): `interface vlan 10` with an IP address, plus `ip routing`."
-          },
-          {
-            "say": "Each SVI is its VLAN's gateway, and the management VLAN's SVI holds the switch's own address."
           }
         ],
-        "say": "Traffic between VLANs needs a Layer 3 hop. In a **router on a stick**, one router port trunks to the switch. That port is split into **sub-interfaces**, one per VLAN, each with its VLAN tag and that VLAN's gateway address. A multilayer switch can route internally instead, with a **switch virtual interface** (SVI): `interface vlan 10` with an IP address, plus `ip routing`. Each SVI is its VLAN's gateway, and the management VLAN's SVI holds the switch's own address."
+        "say": "Traffic between VLANs needs a Layer 3 hop. In a **router on a stick**, one router port trunks to the switch. That port is split into **sub-interfaces**, one per VLAN, each with its tag and that VLAN's gateway address."
+      },
+      {
+        "beats": [
+          {
+            "say": "A multilayer switch can route internally with a **switch virtual interface** (SVI):"
+          },
+          {
+            "code": "interface vlan 10\n ip address 10.0.10.1 255.255.255.0\nip routing",
+            "language": "Cisco IOS switch"
+          },
+          {
+            "say": "Each SVI is its VLAN's gateway; the management VLAN's SVI holds the switch's own address."
+          },
+          {
+            "say": "Wireless APs join VLANs too: each **SSID**, a Wi-Fi network name, can be bridged to its own VLAN."
+          }
+        ],
+        "say": "A multilayer switch can route internally with a **switch virtual interface** (SVI): Each SVI is its VLAN's gateway; the management VLAN's SVI holds the switch's own address. Wireless APs join VLANs too: each **SSID**, a Wi-Fi network name, can be bridged to its own VLAN."
       }
     ],
     "outro": "First, Brom shows you the VLAN list from an access switch. Pick every statement the output supports."
@@ -1032,37 +1149,45 @@
       {
         "beats": [
           {
-            "say": "A switch learns from the **source** MAC of every frame, recording that MAC, its VLAN and the port it arrived on in its **MAC address table**."
+            "say": "A switch learns from the **source** MAC of every frame, and files it in its **MAC address table** with its VLAN and port."
           },
           {
-            "code": "Vlan  Mac Address      Type     Ports\n30    00aa.0b0c.1001   DYNAMIC  Gi1/0/5\n30    00aa.0b0c.2002   DYNAMIC  Gi1/0/48",
+            "code": "Vlan  Mac Address      Ports\n30    00aa.0b0c.1001   Gi1/0/5\n30    00aa.0b0c.2002   Gi1/0/48",
             "language": "show mac address-table"
           },
           {
-            "say": "For the **destination** MAC it looks the table up. A known address goes out that one port; an unknown address, or a broadcast, is **flooded** out every other port in the same VLAN."
-          },
-          {
-            "say": "With two paths between switches, a flooded frame comes back and is flooded again, round and round, because Ethernet frames carry no TTL."
-          },
-          {
-            "say": "**Spanning Tree Protocol** (STP, IEEE 802.1D) prevents that by blocking just enough ports to leave a single path."
+            "say": "For the **destination** MAC it looks the table up: a known address goes out that one port."
           }
         ],
-        "say": "A switch learns from the **source** MAC of every frame, recording that MAC, its VLAN and the port it arrived on in its **MAC address table**. For the **destination** MAC it looks the table up. A known address goes out that one port; an unknown address, or a broadcast, is **flooded** out every other port in the same VLAN. With two paths between switches, a flooded frame comes back and is flooded again, round and round, because Ethernet frames carry no TTL. **Spanning Tree Protocol** (STP, IEEE 802.1D) prevents that by blocking just enough ports to leave a single path."
+        "say": "A switch learns from the **source** MAC of every frame, and files it in its **MAC address table** with its VLAN and port. For the **destination** MAC it looks the table up: a known address goes out that one port."
       },
       {
         "beats": [
           {
-            "say": "Switches exchange **BPDUs** (bridge protocol data units) and elect one **root bridge**: the switch with the lowest **bridge ID**."
+            "say": "An unknown address, or a broadcast, is **flooded**: sent out every other port in the VLAN."
           },
           {
-            "say": "A bridge ID is a priority, 32768 by default and set in steps of 4096, followed by the switch's MAC address. The priority is compared first; the MAC only breaks a tie."
+            "say": "With two paths between switches, a flooded frame returns and floods again: Ethernet frames have no TTL (time to live)."
           },
           {
-            "say": "The priority field also carries the VLAN number, the **extended system ID**, so a switch at the default priority shows 32778 for VLAN 10."
+            "say": "**Spanning Tree Protocol** (STP) blocks just enough ports to leave a single path."
           }
         ],
-        "say": "Switches exchange **BPDUs** (bridge protocol data units) and elect one **root bridge**: the switch with the lowest **bridge ID**. A bridge ID is a priority, 32768 by default and set in steps of 4096, followed by the switch's MAC address. The priority is compared first; the MAC only breaks a tie. The priority field also carries the VLAN number, the **extended system ID**, so a switch at the default priority shows 32778 for VLAN 10.",
+        "say": "An unknown address, or a broadcast, is **flooded**: sent out every other port in the VLAN. With two paths between switches, a flooded frame returns and floods again: Ethernet frames have no TTL (time to live). **Spanning Tree Protocol** (STP) blocks just enough ports to leave a single path."
+      },
+      {
+        "beats": [
+          {
+            "say": "Switches send each other **BPDUs** (bridge protocol data units) and elect a **root bridge**."
+          },
+          {
+            "say": "The root is the switch with the lowest **bridge ID**."
+          },
+          {
+            "say": "A bridge ID is a priority, 32768 by default, then the switch's MAC. Priority is compared first."
+          }
+        ],
+        "say": "Switches send each other **BPDUs** (bridge protocol data units) and elect a **root bridge**. The root is the switch with the lowest **bridge ID**. A bridge ID is a priority, 32768 by default, then the switch's MAC. Priority is compared first.",
         "check": {
           "prompt": "SW-A: priority 32768, MAC 0000.0c11.1111. SW-B: 32768, MAC 0000.0c00.0001. SW-C: 28672, MAC 0000.0cff.ffff. Which becomes root?",
           "answer": "SW-C, with the lowest priority",
@@ -1076,10 +1201,7 @@
       {
         "beats": [
           {
-            "say": "Each non-root switch picks one **root port**: its port with the lowest total cost to the root. If two ports tie on cost, the one leading to the neighbor with the lower bridge ID wins."
-          },
-          {
-            "say": "Every port on the root bridge is a **designated port**. On each other link, the end nearer the root (lower cost) is designated; if the costs tie, the switch with the lower bridge ID wins."
+            "say": "The priority field also holds the VLAN number, the **extended system ID**: 32778 for VLAN 10."
           },
           {
             "figure": {
@@ -1090,30 +1212,34 @@
             }
           },
           {
-            "say": "A port that is neither root nor designated is blocked; RSTP calls it an **alternate port**."
+            "say": "Each non-root switch picks one **root port**: its lowest-cost way to the root."
           },
           {
-            "say": "A port facing a single host can be made an **edge port** (Cisco's **PortFast**), which goes straight to forwarding."
+            "say": "On each link, the end nearer the root is the **designated port**. Ties go to the lower bridge ID."
           }
         ],
-        "say": "Each non-root switch picks one **root port**: its port with the lowest total cost to the root. If two ports tie on cost, the one leading to the neighbor with the lower bridge ID wins. Every port on the root bridge is a **designated port**. On each other link, the end nearer the root (lower cost) is designated; if the costs tie, the switch with the lower bridge ID wins. A port that is neither root nor designated is blocked; RSTP calls it an **alternate port**. A port facing a single host can be made an **edge port** (Cisco's **PortFast**), which goes straight to forwarding."
+        "say": "The priority field also holds the VLAN number, the **extended system ID**: 32778 for VLAN 10. Each non-root switch picks one **root port**: its lowest-cost way to the root. On each link, the end nearer the root is the **designated port**. Ties go to the lower bridge ID."
       },
       {
         "beats": [
           {
-            "say": "In classic 802.1D a port moves through **blocking**, **listening**, **learning** and **forwarding**; a shut-down port is **disabled**."
+            "say": "A port that is neither is blocked: RSTP calls it an **alternate port**."
           },
           {
-            "say": "Listening and learning each last the forward delay, 15 seconds by default."
+            "say": "A port facing one host can be an **edge port** (Cisco's **PortFast**), going straight to forwarding."
           },
           {
-            "say": "STP comes in **modes**. **RSTP** (802.1w) converges in a second or two through a handshake between neighbors instead of waiting on timers; its port states are discarding, learning and forwarding."
+            "say": "Classic 802.1D ports move through four **states**."
           },
           {
-            "say": "**MSTP** (802.1s) maps many VLANs onto a few tree instances. Cisco's **PVST+** and **Rapid PVST+** run a separate tree for every VLAN."
+            "code": "blocking    hears BPDUs\nlistening   BPDUs only\nlearning    fills table\nforwarding  passes frames\n(disabled = shut down)",
+            "language": "802.1D port states"
+          },
+          {
+            "say": "Listening and learning each last the forward delay: 15 seconds by default."
           }
         ],
-        "say": "In classic 802.1D a port moves through **blocking**, **listening**, **learning** and **forwarding**; a shut-down port is **disabled**. Listening and learning each last the forward delay, 15 seconds by default. STP comes in **modes**. **RSTP** (802.1w) converges in a second or two through a handshake between neighbors instead of waiting on timers; its port states are discarding, learning and forwarding. **MSTP** (802.1s) maps many VLANs onto a few tree instances. Cisco's **PVST+** and **Rapid PVST+** run a separate tree for every VLAN.",
+        "say": "A port that is neither is blocked: RSTP calls it an **alternate port**. A port facing one host can be an **edge port** (Cisco's **PortFast**), going straight to forwarding. Classic 802.1D ports move through four **states**. Listening and learning each last the forward delay: 15 seconds by default.",
         "check": {
           "prompt": "Two switches run 802.1D with default timers. A new uplink between them comes up, and it isn't an edge port. About how long before it forwards?",
           "answer": "About 30 seconds: 15 listening, 15 learning",
@@ -1123,6 +1249,24 @@
           ],
           "why": "Classic STP waits out the forward delay twice before forwarding. The quick handshake belongs to RSTP, and going straight to forwarding is only for edge ports."
         }
+      },
+      {
+        "beats": [
+          {
+            "say": "**RSTP** (802.1w) converges in a second or two, through a handshake between neighbors instead of timers."
+          },
+          {
+            "say": "Its port states are discarding, learning and forwarding."
+          },
+          {
+            "code": "MSTP        shared trees\nPVST+       tree per VLAN\nRapid PVST+ fast per VLAN",
+            "language": "other STP modes"
+          },
+          {
+            "say": "**MSTP** (802.1s) maps many VLANs onto a few tree instances. **PVST+** is Cisco's, running one tree per VLAN."
+          }
+        ],
+        "say": "**RSTP** (802.1w) converges in a second or two, through a handshake between neighbors instead of timers. Its port states are discarding, learning and forwarding. **MSTP** (802.1s) maps many VLANs onto a few tree instances. **PVST+** is Cisco's, running one tree per VLAN."
       }
     ],
     "outro": "First comes SW1's MAC address table and a frame arriving on one of its ports. Work out what SW1 does with it."
@@ -1241,39 +1385,52 @@
       {
         "beats": [
           {
-            "say": "**Half duplex** means only one side transmits at a time, listening for collisions with CSMA/CD, as on old hubs. **Full duplex** sends and receives at the same time, so collisions can't happen."
+            "say": "**Half duplex**: one side transmits at a time, listening for collisions with CSMA/CD."
           },
           {
-            "say": "Both ends should **autonegotiate**, or both be set by hand to the same speed and duplex. If one end is hard-set, the auto end can still sense the speed but falls back to half duplex."
+            "say": "**Full duplex** sends and receives at once, so collisions can't happen."
           },
+          {
+            "say": "Both ends should **autonegotiate**, or both be hand-set alike."
+          },
+          {
+            "say": "If one end is hard-set, the auto end senses the speed but falls back to half duplex."
+          }
+        ],
+        "say": "**Half duplex**: one side transmits at a time, listening for collisions with CSMA/CD. **Full duplex** sends and receives at once, so collisions can't happen. Both ends should **autonegotiate**, or both be hand-set alike. If one end is hard-set, the auto end senses the speed but falls back to half duplex."
+      },
+      {
+        "beats": [
           {
             "say": "An **error-disabled** (err-disabled) port is one the switch shut down itself after detecting a fault."
           },
           {
-            "say": "**BPDU guard** does it to an edge port that receives a BPDU, because a switch has appeared where a host should be; port security does it on a MAC violation."
+            "code": "BPDU guard:\n  BPDU on an edge port\nport security:\n  MAC violation",
+            "language": "common causes"
           },
           {
-            "say": "The port stays down until someone removes the cause and bounces it with `shutdown` then `no shutdown`, or an errdisable recovery timer re-enables it."
+            "say": "The port stays down until someone fixes the cause and bounces it with `shutdown` then `no shutdown`."
           },
           {
             "say": "`show interfaces status err-disabled` lists such ports, with the reason."
           }
         ],
-        "say": "**Half duplex** means only one side transmits at a time, listening for collisions with CSMA/CD, as on old hubs. **Full duplex** sends and receives at the same time, so collisions can't happen. Both ends should **autonegotiate**, or both be set by hand to the same speed and duplex. If one end is hard-set, the auto end can still sense the speed but falls back to half duplex. An **error-disabled** (err-disabled) port is one the switch shut down itself after detecting a fault. **BPDU guard** does it to an edge port that receives a BPDU, because a switch has appeared where a host should be; port security does it on a MAC violation. The port stays down until someone removes the cause and bounces it with `shutdown` then `no shutdown`, or an errdisable recovery timer re-enables it. `show interfaces status err-disabled` lists such ports, with the reason."
+        "say": "An **error-disabled** (err-disabled) port is one the switch shut down itself after detecting a fault. The port stays down until someone fixes the cause and bounces it with `shutdown` then `no shutdown`. `show interfaces status err-disabled` lists such ports, with the reason."
       },
       {
         "beats": [
           {
-            "say": "**Link aggregation** bundles parallel links into one logical link, a port channel, for bandwidth and redundancy."
+            "say": "**Link aggregation** bundles parallel links into one logical link, a **port channel**, for bandwidth and redundancy."
           },
           {
-            "say": "**LACP** (IEEE 802.3ad, now 802.1AX) builds the bundle by exchanging LACPDUs, and drops a member that fails."
+            "say": "**LACP** builds the bundle."
           },
           {
-            "say": "A port in LACP **active** mode starts the negotiation; a **passive** port only answers."
+            "say": "An **active** port starts the talk; a **passive** port only answers."
           },
           {
-            "say": "Traffic is spread per flow, so four 1 Gbps links give 4 Gbps in total, but a single transfer still tops out at 1 Gbps."
+            "code": "4 links x 1 Gbps\ntotal        4 Gbps\none transfer 1 Gbps",
+            "language": "traffic spreads per flow"
           },
           {
             "figure": {
@@ -1284,40 +1441,46 @@
             }
           },
           {
-            "say": "A normal bundle ends on one switch. **MLAG** (multi-chassis link aggregation) lets it end on two switches, joined by a peer link, that act as one LACP partner."
-          },
-          {
-            "say": "So the bundle survives a whole switch failing."
+            "say": "**MLAG** lets a bundle end on two switches acting as one partner, so it survives a switch failing."
           }
         ],
-        "say": "**Link aggregation** bundles parallel links into one logical link, a port channel, for bandwidth and redundancy. **LACP** (IEEE 802.3ad, now 802.1AX) builds the bundle by exchanging LACPDUs, and drops a member that fails. A port in LACP **active** mode starts the negotiation; a **passive** port only answers. Traffic is spread per flow, so four 1 Gbps links give 4 Gbps in total, but a single transfer still tops out at 1 Gbps. A normal bundle ends on one switch. **MLAG** (multi-chassis link aggregation) lets it end on two switches, joined by a peer link, that act as one LACP partner. So the bundle survives a whole switch failing."
+        "say": "**Link aggregation** bundles parallel links into one logical link, a **port channel**, for bandwidth and redundancy. **LACP** builds the bundle. An **active** port starts the talk; a **passive** port only answers. **MLAG** lets a bundle end on two switches acting as one partner, so it survives a switch failing."
       },
       {
         "beats": [
           {
-            "say": "**CDP** (Cisco Discovery Protocol) and **LLDP** (Link Layer Discovery Protocol, IEEE 802.1AB) let a device announce its name, model, port and address to its direct neighbors."
+            "say": "**CDP** (Cisco Discovery Protocol) and **LLDP** (Link Layer Discovery Protocol) let neighbors announce their name, model and port."
           },
           {
-            "say": "CDP is Cisco's own; LLDP works across vendors. On Cisco IOS, `show cdp neighbors` and `show lldp neighbors` list what each has heard, and LLDP often has to be switched on first with `lldp run`."
+            "say": "CDP is Cisco's own; LLDP works across vendors."
           },
           {
-            "say": "Each line names a neighbor, the local port it was heard on, and, as its Port ID, the neighbor's own port at the far end of the cable."
+            "code": "show cdp neighbors\nshow lldp neighbors\nlldp run   (turns it on)",
+            "language": "list what each heard"
           },
           {
-            "say": "Traffic is harder to see. A switch sends a known unicast frame only out the destination's port, so an analyzer plugged into some other port sees almost none of it."
+            "say": "Each line shows the neighbor, the local port, and its **Port ID**, the neighbor's own port."
+          }
+        ],
+        "say": "**CDP** (Cisco Discovery Protocol) and **LLDP** (Link Layer Discovery Protocol) let neighbors announce their name, model and port. CDP is Cisco's own; LLDP works across vendors. Each line shows the neighbor, the local port, and its **Port ID**, the neighbor's own port."
+      },
+      {
+        "beats": [
+          {
+            "say": "A switch sends a known unicast frame only out the destination's port, so an analyzer elsewhere sees almost none."
           },
           {
-            "say": "**Port mirroring** (Cisco's **SPAN**) copies the traffic of a source port or VLAN, in one direction or both, to a destination port where an analyzer or IDS sits."
-          },
-          {
-            "say": "RSPAN carries the copies across a VLAN to another switch."
+            "say": "**Port mirroring** (Cisco's **SPAN**) copies a port's or VLAN's traffic to a port where an analyzer or IDS sits."
           },
           {
             "code": "monitor session 1 source interface Gi1/0/10 both\nmonitor session 1 destination interface Gi1/0/48",
             "language": "Cisco IOS switch"
+          },
+          {
+            "say": "RSPAN carries the copies across a VLAN to another switch."
           }
         ],
-        "say": "**CDP** (Cisco Discovery Protocol) and **LLDP** (Link Layer Discovery Protocol, IEEE 802.1AB) let a device announce its name, model, port and address to its direct neighbors. CDP is Cisco's own; LLDP works across vendors. On Cisco IOS, `show cdp neighbors` and `show lldp neighbors` list what each has heard, and LLDP often has to be switched on first with `lldp run`. Each line names a neighbor, the local port it was heard on, and, as its Port ID, the neighbor's own port at the far end of the cable. Traffic is harder to see. A switch sends a known unicast frame only out the destination's port, so an analyzer plugged into some other port sees almost none of it. **Port mirroring** (Cisco's **SPAN**) copies the traffic of a source port or VLAN, in one direction or both, to a destination port where an analyzer or IDS sits. RSPAN carries the copies across a VLAN to another switch.",
+        "say": "A switch sends a known unicast frame only out the destination's port, so an analyzer elsewhere sees almost none. **Port mirroring** (Cisco's **SPAN**) copies a port's or VLAN's traffic to a port where an analyzer or IDS sits. RSPAN carries the copies across a VLAN to another switch.",
         "check": {
           "prompt": "Gi1/0/10 receives 600 Mb/s and sends 700 Mb/s, mirrored in both directions to a 1 Gbps destination port. What happens?",
           "answer": "Some copies are dropped: 1.3 Gb/s won't fit",
@@ -1331,23 +1494,23 @@
       {
         "beats": [
           {
-            "say": "**LLDP-MED**, an LLDP extension for phones, carries details such as the voice VLAN and how much power the phone needs."
+            "say": "**PoE** (Power over Ethernet) lets the switch power a device over the data cable."
           },
           {
-            "say": "That power comes from **PoE** (Power over Ethernet): the switch, the power sourcing equipment (**PSE**), powers a powered device (**PD**) over the data cable."
+            "say": "The switch is the **PSE**; the device is the **PD**."
           },
           {
-            "say": "Each standard is quoted at the switch port, with less arriving at the device after losses in the cable:"
+            "code": "standard   port   device\n802.3af    15.4W  12.95W\n802.3at    30W    25.5W\n802.3bt T3 60W    51W\n802.3bt T4 90W    71.3W",
+            "language": "PoE: port, then device"
           },
           {
-            "code": "802.3af (PoE)     15.4 W port   12.95 W device\n802.3at (PoE+)    30 W port     25.5 W device\n802.3bt Type 3    60 W port     51 W device\n802.3bt Type 4    90 W port     71.3 W device",
-            "language": "PoE standards"
+            "say": "A switch also has a total **PoE budget**: all port allocations must fit inside it."
           },
           {
-            "say": "A switch also has a total **PoE budget**: the power allocated to all its ports together has to fit inside it."
+            "say": "**LLDP-MED**, for phones, adds the voice VLAN and power needed."
           }
         ],
-        "say": "**LLDP-MED**, an LLDP extension for phones, carries details such as the voice VLAN and how much power the phone needs. That power comes from **PoE** (Power over Ethernet): the switch, the power sourcing equipment (**PSE**), powers a powered device (**PD**) over the data cable. Each standard is quoted at the switch port, with less arriving at the device after losses in the cable: A switch also has a total **PoE budget**: the power allocated to all its ports together has to fit inside it.",
+        "say": "**PoE** (Power over Ethernet) lets the switch power a device over the data cable. The switch is the **PSE**; the device is the **PD**. A switch also has a total **PoE budget**: all port allocations must fit inside it. **LLDP-MED**, for phones, adds the voice VLAN and power needed.",
         "check": {
           "prompt": "An AP needs 22 W delivered to the AP. Which is the lowest standard that can power it?",
           "answer": "802.3at (PoE+), with 25.5 W at the device",

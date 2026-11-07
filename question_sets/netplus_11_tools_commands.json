@@ -3,24 +3,31 @@
     "type": "npc_demo",
     "question": "NPC: What do the everyday network commands tell you?",
     "npc": "tariq",
-    "intro": "I'm Tariq, the Beacon-Courier. A ticket lands on your desk, and before anyone opens a configuration or climbs a ladder, a few commands at a prompt can narrow it down. Each command is short and answers one question well, so the skill is knowing which question you're asking. Let's start with the simplest question you can ask a network.",
+    "intro": "I'm Tariq, the Beacon-Courier. A ticket lands on your desk, and before anyone opens a configuration or climbs a ladder, a few commands at a prompt can narrow it down. Each command answers one question well, so the skill is knowing which question you're asking. Let's start with the simplest one.",
     "steps": [
       {
         "beats": [
           {
-            "say": "**ping** sends an **ICMP Echo Request** and times the **Echo Reply**. It reports round-trip time and how many replies came back, so loss and latency show up at a glance."
+            "say": "**ping** sends a small 'are you there?' message, an **ICMP Echo Request**."
           },
           {
-            "say": "The count flag differs by OS. On Linux it is `ping -c 4 host`; on Windows it is `ping -n 4 host`, and plain `ping host` on Windows stops after four on its own."
+            "say": "The machine answers with an **Echo Reply**, and ping times the round trip."
+          },
+          {
+            "say": "So delay and lost replies show at a glance."
+          },
+          {
+            "code": "send exactly 4\nLinux    ping -c 4 host\nWindows  ping -n 4 host",
+            "language": "the count flag"
+          },
+          {
+            "say": "On Linux, plain ping runs until you stop it. On Windows it stops after four."
           }
         ],
-        "say": "ping sends an ICMP Echo Request and times the Echo Reply. It reports round-trip time and how many replies came back, so loss and latency show up at a glance. The count flag differs by OS. On Linux it is ping -c 4 host; on Windows it is ping -n 4 host, and plain ping host on Windows stops after four on its own."
+        "say": "**ping** sends a small 'are you there?' message, an **ICMP Echo Request**. The machine answers with an **Echo Reply**, and ping times the round trip. So delay and lost replies show at a glance. On Linux, plain ping runs until you stop it. On Windows it stops after four."
       },
       {
         "beats": [
-          {
-            "say": "**traceroute** finds the routers on the way. It sends probes with a **TTL** of 1, then 2, then 3. Each router that drops a probe for TTL reaching 0 returns an **ICMP Time Exceeded**, naming itself."
-          },
           {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; h[label=\"host\"]; r1[label=\"R1\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r2[label=\"R2\"]; r3[label=\"R3\"]; d[label=\"server\"]; h->r1[label=\" TTL=1\"]; r1->h[label=\" Time\\nExceeded\", style=dashed]; r1->r2[label=\" TTL=2\"]; r2->r3; r3->d; }",
@@ -30,10 +37,31 @@
             }
           },
           {
-            "say": "The tool names Windows and Linux differently: **tracert** on Windows, **traceroute** on Linux and macOS. Windows tracert uses ICMP Echo; Linux traceroute uses UDP by default."
+            "say": "**traceroute** lists the routers on the way to a destination."
+          },
+          {
+            "say": "Every packet carries a countdown number, its **TTL**. Each router subtracts one, and drops the packet at zero."
+          },
+          {
+            "say": "traceroute sends probes with TTL 1, then 2, then 3. A router that drops one answers with **ICMP Time Exceeded**, naming itself."
           }
         ],
-        "say": "traceroute finds the routers on the way. It sends probes with a TTL of 1, then 2, then 3. Each router that drops a probe for TTL reaching 0 returns an ICMP Time Exceeded, naming itself. The tool names Windows and Linux differently: tracert on Windows, traceroute on Linux and macOS. Windows tracert uses ICMP Echo; Linux traceroute uses UDP by default.",
+        "say": "**traceroute** lists the routers on the way to a destination. Every packet carries a countdown number, its **TTL**. Each router subtracts one, and drops the packet at zero. traceroute sends probes with TTL 1, then 2, then 3. A router that drops one answers with **ICMP Time Exceeded**, naming itself."
+      },
+      {
+        "beats": [
+          {
+            "say": "The tool's name depends on the operating system."
+          },
+          {
+            "code": "OS        command\nWindows   tracert\nLinux/Mac traceroute\n\nOS        probes\nWindows   ICMP Echo\nLinux/Mac UDP (default)",
+            "language": "names and probes"
+          },
+          {
+            "say": "Either way, the router that drops the probe answers with Time Exceeded."
+          }
+        ],
+        "say": "The tool's name depends on the operating system. Either way, the router that drops the probe answers with Time Exceeded.",
         "check": {
           "prompt": "A traceroute shows the first six hops answering quickly, then hop 7 onward all time out, yet the destination web page loads fine. What is the MOST likely reason?",
           "answer": "Those routers are configured not to reply to the probes, but still forward traffic",
@@ -47,19 +75,59 @@
       {
         "beats": [
           {
-            "say": "**nslookup** queries DNS on Windows, Linux and macOS alike; **dig** gives fuller answers on Linux and macOS but is not on Windows by default. `dig silverkeep.example AAAA` asks for one record type."
+            "say": "**nslookup** asks DNS which address a name has. It runs on Windows, Linux and macOS."
           },
           {
-            "say": "A host's own settings come from **ipconfig** on Windows (`/all` adds DNS servers and lease details, `/flushdns` empties the DNS cache) and from **ip address** (`ip a`) on modern Linux, where the older **ifconfig** may still be installed."
+            "say": "**dig** gives fuller answers on Linux and macOS, but Windows doesn't include it."
           },
           {
-            "say": "**netstat**, or **ss** on modern Linux, lists the local host's own connections and listening ports: `-a` shows them all, and `-n` keeps addresses and ports as numbers. **arp -a** prints the local cache of IP-to-MAC mappings."
+            "code": "dig silverkeep.example\n    AAAA",
+            "language": "one record type"
           },
           {
-            "say": "To look across the network instead, **nmap** scans a range for live hosts, their open ports, and the services and OS behind them."
+            "say": "Naming a record type, here AAAA for IPv6 addresses, asks for just that kind of answer."
           }
         ],
-        "say": "nslookup queries DNS on Windows, Linux and macOS alike; dig gives fuller answers on Linux and macOS but is not on Windows by default. dig silverkeep.example AAAA asks for one record type. A host's own settings come from ipconfig on Windows (/all adds DNS servers and lease details, /flushdns empties the DNS cache) and from ip address (ip a) on modern Linux, where the older ifconfig may still be installed. netstat, or ss on modern Linux, lists the local host's own connections and listening ports: -a shows them all, and -n keeps addresses and ports as numbers. arp -a prints the local cache of IP-to-MAC mappings. To look across the network instead, nmap scans a range for live hosts, their open ports, and the services and OS behind them."
+        "say": "**nslookup** asks DNS which address a name has. It runs on Windows, Linux and macOS. **dig** gives fuller answers on Linux and macOS, but Windows doesn't include it. Naming a record type, here AAAA for IPv6 addresses, asks for just that kind of answer."
+      },
+      {
+        "beats": [
+          {
+            "say": "**ipconfig** shows a Windows host's own settings."
+          },
+          {
+            "code": "Windows\n ipconfig\n ipconfig /all\n ipconfig /flushdns\nLinux\n ip address (ip a)\n ifconfig (older)",
+            "language": "own address and settings"
+          },
+          {
+            "say": "Add `/all` for more, such as the DNS servers. `/flushdns` empties the DNS cache."
+          },
+          {
+            "say": "Modern Linux uses **ip address**, or `ip a`. The older **ifconfig** may still be installed."
+          }
+        ],
+        "say": "**ipconfig** shows a Windows host's own settings. Add `/all` for more, such as the DNS servers. `/flushdns` empties the DNS cache. Modern Linux uses **ip address**, or `ip a`. The older **ifconfig** may still be installed."
+      },
+      {
+        "beats": [
+          {
+            "say": "**netstat**, or **ss** on modern Linux, lists this host's own connections and listening ports."
+          },
+          {
+            "code": "netstat -an   (ss -an)\n  this host's sockets\narp -a\n  IP-to-MAC cache\nnmap\n  scans other hosts",
+            "language": "three more tools"
+          },
+          {
+            "say": "`-a` shows them all, and `-n` keeps addresses and ports as numbers."
+          },
+          {
+            "say": "**arp -a** prints the cache of IP-to-MAC pairs."
+          },
+          {
+            "say": "**nmap** scans other hosts: which are up, their open ports, services and OS."
+          }
+        ],
+        "say": "**netstat**, or **ss** on modern Linux, lists this host's own connections and listening ports. `-a` shows them all, and `-n` keeps addresses and ports as numbers. **arp -a** prints the cache of IP-to-MAC pairs. **nmap** scans other hosts: which are up, their open ports, services and OS."
       }
     ],
     "outro": "Next, Aria wants to check that a server is reachable and time the round trip. Pick the command that does both, along with what it relies on."
@@ -389,9 +457,6 @@
       {
         "beats": [
           {
-            "say": "A **packet capture** records whole packets off an interface, headers and payload. On Linux the classic tool is **tcpdump**; it writes a `.pcap` file."
-          },
-          {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; i[label=\"interface\"]; t[label=\"tcpdump\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; f[label=\"capture\\n.pcap\"]; w[label=\"Wireshark\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; i->t[label=\" packets\"]; t->f[label=\" write\"]; f->w[label=\" open\"]; }",
               "alt": "An interface feeding a capture tool, which writes a capture file, which is then opened in an analysis program.",
@@ -400,16 +465,34 @@
             }
           },
           {
-            "say": "You then open that file in a **packet analyzer** (also called a protocol analyzer) such as **Wireshark**, which decodes each packet across hundreds of protocols."
+            "say": "A **packet capture** records whole packets off a network interface: headers and payload, the data inside."
+          },
+          {
+            "say": "On Linux the classic tool is **tcpdump**. It saves what it sees in a `.pcap` file."
           }
         ],
-        "say": "A packet capture records whole packets off an interface, headers and payload. On Linux the classic tool is tcpdump; it writes a .pcap file. You then open that file in a packet analyzer (also called a protocol analyzer) such as Wireshark, which decodes each packet across hundreds of protocols."
+        "say": "A **packet capture** records whole packets off a network interface: headers and payload, the data inside. On Linux the classic tool is **tcpdump**. It saves what it sees in a `.pcap` file."
       },
       {
         "beats": [
           {
-            "say": "Capturing everything is heavy. **NetFlow** instead exports a summary per conversation - source and destination IP and port, protocol, byte and packet counts, timestamps - and keeps no payload."
+            "say": "You open that file in a **packet analyzer**, also called a protocol analyzer."
           },
+          {
+            "say": "**Wireshark** is the best known. It decodes each packet across hundreds of protocols."
+          },
+          {
+            "code": "tcpdump -i eth0 port 53",
+            "language": "capture DNS on eth0"
+          },
+          {
+            "say": "`-i` picks the interface, and `port 53` keeps only DNS traffic."
+          }
+        ],
+        "say": "You open that file in a **packet analyzer**, also called a protocol analyzer. **Wireshark** is the best known. It decodes each packet across hundreds of protocols. `-i` picks the interface, and `port 53` keeps only DNS traffic."
+      },
+      {
+        "beats": [
           {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; subgraph cluster_cap{label=\"full capture\"; pk[label=\"every packet\\n+ payload\"];} subgraph cluster_nf{label=\"NetFlow\"; fl[label=\"one record\\nper flow:\\nIPs, ports,\\nbytes\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"];} }",
@@ -419,10 +502,34 @@
             }
           },
           {
-            "say": "So NetFlow answers who talked to whom, how much, and when; a full capture answers what they actually said. A log line reading `bytes=240240` is flow data, not a packet."
+            "say": "Capturing everything is heavy."
+          },
+          {
+            "say": "**NetFlow** instead exports one summary per conversation, with no payload."
+          },
+          {
+            "code": "source IP, destination IP\nsource port, dest. port\nprotocol\nbytes, packets\nstart and end time",
+            "language": "a NetFlow record"
+          },
+          {
+            "say": "A vendor-neutral standard built from it is **IPFIX**."
           }
         ],
-        "say": "Capturing everything is heavy. NetFlow instead exports a summary per conversation - source and destination IP and port, protocol, byte and packet counts, timestamps - and keeps no payload. So NetFlow answers who talked to whom, how much, and when; a full capture answers what they actually said. A log line reading bytes=240240 is flow data, not a packet.",
+        "say": "Capturing everything is heavy. **NetFlow** instead exports one summary per conversation, with no payload. A vendor-neutral standard built from it is **IPFIX**."
+      },
+      {
+        "beats": [
+          {
+            "say": "A flow answers who talked to whom, how much, and when."
+          },
+          {
+            "say": "A full capture answers what they actually said."
+          },
+          {
+            "say": "A log line reading `bytes=240240` is flow data, not a packet."
+          }
+        ],
+        "say": "A flow answers who talked to whom, how much, and when. A full capture answers what they actually said. A log line reading `bytes=240240` is flow data, not a packet.",
         "check": {
           "prompt": "You need to prove which exact HTTP URL a host requested. Which source has that detail?",
           "answer": "A full packet capture, because it keeps the payload",
@@ -436,17 +543,37 @@
       {
         "beats": [
           {
-            "say": "One more place telemetry lands. Every router, switch, and firewall writes event messages, and a **log collector** gathers them in one searchable place: a **syslog** server, or a **SIEM** that adds correlation and alerting."
+            "say": "Every router, switch and firewall writes event messages."
           },
           {
-            "say": "A collected log line is terse but complete. This one names the host, the facility and severity, the interface, and what happened:"
+            "say": "A **log collector** gathers them in one searchable place."
+          },
+          {
+            "say": "A **syslog** server is one. A **SIEM** goes further: it links related events and raises alerts."
+          }
+        ],
+        "say": "Every router, switch and firewall writes event messages. A **log collector** gathers them in one searchable place. A **syslog** server is one. A **SIEM** goes further: it links related events and raises alerts."
+      },
+      {
+        "beats": [
+          {
+            "say": "Here is one collected line. Read it left to right."
           },
           {
             "code": "Mar 2 23:41:55 core1 %LINK-3-UPDOWN:\n  Interface TenGigabitEthernet1/1, changed state to up",
             "language": "syslog"
+          },
+          {
+            "say": "First the time, then the host, `core1`."
+          },
+          {
+            "say": "`LINK` is the facility, the part of the device that spoke, and `3` is the severity."
+          },
+          {
+            "say": "The rest says what happened: that interface changed state to up."
           }
         ],
-        "say": "One more place telemetry lands. Every router, switch, and firewall writes event messages, and a log collector gathers them in one searchable place: a syslog server, or a SIEM that adds correlation and alerting. A collected log line is terse but complete. This one names the host, the facility and severity, the interface, and what happened."
+        "say": "Here is one collected line. Read it left to right. First the time, then the host, `core1`. `LINK` is the facility, the part of the device that spoke, and `3` is the severity. The rest says what happened: that interface changed state to up."
       }
     ],
     "outro": "Now Aria opens Wireshark to pick apart a failing TLS handshake. Name the kind of tool she's using."
@@ -567,29 +694,48 @@
       {
         "beats": [
           {
-            "say": "A **toner and probe** finds one cable in a bundle. The **tone generator** clips onto a wire and injects an audible signal; you sweep the **probe** over the far-end cables until one sings. Use it on unpowered copper."
-          },
-          {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; tg[label=\"tone\\ngenerator\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; a[label=\"cable A\"]; b[label=\"cable B\"]; c[label=\"cable C\"]; p[label=\"probe\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; tg->a[label=\" tone\"]; a->p[label=\" beeps\", style=dashed]; }",
               "alt": "A tone generator clipped to one of three cables; a dashed line shows the probe beeping at that same cable's far end.",
               "caption": "the tone sings only on its own wire",
               "src": "_dot/ae241797c3ed0742.svg"
             }
+          },
+          {
+            "say": "A **toner and probe** finds one cable among many unlabeled ones."
+          },
+          {
+            "say": "The **tone generator** clips onto a wire and injects an audible signal."
+          },
+          {
+            "say": "You sweep the **probe** over the far-end cables until one sings."
+          },
+          {
+            "say": "Use it on unpowered copper only."
           }
         ],
-        "say": "A toner and probe finds one cable in a bundle. The tone generator clips onto a wire and injects an audible signal; you sweep the probe over the far-end cables until one sings. Use it on unpowered copper."
+        "say": "A **toner and probe** finds one cable among many unlabeled ones. The **tone generator** clips onto a wire and injects an audible signal. You sweep the **probe** over the far-end cables until one sings. Use it on unpowered copper only."
       },
       {
         "beats": [
           {
-            "say": "A **spectrum analyzer** shows raw radio energy across a band. Unlike a Wi-Fi analyzer, which lists SSIDs and channels, it sees **non-Wi-Fi** sources too: a microwave oven, a 2.4 GHz cordless phone, or a Bluetooth device crowding the band."
+            "say": "A **Wi-Fi analyzer** lists nearby Wi-Fi networks by name and channel."
           },
           {
-            "say": "And a **network tap** is a device spliced inline on a link that copies the full-duplex traffic out to a monitor port, with no frames lost. A switch **SPAN**/mirror port makes the copy inside the switch instead, and can drop frames when it is oversubscribed."
+            "say": "A **spectrum analyzer** shows raw radio energy across a whole band."
+          },
+          {
+            "say": "So it also sees sources that are not Wi-Fi:"
+          },
+          {
+            "code": "microwave oven\n2.4 GHz cordless phone\nBluetooth device",
+            "language": "non-Wi-Fi interference"
+          },
+          {
+            "say": "Those crowd the band, and only a spectrum analyzer shows them."
           }
         ],
-        "say": "A spectrum analyzer shows raw radio energy across a band. Unlike a Wi-Fi analyzer, which lists SSIDs and channels, it sees non-Wi-Fi sources too: a microwave oven, a 2.4 GHz cordless phone, or a Bluetooth device crowding the band. And a network tap is a device spliced inline on a link that copies the full-duplex traffic out to a monitor port, with no frames lost. A switch SPAN/mirror port makes the copy inside the switch instead, and can drop frames when it is oversubscribed.",
+        "say": "A **Wi-Fi analyzer** lists nearby Wi-Fi networks by name and channel. A **spectrum analyzer** shows raw radio energy across a whole band. So it also sees sources that are not Wi-Fi: Those crowd the band, and only a spectrum analyzer shows them.",
         "check": {
           "prompt": "Users on channel 1 get steady interference, but a Wi-Fi analyzer shows no access point on or near that channel. Which tool identifies the source?",
           "answer": "A spectrum analyzer, which sees non-Wi-Fi RF sources a Wi-Fi analyzer cannot",
@@ -599,6 +745,38 @@
           ],
           "why": "Interference with no Wi-Fi source on the channel is almost always a non-802.11 emitter. A spectrum analyzer shows that raw energy; a Wi-Fi analyzer, which only reads Wi-Fi beacons, is blind to it."
         }
+      },
+      {
+        "beats": [
+          {
+            "say": "To watch a link, you need a copy of its traffic."
+          },
+          {
+            "say": "A **network tap** is a device spliced into the cable."
+          },
+          {
+            "say": "It copies the traffic, in both directions at once (**full-duplex**), out to a monitor port."
+          },
+          {
+            "say": "No frames are lost, but a tap sees only the link it sits on."
+          }
+        ],
+        "say": "To watch a link, you need a copy of its traffic. A **network tap** is a device spliced into the cable. It copies the traffic, in both directions at once (**full-duplex**), out to a monitor port. No frames are lost, but a tap sees only the link it sits on."
+      },
+      {
+        "beats": [
+          {
+            "say": "A switch can make the copy inside itself instead: a **SPAN**, or mirror, port."
+          },
+          {
+            "code": "tap\n  in the cable\n  loses no frames\n  passes physical errors\nSPAN port\n  set up in the switch\n  may drop frames\n  usually filters errors",
+            "language": "tap or SPAN"
+          },
+          {
+            "say": "A SPAN session copies a **source** port to a **destination** port, where the analyzer plugs in."
+          }
+        ],
+        "say": "A switch can make the copy inside itself instead: a **SPAN**, or mirror, port. A SPAN session copies a **source** port to a **destination** port, where the analyzer plugs in."
       }
     ],
     "outro": "Next, Old Hask has a job to do in the wiring closet. Read it and pick the tool built for it."
@@ -756,32 +934,31 @@
       {
         "beats": [
           {
-            "say": "A Linux route table from `ip route`. The first word of each line is the destination; `default` is the catch-all, the route taken when nothing more specific matches."
+            "say": "A host's **route table** says where it sends each packet. On Linux, `ip route` prints it."
           },
           {
             "code": "default via 192.168.1.1 dev eth0\n192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.50",
             "language": "ip route"
           },
           {
-            "say": "So `default via 192.168.1.1` is the **default gateway**: anything outside 192.168.1.0/24 is handed to 192.168.1.1. The second line is the directly connected LAN, reached without a gateway."
+            "say": "The first word of each line is the destination. `default` is the catch-all, used when nothing more specific matches."
+          },
+          {
+            "say": "`src` is this host's own address on that network."
           }
         ],
-        "say": "A Linux route table from ip route. The first word of each line is the destination; default is the catch-all, the route taken when nothing more specific matches. So default via 192.168.1.1 is the default gateway: anything outside 192.168.1.0/24 is handed to 192.168.1.1. The second line is the directly connected LAN, reached without a gateway."
+        "say": "A host's **route table** says where it sends each packet. On Linux, `ip route` prints it. The first word of each line is the destination. `default` is the catch-all, used when nothing more specific matches. `src` is this host's own address on that network."
       },
       {
         "beats": [
           {
-            "say": "Now an ARP cache from `arp -a`. Each line maps an IP to the MAC that answered for it on this segment."
+            "say": "`default via 192.168.1.1` hands anything outside 192.168.1.0/24 to 192.168.1.1: the **default gateway**."
           },
           {
-            "code": "192.168.1.1   aa-bb-cc-00-11-22  dynamic\n192.168.1.60  aa-bb-cc-00-11-22  dynamic",
-            "language": "arp -a"
-          },
-          {
-            "say": "Read carefully: two different IPs share one MAC. On a normal LAN that is suspicious - one host answering for another address is what **ARP spoofing** looks like."
+            "say": "The second line is the directly connected LAN, reached without a gateway."
           }
         ],
-        "say": "Now an ARP cache from arp -a. Each line maps an IP to the MAC that answered for it on this segment. Read carefully: two different IPs share one MAC. On a normal LAN that is suspicious - one host answering for another address is what ARP spoofing looks like.",
+        "say": "`default via 192.168.1.1` hands anything outside 192.168.1.0/24 to 192.168.1.1: the **default gateway**. The second line is the directly connected LAN, reached without a gateway.",
         "check": {
           "prompt": "A host's route table holds `default via 192.168.1.1` and `192.168.1.0/24 dev eth0`. Which line decides where a packet for 8.8.8.8 goes first?",
           "answer": "The default route, via 192.168.1.1, since 8.8.8.8 is not in 192.168.1.0/24",
@@ -791,6 +968,75 @@
           ],
           "why": "8.8.8.8 does not fall inside 192.168.1.0/24, so the most specific match fails and the packet follows the default route to the gateway 192.168.1.1."
         }
+      },
+      {
+        "beats": [
+          {
+            "code": "192.168.1.1   aa-bb-cc-00-11-22  dynamic\n192.168.1.60  aa-bb-cc-00-11-22  dynamic",
+            "language": "arp -a"
+          },
+          {
+            "say": "`arp -a` prints the **ARP cache**: each line pairs an IP address with the MAC address that answered for it."
+          },
+          {
+            "say": "Read carefully: two different IPs share one MAC."
+          },
+          {
+            "say": "On a normal LAN that is suspicious: one host answering for another address is what **ARP spoofing** looks like."
+          }
+        ],
+        "say": "`arp -a` prints the **ARP cache**: each line pairs an IP address with the MAC address that answered for it. Read carefully: two different IPs share one MAC. On a normal LAN that is suspicious: one host answering for another address is what **ARP spoofing** looks like."
+      },
+      {
+        "beats": [
+          {
+            "code": "Proto Local        Foreign       State\nTCP   0.0.0.0:22   0.0.0.0:0     LISTENING\nTCP   10.0.0.9:50011 198.51.100.7:443 ESTABLISHED",
+            "language": "netstat -an"
+          },
+          {
+            "say": "`netstat -an` prints one line per connection or listener. First comes the local address and port, then the foreign one."
+          },
+          {
+            "say": "`ESTABLISHED` means the connection is open now."
+          },
+          {
+            "say": "`LISTENING` means waiting for a caller, so the foreign address is empty."
+          }
+        ],
+        "say": "`netstat -an` prints one line per connection or listener. First comes the local address and port, then the foreign one. `ESTABLISHED` means the connection is open now. `LISTENING` means waiting for a caller, so the foreign address is empty."
+      },
+      {
+        "beats": [
+          {
+            "code": "PORT      STATE\n53/tcp    open\n25/tcp    closed\n8080/tcp  filtered",
+            "language": "nmap output"
+          },
+          {
+            "say": "In nmap output, `open` means something accepts connections."
+          },
+          {
+            "say": "`closed` means the host answered, but nothing is listening."
+          },
+          {
+            "say": "`filtered` means a firewall dropped the probe, so nmap cannot tell."
+          }
+        ],
+        "say": "In nmap output, `open` means something accepts connections. `closed` means the host answered, but nothing is listening. `filtered` means a firewall dropped the probe, so nmap cannot tell."
+      },
+      {
+        "beats": [
+          {
+            "code": "1   <1 ms   10.0.0.1\n2    3 ms   203.0.113.1\n3   75 ms   198.51.100.9\n4   76 ms   192.0.2.7",
+            "language": "tracert, shortened"
+          },
+          {
+            "say": "In tracert, each line is one hop: its number, round-trip time, and router address."
+          },
+          {
+            "say": "A big jump in time, here between hops 2 and 3, marks where the delay begins."
+          }
+        ],
+        "say": "In tracert, each line is one hop: its number, round-trip time, and router address. A big jump in time, here between hops 2 and 3, marks where the delay begins."
       }
     ],
     "outro": "Now a technician runs `ip route` on another Linux host. Read the output and find its default gateway."
@@ -913,13 +1159,35 @@
       {
         "beats": [
           {
-            "say": "Work from the symptom. 'Is the server even up?' is reachability - that is ping. 'Where does the path get slow?' walks the route - that is traceroute."
+            "say": "Work from the symptom: the complaint points at the tool."
           },
           {
-            "say": "'Which service is listening here?' reads the local socket table - netstat. 'Which cable is this?' is physical - a toner and probe. 'What is jamming this channel?' is RF - a spectrum analyzer."
+            "code": "is the server up?\n  ping\nwhere is the path slow?\n  traceroute\nIP works, name doesn't?\n  nslookup or dig",
+            "language": "reachability and names"
+          },
+          {
+            "say": "Reachability is ping, and the path is traceroute."
+          },
+          {
+            "say": "A name that won't resolve is a job for DNS lookups."
           }
         ],
-        "say": "Work from the symptom. 'Is the server even up?' is reachability - that is ping. 'Where does the path get slow?' walks the route - that is traceroute. 'Which service is listening here?' reads the local socket table - netstat. 'Which cable is this?' is physical - a toner and probe. 'What is jamming this channel?' is RF - a spectrum analyzer.",
+        "say": "Work from the symptom: the complaint points at the tool. Reachability is ping, and the path is traceroute. A name that won't resolve is a job for DNS lookups."
+      },
+      {
+        "beats": [
+          {
+            "code": "what is listening here?\n  netstat\nwhat else is out there?\n  nmap\none IP, two MACs?\n  arp -a",
+            "language": "this host and its LAN"
+          },
+          {
+            "say": "To see which services this host is listening on, read its own sockets."
+          },
+          {
+            "say": "To look beyond it, you need a different tool."
+          }
+        ],
+        "say": "To see which services this host is listening on, read its own sockets. To look beyond it, you need a different tool.",
         "check": {
           "prompt": "You must find which hosts on a subnet are up and which ports each one exposes. Which tool fits?",
           "answer": "nmap, which probes the whole range across the network",
@@ -929,6 +1197,21 @@
           ],
           "why": "netstat reads only the local host's own sockets, and arp -a shows only cached IP-to-MAC entries. Discovering other hosts and their ports means sending probes across the network, which is what nmap does."
         }
+      },
+      {
+        "beats": [
+          {
+            "code": "which cable is this?\n  toner and probe\nwhat jams this channel?\n  spectrum analyzer\ncopy a link to watch?\n  network tap",
+            "language": "hardware"
+          },
+          {
+            "say": "Some symptoms are physical or radio, and no command reaches them."
+          },
+          {
+            "say": "Those need a hand-held tool, or a tap."
+          }
+        ],
+        "say": "Some symptoms are physical or radio, and no command reaches them. Those need a hand-held tool, or a tap."
       }
     ],
     "outro": "Next, Mira can reach a server by its address but not by its name. Pick every command that would confirm the cause."
