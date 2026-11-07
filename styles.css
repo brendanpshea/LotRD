@@ -2042,16 +2042,25 @@ code.verdict-text {
 
 /* ── NPC teaching scene ───────────────────────────────────────────────────── */
 
-/* A scene is read as prose, a paragraph at a time, so it gets a heavier
+/* A scene's frame (its title, the mentor's name, code panels) gets a heavier
    monospace than the game's Courier New: thin strokes and a small x-height make
-   16px of Courier read like 13px of most fonts. Still monospace, so the
-   terminal look holds, and each system's own readable one is tried first.
-   Buttons keep the game's font (they set their own), except a check's options,
-   which are part of what is read. The code editor is not affected. */
+   16px of Courier read like 13px of most fonts. Each system's own readable one
+   is tried first. The mentor's lines and a check's options, which are what is
+   read, are set in a proportional face (below). Buttons keep the game's font
+   (they set their own). The code editor is not affected. */
 .npc-scene {
     --npc-font: ui-monospace, Menlo, Consolas, 'Cascadia Mono', 'DejaVu Sans Mono',
                 'Liberation Mono', 'Noto Sans Mono', 'Courier New', Courier, monospace;
+    /* What the mentor says is prose, and prose reads faster in a proportional
+       face: the system's own UI font. Code, inline `code`, the scene's title and
+       the buttons keep the monospace, so the terminal look holds around it. */
+    --npc-prose-font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans',
+                      'Helvetica Neue', Arial, sans-serif;
     font-family: var(--npc-font);
+}
+
+.npc-dialogue .npc-line {
+    font-family: var(--npc-prose-font);
 }
 
 /* Wraps, so on a narrow phone the Skip button takes its own line rather than
@@ -2219,6 +2228,8 @@ code.verdict-text {
 
 @media (max-width: 600px) {
     .npc-dialogue { font-size: 1.0625rem; }
+    /* About 28 characters of a table fit across a phone. */
+    .npc-code { font-size: 0.8em; padding: 8px 9px; }
 }
 
 .npc-line {
@@ -2245,13 +2256,20 @@ code.verdict-text {
     font-size: 0.88em;
     line-height: 1.4;
     color: #b6f5b6;
-    background: #050c05;
     border: 1px solid #2f5f2f;
     border-left: 3px solid #7CFC00;
     padding: 9px 12px;
     margin: 0 0 10px 0;
     white-space: pre;
     overflow-x: auto;
+    /* Real command output can run wider than a phone. A green glow at an edge
+       says there is more that way; the cover moves with the text and lifts it. */
+    background:
+        linear-gradient(to right, #050c05 30%, rgba(5, 12, 5, 0)) left / 28px 100% no-repeat local,
+        linear-gradient(to left, #050c05 30%, rgba(5, 12, 5, 0)) right / 28px 100% no-repeat local,
+        radial-gradient(farthest-side at 0 50%, rgba(124, 252, 0, 0.45), rgba(124, 252, 0, 0)) left / 12px 100% no-repeat scroll,
+        radial-gradient(farthest-side at 100% 50%, rgba(124, 252, 0, 0.45), rgba(124, 252, 0, 0)) right / 12px 100% no-repeat scroll,
+        #050c05;
 }
 
 .npc-code[data-lang]::before {
@@ -2276,7 +2294,7 @@ code.verdict-text {
     display: block;
     width: 100%;
     text-align: left;
-    font-family: var(--npc-font);
+    font-family: var(--npc-prose-font);
     font-size: 1.0625rem;
     line-height: 1.4;
 }
