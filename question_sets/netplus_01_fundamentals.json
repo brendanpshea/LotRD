@@ -380,24 +380,9 @@
           },
           {
             "say": "Clients see one shared address, its **virtual IP** (VIP)."
-          },
-          {
-            "say": "It deals requests out in turn (**round robin**) or to the least busy server (**least connections**)."
-          },
-          {
-            "say": "A small test request, a **health check**, shows which servers still answer."
           }
         ],
-        "say": "A **load balancer** shares requests across a **pool** of identical servers. Clients see one shared address, its **virtual IP** (VIP). It deals requests out in turn (**round robin**) or to the least busy server (**least connections**). A small test request, a **health check**, shows which servers still answer.",
-        "check": {
-          "prompt": "One web server in the pool stops answering its health checks. What happens to the new requests that would have gone to it?",
-          "answer": "The load balancer sends them to the healthy servers",
-          "wrong": [
-            "They fail until someone repairs that server",
-            "They queue at the VIP until that server returns"
-          ],
-          "why": "A server that fails its health checks is taken out of the pool, and the others share its load until it passes again. Clients keep using the same VIP and never notice."
-        }
+        "say": "A **load balancer** shares requests across a **pool** of identical servers. Clients see one shared address, its **virtual IP** (VIP)."
       }
     ],
     "outro": "Next, a school with 120 access points has a job to get done. Name the device built for it."
@@ -477,6 +462,43 @@
       }
     ],
     "feedback": "Switches forward frames by MAC address; routers forward packets by IP address. At each hop a router discards the incoming frame and builds a new one for the next link, which is why the MAC addresses change hop by hop while the IP addresses inside stay the same."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How does a load balancer choose a server?",
+    "npc": "tariq",
+    "intro": "A shop's web site may get a thousand visitors a minute, and the load balancer must hand each one to a server in a blink. Two things decide whether that goes well: whose turn it is, and whether that server is even alive. Let's take the turn first.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "It can deal requests out one server at a time, in order: **round robin**."
+          },
+          {
+            "say": "Or it can pick the server with the fewest connections open right now: **least connections**."
+          }
+        ],
+        "say": "It can deal requests out one server at a time, in order: **round robin**. Or it can pick the server with the fewest connections open right now: **least connections**."
+      },
+      {
+        "beats": [
+          {
+            "say": "A small test request, a **health check**, shows which servers still answer."
+          }
+        ],
+        "say": "A small test request, a **health check**, shows which servers still answer.",
+        "check": {
+          "prompt": "One web server in the pool stops answering its health checks. What happens to the new requests that would have gone to it?",
+          "answer": "The load balancer sends them to the healthy servers",
+          "wrong": [
+            "They fail until someone repairs that server",
+            "They queue at the VIP until that server returns"
+          ],
+          "why": "A server that fails its health checks is taken out of the pool, and the others share its load until it passes again. Clients keep using the same VIP and never notice."
+        }
+      }
+    ],
+    "outro": "Next, Marketstone's load balancer spreads a stream of requests evenly across a pool. Work out how many each server gets."
   },
   {
     "type": "dynamic_numeric",
@@ -576,16 +598,16 @@
             }
           },
           {
-            "say": "An **intrusion detection system** (IDS) watches a copy of the traffic and raises an alert on an attack."
+            "say": "An **intrusion detection system** (IDS) watches a copy of the traffic and alerts on attacks."
           },
           {
-            "say": "That copy comes from a switch's mirror port (**SPAN**) or a **tap** on a cable."
+            "say": "A **SPAN** port, a switch's spare mirror port, or a **tap** on a cable supplies the copy."
           },
           {
             "say": "An **intrusion prevention system** (IPS) sits **inline**, in the path itself, so it can drop attacks."
           }
         ],
-        "say": "An **intrusion detection system** (IDS) watches a copy of the traffic and raises an alert on an attack. That copy comes from a switch's mirror port (**SPAN**) or a **tap** on a cable. An **intrusion prevention system** (IPS) sits **inline**, in the path itself, so it can drop attacks.",
+        "say": "An **intrusion detection system** (IDS) watches a copy of the traffic and alerts on attacks. A **SPAN** port, a switch's spare mirror port, or a **tap** on a cable supplies the copy. An **intrusion prevention system** (IPS) sits **inline**, in the path itself, so it can drop attacks.",
         "check": {
           "prompt": "An IDS on a SPAN port alerts on a real attack, yet the attack still reached its server. Is the IDS faulty?",
           "answer": "No: it saw a copy, so alerting was all it could do",
@@ -1537,16 +1559,16 @@
       {
         "beats": [
           {
-            "say": "**IPsec** is the most common tunnel. First, **IKE** (Internet Key Exchange) runs on UDP 500."
+            "say": "**IPsec** is the most common VPN tunnel. **IKE** (Internet Key Exchange) runs on UDP 500."
           },
           {
-            "say": "The two peers prove who they are and agree on keys, called **security associations** (SAs)."
+            "say": "The peers prove who they are and agree on keys and settings, **security associations** (SAs), for the data."
           },
           {
-            "say": "IKE works in two **phases**: phase 1 builds a protected channel, phase 2 agrees the SAs for the data."
+            "say": "IKE has two **phases**: phase 1 builds a protected channel, phase 2 agrees the data's SAs."
           }
         ],
-        "say": "**IPsec** is the most common tunnel. First, **IKE** (Internet Key Exchange) runs on UDP 500. The two peers prove who they are and agree on keys, called **security associations** (SAs). IKE works in two **phases**: phase 1 builds a protected channel, phase 2 agrees the SAs for the data.",
+        "say": "**IPsec** is the most common VPN tunnel. **IKE** (Internet Key Exchange) runs on UDP 500. The peers prove who they are and agree on keys and settings, **security associations** (SAs), for the data. IKE has two **phases**: phase 1 builds a protected channel, phase 2 agrees the data's SAs.",
         "check": {
           "prompt": "Phase 1 never completes between two gateways. Is any user data protected yet?",
           "answer": "No: the data SAs come from phase 2, which needs phase 1",
