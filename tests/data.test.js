@@ -1948,6 +1948,33 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
   // this as their scenes are rewritten (WRITING_GUIDE: Title, opening and closing lines).
   const QUESTION_TITLES = setId => /^securityx_|^netplus_|^techplus_/.test(setId);
 
+  // Frames a beginner can read (WRITING_GUIDE: Beats a beginner can read). Sets move
+  // to this as their scenes are rewritten.
+  const LIGHT_FRAMES = setId => /^netplus_01_/.test(setId);
+  const wordCount = s => s.replace(/[*`]/g, '').split(/\s+/).filter(Boolean).length;
+
+  it('a rewritten set keeps each frame light: short beats, few new terms, 50 words on screen', () => {
+    const bad = [];
+    for (const setId of index.filter(LIGHT_FRAMES)) {
+      loadJSON(`question_sets/${setId}`).forEach((q, i) => {
+        if (q.type !== 'npc_demo') return;
+        if (q.steps.length > 6) bad.push(`${setId}[${i}]: more than six steps`);
+        const intro = (q.intro || '').replace(/^I'm [^.]*\.\s*/, '');
+        if (wordCount(intro) > 70) bad.push(`${setId}[${i}]: an intro of ${wordCount(intro)} words`);
+        q.steps.forEach((step, s) => {
+          const says = step.beats?.length ? step.beats.filter(b => typeof b.say === 'string').map(b => b.say) : [step.say];
+          const frame = says.reduce((n, b) => n + wordCount(b), 0);
+          if (frame > 50) bad.push(`${setId}[${i}] step ${s + 1}: ${frame} spoken words in one frame; split the step`);
+          for (const b of says) {
+            if (wordCount(b) > 25) bad.push(`${setId}[${i}] step ${s + 1}: a beat of ${wordCount(b)} words: ${b.slice(0, 50)}`);
+            if ((b.match(/\*\*[^*]+\*\*/g) || []).length > 2) bad.push(`${setId}[${i}] step ${s + 1}: more than two new terms in a beat: ${b.slice(0, 50)}`);
+          }
+        });
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+
   it('a rewritten set titles each scene with the question it answers', () => {
     const bad = [];
     for (const setId of index.filter(QUESTION_TITLES)) {

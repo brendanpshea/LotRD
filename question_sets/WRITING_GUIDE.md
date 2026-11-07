@@ -938,7 +938,7 @@ Writing good ones — everything said for Python class problems applies, and als
 | `question` | yes | string | The scene's title: the question the scene answers (see *Title, opening and closing lines*). Shown as the scene's heading; also its identity, so it must be unique. Prefix it with `NPC:`, which marks a scene in the data and is not shown |
 | `npc` | yes | string | Mentor **id** from [`assets/npcs.json`](../assets/npcs.json) — `ada`, `nia`, `zoya`, `flint`, `kaelen`, `tariq`, `val`, `omu`. The game resolves the display name and portrait from the roster. Pick the mentor whose domain matches the lesson, and write the prose to fit them (Zoya uses they/them) |
 | `intro` / `outro` | no | string | The mentor's opening and closing words, spoken to the student (see *Title, opening and closing lines*) |
-| `steps` | yes | object[] | 2–4 steps; each needs `say`, may carry `beats` and one `check` |
+| `steps` | yes | object[] | 2–6 steps; each needs `say`, may carry `beats` and one `check`. Each step is a frame: split a heavy step rather than packing it (see *Beats a beginner can read*) |
 | `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is either `{"say": "..."}` (one spoken line), `{"code": "...", "language": "..."}` (the artifact being examined), or `{"figure": {...}}` (a picture; see [Pictures in Questions](#pictures-in-questions-figure)). Without it the whole `say` string appears in one go |
 | `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues |
 
@@ -965,6 +965,25 @@ Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase descr
 **Code in a line.** Write `` `code` `` to show code, or output, inside a line as a small monospaced chip: ``"It shows `Forge lit`, and then `Anvil ready`."`` Mark what a program prints or a user types, a code fragment (`` `name.length()` ``, `` `i++` ``, `` `return -1;` ``), a command or file name, and a name from the code where the sentence could read it as an ordinary word (`` `count` ``, `` `max` ``). Class names written as names (Bird, Golem) stay plain, and so does a term in bold. Check options may use it too. Be sparing: the point is that code can be told from prose at a glance. `data.test.js` rejects an unpaired backtick, and code set off by extra spaces (`So  power = power;  copies`), the old way.
 
 Each step is its own frame: when the next step starts, the screen clears, so a step should make sense on its own rather than leaning on the line just above it from the previous step.
+
+### Beats a beginner can read
+
+A frame is one step: its spoken beats pile up on the screen until the next step clears them, so a frame is what the student actually faces at once. Write it for someone meeting the subject for the first time.
+
+1. **One new idea per beat**, in 25 words at most, and usually fewer. Introduce at most two new `**terms**` in a beat.
+2. **At most 50 spoken words in a frame.** Pictures and code panels don't count. When a step is heavier than that, split it into two steps, each one idea that makes sense on its own. A scene may have up to six.
+3. **Show the thing before you name it.** Define a term only with words the student already has, or with an everyday comparison ("the way a street address gets a letter across town"). Never define one new term with another. If a definition needs a second new word, teach that word first, in a beat of its own.
+4. **Three or more parallel items go in a picture or a table, not a sentence**: the seven OSI layers, a set of ports, a row of devices. Use a `figure` beat, or a `code` beat holding a short aligned table, and let the spoken beats point at it a row at a time.
+5. **Plain words first, the exam term second.** Write "the address built into every network card, its **MAC address**". Don't drop a bare acronym on the student: say what it stands for, or what it does, the first time.
+
+Before and after, from Network+ 01:
+
+| | |
+|---|---|
+| Before (one frame, about 190 words) | The OSI model splits networking into seven layers, numbered up from the wire: 1 Physical, 2 Data Link, 3 Network, 4 Transport, 5 Session, 6 Presentation, 7 Application. Physical sends bits as signals on copper, fiber or radio. Data Link moves frames between neighbors on one network, using MAC addresses. Network moves packets between networks, using IP addresses and routing… |
+| After (three frames) | *[a stack of seven boxes]* This stack is the **OSI model**: seven layers, numbered up from the wire. Let's climb it from the bottom. ▸ **Layer 1, Physical**, is the signal itself: electricity in copper, light in fiber, radio in the air. **Layer 2, Data Link**, hands data to a device on the same local network… ▸ **Layer 3, Network**, gets data from one network to another, the way a street address gets a letter across town. |
+
+The scene shows its intro as a frame of its own, and it dims a frame's earlier lines as each new one arrives, so the newest line is the one the eye finds. `data.test.js` holds the sets listed in `LIGHT_FRAMES` to these limits.
 
 ### Title, opening and closing lines
 

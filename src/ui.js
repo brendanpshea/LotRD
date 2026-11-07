@@ -1934,6 +1934,8 @@ export class GameUI {
     $(this.root, "[data-action=npc-skip]").addEventListener("click", () => onDone());
 
     const addLine = (text, cls = "npc-line npc-say") => {
+      // The newest line is the one to read: the frame's earlier lines step back.
+      for (const el of dialogue.querySelectorAll(".npc-say:not(.npc-say--earlier)")) el.classList.add("npc-say--earlier");
       const div = document.createElement("div");
       div.className = cls;
       div.append(...this._withMarkup(text));
@@ -1979,6 +1981,8 @@ export class GameUI {
     // beat at a time instead of a wall of text. A step's `beats` array is the
     // authored breakdown; a bare `say` string counts as a single beat.
     const queue = [];
+    // The opening words are a frame of their own, so the scene doesn't open on a wall.
+    if (introEl) queue.push({ kind: "intro" });
     for (const [s, step] of (q.steps || []).entries()) {
       const beats = Array.isArray(step.beats) && step.beats.length
         ? step.beats
@@ -1990,8 +1994,8 @@ export class GameUI {
     }
 
     // Each step is a frame of its own: it starts on a clear screen instead of
-    // under everything said before it. The scene's opening line stays with the
-    // first step, and the closing line gets a frame to itself.
+    // under everything said before it. The opening and closing lines get a frame
+    // each, too.
     let pos = 0;
     const advance = () => {
       controls.innerHTML = "";
@@ -2006,32 +2010,35 @@ export class GameUI {
         return;
       }
       const item = queue[pos++];
-      if (item.first && item.step > 0) dialogue.replaceChildren();
-      // The opening line is said with the scene's first beat.
-      const opening = pos === 1 ? [[q.intro_narrate, introEl]] : [];
+      if (item.kind === "intro") {
+        speak([[q.intro_narrate, introEl]]);
+        makeButton("Continue ▸", "action-button", advance).focus();
+        return;
+      }
+      if (item.first && (item.step > 0 || introEl)) dialogue.replaceChildren();
 
       if (item.kind === "figure") {
         const fig = this._figureElement(item.beat.figure);
         fig.classList.add("npc-figure");
         dialogue.appendChild(fig);
         fig.scrollIntoView?.({ block: "nearest" });
-        speak([...opening, [item.beat.narrate, fig]]);
+        speak([[item.beat.narrate, fig]]);
         makeButton("Continue ▸", "action-button", advance).focus();
         return;
       }
       if (item.kind === "code") {
-        speak([...opening, [item.beat.narrate, addCode(item.beat.code, item.beat.language)]]);
+        speak([[item.beat.narrate, addCode(item.beat.code, item.beat.language)]]);
         makeButton("Continue ▸", "action-button", advance).focus();
         return;
       }
       if (item.kind === "say") {
-        speak([...opening, [item.beat.narrate, addLine(item.beat.say)]]);
+        speak([[item.beat.narrate, addLine(item.beat.say)]]);
         makeButton("Continue ▸", "action-button", advance).focus();
         return;
       }
 
       const check = item.check;
-      speak([...opening, [check.narrate, addLine(check.prompt, "npc-line npc-check-prompt")]]);
+      speak([[check.narrate, addLine(check.prompt, "npc-line npc-check-prompt")]]);
       shuffle([check.answer, ...(check.wrong || [])]).forEach(opt => {
         makeButton(opt, "action-button action-button--secondary npc-check-option", () => {
           let whyEl;
