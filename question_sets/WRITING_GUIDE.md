@@ -117,6 +117,18 @@ Use when there is **exactly one** unambiguous correct answer.
 
 5. **Make distractors plausible.** Each wrong answer should represent a common misconception or a closely related concept—not an absurd option.
 
+   This matters most in questions about practice ("Which belong in the standard?", "What should the team do?"). There the lazy distractor is **bad behaviour, described as bad**. *Skipping* review, *trusting* the vendor, a spreadsheet updated *when they remember*: anyone can reject those on tone alone. Apply the **plausibility test** to every wrong option: *could someone who knows nothing about the topic rule it out by its tone, its form, or common sense?* If so, replace it with something a reasonable person might actually propose, wrong for a reason the set teaches:
+
+   - **a real misconception**: "accurate on the benchmark means fair";
+   - **a good practice that belongs somewhere else**: a security or performance control, offered as an ethics condition;
+   - **the right idea at the wrong scope or time**: bias testing only once, before launch.
+
+   Each one must still be clearly wrong under the stem's constraints; if it is only arguably wrong, sharpen the stem. Write the options in **one form**: if the keys are noun phrases ("A named owner who is accountable…"), the distractors are too, not "-ing" phrases ("Skipping human review…"). Leave out words that editorialise (*blindly*, *for convenience*, *when they remember*). In select-all, prefer two or three keys among five or six options, so that spotting the odd ones out cannot finish the question. `data.test.js` rejects the loaded phrases, and a question whose wrong options are all "-ing" phrases while none of its keys is.
+
+   ❌ **Ruled out by tone:** + A named owner accountable for the model's decisions · + A way for customers to contest a decision · − *Treating the vendor's accuracy benchmark as evidence the model is unbiased* · − *Skipping human review whenever confidence is above 90%*
+
+   ✔ **Tempting, and wrong for a reason taught:** + A named owner accountable for the model's decisions · + A way for customers to contest a decision · + Bias testing before launch and at intervals afterwards · − A minimum accuracy of 95% on the vendor's benchmark · − No bias testing once age and gender are left out of the inputs · − Bias testing on the training data before launch
+
 6. **Keep the stem self-contained.** A reader should understand what is being asked without reading the answer options first.
 
 7. **Use precise language.** Avoid vague qualifiers ("sometimes," "usually") unless the ambiguity is the point of the question.
