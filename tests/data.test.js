@@ -420,10 +420,8 @@ describe('question_sets/catalog.json', () => {
         if (s.intro != null) {
           assert.ok(typeof s.intro === 'object' && !Array.isArray(s.intro),
             `intro must be an object: ${s.id}`);
-          if (s.intro.story != null) {
-            assert.ok(typeof s.intro.story === 'string' && s.intro.story.length > 0,
-              `intro.story must be a non-empty string: ${s.id}`);
-          }
+          // A set's objectives say what it teaches; the old preamble story is not shown.
+          assert.ok(!('story' in s.intro), `intro.story is no longer shown; drop it: ${s.id}`);
           if (s.intro.objectives != null) {
             assert.ok(Array.isArray(s.intro.objectives) && s.intro.objectives.length > 0
               && s.intro.objectives.every(o => typeof o === 'string' && o.length > 0),
@@ -1710,10 +1708,10 @@ describe('Audit checks', () => {
       assert.deepEqual(bad, []);
     });
 
-    it('have a catalog intro with a story and objectives', () => {
+    it('have catalog learning objectives', () => {
       const catalog = loadJSON('question_sets/catalog.json');
       const entries = new Map(catalog.flatMap(t => t.sets).map(s => [s.id, s]));
-      const bad = sets.filter(id => !(entries.get(id)?.intro?.story && entries.get(id)?.intro?.objectives?.length >= 3));
+      const bad = sets.filter(id => !(entries.get(id)?.intro?.objectives?.length >= 3));
       assert.deepEqual(bad, []);
     });
 

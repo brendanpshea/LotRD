@@ -1147,7 +1147,7 @@ export class GameUI {
 
   /**
    * Pre-run screen. `meta` shapes what it says:
-   *   { title, intro: {story, objectives[]}, questionCount } – full set run
+   *   { title, intro: {objectives[]}, questionCount }        – full set run
    *   { title, trial: {tier, questionCount} }               – rank trial
    *   { title, review: {questionCount} }                    – spaced review / mix
    *   null / no intro                                       – generic welcome
@@ -1189,10 +1189,7 @@ export class GameUI {
     } else if (meta?.intro) {
       if (meta.title) titleEl.textContent = meta.title;
       genericEl.hidden = true;
-      if (meta.intro.story) {
-        storyEl.textContent = meta.intro.story;
-        storyEl.hidden = false;
-      }
+      // What the set teaches is said by its objectives; it needs no preamble.
       const objectives = meta.intro.objectives || [];
       if (objectives.length > 0) {
         objectives.forEach(obj => {
@@ -1226,8 +1223,6 @@ export class GameUI {
     this._renderStatsBar(this.root, meta.globalStats, meta.levelData, { onlyIfAny: true, titled: false });
     $(this.root, "[data-ref=homeTitle]").textContent = meta.title || "Problem set";
 
-    const story = $(this.root, "[data-ref=homeStory]");
-    if (meta.intro?.story) { story.textContent = meta.intro.story; story.hidden = false; }
     const objectives = meta.intro?.objectives || [];
     if (objectives.length) {
       const list = $(this.root, "[data-ref=homeObjectives]");

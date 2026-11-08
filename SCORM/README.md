@@ -48,7 +48,7 @@ python SCORM/build.py SCORM/editions/techplus_singles.json     # one zip per Tec
 A config with `"single_sets": true` builds one package per set it lists
 (`lotrd-cc-04-control-functions-scorm.zip`, ...). Each one:
 
-- **opens on its set**, not on the menu: a landing page with the story, the
+- **opens on its set**, not on the menu: a landing page with the set's
   objectives, where the student stands, and one button;
 - is worth **full credit, all or nothing**: nothing is written to the gradebook
   until the set is cleared, and then it is 100 and `completed`;
