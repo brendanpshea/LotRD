@@ -988,6 +988,12 @@ A frame is one step: its spoken beats pile up on the screen until the next step 
 4. **Three or more parallel items go in a picture or a table, not a sentence**: the seven OSI layers, a set of ports, a row of devices. Use a `figure` beat, or a `code` beat holding a short aligned table, and let the spoken beats point at it a row at a time. A table you write is at most 26 characters wide, or a phone cuts off its right side; put a long entry on two lines. Real command output may run wider, because the panel scrolls and shows a glow at the edge, but trim it to the lines the beat talks about.
 5. **Plain words first, the exam term second.** Write "the address built into every network card, its **MAC address**". Don't drop a bare acronym on the student: say what it stands for, or what it does, the first time.
 
+6. **Explain in whole, plain sentences; don't compress into punchlines.** A short beat is one idea said simply, not an idea squeezed into an aphorism. Avoid the colon that drops a verbless verdict ("hunts for glitches: an arms race, so never the only layer"), semicolon chains of half-sentences ("signs media when made; missing credentials prove nothing") and tails like ", so never…" or "…, but fade as fakes improve". Say who does what and why, with the *because* or *so* spelled out. A colon is fine to introduce a definition ("Each end is a **socket**: an IP address plus a port.") or a list. When the plain version is longer than 25 words, split it into two beats, and if the frame then runs past 50 words, split the step.
+
+   ❌ **Algorithmic detection** hunts for glitches: an arms race, so never the only layer. **Liveness checks** ask a caller for something hard to render, but fade as fakes improve.
+
+   ✔ **Algorithmic detection** looks for the small glitches that fakes leave behind. Fakes keep getting better at hiding them, so detection should never be the only defense. ▸ A **liveness check** asks a caller to do something a fake struggles to show live, such as turning their head. It helps less as fakes improve.
+
 Before and after, from Network+ 01:
 
 | | |

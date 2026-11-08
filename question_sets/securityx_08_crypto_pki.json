@@ -565,7 +565,7 @@
         ]
       }
     ],
-    "feedback": "A CRL (certificate revocation list) is the original mechanism: complete, but large and fetched by every relying party. OCSP (Online Certificate Status Protocol) checks one certificate in real time, at the cost of a round trip and a privacy leak to the CA. OCSP stapling moves that query to the server, which staples the CA-signed response to its handshake. Public CAs now must publish CRLs while OCSP is optional, and short lifetimes make all three matter less."
+    "feedback": "A CRL (certificate revocation list) is the original mechanism. It is complete, but it is large and every relying party fetches it. OCSP (Online Certificate Status Protocol) checks one certificate in real time, at the cost of a round trip and a privacy leak to the CA. OCSP stapling moves that query to the server, which staples the CA-signed response to its handshake. Public CAs now must publish CRLs while OCSP is optional, and short lifetimes make all three matter less."
   },
   {
     "type": "npc_demo",
@@ -635,14 +635,14 @@
     "correct": [
       "Public TLS CAs must publish CRLs, while running OCSP has been optional since 2024",
       "Browsers soft-fail when a responder does not answer, so faster OCSP adds little protection",
-      "The public lifetime cap falls to 100 days in 2027 and to 47 days in 2029",
-      "DV certificates prove only control of the name, so ACME can issue them unattended"
+      "The public lifetime cap falls to 100 days in 2027 and to 47 days in 2029"
     ],
     "incorrect": [
       "OCSP stapling has replaced short lifetimes as the public web's main revocation strategy",
-      "Longer-lived certificates lower the risk, because each one is vetted more carefully"
+      "Longer-lived certificates lower the risk, because each one is vetted more carefully",
+      "ACME can issue EV certificates unattended, since it vets the organization behind the name"
     ],
-    "feedback": "The public web is moving revocation away from live OCSP: CRLs are mandatory and OCSP optional for public TLS CAs since 2024, Let's Encrypt shut its responders down in 2025, and browsers soft-fail on responder errors anyway. What bounds the damage of a stolen key is a short lifetime, and caps of 100 and then 47 days make ACME automation unavoidable; DV certificates, which check only control of the name, are exactly what ACME can issue with no human involved. Stapling still helps where OCSP is in use, but it has not replaced short lifetimes, and longer lifetimes widen the window of abuse."
+    "feedback": "The public web is moving revocation away from live OCSP: CRLs are mandatory and OCSP optional for public TLS CAs since 2024, Let's Encrypt shut its responders down in 2025, and browsers soft-fail on responder errors anyway. What bounds the damage of a stolen key is a short lifetime, and caps of 100 and then 47 days make ACME automation unavoidable. ACME proves only control of a domain, so it can issue DV certificates unattended but not EV certificates, which need a human to vet the organization. Stapling still helps where OCSP is in use, but it has not replaced short lifetimes, and longer lifetimes widen the window of abuse."
   },
   {
     "type": "npc_demo",
@@ -838,10 +838,13 @@
             "say": "An SSD hides data in spare cells, so use its own sanitize command; degaussing works only on magnetic media."
           },
           {
-            "say": "**Cryptographic erase** destroys the key, not the data: without it, the ciphertext is noise."
+            "say": "**Cryptographic erase** destroys the key instead of the data."
+          },
+          {
+            "say": "Without the key, the ciphertext is just noise."
           }
         ],
-        "say": "An SSD hides data in spare cells, so use its own sanitize command; degaussing works only on magnetic media. **Cryptographic erase** destroys the key, not the data: without it, the ciphertext is noise.",
+        "say": "An SSD hides data in spare cells, so use its own sanitize command; degaussing works only on magnetic media. **Cryptographic erase** destroys the key instead of the data. Without the key, the ciphertext is just noise.",
         "check": {
           "prompt": "A laptop's disk was fully encrypted from day one, and it must be retired today. What is the fastest sound way to make its data unrecoverable?",
           "answer": "Destroy the encryption key for good",
@@ -1045,7 +1048,7 @@
       "sha256sum f"
     ],
     "case_sensitive": true,
-    "feedback": "openssl dgst -sha256 f (or the shorthand openssl sha256 f) prints the file's SHA-256 digest. A digest changes completely if one bit of the input changes, so a match shows the file is the one the vendor described. Notice where the comparison value comes from: signed release notes. A bare hash posted beside the file on the same server proves nothing if an attacker can replace both."
+    "feedback": "openssl dgst -sha256 f (or the shorthand openssl sha256 f) prints the file's SHA-256 digest. A digest changes completely if one bit of the input changes, so a match shows the file is the one the vendor described. Notice that the comparison value comes from signed release notes. A bare hash posted beside the file on the same server proves nothing if an attacker can replace both."
   },
   {
     "type": "npc_demo",
@@ -1244,7 +1247,7 @@
             "Every object, which must be re-encrypted",
             "Nothing, because the DEKs are stored in plaintext"
           ],
-          "why": "Each object stays encrypted under its own DEK. Rotation unwraps every DEK with the old KEK and wraps it with the new one: a few hundred bytes per object instead of petabytes."
+          "why": "Each object stays encrypted under its own DEK. Rotation unwraps every DEK with the old KEK and wraps it with the new one. That moves a few hundred bytes per object instead of petabytes."
         }
       },
       {
@@ -1268,10 +1271,13 @@
             "say": "That bolted-on check bred bugs such as **padding oracles**, where error messages help an attacker decrypt."
           },
           {
-            "say": "AEAD's one sharp edge: reusing a **nonce**, a number meant to be used once, under the same AES-GCM key destroys both properties."
+            "say": "AEAD has one sharp edge."
+          },
+          {
+            "say": "Reusing a **nonce**, a number meant to be used once, under the same AES-GCM key destroys both properties."
           }
         ],
-        "say": "That bolted-on check bred bugs such as **padding oracles**, where error messages help an attacker decrypt. AEAD's one sharp edge: reusing a **nonce**, a number meant to be used once, under the same AES-GCM key destroys both properties."
+        "say": "That bolted-on check bred bugs such as **padding oracles**, where error messages help an attacker decrypt. AEAD has one sharp edge. Reusing a **nonce**, a number meant to be used once, under the same AES-GCM key destroys both properties."
       },
       {
         "beats": [
@@ -1329,7 +1335,7 @@
         ]
       }
     ],
-    "feedback": "The DEK (data encryption key) does the bulk work locally; the KEK (key encryption key) stays in the KMS or HSM and only ever wraps DEKs. That split is why rotation is cheap (re-wrap the DEKs) and why destroying the KEK is a cryptographic erase of everything it protected: the standard way to sanitize cloud data you cannot physically destroy."
+    "feedback": "The DEK (data encryption key) does the bulk work locally; the KEK (key encryption key) stays in the KMS or HSM and only ever wraps DEKs. That split is why rotation is cheap (re-wrap the DEKs) and why destroying the KEK is a cryptographic erase of everything it protected. That is the standard way to sanitize cloud data you cannot physically destroy."
   },
   {
     "question": "A penetration test of Marketstone Exchange's file-decrypt API finds a padding-oracle flaw: objects are encrypted with AES-256-CBC and carry no integrity tag. Iolen must close that class of flaw for good without changing the key hierarchy. Which change is BEST?",
@@ -1396,13 +1402,13 @@
             "language": "stretching methods"
           },
           {
-            "say": "It adds no **entropy**, meaning unpredictability: a weak password stays weak, only slower to crack."
+            "say": "It adds no **entropy**, meaning unpredictability, so a weak password stays weak and is only slower to crack."
           },
           {
             "say": "A unique random **salt** per password stops one guess being tested against every account at once."
           }
         ],
-        "say": "Systems store passwords as hashes. **Key stretching** makes each guess against one deliberately slow and memory-hungry. It adds no **entropy**, meaning unpredictability: a weak password stays weak, only slower to crack. A unique random **salt** per password stops one guess being tested against every account at once."
+        "say": "Systems store passwords as hashes. **Key stretching** makes each guess against one deliberately slow and memory-hungry. It adds no **entropy**, meaning unpredictability, so a weak password stays weak and is only slower to crack. A unique random **salt** per password stops one guess being tested against every account at once."
       },
       {
         "beats": [
@@ -1589,12 +1595,20 @@
           {
             "code": "Shor\n  breaks RSA, DH and\n  elliptic curves\nGrover\n  halves symmetric\n  strength: AES-256\n  keeps ~128 bits",
             "language": "quantum threats"
-          },
-          {
-            "say": "No such machine exists yet, but an adversary can record traffic today and decrypt it once one does: **harvest now, decrypt later**."
           }
         ],
-        "say": "**Shor's algorithm**, on a large quantum computer, solves the math problems under RSA, Diffie-Hellman and elliptic curves. **Grover's algorithm** only roughly halves a symmetric key's strength. No such machine exists yet, but an adversary can record traffic today and decrypt it once one does: **harvest now, decrypt later**."
+        "say": "**Shor's algorithm**, on a large quantum computer, solves the math problems under RSA, Diffie-Hellman and elliptic curves. **Grover's algorithm** only roughly halves a symmetric key's strength."
+      },
+      {
+        "beats": [
+          {
+            "say": "No such machine exists yet, but an adversary can record traffic today and decrypt it once one does."
+          },
+          {
+            "say": "That tactic is called **harvest now, decrypt later**."
+          }
+        ],
+        "say": "No such machine exists yet, but an adversary can record traffic today and decrypt it once one does. That tactic is called **harvest now, decrypt later**."
       }
     ],
     "outro": "First, an attacker holds six months of recordings and has just stolen the server's key. Work out exactly which sessions are exposed."
@@ -1730,7 +1744,7 @@
             "say": "Migration starts with an **inventory** of every place classical public-key cryptography hides."
           },
           {
-            "say": "Then **cryptographic agility**: making algorithms configurable, not hard-coded."
+            "say": "Then comes **cryptographic agility**, which means making algorithms configurable instead of hard-coded."
           },
           {
             "code": "1 inventory\n2 cryptographic agility\n3 key exchange first\n  (harvest now, decrypt\n  later hits secrecy)\n4 signatures: roots and\n  firmware keys first\n5 RSA, ECDSA:\n  deprecated after 2030,\n  disallowed after 2035",
@@ -1743,7 +1757,7 @@
             "say": "NIST plans to deprecate RSA and ECDSA after 2030 and disallow them after 2035."
           }
         ],
-        "say": "Migration starts with an **inventory** of every place classical public-key cryptography hides. Then **cryptographic agility**: making algorithms configurable, not hard-coded. Key exchange moves first, and signatures follow. NIST plans to deprecate RSA and ECDSA after 2030 and disallow them after 2035."
+        "say": "Migration starts with an **inventory** of every place classical public-key cryptography hides. Then comes **cryptographic agility**, which means making algorithms configurable instead of hard-coded. Key exchange moves first, and signatures follow. NIST plans to deprecate RSA and ECDSA after 2030 and disallow them after 2035."
       }
     ],
     "outro": "Next, five post-quantum names, five descriptions. Match each name to its description."
@@ -1864,7 +1878,7 @@
       "Firmware signed once a month, verified by millions of devices: Ed25519",
       "An API gateway signing thousands of tokens a second: RSA-2048"
     ],
-    "feedback": "RSA suits sign rarely, verify often: a monthly firmware signature checked on millions of devices spends nearly all its cost on verification, where RSA is faster. Elliptic curves suit servers that sign constantly, so the token gateway should use Ed25519. The mirrored pairings put each workload on the algorithm that is slow at the operation it repeats. Both choices are classical and quantum-vulnerable, so each also needs a path to ML-DSA."
+    "feedback": "RSA suits workloads that sign rarely and verify often. A monthly firmware signature checked on millions of devices spends nearly all its cost on verification, where RSA is faster. Elliptic curves suit servers that sign constantly, so the token gateway should use Ed25519. The mirrored pairings put each workload on the algorithm that is slow at the operation it repeats. Both choices are classical and quantum-vulnerable, so each also needs a path to ML-DSA."
   },
   {
     "type": "rule_table",

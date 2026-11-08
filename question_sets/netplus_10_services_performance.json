@@ -49,7 +49,7 @@
             "Everything, since .254 is inside its own subnet",
             "Nothing at all, not even its neighbors"
           ],
-          "why": "Local traffic goes straight to the neighbors by ARP and never touches the gateway, so it works. Everything else is handed to .254, where nobody is listening. Local fine, remote dead is the signature of a wrong gateway."
+          "why": "Local traffic goes straight to the neighbors by ARP and never touches the gateway, so it works. Everything else is handed to .254, where nobody is listening. Working locally while failing for everything remote is the sign of a wrong gateway."
         }
       },
       {
@@ -106,13 +106,13 @@
             "say": "That is **address exhaustion**: every address in the scope is leased, so new clients get no offer."
           },
           {
-            "say": "Causes: a scope too small, or long leases on devices that come and go."
+            "say": "It happens with a small scope, or with long leases on devices that come and go."
           },
           {
             "say": "Addresses held back for static devices are an **exclusion**; a **reservation** ties one to a device's MAC."
           }
         ],
-        "say": "That is **address exhaustion**: every address in the scope is leased, so new clients get no offer. Causes: a scope too small, or long leases on devices that come and go. Addresses held back for static devices are an **exclusion**; a **reservation** ties one to a device's MAC."
+        "say": "That is **address exhaustion**: every address in the scope is leased, so new clients get no offer. It happens with a small scope, or with long leases on devices that come and go. Addresses held back for static devices are an **exclusion**; a **reservation** ties one to a device's MAC."
       },
       {
         "beats": [
@@ -152,7 +152,7 @@
       "Someone typed a static address on the PC with the wrong mask, which overrides what DHCP would give it",
       "The PC has no default gateway, so DHCP replies cannot reach it"
     ],
-    "feedback": "A 169.254.x.x address with DHCP Enabled: Yes is APIPA: the PC broadcast for a lease, heard nothing, and gave itself a link-local address that reaches only other APIPA hosts, hence not even the printer. A lease from the wrong scope would be an ordinary address from that scope, and a typed static address would show DHCP Enabled: No. The blank gateway is a result, not the cause: DHCP works by broadcast on the local link and needs no gateway."
+    "feedback": "A 169.254.x.x address with DHCP Enabled: Yes is APIPA. The PC broadcast for a lease, heard nothing, and gave itself a link-local address that reaches only other APIPA hosts, so not even the printer answers. A lease from the wrong scope would be an ordinary address from that scope, and a typed static address would show DHCP Enabled: No. The blank gateway is a result and not the cause, because DHCP works by broadcast on the local link and needs no gateway."
   },
   {
     "question": "Which of the following can leave DHCP clients with 169.254.x.x addresses?",
@@ -343,13 +343,13 @@
             "say": "The **primary** holds the editable copy."
           },
           {
-            "say": "Each **secondary** pulls a read-only copy from it: a **zone transfer**."
+            "say": "Each **secondary** pulls a read-only copy, called a **zone transfer**."
           },
           {
             "say": "A resolver with recursion turned off answers only for its own zones, so every internet name fails."
           }
         ],
-        "say": "A **zone** is the set of records for one domain. It usually has several authoritative servers. The **primary** holds the editable copy. Each **secondary** pulls a read-only copy from it: a **zone transfer**. A resolver with recursion turned off answers only for its own zones, so every internet name fails."
+        "say": "A **zone** is the set of records for one domain. It usually has several authoritative servers. The **primary** holds the editable copy. Each **secondary** pulls a read-only copy, called a **zone transfer**. A resolver with recursion turned off answers only for its own zones, so every internet name fails."
       },
       {
         "beats": [
@@ -509,13 +509,13 @@
             "say": "IPv4 reverse names end in `in-addr.arpa`."
           },
           {
-            "say": "No A record: the server replies that the name does not exist."
+            "say": "Without an A record, the server says the name does not exist."
           },
           {
-            "say": "No PTR: the name resolves, but `dig -x` finds no name for the address."
+            "say": "Without a PTR, the name resolves, but `dig -x` finds no name for it."
           }
         ],
-        "say": "A **forward zone** maps names to addresses. A **reverse zone** maps addresses back to names, with **PTR** records. IPv4 reverse names end in `in-addr.arpa`. No A record: the server replies that the name does not exist. No PTR: the name resolves, but `dig -x` finds no name for the address.",
+        "say": "A **forward zone** maps names to addresses. A **reverse zone** maps addresses back to names, with **PTR** records. IPv4 reverse names end in `in-addr.arpa`. Without an A record, the server says the name does not exist. Without a PTR, the name resolves, but `dig -x` finds no name for it.",
         "check": {
           "prompt": "Aria's `dig -x 192.0.2.40` returns no name, yet `www.example.com` resolves to 192.0.2.40. What does that show?",
           "answer": "The forward zone has an A record, but the reverse zone has no PTR record",
@@ -679,7 +679,10 @@
             "say": "An Ethernet frame carries no TTL."
           },
           {
-            "say": "With two paths between switches and nothing to stop it, a broadcast circles forever, copied at every switch: a **broadcast storm**."
+            "say": "With two paths between switches and nothing to stop it, a broadcast circles forever, copied at every switch."
+          },
+          {
+            "say": "That is a **broadcast storm**."
           },
           {
             "say": "Links fill, MAC tables flap, and the VLAN stops."
@@ -688,24 +691,24 @@
             "say": "**Spanning Tree Protocol** (STP) prevents that."
           }
         ],
-        "say": "An Ethernet frame carries no TTL. With two paths between switches and nothing to stop it, a broadcast circles forever, copied at every switch: a **broadcast storm**. Links fill, MAC tables flap, and the VLAN stops. **Spanning Tree Protocol** (STP) prevents that."
+        "say": "An Ethernet frame carries no TTL. With two paths between switches and nothing to stop it, a broadcast circles forever, copied at every switch. That is a **broadcast storm**. Links fill, MAC tables flap, and the VLAN stops. **Spanning Tree Protocol** (STP) prevents that."
       },
       {
         "beats": [
           {
-            "say": "Switches swap messages (**BPDUs**) to elect a **root bridge**, the lowest bridge ID."
+            "say": "Switches swap messages (**BPDUs**) to elect a **root bridge**, the switch with the lowest bridge ID."
           },
           {
             "say": "STP blocks one port per loop, leaving a single path."
           },
           {
-            "say": "**BPDU guard** shuts an edge port, one facing an end device, if a switch is plugged in."
+            "say": "**BPDU guard** shuts an edge port, one facing an end device, if a switch appears."
           },
           {
             "say": "**PortFast** lets an edge port skip STP's 30-second wait."
           }
         ],
-        "say": "Switches swap messages (**BPDUs**) to elect a **root bridge**, the lowest bridge ID. STP blocks one port per loop, leaving a single path. **BPDU guard** shuts an edge port, one facing an end device, if a switch is plugged in. **PortFast** lets an edge port skip STP's 30-second wait.",
+        "say": "Switches swap messages (**BPDUs**) to elect a **root bridge**, the switch with the lowest bridge ID. STP blocks one port per loop, leaving a single path. **BPDU guard** shuts an edge port, one facing an end device, if a switch appears. **PortFast** lets an edge port skip STP's 30-second wait.",
         "check": {
           "prompt": "Two switches already linked by one cable get a second cable between them for redundancy, with STP running. What does STP do with the pair?",
           "answer": "Blocks one port, so only one of the two links forwards",
@@ -722,7 +725,7 @@
             "say": "VLAN faults strand a host even when its link light is on."
           },
           {
-            "say": "A port in the wrong VLAN puts the host in the wrong subnet: wrong DHCP scope, or none."
+            "say": "A port in the wrong VLAN puts the host in the wrong subnet, so it gets the wrong DHCP scope or none."
           },
           {
             "code": "Switch# show interfaces gi1/0/12 switchport\nAccess Mode VLAN: 99 (PARKING)",
@@ -732,7 +735,7 @@
             "say": "This port sits in VLAN 99, a parking VLAN for unused ports."
           }
         ],
-        "say": "VLAN faults strand a host even when its link light is on. A port in the wrong VLAN puts the host in the wrong subnet: wrong DHCP scope, or none. This port sits in VLAN 99, a parking VLAN for unused ports."
+        "say": "VLAN faults strand a host even when its link light is on. A port in the wrong VLAN puts the host in the wrong subnet, so it gets the wrong DHCP scope or none. This port sits in VLAN 99, a parking VLAN for unused ports."
       },
       {
         "beats": [
@@ -789,10 +792,10 @@
     ],
     "incorrect": [
       "STP has moved its access port into the forwarding state",
-      "The switch has learned the PC's MAC address on its port",
-      "The PC holds a valid lease from its own VLAN's DHCP scope"
+      "The scope's DNS server option names a server that has stopped answering",
+      "BPDU guard is enabled on its access port, and only the PC is plugged in"
     ],
-    "feedback": "A wrong access VLAN puts the PC in a VLAN where its gateway isn't; a trunk that does not allow its VLAN drops its frames at the uplink; and a native VLAN mismatch delivers its untagged frames into a different VLAN at the far end. A port in forwarding, a learned MAC address and a valid lease from its own scope are all signs of a healthy port, not causes."
+    "feedback": "A wrong access VLAN puts the PC in a VLAN where its gateway isn't; a trunk that does not allow its VLAN drops its frames at the uplink; and a native VLAN mismatch delivers its untagged frames into a different VLAN at the far end. A port in forwarding is a normal state. A dead DNS server breaks names, not reaching the gateway by address. BPDU guard shuts a port down when a switch is plugged into it, and the link light would then be off."
   },
   {
     "type": "cloze",
@@ -821,7 +824,7 @@
         ]
       }
     ],
-    "feedback": "A loop with nothing to block it turns every broadcast into a broadcast storm. A one-way fiber is a unidirectional link, dangerous because a blocked STP port that stops hearing BPDUs starts forwarding; UDLD shuts it first. A wrong access VLAN is the quiet one: the port works, just in the wrong place."
+    "feedback": "A loop with nothing to block it turns every broadcast into a broadcast storm. A one-way fiber is a unidirectional link, dangerous because a blocked STP port that stops hearing BPDUs starts forwarding; UDLD shuts it first. A wrong access VLAN gives no warning, because the port works but sits in the wrong place."
   },
   {
     "question": "In the figure, S1 is the root bridge and STP has blocked S3's port toward S2. The fiber between S2 and S3 is damaged so that frames from S2 no longer reach S3, though both ports still show the link up. What happens next?",
@@ -833,7 +836,7 @@
       "S2 blocks its own end of the link as well, so traffic carries on just as before",
       "Both ports go down, and traffic reroutes through S1 without any loop forming"
     ],
-    "feedback": "S3's port was blocked because S2 kept sending better BPDUs onto that link. Those BPDUs stop arriving, so once STP's timer runs out S3 decides the link is safe and moves the port to forwarding, while S2 still forwards its end: a loop and a broadcast storm. S3 still hears S1's BPDUs on its other link, so no new root is elected, and the ports stay up because the damage is one-way. This is a unidirectional link, the fault UDLD and loop guard exist to catch.",
+    "feedback": "S3's port was blocked because S2 kept sending better BPDUs onto that link. Those BPDUs stop arriving, so once STP's timer runs out S3 decides the link is safe and moves the port to forwarding, while S2 still forwards its end, so a loop and a broadcast storm form. S3 still hears S1's BPDUs on its other link, so no new root is elected, and the ports stay up because the damage is one-way. This is a unidirectional link, the fault UDLD and loop guard exist to catch.",
     "figure": {
       "dot": "digraph { rankdir=TB; nodesep=0.8; s1 [label=\"S1\\nroot\"]; s2 [label=\"S2\"]; s3 [label=\"S3\"]; {rank=same; s2; s3;} s1 -> s2 [dir=none]; s1 -> s3 [dir=none]; s2 -> s3 [style=dashed, label=\" blocked at S3;\\n S2-to-S3\\n frames lost\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
       "alt": "Three switches in a triangle: S1 on top marked root, S2 and S3 below. The S2-S3 link is a dashed amber arrow from S2 to S3, labeled blocked at S3 and S2-to-S3 frames lost.",
@@ -901,7 +904,7 @@
       "A VM's own firewall blocks inbound RDP after a recent update",
       "A VM rebuilt from an old image lacks its virtual NIC driver"
     ],
-    "feedback": "The uplink and the port groups belong to the hypervisor's virtual switch, shared by every VM attached to them, so they are host configuration and break many VMs at once. A wrong gateway inside the OS, the guest's own firewall, and a missing virtual NIC driver all live inside one VM: guest configuration, affecting that VM alone."
+    "feedback": "The uplink and the port groups belong to the hypervisor's virtual switch, shared by every VM attached to them, so they are host configuration and break many VMs at once. A wrong gateway inside the OS, the guest's own firewall, and a missing virtual NIC driver all live inside one VM, so they are guest configuration faults that affect that VM alone."
   },
   {
     "type": "npc_demo",
@@ -922,10 +925,13 @@
             "say": "The router uses the most specific route that matches."
           },
           {
-            "say": "A destination that matches nothing, with no default route (`0.0.0.0/0`), is dropped: a **missing route**."
+            "say": "A destination that matches nothing, with no default route (`0.0.0.0/0`), is dropped."
+          },
+          {
+            "say": "That fault is a **missing route**."
           }
         ],
-        "say": "Here is a router's table. It knows its own LAN and one remote network, learned from OSPF. The router uses the most specific route that matches. A destination that matches nothing, with no default route (`0.0.0.0/0`), is dropped: a **missing route**.",
+        "say": "Here is a router's table. It knows its own LAN and one remote network, learned from OSPF. The router uses the most specific route that matches. A destination that matches nothing, with no default route (`0.0.0.0/0`), is dropped. That fault is a **missing route**.",
         "check": {
           "prompt": "A packet for 10.3.4.5 arrives at R1. What does R1 do with it?",
           "answer": "Drops it and sends back ICMP destination unreachable",
@@ -967,14 +973,17 @@
             "say": "Packets bounce until their IP TTL reaches zero, and traceroute repeats the same two hops."
           },
           {
-            "say": "**Sub-optimal routing** arrives, but by a longer path: extra latency, not failure."
+            "say": "**Sub-optimal routing** still arrives, but by a longer path."
+          },
+          {
+            "say": "That adds latency and does not cause failure."
           },
           {
             "code": "branch to branch traffic\n  hauled through a far hub\nstatic route (distance 1)\n  beats OSPF path (110)",
             "language": "sub-optimal routing"
           }
         ],
-        "say": "A **routing loop** is two routers each pointing at the other for the same prefix. Packets bounce until their IP TTL reaches zero, and traceroute repeats the same two hops. **Sub-optimal routing** arrives, but by a longer path: extra latency, not failure."
+        "say": "A **routing loop** is two routers each pointing at the other for the same prefix. Packets bounce until their IP TTL reaches zero, and traceroute repeats the same two hops. **Sub-optimal routing** still arrives, but by a longer path. That adds latency and does not cause failure."
       },
       {
         "beats": [
@@ -1016,14 +1025,17 @@
             "say": "One address has roughly 64,000 usable ports per protocol."
           },
           {
-            "say": "When they run out, that is **NAT exhaustion**: open sessions carry on, new ones fail."
+            "say": "When they run out, that is **NAT exhaustion**."
+          },
+          {
+            "say": "Open sessions carry on, but new ones fail."
           },
           {
             "code": "fixes\n  add public addresses\n  shorten idle timeouts\n  find the noisy host\n\nshow ip nat translations\nshow ip nat statistics",
             "language": "NAT exhaustion"
           }
         ],
-        "say": "**PAT** (port address translation, NAT overload) hides many inside hosts behind one public address. It tells their sessions apart by source port. One address has roughly 64,000 usable ports per protocol. When they run out, that is **NAT exhaustion**: open sessions carry on, new ones fail.",
+        "say": "**PAT** (port address translation, NAT overload) hides many inside hosts behind one public address. It tells their sessions apart by source port. One address has roughly 64,000 usable ports per protocol. When they run out, that is **NAT exhaustion**. Open sessions carry on, but new ones fail.",
         "check": {
           "prompt": "Users say new web pages won't load, yet a video call that started an hour ago is still running. Which fits?",
           "answer": "NAT exhaustion: open sessions keep their ports, new ones get none",
@@ -1047,7 +1059,7 @@
       "Bring Tunnel0 back up, since its link to HQ has dropped",
       "Add a return route at HQ for 10.30.0.0/24 via 10.255.0.2"
     ],
-    "feedback": "Ember-R1 has a route for 10.10.0.0/16 but none for 10.20.0.0/16, and no gateway of last resort, so packets for the new subnet match nothing and are dropped: a missing route. A static route for 10.20.0.0/16 via HQ's tunnel address (or a default route the same way) fixes it. The tunnel is plainly up, since 10.10.0.0/16 works; the PCs' gateway must stay on their own subnet, 10.30.0.1; and HQ's return route is already in place."
+    "feedback": "Ember-R1 has a route for 10.10.0.0/16 but none for 10.20.0.0/16, and no gateway of last resort, so packets for the new subnet match nothing and are dropped. That is a missing route. A static route for 10.20.0.0/16 via HQ's tunnel address (or a default route the same way) fixes it. The tunnel is plainly up, since 10.10.0.0/16 works; the PCs' gateway must stay on their own subnet, 10.30.0.1; and HQ's return route is already in place."
   },
   {
     "question": "From a PC at Ember Forge, Brom traces the path to a server at 10.60.2.15:\n\nC:\\> tracert -d 10.60.2.15\n  1     1 ms     1 ms     1 ms  10.30.0.1\n  2    12 ms    11 ms    12 ms  10.255.0.1\n  3    13 ms    12 ms    13 ms  10.255.0.2\n  4    24 ms    23 ms    24 ms  10.255.0.1\n  5    25 ms    24 ms    25 ms  10.255.0.2\n  (the same two addresses repeat to hop 30)\n\n10.255.0.1 is HQ's end of the tunnel and 10.255.0.2 the branch router's. Which conclusions does the trace support?",
@@ -1092,7 +1104,7 @@
         "definition": "Traffic arrives, but crosses a distant hub and latency triples"
       }
     ],
-    "feedback": "A missing route fails loudly with ICMP, while a black hole fails silently. A loop shows up as repeating hops, a sinkhole as deliberate redirection to a server you control, asymmetry as one-sided sessions at a stateful device, and sub-optimal routing as delay with nothing actually broken."
+    "feedback": "A missing route fails loudly with ICMP, while a black hole fails silently. A loop shows up as repeating hops, and a sinkhole shows up as deliberate redirection to a server you control. Asymmetry shows up as one-sided sessions at a stateful device, and sub-optimal routing shows up as delay with nothing actually broken."
   },
   {
     "question": "Thornwood Clinic added a second WAN router, R2. Since then, many new connections from the clinic to the HQ records server hang right after they start, and the firewall logs drops for packets that match no session. The figure shows the path one session's packets took. What is the MOST likely cause?",
@@ -1489,16 +1501,19 @@
             }
           },
           {
-            "say": "The access VLAN carries the PC's untagged traffic; the **voice VLAN**, the phone's tagged traffic."
+            "say": "The access VLAN carries the PC's untagged traffic."
+          },
+          {
+            "say": "The **voice VLAN** carries the phone's tagged traffic."
           },
           {
             "say": "The switch tells the phone which, using CDP or LLDP, protocols neighbors use to announce themselves."
           },
           {
-            "say": "Miss it and the phone falls into the data VLAN: wrong DHCP scope, often no registration."
+            "say": "Without it, the phone joins the data VLAN, gets the wrong DHCP scope, and often cannot register."
           }
         ],
-        "say": "The access VLAN carries the PC's untagged traffic; the **voice VLAN**, the phone's tagged traffic. The switch tells the phone which, using CDP or LLDP, protocols neighbors use to announce themselves. Miss it and the phone falls into the data VLAN: wrong DHCP scope, often no registration."
+        "say": "The access VLAN carries the PC's untagged traffic. The **voice VLAN** carries the phone's tagged traffic. The switch tells the phone which, using CDP or LLDP, protocols neighbors use to announce themselves. Without it, the phone joins the data VLAN, gets the wrong DHCP scope, and often cannot register."
       },
       {
         "beats": [
@@ -1512,10 +1527,10 @@
             "say": "Each hop queues EF first, but only if it trusts the marking."
           },
           {
-            "say": "Silence after a call connects: an RTP stream is blocked or misaddressed."
+            "say": "Silence after a call connects usually means an RTP stream is blocked or misaddressed."
           }
         ],
-        "say": "**QoS** (quality of service) lets voice jump the queue. Phones stamp each voice packet with a priority mark, **DSCP EF** (Expedited Forwarding, 46). Each hop queues EF first, but only if it trusts the marking. Silence after a call connects: an RTP stream is blocked or misaddressed.",
+        "say": "**QoS** (quality of service) lets voice jump the queue. Phones stamp each voice packet with a priority mark, **DSCP EF** (Expedited Forwarding, 46). Each hop queues EF first, but only if it trusts the marking. Silence after a call connects usually means an RTP stream is blocked or misaddressed.",
         "check": {
           "prompt": "Calls are choppy only while the nightly backup crosses the same WAN link, and the WAN router ignores DSCP markings. Which fix targets the cause?",
           "answer": "Trust the EF marking and queue voice first on the WAN link",
@@ -1688,7 +1703,7 @@
             }
           },
           {
-            "say": "**Reachability** comes first: you can't fix what you can't reach."
+            "say": "**Reachability** comes first, because you can't fix what you can't reach."
           },
           {
             "say": "**In-band** management, SSH across the production network, fails exactly when that network does."
@@ -1697,7 +1712,7 @@
             "say": "**Out-of-band** management uses a separate path, so it works when production is down."
           }
         ],
-        "say": "**Reachability** comes first: you can't fix what you can't reach. **In-band** management, SSH across the production network, fails exactly when that network does. **Out-of-band** management uses a separate path, so it works when production is down."
+        "say": "**Reachability** comes first, because you can't fix what you can't reach. **In-band** management, SSH across the production network, fails exactly when that network does. **Out-of-band** management uses a separate path, so it works when production is down."
       },
       {
         "beats": [
@@ -1723,7 +1738,10 @@
       {
         "beats": [
           {
-            "say": "Two identical switches on different software releases can behave differently: a **versioning** fault."
+            "say": "Two identical switches on different software releases can behave differently."
+          },
+          {
+            "say": "That mismatch is a **versioning** fault."
           },
           {
             "say": "`show version` (Cisco) tells you which release a device runs."
@@ -1735,7 +1753,7 @@
             "say": "Compare it with the saved **startup configuration** and the last backup."
           }
         ],
-        "say": "Two identical switches on different software releases can behave differently: a **versioning** fault. `show version` (Cisco) tells you which release a device runs. A **misconfiguration** shows in the **running configuration**, what the device uses now. Compare it with the saved **startup configuration** and the last backup.",
+        "say": "Two identical switches on different software releases can behave differently. That mismatch is a **versioning** fault. `show version` (Cisco) tells you which release a device runs. A **misconfiguration** shows in the **running configuration**, what the device uses now. Compare it with the saved **startup configuration** and the last backup.",
         "check": {
           "prompt": "A router's running configuration has a new ACL that its startup configuration lacks. What happens to that ACL at the next reboot?",
           "answer": "It disappears, because the router boots from the startup configuration",
@@ -1752,13 +1770,16 @@
             "say": "A **baseline** records normal: CPU, memory, interface use and errors, latency, and the approved configuration."
           },
           {
-            "say": "Without one, CPU at 60% means nothing; with one, you see it is three times the usual for a Tuesday."
+            "say": "Without one, CPU at 60% means nothing."
+          },
+          {
+            "say": "With one, you can see it is three times the usual for a Tuesday."
           },
           {
             "say": "Comparing a configuration with its approved baseline finds unrecorded changes, called **drift**."
           }
         ],
-        "say": "A **baseline** records normal: CPU, memory, interface use and errors, latency, and the approved configuration. Without one, CPU at 60% means nothing; with one, you see it is three times the usual for a Tuesday. Comparing a configuration with its approved baseline finds unrecorded changes, called **drift**."
+        "say": "A **baseline** records normal: CPU, memory, interface use and errors, latency, and the approved configuration. Without one, CPU at 60% means nothing. With one, you can see it is three times the usual for a Tuesday. Comparing a configuration with its approved baseline finds unrecorded changes, called **drift**."
       },
       {
         "beats": [
@@ -1772,10 +1793,10 @@
             "say": "**Kerberos**, used by Active Directory sign-in, rejects tickets when clocks differ by over 5 minutes by default."
           },
           {
-            "say": "It compares UTC, so a wrong time zone alone doesn't trip it; drift does."
+            "say": "It compares UTC, so only drift trips it, not a wrong time zone alone."
           }
         ],
-        "say": "Device clocks drift unless **NTP** (Network Time Protocol) keeps them in step. **Time drift** breaks anything that compares timestamps. **Kerberos**, used by Active Directory sign-in, rejects tickets when clocks differ by over 5 minutes by default. It compares UTC, so a wrong time zone alone doesn't trip it; drift does."
+        "say": "Device clocks drift unless **NTP** (Network Time Protocol) keeps them in step. **Time drift** breaks anything that compares timestamps. **Kerberos**, used by Active Directory sign-in, rejects tickets when clocks differ by over 5 minutes by default. It compares UTC, so only drift trips it, not a wrong time zone alone."
       },
       {
         "beats": [

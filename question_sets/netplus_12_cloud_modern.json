@@ -132,13 +132,16 @@
             "say": "Servers plug into **leaf** switches, usually one per rack."
           },
           {
-            "say": "Every leaf links to every **spine**; leaves never link to each other, nor spines to spines."
+            "say": "Every leaf links to every **spine**."
           },
           {
-            "say": "A new spine adds bandwidth and a new leaf adds ports, each linked to every switch on the other tier."
+            "say": "Leaves never link to leaves, and spines never link to spines."
+          },
+          {
+            "say": "Adding a spine adds bandwidth, and adding a leaf adds ports."
           }
         ],
-        "say": "**Spine-and-leaf** is built for that. Servers plug into **leaf** switches, usually one per rack. Every leaf links to every **spine**; leaves never link to each other, nor spines to spines. A new spine adds bandwidth and a new leaf adds ports, each linked to every switch on the other tier.",
+        "say": "**Spine-and-leaf** is built for that. Servers plug into **leaf** switches, usually one per rack. Every leaf links to every **spine**. Leaves never link to leaves, and spines never link to spines. Adding a spine adds bandwidth, and adding a leaf adds ports.",
         "check": {
           "prompt": "The web server on leaf-1 queries the database on leaf-3. Which way does that flow, and which switches does it cross?",
           "answer": "East-west: leaf-1, one spine, then leaf-3",
@@ -447,7 +450,7 @@
         "definition": "Central supervision of a physical process spread over a wide area"
       }
     ],
-    "feedback": "Intranet and extranet differ in audience: staff only, versus named partners who sign in. A DMZ is for the public, kept apart from the inside. An air gap has no path at all, while a wireless bridge is a path, joining two sites by radio. SCADA is the operational technology that runs pipelines, grids and water networks from a control center."
+    "feedback": "Intranet and extranet differ in audience, because an intranet is for staff only and an extranet is for named partners who sign in. A DMZ is for the public, kept apart from the inside. An air gap has no path at all, while a wireless bridge is a path, joining two sites by radio. SCADA is the operational technology that runs pipelines, grids and water networks from a control center."
   },
   {
     "question": "Silverkeep is moving its public website onto a server of its own. Anyone on the internet must reach it, but if it is compromised it must not share a segment with staff PCs, and it must not sit outside every firewall. In which segment of the diagram should it go?",
@@ -907,10 +910,13 @@
             "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network."
           },
           {
-            "say": "A site-to-site **VPN** is an encrypted tunnel from your data center across the internet: cheap and quick, but only as steady as the internet."
+            "say": "A site-to-site **VPN** is an encrypted tunnel from your data center across the internet."
+          },
+          {
+            "say": "It is cheap and quick, but only as steady as the internet."
           }
         ],
-        "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network. A site-to-site **VPN** is an encrypted tunnel from your data center across the internet: cheap and quick, but only as steady as the internet."
+        "say": "Your network in the cloud is a **virtual private cloud** (VPC): a private, isolated slice of the provider's network. A site-to-site **VPN** is an encrypted tunnel from your data center across the internet. It is cheap and quick, but only as steady as the internet."
       },
       {
         "beats": [
@@ -948,7 +954,7 @@
             "Turn on routing in B so it forwards for its peers",
             "Nothing: B already relays traffic between its peers"
           ],
-          "why": "A peering carries traffic only between the two networks it joins; B will not forward for A. Either add a direct A-to-C peering, or attach every VPC to a **transit gateway**, a hub that does route between them: hub-and-spoke again."
+          "why": "A peering carries traffic only between the two networks it joins; B will not forward for A. Either add a direct A-to-C peering, or attach every VPC to a **transit gateway**, a hub that does route between them. That is hub-and-spoke again."
         }
       }
     ],
@@ -1040,10 +1046,10 @@
             "language": "segment numbers"
           },
           {
-            "say": "Stretch an overlay across two data centers and you get a **data center interconnect** (DCI): one segment at both sites."
+            "say": "Stretch an overlay across two data centers and you get a **data center interconnect** (DCI), which puts one segment at both sites."
           }
         ],
-        "say": "The routed network the outer packets cross is the **underlay**. The Layer 2 segments riding on it are the **overlay**. A 24-bit **VNI** numbers each segment. Stretch an overlay across two data centers and you get a **data center interconnect** (DCI): one segment at both sites.",
+        "say": "The routed network the outer packets cross is the **underlay**. The Layer 2 segments riding on it are the **overlay**. A 24-bit **VNI** numbers each segment. Stretch an overlay across two data centers and you get a **data center interconnect** (DCI), which puts one segment at both sites.",
         "check": {
           "prompt": "A VM is live-migrated, moved while still running, from site 1 to site 2 across the DCI. What happens to its IP address?",
           "answer": "It keeps it: its subnet exists at both sites",
@@ -1208,7 +1214,7 @@
         "definition": "Pushes one rule, written once on the controller, to every site"
       }
     ],
-    "feedback": "Application awareness is per-app path choice based on measured latency, loss and jitter. Transport agnosticism is the overlay's indifference to what carries it. Zero-touch provisioning removes the engineer from branch installs, and central policy management means a rule is written once and every edge receives it."
+    "feedback": "Application awareness means choosing a path for each application based on measured latency, loss and jitter. Transport agnosticism means the overlay does not care what carries it. Zero-touch provisioning removes the engineer from branch installs, and central policy management means a rule is written once and every edge receives it."
   },
   {
     "type": "cloze",
@@ -1335,7 +1341,7 @@
         }
       ]
     ],
-    "feedback": "One site, four applications, four rules: that is application awareness. Voice takes the first link that meets SLA in the order MPLS, broadband, LTE, so 210 ms on MPLS sends it to broadband, and with MPLS down and broadband losing 3% it falls to LTE. Payments ignore SLA and stay on MPLS while it is up, even at 2% loss; with both wired links down the rule forbids LTE, so they hold. The office suite prefers broadband for its direct path to the internet and falls back to MPLS, while backups wait for broadband rather than load MPLS or the metered LTE link."
+    "feedback": "One site runs four applications under four different rules, which is application awareness. Voice takes the first link that meets SLA in the order MPLS, broadband, LTE, so 210 ms on MPLS sends it to broadband, and with MPLS down and broadband losing 3% it falls to LTE. Payments ignore SLA and stay on MPLS while it is up, even at 2% loss; with both wired links down the rule forbids LTE, so they hold. The office suite prefers broadband for its direct path to the internet and falls back to MPLS, while backups wait for broadband rather than load MPLS or the metered LTE link."
   },
   {
     "type": "npc_demo",
@@ -1425,7 +1431,7 @@
       {
         "beats": [
           {
-            "say": "Someone fixes an outage at 2 a.m. by hand. Now the running config differs from the files: **configuration drift**."
+            "say": "Someone fixes an outage at 2 a.m. by hand. Now the running config differs from the files, which is **configuration drift**."
           },
           {
             "say": "A **compliance** check compares every device with the files and reports or reverses drift."
@@ -1434,7 +1440,7 @@
             "say": "Good automation is **idempotent**: running it again changes only what differs."
           }
         ],
-        "say": "Someone fixes an outage at 2 a.m. by hand. Now the running config differs from the files: **configuration drift**. A **compliance** check compares every device with the files and reports or reverses drift. Good automation is **idempotent**: running it again changes only what differs.",
+        "say": "Someone fixes an outage at 2 a.m. by hand. Now the running config differs from the files, which is **configuration drift**. A **compliance** check compares every device with the files and reports or reverses drift. Good automation is **idempotent**: running it again changes only what differs.",
         "check": {
           "prompt": "Yesterday a playbook changed 12 switches. Nobody has touched them since, and it runs again today. How many does it change?",
           "answer": "None: they already match the files",
@@ -1715,15 +1721,15 @@
     "question": "Which of the following are Zero Trust principles?",
     "correct": [
       "Authenticate and authorize every request, wherever it comes from",
-      "Let policy set how strongly to authenticate, such as a key for admin consoles",
       "Grant access to specific applications rather than to whole networks",
       "Feed identity, device and monitoring signals into one policy engine"
     ],
     "incorrect": [
       "Trust devices once they are plugged into the internal LAN",
-      "Authorize each user once at sign-in for the rest of the day"
+      "Authorize each user once at sign-in for the rest of the day",
+      "Apply one strong authentication method to every application, whatever it protects"
     ],
-    "feedback": "Zero Trust judges every request on its own merits, with authentication strength set by policy and access granted to applications, not networks. Its parts are integrated so one policy engine sees identity, device health and alerts together. Location on the LAN earns nothing, and a morning sign-in does not authorize the afternoon's requests."
+    "feedback": "Zero Trust judges every request on its own merits, with access granted to applications, not networks. Its parts are integrated so one policy engine sees identity, device health and alerts together. Location on the LAN earns nothing, and a morning sign-in does not authorize the afternoon's requests. Authentication strength is set by policy for each resource, so one method applied everywhere is not the principle."
   },
   {
     "type": "ordering",

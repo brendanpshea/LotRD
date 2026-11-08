@@ -1333,6 +1333,29 @@ describe('Question set quality heuristics', () => {
     );
   });
 
+  it('gives no wrong option away by tone or form (WRITING_GUIDE: the plausibility test)', () => {
+    // A wrong option described as bad behaviour ("updated by hand when they remember")
+    // can be rejected on tone alone; so can wrong options that are all "-ing" phrases
+    // ("Skipping review…") beside keys that are not.
+    const LOADED = /\b(when (?:they|people|staff|someone) remembers?|for convenience|to save time|blindly|without thinking|just hope|lazily|lazy)\b/i;
+    const ING = /^[A-Za-z]+ing\b/;
+    const flagged = [];
+    for (const setId of index) {
+      loadJSON(`question_sets/${setId}`).forEach((q, i) => {
+        if (q.type && q.type !== 'multiple_choice') return;
+        const correct = q.correct || [];
+        const incorrect = q.incorrect || [];
+        for (const o of incorrect) {
+          if (LOADED.test(o)) flagged.push(`${setId}[${i}]: a wrong option editorialises: "${o}"`);
+        }
+        if (incorrect.length >= 2 && incorrect.every(o => ING.test(o)) && !correct.some(o => ING.test(o))) {
+          flagged.push(`${setId}[${i}]: every wrong option is an -ing phrase and no key is`);
+        }
+      });
+    }
+    assert.deepEqual(flagged, []);
+  });
+
   it('flags sets where wrong answers overuse absolute quantifiers or negations', () => {
     const flaggedSets = [];
 

@@ -122,7 +122,7 @@
         "definition": "Schedules heating and ventilation for the plant's office block"
       }
     ],
-    "feedback": "The PLC runs the local control logic (oxygen low, open the valve). The RTU does similar work at a remote field site and reports over radio or cellular. The HMI is the operator's live window with alarms and manual controls. The historian keeps every tag over time, so it is where last year's readings live. The building management system runs the facility's own HVAC: OT too, though usually owned by Facilities."
+    "feedback": "The PLC runs the local control logic (oxygen low, open the valve). The RTU does similar work at a remote field site and reports over radio or cellular. The HMI is the operator's live window with alarms and manual controls. The historian keeps every tag over time, so it is where last year's readings live. The building management system runs the facility's own HVAC. It is OT too, though it is usually owned by Facilities."
   },
   {
     "type": "cloze",
@@ -149,7 +149,7 @@
         "hint": "architecture"
       }
     ],
-    "feedback": "SCADA is the supervisory architecture for geographically spread sites: a central server collecting telemetry, typical of pipelines, water and power lines. Its field sites often use RTUs, which are PLC-like controllers optimised for remote deployment with cellular or radio links. A DCS distributes control across many processors inside a single facility, typical of refineries, chemical plants and power generation. All of them are kinds of ICS."
+    "feedback": "SCADA is the supervisory architecture for geographically spread sites, in which a central server collects telemetry, as on pipelines, water and power lines. Its field sites often use RTUs, which are PLC-like controllers optimised for remote deployment with cellular or radio links. A DCS distributes control across many processors inside a single facility, as in refineries, chemical plants and power generation. All of them are kinds of ICS."
   },
   {
     "question": "During an OT asset review at Thornwood Civic Trust, Vex Ardal finds 30 BACnet controllers for city hall's air handlers on the corporate VLAN. IT says they belong to Facilities and are out of scope. Which response is BEST?",
@@ -161,7 +161,7 @@
       "Add them to the monthly IT patch cycle used for corporate workstations",
       "Accept the risk, since building controllers hold no sensitive business data"
     ],
-    "feedback": "HVAC and building management controllers are OT in everything but name: constrained devices speaking protocols such as BACnet, sitting on the corporate network, so they are an entry point whoever owns them. They need an inventory entry, an owner and segmentation. Leaving them out of scope ignores that exposure; the monthly IT patch cycle does not fit devices that often cannot be patched on IT's schedule; and 'no sensitive data' misses that their risk is reach into the network and physical effects, not data."
+    "feedback": "HVAC and building management controllers are OT in everything but name. They are constrained devices that speak protocols such as BACnet and sit on the corporate network, so they are an entry point whoever owns them. They need an inventory entry, an owner and segmentation. Leaving them out of scope ignores that exposure; the monthly IT patch cycle does not fit devices that often cannot be patched on IT's schedule; and 'no sensitive data' misses that their risk is reach into the network and physical effects, not data."
   },
   {
     "type": "npc_demo",
@@ -396,7 +396,7 @@
       "Path 2",
       "Path 3"
     ],
-    "feedback": "Path 4 lets the corporate network open a connection straight to a Level 1 PLC, skipping the iDMZ: exactly the IT-to-controller path the model forbids. Path 5 crosses from the Line 1 zone into the Line 2 zone with no approved conduit, so a compromise of one line spreads to the next. Path 1 (IT reading the replica) and path 2 (the historian publishing its copy up) are how data should leave OT, and path 3 is the one approved conduit, from the jump host.",
+    "feedback": "Path 4 lets the corporate network open a connection straight to a Level 1 PLC, skipping the iDMZ. That is exactly the IT-to-controller path the model forbids. Path 5 crosses from the Line 1 zone into the Line 2 zone with no approved conduit, so a compromise of one line spreads to the next. Path 1 (IT reading the replica) and path 2 (the historian publishing its copy up) are how data should leave OT, and path 3 is the one approved conduit, from the jump host.",
     "figure": {
       "dot": "digraph { rankdir=TB; newrank=true; nodesep=0.45; ranksep=0.5; subgraph cluster_it { label=\"IT\"; color=\"#4a8a4a\"; style=rounded; corp [label=\"corporate\\nnetwork\"]; } subgraph cluster_dmz { label=\"iDMZ\"; labelloc=b; color=\"#4a8a4a\"; style=rounded; rep [label=\"historian\\nreplica\"]; jh [label=\"jump host\"]; } subgraph cluster_ot { label=\"OT\"; labeljust=l; color=\"#4a8a4a\"; style=rounded; hist [label=\"site\\nhistorian\"]; hmi1 [label=\"Line 1\\nHMI\"]; plc2 [label=\"Line 2\\nPLC\"]; } { rank=same; rep; jh; } { rank=same; hist; hmi1; } corp -> rep [label=\" 1\"]; rep -> hist [dir=back, label=\" 2\"]; jh -> hmi1 [label=\" 3\"]; hmi1 -> plc2 [label=\" 5\"]; corp -> plc2 [label=\" 4\"]; }",
       "alt": "Three labelled regions: IT holding a corporate network box; a middle buffer holding a historian replica and a jump host; and OT holding a historian, a Line 1 HMI and a Line 2 PLC, each in its own box. Five numbered arrows connect them.",
@@ -649,7 +649,7 @@
         "hint": "port type"
       }
     ],
-    "feedback": "Active scanning sends unexpected packets to devices that were never built to handle them, and a 25-year-old PLC has a credible chance of crashing. Passive monitoring, from a SPAN (mirror) port, builds the inventory and the detections from traffic the devices were sending anyway. Vendor-approved active queries in a maintenance window are the exception, not the routine."
+    "feedback": "Active scanning sends unexpected packets to devices that were never built to handle them, and a 25-year-old PLC has a credible chance of crashing. Passive monitoring, from a SPAN (mirror) port, builds the inventory and the detections from traffic the devices were sending anyway. Vendor-approved active queries in a maintenance window are an occasional exception and not the normal method."
   },
   {
     "type": "ordering",
@@ -823,16 +823,16 @@
   {
     "question": "Greycloak Apothecary is writing the security section of a tender for 300 bedside patient monitors that will stay in service for ten years. Which requirements belong in it?",
     "correct": [
-      "Secure boot anchored in the monitor's SoC",
       "Firmware updates signed by the manufacturer",
       "JTAG and UART debug ports disabled in shipped units",
       "Unique credentials set at commissioning, no defaults"
     ],
     "incorrect": [
+      "Secure boot added to the monitors later through a firmware update",
       "An EDR agent running alongside the monitor's RTOS",
-      "A shared service password so biomed techs log in fast"
+      "A service password shared by the biomed team and changed each quarter"
     ],
-    "feedback": "On an embedded device, security has to be designed in: secure boot anchored in the SoC, signed updates, debug ports closed in production, and no default credentials. An EDR agent is the IT habit that does not fit; an RTOS-based monitor has neither the room nor the support for one, which is why the design-time controls matter. A shared service password is the default-credential problem in another form: one leak opens every monitor."
+    "feedback": "On an embedded device, security has to be designed in: signed updates, debug ports closed in production, and no default credentials. Secure boot has to be anchored in the SoC from the start, so a promise to add it in a later firmware update cannot be relied on. An EDR agent is the IT habit that does not fit, because an RTOS-based monitor has neither the room nor the support for one. A shared service password is the default-credential problem in another form, because one leak opens every monitor."
   },
   {
     "type": "ordering",
@@ -925,10 +925,10 @@
             "say": "**Deauthentication** floods forge messages that knock clients off."
           },
           {
-            "say": "Add weak shared passwords, and devices that rejoin any familiar name."
+            "say": "Weak shared passwords, and devices that rejoin any familiar name, make these attacks easier."
           }
         ],
-        "say": "Corporate Wi-Fi, where devices join through access points, has three classic attacks. A **rogue access point** is one nobody approved. An **evil twin** copies a trusted network's name. **Deauthentication** floods forge messages that knock clients off. Add weak shared passwords, and devices that rejoin any familiar name."
+        "say": "Corporate Wi-Fi, where devices join through access points, has three classic attacks. A **rogue access point** is one nobody approved. An **evil twin** copies a trusted network's name. **Deauthentication** floods forge messages that knock clients off. Weak shared passwords, and devices that rejoin any familiar name, make these attacks easier."
       },
       {
         "beats": [
@@ -1004,10 +1004,10 @@
             "say": "One leak exposes one device."
           },
           {
-            "say": "Beware a vendor guide that says: one SSID, one shared PSK."
+            "say": "Beware a vendor guide that says \"one SSID, one shared PSK.\""
           },
           {
-            "say": "It assumes a flat network; without a VLAN and ACL, the device becomes your entry point."
+            "say": "It assumes a flat network. Without a VLAN and ACL, the device becomes your entry point."
           },
           {
             "figure": {
@@ -1018,7 +1018,7 @@
             }
           }
         ],
-        "say": "Many IoT devices cannot hold certificates, so each gets its own password, a **per-device PSK** (pre-shared key). One leak exposes one device. Beware a vendor guide that says: one SSID, one shared PSK. It assumes a flat network; without a VLAN and ACL, the device becomes your entry point.",
+        "say": "Many IoT devices cannot hold certificates, so each gets its own password, a **per-device PSK** (pre-shared key). One leak exposes one device. Beware a vendor guide that says \"one SSID, one shared PSK.\" It assumes a flat network. Without a VLAN and ACL, the device becomes your entry point.",
         "check": {
           "prompt": "Smart TVs get per-device PSKs, but their SSID drops them onto the corporate VLAN. One TV is compromised. How far can the attacker reach?",
           "answer": "Anything on the corporate VLAN",
@@ -1228,7 +1228,7 @@
       "Log in to a backup server with a weak service account",
       "Pivot to file shares that hold payroll data"
     ],
-    "feedback": "Each step depends on the one before: the camera gives a foothold, the flat network lets it reach the gateway and directory, enumeration over SMB finds accounts, a weak service account opens the backup server, and that server leads to the payroll shares. The fix was architecture, not a better camera: a dedicated VLAN with egress-only rules to the vendor cloud would have stopped the chain at step two, leaving the firmware flaw with a blast radius of one camera."
+    "feedback": "Each step depends on the one before: the camera gives a foothold, the flat network lets it reach the gateway and directory, enumeration over SMB finds accounts, a weak service account opens the backup server, and that server leads to the payroll shares. The fix was architecture and not a better camera. A dedicated VLAN with egress-only rules to the vendor cloud would have stopped the chain at step two, leaving the firmware flaw with a blast radius of one camera."
   },
   {
     "type": "npc_demo",
@@ -1414,7 +1414,7 @@
       {
         "beats": [
           {
-            "say": "Water is the surprise: its regulation is thin."
+            "say": "Water is the surprise, because its regulation is thin."
           },
           {
             "say": "EPA tried in 2023 to require cybersecurity reviews, then withdrew after a court challenge."
@@ -1423,7 +1423,7 @@
             "say": "So the sector leans on guidance and voluntary programs."
           }
         ],
-        "say": "Water is the surprise: its regulation is thin. EPA tried in 2023 to require cybersecurity reviews, then withdrew after a court challenge. So the sector leans on guidance and voluntary programs."
+        "say": "Water is the surprise, because its regulation is thin. EPA tried in 2023 to require cybersecurity reviews, then withdrew after a court challenge. So the sector leans on guidance and voluntary programs."
       },
       {
         "beats": [
@@ -1485,10 +1485,10 @@
     "incorrect": [
       "A longer shared password, changed every quarter",
       "TeamViewer moved to a non-standard port to hide it",
-      "A pause until EPA rules define water-sector duties",
+      "A written policy that forbids operators from sharing the password",
       "A full SCADA replacement before any other change"
     ],
-    "feedback": "The Oldsmar lesson is that the same fixes cover both an intruder and an honest mistake: named accounts with MFA on one approved path, and a jump host that records every session, block a stranger and make any later change traceable. A longer shared password still names no one; a non-standard port hides nothing from a scanner; water regulation is thin and voluntary, so waiting for EPA rules means waiting indefinitely; and a full replacement is the slow, expensive fix when cheap ones are available now."
+    "feedback": "The Oldsmar lesson is that the same fixes cover both an intruder and an honest mistake. Named accounts with MFA on one approved path, and a jump host that records every session, block a stranger and make any later change traceable. A longer shared password still names no one, and a non-standard port hides nothing from a scanner. A written policy against sharing the password changes nothing about who can log in or what gets recorded. A full replacement is the slow, expensive fix when cheap ones are available now."
   },
   {
     "question": "An HMI at Thornwood Civic Trust's water plant shows a chemical setpoint change that no operator remembers making, entered through a remote session. The council wants to announce that hackers attacked the plant. Which response BEST reflects the lesson of Oldsmar?",
@@ -1570,7 +1570,7 @@
             "say": "Third is **strict change control**: nothing changes without a ticket, an approver and a record."
           },
           {
-            "say": "Add locked enclosures, and console access only through a jump host."
+            "say": "Locked enclosures help, and console access should go only through a jump host."
           },
           {
             "say": "Keep one approved remote-access path, with MFA and central logging."
@@ -1579,7 +1579,7 @@
             "say": "Use named accounts through **privileged access management (PAM)**, not shared logins."
           }
         ],
-        "say": "Third is **strict change control**: nothing changes without a ticket, an approver and a record. Add locked enclosures, and console access only through a jump host. Keep one approved remote-access path, with MFA and central logging. Use named accounts through **privileged access management (PAM)**, not shared logins."
+        "say": "Third is **strict change control**: nothing changes without a ticket, an approver and a record. Locked enclosures help, and console access should go only through a jump host. Keep one approved remote-access path, with MFA and central logging. Use named accounts through **privileged access management (PAM)**, not shared logins."
       },
       {
         "beats": [
@@ -1660,7 +1660,7 @@
             "say": "The fifth family is **replacement planning**."
           },
           {
-            "say": "Compensating controls are a holding action, not a destination."
+            "say": "Compensating controls are a holding action and not a lasting fix."
           },
           {
             "say": "So treat them as debt."
@@ -1669,7 +1669,7 @@
             "say": "Each gets an owner, a justification, a review cadence and, ideally, an end date matching the system's replacement."
           }
         ],
-        "say": "The fifth family is **replacement planning**. Compensating controls are a holding action, not a destination. So treat them as debt. Each gets an owner, a justification, a review cadence and, ideally, an end date matching the system's replacement.",
+        "say": "The fifth family is **replacement planning**. Compensating controls are a holding action and not a lasting fix. So treat them as debt. Each gets an owner, a justification, a review cadence and, ideally, an end date matching the system's replacement.",
         "check": {
           "prompt": "Why does a funded, tracked replacement roadmap count as a control in its own right?",
           "answer": "It bounds how long the other controls must hold",
@@ -1823,13 +1823,13 @@
     "correct": [
       "Application allowlisting limited to the HMI software",
       "USB writes disabled except by approved exception",
-      "Network ACLs allowing only the two protocols the PLCs need",
       "No route to the internet from the HMI segment"
     ],
     "incorrect": [
       "An upgrade to a supported Windows release on each HMI",
-      "The corporate EDR agent from the standard laptop build"
+      "The corporate EDR agent from the standard laptop build",
+      "Network ACLs that allow the whole plant segment to reach the PLCs, so future changes are not blocked"
     ],
-    "feedback": "These are the compensating controls for an unsupported OS that cannot be changed: allowlisting so only the approved program runs, USB restrictions against the Stuxnet route, ACLs that admit only the protocols the controllers actually need, and no internet egress. An OS upgrade is exactly what the recertification constraint rules out, and a modern EDR agent will not run on Windows XP: that is what 'cannot run EDR' looks like, and why the network carries the monitoring instead."
+    "feedback": "These are the compensating controls for an unsupported OS that cannot be changed: allowlisting so only the approved program runs, USB restrictions against the Stuxnet route, and no internet egress. An ACL helps only when it admits just the two protocols the controllers need, so one that opens the whole segment to the PLCs adds little. An OS upgrade is exactly what the recertification constraint rules out, and a modern EDR agent will not run on Windows XP. That is what 'cannot run EDR' looks like, and why the network carries the monitoring instead."
   }
 ]

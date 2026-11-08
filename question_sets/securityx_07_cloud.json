@@ -266,10 +266,10 @@
             "say": "Encryption costs you no effort."
           },
           {
-            "say": "The catch: the provider can use that key, and can be compelled to, by a court order or its own internal processes."
+            "say": "The catch is that the provider can use that key, and can be compelled to, by a court order or its own internal processes."
           }
         ],
-        "say": "With **cloud-managed keys**, also called provider-managed keys, the provider generates, stores, rotates and uses the key for you. Encryption costs you no effort. The catch: the provider can use that key, and can be compelled to, by a court order or its own internal processes."
+        "say": "With **cloud-managed keys**, also called provider-managed keys, the provider generates, stores, rotates and uses the key for you. Encryption costs you no effort. The catch is that the provider can use that key, and can be compelled to, by a court order or its own internal processes."
       },
       {
         "beats": [
@@ -551,7 +551,7 @@
         ]
       },
       {
-        "say": "Each pod gets its own cloud identity, **workload identity**, instead of borrowing the credentials of the machine it runs on. **Network policies** say which pods may talk to which; start with **default-deny**, then allow each flow an app needs. `-n` names one namespace; `-A` covers every namespace.",
+        "say": "Each pod gets its own cloud identity, **workload identity**, instead of borrowing the credentials of the machine it runs on. **Network policies** say which pods may talk to which. Start with **default-deny**, then allow each flow an app needs. `-n` names one namespace; `-A` covers every namespace.",
         "beats": [
           {
             "code": "$ kubectl get networkpolicy -n payments\nNo resources found in payments namespace.",
@@ -561,7 +561,7 @@
             "say": "Each pod gets its own cloud identity, **workload identity**, instead of borrowing the credentials of the machine it runs on."
           },
           {
-            "say": "**Network policies** say which pods may talk to which; start with **default-deny**, then allow each flow an app needs."
+            "say": "**Network policies** say which pods may talk to which. Start with **default-deny**, then allow each flow an app needs."
           },
           {
             "say": "`-n` names one namespace; `-A` covers every namespace."
@@ -618,15 +618,15 @@
     "question": "Highrook's new managed Kubernetes cluster was built with defaults: a flat pod network, pods using the node's cloud credentials, broad service-account permissions, and etcd unencrypted. Which changes limit what an attacker in one compromised pod can reach?",
     "correct": [
       "Default-deny network policies, then allow only the flows each app needs",
-      "Workload identity, so each pod gets its own narrowly scoped cloud role",
       "Encryption at rest and tight access control for etcd",
       "RBAC limiting what each service account may ask the API server to do"
     ],
     "incorrect": [
+      "Node-level cloud credentials, rotated daily and shared by every pod on the node",
       "CPU and memory limits on every pod, so one cannot starve the node",
       "Image tags set to latest, so pods pick up patched images on restart"
     ],
-    "feedback": "Network policies stop lateral movement across a flat network; workload identity stops a pod from inheriting the node's broader cloud role; protecting etcd guards the cluster's secrets; and tight RBAC stops a stolen service-account token from reconfiguring the cluster. Resource limits are good hygiene, but they protect availability, not what an intruder can reach. A latest tag makes builds unpredictable and unverifiable; pin digests instead."
+    "feedback": "Network policies stop lateral movement across a flat network; protecting etcd guards the cluster's secrets; and tight RBAC stops a stolen service-account token from reconfiguring the cluster. Rotating shared node credentials daily still leaves every pod holding the node's broad cloud role; workload identity, which gives each pod its own narrowly scoped role, is what limits that. Resource limits are good hygiene, but they protect availability, not what an intruder can reach. A latest tag makes builds unpredictable and unverifiable; pin digests instead."
   },
   {
     "type": "code_line",
@@ -1136,13 +1136,13 @@
             "say": "**Rate limiting** caps requests per client per unit of time."
           },
           {
-            "say": "An attacker who cannot steal data may still run up a ruinous bill by calling expensive operations: a **denial of wallet**."
+            "say": "An attacker who cannot steal data may still run up a ruinous bill by calling expensive operations, which is called a **denial of wallet**."
           },
           {
             "say": "Quotas, budget alerts and circuit breakers limit that exposure."
           }
         ],
-        "say": "**Rate limiting** caps requests per client per unit of time. An attacker who cannot steal data may still run up a ruinous bill by calling expensive operations: a **denial of wallet**. Quotas, budget alerts and circuit breakers limit that exposure.",
+        "say": "**Rate limiting** caps requests per client per unit of time. An attacker who cannot steal data may still run up a ruinous bill by calling expensive operations, which is called a **denial of wallet**. Quotas, budget alerts and circuit breakers limit that exposure.",
         "check": {
           "prompt": "Keys A and B are each limited to 100 requests per minute. In one minute A sends 250 and B sends 40. How many reach the backend?",
           "answer": "140",
@@ -1347,7 +1347,7 @@
     "intro": "Plenty of cloud breaches aren't clever: nobody cracks the encryption or finds a flaw in the provider's code, and the data just ends up somewhere it was never meant to be. Those failures fall into a few patterns with names of their own, and the commonest comes first.",
     "steps": [
       {
-        "say": "**Data exposure**: a storage resource that should be private is configured for public access. **Data leakage**: data leaves through a legitimate channel used the wrong way, such as production data copied into a test environment. **Data remanence**: residual data left after deletion; destroy the customer-managed key and it is unreadable.",
+        "say": "**Data exposure**: a storage resource that should be private is configured for public access. **Data leakage**: data leaves through a legitimate channel used the wrong way, such as production data copied into a test environment. **Data remanence** is residual data left after deletion. Destroying the customer-managed key makes it unreadable.",
         "beats": [
           {
             "say": "**Data exposure**: a storage resource that should be private is configured for public access."
@@ -1356,7 +1356,7 @@
             "say": "**Data leakage**: data leaves through a legitimate channel used the wrong way, such as production data copied into a test environment."
           },
           {
-            "say": "**Data remanence**: residual data left after deletion; destroy the customer-managed key and it is unreadable."
+            "say": "**Data remanence** is residual data left after deletion. Destroying the customer-managed key makes it unreadable."
           }
         ]
       },
@@ -1531,10 +1531,10 @@
             "say": "**Private dedicated connectivity**, such as AWS Direct Connect, gives predictable latency and contracted bandwidth, usually backed by a VPN."
           },
           {
-            "say": "A dedicated circuit is isolated, not encrypted: encrypt the traffic anyway."
+            "say": "A dedicated circuit is isolated but not encrypted, so encrypt the traffic anyway."
           }
         ],
-        "say": "A site-to-site **IPsec VPN** is the cheapest, most flexible road, but performance varies. **Private dedicated connectivity**, such as AWS Direct Connect, gives predictable latency and contracted bandwidth, usually backed by a VPN. A dedicated circuit is isolated, not encrypted: encrypt the traffic anyway."
+        "say": "A site-to-site **IPsec VPN** is the cheapest, most flexible road, but performance varies. **Private dedicated connectivity**, such as AWS Direct Connect, gives predictable latency and contracted bandwidth, usually backed by a VPN. A dedicated circuit is isolated but not encrypted, so encrypt the traffic anyway."
       },
       {
         "say": "Adopting a cloud service starts with assessing the vendor. A **SOC 2 Type II** report is an auditor's findings on how a vendor's controls worked over months. An **ISO 27001** certificate says the vendor runs a formal security management system. The **CSA STAR** registry lists vendors' published security assessments.",

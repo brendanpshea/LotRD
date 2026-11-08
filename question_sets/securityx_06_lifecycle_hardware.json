@@ -166,9 +166,9 @@
     "incorrect": [
       "Remove the timeout for clinical users, since patient care outranks this security control",
       "Keep five minutes on each hospital system, since the strictest setting is the safest one",
-      "Let each ward manager pick a local timeout and change it quietly whenever staff complain"
+      "Let each ward manager set a local timeout and adjust it whenever staff ask"
     ],
-    "feedback": "The right balance depends on how sensitive the system is and on its realistic threat model, and it should be decided deliberately and written down with an owner. Dropping the timeout settles the trade-off informally in favour of convenience. One strict value everywhere ignores that a shared ward workstation and a payment portal face different threats. Quiet local changes are exactly the drift Selene wants to stop."
+    "feedback": "The right balance depends on how sensitive the system is and on its realistic threat model, and it should be decided deliberately and written down with an owner. Dropping the timeout settles the trade-off informally in favour of convenience. One strict value everywhere ignores that a shared ward workstation and a payment portal face different threats. Local changes made whenever staff ask are exactly the drift Selene wants to stop."
   },
   {
     "question": "Cinderpost Couriers wants to stop unreviewed or unverified changes from reaching main, and separately to catch insecure patterns as developers type. Which of these controls are enforced by branch protection rather than by a linter?",
@@ -360,10 +360,12 @@
       "Sign build outputs and attach an attestation of how and where each was built"
     ],
     "incorrect": [
-      "Give each developer admin rights on the pipeline so that broken builds get fixed faster",
-      "Keep the signing key in the repository, encrypted with a password the team shares"
+      "Give every developer admin rights on the pipeline configuration and its runners",
+      "Keep the signing key in the repository, encrypted with a password the team shares",
+      "Add a DAST scan of the staging application to every merge to main",
+      "Run every job on one long-lived shared runner so that build caches stay warm"
     ],
-    "feedback": "A pipeline that holds signing keys and deployment credentials deserves production-grade protection: least-privilege runners, secrets pulled from a vault only when a job needs them, and signed, attested outputs so tampering is detectable. Broad admin rights widen exactly the access an attacker wants. A key committed to the repository, even encrypted under a shared password, is readable by anyone with repository access and is one leaked password away from exposure."
+    "feedback": "A pipeline that holds signing keys and deployment credentials deserves production-grade protection: least-privilege runners, secrets pulled from a vault only when a job needs them, and signed, attested outputs so tampering is detectable. Broad admin rights widen exactly the access an attacker wants. A key committed to the repository, even encrypted under a shared password, is readable by anyone with repository access and is one leaked password away from exposure. A DAST scan is a good control, but it tests the application in staging and does nothing to protect the pipeline that builds it. One long-lived runner shared by every job lets a compromised job read what the others left behind."
   },
   {
     "type": "fill_blank",
@@ -390,10 +392,10 @@
             "language": "SAST finding (Bandit, Python)"
           },
           {
-            "say": "It is rated Low, yet it is a live password: SAST ranks the pattern, not the damage, so a human still triages."
+            "say": "It is rated Low, yet it is a live password. SAST ranks the pattern and not the damage, so a human still triages."
           }
         ],
-        "say": "**Static application security testing (SAST)** reads code without running it, hunting known flaw patterns such as injection or weak crypto. It is rated Low, yet it is a live password: SAST ranks the pattern, not the damage, so a human still triages."
+        "say": "**Static application security testing (SAST)** reads code without running it, hunting known flaw patterns such as injection or weak crypto. It is rated Low, yet it is a live password. SAST ranks the pattern and not the damage, so a human still triages."
       },
       {
         "beats": [
@@ -443,15 +445,19 @@
           },
           {
             "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line."
-          },
+          }
+        ],
+        "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line."
+      },
+      {
+        "beats": [
           {
             "say": "**Runtime application self-protection (RASP)** puts a similar agent in production, ending requests that look like injection."
           },
           {
-            "say": "Treat RASP as defense in depth, not a substitute for fixing code."
+            "say": "Treat RASP as one extra layer of defense, because it never replaces fixing the code."
           }
         ],
-        "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line. **Runtime application self-protection (RASP)** puts a similar agent in production, ending requests that look like injection. Treat RASP as defense in depth, not a substitute for fixing code.",
         "check": {
           "prompt": "An IAST agent reports nothing on the password-reset code. What is the likeliest reason?",
           "answer": "No test ever exercised that code path",
@@ -460,7 +466,8 @@
             "IAST only reads the source files"
           ],
           "why": "IAST sees only the code your tests actually run. An untested path is invisible to it, however flawed."
-        }
+        },
+        "say": "**Runtime application self-protection (RASP)** puts a similar agent in production, ending requests that look like injection. Treat RASP as one extra layer of defense, because it never replaces fixing the code."
       }
     ],
     "outro": "Next, a different team runs three of these tools on one release. Name each tool from what it saw."
@@ -541,10 +548,10 @@
         }
       },
       {
-        "say": "**Formal methods** go furthest: a mathematical specification, then a proof that the code satisfies it for every input. They are costly, so they appear where failure is unacceptable. The seL4 microkernel, a tiny OS core, has a machine-checked proof of correctness. TLS 1.3 was formally analyzed during design.",
+        "say": "**Formal methods** go furthest. They write a mathematical specification, then prove the code satisfies it for every input. They are costly, so they appear where failure is unacceptable. The seL4 microkernel, a tiny OS core, has a machine-checked proof of correctness. TLS 1.3 was formally analyzed during design.",
         "beats": [
           {
-            "say": "**Formal methods** go furthest: a mathematical specification, then a proof that the code satisfies it for every input."
+            "say": "**Formal methods** go furthest. They write a mathematical specification, then prove the code satisfies it for every input."
           },
           {
             "say": "They are costly, so they appear where failure is unacceptable."
@@ -594,7 +601,7 @@
       "A weekly DAST scan of the portal, to confirm the flaw is still exploitable",
       "An IAST agent in staging, to trace the tainted data flow down to the line"
     ],
-    "feedback": "RASP runs inside the production application and can stop an exploit at the moment input reaches the vulnerable call, which is exactly the stated gap. A SAST rule only finds the pattern in code, and nobody is changing this vendor module. A DAST scan confirms the exposure without blocking anything. IAST adds diagnostic detail in staging but protects no live user. RASP is the stopgap; the vendor fix is still the cure."
+    "feedback": "RASP runs inside the production application and can stop an exploit at the moment input reaches the vulnerable call, which is exactly the stated gap. A SAST rule only finds the pattern in code, and nobody is changing this vendor module. A DAST scan confirms the exposure without blocking anything. IAST adds diagnostic detail in staging but protects no live user. RASP is only the stopgap, so the vendor fix is still needed."
   },
   {
     "type": "code_line",
@@ -620,7 +627,7 @@
     "feedback": "Only formal methods establish a property over every input: a precise specification plus a mathematical proof that the implementation meets it, as the seL4 microkernel's machine-checked proof does. IAST sees only the paths tests exercise; SAST matches patterns and produces false positives; RASP reacts to attacks in production rather than proving their absence. The cost of proof is why formal methods are kept for kernels, hypervisors, cryptographic libraries and avionics."
   },
   {
-    "question": "Kaeli Renn's backlog holds 30 CVEs in third-party components, all in the same critical CVSS band, and her team can fix six this week. Which inputs should decide which six come first?",
+    "question": "Kaeli Renn's backlog holds 30 CVEs in third-party components, all in the same critical CVSS band, and her team can fix six this week. Which inputs should decide which six come first, to cut the chance of exploitation soonest?",
     "correct": [
       "The EPSS estimate of how likely each flaw is to be exploited",
       "Whether CISA's Known Exploited Vulnerabilities catalog lists it",
@@ -628,9 +635,9 @@
     ],
     "incorrect": [
       "The CVSS base score, since it already ranks them by exploitability",
-      "The order in which the scanner happened to list the findings"
+      "The date each CVE was published, oldest first"
     ],
-    "feedback": "With all 30 in one CVSS band, the severity score cannot separate them; it measures how bad a flaw would be, not how likely it is to be exploited here. EPSS estimates exploitation likelihood, the KEV catalog records flaws already exploited in the wild, and reachability asks whether the vulnerable code even runs in this deployment. Scanner order reflects nothing about risk."
+    "feedback": "With all 30 in one CVSS band, the severity score cannot separate them; it measures how bad a flaw would be, not how likely it is to be exploited here. EPSS estimates exploitation likelihood, the KEV catalog records flaws already exploited in the wild, and reachability asks whether the vulnerable code even runs in this deployment. Publication date says how old a record is, not how likely anyone is to exploit the flaw."
   },
   {
     "type": "rule_table",
@@ -759,13 +766,13 @@
             "say": "In December 2021, Log4Shell (CVE-2021-44228, a flaw's public ID) let attackers run code on servers through Log4j, a Java logging library."
           },
           {
-            "say": "A crafted string, once logged, was enough: CVSS 10.0, the maximum."
+            "say": "A crafted string, once logged, was enough, scoring CVSS 10.0, the maximum."
           },
           {
             "say": "Teams with current SBOMs or SCA inventories answered \"are we exposed?\" in hours. Others spent weeks."
           }
         ],
-        "say": "In December 2021, Log4Shell (CVE-2021-44228, a flaw's public ID) let attackers run code on servers through Log4j, a Java logging library. A crafted string, once logged, was enough: CVSS 10.0, the maximum. Teams with current SBOMs or SCA inventories answered \"are we exposed?\" in hours. Others spent weeks."
+        "say": "In December 2021, Log4Shell (CVE-2021-44228, a flaw's public ID) let attackers run code on servers through Log4j, a Java logging library. A crafted string, once logged, was enough, scoring CVSS 10.0, the maximum. Teams with current SBOMs or SCA inventories answered \"are we exposed?\" in hours. Others spent weeks."
       },
       {
         "beats": [
@@ -868,18 +875,18 @@
     "feedback": "The inventory answers \"are we exposed?\" first; without it there is nothing to rank. Exposure and criticality set the order, because internet-facing, critical systems are where attackers strike first. Patching follows that ranking, and the job ends only when a fresh query confirms coverage. Teams with inventories ran this loop for Log4Shell within days; teams without spent weeks on the first step alone."
   },
   {
-    "question": "Cinderpost Couriers' builds pull the latest version of every open-source package, push unsigned container images straight to production, and bundle two commercial SDKs that nobody has assessed. Which changes reduce its software supply chain risk?",
+    "question": "Cinderpost Couriers' builds pull the latest version of every open-source package, push unsigned container images straight to production, and bundle two commercial SDKs that nobody has assessed. Which changes reduce its software supply chain risk by making what it ships verifiable?",
     "correct": [
       "Pin each dependency in a lockfile that records package hashes",
       "Sign images at build and refuse unsigned images at deployment",
-      "Record provenance: the source, the builder and the build platform",
-      "Ask commercial suppliers for SBOMs and their patch timelines"
+      "Record provenance: the source, the builder and the build platform"
     ],
     "incorrect": [
       "Pull the newest version of each package on each build to get fixes",
-      "Allow unsigned images in production while the registry stays private"
+      "Allow unsigned images in production while the registry stays private",
+      "A contract clause in which each commercial supplier promises its SDK has no known flaws"
     ],
-    "feedback": "Pinning with recorded hashes means a build gets exactly the code that was vetted, and updates happen deliberately. Signing and refusing unsigned images stops a tampered image from deploying. Provenance records how and where each artifact was built, the gap a valid signature alone leaves open. Supplier SBOMs and patch timelines extend the same visibility to commercial code. Always pulling the newest version imports whatever was published last, including a malicious release, and a private registry does not prove an image is the one you built."
+    "feedback": "Pinning with recorded hashes means a build gets exactly the code that was vetted, and updates happen deliberately. Signing and refusing unsigned images stops a tampered image from deploying. Provenance records how and where each artifact was built, the gap a valid signature alone leaves open. Always pulling the newest version imports whatever was published last, including a malicious release, and a private registry does not prove an image is the one you built. A supplier's promise is not evidence; the checkable version is an SBOM with a patch timeline, which is how a team sees inside commercial code."
   },
   {
     "question": "Forgeworks Industrial runs a web-facing supplier portal on an operating system that reached end of support last month, and the funded replacement will take nine months. Which actions belong in the plan for that gap?",
@@ -944,13 +951,13 @@
             "say": "A motherboard is designed, made, assembled and shipped by four companies."
           },
           {
-            "say": "Each hand-off invites counterfeit parts, modified firmware or implants. Buy from authorized channels; inspect **tamper-evident packaging**."
+            "say": "Each hand-off invites counterfeit parts, modified firmware or implants. Buy from authorized channels and inspect **tamper-evident packaging**."
           },
           {
             "say": "Compare the firmware's hash, a file's fingerprint, with the vendor's **golden hash**, the published hash of the genuine image."
           }
         ],
-        "say": "A motherboard is designed, made, assembled and shipped by four companies. Each hand-off invites counterfeit parts, modified firmware or implants. Buy from authorized channels; inspect **tamper-evident packaging**. Compare the firmware's hash, a file's fingerprint, with the vendor's **golden hash**, the published hash of the genuine image."
+        "say": "A motherboard is designed, made, assembled and shipped by four companies. Each hand-off invites counterfeit parts, modified firmware or implants. Buy from authorized channels and inspect **tamper-evident packaging**. Compare the firmware's hash, a file's fingerprint, with the vendor's **golden hash**, the published hash of the genuine image."
       },
       {
         "beats": [
@@ -1040,7 +1047,7 @@
       "Choose B as shipped, because validation carries over to later firmware",
       "Choose either one, because both certifications attest to validated cryptography"
     ],
-    "feedback": "Validated cryptography is what FIPS 140-3 governs: modules that pass accredited lab testing are listed as validated. A validation is a point-in-time snapshot, so newer firmware is not automatically the validated configuration; make sure the version in service is the one listed. Common Criteria is the broader scheme, but breadth is not the requirement: vendor A was evaluated against its own Security Target, the vendor's claim set, not listed as a validated cryptographic module, so the two certifications are not interchangeable."
+    "feedback": "Validated cryptography is what FIPS 140-3 governs: modules that pass accredited lab testing are listed as validated. A validation is a point-in-time snapshot, so newer firmware is not automatically the validated configuration; make sure the version in service is the one listed. Common Criteria is the broader scheme, but breadth is not the requirement: vendor A was evaluated against its own Security Target, which is the vendor's own claim set, and is not listed as a validated cryptographic module, so the two certifications are not interchangeable."
   },
   {
     "type": "npc_demo",
@@ -1145,7 +1152,7 @@
         "hint": "acronym"
       }
     ],
-    "feedback": "A TPM is per device: integrity measurement and local key protection. An HSM is shared infrastructure for high-value, high-throughput cryptography and master secrets, and it destroys its keys when tampered with. A vTPM gives a VM the same TPM functions through the hypervisor, with its secrets protected by the hypervisor and, ideally, the host's physical TPM."
+    "feedback": "A TPM is per device and handles integrity measurement and local key protection. An HSM is shared infrastructure for high-value, high-throughput cryptography and master secrets, and it destroys its keys when tampered with. A vTPM gives a VM the same TPM functions through the hypervisor, with its secrets protected by the hypervisor and, ideally, the host's physical TPM."
   },
   {
     "question": "Cinderpost Couriers' release-signing key must never exist outside dedicated hardware, all twelve build runners must be able to sign with it, and signing volume is high. The diagram shows four candidate homes for the key. Which location BEST meets every constraint?",
@@ -1199,7 +1206,7 @@
       "A CA whose signing key lives in an HSM issues the meter's certificate",
       "The certificate is written back to the meter; no private key ever travels"
     ],
-    "feedback": "Each step needs the one before it: the key pair must exist before a request can carry its public key; the CA can sign only once it has the request; and the certificate goes back only once it exists. The meter's private key never leaves its secure element, and the CA's signing key never leaves the HSM: generate secrets where they will live. Generating keys on a shared laptop and injecting them would have exposed every one before the meters shipped."
+    "feedback": "Each step needs the one before it: the key pair must exist before a request can carry its public key; the CA can sign only once it has the request; and the certificate goes back only once it exists. The meter's private key never leaves its secure element, and the CA's signing key never leaves the HSM, so secrets should be generated where they will live. Generating keys on a shared laptop and injecting them would have exposed every one before the meters shipped."
   },
   {
     "type": "npc_demo",
@@ -1308,15 +1315,20 @@
         "beats": [
           {
             "say": "**Intel Boot Guard** checks the first boot block against the manufacturer's key, whose hash is fused into the chipset."
-          },
+          }
+        ],
+        "say": "**Intel Boot Guard** checks the first boot block against the manufacturer's key, whose hash is fused into the chipset."
+      },
+      {
+        "beats": [
           {
-            "say": "**Self-healing hardware** restores a known-good image: NIST SP 800-193 says protect, detect, recover."
+            "say": "**Self-healing hardware** restores a known-good image. NIST SP 800-193 says to protect, detect and recover."
           },
           {
             "say": "HP Sure Start or a server's **baseboard management controller (BMC)** can reflash firmware from a golden copy."
           }
         ],
-        "say": "**Intel Boot Guard** checks the first boot block against the manufacturer's key, whose hash is fused into the chipset. **Self-healing hardware** restores a known-good image: NIST SP 800-193 says protect, detect, recover. HP Sure Start or a server's **baseboard management controller (BMC)** can reflash firmware from a golden copy."
+        "say": "**Self-healing hardware** restores a known-good image. NIST SP 800-193 says to protect, detect and recover. HP Sure Start or a server's **baseboard management controller (BMC)** can reflash firmware from a golden copy."
       }
     ],
     "outro": "Next is a laptop with Boot Guard and Secure Boot turned on. Put its chain of trust in order, from power-on to a running system."
@@ -1358,13 +1370,13 @@
     "intro": "A record of how a machine booted does nothing until someone reads it, and the reader must be sure the record is real. That job falls to a second party, and to a signature the machine itself can't forge.",
     "steps": [
       {
-        "say": "A verifier asks the TPM for a signed **quote**, a report of its PCR values. It compares the quote with known-good values: **remote attestation**.",
+        "say": "A verifier asks the TPM for a signed **quote**, a report of its PCR values. It compares the quote with known-good values, and this is called **remote attestation**.",
         "beats": [
           {
             "say": "A verifier asks the TPM for a signed **quote**, a report of its PCR values."
           },
           {
-            "say": "It compares the quote with known-good values: **remote attestation**."
+            "say": "It compares the quote with known-good values, and this is called **remote attestation**."
           },
           {
             "code": "PCR  expected   quoted\n 0   3d4f...91a2  3d4f...91a2\n 4   a81c...07be  6f02...d3e1   MISMATCH\n 7   5be0...c3d9  5be0...c3d9",
@@ -1434,7 +1446,7 @@
         ]
       }
     ],
-    "feedback": "Secure Boot enforces: an unsigned or revoked component does not run. Measured Boot records: each component's hash is extended into the TPM's Platform Configuration Registers, and nothing is blocked. Remote attestation turns that record into a decision, since a verifier compares the signed PCR quote with known-good values. Secure Boot alone leaves no evidence a remote party can check."
+    "feedback": "Secure Boot enforces, which means an unsigned or revoked component does not run. Measured Boot records, which means each component's hash is extended into the TPM's Platform Configuration Registers and nothing is blocked. Remote attestation turns that record into a decision, since a verifier compares the signed PCR quote with known-good values. Secure Boot alone leaves no evidence a remote party can check."
   },
   {
     "type": "ordering",
@@ -1472,7 +1484,7 @@
       "Measured Boot on its own, which records the firmware hash for later review",
       "A TPM-plus-PIN unlock, so the disk key needs a PIN at each cold start"
     ],
-    "feedback": "Boot Guard-style hardware verification refuses modified firmware before it runs, and a self-healing controller (HP Sure Start, or a BMC reflashing from a golden copy) restores a known-good image: protect, detect and recover. Secure Boot is enforced by the firmware, so it cannot judge the firmware itself. Reimaging the OS does nothing to an implant that survives reinstalls. Measured Boot is detection only, and detection alone is not self-healing. A pre-boot PIN protects the disk key, not the firmware."
+    "feedback": "Boot Guard-style hardware verification refuses modified firmware before it runs, and a self-healing controller (HP Sure Start, or a BMC reflashing from a golden copy) restores a known-good image, which completes the cycle of protect, detect and recover. Secure Boot is enforced by the firmware, so it cannot judge the firmware itself. Reimaging the OS does nothing to an implant that survives reinstalls. Measured Boot is detection only, and detection alone is not self-healing. A pre-boot PIN protects the disk key, not the firmware."
   },
   {
     "type": "npc_demo",

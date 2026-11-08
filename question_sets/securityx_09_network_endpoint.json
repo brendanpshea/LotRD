@@ -113,7 +113,7 @@
       "Implementation in a scheduled maintenance window by a named implementer and verifier",
       "Post-implementation review recorded against the original change ticket"
     ],
-    "feedback": "The workflow is request and impact assessment, then CAB approval, then a scheduled implementation, then a post-implementation review tied back to the ticket - so months later an auditor can correlate a symptom with the exact change that caused it."
+    "feedback": "The workflow is request and impact assessment, then CAB approval, then a scheduled implementation, then a post-implementation review tied back to the ticket. That way, months later, an auditor can correlate a symptom with the exact change that caused it."
   },
   {
     "type": "ordering",
@@ -133,7 +133,7 @@
       "CMDB"
     ],
     "case_sensitive": false,
-    "feedback": "The CMDB (Configuration Management Database) is the substrate every other control depends on - a firewall rule, an EDR agent, or a scan is useless on a host you do not know exists. An inventory is only the raw list; the CMDB adds ownership and relationships."
+    "feedback": "The CMDB (Configuration Management Database) is the substrate every other control depends on, because a firewall rule, an EDR agent, or a scan is useless on a host you do not know exists. An inventory is only the raw list; the CMDB adds ownership and relationships."
   },
   {
     "type": "cloze",
@@ -161,11 +161,11 @@
       "The Active Directory computer list"
     ],
     "incorrect": [
-      "A quarterly spreadsheet that staff update by hand when they remember",
+      "A spreadsheet that staff update by hand each quarter",
       "The purchase orders filed with the finance department",
-      "A printed floor map of where equipment was installed"
+      "An annual physical audit that counts the asset tags in each room"
     ],
-    "feedback": "Cloud inventory APIs and the AD computer list are machine-readable sources that can be diffed against the CMDB continuously (the EDR and MDM consoles are two more). A hand-updated spreadsheet, filed purchase orders, and a printed map are all manual artifacts that drift the moment reality changes - they are exactly what automated reconciliation replaces."
+    "feedback": "Cloud inventory APIs and the AD computer list are machine-readable sources that can be diffed against the CMDB continuously (the EDR and MDM consoles are two more). A hand-updated spreadsheet, filed purchase orders, and a physical asset-tag count are all manual records that drift the moment reality changes. Automated reconciliation exists to replace them."
   },
   {
     "type": "npc_demo",
@@ -325,7 +325,7 @@
         "definition": "Renders web pages in a disposable remote container so a page exploit never reaches the endpoint"
       }
     ],
-    "feedback": "EDR detects by behaviour; a host firewall limits lateral reach at the host; endpoint privilege management strips admin rights; allowlisting blocks unapproved binaries; browser isolation keeps renderer exploits off the endpoint. They are complementary, not interchangeable."
+    "feedback": "EDR detects by behaviour; a host firewall limits lateral reach at the host; endpoint privilege management strips admin rights; allowlisting blocks unapproved binaries; browser isolation keeps renderer exploits off the endpoint. They work together, and none of them can replace another."
   },
   {
     "question": "Which of the following are capabilities a modern EDR or XDR platform provides that traditional signature antivirus generally does not?",
@@ -336,9 +336,9 @@
     ],
     "incorrect": [
       "Protection of data at rest through full-disk encryption of the endpoint",
-      "Elimination of the need for any network segmentation or host firewalls"
+      "Matching each file against a database of known-bad hashes"
     ],
-    "feedback": "EDR adds retained searchable telemetry, active response, and behaviour-based detection of unknown threats - the things signature matching cannot do. Full-disk encryption is a separate control EDR does not provide, and EDR complements segmentation and host firewalls rather than removing the need for them."
+    "feedback": "EDR adds retained searchable telemetry, active response, and behaviour-based detection of unknown threats, which signature matching cannot do. Matching files against known-bad hashes is exactly what traditional antivirus already does, so it is not an added capability. Full-disk encryption is a separate control that EDR does not provide."
   },
   {
     "type": "matching",
@@ -375,7 +375,7 @@
       "It issues large ReadProcessMemory calls over the ranges where credentials live",
       "It writes the captured memory to a dump file on disk or sends it to an external host"
     ],
-    "feedback": "Open the handle, read the memory, exfiltrate the dump. No single step proves an attack, but the ordered sequence is a fingerprint a behaviour-based backend recognizes even when the tool is renamed or repacked - something signature matching cannot express."
+    "feedback": "The order is to open the handle, read the memory, and then exfiltrate the dump. No single step proves an attack, but the ordered sequence is a fingerprint that a behaviour-based backend recognizes even when the tool is renamed or repacked. Signature matching cannot express a sequence like that."
   },
   {
     "type": "npc_demo",
@@ -486,7 +486,7 @@
       "sudo setenforce 1"
     ],
     "case_sensitive": true,
-    "feedback": "setenforce 1 (or setenforce Enforcing) flips the running system to enforcing at once; the 0 argument would go the other way, to permissive. It is a runtime change - the mode in /etc/selinux/config governs what happens after a reboot."
+    "feedback": "setenforce 1 (or setenforce Enforcing) flips the running system to enforcing at once; the 0 argument would go the other way, to permissive. It is a runtime change, and the mode in /etc/selinux/config governs what happens after a reboot."
   },
   {
     "type": "cloze",
@@ -518,7 +518,7 @@
       "A signed Windows update installing from Microsoft",
       "An administrator logging in over RDP from a jump host"
     ],
-    "feedback": "ASR targets attacker behaviours: Office spawning children and LSASS credential theft are canonical examples (untrusted USB executables and obfuscated scripts are others). Legitimate VPN use, signed updates, and sanctioned jump-host RDP are normal operations ASR should not break - which is why new rules are tested in audit mode first."
+    "feedback": "ASR targets attacker behaviours: Office spawning children and LSASS credential theft are canonical examples (untrusted USB executables and obfuscated scripts are others). Legitimate VPN use, signed updates, and sanctioned jump-host RDP are normal operations that ASR should not break, which is why new rules are tested in audit mode first."
   },
   {
     "type": "npc_demo",
@@ -554,13 +554,13 @@
       {
         "beats": [
           {
-            "say": "The fix is scoped: suppress the specific expected rules for the scanner's address."
+            "say": "The fix is to suppress only the specific expected rules for the scanner's address."
           },
           {
             "say": "Suppressing all alerts from that host blinds you to a real attacker who later lands on it."
           }
         ],
-        "say": "The fix is scoped: suppress the specific expected rules for the scanner's address. Suppressing all alerts from that host blinds you to a real attacker who later lands on it.",
+        "say": "The fix is to suppress only the specific expected rules for the scanner's address. Suppressing all alerts from that host blinds you to a real attacker who later lands on it.",
         "check": {
           "prompt": "An attack crosses the IPS inside a TLS session it cannot decrypt, and no alert fires. What kind of failure is that?",
           "answer": "A false negative: a real attack the sensor missed",
@@ -580,13 +580,13 @@
             "say": "An IPS at the internet edge sees **north-south** traffic, in and out of the network."
           },
           {
-            "say": "It cannot see two servers talking inside one network segment: **east-west** traffic."
+            "say": "It cannot see two servers talking inside one network segment, which is **east-west** traffic."
           },
           {
             "say": "That needs internal sensors, host-based detection, or zones that force traffic past an inspection point."
           }
         ],
-        "say": "**Placement** matters as much as rules. An IPS at the internet edge sees **north-south** traffic, in and out of the network. It cannot see two servers talking inside one network segment: **east-west** traffic. That needs internal sensors, host-based detection, or zones that force traffic past an inspection point."
+        "say": "**Placement** matters as much as rules. An IPS at the internet edge sees **north-south** traffic, in and out of the network. It cannot see two servers talking inside one network segment, which is **east-west** traffic. That needs internal sensors, host-based detection, or zones that force traffic past an inspection point."
       },
       {
         "beats": [
@@ -680,7 +680,7 @@
       "A DNS resolution failure that intermittently returns the wrong server address",
       "A certificate hostname mismatch that aborts the TLS handshake after it starts"
     ],
-    "feedback": "A stateful firewall that sees only one direction treats the other direction's packets as not belonging to any known connection and drops them - the signature of asymmetric routing. An MTU problem hits only large packets, a DNS failure prevents connecting at all rather than stalling midstream, and a cert mismatch is a TLS-layer error, not a routing one."
+    "feedback": "A stateful firewall that sees only one direction treats the other direction's packets as not belonging to any known connection and drops them, which is the signature of asymmetric routing. An MTU problem hits only large packets, a DNS failure prevents connecting at all rather than stalling midstream, and a cert mismatch is a TLS-layer error, not a routing one."
   },
   {
     "type": "rule_table",
@@ -842,7 +842,7 @@
     "feedback": "Explicit access mode with DTP disabled stops switch-spoofing (no trunk to negotiate), and an unused native VLAN defeats double-tagging. Leaving DTP on invites switch-spoofing, putting users in the native VLAN makes double-tagging easier, and widening the VLAN range does nothing about tag abuse."
   },
   {
-    "question": "Which of the following are insecure-routing conditions an attacker can abuse to inject routes or hijack traffic?",
+    "question": "Which of the following are insecure routing conditions, on routers rather than switches, that an attacker can abuse to inject routes or steer traffic?",
     "correct": [
       "Unauthenticated OSPF or RIP adjacencies on user-facing ports",
       "BGP sessions with no prefix filters and no RPKI validation",
@@ -850,9 +850,10 @@
     ],
     "incorrect": [
       "OSPF adjacencies authenticated with a per-link key",
-      "BGP sessions that drop prefixes failing RPKI origin validation"
+      "DTP auto-negotiation left enabled on user-facing access ports",
+      "User access ports placed in the trunk's native VLAN"
     ],
-    "feedback": "Unauthenticated interior routing, unfiltered BGP, and enabled source routing all let an attacker steer traffic through a device they control - the mechanism behind many route leaks and hijacks. Authenticated adjacencies and RPKI-validated BGP are the hardened versions, which is why they are not abusable here."
+    "feedback": "Unauthenticated interior routing, unfiltered BGP, and enabled source routing all let an attacker steer traffic through a device they control, which is the mechanism behind many route leaks and hijacks. An authenticated OSPF adjacency is a hardened routing setup, so it is not abusable here. Open DTP and a shared native VLAN are real weaknesses, but they belong to VLAN hopping at the switch and do not let an attacker inject routes."
   },
   {
     "question": "After a new IPsec site-to-site tunnel is cut over at Wyrmkeep Logistics, users report that 'small pages load, but large pages and file downloads hang.' Pings and small requests succeed. Which problem fits this symptom BEST?",
@@ -864,7 +865,7 @@
       "Asymmetric routing that drops exactly half of every connection's packets",
       "A DNS zone-transfer failure preventing resolution of large hostnames"
     ],
-    "feedback": "Small packets fit and large ones vanish is the classic MTU/MSS fingerprint - the tunnel adds overhead, Path MTU Discovery is blocked, and oversized packets silently drop; MSS clamping is the fix. An expired cert would break the whole tunnel, asymmetric routing stalls all sizes, and DNS has nothing to do with packet size."
+    "feedback": "Small packets that fit while large ones vanish is the classic MTU/MSS pattern. The tunnel adds overhead, Path MTU Discovery is blocked, and oversized packets silently drop, so MSS clamping is the fix. An expired cert would break the whole tunnel, asymmetric routing stalls all sizes, and DNS has nothing to do with packet size."
   },
   {
     "type": "dynamic_numeric",
@@ -903,16 +904,16 @@
   {
     "question": "Which of the following controls most directly limit an attacker's lateral movement from one compromised endpoint to the rest of the environment?",
     "correct": [
-      "Network segmentation that forces inter-VLAN traffic across a firewall",
       "Microsegmentation with default-deny per-workload policy",
       "Host firewalls that refuse workstation-to-workstation SMB and RDP",
       "Just-in-time, time-boxed PAM credentials for RDP and SSH through logged jump hosts"
     ],
     "incorrect": [
-      "A single flat VLAN shared by workstations, servers, and IoT devices",
-      "Disabling all endpoint and server logging to reduce performance overhead"
+      "VLANs alone, with inter-VLAN routing left open on the core switch",
+      "An IPS at the internet edge that inspects north-south traffic",
+      "Full-disk encryption on every workstation"
     ],
-    "feedback": "Segmentation, microsegmentation, host firewalls, and just-in-time admin access all shrink what a single compromised host can reach. A flat VLAN does the opposite - it is the condition that lets a worm spread anywhere - and disabling logging removes the visibility needed to even detect the movement."
+    "feedback": "Microsegmentation, host firewalls, and just-in-time admin access all shrink what a single compromised host can reach. VLANs with open routing between them still let traffic move freely, so segmentation only limits movement when inter-VLAN traffic is forced across a firewall. An edge IPS sees only north-south traffic, not east-west movement, and disk encryption protects data at rest without limiting what a compromised host can reach."
   },
   {
     "question": "Kaeli must place one sensor to capture lateral movement between the two database hosts, which both connect to the same server access switch. The diagram marks four candidate monitoring points, A through D. Which point gives that visibility?",
@@ -942,7 +943,7 @@
       "B",
       "D"
     ],
-    "feedback": "Link C connects the workstation directly to the HR server, bypassing the firewall that A and B route through - a textbook piece of drift that opens a lateral-movement path. Link D only reaches the backup behind the server, and A and B are the intended, inspected paths.",
+    "feedback": "Link C connects the workstation directly to the HR server, bypassing the firewall that A and B route through. That is a textbook case of drift, and it opens a lateral-movement path. Link D only reaches the backup behind the server, and A and B are the intended, inspected paths.",
     "figure": {
       "dot": "digraph { rankdir=LR; node[shape=box]; ws[label=\"workstation\"]; fw[label=\"firewall\"]; srv[label=\"HR server\"]; bak[label=\"backup\"]; ws->fw[label=\" A\"]; fw->srv[label=\" B\"]; ws->srv[label=\" C\"]; srv->bak[label=\" D\"]; }",
       "alt": "Four labeled links: a workstation to a firewall is A, the firewall to an HR server is B, the workstation straight to the HR server is C, and the HR server to a backup is D.",
@@ -980,13 +981,16 @@
             "say": "A resolver keeps answers in a **cache**, a short-term memory, to reuse them."
           },
           {
-            "say": "Without protection, a forged answer can slip into it: **DNS cache poisoning**."
+            "say": "Without protection, a forged answer can slip into it."
+          },
+          {
+            "say": "That attack is **DNS cache poisoning**."
           },
           {
             "say": "Resolvers fight it by randomizing what a forger must guess: query ID, source port, even the letter case of the name."
           }
         ],
-        "say": "A resolver keeps answers in a **cache**, a short-term memory, to reuse them. Without protection, a forged answer can slip into it: **DNS cache poisoning**. Resolvers fight it by randomizing what a forger must guess: query ID, source port, even the letter case of the name."
+        "say": "A resolver keeps answers in a **cache**, a short-term memory, to reuse them. Without protection, a forged answer can slip into it. That attack is **DNS cache poisoning**. Resolvers fight it by randomizing what a forger must guess: query ID, source port, even the letter case of the name."
       },
       {
         "beats": [
@@ -994,7 +998,7 @@
             "say": "**DNSSEC** signs records, so a validating resolver rejects forged answers outright."
           },
           {
-            "say": "It gives authenticity and integrity, not confidentiality: queries stay readable."
+            "say": "It gives authenticity and integrity but not confidentiality, because queries stay readable."
           },
           {
             "say": "**DoH** and **DoT**, DNS over HTTPS and over TLS, encrypt the query itself for privacy."
@@ -1003,7 +1007,7 @@
             "say": "That is a different goal."
           }
         ],
-        "say": "**DNSSEC** signs records, so a validating resolver rejects forged answers outright. It gives authenticity and integrity, not confidentiality: queries stay readable. **DoH** and **DoT**, DNS over HTTPS and over TLS, encrypt the query itself for privacy. That is a different goal."
+        "say": "**DNSSEC** signs records, so a validating resolver rejects forged answers outright. It gives authenticity and integrity but not confidentiality, because queries stay readable. **DoH** and **DoT**, DNS over HTTPS and over TLS, encrypt the query itself for privacy. That is a different goal."
       },
       {
         "beats": [
@@ -1033,7 +1037,7 @@
             "Any resolver that looks up names on users' behalf",
             "Anyone: the zone's records are published in DNS anyway"
           ],
-          "why": "Secondaries need the whole zone to replicate it, and nobody else does. Restrict transfers by source IP or a shared secret key (**TSIG**): single records may be public, but the complete list is free reconnaissance."
+          "why": "Secondaries need the whole zone to replicate it, and nobody else does. Restrict transfers by source IP or a shared secret key (**TSIG**). Single records may be public, but the complete list is free reconnaissance."
         }
       }
     ],
@@ -1074,11 +1078,11 @@
       "Randomizing the case of the queried name as an extra entropy source"
     ],
     "incorrect": [
-      "Answering AXFR zone-transfer requests from any client",
-      "Disabling the resolver's logging to improve performance",
+      "Encrypting resolver queries with DoH or DoT",
+      "Restricting AXFR zone transfers to the secondary nameservers",
       "Lowering record TTLs so that cached entries expire sooner"
     ],
-    "feedback": "Query-ID and source-port randomization raise the work needed to spoof a response (the Kaminsky-era defense), DNSSEC validation rejects forgeries outright, and case randomization adds entropy. Open AXFR and disabling logs make things worse, and shorter TTLs alone do not stop a correctly guessed forged answer."
+    "feedback": "Query-ID and source-port randomization raise the work needed to spoof a response (the Kaminsky-era defense), DNSSEC validation rejects forgeries outright, and case randomization adds entropy. DoH and DoT encrypt queries for privacy and do not check who sent an answer. Restricting AXFR protects the zone from reconnaissance and has no effect on forged answers, and shorter TTLs alone do not stop a correctly guessed forged answer."
   },
   {
     "question": "A security team configures its corporate resolver, using DNS Response Policy Zones, to return a controlled address for a list of known command-and-control domains and to alert when an internal host asks for one. What technique is this?",
@@ -1090,7 +1094,7 @@
       "A zone transfer: replicating the bad-domain list to secondary nameservers",
       "DNS over HTTPS: encrypting the resolver conversation to hide the queries"
     ],
-    "feedback": "Returning a controlled answer for malicious names and alerting on the lookup is DNS sinkholing, commonly built with RPZ and aimed at C2, malvertising, and DGA domains. DNSSEC validates authenticity, a zone transfer replicates zones, and DoH encrypts queries - none of them redirect known-bad names."
+    "feedback": "Returning a controlled answer for malicious names and alerting on the lookup is DNS sinkholing, commonly built with RPZ and aimed at C2, malvertising, and DGA domains. DNSSEC validates authenticity, a zone transfer replicates zones, and DoH encrypts queries. None of them redirect known-bad names."
   },
   {
     "type": "cloze",
@@ -1110,7 +1114,7 @@
         "hint": "encrypts the query"
       }
     ],
-    "feedback": "DNSSEC provides authenticity and integrity, not confidentiality - it stops forgery but does not hide the lookup. DoH/DoT provide confidentiality but not record authenticity, and they complicate corporate DNS logging. They solve different problems."
+    "feedback": "DNSSEC provides authenticity and integrity, but not confidentiality, so it stops forgery but does not hide the lookup. DoH/DoT provide confidentiality but not record authenticity, and they complicate corporate DNS logging. They solve different problems."
   },
   {
     "type": "matching",
@@ -1276,7 +1280,7 @@
       "They are delivered: the vendor is a legitimate sender, so alignment is waived",
       "They are quarantined: a vendor mismatch downgrades reject to quarantine"
     ],
-    "feedback": "DMARC needs an aligned pass - the authenticated domain must match the visible From domain. The vendor's own-domain passes do not align with greycloak-apothecary.org, so p=reject refuses them. The fix is to give the vendor a DKIM key for greycloak-apothecary.org (or a delegated subdomain), not to weaken the policy."
+    "feedback": "DMARC needs an aligned pass, which means the authenticated domain must match the visible From domain. The vendor's own-domain passes do not align with greycloak-apothecary.org, so p=reject refuses them. The fix is to give the vendor a DKIM key for greycloak-apothecary.org (or a delegated subdomain), not to weaken the policy."
   },
   {
     "type": "matching",
@@ -1311,7 +1315,7 @@
       "S/MIME lists the IP addresses authorized to send mail for a domain, like a stronger SPF",
       "S/MIME publishes a public key in DNS so any receiver can verify every outbound message"
     ],
-    "feedback": "S/MIME operates at the person-to-person layer with certificates, providing end-to-end signing and optional encryption; SPF, DKIM, and DMARC authenticate the sending domain instead. The distractors describe DMARC alignment, SPF, and DKIM respectively - the domain-level controls S/MIME complements rather than replaces."
+    "feedback": "S/MIME operates at the person-to-person layer with certificates, providing end-to-end signing and optional encryption; SPF, DKIM, and DMARC authenticate the sending domain instead. The distractors describe DMARC alignment, SPF, and DKIM respectively. Those are the domain-level controls that S/MIME complements rather than replaces."
   },
   {
     "type": "dynamic_numeric",
@@ -1479,7 +1483,7 @@
       "The wipe runs instantly over the cellular network even while the phone is powered off",
       "No wipe is possible on a personal BYOD device, so only the account password can be reset"
     ],
-    "feedback": "An offline device cannot receive the command until it reconnects, so the wipe waits - which is exactly why policy requires a prompt lost-phone report. When it runs it is selective, clearing only corporate data, and BYOD enrollment does make a selective wipe possible on a personal device."
+    "feedback": "An offline device cannot receive the command until it reconnects, so the wipe waits, which is exactly why policy requires a prompt lost-phone report. When it runs it is selective, clearing only corporate data, and BYOD enrollment does make a selective wipe possible on a personal device."
   },
   {
     "question": "Greycloak Apothecary gates EHR access so that only compliant mobile devices pass conditional access. Which of the following are appropriate device-posture conditions for that check?",
@@ -1488,11 +1492,10 @@
       "The device is not jailbroken or rooted and a mobile threat-defense agent is reporting"
     ],
     "incorrect": [
-      "The device's case is a company-approved color and model",
-      "The user has logged in at least once in the past hour",
-      "The device is connected to a 5G rather than a 4G network",
-      "The phone's battery level is above fifty percent"
+      "The user's password was changed within the last 90 days",
+      "The user completed this year's security-awareness training",
+      "The sign-in comes from an approved country"
     ],
-    "feedback": "Encryption, a current OS, no jailbreak, and a reporting security agent are real security posture signals conditional access evaluates. Case color, recent login timing, cellular generation, and battery level say nothing about the device's security state and would block or admit devices for irrelevant reasons."
+    "feedback": "Encryption, a current OS, no jailbreak, and a reporting security agent are real device-posture signals that conditional access evaluates. Password age and training describe the user, not the device, and the sign-in country is a location signal rather than a posture condition. None of the three says whether this phone is in a safe state."
   }
 ]

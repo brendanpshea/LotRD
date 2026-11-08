@@ -69,7 +69,7 @@
             "The path is broken at hop 7, so the site cannot actually be reached",
             "The TTL stopped incrementing, so no probe got past hop 6"
           ],
-          "why": "Many routers rate-limit or drop the ICMP/UDP probes traceroute relies on while forwarding real traffic normally, so timed-out middle hops with a working destination are expected, not a fault."
+          "why": "Many routers rate-limit or drop the ICMP/UDP probes traceroute relies on while forwarding real traffic normally, so timed-out middle hops with a working destination are expected and do not mean a fault."
         }
       },
       {
@@ -124,10 +124,10 @@
             "say": "**arp -a** prints the cache of IP-to-MAC pairs."
           },
           {
-            "say": "**nmap** scans other hosts: which are up, their open ports, services and OS."
+            "say": "**nmap** scans other hosts to find which are up, their open ports, services and OS."
           }
         ],
-        "say": "**netstat**, or **ss** on modern Linux, lists this host's own connections and listening ports. `-a` shows them all, and `-n` keeps addresses and ports as numbers. **arp -a** prints the cache of IP-to-MAC pairs. **nmap** scans other hosts: which are up, their open ports, services and OS."
+        "say": "**netstat**, or **ss** on modern Linux, lists this host's own connections and listening ports. `-a` shows them all, and `-n` keeps addresses and ports as numbers. **arp -a** prints the cache of IP-to-MAC pairs. **nmap** scans other hosts to find which are up, their open ports, services and OS."
       }
     ],
     "outro": "Next, Aria wants to check that a server is reachable and time the round trip. Pick the command that does both, along with what it relies on."
@@ -142,7 +142,7 @@
       "arp, which sends a broadcast and waits for the host to answer with its MAC",
       "netstat, which opens a TCP connection to the host and reports the latency"
     ],
-    "feedback": "ping is the universal reachability and latency test: an ICMP Echo Request out, an Echo Reply back, timed. nslookup resolves names and does not use ICMP; arp resolves IP to MAC on the local segment only; netstat lists local sockets and sends nothing to a remote host."
+    "feedback": "ping is the universal reachability and latency test. It sends an ICMP Echo Request, gets an Echo Reply back, and times the trip. nslookup resolves names and does not use ICMP; arp resolves IP to MAC on the local segment only; netstat lists local sockets and sends nothing to a remote host."
   },
   {
     "type": "code_line",
@@ -306,7 +306,7 @@
       "Clear-DnsClientCache"
     ],
     "case_sensitive": false,
-    "feedback": "ipconfig /flushdns (or PowerShell's Clear-DnsClientCache) empties the Windows resolver cache so the next lookup goes back to the DNS server - the fix when a record changed but the host keeps resolving the old address. On Linux the cache lives in the resolver service (for example systemd-resolved), not in ip."
+    "feedback": "ipconfig /flushdns (or PowerShell's Clear-DnsClientCache) empties the Windows resolver cache so the next lookup goes back to the DNS server. That is the fix when a record changed but the host keeps resolving the old address. On Linux the cache lives in the resolver service (for example systemd-resolved), not in ip."
   },
   {
     "type": "code_line",
@@ -564,7 +564,7 @@
             "language": "syslog"
           },
           {
-            "say": "First the time, then the host, `core1`."
+            "say": "It starts with the time, then the host, `core1`."
           },
           {
             "say": "`LINK` is the **facility**, the part of the device that spoke, and `3` is the **severity**, from 0 (worst) to 7."
@@ -573,7 +573,7 @@
             "say": "The rest says what happened: that interface changed state to up."
           }
         ],
-        "say": "Here is one collected line, read left to right. First the time, then the host, `core1`. `LINK` is the **facility**, the part of the device that spoke, and `3` is the **severity**, from 0 (worst) to 7. The rest says what happened: that interface changed state to up."
+        "say": "Here is one collected line, read left to right. It starts with the time, then the host, `core1`. `LINK` is the **facility**, the part of the device that spoke, and `3` is the **severity**, from 0 (worst) to 7. The rest says what happened: that interface changed state to up."
       }
     ],
     "outro": "Now Aria opens Wireshark to pick apart a failing TLS handshake. Name the kind of tool she's using."
@@ -588,7 +588,7 @@
       "A toner and probe",
       "A log collector"
     ],
-    "feedback": "Wireshark is the dominant packet/protocol analyzer: it decodes captured packets across many protocols. A spectrum analyzer visualizes RF energy, a toner and probe traces copper cables, and a log collector aggregates text log entries - none of them decode packets."
+    "feedback": "Wireshark is the dominant packet/protocol analyzer: it decodes captured packets across many protocols. A spectrum analyzer visualizes RF energy, a toner and probe traces copper cables, and a log collector aggregates text log entries. None of them decodes packets."
   },
   {
     "type": "code_line",
@@ -628,7 +628,7 @@
       "A spectrum analyzer, because it measures throughput across the RF spectrum",
       "syslog, because routers log every conversation's byte count by default"
     ],
-    "feedback": "NetFlow summarizes each flow's addresses, ports, and byte/packet counts - exactly what top-talker and volume reports need, and far lighter than storing payloads. A week of full captures would be enormous and unnecessary; a spectrum analyzer measures RF, not bytes; and syslog does not record per-flow byte totals."
+    "feedback": "NetFlow summarizes each flow's addresses, ports, and byte/packet counts, which is exactly what top-talker and volume reports need, and it is far lighter than storing payloads. A week of full captures would be enormous and unnecessary; a spectrum analyzer measures RF, not bytes; and syslog does not record per-flow byte totals."
   },
   {
     "type": "fill_blank",
@@ -645,14 +645,14 @@
     "correct": [
       "Source and destination IP addresses",
       "Source and destination port numbers",
-      "The IP protocol of the flow",
       "The byte and packet counts for the flow"
     ],
     "incorrect": [
       "The decrypted contents of each packet's payload",
-      "The HTTP request body of every web transaction"
+      "The HTTP request body of every web transaction",
+      "The URL requested in each web transaction"
     ],
-    "feedback": "A flow record is metadata: the addresses, ports, protocol, and counts that describe a conversation. It deliberately holds no payload, so neither packet contents nor an HTTP body appears - for those you need a full capture."
+    "feedback": "A flow record is metadata: the addresses, ports, protocol, and counts that describe a conversation. It deliberately holds no payload, so neither packet contents, an HTTP body, nor a requested URL appears. For those you need a full capture."
   },
   {
     "type": "matching",
@@ -845,10 +845,10 @@
     ],
     "incorrect": [
       "A SPAN port guarantees zero frame loss at any switch load",
-      "A tap resolves hostnames before forwarding traffic to the analyzer",
-      "A tap decrypts the traffic for the analyzer"
+      "A tap sees the traffic on every link of the switch it connects to",
+      "A tap is configured in the switch's software, like a SPAN session"
     ],
-    "feedback": "A tap passes a faithful full-duplex copy regardless of switch load, and it can relay errors a SPAN port filters out. A SPAN port is convenient but can drop frames when oversubscribed, and a tap neither resolves names nor decrypts - those are distractors."
+    "feedback": "A tap passes a faithful full-duplex copy regardless of switch load, and it can relay errors a SPAN port filters out. A SPAN port is convenient but can drop frames when oversubscribed. A tap sees only the link it is spliced into, and it is separate hardware, so it needs no switch configuration."
   },
   {
     "question": "Doran reads this excerpt of a branch router's configuration on Cisco IOS (show running-config):\n\nlogging host 10.0.9.20\nlogging trap warnings\nntp server 10.0.9.1\n\nWhat do these lines tell him about 10.0.9.20?",
@@ -982,10 +982,13 @@
             "say": "Read carefully: two different IPs share one MAC."
           },
           {
-            "say": "That's worth a look: **ARP spoofing**, one host answering for another's address, looks like this, though so does a two-address host."
+            "say": "This could be **ARP spoofing**, where one host answers for another's address."
+          },
+          {
+            "say": "A host with two addresses looks the same."
           }
         ],
-        "say": "`arp -a` prints the **ARP cache**: each line pairs an IP address with the MAC address that answered for it. Read carefully: two different IPs share one MAC. That's worth a look: **ARP spoofing**, one host answering for another's address, looks like this, though so does a two-address host."
+        "say": "`arp -a` prints the **ARP cache**: each line pairs an IP address with the MAC address that answered for it. Read carefully: two different IPs share one MAC. This could be **ARP spoofing**, where one host answers for another's address. A host with two addresses looks the same."
       },
       {
         "beats": [
@@ -1113,7 +1116,7 @@
       "VLAN 5 was removed from sw1 at 02:14:07",
       "The default gateway on sw1 changed at 02:14:07"
     ],
-    "feedback": "The %LINK-3-UPDOWN message names the interface (GigabitEthernet0/5) and its new state (down), with the timestamp and the host sw1. It is one interface changing state - not a power loss, a VLAN change, or a gateway event."
+    "feedback": "The %LINK-3-UPDOWN message names the interface (GigabitEthernet0/5) and its new state (down), with the timestamp and the host sw1. It is one interface changing state, so it is not a power loss, a VLAN change, or a gateway event."
   },
   {
     "question": "A user reports a slow connection. The tracert output below is from their workstation. Between which two hops does the large jump in round-trip time first appear?\n\n  1    <1 ms    <1 ms    <1 ms   10.0.0.1\n  2     2 ms     2 ms     3 ms   203.0.113.1\n  3     3 ms     2 ms     3 ms   198.51.100.9\n  4    88 ms    91 ms    90 ms   198.51.100.40\n  5    89 ms    90 ms    92 ms   192.0.2.7",
@@ -1125,7 +1128,7 @@
       "Between hop 4 and hop 5",
       "Between hop 2 and hop 3"
     ],
-    "feedback": "RTT climbs from about 3 ms at hop 3 to about 90 ms at hop 4 and stays there, so the latency is introduced on the link into hop 4. Hops 4 to 5 add almost nothing, and the first three hops are all low - the delay is not there."
+    "feedback": "RTT climbs from about 3 ms at hop 3 to about 90 ms at hop 4 and stays there, so the latency is introduced on the link into hop 4. Hops 4 to 5 add almost nothing, and the first three hops are all low, so the delay is not there."
   },
   {
     "type": "ordering",
@@ -1148,7 +1151,7 @@
       "23/tcp (telnet)",
       "443/tcp (https)"
     ],
-    "feedback": "Only ports reading 'open' are accepting connections: 22 (ssh) and 80 (http). 23 is 'closed' (reachable but nothing listening), and 443 is 'filtered', meaning a firewall dropped the probe so nmap cannot tell - neither counts as open."
+    "feedback": "Only ports reading 'open' are accepting connections: 22 (ssh) and 80 (http). 23 is 'closed' (reachable but nothing listening), and 443 is 'filtered', meaning a firewall dropped the probe so nmap cannot tell. Neither counts as open."
   },
   {
     "type": "npc_demo",
@@ -1159,20 +1162,20 @@
       {
         "beats": [
           {
-            "say": "Work from the symptom: the complaint points at the tool."
+            "say": "Work from the symptom, because the complaint points at the tool."
           },
           {
             "code": "is the server up?\n  ping\nwhere is the path slow?\n  traceroute\nIP works, name doesn't?\n  nslookup or dig",
             "language": "reachability and names"
           },
           {
-            "say": "Reachability is ping, and the path is traceroute."
+            "say": "Use ping to test reachability and traceroute to see the path."
           },
           {
             "say": "A name that won't resolve is a job for DNS lookups."
           }
         ],
-        "say": "Work from the symptom: the complaint points at the tool. Reachability is ping, and the path is traceroute. A name that won't resolve is a job for DNS lookups."
+        "say": "Work from the symptom, because the complaint points at the tool. Use ping to test reachability and traceroute to see the path. A name that won't resolve is a job for DNS lookups."
       },
       {
         "beats": [
@@ -1227,7 +1230,7 @@
       "arp -a",
       "netstat -an"
     ],
-    "feedback": "The IP works but the name does not, so resolution is the suspect, and both nslookup and dig ask a DNS server directly and show whether it answers. traceroute maps the routed path (already working, since the IP is reachable), arp -a shows IP-to-MAC mappings, and netstat -an lists local sockets - none of them queries DNS."
+    "feedback": "The IP works but the name does not, so resolution is the suspect, and both nslookup and dig ask a DNS server directly and show whether it answers. traceroute maps the routed path (already working, since the IP is reachable), arp -a shows IP-to-MAC mappings, and netstat -an lists local sockets. None of them queries DNS."
   },
   {
     "question": "Two devices on the same VLAN intermittently lose connectivity, and a duplicate IP is suspected. Which command most directly shows whether one IP is being claimed by two different MAC addresses?",
