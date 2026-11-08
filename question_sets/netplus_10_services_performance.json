@@ -62,19 +62,34 @@
           },
           {
             "say": "It comes with **options**: option 3 is the router (default gateway), option 6 the DNS servers."
-          }
-        ],
-        "say": "A DHCP server leases addresses from a **scope**, the pool it keeps for one subnet. Each **lease** says how long the host may keep its address. It comes with **options**: option 3 is the router (default gateway), option 6 the DNS servers."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "A scope with **missing options** leases addresses that half work."
           },
           {
-            "code": "no option 3  no gateway\nno option 6  names fail,\n             pings work",
-            "language": "missing options"
-          },
+            "table": {
+              "head": [
+                "Missing option",
+                "What goes wrong"
+              ],
+              "rows": [
+                [
+                  "option 3",
+                  "no default gateway"
+                ],
+                [
+                  "option 6",
+                  "names fail, though pings work"
+                ]
+              ]
+            },
+            "caption": "missing options"
+          }
+        ],
+        "say": "A DHCP server leases addresses from a **scope**, the pool it keeps for one subnet. Each **lease** says how long the host may keep its address. It comes with **options**: option 3 is the router (default gateway), option 6 the DNS servers. A scope with **missing options** leases addresses that half work."
+      },
+      {
+        "beats": [
           {
             "say": "A client tries to renew halfway through its lease."
           },
@@ -85,7 +100,7 @@
             "say": "The client must start again, which on Windows ends in APIPA."
           }
         ],
-        "say": "A scope with **missing options** leases addresses that half work. A client tries to renew halfway through its lease. If no server answers before it runs out, that is **lease expiration**. The client must start again, which on Windows ends in APIPA.",
+        "say": "A client tries to renew halfway through its lease. If no server answers before it runs out, that is **lease expiration**. The client must start again, which on Windows ends in APIPA.",
         "check": {
           "prompt": "The DHCP server failed at nine this morning, yet most users worked on until the afternoon. Why?",
           "answer": "Their leases were still valid, so each kept its address until its lease ran out",
@@ -103,7 +118,7 @@
             "language": "DHCP server log"
           },
           {
-            "say": "That is **address exhaustion**: every address in the scope is leased, so new clients get no offer."
+            "say": "**Address exhaustion** is when every address in the scope is leased, so new clients get no offer."
           },
           {
             "say": "It happens with a small scope, or with long leases on devices that come and go."
@@ -112,7 +127,7 @@
             "say": "Addresses held back for static devices are an **exclusion**; a **reservation** ties one to a device's MAC."
           }
         ],
-        "say": "That is **address exhaustion**: every address in the scope is leased, so new clients get no offer. It happens with a small scope, or with long leases on devices that come and go. Addresses held back for static devices are an **exclusion**; a **reservation** ties one to a device's MAC."
+        "say": "**Address exhaustion** is when every address in the scope is leased, so new clients get no offer. It happens with a small scope, or with long leases on devices that come and go. Addresses held back for static devices are an **exclusion**; a **reservation** ties one to a device's MAC."
       },
       {
         "beats": [
@@ -284,8 +299,23 @@
             "say": "Before asking DNS, a host checks its **hosts file** and DNS cache; an entry there wins."
           },
           {
-            "code": "Linux, macOS:\n  /etc/hosts\nWindows:\n  C:\\Windows\\System32\n  \\drivers\\etc\\hosts",
-            "language": "the hosts file"
+            "table": {
+              "head": [
+                "System",
+                "Hosts file"
+              ],
+              "rows": [
+                [
+                  "Linux, macOS",
+                  "`/etc/hosts`"
+                ],
+                [
+                  "Windows",
+                  "`C:\\Windows\\System32\\drivers\\etc\\hosts`"
+                ]
+              ]
+            },
+            "caption": "the hosts file"
           },
           {
             "say": "Next it asks its **recursive resolver**, its configured DNS server."
@@ -457,20 +487,40 @@
             "say": "Every line in a zone is a **record**, and each has a type."
           },
           {
-            "code": "A      name to IPv4\nAAAA   name to IPv6\nCNAME  alias of a name\nMX     mail servers",
-            "language": "record types, part 1"
+            "say": "**A** and **AAAA** are the address records."
           },
           {
-            "say": "**A** and **AAAA** map a name to an IPv4 and an IPv6 address."
+            "say": "A **CNAME** is an alias record, and **MX** is the mail record."
           },
           {
-            "say": "A **CNAME** is an alias for another name."
-          },
-          {
-            "say": "**MX** names the domain's mail servers, lowest number first."
+            "table": {
+              "head": [
+                "Type",
+                "What it holds"
+              ],
+              "rows": [
+                [
+                  "A",
+                  "a name's IPv4 address"
+                ],
+                [
+                  "AAAA",
+                  "a name's IPv6 address"
+                ],
+                [
+                  "CNAME",
+                  "an alias for another name"
+                ],
+                [
+                  "MX",
+                  "the domain's mail servers, lowest number first"
+                ]
+              ]
+            },
+            "caption": "record types, part 1"
           }
         ],
-        "say": "Every line in a zone is a **record**, and each has a type. **A** and **AAAA** map a name to an IPv4 and an IPv6 address. A **CNAME** is an alias for another name. **MX** names the domain's mail servers, lowest number first."
+        "say": "Every line in a zone is a **record**, and each has a type. **A** and **AAAA** are the address records. A **CNAME** is an alias record, and **MX** is the mail record."
       },
       {
         "beats": [
@@ -478,20 +528,40 @@
             "say": "Four more types you will meet."
           },
           {
-            "code": "NS     zone's servers\nSOA    primary, serial\nTXT    free text (SPF)\nSRV    host and port",
-            "language": "record types, part 2"
+            "say": "**NS** and **SOA** describe the zone itself."
           },
           {
-            "say": "**NS** lists the zone's servers, and **SOA** names its primary."
+            "say": "**TXT** carries free text, and **SRV** locates a service."
           },
           {
-            "say": "**TXT** carries free text, such as SPF, a list of which servers may send the domain's mail."
-          },
-          {
-            "say": "**SRV** gives a service's host and port."
+            "table": {
+              "head": [
+                "Type",
+                "What it holds"
+              ],
+              "rows": [
+                [
+                  "NS",
+                  "the zone's servers"
+                ],
+                [
+                  "SOA",
+                  "names the zone's primary, and holds the serial"
+                ],
+                [
+                  "TXT",
+                  "free text, such as SPF, a list of which servers may send the domain's mail"
+                ],
+                [
+                  "SRV",
+                  "a service's host and port"
+                ]
+              ]
+            },
+            "caption": "record types, part 2"
           }
         ],
-        "say": "Four more types you will meet. **NS** lists the zone's servers, and **SOA** names its primary. **TXT** carries free text, such as SPF, a list of which servers may send the domain's mail. **SRV** gives a service's host and port."
+        "say": "Four more types you will meet. **NS** and **SOA** describe the zone itself. **TXT** carries free text, and **SRV** locates a service."
       },
       {
         "beats": [
@@ -502,20 +572,24 @@
             "say": "A **reverse zone** maps addresses back to names, with **PTR** records."
           },
           {
-            "code": "198.51.100.7 is looked\nup as\n7.100.51.198.in-addr.arpa\n\nIPv6 uses ip6.arpa",
-            "language": "a reverse name"
-          },
-          {
-            "say": "IPv4 reverse names end in `in-addr.arpa`."
-          },
-          {
             "say": "Without an A record, the server says the name does not exist."
           },
           {
             "say": "Without a PTR, the name resolves, but `dig -x` finds no name for it."
+          },
+          {
+            "chain": [
+              "Start with the address: 198.51.100.7",
+              "Reverse the four numbers: 7.100.51.198",
+              "Add the ending: 7.100.51.198.in-addr.arpa"
+            ],
+            "caption": "building a reverse name"
+          },
+          {
+            "say": "IPv4 reverse names end in `in-addr.arpa`, and IPv6 uses `ip6.arpa`."
           }
         ],
-        "say": "A **forward zone** maps names to addresses. A **reverse zone** maps addresses back to names, with **PTR** records. IPv4 reverse names end in `in-addr.arpa`. Without an A record, the server says the name does not exist. Without a PTR, the name resolves, but `dig -x` finds no name for it.",
+        "say": "A **forward zone** maps names to addresses. A **reverse zone** maps addresses back to names, with **PTR** records. Without an A record, the server says the name does not exist. Without a PTR, the name resolves, but `dig -x` finds no name for it. IPv4 reverse names end in `in-addr.arpa`, and IPv6 uses `ip6.arpa`.",
         "check": {
           "prompt": "Aria's `dig -x 192.0.2.40` returns no name, yet `www.example.com` resolves to 192.0.2.40. What does that show?",
           "answer": "The forward zone has an A record, but the reverse zone has no PTR record",
@@ -733,32 +807,26 @@
           },
           {
             "say": "This port sits in VLAN 99, a parking VLAN for unused ports."
+          },
+          {
+            "say": "On a trunk, the VLAN must be in the allowed list, and both ends must agree on the **native VLAN**, the one carried untagged."
           }
         ],
-        "say": "VLAN faults strand a host even when its link light is on. A port in the wrong VLAN puts the host in the wrong subnet, so it gets the wrong DHCP scope or none. This port sits in VLAN 99, a parking VLAN for unused ports."
+        "say": "VLAN faults strand a host even when its link light is on. A port in the wrong VLAN puts the host in the wrong subnet, so it gets the wrong DHCP scope or none. This port sits in VLAN 99, a parking VLAN for unused ports. On a trunk, the VLAN must be in the allowed list, and both ends must agree on the **native VLAN**, the one carried untagged."
       },
       {
         "beats": [
-          {
-            "say": "On a trunk, check two things."
-          },
-          {
-            "say": "The VLAN must be in the allowed list."
-          },
-          {
-            "say": "Both ends must agree on the **native VLAN**, the one carried untagged."
-          },
           {
             "say": "A **unidirectional link** carries frames one way only, often from a damaged fiber strand or faulty transceiver, while both ports show link up."
+          },
+          {
+            "say": "With STP, a one-way link is dangerous: a blocked port that stops hearing BPDUs assumes the loop is gone, forwards, and makes one."
           }
         ],
-        "say": "On a trunk, check two things. The VLAN must be in the allowed list. Both ends must agree on the **native VLAN**, the one carried untagged. A **unidirectional link** carries frames one way only, often from a damaged fiber strand or faulty transceiver, while both ports show link up."
+        "say": "A **unidirectional link** carries frames one way only, often from a damaged fiber strand or faulty transceiver, while both ports show link up. With STP, a one-way link is dangerous: a blocked port that stops hearing BPDUs assumes the loop is gone, forwards, and makes one."
       },
       {
         "beats": [
-          {
-            "say": "With STP, a one-way link is dangerous: a blocked port that stops hearing BPDUs assumes the loop is gone, forwards, and makes one."
-          },
           {
             "say": "**UDLD** (UniDirectional Link Detection) checks that each side hears the other, and disables the port."
           },
@@ -766,7 +834,7 @@
             "say": "**Loop guard** refuses to unblock a port just because its BPDUs stopped."
           }
         ],
-        "say": "With STP, a one-way link is dangerous: a blocked port that stops hearing BPDUs assumes the loop is gone, forwards, and makes one. **UDLD** (UniDirectional Link Detection) checks that each side hears the other, and disables the port. **Loop guard** refuses to unblock a port just because its BPDUs stopped."
+        "say": "**UDLD** (UniDirectional Link Detection) checks that each side hears the other, and disables the port. **Loop guard** refuses to unblock a port just because its BPDUs stopped."
       }
     ],
     "outro": "Now Brom adds a small switch under a desk, and minutes later the whole floor crawls. Use the counters and the log to find the most likely cause."
@@ -869,8 +937,23 @@
       {
         "beats": [
           {
-            "code": "guest (inside one VM)\n  wrong IP, mask, gateway\n  guest firewall\n  missing NIC driver\nhost (many VMs at once)\n  uplink on an access port\n  port group, wrong VLAN\n  NIC teaming mismatch",
-            "language": "guest and host faults"
+            "table": {
+              "head": [
+                "Where the fault sits",
+                "Examples"
+              ],
+              "rows": [
+                [
+                  "guest, inside one VM",
+                  "wrong IP, mask or gateway; guest firewall; missing NIC driver"
+                ],
+                [
+                  "host, many VMs at once",
+                  "uplink on an access port; wrong VLAN on the port group; NIC teaming mismatch"
+                ]
+              ]
+            },
+            "caption": "guest and host faults"
           },
           {
             "say": "**Guest configuration** faults sit inside one VM."
@@ -959,6 +1042,12 @@
       {
         "beats": [
           {
+            "say": "A **routing loop** is two routers each pointing at the other for the same prefix."
+          },
+          {
+            "say": "Packets bounce until their IP TTL reaches zero, and traceroute repeats the same two hops."
+          },
+          {
             "figure": {
               "dot": "digraph { rankdir=LR; nodesep=0.5; src [label=\"sender\"]; r1 [label=\"R1\"]; r2 [label=\"R2\"]; r3 [label=\"R3\"]; net [label=\"10.9.0.0/16\"]; src -> r1; r1 -> r2 [label=\" 10.9/16\\n via R2\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r2 -> r1 [label=\" 10.9/16\\n via R1\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r1 -> r3 [dir=none]; r3 -> net [dir=none]; }",
               "alt": "A sender reaches R1. R1 and R2 are joined by amber arrows both ways, each labeled with a route for 10.9.0.0/16 pointing at the other router; R1 also links to a third router, R3, behind which 10.9.0.0/16 actually sits.",
@@ -967,20 +1056,18 @@
             }
           },
           {
-            "say": "A **routing loop** is two routers each pointing at the other for the same prefix."
-          },
-          {
-            "say": "Packets bounce until their IP TTL reaches zero, and traceroute repeats the same two hops."
-          },
-          {
             "say": "**Sub-optimal routing** still arrives, but by a longer path."
           },
           {
             "say": "That adds latency and does not cause failure."
           },
           {
-            "code": "branch to branch traffic\n  hauled through a far hub\nstatic route (distance 1)\n  beats OSPF path (110)",
-            "language": "sub-optimal routing"
+            "chain": [
+              "A static route has administrative distance 1",
+              "It beats the OSPF path, distance 110",
+              "Branch-to-branch traffic is hauled through a far hub"
+            ],
+            "caption": "how sub-optimal routing can arise"
           }
         ],
         "say": "A **routing loop** is two routers each pointing at the other for the same prefix. Packets bounce until their IP TTL reaches zero, and traceroute repeats the same two hops. **Sub-optimal routing** still arrives, but by a longer path. That adds latency and does not cause failure."
@@ -994,24 +1081,37 @@
             "say": "A deliberate one routes a prefix to the null interface, the **bit bucket** (`Null0` on Cisco)."
           },
           {
-            "say": "Written too broadly, it eats real subnets too."
-          }
-        ],
-        "say": "A **black hole** swallows traffic: packets go in and never arrive, often with no error. A deliberate one routes a prefix to the null interface, the **bit bucket** (`Null0` on Cisco). Written too broadly, it eats real subnets too."
-      },
-      {
-        "beats": [
-          {
             "say": "A **sinkhole** redirects traffic on purpose to somewhere you control."
           },
           {
-            "say": "A DNS sinkhole answers known malware domains with an internal server that logs who asked."
-          },
-          {
-            "say": "Misconfigured, it captures a legitimate domain."
+            "table": {
+              "head": [
+                "Compare",
+                "Black hole",
+                "Sinkhole"
+              ],
+              "rows": [
+                [
+                  "Where the traffic goes",
+                  "the null interface",
+                  "a server you control"
+                ],
+                [
+                  "What it is used for",
+                  "dropping a prefix on purpose",
+                  "a DNS sinkhole answers known malware domains with an internal server that logs who asked"
+                ],
+                [
+                  "When it goes wrong",
+                  "written too broadly, it eats real subnets too",
+                  "misconfigured, it captures a legitimate domain"
+                ]
+              ]
+            },
+            "caption": "black hole and sinkhole"
           }
         ],
-        "say": "A **sinkhole** redirects traffic on purpose to somewhere you control. A DNS sinkhole answers known malware domains with an internal server that logs who asked. Misconfigured, it captures a legitimate domain."
+        "say": "A **black hole** swallows traffic: packets go in and never arrive, often with no error. A deliberate one routes a prefix to the null interface, the **bit bucket** (`Null0` on Cisco). A **sinkhole** redirects traffic on purpose to somewhere you control."
       },
       {
         "beats": [
@@ -1019,23 +1119,26 @@
             "say": "**PAT** (port address translation, NAT overload) hides many inside hosts behind one public address."
           },
           {
-            "say": "It tells their sessions apart by source port."
+            "say": "It tells their sessions apart by source port, and one address has roughly 64,000 usable ports per protocol."
           },
           {
-            "say": "One address has roughly 64,000 usable ports per protocol."
+            "say": "When they run out, that is **NAT exhaustion**. Open sessions carry on, but new ones fail."
           },
           {
-            "say": "When they run out, that is **NAT exhaustion**."
+            "list": [
+              "Add public addresses",
+              "Shorten idle timeouts",
+              "Find the noisy host"
+            ],
+            "ordered": false,
+            "caption": "fixes for NAT exhaustion"
           },
           {
-            "say": "Open sessions carry on, but new ones fail."
-          },
-          {
-            "code": "fixes\n  add public addresses\n  shorten idle timeouts\n  find the noisy host\n\nshow ip nat translations\nshow ip nat statistics",
-            "language": "NAT exhaustion"
+            "code": "show ip nat translations\nshow ip nat statistics",
+            "language": "commands that show the translations"
           }
         ],
-        "say": "**PAT** (port address translation, NAT overload) hides many inside hosts behind one public address. It tells their sessions apart by source port. One address has roughly 64,000 usable ports per protocol. When they run out, that is **NAT exhaustion**. Open sessions carry on, but new ones fail.",
+        "say": "**PAT** (port address translation, NAT overload) hides many inside hosts behind one public address. It tells their sessions apart by source port, and one address has roughly 64,000 usable ports per protocol. When they run out, that is **NAT exhaustion**. Open sessions carry on, but new ones fail.",
         "check": {
           "prompt": "Users say new web pages won't load, yet a video call that started an hour ago is still running. Which fits?",
           "answer": "NAT exhaustion: open sessions keep their ports, new ones get none",
@@ -1251,8 +1354,14 @@
             "say": "A **VPN**, an encrypted tunnel between sites, comes up only if both firewalls agree on four things."
           },
           {
-            "code": "peers must agree on:\n  encryption\n  hashing\n  keys\n  subnets in the tunnel",
-            "language": "VPN settings"
+            "list": [
+              "Encryption",
+              "Hashing",
+              "Keys",
+              "Subnets in the tunnel"
+            ],
+            "ordered": false,
+            "caption": "what the VPN peers must agree on"
           },
           {
             "say": "Exempt tunnel traffic from NAT, or NAT rewrites it before the tunnel sees it."
@@ -1329,12 +1438,7 @@
           },
           {
             "say": "With **802.1X**, the switch asks a **RADIUS** server to check the device's credentials before opening the port."
-          }
-        ],
-        "say": "**NAC** (network access control) decides which devices may join the network. With **802.1X**, the switch asks a **RADIUS** server to check the device's credentials before opening the port."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "Printers and cameras often can't do 802.1X, so the switch falls back to **MAC authentication bypass** (MAB)."
           },
@@ -1342,10 +1446,15 @@
             "say": "It sends the device's MAC address to RADIUS, checked against an **allow list**."
           },
           {
-            "say": "A replaced device is rejected, and a spoofed MAC gets the printer's access."
+            "list": [
+              "A replaced device is rejected, because its MAC is not on the list",
+              "A spoofed MAC gets the printer's access"
+            ],
+            "ordered": false,
+            "caption": "MAB's weak points"
           }
         ],
-        "say": "Printers and cameras often can't do 802.1X, so the switch falls back to **MAC authentication bypass** (MAB). It sends the device's MAC address to RADIUS, checked against an **allow list**. A replaced device is rejected, and a spoofed MAC gets the printer's access."
+        "say": "**NAC** (network access control) decides which devices may join the network. With **802.1X**, the switch asks a **RADIUS** server to check the device's credentials before opening the port. Printers and cameras often can't do 802.1X, so the switch falls back to **MAC authentication bypass** (MAB). It sends the device's MAC address to RADIUS, checked against an **allow list**."
       },
       {
         "beats": [
@@ -1367,8 +1476,23 @@
             "say": "**Policy misconfiguration** and **posture issues** both misplace healthy devices."
           },
           {
-            "code": "policy misconfiguration\n  broad rule over specific\n  wrong directory group\n  falls to default rule\nposture issues\n  outdated agent\n  names one antivirus",
-            "language": "NAC faults"
+            "table": {
+              "head": [
+                "Fault",
+                "Examples"
+              ],
+              "rows": [
+                [
+                  "policy misconfiguration",
+                  "a broad rule over a specific one; the wrong directory group; falling through to the default rule"
+                ],
+                [
+                  "posture issues",
+                  "an outdated agent; a policy that names only one antivirus"
+                ]
+              ]
+            },
+            "caption": "NAC faults"
           }
         ],
         "say": "**Posture** checks a device's health after it authenticates: patches, antivirus, disk encryption. A failing device goes to a **remediation VLAN**, with just enough access to fix itself. **Policy misconfiguration** and **posture issues** both misplace healthy devices.",
@@ -1470,8 +1594,23 @@
             "say": "The caller's INVITE offers its **codecs**, the methods that turn voice into bits, and where to send audio."
           },
           {
-            "code": "G.711   64 kbps\nG.729    8 kbps",
-            "language": "common codecs"
+            "table": {
+              "head": [
+                "Codec",
+                "Bitrate"
+              ],
+              "rows": [
+                [
+                  "G.711",
+                  "64 kbps"
+                ],
+                [
+                  "G.729",
+                  "8 kbps"
+                ]
+              ]
+            },
+            "caption": "common codecs"
           }
         ],
         "say": "TCP resends what is lost; a phone call can't wait for one. An IP phone first **registers** with its call server, the **PBX**. **SIP** (Session Initiation Protocol) sets up each call. The caller's INVITE offers its **codecs**, the methods that turn voice into bits, and where to send audio."
@@ -1486,9 +1625,12 @@
           },
           {
             "say": "A **codec mismatch** gets the offer rejected, so the call fails at setup."
+          },
+          {
+            "say": "Silence after a call connects usually means an RTP stream is blocked or misaddressed."
           }
         ],
-        "say": "Voice rides **RTP** (Real-time Transport Protocol) over UDP; nothing is resent, so a lost packet is a gap in the sound. A **jitter buffer** evens out small variations; jitter beyond it means choppy audio. A **codec mismatch** gets the offer rejected, so the call fails at setup."
+        "say": "Voice rides **RTP** (Real-time Transport Protocol) over UDP; nothing is resent, so a lost packet is a gap in the sound. A **jitter buffer** evens out small variations; jitter beyond it means choppy audio. A **codec mismatch** gets the offer rejected, so the call fails at setup. Silence after a call connects usually means an RTP stream is blocked or misaddressed."
       },
       {
         "beats": [
@@ -1521,16 +1663,13 @@
             "say": "**QoS** (quality of service) lets voice jump the queue."
           },
           {
-            "say": "Phones stamp each voice packet with a priority mark, **DSCP EF** (Expedited Forwarding, 46)."
+            "say": "Each hop can queue voice first, but only if it trusts the packet's priority marking."
           },
           {
-            "say": "Each hop queues EF first, but only if it trusts the marking."
-          },
-          {
-            "say": "Silence after a call connects usually means an RTP stream is blocked or misaddressed."
+            "say": "Phones set that marking to **DSCP EF** (Expedited Forwarding, 46)."
           }
         ],
-        "say": "**QoS** (quality of service) lets voice jump the queue. Phones stamp each voice packet with a priority mark, **DSCP EF** (Expedited Forwarding, 46). Each hop queues EF first, but only if it trusts the marking. Silence after a call connects usually means an RTP stream is blocked or misaddressed.",
+        "say": "**QoS** (quality of service) lets voice jump the queue. Each hop can queue voice first, but only if it trusts the packet's priority marking. Phones set that marking to **DSCP EF** (Expedited Forwarding, 46).",
         "check": {
           "prompt": "Calls are choppy only while the nightly backup crosses the same WAN link, and the WAN router ignores DSCP markings. Which fix targets the cause?",
           "answer": "Trust the EF marking and queue voice first on the WAN link",
@@ -1550,14 +1689,33 @@
             "say": "**Intermittent connectivity** comes and goes."
           },
           {
-            "code": "intermittent\n  flapping link,\n  duplicate IP,\n  lease cannot renew,\n  storm now and then\nmisdelivery\n  stale DNS record,\n  wrong NAT or\n  load-balancer rule\ncapacity\n  use near 100%,\n  queues drop",
-            "language": "delivery faults"
-          },
-          {
             "say": "**Misdelivery** sends traffic to the wrong place."
           },
           {
             "say": "**Capacity issues** mean a link or device is simply full at peak."
+          },
+          {
+            "table": {
+              "head": [
+                "Complaint",
+                "Typical causes"
+              ],
+              "rows": [
+                [
+                  "intermittent",
+                  "flapping link; duplicate IP; lease cannot renew; storm now and then"
+                ],
+                [
+                  "misdelivery",
+                  "stale DNS record; wrong NAT or load-balancer rule"
+                ],
+                [
+                  "capacity",
+                  "use near 100%; queues drop"
+                ]
+              ]
+            },
+            "caption": "delivery faults"
           }
         ],
         "say": "Some complaints are about delivery, not speed. **Intermittent connectivity** comes and goes. **Misdelivery** sends traffic to the wrong place. **Capacity issues** mean a link or device is simply full at peak."
@@ -1720,8 +1878,13 @@
             "say": "Remote access has three classic faults."
           },
           {
-            "code": "SSH off on the VTY lines\nno RSA key generated\nmanagement ACL omits you",
-            "language": "remote access faults"
+            "list": [
+              "SSH is off on the VTY lines",
+              "No RSA key has been generated",
+              "The management ACL omits you"
+            ],
+            "ordered": false,
+            "caption": "remote access faults"
           },
           {
             "say": "The **VTY lines** are the virtual terminals remote sessions use; SSH must be enabled on them."

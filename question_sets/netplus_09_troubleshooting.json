@@ -11,8 +11,17 @@
             "say": "A good troubleshooter works in a fixed order."
           },
           {
-            "code": "1 identify the problem\n2 establish a theory\n3 test the theory\n4 establish a plan\n5 implement or escalate\n6 verify full function\n7 document",
-            "language": "troubleshooting method"
+            "list": [
+              "Identify the problem",
+              "Establish a theory of the probable cause",
+              "Test the theory",
+              "Establish a plan of action",
+              "Implement the solution, or escalate",
+              "Verify full system function",
+              "Document findings"
+            ],
+            "ordered": true,
+            "caption": "the troubleshooting method"
           },
           {
             "say": "First **identify the problem**, then **establish a theory** of the probable cause."
@@ -27,10 +36,6 @@
         "beats": [
           {
             "say": "The last three steps close the job."
-          },
-          {
-            "code": "5 implement or escalate\n6 verify full function\n7 document",
-            "language": "the last three steps"
           },
           {
             "say": "**Implement** the fix, or escalate it: hand it to someone who can."
@@ -151,17 +156,8 @@
       {
         "beats": [
           {
-            "code": "  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 18342\n     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored",
-            "language": "show interfaces (Cisco IOS)"
-          },
-          {
             "say": "An **overrun**: frames arrive faster than the port can take them in."
-          }
-        ],
-        "say": "An **overrun**: frames arrive faster than the port can take them in."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "**Drops** mean a queue, a waiting line, was full."
           },
@@ -170,8 +166,13 @@
           },
           {
             "say": "Output drops with clean counters mean **congestion**, not a bad cable."
+          },
+          {
+            "code": "  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 18342\n     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored",
+            "language": "show interfaces (Cisco IOS)"
           }
         ],
+        "say": "An **overrun**: frames arrive faster than the port can take them in. **Drops** mean a queue, a waiting line, was full. **Input drops** mean the device cannot keep up. **Output drops** mean too much traffic is trying to leave through one port. Output drops with clean counters mean **congestion**, not a bad cable.",
         "check": {
           "prompt": "Port A on a switch shows rising CRC errors. Port B shows rising output drops and CRC at 0. Which port will a new cable fix?",
           "answer": "Port A only",
@@ -180,8 +181,7 @@
             "Both ports"
           ],
           "why": "CRC means frames were damaged on the wire, so a new cable can cure Port A. Port B's drops come from congestion: a cable swap leaves its queue just as full."
-        },
-        "say": "**Drops** mean a queue, a waiting line, was full. **Input drops** mean the device cannot keep up. **Output drops** mean too much traffic is trying to leave through one port. Output drops with clean counters mean **congestion**, not a bad cable."
+        }
       }
     ],
     "outro": "Next, match each interface counter to what it most often means."
@@ -318,14 +318,33 @@
             "say": "A basic tester checks the **wire map**: every wire on its right pin."
           },
           {
-            "code": "open\n  a broken wire\nshort\n  wires touching\nreversed pair\n  two wires swapped",
-            "language": "faults a tester finds"
-          },
-          {
             "say": "It finds an **open** or a **short**."
           },
           {
             "say": "A **reversed pair** is caught too."
+          },
+          {
+            "table": {
+              "head": [
+                "Fault",
+                "What it is"
+              ],
+              "rows": [
+                [
+                  "open",
+                  "a broken wire"
+                ],
+                [
+                  "short",
+                  "wires touching"
+                ],
+                [
+                  "reversed pair",
+                  "two wires swapped"
+                ]
+              ]
+            },
+            "caption": "faults a tester finds"
           }
         ],
         "say": "A **TDR** (time-domain reflectometer) sends a pulse down a cable to find its length, or where it breaks. A basic tester checks the **wire map**: every wire on its right pin. It finds an **open** or a **short**. A **reversed pair** is caught too."
@@ -350,20 +369,19 @@
             "say": "**NEXT** (near-end crosstalk) is measured at the sending end, and **FEXT** (far-end) at the other end."
           },
           {
-            "code": "NEXT  at the sending end\nFEXT  at the far end\nalien between cables\n\nkeep twists within\n13 mm (1/2 in)",
-            "language": "crosstalk"
-          },
-          {
             "say": "**Alien crosstalk** leaks between neighboring cables."
           },
           {
             "say": "Twisting each pair cancels most leakage, so wires untwisted at a jack are the usual culprit."
           },
           {
+            "say": "Keep the untwisted part within 13 mm (1/2 in)."
+          },
+          {
             "say": "EMI is different: it comes from outside the cable, such as motors."
           }
         ],
-        "say": "**NEXT** (near-end crosstalk) is measured at the sending end, and **FEXT** (far-end) at the other end. **Alien crosstalk** leaks between neighboring cables. Twisting each pair cancels most leakage, so wires untwisted at a jack are the usual culprit. EMI is different: it comes from outside the cable, such as motors."
+        "say": "**NEXT** (near-end crosstalk) is measured at the sending end, and **FEXT** (far-end) at the other end. **Alien crosstalk** leaks between neighboring cables. Twisting each pair cancels most leakage, so wires untwisted at a jack are the usual culprit. Keep the untwisted part within 13 mm (1/2 in). EMI is different: it comes from outside the cable, such as motors."
       },
       {
         "beats": [
@@ -375,12 +393,10 @@
           },
           {
             "say": "Inspect with a **fiber inspection scope**, and clean first."
-          }
-        ],
-        "say": "Light in glass ignores EMI and crosstalk. It is easy to lose in other ways. The commonest fault is a **dirty connector**: dust or oil. Inspect with a **fiber inspection scope**, and clean first."
-      },
-      {
-        "beats": [
+          },
+          {
+            "say": "Each end's transmitter (TX) must feed the other end's receiver (RX); if they are swapped, that is **reversed polarity**."
+          },
           {
             "figure": {
               "dot": "digraph { rankdir=LR; nodesep=0.3; ranksep=1.2; subgraph cluster_a { label=\"switch A\"; style=rounded; color=\"#5aaa5a\"; atx [label=\"TX\"]; arx [label=\"RX\"]; } subgraph cluster_b { label=\"switch B\"; style=rounded; color=\"#5aaa5a\"; brx [label=\"RX\"]; btx [label=\"TX\"]; } atx -> brx [color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; btx -> arx [color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; }",
@@ -388,14 +404,9 @@
               "caption": "each transmitter feeds the far receiver",
               "src": "_dot/e430d5f88d9c6e99.svg"
             }
-          },
-          {
-            "say": "Each end's transmitter (TX) must feed the other end's receiver (RX)."
-          },
-          {
-            "say": "If they are swapped, that is **reversed polarity**."
           }
         ],
+        "say": "Light in glass ignores EMI and crosstalk. It is easy to lose in other ways. The commonest fault is a **dirty connector**: dust or oil. Inspect with a **fiber inspection scope**, and clean first. Each end's transmitter (TX) must feed the other end's receiver (RX); if they are swapped, that is **reversed polarity**.",
         "check": {
           "prompt": "A fiber uplink worked until Brom re-patched it. Now neither end shows a link, and both connectors were just cleaned. What is the likely cause?",
           "answer": "The strands are swapped, so each TX feeds the far TX",
@@ -404,8 +415,7 @@
             "EMI from power cables in the same tray"
           ],
           "why": "Re-patching is the classic moment for a polarity swap: clean connectors and no light at either receiver mean each transmitter is aimed at a transmitter. Glass carries light, not current, so neither crosstalk nor EMI applies to fiber."
-        },
-        "say": "Each end's transmitter (TX) must feed the other end's receiver (RX). If they are swapped, that is **reversed polarity**."
+        }
       }
     ],
     "outro": "Old Hask tests a troublesome copper run to a warehouse office next. Use what the tester reports to find the most likely cause."
@@ -446,17 +456,69 @@
             "say": "**Multimode** fiber has a wide core and suits short runs; **single-mode** has a narrow core and goes much farther."
           },
           {
-            "code": "multimode\n  wide core, 850 nm\n  10GBASE-SR (short)\n  reaches 300 m\nsingle-mode\n  narrow core\n  1310 or 1550 nm\n  10GBASE-LR (long)\n  reaches 10 km",
-            "language": "fiber and optics"
+            "say": "Each needs its own optics, because they use different **wavelengths**, the colors of the light. Mismatched optics and fiber mean no link."
           },
           {
-            "say": "Each needs its own optics, because they use different **wavelengths**, the colors of the light."
+            "table": {
+              "head": [
+                "Fiber",
+                "Core and light",
+                "Optic and reach"
+              ],
+              "rows": [
+                [
+                  "multimode",
+                  "wide core, 850 nm",
+                  "10GBASE-SR (short), reaches 300 m"
+                ],
+                [
+                  "single-mode",
+                  "narrow core, 1310 or 1550 nm",
+                  "10GBASE-LR (long), reaches 10 km"
+                ]
+              ]
+            },
+            "caption": "fiber and optics"
           },
           {
-            "say": "Mismatched optics and fiber mean no link."
+            "say": "Each optic is a **transceiver**: a small plug-in module that sends and receives light."
+          },
+          {
+            "say": "Its name shows its speed, and both ends must match."
+          },
+          {
+            "table": {
+              "head": [
+                "Module",
+                "Speed"
+              ],
+              "rows": [
+                [
+                  "SFP",
+                  "1 Gbps"
+                ],
+                [
+                  "SFP+",
+                  "10 Gbps"
+                ],
+                [
+                  "SFP28",
+                  "25 Gbps"
+                ],
+                [
+                  "QSFP+",
+                  "40 Gbps"
+                ],
+                [
+                  "QSFP28",
+                  "100 Gbps"
+                ]
+              ]
+            },
+            "caption": "transceiver modules"
           }
         ],
-        "say": "**Multimode** fiber has a wide core and suits short runs; **single-mode** has a narrow core and goes much farther. Each needs its own optics, because they use different **wavelengths**, the colors of the light. Mismatched optics and fiber mean no link.",
+        "say": "**Multimode** fiber has a wide core and suits short runs; **single-mode** has a narrow core and goes much farther. Each needs its own optics, because they use different **wavelengths**, the colors of the light. Mismatched optics and fiber mean no link. Each optic is a **transceiver**: a small plug-in module that sends and receives light. Its name shows its speed, and both ends must match.",
         "check": {
           "prompt": "Hask has a single-mode fiber run and a spare 10GBASE-SR optic. Will the optic work on that run?",
           "answer": "No: SR optics are made for multimode fiber",
@@ -466,21 +528,6 @@
           ],
           "why": "SR means short reach over multimode fiber at 850 nm; LR is built for single-mode. Speed alone doesn't make an optic fit the fiber, and short distances don't fix the mismatch."
         }
-      },
-      {
-        "beats": [
-          {
-            "say": "Each optic is a **transceiver**: a small plug-in module that sends and receives light."
-          },
-          {
-            "say": "Its name shows its speed, and both ends must match."
-          },
-          {
-            "code": "SFP     1 Gbps\nSFP+    10 Gbps\nSFP28   25 Gbps\nQSFP+   40 Gbps\nQSFP28  100 Gbps",
-            "language": "transceiver modules"
-          }
-        ],
-        "say": "Each optic is a **transceiver**: a small plug-in module that sends and receives light. Its name shows its speed, and both ends must match."
       },
       {
         "beats": [
@@ -520,14 +567,18 @@
             "say": "A drop of 3 dB halves the power, and a rise of 3 dB doubles it."
           },
           {
-            "code": "0 dBm    one milliwatt\n-3 dB    half the power\n+3 dB    double the power\ncloser to 0 = stronger\n-2 dBm - 6 dB = -8 dBm",
-            "language": "reading dBm"
+            "chain": [
+              "Start at -2 dBm",
+              "Lose 6 dB along the link",
+              "Arrive at -8 dBm"
+            ],
+            "caption": "losses subtract from the level"
           },
           {
-            "say": "Losses subtract straight from the level: start at -2 dBm, lose 6 dB, and you have -8 dBm."
+            "say": "Losses subtract straight from the level."
           }
         ],
-        "say": "A drop of 3 dB halves the power, and a rise of 3 dB doubles it. Losses subtract straight from the level: start at -2 dBm, lose 6 dB, and you have -8 dBm."
+        "say": "A drop of 3 dB halves the power, and a rise of 3 dB doubles it. Losses subtract straight from the level."
       },
       {
         "beats": [
@@ -690,9 +741,39 @@
           },
           {
             "say": "`up/up` is healthy."
+          },
+          {
+            "say": "`show interfaces status` gives one line per port."
+          },
+          {
+            "table": {
+              "head": [
+                "Status",
+                "Meaning"
+              ],
+              "rows": [
+                [
+                  "connected",
+                  "link is up"
+                ],
+                [
+                  "notconnect",
+                  "no link"
+                ],
+                [
+                  "disabled",
+                  "admin shut"
+                ],
+                [
+                  "err-disabled",
+                  "switch shut"
+                ]
+              ]
+            },
+            "caption": "show interfaces status"
           }
         ],
-        "say": "`show interfaces` opens each port with two states. The **status** says whether Layer 1 has a usable signal. The **line protocol** says whether Layer 2 works over it. `up/up` is healthy."
+        "say": "`show interfaces` opens each port with two states. The **status** says whether Layer 1 has a usable signal. The **line protocol** says whether Layer 2 works over it. `up/up` is healthy. `show interfaces status` gives one line per port."
       },
       {
         "beats": [
@@ -703,31 +784,19 @@
             "say": "`up/down` means a signal but no working Layer 2, as when the two ends disagree on Layer 2 settings."
           },
           {
-            "say": "`show interfaces status` gives one line per port."
-          },
-          {
-            "code": "connected     link is up\nnotconnect    no link\ndisabled      admin shut\nerr-disabled  switch shut",
-            "language": "show interfaces status"
-          }
-        ],
-        "say": "`down/down` means no usable signal: nothing plugged in, a broken cable, a dead far end, or settings the two ends cannot agree on. `up/down` means a signal but no working Layer 2, as when the two ends disagree on Layer 2 settings. `show interfaces status` gives one line per port."
-      },
-      {
-        "beats": [
-          {
             "say": "**Administratively down** means someone entered `shutdown` on the port."
           },
           {
             "say": "Nothing is wrong with the cable, and the port stays down until it is enabled again."
-          },
-          {
-            "say": "**Error disabled** (`err-disabled`) means the switch shut the port itself because a protection feature fired."
           }
         ],
-        "say": "**Administratively down** means someone entered `shutdown` on the port. Nothing is wrong with the cable, and the port stays down until it is enabled again. **Error disabled** (`err-disabled`) means the switch shut the port itself because a protection feature fired."
+        "say": "`down/down` means no usable signal: nothing plugged in, a broken cable, a dead far end, or settings the two ends cannot agree on. `up/down` means a signal but no working Layer 2, as when the two ends disagree on Layer 2 settings. **Administratively down** means someone entered `shutdown` on the port. Nothing is wrong with the cable, and the port stays down until it is enabled again."
       },
       {
         "beats": [
+          {
+            "say": "**Error disabled** (`err-disabled`) means the switch shut the port itself because a protection feature fired."
+          },
           {
             "say": "**Port security** fires on a MAC address it does not allow."
           },
@@ -735,17 +804,14 @@
             "say": "**BPDU guard** fires when a **BPDU**, a message switches use to prevent loops, arrives on an end-device port."
           },
           {
-            "say": "A link that keeps flapping, going up and down, can fire it too."
+            "say": "A link that keeps flapping, going up and down, can fire it too. The log names the cause."
           },
           {
             "code": "%PM-4-ERR_DISABLE: bpduguard error detected on Gi1/0/6, putting Gi1/0/6 in err-disable state",
             "language": "switch log"
-          },
-          {
-            "say": "The log names the cause."
           }
         ],
-        "say": "**Port security** fires on a MAC address it does not allow. **BPDU guard** fires when a **BPDU**, a message switches use to prevent loops, arrives on an end-device port. A link that keeps flapping, going up and down, can fire it too. The log names the cause."
+        "say": "**Error disabled** (`err-disabled`) means the switch shut the port itself because a protection feature fired. **Port security** fires on a MAC address it does not allow. **BPDU guard** fires when a **BPDU**, a message switches use to prevent loops, arrives on an end-device port. A link that keeps flapping, going up and down, can fire it too. The log names the cause."
       },
       {
         "beats": [
@@ -912,16 +978,11 @@
       {
         "beats": [
           {
-            "say": "The other end, on auto, falls back to half duplex: it senses speed, not duplex."
+            "say": "When one end is hard-set and the other is left on auto, the auto end falls back to half duplex: it senses speed, not duplex."
           },
           {
             "say": "That is a **duplex mismatch**. Light traffic looks fine, but the link breaks down under load."
-          }
-        ],
-        "say": "The other end, on auto, falls back to half duplex: it senses speed, not duplex. That is a **duplex mismatch**. Light traffic looks fine, but the link breaks down under load."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "The half-duplex end logs **late collisions**, after a frame's first 64 bytes."
           },
@@ -933,6 +994,7 @@
             "language": "both ends of one link"
           }
         ],
+        "say": "When one end is hard-set and the other is left on auto, the auto end falls back to half duplex: it senses speed, not duplex. That is a **duplex mismatch**. Light traffic looks fine, but the link breaks down under load. The half-duplex end logs **late collisions**, after a frame's first 64 bytes. The full-duplex end logs CRC errors and runts.",
         "check": {
           "prompt": "Users on Fa0/5 get quick pings but crawling file copies. What fixes it for good?",
           "answer": "Set both ends to auto, or hard-set both to the same speed and duplex",
@@ -941,8 +1003,7 @@
             "Lower the MTU on Fa0/5 to cut the runts"
           ],
           "why": "The settings disagree, not the copper: let both ends negotiate, or set both by hand to match. A new cable would show the same counters, and these runts are collision fragments, not a size problem."
-        },
-        "say": "The half-duplex end logs **late collisions**, after a frame's first 64 bytes. The full-duplex end logs CRC errors and runts."
+        }
       },
       {
         "beats": [
@@ -956,8 +1017,23 @@
             "say": "In `show interfaces status`, an `a-` prefix means autonegotiated."
           },
           {
-            "code": "a-full  a-1000\n  negotiated\nfull    100\n  set by hand",
-            "language": "status columns"
+            "table": {
+              "head": [
+                "Status columns",
+                "Meaning"
+              ],
+              "rows": [
+                [
+                  "a-full, a-1000",
+                  "negotiated"
+                ],
+                [
+                  "full, 100",
+                  "set by hand"
+                ]
+              ]
+            },
+            "caption": "show interfaces status"
           }
         ],
         "say": "A **speed mismatch** is harder to miss: ends hard-set to different speeds, say 100 and 1000, cannot link at all. The port sits at `down/down`, shown as `notconnect`. Optics of different speeds fail the same way. In `show interfaces status`, an `a-` prefix means autonegotiated."
@@ -1031,16 +1107,8 @@
       {
         "beats": [
           {
-            "say": "One hop left at 1500 is an **MTU mismatch**: that port drops the bigger frames and counts them as giants."
+            "say": "One hop left at 1500 is an **MTU mismatch**: it drops bigger frames as giants, so small things work and big ones fail."
           },
-          {
-            "say": "Small things work and big ones fail."
-          }
-        ],
-        "say": "One hop left at 1500 is an **MTU mismatch**: that port drops the bigger frames and counts them as giants. Small things work and big ones fail."
-      },
-      {
-        "beats": [
           {
             "say": "A router handed a packet bigger than the next link's MTU normally **fragments** it, cutting it into smaller pieces."
           },
@@ -1051,7 +1119,7 @@
             "say": "Then the router drops the packet and sends back an ICMP 'fragmentation needed' message, the kind ping uses."
           }
         ],
-        "say": "A router handed a packet bigger than the next link's MTU normally **fragments** it, cutting it into smaller pieces. Setting the **Don't Fragment** (DF) bit forbids that. Then the router drops the packet and sends back an ICMP 'fragmentation needed' message, the kind ping uses."
+        "say": "One hop left at 1500 is an **MTU mismatch**: it drops bigger frames as giants, so small things work and big ones fail. A router handed a packet bigger than the next link's MTU normally **fragments** it, cutting it into smaller pieces. Setting the **Don't Fragment** (DF) bit forbids that. Then the router drops the packet and sends back an ICMP 'fragmentation needed' message, the kind ping uses."
       },
       {
         "beats": [
@@ -1173,26 +1241,60 @@
           },
           {
             "say": "So an ordinary laptop NIC is never powered."
-          }
-        ],
-        "say": "The switch is the **PSE** (power sourcing equipment); the phone, camera or AP is the **PD** (powered device). Before power flows, the PSE runs **detection**: a low test voltage looks for the PD's signature resistance. So an ordinary laptop NIC is never powered."
-      },
-      {
-        "beats": [
-          {
-            "say": "Then **classification**: the PD reports how much power it needs."
           },
           {
-            "say": "Only then does the PSE power it up, and it cuts power if the PD is unplugged."
+            "say": "Then comes **classification**, where the PD reports how much power it needs."
+          },
+          {
+            "chain": [
+              "PSE tests for a PD with a low voltage (detection)",
+              "PD reports its power need (classification)",
+              "PSE powers the PD up",
+              "PSE cuts power if the PD is unplugged"
+            ],
+            "caption": "plugging in a PoE device"
           }
         ],
-        "say": "Then **classification**: the PD reports how much power it needs. Only then does the PSE power it up, and it cuts power if the PD is unplugged."
+        "say": "The switch is the **PSE** (power sourcing equipment); the phone, camera or AP is the **PD** (powered device). Before power flows, the PSE runs **detection**: a low test voltage looks for the PD's signature resistance. So an ordinary laptop NIC is never powered. Then comes **classification**, where the PD reports how much power it needs."
       },
       {
         "beats": [
           {
-            "code": "Standard  Name  PSE PD\n802.3af   PoE   15.4 12.95\n802.3at   PoE+  30  25.5\n802.3bt T3 PoE++ 60 51\n802.3bt T4 PoE++ 90 71.3",
-            "language": "watts at PSE and PD"
+            "table": {
+              "head": [
+                "Standard",
+                "Name",
+                "PSE watts",
+                "PD watts"
+              ],
+              "rows": [
+                [
+                  "802.3af",
+                  "PoE",
+                  "15.4",
+                  "12.95"
+                ],
+                [
+                  "802.3at",
+                  "PoE+",
+                  "30",
+                  "25.5"
+                ],
+                [
+                  "802.3bt Type 3",
+                  "PoE++",
+                  "60",
+                  "51"
+                ],
+                [
+                  "802.3bt Type 4",
+                  "PoE++",
+                  "90",
+                  "71.3"
+                ]
+              ]
+            },
+            "caption": "watts at the switch (PSE) and at the device (PD)"
           },
           {
             "say": "The device gets less than the switch sends, because the cable turns some power into heat over 100 m."
@@ -1466,8 +1568,27 @@
             "say": "A client's **RSSI** (received signal strength indicator) is reported in dBm, and for Wi-Fi it is negative."
           },
           {
-            "code": "-45 dBm  strong\n-67 dBm  voice and video\n         minimum\n-80 dBm  barely usable",
-            "language": "RSSI landmarks"
+            "table": {
+              "head": [
+                "RSSI",
+                "Meaning"
+              ],
+              "rows": [
+                [
+                  "-45 dBm",
+                  "strong"
+                ],
+                [
+                  "-67 dBm",
+                  "minimum for voice and video"
+                ],
+                [
+                  "-80 dBm",
+                  "barely usable"
+                ]
+              ]
+            },
+            "caption": "RSSI landmarks"
           },
           {
             "say": "As signal weakens, the AP and client fall back to slower rates and retry more, so a weak link is slow long before it drops."
@@ -1492,8 +1613,29 @@
             "say": "**SNR** (signal-to-noise ratio) is the signal minus the noise floor, in dB."
           },
           {
-            "code": "client  sig   noise  SNR\nlap-07  -61   -94    33 dB\nlap-12  -66   -78    12 dB",
-            "language": "survey: signal, noise in dBm"
+            "table": {
+              "head": [
+                "Client",
+                "Signal",
+                "Noise",
+                "SNR"
+              ],
+              "rows": [
+                [
+                  "lap-07",
+                  "-61 dBm",
+                  "-94 dBm",
+                  "33 dB"
+                ],
+                [
+                  "lap-12",
+                  "-66 dBm",
+                  "-78 dBm",
+                  "12 dB"
+                ]
+              ]
+            },
+            "caption": "survey results"
           },
           {
             "say": "lap-12's signal is only 5 dB weaker, but its noise floor is 16 dB higher, so its SNR collapsed."
@@ -1641,8 +1783,31 @@
             "say": "A **band** is a range of radio frequencies, and Wi-Fi uses three."
           },
           {
-            "code": "2.4 GHz\n  farthest, crowded\n  channels 1, 6, 11 only\n5 GHz\n  many channels, shorter\n6 GHz\n  cleanest, shortest\n  Wi-Fi 6E or 7 only",
-            "language": "the three bands"
+            "table": {
+              "head": [
+                "Band",
+                "Reach",
+                "Channels and clients"
+              ],
+              "rows": [
+                [
+                  "2.4 GHz",
+                  "farthest, crowded",
+                  "channels 1, 6, 11 only"
+                ],
+                [
+                  "5 GHz",
+                  "shorter",
+                  "many channels"
+                ],
+                [
+                  "6 GHz",
+                  "shortest, cleanest",
+                  "Wi-Fi 6E or 7 only"
+                ]
+              ]
+            },
+            "caption": "the three bands"
           },
           {
             "say": "**2.4 GHz** reaches farthest but is crowded; **5 GHz** has many more channels but shorter range."
@@ -1747,14 +1912,37 @@
       {
         "beats": [
           {
-            "code": "802.11k\n  neighbor AP list\n802.11v\n  network suggests an AP\n802.11r\n  skips full re-auth",
-            "language": "roaming helpers"
-          },
-          {
             "say": "**802.11k** gives clients a list of neighbors, and **802.11v** lets the network suggest a better AP."
           },
           {
             "say": "**802.11r** (fast transition) lets a client roam without a full re-authentication."
+          },
+          {
+            "table": {
+              "head": [
+                "Standard",
+                "What it gives",
+                "Speeds up"
+              ],
+              "rows": [
+                [
+                  "802.11k",
+                  "list of neighbor APs",
+                  "finding the next AP"
+                ],
+                [
+                  "802.11v",
+                  "network suggests a better AP",
+                  "choosing an AP"
+                ],
+                [
+                  "802.11r",
+                  "skips full re-authentication",
+                  "joining the new AP"
+                ]
+              ]
+            },
+            "caption": "roaming helpers"
           },
           {
             "say": "Voice calls suffer first: a full re-authentication, a fresh login at each new AP, can drop audio, or the call."
@@ -1777,8 +1965,14 @@
             "say": "**Placement** decides coverage. Mount an AP on the ceiling of the space it serves, out in the open."
           },
           {
-            "code": "avoid:\n closet or cabinet\n above a metal ceiling\n behind a pillar or\n elevator shaft\n aquarium, metal shelves,\n mirrored glass, crowds",
-            "language": "poor AP spots"
+            "list": [
+              "A closet or cabinet",
+              "Above a metal ceiling",
+              "Behind a pillar or elevator shaft",
+              "Near an aquarium, metal shelves, mirrored glass or crowds"
+            ],
+            "ordered": false,
+            "caption": "poor AP spots"
           },
           {
             "say": "Water and metal absorb and reflect signal."
@@ -1795,25 +1989,35 @@
             "say": "**Gain**, in dBi, is how much an antenna focuses its signal, not extra power."
           },
           {
-            "code": "omnidirectional\n  all around\ndirectional\n  narrow beam\n  patch, Yagi, dish",
-            "language": "antenna types"
-          },
-          {
             "say": "An **omnidirectional** antenna covers all around, a **directional** one a narrow beam."
-          }
-        ],
-        "say": "**Gain**, in dBi, is how much an antenna focuses its signal, not extra power. An **omnidirectional** antenna covers all around, a **directional** one a narrow beam."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "**Poor gain** can come from the wrong antenna, a damaged cable, or one antenna vertical and the other horizontal."
           },
           {
             "say": "A point-to-point dish aimed even a few degrees off can lose most of the signal."
+          },
+          {
+            "table": {
+              "head": [
+                "Antenna",
+                "Covers"
+              ],
+              "rows": [
+                [
+                  "omnidirectional",
+                  "all around"
+                ],
+                [
+                  "directional",
+                  "a narrow beam: patch, Yagi, dish"
+                ]
+              ]
+            },
+            "caption": "antenna types"
           }
         ],
-        "say": "**Poor gain** can come from the wrong antenna, a damaged cable, or one antenna vertical and the other horizontal. A point-to-point dish aimed even a few degrees off can lose most of the signal."
+        "say": "**Gain**, in dBi, is how much an antenna focuses its signal, not extra power. An **omnidirectional** antenna covers all around, a **directional** one a narrow beam. **Poor gain** can come from the wrong antenna, a damaged cable, or one antenna vertical and the other horizontal. A point-to-point dish aimed even a few degrees off can lose most of the signal."
       }
     ],
     "outro": "Next, Brom's laptop won't let go of an access point down the hall. Pick the change that helps it move to the nearer one."
@@ -1842,8 +2046,13 @@
             "say": "**EIRP** is what actually leaves the antenna: transmit power plus gain, minus cable loss."
           },
           {
-            "code": "transmit power   17 dBm\nantenna gain    +6 dBi\ncable loss      -2 dB\nEIRP            21 dBm",
-            "language": "EIRP worked out"
+            "chain": [
+              "Transmit power: 17 dBm",
+              "Add antenna gain: +6 dBi",
+              "Subtract cable loss: -2 dB",
+              "EIRP: 21 dBm"
+            ],
+            "caption": "EIRP worked out"
           },
           {
             "say": "Regulators cap EIRP, so a high-gain antenna can mean turning the radio down."
