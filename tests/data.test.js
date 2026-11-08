@@ -2023,7 +2023,7 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
   const SLIDES = setId => /^securityx_|^netplus_|^techplus_/.test(setId);
   const wordCount = s => s.replace(/[*`]/g, '').split(/\s+/).filter(Boolean).length;
 
-  it('a rewritten set keeps each frame one slide: short beats, five new terms at most, 70 words, a fresh start', () => {
+  it('a rewritten set keeps each frame one slide: short beats, few new terms, 70 words, a fresh start', () => {
     const bad = [];
     for (const setId of index.filter(LIGHT_FRAMES)) {
       loadJSON(`question_sets/${setId}`).forEach((q, i) => {
@@ -2039,7 +2039,11 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
           const first = step.beats?.length ? step.beats.find(b => typeof b.say === 'string')?.say : step.say;
           if (SLIDES(setId) && s > 0 && first && /^(It|Its|This|That|These|Those|They|Their|Them)\b/.test(first)) bad.push(`${setId}[${i}] step ${s + 1}: the frame opens on "${first.split(' ').slice(0, 4).join(' ')}…", which points back at a cleared screen`);
           const terms = says.reduce((n, b) => n + (b.match(/\*\*[^*]+\*\*/g) || []).length, 0);
-          if (terms > 5) bad.push(`${setId}[${i}] step ${s + 1}: ${terms} new terms in one frame; teach fewer at once`);
+          // A table, list or chain sets parallel terms out where the eye can compare them, so such a
+          // frame may introduce more of them.
+          const laidOut = (step.beats || []).some(b => b.table || Array.isArray(b.list) || Array.isArray(b.chain));
+          const termCap = laidOut ? 8 : 5;
+          if (terms > termCap) bad.push(`${setId}[${i}] step ${s + 1}: ${terms} new terms in one frame (at most ${termCap}); teach fewer at once`);
           for (const b of says) {
             if (wordCount(b) > 25) bad.push(`${setId}[${i}] step ${s + 1}: a beat of ${wordCount(b)} words: ${b.slice(0, 50)}`);
             if ((b.match(/\*\*[^*]+\*\*/g) || []).length > 2) bad.push(`${setId}[${i}] step ${s + 1}: more than two new terms in a beat: ${b.slice(0, 50)}`);
