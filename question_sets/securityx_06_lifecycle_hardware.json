@@ -37,8 +37,16 @@
             "say": "\"The system must be secure\" is not a requirement, because nothing can check it."
           },
           {
-            "code": "Every HTTP response must\ninclude\nStrict-Transport-Security\nwith max-age of at least\n31536000 seconds\n(365 days).",
-            "language": "requirement with acceptance criteria"
+            "document": {
+              "header": [
+                [
+                  "Type",
+                  "Security requirement with acceptance criteria"
+                ]
+              ],
+              "body": "Every HTTP response must include Strict-Transport-Security with max-age of at least 31536000 seconds (365 days)."
+            },
+            "caption": "a requirement a build can test"
           },
           {
             "say": "A build can verify that one automatically."
@@ -66,11 +74,16 @@
       {
         "beats": [
           {
-            "code": "input validation\nerror handling\nlogging format\nallowed cryptography",
-            "language": "what standards cover"
+            "say": "**Coding standards** are the team's written rules for how code is written."
           },
           {
-            "say": "**Coding standards** are the team's written rules for how code is written."
+            "list": [
+              "input validation",
+              "error handling",
+              "logging format",
+              "allowed cryptography"
+            ],
+            "caption": "what standards cover"
           },
           {
             "say": "A **linter** enforces them automatically, before the code ever runs."
@@ -82,23 +95,14 @@
         "say": "**Coding standards** are the team's written rules for how code is written. A **linter** enforces them automatically, before the code ever runs. It flags hardcoded secrets, missing sanitization or deprecated crypto. A flaw caught as it is typed is the cheapest there is."
       },
       {
-        "say": "A linter checks code; it cannot make a second person read it. **Branch protection** is a set of rules the code host enforces before any change reaches the `main` branch.",
         "beats": [
           {
-            "say": "A linter checks code; it cannot make a second person read it."
-          },
-          {
-            "say": "**Branch protection** is a set of rules the code host enforces before any change reaches the `main` branch."
+            "say": "A linter cannot make a second person read code, so **branch protection** sets rules the code host enforces before any change reaches `main`."
           },
           {
             "code": "branch: main\n  require_pull_request:       true\n  required_approving_reviews: 1\n  required_status_checks:     [build, lint, unit-tests]\n  require_signed_commits:     true\n  enforce_admins:             true",
             "language": "branch protection rule"
-          }
-        ]
-      },
-      {
-        "say": "No direct pushes to `main`. A **pull request**, a proposed change others review, needs one reviewer and passing build, lint and test checks. Each **commit**, a saved change, is signed with the developer's GPG or SSH key, so authorship cannot be spoofed.",
-        "beats": [
+          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; nodesep=0.4; ranksep=0.3; c [label=\"signed commit\"]; pr [label=\"pull request\"]; g [label=\"1 review +\\nbuild, lint, tests\"]; m [label=\"main\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; c -> pr; pr -> g; g -> m; c -> m [style=dashed, arrowhead=tee, label=\" direct push,\\n refused\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
@@ -114,6 +118,7 @@
             "say": "Each **commit**, a saved change, is signed with the developer's GPG or SSH key, so authorship cannot be spoofed."
           }
         ],
+        "say": "A linter cannot make a second person read code, so **branch protection** sets rules the code host enforces before any change reaches `main`. No direct pushes to `main`. A **pull request**, a proposed change others review, needs one reviewer and passing build, lint and test checks. Each **commit**, a saved change, is signed with the developer's GPG or SSH key, so authorship cannot be spoofed.",
         "check": {
           "prompt": "Platform administrators can usually bypass rules like these. What should a bypass trigger?",
           "answer": "A logged event that someone reviews, or a second approver",
@@ -269,11 +274,15 @@
       {
         "beats": [
           {
-            "code": "Recurring finding becomes\n a lint rule\n a regression test\n a training topic",
-            "language": "closing the loop"
+            "say": "**Continuous improvement** closes the loop: a finding that keeps coming back changes the pipeline."
           },
           {
-            "say": "**Continuous improvement** closes the loop: a finding that keeps coming back changes the pipeline."
+            "list": [
+              "a lint rule",
+              "a regression test",
+              "a training topic"
+            ],
+            "caption": "a recurring finding becomes"
           },
           {
             "say": "So the pipeline tightens where the team keeps slipping."
@@ -440,24 +449,24 @@
             }
           },
           {
-            "code": "RASP costs\n latency\n one more component\n false positives that\n can break real users",
-            "language": "RASP's price"
+            "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line."
           },
           {
-            "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line."
-          }
-        ],
-        "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line."
-      },
-      {
-        "beats": [
-          {
             "say": "**Runtime application self-protection (RASP)** puts a similar agent in production, ending requests that look like injection."
+          },
+          {
+            "list": [
+              "latency",
+              "one more component",
+              "false positives that can break real users"
+            ],
+            "caption": "RASP's price"
           },
           {
             "say": "Treat RASP as one extra layer of defense, because it never replaces fixing the code."
           }
         ],
+        "say": "**Interactive application security testing (IAST)** puts an agent inside the app while tests run, so it can name the exact line. **Runtime application self-protection (RASP)** puts a similar agent in production, ending requests that look like injection. Treat RASP as one extra layer of defense, because it never replaces fixing the code.",
         "check": {
           "prompt": "An IAST agent reports nothing on the password-reset code. What is the likeliest reason?",
           "answer": "No test ever exercised that code path",
@@ -466,8 +475,7 @@
             "IAST only reads the source files"
           ],
           "why": "IAST sees only the code your tests actually run. An untested path is invisible to it, however flawed."
-        },
-        "say": "**Runtime application self-protection (RASP)** puts a similar agent in production, ending requests that look like injection. Treat RASP as one extra layer of defense, because it never replaces fixing the code."
+        }
       }
     ],
     "outro": "Next, a different team runs three of these tools on one release. Name each tool from what it saw."
@@ -507,36 +515,45 @@
     "intro": "A scanner can hand you thirty critical findings and a week to fix six, so something has to say which six come first. And for the few systems where even a clean scan isn't enough, there's a technique that goes further than testing.",
     "steps": [
       {
-        "say": "**Vulnerability analysis** turns findings into a fix order. Each known flaw has a public ID, a **CVE**; **CVSS** scores how severe it is. **EPSS** scores how likely it is to be exploited. CISA, the US cyber agency, keeps a **Known Exploited Vulnerabilities (KEV)** list of flaws attackers use now.",
         "beats": [
-          {
-            "code": "CVSS  how severe\nEPSS  how likely to be\n      exploited\nKEV   CISA list of flaws\n      exploited now\nReachable here?",
-            "language": "ranking a fix order"
-          },
           {
             "say": "**Vulnerability analysis** turns findings into a fix order."
           },
           {
-            "say": "Each known flaw has a public ID, a **CVE**; **CVSS** scores how severe it is."
+            "say": "Each known flaw has a public ID, a **CVE**, and four questions rank it."
           },
           {
-            "say": "**EPSS** scores how likely it is to be exploited."
-          },
-          {
-            "say": "CISA, the US cyber agency, keeps a **Known Exploited Vulnerabilities (KEV)** list of flaws attackers use now."
-          }
-        ]
-      },
-      {
-        "say": "Last, ask whether the flaw is reachable in your deployment. Not every critical CVE is exploitable where you run it: the vulnerable code may never be called.",
-        "beats": [
-          {
-            "say": "Last, ask whether the flaw is reachable in your deployment."
+            "table": {
+              "head": [
+                "Signal",
+                "Tells you"
+              ],
+              "rows": [
+                [
+                  "**CVSS**",
+                  "how severe the flaw is"
+                ],
+                [
+                  "**EPSS**",
+                  "how likely it is to be exploited"
+                ],
+                [
+                  "**Known Exploited Vulnerabilities (KEV)**",
+                  "CISA's list of flaws attackers use now (CISA is the US cyber agency)"
+                ],
+                [
+                  "Reachable here?",
+                  "whether the vulnerable code is ever called where you run it"
+                ]
+              ]
+            },
+            "caption": "ranking a fix order"
           },
           {
             "say": "Not every critical CVE is exploitable where you run it: the vulnerable code may never be called."
           }
         ],
+        "say": "**Vulnerability analysis** turns findings into a fix order. Each known flaw has a public ID, a **CVE**, and four questions rank it. Not every critical CVE is exploitable where you run it: the vulnerable code may never be called.",
         "check": {
           "prompt": "Two third-party flaws share a critical CVSS score, and only one is on CISA's KEV list. Everything else is equal. Which do you fix first?",
           "answer": "The one on the KEV list, since attackers are already using it",
@@ -721,26 +738,18 @@
             "say": "**Software composition analysis (SCA)** lists the third-party packages in your build."
           },
           {
-            "code": "It checks them against\n vulnerability databases\n license rules\n end-of-life dates",
-            "language": "what SCA checks"
+            "list": [
+              "vulnerability databases",
+              "license rules",
+              "end-of-life dates"
+            ],
+            "caption": "what SCA checks against"
           },
           {
-            "say": "A **software bill of materials (SBOM)** is the machine-readable ingredient list: every component, version, license and origin."
+            "say": "A **software bill of materials (SBOM)** is the machine-readable ingredient list: every component, version, license and origin, in formats such as SPDX and CycloneDX."
           },
           {
-            "say": "Standard formats include SPDX and CycloneDX."
-          }
-        ],
-        "say": "**Software composition analysis (SCA)** lists the third-party packages in your build. A **software bill of materials (SBOM)** is the machine-readable ingredient list: every component, version, license and origin. Standard formats include SPDX and CycloneDX."
-      },
-      {
-        "say": "Packages pull in other packages, a **dependency tree**. A package you never chose, pulled in by another, is a **transitive dependency**. This SBOM excerpt records who depends on whom.",
-        "beats": [
-          {
-            "say": "Packages pull in other packages, a **dependency tree**."
-          },
-          {
-            "say": "A package you never chose, pulled in by another, is a **transitive dependency**."
+            "say": "Packages pull in other packages, a **dependency tree**; a package you never chose, pulled in by another, is a **transitive dependency**."
           },
           {
             "say": "This SBOM excerpt records who depends on whom."
@@ -750,6 +759,7 @@
             "language": "SBOM excerpt (CycloneDX)"
           }
         ],
+        "say": "**Software composition analysis (SCA)** lists the third-party packages in your build. A **software bill of materials (SBOM)** is the machine-readable ingredient list: every component, version, license and origin, in formats such as SPDX and CycloneDX. Packages pull in other packages, a **dependency tree**; a package you never chose, pulled in by another, is a **transitive dependency**. This SBOM excerpt records who depends on whom.",
         "check": {
           "prompt": "An advisory names `quillqs` 1.0.3. The app's own manifest never mentions it. Is the app exposed?",
           "answer": "Yes, it arrives through `lanternrouter`",
@@ -785,11 +795,16 @@
             }
           },
           {
-            "code": "Outside code\n open-source packages\n commercial software\n SDKs\n contractor code",
-            "language": "supply chain scope"
+            "say": "**Software supply chain risk management** covers code from outside."
           },
           {
-            "say": "**Software supply chain risk management** covers code from outside."
+            "list": [
+              "open-source packages",
+              "commercial software",
+              "SDKs",
+              "contractor code"
+            ],
+            "caption": "outside code"
           },
           {
             "say": "**Dependency pinning** fixes a known-good version in a lockfile that records hashes, so updates happen on purpose."
@@ -801,12 +816,7 @@
         "say": "**Software supply chain risk management** covers code from outside. **Dependency pinning** fixes a known-good version in a lockfile that records hashes, so updates happen on purpose. **Signed artifacts** prove a package or image came from its publisher unaltered."
       },
       {
-        "say": "**Provenance** records where code came from, who built it and on what infrastructure. The **SLSA** framework (Supply-chain Levels for Software Artifacts) grades how trustworthy a build's provenance is. **Vendor security assessments** belong in procurement. NIST's Secure Software Development Framework (SSDF) treats provenance, dependency control and supplier review as core practice.",
         "beats": [
-          {
-            "code": "Ask suppliers\n vulnerability disclosure\n program?\n SBOMs shipped?\n critical flaws patched\n quickly?",
-            "language": "vendor assessment"
-          },
           {
             "say": "**Provenance** records where code came from, who built it and on what infrastructure."
           },
@@ -817,9 +827,18 @@
             "say": "**Vendor security assessments** belong in procurement."
           },
           {
+            "list": [
+              "Do you run a vulnerability disclosure program?",
+              "Do you ship SBOMs?",
+              "Do you patch critical flaws quickly?"
+            ],
+            "caption": "ask suppliers"
+          },
+          {
             "say": "NIST's Secure Software Development Framework (SSDF) treats provenance, dependency control and supplier review as core practice."
           }
         ],
+        "say": "**Provenance** records where code came from, who built it and on what infrastructure. The **SLSA** framework (Supply-chain Levels for Software Artifacts) grades how trustworthy a build's provenance is. **Vendor security assessments** belong in procurement. NIST's Secure Software Development Framework (SSDF) treats provenance, dependency control and supplier review as core practice.",
         "check": {
           "prompt": "SolarWinds customers installed an Orion update that carried a valid vendor signature yet contained attacker code. What did the signature fail to show?",
           "answer": "That the build environment itself was clean",
@@ -833,20 +852,24 @@
       {
         "beats": [
           {
-            "code": "Compensating controls\n segmentation\n closer monitoring\n fewer inbound paths\n\nWindows 10: support\n ended October 2025",
-            "language": "end of life"
-          },
-          {
-            "say": "Every product has an **end-of-life (EOL)** date, after which its vendor ships no security fixes."
+            "say": "Every product has an **end-of-life (EOL)** date, after which its vendor ships no security fixes, as when Windows 10 support ended in October 2025."
           },
           {
             "say": "Record the EOL date, the replacement path and the **compensating controls** for if replacement slips."
           },
           {
+            "list": [
+              "segmentation",
+              "closer monitoring",
+              "fewer inbound paths"
+            ],
+            "caption": "compensating controls"
+          },
+          {
             "say": "Keeping an EOL system running is a **risk acceptance**: quantify it, get a senior executive to sign it, revisit it."
           }
         ],
-        "say": "Every product has an **end-of-life (EOL)** date, after which its vendor ships no security fixes. Record the EOL date, the replacement path and the **compensating controls** for if replacement slips. Keeping an EOL system running is a **risk acceptance**: quantify it, get a senior executive to sign it, revisit it."
+        "say": "Every product has an **end-of-life (EOL)** date, after which its vendor ships no security fixes, as when Windows 10 support ended in October 2025. Record the EOL date, the replacement path and the **compensating controls** for if replacement slips. Keeping an EOL system running is a **risk acceptance**: quantify it, get a senior executive to sign it, revisit it."
       }
     ],
     "outro": "Next, an advisory comes out while a vendor's SBOM is open in front of you. Decide whether the vendor's product is exposed."
@@ -985,10 +1008,6 @@
       {
         "beats": [
           {
-            "code": "A TPM can\n make keys it never\n  exports\n hash each boot step\n  into PCRs\n seal a key to them",
-            "language": "what a TPM does"
-          },
-          {
             "say": "A **Trusted Platform Module (TPM)** is a security chip in most laptops and servers."
           },
           {
@@ -1004,22 +1023,34 @@
         "say": "A **Trusted Platform Module (TPM)** is a security chip in most laptops and servers. Keys made inside it cannot be extracted. Its **Platform Configuration Registers (PCRs)** hold a hash of each boot step. It can **seal** a key to those hashes: change the boot path and it withholds the key."
       },
       {
-        "say": "A **Hardware Security Module (HSM)** is shared, hardened hardware for high-value cryptography, such as root and signing keys. If someone opens it, it **zeroizes**: it destroys its stored keys. Where a TPM guards one device, an HSM serves a whole organization.",
         "beats": [
           {
-            "code": "HSM  shared, hardened box\n     for root and signing\n     keys\nTPM  one chip per device",
-            "language": "HSM and TPM"
-          },
-          {
-            "say": "A **Hardware Security Module (HSM)** is shared, hardened hardware for high-value cryptography, such as root and signing keys."
+            "say": "A **Hardware Security Module (HSM)** is hardened hardware for high-value cryptography, such as root and signing keys."
           },
           {
             "say": "If someone opens it, it **zeroizes**: it destroys its stored keys."
           },
           {
-            "say": "Where a TPM guards one device, an HSM serves a whole organization."
+            "table": {
+              "head": [
+                "Device",
+                "Role"
+              ],
+              "rows": [
+                [
+                  "HSM",
+                  "a shared, hardened box for root and signing keys; serves a whole organization"
+                ],
+                [
+                  "TPM",
+                  "one chip per device"
+                ]
+              ]
+            },
+            "caption": "HSM and TPM"
           }
-        ]
+        ],
+        "say": "A **Hardware Security Module (HSM)** is hardened hardware for high-value cryptography, such as root and signing keys. If someone opens it, it **zeroizes**: it destroys its stored keys."
       }
     ],
     "outro": "Next, new servers are waiting to be racked. Write the command that prints their firmware's hash, so you can compare it with the vendor's."
@@ -1078,14 +1109,16 @@
         ]
       },
       {
-        "say": "The hypervisor enforces **virtual hardware** controls that a guest cannot override. Promiscuous mode lets a network card read traffic meant for others; the virtual switch can forbid it. It can also encrypt VM disks with keys from an external key manager, so a copy of the storage file exposes nothing.",
         "beats": [
           {
-            "code": "Hypervisor enforces\n memory isolation\n  between VMs\n virtual-switch rules:\n  MAC pinning, no\n  promiscuous mode",
-            "language": "virtual hardware"
+            "say": "The hypervisor enforces **virtual hardware** controls that a guest cannot override."
           },
           {
-            "say": "The hypervisor enforces **virtual hardware** controls that a guest cannot override."
+            "list": [
+              "memory isolation between VMs",
+              "virtual-switch rules: MAC pinning, no promiscuous mode"
+            ],
+            "caption": "what the hypervisor enforces"
           },
           {
             "say": "Promiscuous mode lets a network card read traffic meant for others; the virtual switch can forbid it."
@@ -1094,6 +1127,7 @@
             "say": "It can also encrypt VM disks with keys from an external key manager, so a copy of the storage file exposes nothing."
           }
         ],
+        "say": "The hypervisor enforces **virtual hardware** controls that a guest cannot override. Promiscuous mode lets a network card read traffic meant for others; the virtual switch can forbid it. It can also encrypt VM disks with keys from an external key manager, so a copy of the storage file exposes nothing.",
         "check": {
           "prompt": "A tenant with root inside a VM turns on promiscuous mode for its virtual NIC. What decides whether it sees other VMs' traffic?",
           "answer": "The hypervisor's virtual-switch policy",
@@ -1105,22 +1139,41 @@
         }
       },
       {
-        "say": "A **security coprocessor** keeps keys in a separate chip, so the main CPU never sees them. A **secure enclave**, such as Intel SGX, keeps memory encrypted in RAM, so even the OS and hypervisor cannot read it. **Confidential computing** shields a whole VM, even from the cloud operator.",
         "beats": [
           {
-            "code": "Coprocessors\n Apple Secure Enclave\n Google Titan\n Microsoft Pluton\nSmall IoT devices\n a secure element\nWhole-VM shielding\n AMD SEV-SNP, Intel TDX\nRule: make keys inside\n the hardware",
-            "language": "hardware that guards keys"
-          },
-          {
-            "say": "A **security coprocessor** keeps keys in a separate chip, so the main CPU never sees them."
+            "say": "A **security coprocessor** keeps keys in a separate chip, so the main CPU never sees them. The rule is to make keys inside the hardware."
           },
           {
             "say": "A **secure enclave**, such as Intel SGX, keeps memory encrypted in RAM, so even the OS and hypervisor cannot read it."
           },
           {
             "say": "**Confidential computing** shields a whole VM, even from the cloud operator."
+          },
+          {
+            "table": {
+              "head": [
+                "Kind",
+                "Examples"
+              ],
+              "rows": [
+                [
+                  "Coprocessors",
+                  "Apple Secure Enclave, Google Titan, Microsoft Pluton"
+                ],
+                [
+                  "Small IoT devices",
+                  "a secure element"
+                ],
+                [
+                  "Whole-VM shielding",
+                  "AMD SEV-SNP, Intel TDX"
+                ]
+              ]
+            },
+            "caption": "hardware that guards keys"
           }
-        ]
+        ],
+        "say": "A **security coprocessor** keeps keys in a separate chip, so the main CPU never sees them. The rule is to make keys inside the hardware. A **secure enclave**, such as Intel SGX, keeps memory encrypted in RAM, so even the OS and hypervisor cannot read it. **Confidential computing** shields a whole VM, even from the cloud operator."
       }
     ],
     "outro": "Next, a design review assigns three roots of trust to three kinds of hardware. Fill in each blank."
@@ -1294,7 +1347,6 @@
         }
       },
       {
-        "say": "Secure Boot is enforced by the firmware, so it cannot vouch for the firmware itself. A **UEFI implant** is malware inside that firmware: it survives OS reinstalls and drive replacement. **LoJax**, found in 2018 and linked to the APT28 group, was the first UEFI rootkit seen in the wild.",
         "beats": [
           {
             "say": "Secure Boot is enforced by the firmware, so it cannot vouch for the firmware itself."
@@ -1304,23 +1356,22 @@
           },
           {
             "say": "**LoJax**, found in 2018 and linked to the APT28 group, was the first UEFI rootkit seen in the wild."
-          },
-          {
-            "code": "Defenses\n signed firmware updates\n from verified sources\n admin-password and\n physical-presence locks",
-            "language": "firmware defenses"
           }
-        ]
+        ],
+        "say": "Secure Boot is enforced by the firmware, so it cannot vouch for the firmware itself. A **UEFI implant** is malware inside that firmware: it survives OS reinstalls and drive replacement. **LoJax**, found in 2018 and linked to the APT28 group, was the first UEFI rootkit seen in the wild."
       },
       {
         "beats": [
           {
             "say": "**Intel Boot Guard** checks the first boot block against the manufacturer's key, whose hash is fused into the chipset."
-          }
-        ],
-        "say": "**Intel Boot Guard** checks the first boot block against the manufacturer's key, whose hash is fused into the chipset."
-      },
-      {
-        "beats": [
+          },
+          {
+            "list": [
+              "signed firmware updates from verified sources",
+              "admin-password and physical-presence locks"
+            ],
+            "caption": "firmware defenses"
+          },
           {
             "say": "**Self-healing hardware** restores a known-good image. NIST SP 800-193 says to protect, detect and recover."
           },
@@ -1328,7 +1379,7 @@
             "say": "HP Sure Start or a server's **baseboard management controller (BMC)** can reflash firmware from a golden copy."
           }
         ],
-        "say": "**Self-healing hardware** restores a known-good image. NIST SP 800-193 says to protect, detect and recover. HP Sure Start or a server's **baseboard management controller (BMC)** can reflash firmware from a golden copy."
+        "say": "**Intel Boot Guard** checks the first boot block against the manufacturer's key, whose hash is fused into the chipset. **Self-healing hardware** restores a known-good image. NIST SP 800-193 says to protect, detect and recover. HP Sure Start or a server's **baseboard management controller (BMC)** can reflash firmware from a golden copy."
       }
     ],
     "outro": "Next is a laptop with Boot Guard and Secure Boot turned on. Put its chain of trust in order, from power-on to a running system."
@@ -1370,7 +1421,6 @@
     "intro": "A record of how a machine booted does nothing until someone reads it, and the reader must be sure the record is real. That job falls to a second party, and to a signature the machine itself can't forge.",
     "steps": [
       {
-        "say": "A verifier asks the TPM for a signed **quote**, a report of its PCR values. It compares the quote with known-good values, and this is called **remote attestation**.",
         "beats": [
           {
             "say": "A verifier asks the TPM for a signed **quote**, a report of its PCR values."
@@ -1383,10 +1433,30 @@
             "language": "attestation result"
           },
           {
-            "code": "PCR 0  core UEFI firmware\nPCR 4  boot manager\nPCR 7  Secure Boot state",
-            "language": "what the PCRs cover"
+            "table": {
+              "head": [
+                "PCR",
+                "Covers"
+              ],
+              "rows": [
+                [
+                  "PCR 0",
+                  "core UEFI firmware"
+                ],
+                [
+                  "PCR 4",
+                  "boot manager"
+                ],
+                [
+                  "PCR 7",
+                  "Secure Boot state"
+                ]
+              ]
+            },
+            "caption": "what the PCRs cover"
           }
         ],
+        "say": "A verifier asks the TPM for a signed **quote**, a report of its PCR values. It compares the quote with known-good values, and this is called **remote attestation**.",
         "check": {
           "prompt": "What does this quote tell the verifier?",
           "answer": "The boot manager differs from the known-good one",
@@ -1493,7 +1563,6 @@
     "intro": "Most controls assume the attacker is out on the network somewhere. Give that attacker a few minutes in the same room as the machine, and they can reach parts of it that no software is watching. The quietest trick hides on a cable between two parts.",
     "steps": [
       {
-        "say": "**Shimming** slips a thin layer between two components to intercept or alter what passes. A board inline on a keyboard cable can log keystrokes. A **HID attack** makes a USB device pose as a keyboard; **BadUSB** rewrites a device's firmware so it can pose as anything.",
         "beats": [
           {
             "say": "**Shimming** slips a thin layer between two components to intercept or alter what passes."
@@ -1502,22 +1571,47 @@
             "say": "A board inline on a keyboard cable can log keystrokes."
           },
           {
-            "say": "A **HID attack** makes a USB device pose as a keyboard; **BadUSB** rewrites a device's firmware so it can pose as anything."
+            "say": "USB devices can pose as something they are not."
           },
           {
-            "code": "HID attack\n device poses as a\n keyboard (Rubber\n Ducky), types a payload\n faster than you can see\nBadUSB\n rewritten firmware lets\n it pose as any class\nBoot shim: vendor-signed,\n legitimate. A malicious\n shim is not.",
-            "language": "shims and USB tricks"
+            "table": {
+              "head": [
+                "Trick",
+                "How it works"
+              ],
+              "rows": [
+                [
+                  "**HID attack**",
+                  "a device poses as a keyboard (a Rubber Ducky) and types a payload faster than you can see"
+                ],
+                [
+                  "**BadUSB**",
+                  "rewritten firmware lets a device pose as any class of device"
+                ],
+                [
+                  "Boot shim",
+                  "vendor-signed and legitimate; a malicious shim is not"
+                ]
+              ]
+            },
+            "caption": "shims and USB tricks"
           }
-        ]
+        ],
+        "say": "**Shimming** slips a thin layer between two components to intercept or alter what passes. A board inline on a keyboard cable can log keystrokes. USB devices can pose as something they are not."
       },
       {
         "beats": [
           {
-            "code": "Disable unused ports\nUSB allow listing\nData blockers, or\n charge-only cables\nLock ports (high\n security)",
-            "language": "USB controls"
+            "say": "**USB device allow listing** recognizes only approved device identifiers."
           },
           {
-            "say": "**USB device allow listing** recognizes only approved device identifiers."
+            "list": [
+              "Disable unused ports",
+              "USB allow listing",
+              "Data blockers, or charge-only cables",
+              "Lock ports (high security)"
+            ],
+            "caption": "USB controls"
           },
           {
             "say": "The **evil maid attack** is brief access to an unattended, powered-off laptop: boot a USB stick, plant a bootkit or read the disk."
@@ -1545,11 +1639,26 @@
       {
         "beats": [
           {
-            "code": "SED claims: verify them,\n or layer host-based\n encryption on top\nEvil maid defenses\n Secure and Measured\n Boot, TPM plus PIN\n intrusion switch, seals",
-            "language": "defenses"
+            "say": "An SED trusts its own firmware completely, and some drives reported encryption as active while data stayed recoverable."
           },
           {
-            "say": "An SED trusts its own firmware completely, and some drives reported encryption as active while data stayed recoverable."
+            "table": {
+              "head": [
+                "Threat",
+                "Defenses"
+              ],
+              "rows": [
+                [
+                  "SED claims",
+                  "verify them, or layer host-based encryption on top"
+                ],
+                [
+                  "Evil maid",
+                  "Secure and Measured Boot, TPM plus PIN, intrusion switch, seals"
+                ]
+              ]
+            },
+            "caption": "defenses"
           },
           {
             "say": "A **pre-boot PIN** is typed before the OS starts, and unlocks the TPM's key."
@@ -1607,14 +1716,18 @@
         ]
       },
       {
-        "say": "A **cold boot attack** dumps RAM after power-off, because DRAM keeps its contents for a while. TPM sealing cannot stop a cold boot: the unlocked disk key sits in RAM. Shutting down, not sleeping, clears the key from RAM.",
         "beats": [
           {
-            "code": "Cold boot defenses\n hardware memory\n  encryption (SME, TME)\n wipe memory at restart\n soldered RAM\n shut down, not sleep",
-            "language": "against cold boot"
+            "say": "A **cold boot attack** dumps RAM after power-off, because DRAM keeps its contents for a while."
           },
           {
-            "say": "A **cold boot attack** dumps RAM after power-off, because DRAM keeps its contents for a while."
+            "list": [
+              "hardware memory encryption (SME, TME)",
+              "wipe memory at restart",
+              "soldered RAM",
+              "shut down, not sleep"
+            ],
+            "caption": "cold boot defenses"
           },
           {
             "say": "TPM sealing cannot stop a cold boot: the unlocked disk key sits in RAM."
@@ -1622,33 +1735,48 @@
           {
             "say": "Shutting down, not sleeping, clears the key from RAM."
           }
-        ]
+        ],
+        "say": "A **cold boot attack** dumps RAM after power-off, because DRAM keeps its contents for a while. TPM sealing cannot stop a cold boot: the unlocked disk key sits in RAM. Shutting down, not sleeping, clears the key from RAM."
       },
       {
-        "say": "**Rowhammer** hammers one DRAM row until bits flip in its neighbor, corrupting memory the attacker cannot touch. **EMI**, interference, disrupts electronics; an **EMP**, a pulse, can destroy circuits.",
         "beats": [
           {
             "say": "**Rowhammer** hammers one DRAM row until bits flip in its neighbor, corrupting memory the attacker cannot touch."
           },
           {
             "say": "**EMI**, interference, disrupts electronics; an **EMP**, a pulse, can destroy circuits."
-          }
-        ]
-      },
-      {
-        "say": "**TEMPEST** is information leaking through emissions. Shielded rooms, cages and certified gear defend against all three.",
-        "beats": [
-          {
-            "code": "EMI, EMP\n Faraday cages, shielded\n rooms, hardened gear\nTEMPEST\n certified, shielded gear\nOther tamper signals\n PCR mismatch; an HSM\n that senses heat,\n voltage or penetration\n zeroizes its keys",
-            "language": "radio and tamper"
           },
           {
             "say": "**TEMPEST** is information leaking through emissions."
           },
           {
             "say": "Shielded rooms, cages and certified gear defend against all three."
+          },
+          {
+            "table": {
+              "head": [
+                "Threat",
+                "Defense"
+              ],
+              "rows": [
+                [
+                  "EMI, EMP",
+                  "Faraday cages, shielded rooms, hardened gear"
+                ],
+                [
+                  "TEMPEST",
+                  "certified, shielded gear"
+                ],
+                [
+                  "Other tamper signals",
+                  "PCR mismatch; an HSM that senses heat, voltage or penetration zeroizes its keys"
+                ]
+              ]
+            },
+            "caption": "radio and tamper"
           }
         ],
+        "say": "**Rowhammer** hammers one DRAM row until bits flip in its neighbor, corrupting memory the attacker cannot touch. **EMI**, interference, disrupts electronics; an **EMP**, a pulse, can destroy circuits. **TEMPEST** is information leaking through emissions. Shielded rooms, cages and certified gear defend against all three.",
         "check": {
           "prompt": "A docking station quietly copies a laptop's RAM while the CPU is busy elsewhere. Which attack is this?",
           "answer": "A DMA attack",

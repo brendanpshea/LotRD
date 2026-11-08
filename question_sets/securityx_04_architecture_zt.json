@@ -14,17 +14,23 @@
             "say": "Before placing a control, ask four questions about the spot."
           },
           {
-            "say": "A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries."
-          },
-          {
-            "code": "1 Boundary: do trusted\n  and untrusted traffic\n  meet here?\n2 Tolerance: can the\n  business absorb delay\n  or blocking?\n3 Visibility: does it\n  show useful traffic,\n  or just noise?\n4 Blast radius: if this\n  layer fails, how much\n  is exposed?",
-            "language": "placement questions"
+            "list": [
+              "Boundary: do trusted and untrusted traffic meet here?",
+              "Tolerance: can the business absorb delay or blocking?",
+              "Visibility: does it show useful traffic, or just noise?",
+              "Blast radius: if this layer fails, how much is exposed?"
+            ],
+            "ordered": true,
+            "caption": "four placement questions"
           }
         ],
-        "say": "A **trust boundary** is where traffic you trust meets traffic you don't. Before placing a control, ask four questions about the spot. A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries."
+        "say": "A **trust boundary** is where traffic you trust meets traffic you don't. Before placing a control, ask four questions about the spot."
       },
       {
         "beats": [
+          {
+            "say": "A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries."
+          },
           {
             "say": "Firewalls sit between the internet and a **DMZ**, a zone for public-facing servers."
           },
@@ -32,10 +38,10 @@
             "say": "Others guard an **extranet**, a zone shared with partners, and a sensitive data zone."
           },
           {
-            "say": "It does not understand application logic, so as the only layer it is one wall with nothing behind it."
+            "say": "A firewall does not understand application logic, so as the only layer it is one wall with nothing behind it."
           }
         ],
-        "say": "Firewalls sit between the internet and a **DMZ**, a zone for public-facing servers. Others guard an **extranet**, a zone shared with partners, and a sensitive data zone. It does not understand application logic, so as the only layer it is one wall with nothing behind it."
+        "say": "A **firewall** enforces broad allow and deny rules, so it belongs on clear boundaries. Firewalls sit between the internet and a **DMZ**, a zone for public-facing servers. Others guard an **extranet**, a zone shared with partners, and a sensitive data zone. A firewall does not understand application logic, so as the only layer it is one wall with nothing behind it."
       },
       {
         "beats": [
@@ -216,8 +222,23 @@
             "say": "Either can decrypt **TLS**, the encryption on web traffic, so it can inspect what passes."
           },
           {
-            "code": "forward proxy:\n  enforce acceptable use\n  inspect TLS (encryption)\n  sandbox downloads\n  stop data leaving\nreverse proxy:\n  terminate TLS\n  spread requests\n  hide the backend",
-            "language": "what each proxy does"
+            "table": {
+              "head": [
+                "Proxy",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "forward proxy",
+                  "enforce acceptable use, inspect TLS, sandbox downloads, stop data leaving"
+                ],
+                [
+                  "reverse proxy",
+                  "terminate TLS, spread requests, hide the backend"
+                ]
+              ]
+            },
+            "caption": "what each proxy does"
           }
         ],
         "say": "A **forward proxy** stands in front of users: their outbound requests pass through it. A **reverse proxy** stands in front of servers: inbound requests reach it first. Either can decrypt **TLS**, the encryption on web traffic, so it can inspect what passes."
@@ -225,33 +246,19 @@
       {
         "beats": [
           {
-            "say": "A **web application firewall (WAF)** reads the web requests themselves."
+            "say": "A **web application firewall (WAF)** reads web requests themselves, while an edge firewall sees only addresses and ports."
           },
           {
-            "say": "An edge firewall works only from addresses and ports, so it misses web attacks."
+            "say": "It catches **SQL injection**, which slips database commands into a form field, and **cross-site scripting**, which makes a page run an attacker's script."
           },
-          {
-            "say": "A WAF catches **SQL injection**, which slips database commands into a form field."
-          },
-          {
-            "say": "It also catches **cross-site scripting**, which makes a page run an attacker's script."
-          }
-        ],
-        "say": "A **web application firewall (WAF)** reads the web requests themselves. An edge firewall works only from addresses and ports, so it misses web attacks. A WAF catches **SQL injection**, which slips database commands into a form field. It also catches **cross-site scripting**, which makes a page run an attacker's script."
-      },
-      {
-        "beats": [
           {
             "say": "It also spots **bots**, scripts that hammer a login or checkout page."
           },
           {
-            "say": "Put it in front of web apps and portals that take untrusted input."
-          },
-          {
-            "say": "With default rules it mostly makes noise."
+            "say": "Put it in front of web apps and portals taking untrusted input. Default rules mostly make noise."
           }
         ],
-        "say": "It also spots **bots**, scripts that hammer a login or checkout page. Put it in front of web apps and portals that take untrusted input. With default rules it mostly makes noise."
+        "say": "A **web application firewall (WAF)** reads web requests themselves, while an edge firewall sees only addresses and ports. It catches **SQL injection**, which slips database commands into a form field, and **cross-site scripting**, which makes a page run an attacker's script. It also spots **bots**, scripts that hammer a login or checkout page. Put it in front of web apps and portals taking untrusted input. Default rules mostly make noise."
       },
       {
         "beats": [
@@ -259,20 +266,19 @@
             "say": "An **API** is how one program calls another for data or actions."
           },
           {
-            "say": "An **API gateway** fronts those calls from mobile apps, partners and automations."
+            "say": "An **API gateway** fronts those calls from mobile apps, partners and automations, and is a programmable trust boundary, not just another web page."
           },
           {
-            "say": "An API is a programmable trust boundary, not just another web page."
+            "list": [
+              "authenticate the caller",
+              "authorize the action",
+              "validate the request (format, size)",
+              "rate-limit each caller",
+              "manage API versions",
+              "log who called what, and the result"
+            ],
+            "caption": "what an API gateway does"
           },
-          {
-            "code": "authenticate the caller\nauthorize the action\nvalidate the request\n  (format, size)\nrate-limit each caller\nmanage API versions\nlog who called what,\n  and the result",
-            "language": "API gateway jobs"
-          }
-        ],
-        "say": "An **API** is how one program calls another for data or actions. An **API gateway** fronts those calls from mobile apps, partners and automations. An API is a programmable trust boundary, not just another web page."
-      },
-      {
-        "beats": [
           {
             "say": "Callers prove who they are with a **signed token**, a digitally signed pass sent with each request."
           },
@@ -280,7 +286,7 @@
             "say": "Or with **mutual TLS**, where both sides show each other certificates, digital IDs."
           }
         ],
-        "say": "Callers prove who they are with a **signed token**, a digitally signed pass sent with each request. Or with **mutual TLS**, where both sides show each other certificates, digital IDs."
+        "say": "An **API** is how one program calls another for data or actions. An **API gateway** fronts those calls from mobile apps, partners and automations, and is a programmable trust boundary, not just another web page. Callers prove who they are with a **signed token**, a digitally signed pass sent with each request. Or with **mutual TLS**, where both sides show each other certificates, digital IDs."
       },
       {
         "beats": [
@@ -457,16 +463,8 @@
             "say": "In **active-active**, every node carries live traffic."
           },
           {
-            "say": "When one fails, the rest absorb its load, and that **failover** is fast."
+            "say": "When one fails, the rest absorb its load in a fast **failover**, though survivors need spare capacity and synced data."
           },
-          {
-            "say": "Survivors need spare capacity, and the nodes' data must stay in sync."
-          }
-        ],
-        "say": "In **active-active**, every node carries live traffic. When one fails, the rest absorb its load, and that **failover** is fast. Survivors need spare capacity, and the nodes' data must stay in sync."
-      },
-      {
-        "beats": [
           {
             "say": "In **active-passive**, a standby waits for the primary to fail, which keeps failover simple."
           },
@@ -474,7 +472,7 @@
             "say": "But a rarely tested standby can hide a **dormant failure**, such as an expired certificate."
           }
         ],
-        "say": "In **active-passive**, a standby waits for the primary to fail, which keeps failover simple. But a rarely tested standby can hide a **dormant failure**, such as an expired certificate."
+        "say": "In **active-active**, every node carries live traffic. When one fails, the rest absorb its load in a fast **failover**, though survivors need spare capacity and synced data. In **active-passive**, a standby waits for the primary to fail, which keeps failover simple. But a rarely tested standby can hide a **dormant failure**, such as an expired certificate."
       },
       {
         "beats": [
@@ -621,14 +619,32 @@
             "say": "A request through several components in a row works only when all do, so multiply their availabilities."
           },
           {
-            "code": "CDN          99.99%\nbalancer     99.95%\napp tier     99.90%\n\n0.9999 x 0.9995 x 0.9990\n  = 0.9984\nwhole path   99.84%",
-            "language": "availability in series"
-          }
-        ],
-        "say": "**Availability** is the share of time a component works. A request through several components in a row works only when all do, so multiply their availabilities."
-      },
-      {
-        "beats": [
+            "table": {
+              "head": [
+                "Component",
+                "Availability"
+              ],
+              "rows": [
+                [
+                  "CDN",
+                  "99.99%"
+                ],
+                [
+                  "balancer",
+                  "99.95%"
+                ],
+                [
+                  "app tier",
+                  "99.90%"
+                ],
+                [
+                  "whole path",
+                  "0.9999 x 0.9995 x 0.9990 = 0.9984, or 99.84%"
+                ]
+              ]
+            },
+            "caption": "availability in series"
+          },
           {
             "say": "The chain is weaker than its weakest link."
           },
@@ -636,7 +652,7 @@
             "say": "A component every path needs, with no redundant partner, is a **single point of failure**, so balancers come in redundant pairs."
           }
         ],
-        "say": "The chain is weaker than its weakest link. A component every path needs, with no redundant partner, is a **single point of failure**, so balancers come in redundant pairs."
+        "say": "**Availability** is the share of time a component works. A request through several components in a row works only when all do, so multiply their availabilities. The chain is weaker than its weakest link. A component every path needs, with no redundant partner, is a **single point of failure**, so balancers come in redundant pairs."
       },
       {
         "beats": [
@@ -644,14 +660,17 @@
             "say": "**Recoverability** is restoring business function after a failure, in a tested order."
           },
           {
+            "chain": [
+              "Restore what the system depends on",
+              "Then the system itself comes back"
+            ],
+            "caption": "restore in order"
+          },
+          {
             "say": "The **recovery time objective (RTO)** is how long restoring may take."
           },
           {
             "say": "The **recovery point objective (RPO)** is how much data loss, in time, is tolerable."
-          },
-          {
-            "code": "restore in order:\n  a system comes back\n  only after what it\n  depends on",
-            "language": "recovery"
           }
         ],
         "say": "**Recoverability** is restoring business function after a failure, in a tested order. The **recovery time objective (RTO)** is how long restoring may take. The **recovery point objective (RPO)** is how much data loss, in time, is tolerable."
@@ -908,8 +927,31 @@
             "say": "**Impossible travel** is one session in two places too far apart to be real."
           },
           {
-            "code": "08:55 login, Chicago\n  managed laptop, MFA ok\n09:10 CRM, Chicago\n  managed laptop: allowed\n11:40 billing API,\n  Bucharest, unknown host\n  same token",
-            "language": "session timeline"
+            "table": {
+              "head": [
+                "Time",
+                "Request",
+                "From where"
+              ],
+              "rows": [
+                [
+                  "08:55",
+                  "login, MFA ok",
+                  "Chicago, managed laptop"
+                ],
+                [
+                  "09:10",
+                  "CRM, allowed",
+                  "Chicago, managed laptop"
+                ],
+                [
+                  "11:40",
+                  "billing API, same token",
+                  "Bucharest, unknown host"
+                ]
+              ]
+            },
+            "caption": "the session timeline"
           }
         ],
         "say": "Trusting a session all day after one login is the old model. **Continuous authorization** keeps checking that the conditions for access still hold. **MFA** (multifactor authentication) is a second proof, like a phone prompt. **Impossible travel** is one session in two places too far apart to be real.",
@@ -951,8 +993,23 @@
             "say": "Frame each grant as a **subject-object relationship**."
           },
           {
-            "code": "subject: who asks\n  a user, a device, or\n  a program's own account\nobject: what it wants\n  file share, API,\n  console, key",
-            "language": "subject and object"
+            "table": {
+              "head": [
+                "Term",
+                "Means"
+              ],
+              "rows": [
+                [
+                  "subject",
+                  "who asks: a user, a device, or a program's own account"
+                ],
+                [
+                  "object",
+                  "what it wants: a file share, an API, a console, a key"
+                ]
+              ]
+            },
+            "caption": "subject and object"
           },
           {
             "say": "Ask what exact relationship this subject should have with this object, under which conditions, for how long."
@@ -1144,12 +1201,7 @@
           },
           {
             "say": "It is keyed to identity or labels, not network addresses, so it follows workloads that move."
-          }
-        ],
-        "say": "**Microsegmentation** goes finer: one policy per **workload**, meaning each app or server. It is keyed to identity or labels, not network addresses, so it follows workloads that move."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "**Software-defined networking (SDN)** makes that practical by setting segmentation in software."
           },
@@ -1157,7 +1209,7 @@
             "say": "It separates the **control plane**, which decides where traffic goes, from the **data plane**, which forwards it."
           }
         ],
-        "say": "**Software-defined networking (SDN)** makes that practical by setting segmentation in software. It separates the **control plane**, which decides where traffic goes, from the **data plane**, which forwards it."
+        "say": "**Microsegmentation** goes finer: one policy per **workload**, meaning each app or server. It is keyed to identity or labels, not network addresses, so it follows workloads that move. **Software-defined networking (SDN)** makes that practical by setting segmentation in software. It separates the **control plane**, which decides where traffic goes, from the **data plane**, which forwards it."
       },
       {
         "beats": [
@@ -1188,8 +1240,35 @@
             "say": "Internal APIs often expose sensitive functions because developers assume only trusted callers reach them, which Zero Trust rejects."
           },
           {
-            "code": "caller identity\n  signed token or mTLS\nauthorization\n  per action, not per API\ninput validation\n  format, parameters, size\nrate limiting\n  cap calls per caller\n  degrade gracefully\nlogging\n  who, what, when, result",
-            "language": "minimum API validation"
+            "table": {
+              "head": [
+                "Check",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "caller identity",
+                  "signed token or mTLS"
+                ],
+                [
+                  "authorization",
+                  "per action, not per API"
+                ],
+                [
+                  "input validation",
+                  "format, parameters, size"
+                ],
+                [
+                  "rate limiting",
+                  "cap calls per caller, degrade gracefully"
+                ],
+                [
+                  "logging",
+                  "who, what, when, result"
+                ]
+              ]
+            },
+            "caption": "minimum API validation"
           },
           {
             "say": "Decide whether each API is internet-facing, partner-facing, private or gateway-only."
@@ -1239,12 +1318,7 @@
           },
           {
             "say": "Controls move closer to the one asking, the thing asked for, and the request itself."
-          }
-        ],
-        "say": "**Deperimeterization** is accepting that security can no longer hang on one network edge. Controls move closer to the one asking, the thing asked for, and the request itself."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "**SD-WAN** (software-defined wide area network) steers traffic between branches, sites and cloud over encrypted tunnels."
           },
@@ -1252,24 +1326,22 @@
             "say": "It picks the best link for each application, with consistent policy and visibility."
           }
         ],
-        "say": "**SD-WAN** (software-defined wide area network) steers traffic between branches, sites and cloud over encrypted tunnels. It picks the best link for each application, with consistent policy and visibility."
+        "say": "**Deperimeterization** is accepting that security can no longer hang on one network edge. Controls move closer to the one asking, the thing asked for, and the request itself. **SD-WAN** (software-defined wide area network) steers traffic between branches, sites and cloud over encrypted tunnels. It picks the best link for each application, with consistent policy and visibility."
       },
       {
         "beats": [
           {
-            "say": "**SASE** (secure access service edge) is cloud-delivered SD-WAN plus a **security service edge (SSE)**."
+            "say": "**SASE** (secure access service edge) is cloud-delivered SD-WAN plus a **security service edge (SSE)**, which bundles four services."
           },
           {
-            "say": "The SSE bundles a **secure web gateway**, which filters web traffic, and ZTNA."
+            "list": [
+              "**secure web gateway**: filters web traffic",
+              "ZTNA: brokers access to one application",
+              "**CASB**: governs SaaS use (software rented online)",
+              "firewall as a service, often"
+            ],
+            "caption": "what the SSE bundles"
           },
-          {
-            "say": "It adds a **CASB**, which governs SaaS use (software rented online), and often a firewall as a service."
-          }
-        ],
-        "say": "**SASE** (secure access service edge) is cloud-delivered SD-WAN plus a **security service edge (SSE)**. The SSE bundles a **secure web gateway**, which filters web traffic, and ZTNA. It adds a **CASB**, which governs SaaS use (software rented online), and often a firewall as a service."
-      },
-      {
-        "beats": [
           {
             "say": "SSE services run at **points of presence**, cloud sites near the user, and inspect traffic early."
           },
@@ -1280,7 +1352,7 @@
             "say": "SASE can deliver Zero Trust but is not a synonym, because central policy spreads a weak model's mistakes faster."
           }
         ],
-        "say": "SSE services run at **points of presence**, cloud sites near the user, and inspect traffic early. That avoids **hairpinning**: detouring traffic through headquarters before it goes out. SASE can deliver Zero Trust but is not a synonym, because central policy spreads a weak model's mistakes faster.",
+        "say": "**SASE** (secure access service edge) is cloud-delivered SD-WAN plus a **security service edge (SSE)**, which bundles four services. SSE services run at **points of presence**, cloud sites near the user, and inspect traffic early. That avoids **hairpinning**: detouring traffic through headquarters before it goes out. SASE can deliver Zero Trust but is not a synonym, because central policy spreads a weak model's mistakes faster.",
         "check": {
           "prompt": "A firm has SD-WAN steering branch traffic over encrypted tunnels, but nothing filters web content or SaaS use. Which half of SASE is missing?",
           "answer": "The security service edge (SSE)",
@@ -1398,8 +1470,46 @@
             "say": "Each boundary type asks its own question."
           },
           {
-            "code": "physical: who can touch\n  it? badges, cameras\nnetwork: which systems\n  talk? firewalls, NAC\napplication: which\n  functions run? WAF\nidentity: who may act\n  on what? MFA, access\n  checks\ndata: where may it\n  move? leak prevention,\n  encryption, tags\noperational: how is\n  it watched? logging",
-            "language": "boundary types"
+            "table": {
+              "head": [
+                "Boundary",
+                "The question it asks",
+                "Controls"
+              ],
+              "rows": [
+                [
+                  "physical",
+                  "who can touch it?",
+                  "badges, cameras"
+                ],
+                [
+                  "network",
+                  "which systems talk?",
+                  "firewalls, NAC"
+                ],
+                [
+                  "application",
+                  "which functions run?",
+                  "WAF"
+                ],
+                [
+                  "identity",
+                  "who may act on what?",
+                  "MFA, access checks"
+                ],
+                [
+                  "data",
+                  "where may it move?",
+                  "leak prevention, encryption, tags"
+                ],
+                [
+                  "operational",
+                  "how is it watched?",
+                  "logging"
+                ]
+              ]
+            },
+            "caption": "boundary types"
           },
           {
             "say": "A **data perimeter** is guardrails keeping data with trusted identities, devices and approved destinations."
@@ -1422,8 +1532,23 @@
             "say": "**Hardening** removes unnecessary function; **legacy components** that cannot be patched need other care."
           },
           {
-            "code": "hardening removes:\n  unused services\n  open ports\n  permissive ACLs\n  old encryption settings\n  default credentials\nlegacy, unpatchable:\n  isolate, wrap in a\n  gateway, replace, or\n  add monitoring",
-            "language": "reducing the surface"
+            "table": {
+              "head": [
+                "Approach",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "hardening removes",
+                  "unused services, open ports, permissive ACLs, old encryption settings, default credentials"
+                ],
+                [
+                  "legacy, unpatchable",
+                  "isolate, wrap in a gateway, replace, or add monitoring"
+                ]
+              ]
+            },
+            "caption": "reducing the surface"
           }
         ],
         "say": "**Attack surface management** continuously finds what is exposed: services, APIs, cloud assets, forgotten web addresses. Then reduce it: decommission what is unneeded and run **vulnerability management**: find, prioritize and fix weaknesses. **Hardening** removes unnecessary function; **legacy components** that cannot be patched need other care."
@@ -1459,8 +1584,15 @@
             "say": "**Sensor placement** decides which hypotheses you can test: edge-only sensors miss lateral movement; endpoint-only sensors miss changes made through the cloud's management interface."
           },
           {
-            "code": "combine viewpoints:\n  endpoint sensors\n  network traffic data\n  identity logs\n  cloud audit trails\n  leak-prevention alerts\n  application logs",
-            "language": "mature designs"
+            "list": [
+              "endpoint sensors",
+              "network traffic data",
+              "identity logs",
+              "cloud audit trails",
+              "leak-prevention alerts",
+              "application logs"
+            ],
+            "caption": "mature designs combine viewpoints"
           },
           {
             "say": "Place them around the identity provider, jump hosts, cloud management plane and east-west traffic."
@@ -1600,14 +1732,15 @@
             "say": "A **classification model** defines sensitivity categories, so systems know a payment record and a brochure need different handling."
           },
           {
-            "code": "public\ninternal\nconfidential\nrestricted",
-            "language": "sensitivity categories"
-          }
-        ],
-        "say": "A **classification model** defines sensitivity categories, so systems know a payment record and a brochure need different handling."
-      },
-      {
-        "beats": [
+            "list": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ],
+            "ordered": true,
+            "caption": "sensitivity categories"
+          },
           {
             "say": "**Data labeling** makes the classification visible, in a document, email, cloud object or database field."
           },
@@ -1618,11 +1751,34 @@
             "say": "A tag can trigger encryption, retention (how long data is kept), sharing limits or leak prevention."
           },
           {
-            "code": "object:\n  q3-claims-export.csv\ntags:\n  classification:\n    restricted\n  data-type:\n    health records\n  owner: claims-ops",
-            "language": "object metadata"
+            "table": {
+              "head": [
+                "Tag",
+                "Value"
+              ],
+              "rows": [
+                [
+                  "object",
+                  "q3-claims-export.csv"
+                ],
+                [
+                  "classification",
+                  "restricted"
+                ],
+                [
+                  "data-type",
+                  "health records"
+                ],
+                [
+                  "owner",
+                  "claims-ops"
+                ]
+              ]
+            },
+            "caption": "object metadata"
           }
         ],
-        "say": "**Data labeling** makes the classification visible, in a document, email, cloud object or database field. A **tagging strategy** adds machine-readable metadata that automation acts on. A tag can trigger encryption, retention (how long data is kept), sharing limits or leak prevention."
+        "say": "A **classification model** defines sensitivity categories, so systems know a payment record and a brochure need different handling. **Data labeling** makes the classification visible, in a document, email, cloud object or database field. A **tagging strategy** adds machine-readable metadata that automation acts on. A tag can trigger encryption, retention (how long data is kept), sharing limits or leak prevention."
       },
       {
         "beats": [
@@ -1761,21 +1917,35 @@
           },
           {
             "say": "**Scanning** reveals exposed assets, weak encryption and drift, settings that wander from the baseline."
-          }
-        ],
-        "say": "**Control effectiveness** is whether controls really work, and it takes evidence, not diagrams. **Assessments** check that the intended design exists in practice. **Scanning** reveals exposed assets, weak encryption and drift, settings that wander from the baseline."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "**Metrics** show whether risk is moving; counting volume tells you little."
           },
           {
-            "code": "accounts with standing\nadmin access\n  January   60\n  June      42\nreduction\n  = (60 - 42) / 60 = 30%",
-            "language": "a risk-movement metric"
+            "table": {
+              "head": [
+                "Month",
+                "Accounts with standing admin access"
+              ],
+              "rows": [
+                [
+                  "January",
+                  "60"
+                ],
+                [
+                  "June",
+                  "42"
+                ],
+                [
+                  "reduction",
+                  "(60 - 42) / 60 = 30%"
+                ]
+              ]
+            },
+            "caption": "a risk-movement metric"
           }
         ],
-        "say": "**Metrics** show whether risk is moving; counting volume tells you little.",
+        "say": "**Control effectiveness** is whether controls really work, and it takes evidence, not diagrams. **Assessments** check that the intended design exists in practice. **Scanning** reveals exposed assets, weak encryption and drift, settings that wander from the baseline. **Metrics** show whether risk is moving; counting volume tells you little.",
         "check": {
           "prompt": "Which of these shows risk moving, rather than activity piling up?",
           "answer": "Mean time to revoke privileged access",
@@ -1795,8 +1965,26 @@
             "say": "It scores five pillars, each at one of four stages."
           },
           {
-            "code": "CISA Zero Trust model\n5 pillars: Identity,\n  Devices, Networks,\n  Applications and\n  Workloads, Data\n4 stages: traditional,\n  initial, advanced,\n  optimal",
-            "language": "maturity model"
+            "table": {
+              "head": [
+                "Part",
+                "Count",
+                "Values"
+              ],
+              "rows": [
+                [
+                  "pillars",
+                  "5",
+                  "Identity, Devices, Networks, Applications and Workloads, Data"
+                ],
+                [
+                  "stages",
+                  "4",
+                  "traditional, initial, advanced, optimal"
+                ]
+              ]
+            },
+            "caption": "CISA Zero Trust Maturity Model"
           },
           {
             "say": "Zero Trust is a maturity journey, measured pillar by pillar, not a switch."

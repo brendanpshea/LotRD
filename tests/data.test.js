@@ -2020,7 +2020,7 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
   const LIGHT_FRAMES = setId => /^securityx_|^netplus_/.test(setId);
   // Sets regrouped into slides (WRITING_GUIDE: Beats a beginner can read, item 2), where no frame
   // may open on a pronoun for the cleared screen. Sets move here as they are regrouped.
-  const SLIDES = setId => /^netplus_07_/.test(setId);
+  const SLIDES = setId => /^securityx_|^netplus_|^techplus_/.test(setId);
   const wordCount = s => s.replace(/[*`]/g, '').split(/\s+/).filter(Boolean).length;
 
   it('a rewritten set keeps each frame one slide: short beats, five new terms at most, 70 words, a fresh start', () => {
