@@ -12,12 +12,7 @@
           },
           {
             "say": "Its first tool is **high availability** (HA): redundant, duplicate parts, so one failure costs at most a brief interruption."
-          }
-        ],
-        "say": "**Business continuity** (BC) means keeping the business running through trouble. Its first tool is **high availability** (HA): redundant, duplicate parts, so one failure costs at most a brief interruption."
-      },
-      {
-        "beats": [
+          },
           {
             "figure": {
               "dot": "digraph { rankdir=TB; node[shape=box]; users[label=\"users\"]; vip[label=\"virtual IP\\n10.0.0.1\"]; fw1[label=\"firewall 1\\nactive\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; fw2[label=\"firewall 2\\nstandby\", style=\"rounded,dashed\"]; users->vip; vip->fw1; vip->fw2[style=dashed]; fw1->fw2[dir=both, style=dashed, label=\" heartbeat\\n state sync\"]; {rank=same; fw1; fw2} }",
@@ -36,7 +31,7 @@
             "say": "Clients use a shared **virtual IP** address that either unit can own."
           }
         ],
-        "say": "In an **active-passive** pair, one unit carries all the traffic while the other stands by. The standby copies the active unit's configuration and connection state. Clients use a shared **virtual IP** address that either unit can own."
+        "say": "**Business continuity** (BC) means keeping the business running through trouble. Its first tool is **high availability** (HA): redundant, duplicate parts, so one failure costs at most a brief interruption. In an **active-passive** pair, one unit carries all the traffic while the other stands by. The standby copies the active unit's configuration and connection state. Clients use a shared **virtual IP** address that either unit can own."
       },
       {
         "beats": [
@@ -61,18 +56,6 @@
             "say": "If one of two dies, the survivor carries everything: two nodes at 70% become one asked for 140%."
           },
           {
-            "say": "**Fault tolerance** goes past HA: a failure causes no interruption, because redundant parts run side by side."
-          },
-          {
-            "code": "dual power supplies\nmirrored disks (RAID 1)\nbonded network links",
-            "language": "fault tolerance in practice"
-          }
-        ],
-        "say": "In **active-active**, every node carries live traffic at once, usually behind a load balancer. If one of two dies, the survivor carries everything: two nodes at 70% become one asked for 140%. **Fault tolerance** goes past HA: a failure causes no interruption, because redundant parts run side by side."
-      },
-      {
-        "beats": [
-          {
             "say": "A design is only a claim until it is tested."
           },
           {
@@ -82,28 +65,41 @@
             "say": "For an active-active pair, test one node carrying the whole peak alone."
           }
         ],
-        "say": "A design is only a claim until it is tested. **Stress testing** pushes a system past its expected peak load to find where it breaks. For an active-active pair, test one node carrying the whole peak alone."
+        "say": "In **active-active**, every node carries live traffic at once, usually behind a load balancer. If one of two dies, the survivor carries everything: two nodes at 70% become one asked for 140%. A design is only a claim until it is tested. **Stress testing** pushes a system past its expected peak load to find where it breaks. For an active-active pair, test one node carrying the whole peak alone."
       },
       {
         "beats": [
           {
-            "say": "**Mean time between failures** (MTBF) is the average running time from one failure to the next."
+            "say": "**Fault tolerance** goes past HA: a failure causes no interruption, because redundant parts run side by side."
           },
           {
-            "say": "**Mean time to recover** (MTTR) is the average time from a failure until service is back."
+            "list": [
+              "dual power supplies",
+              "mirrored disks (RAID 1)",
+              "bonded network links"
+            ],
+            "ordered": false,
+            "caption": "fault tolerance in practice"
           },
           {
-            "say": "You want MTBF high and MTTR low."
+            "say": "**Mean time between failures** (MTBF) is the average running time from one failure to the next, and you want it high."
           },
           {
-            "code": "MTBF = total hours\n       / failures\navailability =\n  MTBF / (MTBF+MTTR)\n999 h and 1 h:\n999 / 1000 = 99.9%",
-            "language": "reliability formulas"
+            "say": "**Mean time to recover** (MTTR) is the average time from a failure until service is back, and you want it low."
+          },
+          {
+            "chain": [
+              "MTBF = total hours / failures",
+              "availability = MTBF / (MTBF + MTTR)",
+              "999 h and 1 h: 999 / 1000 = 99.9%"
+            ],
+            "caption": "reliability formulas"
           },
           {
             "say": "Availability is the share of time a service is up."
           }
         ],
-        "say": "**Mean time between failures** (MTBF) is the average running time from one failure to the next. **Mean time to recover** (MTTR) is the average time from a failure until service is back. You want MTBF high and MTTR low. Availability is the share of time a service is up.",
+        "say": "**Fault tolerance** goes past HA: a failure causes no interruption, because redundant parts run side by side. **Mean time between failures** (MTBF) is the average running time from one failure to the next, and you want it high. **Mean time to recover** (MTTR) is the average time from a failure until service is back, and you want it low. Availability is the share of time a service is up.",
         "check": {
           "prompt": "A hot-swappable part cuts a switch's MTTR from 4 hours to 1 hour, and its MTBF is unchanged. What happens to its availability?",
           "answer": "It rises, because less of each cycle is spent down",
@@ -273,12 +269,10 @@
           },
           {
             "say": "The **recovery time objective** (RTO) is the longest the service may stay down."
-          }
-        ],
-        "say": "**Disaster recovery** (DR) is bringing service back after the site itself, or its data, is lost. The business sets two targets first. The **recovery time objective** (RTO) is the longest the service may stay down."
-      },
-      {
-        "beats": [
+          },
+          {
+            "say": "The **recovery point objective** (RPO) is the most data you can afford to lose, measured in time back from the disaster."
+          },
           {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; bk[label=\"last good\\nbackup\"]; dis[label=\"disaster\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; up[label=\"service\\nrestored\"]; bk->dis[label=\" data lost\\n (RPO caps it)\"]; dis->up[label=\" downtime\\n (RTO caps it)\"]; }",
@@ -288,24 +282,37 @@
             }
           },
           {
-            "say": "The **recovery point objective** (RPO) is the most data you can afford to lose, measured in time back from the disaster."
-          },
-          {
-            "say": "An RPO of one hour means copying the data at least hourly."
-          },
-          {
-            "say": "An RTO of one hour means finishing recovery within the hour."
+            "table": {
+              "head": [
+                "Target",
+                "What it limits",
+                "One hour means"
+              ],
+              "rows": [
+                [
+                  "RTO",
+                  "downtime",
+                  "recovery finishes within the hour"
+                ],
+                [
+                  "RPO",
+                  "data lost",
+                  "the data is copied at least hourly"
+                ]
+              ]
+            },
+            "caption": "the two DR targets"
           }
         ],
-        "say": "The **recovery point objective** (RPO) is the most data you can afford to lose, measured in time back from the disaster. An RPO of one hour means copying the data at least hourly. An RTO of one hour means finishing recovery within the hour."
+        "say": "**Disaster recovery** (DR) is bringing service back after the site itself, or its data, is lost. The business sets two targets first. The **recovery time objective** (RTO) is the longest the service may stay down. The **recovery point objective** (RPO) is the most data you can afford to lose, measured in time back from the disaster."
       },
       {
         "beats": [
           {
-            "say": "Where do you recover? There are four kinds of site."
+            "say": "Where do you recover? The first three kinds of site differ in how ready they are."
           },
           {
-            "say": "A **cold site** is only space, power and cooling. Recovery there takes days to weeks."
+            "say": "A **cold site** is only space, power and cooling."
           },
           {
             "say": "A **warm site** already has hardware, but systems must be brought up and data restored."
@@ -314,11 +321,30 @@
             "say": "A **hot site** runs ready, with data replicated continuously."
           },
           {
-            "code": "cold   space only\n       days to weeks\nwarm   hardware ready\n       hours to days\nhot    runs, data synced\n       minutes to an hour",
-            "language": "recovery sites"
+            "table": {
+              "head": [
+                "Site",
+                "Recovery takes"
+              ],
+              "rows": [
+                [
+                  "cold",
+                  "days to weeks"
+                ],
+                [
+                  "warm",
+                  "hours to days"
+                ],
+                [
+                  "hot",
+                  "minutes to an hour"
+                ]
+              ]
+            },
+            "caption": "recovery sites"
           }
         ],
-        "say": "Where do you recover? There are four kinds of site. A **cold site** is only space, power and cooling. Recovery there takes days to weeks. A **warm site** already has hardware, but systems must be brought up and data restored. A **hot site** runs ready, with data replicated continuously."
+        "say": "Where do you recover? The first three kinds of site differ in how ready they are. A **cold site** is only space, power and cooling. A **warm site** already has hardware, but systems must be brought up and data restored. A **hot site** runs ready, with data replicated continuously."
       },
       {
         "beats": [
@@ -443,11 +469,16 @@
       {
         "beats": [
           {
-            "say": "So keep several versions of each backup, by the **3-2-1** rule:"
+            "say": "Keep several versions of each backup, following the **3-2-1** rule:"
           },
           {
-            "code": "3 copies\n2 kinds of media\n1 of them offsite",
-            "language": "the 3-2-1 rule"
+            "list": [
+              "3 copies",
+              "2 kinds of media",
+              "1 of them offsite"
+            ],
+            "ordered": false,
+            "caption": "the 3-2-1 rule"
           },
           {
             "say": "Keep one copy offline as well, where ransomware can't reach it."
@@ -456,7 +487,7 @@
             "say": "Test restores on a schedule and time them against the RTO, because a backup that was never restored is only a hope."
           }
         ],
-        "say": "So keep several versions of each backup, by the **3-2-1** rule: Keep one copy offline as well, where ransomware can't reach it. Test restores on a schedule and time them against the RTO, because a backup that was never restored is only a hope."
+        "say": "Keep several versions of each backup, following the **3-2-1** rule: Keep one copy offline as well, where ransomware can't reach it. Test restores on a schedule and time them against the RTO, because a backup that was never restored is only a hope."
       }
     ],
     "outro": "Next, a file server takes snapshots on a schedule, and then its disk array fails. Work out how much is lost."
@@ -709,17 +740,18 @@
             "say": "These **vendor considerations** belong in the plan and in the test."
           },
           {
-            "code": "commitments fit RTO\nvendor joins tests,\n  and notice needed\nlicenses valid at site\nsite far from your\n  disaster",
-            "language": "check with the vendor"
+            "list": [
+              "commitments fit the RTO",
+              "vendor joins tests, and notice is needed",
+              "licenses valid at the recovery site",
+              "site far from your disaster"
+            ],
+            "ordered": false,
+            "caption": "check with the vendor"
           },
           {
-            "say": "Check each row."
-          }
-        ],
-        "say": "Most recoveries lean on someone else: the DR or cloud provider, the ISP, the hardware supplier. These **vendor considerations** belong in the plan and in the test. Check each row."
-      },
-      {
-        "beats": [
+            "say": "Check each item."
+          },
           {
             "say": "A provider's promise is written as a **service-level agreement** (SLA), often a percentage of availability per month."
           },
@@ -727,7 +759,7 @@
             "say": "Turn that percentage into minutes of downtime before you trust it."
           }
         ],
-        "say": "A provider's promise is written as a **service-level agreement** (SLA), often a percentage of availability per month. Turn that percentage into minutes of downtime before you trust it."
+        "say": "Most recoveries lean on someone else: the DR or cloud provider, the ISP, the hardware supplier. These **vendor considerations** belong in the plan and in the test. Check each item. A provider's promise is written as a **service-level agreement** (SLA), often a percentage of availability per month. Turn that percentage into minutes of downtime before you trust it."
       }
     ],
     "outro": "Here are five ways to put a plan or a system to the test. Match each one to what it does."
@@ -825,12 +857,7 @@
           },
           {
             "say": "A gateway at each end keeps the tunnel up permanently, and users see one network."
-          }
-        ],
-        "say": "A **VPN** (virtual private network) carries private traffic in an encrypted tunnel across a network you don't control, usually the internet. A **site-to-site VPN** joins two whole networks. A gateway at each end keeps the tunnel up permanently, and users see one network."
-      },
-      {
-        "beats": [
+          },
           {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; blan[label=\"branch\\nLAN\"]; br[label=\"branch\\nrouter\"]; fw[label=\"HQ\\nfirewall\"]; hq[label=\"HQ\\nLAN\"]; lap[label=\"laptop\\nat home\"]; blan->br[dir=none]; br->fw[style=dashed, dir=both, label=\" site-to-site\"]; lap->fw[style=dashed, dir=both, label=\" client-to-site\"]; fw->hq[dir=none]; }",
@@ -840,13 +867,13 @@
             }
           },
           {
-            "say": "A **client-to-site VPN**, also called remote access, connects a single device."
+            "say": "A **client-to-site VPN**, or remote access, connects a single device."
           },
           {
-            "say": "Software on the laptop builds a tunnel to a VPN gateway at headquarters when the user starts it."
+            "say": "Software on the laptop builds a tunnel to a headquarters VPN gateway when the user starts it."
           }
         ],
-        "say": "A **client-to-site VPN**, also called remote access, connects a single device. Software on the laptop builds a tunnel to a VPN gateway at headquarters when the user starts it."
+        "say": "A **VPN** (virtual private network) carries private traffic in an encrypted tunnel across a network you don't control, usually the internet. A **site-to-site VPN** joins two whole networks. A gateway at each end keeps the tunnel up permanently, and users see one network. A **client-to-site VPN**, or remote access, connects a single device. Software on the laptop builds a tunnel to a headquarters VPN gateway when the user starts it."
       },
       {
         "beats": [
@@ -857,21 +884,29 @@
             "say": "With **full tunneling**, everything goes through the tunnel, browsing included."
           },
           {
-            "say": "Headquarters' firewall and web filter see it all, at the cost of bandwidth and delay."
-          }
-        ],
-        "say": "A client-to-site VPN has one more choice: what to do with the laptop's other traffic. With **full tunneling**, everything goes through the tunnel, browsing included. Headquarters' firewall and web filter see it all, at the cost of bandwidth and delay."
-      },
-      {
-        "beats": [
-          {
-            "say": "With **split tunneling**, only traffic for the corporate networks enters the tunnel."
+            "say": "With **split tunneling**, only traffic for the corporate networks enters the tunnel; the rest leaves through the user's own internet connection."
           },
           {
-            "say": "The rest leaves through the user's own internet connection. It's lighter on headquarters, but that traffic is never inspected."
+            "table": {
+              "head": [
+                "Mode",
+                "What it means for headquarters"
+              ],
+              "rows": [
+                [
+                  "full tunneling",
+                  "its firewall and web filter see everything, at the cost of bandwidth and delay"
+                ],
+                [
+                  "split tunneling",
+                  "lighter on headquarters, but the traffic that leaves directly is never inspected"
+                ]
+              ]
+            },
+            "caption": "two ways to tunnel"
           }
         ],
-        "say": "With **split tunneling**, only traffic for the corporate networks enters the tunnel. The rest leaves through the user's own internet connection. It's lighter on headquarters, but that traffic is never inspected.",
+        "say": "A client-to-site VPN has one more choice: what to do with the laptop's other traffic. With **full tunneling**, everything goes through the tunnel, browsing included. With **split tunneling**, only traffic for the corporate networks enters the tunnel; the rest leaves through the user's own internet connection.",
         "check": {
           "prompt": "Lyra must make sure every web request from remote laptops passes through Silverkeep's web filter. Which mode does she need?",
           "answer": "Full tunneling",
@@ -1017,8 +1052,13 @@
             "say": "Once a device has an address, you usually manage it through its **management interface**, a port or address reserved for that:"
           },
           {
-            "code": "MGMT Ethernet port\nserver's controller\nmanagement VLAN address",
-            "language": "management interface can be"
+            "list": [
+              "a MGMT Ethernet port",
+              "a server's controller",
+              "a management VLAN address"
+            ],
+            "ordered": false,
+            "caption": "a management interface can be"
           },
           {
             "say": "A **command-line interface** (CLI) takes typed commands. It is fast, precise and easy to script."
@@ -1035,8 +1075,36 @@
             "say": "Each way in has its own TCP port."
           },
           {
-            "code": "SSH    22   encrypted CLI\nTelnet 23   cleartext CLI\n       avoid it\nRDP    3389 remote desktop\nHTTPS  443  web GUI, API",
-            "language": "remote access, TCP ports"
+            "table": {
+              "head": [
+                "Protocol",
+                "TCP port",
+                "Used for"
+              ],
+              "rows": [
+                [
+                  "SSH",
+                  "22",
+                  "encrypted CLI"
+                ],
+                [
+                  "Telnet",
+                  "23",
+                  "cleartext CLI; avoid it"
+                ],
+                [
+                  "RDP",
+                  "3389",
+                  "remote desktop"
+                ],
+                [
+                  "HTTPS",
+                  "443",
+                  "web GUI, API"
+                ]
+              ]
+            },
+            "caption": "remote access, TCP ports"
           },
           {
             "say": "From Linux or macOS, the SSH client takes a user and an address: `ssh brom@10.9.0.5`."
@@ -1050,6 +1118,9 @@
       {
         "beats": [
           {
+            "say": "Rather than opening management interfaces to every desk, admins first sign in to a **jump box**, or **bastion host**: a hardened, closely logged server."
+          },
+          {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; admin[label=\"admin\\nlaptop\"]; jb[label=\"jump box\\nMFA + logging\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; sw[label=\"switches\"]; srv[label=\"servers\"]; staff[label=\"staff\\nPCs\"]; admin->jb[label=\" SSH, RDP\"]; jb->sw; jb->srv; staff->sw[style=dashed, label=\" blocked\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; }",
               "alt": "An admin laptop connects to a highlighted jump box, which connects onward to switches and servers. A dashed, highlighted line from staff PCs toward the switches is labeled blocked.",
@@ -1058,31 +1129,26 @@
             }
           },
           {
-            "say": "Don't leave management interfaces open to every desk."
-          },
-          {
-            "say": "A **jump box**, or **bastion host**, is one hardened, closely logged server that admins must sign in to first."
-          },
-          {
             "say": "The firewall allows management traffic only from the jump box, so every session passes one watched door."
-          }
-        ],
-        "say": "Don't leave management interfaces open to every desk. A **jump box**, or **bastion host**, is one hardened, closely logged server that admins must sign in to first. The firewall allows management traffic only from the jump box, so every session passes one watched door."
-      },
-      {
-        "beats": [
-          {
-            "say": "Give every admin a named account, checked against a central **AAA** server: authentication, authorization and accounting."
           },
           {
-            "say": "Require **multifactor authentication** (MFA): more than one kind of proof, at the jump box."
+            "say": "Give every admin a named account, checked by an **AAA** server: authentication, authorization and accounting."
           },
           {
-            "code": "AAA server: RADIUS or\n  TACACS+\neach role: needed\n  commands only\nlocal emergency account\n  sealed in a vault\nno vendor default login",
-            "language": "admin access"
+            "say": "Require **multifactor authentication** (MFA), more than one kind of proof, at the jump box."
+          },
+          {
+            "list": [
+              "AAA server: RADIUS or TACACS+",
+              "each role: needed commands only",
+              "local emergency account, sealed in a vault",
+              "no vendor default login"
+            ],
+            "ordered": false,
+            "caption": "admin access"
           }
         ],
-        "say": "Give every admin a named account, checked against a central **AAA** server: authentication, authorization and accounting. Require **multifactor authentication** (MFA): more than one kind of proof, at the jump box.",
+        "say": "Rather than opening management interfaces to every desk, admins first sign in to a **jump box**, or **bastion host**: a hardened, closely logged server. The firewall allows management traffic only from the jump box, so every session passes one watched door. Give every admin a named account, checked by an **AAA** server: authentication, authorization and accounting. Require **multifactor authentication** (MFA), more than one kind of proof, at the jump box.",
         "check": {
           "prompt": "Three admins share one switch login. A change takes a VLAN down, and the switch's log shows every command entered. What can't the log tell you?",
           "answer": "Which of the three admins made the change",
@@ -1102,8 +1168,31 @@
             "say": "Platforms and many devices accept **API calls**: a script sends an HTTPS request with a token and gets structured data back."
           },
           {
-            "code": "GET           reads\nPOST          creates\nPUT or PATCH  changes\nDELETE        removes",
-            "language": "what the method does"
+            "table": {
+              "head": [
+                "Method",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "GET",
+                  "reads"
+                ],
+                [
+                  "POST",
+                  "creates"
+                ],
+                [
+                  "PUT or PATCH",
+                  "changes"
+                ],
+                [
+                  "DELETE",
+                  "removes"
+                ]
+              ]
+            },
+            "caption": "what the method does"
           },
           {
             "say": "The method says what a call does."
@@ -1277,15 +1366,15 @@
           },
           {
             "say": "**Anomaly detection** flags the one event unlike the normal baseline."
+          },
+          {
+            "say": "**Trend detection** spots slow change across weeks, like a link creeping toward full."
           }
         ],
-        "say": "**Machine learning** (ML) is software that learns patterns from examples, not hand-written rules. **Non-generative AI** uses those patterns to judge: it classifies, scores or predicts, giving a verdict, not new content. **Anomaly detection** flags the one event unlike the normal baseline."
+        "say": "**Machine learning** (ML) is software that learns patterns from examples, not hand-written rules. **Non-generative AI** uses those patterns to judge: it classifies, scores or predicts, giving a verdict, not new content. **Anomaly detection** flags the one event unlike the normal baseline. **Trend detection** spots slow change across weeks, like a link creeping toward full."
       },
       {
         "beats": [
-          {
-            "say": "**Trend detection** spots slow change across weeks, like a link creeping toward full."
-          },
           {
             "say": "**Generative AI** produces new content: text, code, images, a draft configuration."
           },
@@ -1294,20 +1383,15 @@
           },
           {
             "say": "Plausible is not the same as true."
-          }
-        ],
-        "say": "**Trend detection** spots slow change across weeks, like a link creeping toward full. **Generative AI** produces new content: text, code, images, a draft configuration. A **large language model** (LLM) is generative AI trained on vast text, predicting what plausibly comes next. Plausible is not the same as true."
-      },
-      {
-        "beats": [
-          {
-            "say": "Used well, it gives **skill augmentation**: a newer tech drafts, a human checks and decides."
           },
           {
-            "say": "Other uses are **research** on a new protocol, and a **knowledge base** that answers from your own runbooks and tickets."
+            "say": "Used well, an LLM gives **skill augmentation**: a newer tech drafts, a human checks and decides."
+          },
+          {
+            "say": "Other uses are **research** on a new protocol, and a **knowledge base** answering from your own runbooks and tickets."
           }
         ],
-        "say": "Used well, it gives **skill augmentation**: a newer tech drafts, a human checks and decides. Other uses are **research** on a new protocol, and a **knowledge base** that answers from your own runbooks and tickets."
+        "say": "**Generative AI** produces new content: text, code, images, a draft configuration. A **large language model** (LLM) is generative AI trained on vast text, predicting what plausibly comes next. Plausible is not the same as true. Used well, an LLM gives **skill augmentation**: a newer tech drafts, a human checks and decides. Other uses are **research** on a new protocol, and a **knowledge base** answering from your own runbooks and tickets."
       },
       {
         "beats": [
@@ -1506,9 +1590,12 @@
           },
           {
             "say": "**Bias** is a skew inherited from the training data or the way you asked."
+          },
+          {
+            "say": "**Data poisoning** corrupts the training data or the knowledge base, so the model learns, or retrieves, something false."
           }
         ],
-        "say": "Treat every answer as a draft. A **hallucination** is a fluent, confident answer that is false: a command option that doesn't exist, an RFC that was never written. **Bias** is a skew inherited from the training data or the way you asked.",
+        "say": "Treat every answer as a draft. A **hallucination** is a fluent, confident answer that is false: a command option that doesn't exist, an RFC that was never written. **Bias** is a skew inherited from the training data or the way you asked. **Data poisoning** corrupts the training data or the knowledge base, so the model learns, or retrieves, something false.",
         "check": {
           "prompt": "An assistant gives Brom a tidy command with a flag he has never seen. What should he do before using it?",
           "answer": "Check it against the vendor's documentation or a lab device",
@@ -1522,11 +1609,16 @@
       {
         "beats": [
           {
-            "say": "The **acceptable use policy** (AUP) turns that into rules; the table shows what it sets."
+            "say": "An **acceptable use policy** (AUP) turns these cautions into rules, and the list shows what it sets."
           },
           {
-            "code": "approved AI tools\nnever paste in:\n  passwords, configs,\n  customer records\nwhen output must be\n  reviewed",
-            "language": "AUP for AI"
+            "list": [
+              "approved AI tools",
+              "never paste in passwords, configs or customer records",
+              "when output must be reviewed"
+            ],
+            "ordered": false,
+            "caption": "AUP for AI"
           },
           {
             "say": "**Ethics** asks whether a use is fair and honest: privacy, credit for others' work, openness about using AI."
@@ -1535,24 +1627,16 @@
             "say": "**Avoiding overreliance** means a person stays accountable: keep skills sharp, never let unchecked output reach production."
           }
         ],
-        "say": "The **acceptable use policy** (AUP) turns that into rules; the table shows what it sets. **Ethics** asks whether a use is fair and honest: privacy, credit for others' work, openness about using AI. **Avoiding overreliance** means a person stays accountable: keep skills sharp, never let unchecked output reach production."
+        "say": "An **acceptable use policy** (AUP) turns these cautions into rules, and the list shows what it sets. **Ethics** asks whether a use is fair and honest: privacy, credit for others' work, openness about using AI. **Avoiding overreliance** means a person stays accountable: keep skills sharp, never let unchecked output reach production."
       },
       {
         "beats": [
-          {
-            "say": "**Data poisoning** corrupts the training data or the knowledge base, so the model learns, or retrieves, something false."
-          },
           {
             "say": "**Prompt injection** hides instructions in the input."
           },
           {
             "say": "A user can type it directly; an **indirect injection** sits inside content the AI reads, such as a web page, email or log line."
-          }
-        ],
-        "say": "**Data poisoning** corrupts the training data or the knowledge base, so the model learns, or retrieves, something false. **Prompt injection** hides instructions in the input. A user can type it directly; an **indirect injection** sits inside content the AI reads, such as a web page, email or log line."
-      },
-      {
-        "beats": [
+          },
           {
             "say": "Here is an indirect injection, hidden as white text on a web page:"
           },
@@ -1564,7 +1648,7 @@
             "say": "The model can't reliably tell your request from text it merely read, so it may obey the hidden line."
           }
         ],
-        "say": "Here is an indirect injection, hidden as white text on a web page: The model can't reliably tell your request from text it merely read, so it may obey the hidden line."
+        "say": "**Prompt injection** hides instructions in the input. A user can type it directly; an **indirect injection** sits inside content the AI reads, such as a web page, email or log line. Here is an indirect injection, hidden as white text on a web page: The model can't reliably tell your request from text it merely read, so it may obey the hidden line."
       },
       {
         "beats": [
