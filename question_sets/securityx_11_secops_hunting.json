@@ -47,8 +47,31 @@
             "say": "**Normalization** rewrites each record into one shared layout, so the same fact gets the same field name everywhere."
           },
           {
-            "code": "EDR:    src_ip=10.4.2.17\n        user=CORP\\jdoe\nCloud:  sourceIPAddress=\n          10.4.2.17\n        userName=jdoe\nnormalized:\n  source.ip=10.4.2.17\n  user.name=jdoe",
-            "language": "two sources, one layout"
+            "table": {
+              "head": [
+                "Source",
+                "Address field",
+                "User field"
+              ],
+              "rows": [
+                [
+                  "EDR",
+                  "`src_ip`=10.4.2.17",
+                  "`user`=CORP\\jdoe"
+                ],
+                [
+                  "Cloud",
+                  "`sourceIPAddress`=10.4.2.17",
+                  "`userName`=jdoe"
+                ],
+                [
+                  "Normalized",
+                  "`source.ip`=10.4.2.17",
+                  "`user.name`=jdoe"
+                ]
+              ]
+            },
+            "caption": "two sources, one layout"
           },
           {
             "say": "That shared layout is a **schema**, such as ECS (Elastic Common Schema) or OCSF."
@@ -85,14 +108,37 @@
             "say": "Stage 3 stores events in a searchable index, in tiers by age."
           },
           {
-            "code": "hot   recent days, costly\nwarm  months, slower\ncold  years, archive",
-            "language": "storage tiers"
+            "say": "**Hot** logs are the newest, and **warm** logs are older."
           },
           {
-            "say": "**Hot** is recent days; **warm** is months."
+            "say": "**Cold** logs are the oldest."
           },
           {
-            "say": "**Cold** is years of archive."
+            "table": {
+              "head": [
+                "Tier",
+                "Holds",
+                "Trade-off"
+              ],
+              "rows": [
+                [
+                  "hot",
+                  "recent days",
+                  "costly"
+                ],
+                [
+                  "warm",
+                  "months",
+                  "slower"
+                ],
+                [
+                  "cold",
+                  "years",
+                  "archive"
+                ]
+              ]
+            },
+            "caption": "storage tiers"
           },
           {
             "say": "**Retention** is how long logs are kept, set by law, contracts and investigation needs."
@@ -101,7 +147,7 @@
             "say": "Intruders hide for months, so weeks of logs destroy later evidence."
           }
         ],
-        "say": "Stage 3 stores events in a searchable index, in tiers by age. **Hot** is recent days; **warm** is months. **Cold** is years of archive. **Retention** is how long logs are kept, set by law, contracts and investigation needs. Intruders hide for months, so weeks of logs destroy later evidence."
+        "say": "Stage 3 stores events in a searchable index, in tiers by age. **Hot** logs are the newest, and **warm** logs are older. **Cold** logs are the oldest. **Retention** is how long logs are kept, set by law, contracts and investigation needs. Intruders hide for months, so weeks of logs destroy later evidence."
       },
       {
         "beats": [
@@ -214,23 +260,40 @@
             "say": "Windows writes every security event with a numbered **event ID**; four tell most logon stories."
           },
           {
-            "code": "4625  failed logon\n4624  successful logon\n4672  admin-level rights\n4720  account created",
-            "language": "Windows Security log"
-          },
-          {
-            "say": "`4625` is a failed logon; `4624` is a successful one."
+            "table": {
+              "head": [
+                "Event ID",
+                "Meaning"
+              ],
+              "rows": [
+                [
+                  "`4625`",
+                  "failed logon"
+                ],
+                [
+                  "`4624`",
+                  "successful logon"
+                ],
+                [
+                  "`4672`",
+                  "admin-level rights"
+                ],
+                [
+                  "`4720`",
+                  "account created"
+                ]
+              ]
+            },
+            "caption": "Windows Security log"
           },
           {
             "say": "`4672` shows up beside a `4624` when the account has admin-level rights."
           },
           {
             "say": "It records privilege, not an exploit."
-          },
-          {
-            "say": "`4720` means a new account was created."
           }
         ],
-        "say": "Windows writes every security event with a numbered **event ID**; four tell most logon stories. `4625` is a failed logon; `4624` is a successful one. `4672` shows up beside a `4624` when the account has admin-level rights. It records privilege, not an exploit. `4720` means a new account was created."
+        "say": "Windows writes every security event with a numbered **event ID**; four tell most logon stories. `4672` shows up beside a `4624` when the account has admin-level rights. It records privilege, not an exploit."
       },
       {
         "beats": [
@@ -246,13 +309,16 @@
             }
           },
           {
-            "say": "In the log, one address tries one password on many accounts."
+            "say": "In the log, one address tries one password on many accounts: that attack is **password spraying**."
           },
           {
-            "say": "That attack is **password spraying**."
+            "say": "A **correlation rule** encodes a story like this one: many failures from one source, then a success from it within minutes."
+          },
+          {
+            "say": "Add a `4672`, which shows admin rights, and the alert's severity rises."
           }
         ],
-        "say": "Here is one night on file server FS01, in time order. In the log, one address tries one password on many accounts. That attack is **password spraying**.",
+        "say": "Here is one night on file server FS01, in time order. In the log, one address tries one password on many accounts: that attack is **password spraying**. A **correlation rule** encodes a story like this one: many failures from one source, then a success from it within minutes. Add a `4672`, which shows admin rights, and the alert's severity rises.",
         "check": {
           "prompt": "What does the `4624` from 203.0.113.50, just after the burst, tell you?",
           "answer": "One guess worked: the spray found a real password",
@@ -262,20 +328,6 @@
           ],
           "why": "A success from the same address seconds after sixty failures means one of the guesses was right. The `4672` beside it adds that the cracked account holds admin rights."
         }
-      },
-      {
-        "beats": [
-          {
-            "say": "A **correlation rule** encodes a story like this one."
-          },
-          {
-            "say": "It looks for many failures from one source, then a success from it within minutes."
-          },
-          {
-            "say": "Add a `4672`, which shows admin rights, and the alert's severity rises."
-          }
-        ],
-        "say": "A **correlation rule** encodes a story like this one. It looks for many failures from one source, then a success from it within minutes. Add a `4672`, which shows admin rights, and the alert's severity rises."
       },
       {
         "beats": [
@@ -384,8 +436,27 @@
             "say": "Score a rule by its **false-positive rate** (FPR): the share of its alerts closed as harmless."
           },
           {
-            "code": "alerts raised:  200\nclosed benign:  190\nFPR: 190 / 200 = 95%",
-            "language": "rule scorecard, 30 days"
+            "table": {
+              "head": [
+                "Measure",
+                "Value"
+              ],
+              "rows": [
+                [
+                  "Alerts raised",
+                  "200"
+                ],
+                [
+                  "Closed as harmless",
+                  "190"
+                ],
+                [
+                  "False-positive rate",
+                  "190 / 200 = 95%"
+                ]
+              ]
+            },
+            "caption": "rule scorecard, 30 days"
           }
         ],
         "say": "A **false positive** is an alert on harmless activity. A **false negative** is a real attack that raises no alert, which is worse: nobody sees it. Score a rule by its **false-positive rate** (FPR): the share of its alerts closed as harmless."
@@ -393,7 +464,10 @@
       {
         "beats": [
           {
-            "say": "A rule wrong that often teaches analysts to ignore it. Tune or retire it, but carefully: over-tuning creates false negatives."
+            "say": "A rule that is almost always wrong teaches analysts to ignore it."
+          },
+          {
+            "say": "Tune or retire it, but carefully: over-tuning creates false negatives."
           },
           {
             "say": "**Audit log reduction** trims logs at the source to what matters."
@@ -402,7 +476,7 @@
             "say": "A **known-noise allowlist** names expected activity, like the approved scanner, so it trips no rules."
           }
         ],
-        "say": "A rule wrong that often teaches analysts to ignore it. Tune or retire it, but carefully: over-tuning creates false negatives. **Audit log reduction** trims logs at the source to what matters. A **known-noise allowlist** names expected activity, like the approved scanner, so it trips no rules."
+        "say": "A rule that is almost always wrong teaches analysts to ignore it. Tune or retire it, but carefully: over-tuning creates false negatives. **Audit log reduction** trims logs at the source to what matters. A **known-noise allowlist** names expected activity, like the approved scanner, so it trips no rules."
       },
       {
         "beats": [
@@ -679,37 +753,58 @@
       {
         "beats": [
           {
-            "say": "Each log source answers a different question."
+            "table": {
+              "head": [
+                "Log source",
+                "Question it answers"
+              ],
+              "rows": [
+                [
+                  "EDR",
+                  "what ran"
+                ],
+                [
+                  "firewall",
+                  "traffic in and out"
+                ],
+                [
+                  "DNS",
+                  "domains looked up"
+                ],
+                [
+                  "identity",
+                  "who signed in"
+                ],
+                [
+                  "cloud API",
+                  "what changed"
+                ],
+                [
+                  "app logs",
+                  "how the app's own logic was used or abused"
+                ],
+                [
+                  "DLP",
+                  "what data left"
+                ]
+              ]
+            },
+            "caption": "each source answers a different question"
           },
           {
-            "code": "EDR        what ran\nfirewall   traffic in/out\nDNS        domains looked up\nidentity   who signed in\ncloud API  what changed\napp logs   app actions\nDLP        what data left",
-            "language": "source: its question"
-          },
-          {
-            "say": "**EDR** (endpoint detection and response) tools watch each computer's processes."
+            "say": "**EDR** (endpoint detection and response) tools watch each computer's processes. **DLP** (data loss prevention) watches data leaving."
           },
           {
             "say": "**DLP** (data loss prevention) watches data leaving."
           },
           {
-            "say": "A **DNS** resolver turns names into addresses, so its logs show what each host looked up."
-          }
-        ],
-        "say": "Each log source answers a different question. **EDR** (endpoint detection and response) tools watch each computer's processes. **DLP** (data loss prevention) watches data leaving. A **DNS** resolver turns names into addresses, so its logs show what each host looked up."
-      },
-      {
-        "beats": [
-          {
             "say": "An **identity provider** handles sign-ins, so its logs show who signed in, and from where."
           },
           {
             "say": "The **cloud control plane** is where API calls change cloud settings, and each call is logged."
-          },
-          {
-            "say": "Application logs show how the app's own logic was used or abused."
           }
         ],
-        "say": "An **identity provider** handles sign-ins, so its logs show who signed in, and from where. The **cloud control plane** is where API calls change cloud settings, and each call is logged. Application logs show how the app's own logic was used or abused."
+        "say": "**EDR** (endpoint detection and response) tools watch each computer's processes. **DLP** (data loss prevention) watches data leaving. **DLP** (data loss prevention) watches data leaving. An **identity provider** handles sign-ins, so its logs show who signed in, and from where. The **cloud control plane** is where API calls change cloud settings, and each call is logged."
       },
       {
         "beats": [
@@ -768,8 +863,36 @@
             "say": "**Mean time to respond** (MTTR) is the average from discovery to response."
           },
           {
-            "code": "incident  found  contained\nINC-1     30 h   4 h\nINC-2     12 h   2 h\nINC-3     18 h   6 h\nMTTD = (30+12+18)/3 = 20 h\nMTTR = (4+2+6)/3 = 4 h",
-            "language": "this quarter's incidents"
+            "table": {
+              "head": [
+                "Incident",
+                "Found after",
+                "Contained after"
+              ],
+              "rows": [
+                [
+                  "INC-1",
+                  "30 h",
+                  "4 h"
+                ],
+                [
+                  "INC-2",
+                  "12 h",
+                  "2 h"
+                ],
+                [
+                  "INC-3",
+                  "18 h",
+                  "6 h"
+                ],
+                [
+                  "Average",
+                  "(30+12+18)/3 = 20 h, the MTTD",
+                  "(4+2+6)/3 = 4 h, the MTTR"
+                ]
+              ]
+            },
+            "caption": "this quarter's incidents"
           },
           {
             "say": "An average can't see an intruder nobody has found yet."
@@ -915,28 +1038,40 @@
             "say": "An **entity** is anything with habits of its own: a user, host, service account or app."
           },
           {
-            "say": "That learned normal is its **baseline**."
+            "say": "That learned normal is its **baseline**, and baselines adapt as things change, because a fixed threshold goes stale fast."
+          },
+          {
+            "table": {
+              "head": [
+                "Entity",
+                "Baseline holds"
+              ],
+              "rows": [
+                [
+                  "user",
+                  "hours, places, devices"
+                ],
+                [
+                  "host",
+                  "usual processes"
+                ],
+                [
+                  "network",
+                  "normal flows"
+                ],
+                [
+                  "app",
+                  "usual callers"
+                ]
+              ]
+            },
+            "caption": "each kind of entity has its own baseline"
           },
           {
             "say": "UEBA grew out of **UBA**, which tracked only users."
           }
         ],
-        "say": "**UEBA** (user and entity behavior analytics) learns what is normal for each entity, then flags big departures. An **entity** is anything with habits of its own: a user, host, service account or app. That learned normal is its **baseline**. UEBA grew out of **UBA**, which tracked only users."
-      },
-      {
-        "beats": [
-          {
-            "say": "Each kind of entity has its own baseline."
-          },
-          {
-            "code": "user     hours, places,\n         devices\nhost     usual processes\nnetwork  normal flows\napp      usual callers",
-            "language": "what each baseline holds"
-          },
-          {
-            "say": "Baselines adapt as things change, because a fixed threshold goes stale fast."
-          }
-        ],
-        "say": "Each kind of entity has its own baseline. Baselines adapt as things change, because a fixed threshold goes stale fast."
+        "say": "**UEBA** (user and entity behavior analytics) learns what is normal for each entity, then flags big departures. An **entity** is anything with habits of its own: a user, host, service account or app. That learned normal is its **baseline**, and baselines adapt as things change, because a fixed threshold goes stale fast. UEBA grew out of **UBA**, which tracked only users."
       },
       {
         "beats": [
@@ -969,8 +1104,31 @@
             "say": "An **impossible travel** alert fires when two sign-ins on one account are too far apart to fly between in the time."
           },
           {
-            "code": "user: r.okafor\n10:02 Toronto, CA\n  enrolled laptop, home ISP\n10:31 Warsaw, PL\n  never-seen device,\n  hosting provider\nflight ~9 h, gap 29 min",
-            "language": "UEBA alert"
+            "table": {
+              "head": [
+                "Time",
+                "Place",
+                "Device and network"
+              ],
+              "rows": [
+                [
+                  "10:02",
+                  "Toronto, CA",
+                  "enrolled laptop, home ISP"
+                ],
+                [
+                  "10:31",
+                  "Warsaw, PL",
+                  "never-seen device, hosting provider"
+                ],
+                [
+                  "Gap",
+                  "29 minutes",
+                  "a flight takes about 9 hours"
+                ]
+              ]
+            },
+            "caption": "UEBA alert for r.okafor"
           },
           {
             "say": "First rule out benign causes: a corporate VPN or cloud proxy can place a real sign-in far from the user."
@@ -1119,24 +1277,50 @@
           },
           {
             "say": "An **indicator of compromise** (IoC) is a single trace, like a known-bad IP address or file hash."
+          },
+          {
+            "say": "Attackers swap IoCs cheaply, so they go stale fast."
           }
         ],
-        "say": "An **indicator of attack** (IoA) is a behavior, such as a process reading the memory where Windows keeps logon secrets. Such behaviors are the attacker's **TTPs**: tactics, techniques and procedures. An **indicator of compromise** (IoC) is a single trace, like a known-bad IP address or file hash."
+        "say": "An **indicator of attack** (IoA) is a behavior, such as a process reading the memory where Windows keeps logon secrets. Such behaviors are the attacker's **TTPs**: tactics, techniques and procedures. An **indicator of compromise** (IoC) is a single trace, like a known-bad IP address or file hash. Attackers swap IoCs cheaply, so they go stale fast."
       },
       {
         "beats": [
           {
-            "say": "Attackers swap IoCs cheaply, so they go stale fast."
-          },
-          {
             "say": "Here is a hunt for a **command-and-control** (C2) implant: malware that phones home to its operator on a timer."
           },
           {
-            "code": "Hypothesis\n  C2 implant beacons home\n  on a fixed sleep timer\nTelemetry\n  netflow and DNS, 30 days\nTest\n  outbound HTTPS to one\n  destination at regular\n  intervals\nTool\n  RITA scores Zeek logs\n  for beaconing",
-            "language": "hunt plan"
+            "say": "A hunt plan states its hypothesis first, then where to look, how to test and with what tool."
+          },
+          {
+            "table": {
+              "head": [
+                "Plan part",
+                "This hunt"
+              ],
+              "rows": [
+                [
+                  "Hypothesis",
+                  "a C2 implant beacons home on a fixed sleep timer"
+                ],
+                [
+                  "Telemetry",
+                  "netflow and DNS, 30 days"
+                ],
+                [
+                  "Test",
+                  "outbound HTTPS to one destination at regular intervals"
+                ],
+                [
+                  "Tool",
+                  "RITA scores Zeek logs for beaconing"
+                ]
+              ]
+            },
+            "caption": "hunt plan"
           }
         ],
-        "say": "Attackers swap IoCs cheaply, so they go stale fast. Here is a hunt for a **command-and-control** (C2) implant: malware that phones home to its operator on a timer.",
+        "say": "Here is a hunt for a **command-and-control** (C2) implant: malware that phones home to its operator on a timer. A hunt plan states its hypothesis first, then where to look, how to test and with what tool.",
         "check": {
           "prompt": "The test finds nothing on any host. Was the hunt wasted?",
           "answer": "No: save the query as a rule and record the coverage",
@@ -1345,8 +1529,39 @@
             "say": "**Threat intelligence** is refined information about adversaries: their tools, infrastructure and targets."
           },
           {
-            "code": "OSINT       public sources\ncommercial  paid feeds\ngovernment  CISA's AIS\nISACs       sector groups\ninternal    own incidents\ndark web    stolen logins",
-            "language": "intelligence sources"
+            "table": {
+              "head": [
+                "Source",
+                "What it offers"
+              ],
+              "rows": [
+                [
+                  "OSINT",
+                  "public sources"
+                ],
+                [
+                  "commercial",
+                  "paid feeds"
+                ],
+                [
+                  "government",
+                  "CISA's AIS"
+                ],
+                [
+                  "ISACs",
+                  "sector groups"
+                ],
+                [
+                  "internal",
+                  "own incidents"
+                ],
+                [
+                  "dark web",
+                  "stolen logins"
+                ]
+              ]
+            },
+            "caption": "intelligence sources"
           },
           {
             "say": "An **ISAC** (information sharing and analysis center) is a members-only community for one sector."
@@ -1369,24 +1584,69 @@
             "say": "The **Admiralty system** grades the source A to F and its information 1 to 6."
           },
           {
-            "code": "source reliability\nA  completely reliable\nF  cannot be judged\ninformation accuracy\n1  confirmed\n6  cannot be judged",
-            "language": "Admiralty system"
+            "table": {
+              "head": [
+                "Scale",
+                "Best",
+                "Worst"
+              ],
+              "rows": [
+                [
+                  "Source reliability",
+                  "A: completely reliable",
+                  "F: cannot be judged"
+                ],
+                [
+                  "Information accuracy",
+                  "1: confirmed",
+                  "6: cannot be judged"
+                ]
+              ]
+            },
+            "caption": "Admiralty system"
           },
           {
             "say": "Guard your own work (**OPSEC**): study suspect domains only from isolated systems."
-          },
+          }
+        ],
+        "say": "Weigh a source's track record, freshness and corroboration. The **Admiralty system** grades the source A to F and its information 1 to 6. Guard your own work (**OPSEC**): study suspect domains only from isolated systems."
+      },
+      {
+        "beats": [
           {
             "say": "Label what you share with the **Traffic Light Protocol** (TLP)."
           },
           {
-            "code": "RED           named people\nAMBER+STRICT  org only\nAMBER         org and clients\nGREEN         community\nCLEAR         public",
-            "language": "TLP, most to least secret"
-          }
-        ],
-        "say": "Weigh a source's track record, freshness and corroboration. The **Admiralty system** grades the source A to F and its information 1 to 6. Guard your own work (**OPSEC**): study suspect domains only from isolated systems. Label what you share with the **Traffic Light Protocol** (TLP)."
-      },
-      {
-        "beats": [
+            "table": {
+              "head": [
+                "Label",
+                "Share with"
+              ],
+              "rows": [
+                [
+                  "RED",
+                  "named people"
+                ],
+                [
+                  "AMBER+STRICT",
+                  "your organization only"
+                ],
+                [
+                  "AMBER",
+                  "your organization and clients"
+                ],
+                [
+                  "GREEN",
+                  "the community"
+                ],
+                [
+                  "CLEAR",
+                  "the public"
+                ]
+              ]
+            },
+            "caption": "TLP, most to least secret"
+          },
           {
             "say": "**STIX** is a standard format for describing intelligence, like the letter in an envelope."
           },
@@ -1405,18 +1665,18 @@
             }
           }
         ],
-        "say": "**STIX** is a standard format for describing intelligence, like the letter in an envelope. **TAXII** is the HTTPS service that carries it, like the post that delivers the letter. A **threat intelligence platform** (TIP) pulls both in, then deduplicates, scores and ages indicators."
+        "say": "Label what you share with the **Traffic Light Protocol** (TLP). **STIX** is a standard format for describing intelligence, like the letter in an envelope. **TAXII** is the HTTPS service that carries it, like the post that delivers the letter. A **threat intelligence platform** (TIP) pulls both in, then deduplicates, scores and ages indicators."
       },
       {
         "beats": [
           {
-            "say": "The platform sends only high-confidence indicators to blocklists, and shares each **sighting**, a report that an indicator was seen, back."
+            "say": "A TIP sends only high-confidence indicators to blocklists, and shares each **sighting**, a report that an indicator was seen, back."
           },
           {
             "say": "Wiring a raw feed straight to a blocklist will eventually block something innocent, like your own VPN."
           }
         ],
-        "say": "The platform sends only high-confidence indicators to blocklists, and shares each **sighting**, a report that an indicator was seen, back. Wiring a raw feed straight to a blocklist will eventually block something innocent, like your own VPN.",
+        "say": "A TIP sends only high-confidence indicators to blocklists, and shares each **sighting**, a report that an indicator was seen, back. Wiring a raw feed straight to a blocklist will eventually block something innocent, like your own VPN.",
         "check": {
           "prompt": "An IP indicator was first and last seen in 2021. What should the TIP do with it today?",
           "answer": "Age it out, or score it down to context only",
@@ -1449,8 +1709,51 @@
             "language": "Snort rule"
           },
           {
-            "code": "alert      action\ntcp        protocol\n$HOME_NET  source address\nany        source port\n->         direction\n$EXTERNAL_NET\n           destination\n4444       destination port\nsid        rule ID (1000000+\n           is local)\nrev        revision",
-            "language": "reading the Snort rule"
+            "table": {
+              "head": [
+                "Part",
+                "Means"
+              ],
+              "rows": [
+                [
+                  "`alert`",
+                  "action"
+                ],
+                [
+                  "`tcp`",
+                  "protocol"
+                ],
+                [
+                  "`$HOME_NET`",
+                  "source address"
+                ],
+                [
+                  "`any`",
+                  "source port"
+                ],
+                [
+                  "`->`",
+                  "direction"
+                ],
+                [
+                  "`$EXTERNAL_NET`",
+                  "destination address"
+                ],
+                [
+                  "`4444`",
+                  "destination port"
+                ],
+                [
+                  "`sid`",
+                  "rule ID (1000000+ is local)"
+                ],
+                [
+                  "`rev`",
+                  "revision"
+                ]
+              ]
+            },
+            "caption": "reading the Snort rule"
           },
           {
             "say": "Read it left to right, as the table shows."

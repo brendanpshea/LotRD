@@ -60,7 +60,7 @@
       {
         "beats": [
           {
-            "say": "The browser is an interpreter too."
+            "say": "A browser is an interpreter too: it runs whatever script a page contains."
           },
           {
             "say": "**Cross-site scripting** (XSS) echoes input into a page unencoded, so the attacker's script runs in the victim's session."
@@ -76,7 +76,7 @@
             "language": "output encoding"
           }
         ],
-        "say": "The browser is an interpreter too. **Cross-site scripting** (XSS) echoes input into a page unencoded, so the attacker's script runs in the victim's session. Stored XSS sits in the database; reflected XSS arrives in a link. The fix is **output encoding**: convert special characters as each value is written."
+        "say": "A browser is an interpreter too: it runs whatever script a page contains. **Cross-site scripting** (XSS) echoes input into a page unencoded, so the attacker's script runs in the victim's session. Stored XSS sits in the database; reflected XSS arrives in a link. The fix is **output encoding**: convert special characters as each value is written."
       },
       {
         "beats": [
@@ -277,7 +277,7 @@
       {
         "beats": [
           {
-            "say": "Memory-safe languages such as Rust and Go remove the whole class."
+            "say": "Memory-safe languages such as Rust and Go remove memory-unsafety flaws altogether."
           },
           {
             "say": "Where code can't change, **ASLR**, which randomizes memory addresses, plus stack canaries and non-executable memory raise the attacker's cost."
@@ -286,7 +286,7 @@
             "say": "**Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()` or MD5 for passwords."
           }
         ],
-        "say": "Memory-safe languages such as Rust and Go remove the whole class. Where code can't change, **ASLR**, which randomizes memory addresses, plus stack canaries and non-executable memory raise the attacker's cost. **Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()` or MD5 for passwords."
+        "say": "Memory-safe languages such as Rust and Go remove memory-unsafety flaws altogether. Where code can't change, **ASLR**, which randomizes memory addresses, plus stack canaries and non-executable memory raise the attacker's cost. **Deprecated functions** are unsafe legacy APIs and algorithms, such as `gets()` or MD5 for passwords."
       },
       {
         "beats": [
@@ -303,8 +303,31 @@
             "say": "**Weak ciphers** are outdated encryption."
           },
           {
-            "code": "config: harden, audit\ndirectory: audits,\n  tiered admin,\n  LDAP signing\nend-of-life: upgrade,\n  retire, or isolate\nweak ciphers: RC4, 3DES,\n  TLS 1.0 give way to\n  TLS 1.2 or later",
-            "language": "flaw: its fix"
+            "table": {
+              "head": [
+                "Flaw",
+                "Fix"
+              ],
+              "rows": [
+                [
+                  "insecure configuration",
+                  "harden, audit"
+                ],
+                [
+                  "directory service misconfiguration",
+                  "audits, tiered admin, LDAP signing"
+                ],
+                [
+                  "end-of-life",
+                  "upgrade, retire, or isolate"
+                ],
+                [
+                  "weak ciphers",
+                  "RC4, 3DES and TLS 1.0 give way to TLS 1.2 or later"
+                ]
+              ]
+            },
+            "caption": "flaw and fix"
           }
         ],
         "say": "**Insecure configuration** means risky settings left in place. **Directory service misconfiguration** is the same failure in account servers such as Active Directory or LDAP. **End-of-life** software gets no more patches. **Weak ciphers** are outdated encryption."
@@ -312,34 +335,43 @@
       {
         "beats": [
           {
-            "say": "**Embedded secrets** are keys and passwords committed into code or config."
+            "say": "**Embedded secrets** are keys and passwords committed into code or config, and **key rotation** makes a leaked key soon stop working."
           },
           {
-            "say": "With **key rotation**, a leaked key soon stops working."
+            "say": "**Poisoning** corrupts trusted data at its source, like a package repository, while an **implant** is malicious code or hardware planted on a system."
           },
-          {
-            "say": "**Poisoning** corrupts trusted data at its source, like a package repository."
-          },
-          {
-            "say": "An **implant** is malicious code or hardware planted on a system."
-          }
-        ],
-        "say": "**Embedded secrets** are keys and passwords committed into code or config. With **key rotation**, a leaked key soon stops working. **Poisoning** corrupts trusted data at its source, like a package repository. An **implant** is malicious code or hardware planted on a system."
-      },
-      {
-        "beats": [
           {
             "say": "A **confused deputy** is a privileged program that a caller tricks into misusing its authority."
           },
           {
-            "say": "The table shows the usual fix for each of the last four flaws."
-          },
-          {
-            "code": "secrets:\n  secrets manager, commit\n  scanning\npoisoning:\n  signed, pinned packages,\n  data validation\nimplant:\n  secure boot, code signing,\n  supply-chain vetting\nconfused deputy:\n  check the original\n  caller's rights",
-            "language": "flaw: its fix"
+            "table": {
+              "head": [
+                "Flaw",
+                "Usual fix"
+              ],
+              "rows": [
+                [
+                  "embedded secrets",
+                  "secrets manager, commit scanning"
+                ],
+                [
+                  "poisoning",
+                  "signed, pinned packages, data validation"
+                ],
+                [
+                  "implant",
+                  "secure boot, code signing, supply-chain vetting"
+                ],
+                [
+                  "confused deputy",
+                  "check the original caller's rights"
+                ]
+              ]
+            },
+            "caption": "the usual fix for each"
           }
         ],
-        "say": "A **confused deputy** is a privileged program that a caller tricks into misusing its authority. The table shows the usual fix for each of the last four flaws."
+        "say": "**Embedded secrets** are keys and passwords committed into code or config, and **key rotation** makes a leaked key soon stop working. **Poisoning** corrupts trusted data at its source, like a package repository, while an **implant** is malicious code or hardware planted on a system. A **confused deputy** is a privileged program that a caller tricks into misusing its authority."
       }
     ],
     "outro": "A bank's withdrawal handler runs on many threads at once, and two withdrawals both succeed. Choose the fix that removes the flaw."
@@ -481,8 +513,31 @@
             "say": "Log4Shell hid in Log4j, a Java logging library inside thousands of products."
           },
           {
-            "code": "CVE-2021-44228\nCVSS 10.0\ncrafted string in logs\nruns code on server",
-            "language": "Log4Shell"
+            "table": {
+              "head": [
+                "Fact",
+                "Log4Shell"
+              ],
+              "rows": [
+                [
+                  "CVE ID",
+                  "CVE-2021-44228"
+                ],
+                [
+                  "CVSS score",
+                  "10.0"
+                ],
+                [
+                  "Trigger",
+                  "a crafted string in the logs"
+                ],
+                [
+                  "Effect",
+                  "runs code on the server"
+                ]
+              ]
+            },
+            "caption": "Log4Shell at a glance"
           },
           {
             "say": "A **Software Bill of Materials** (SBoM) lists every component and version in a product."
@@ -494,8 +549,12 @@
             "say": "Searching SBoMs can answer 'are we affected?' in hours instead of weeks."
           },
           {
-            "code": "SPDX\nCycloneDX",
-            "language": "common SBoM formats"
+            "list": [
+              "SPDX",
+              "CycloneDX"
+            ],
+            "ordered": false,
+            "caption": "common SBoM formats"
           }
         ],
         "say": "Log4Shell hid in Log4j, a Java logging library inside thousands of products. A **Software Bill of Materials** (SBoM) lists every component and version in a product. That includes **transitive dependencies**: libraries pulled in by other libraries. Searching SBoMs can answer 'are we affected?' in hours instead of weeks."
@@ -529,8 +588,31 @@
             "say": "**CVSS**, the Common Vulnerability Scoring System, rates severity from 0 to 10."
           },
           {
-            "code": "0.1 - 3.9   Low\n4.0 - 6.9   Medium\n7.0 - 8.9   High\n9.0 - 10.0  Critical",
-            "language": "CVSS severity"
+            "table": {
+              "head": [
+                "Score",
+                "Rating"
+              ],
+              "rows": [
+                [
+                  "0.1 - 3.9",
+                  "Low"
+                ],
+                [
+                  "4.0 - 6.9",
+                  "Medium"
+                ],
+                [
+                  "7.0 - 8.9",
+                  "High"
+                ],
+                [
+                  "9.0 - 10.0",
+                  "Critical"
+                ]
+              ]
+            },
+            "caption": "CVSS severity"
           },
           {
             "say": "A **vector string** records the metrics behind the score."
@@ -540,32 +622,92 @@
             "language": "one vector, wrapped"
           },
           {
-            "code": "AV:N  vector: network\nAC:L  complexity: low\nPR:N  privileges: none\nUI:N  user action: none\nS:U   scope: unchanged\nC:H   confidentiality: high\nI:H   integrity: high\nA:H   availability: high",
-            "language": "decoding it"
+            "table": {
+              "head": [
+                "Pair",
+                "Meaning"
+              ],
+              "rows": [
+                [
+                  "`AV:N`",
+                  "vector: network"
+                ],
+                [
+                  "`AC:L`",
+                  "complexity: low"
+                ],
+                [
+                  "`PR:N`",
+                  "privileges: none"
+                ],
+                [
+                  "`UI:N`",
+                  "user action: none"
+                ],
+                [
+                  "`S:U`",
+                  "scope: unchanged"
+                ],
+                [
+                  "`C:H`",
+                  "confidentiality: high"
+                ],
+                [
+                  "`I:H`",
+                  "integrity: high"
+                ],
+                [
+                  "`A:H`",
+                  "availability: high"
+                ]
+              ]
+            },
+            "caption": "decoding it"
           },
           {
             "say": "Read it pair by pair; this vector scores 9.8."
-          },
-          {
-            "say": "Those are **base metrics**, which describe the flaw in the abstract."
-          },
-          {
-            "say": "CVSS measures severity, not how likely an attack is."
-          },
-          {
-            "code": "AV  N, A (same segment),\n    L, P (physical)\nPR  N, L, H\nUI  N, R (victim acts)\nS   U, C (spills into\n    another component)\nC/I/A  N, L, H",
-            "language": "other values"
           }
         ],
-        "say": "**CVSS**, the Common Vulnerability Scoring System, rates severity from 0 to 10. A **vector string** records the metrics behind the score. Read it pair by pair; this vector scores 9.8. Those are **base metrics**, which describe the flaw in the abstract. CVSS measures severity, not how likely an attack is."
+        "say": "**CVSS**, the Common Vulnerability Scoring System, rates severity from 0 to 10. A **vector string** records the metrics behind the score. Read it pair by pair; this vector scores 9.8."
       },
       {
         "beats": [
           {
-            "say": "**Threat** metrics add whether an exploit exists."
+            "say": "The pairs are **base metrics**, which describe a flaw's severity in the abstract, not how likely an attack is."
           },
           {
-            "say": "**Environmental** metrics add how much the asset matters to you."
+            "table": {
+              "head": [
+                "Metric",
+                "Possible values"
+              ],
+              "rows": [
+                [
+                  "`AV`",
+                  "N, A (same segment), L, P (physical)"
+                ],
+                [
+                  "`PR`",
+                  "N, L, H"
+                ],
+                [
+                  "`UI`",
+                  "N, R (victim acts)"
+                ],
+                [
+                  "`S`",
+                  "U, C (spills into another component)"
+                ],
+                [
+                  "`C`/`I`/`A`",
+                  "N, L, H"
+                ]
+              ]
+            },
+            "caption": "other values"
+          },
+          {
+            "say": "**Threat** metrics add whether an exploit exists, and **Environmental** metrics add how much the asset matters to you."
           },
           {
             "say": "CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now, so patch these first."
@@ -574,7 +716,7 @@
             "say": "FIRST's **EPSS** estimates the chance of exploitation in the next 30 days."
           }
         ],
-        "say": "**Threat** metrics add whether an exploit exists. **Environmental** metrics add how much the asset matters to you. CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now, so patch these first. FIRST's **EPSS** estimates the chance of exploitation in the next 30 days.",
+        "say": "The pairs are **base metrics**, which describe a flaw's severity in the abstract, not how likely an attack is. **Threat** metrics add whether an exploit exists, and **Environmental** metrics add how much the asset matters to you. CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now, so patch these first. FIRST's **EPSS** estimates the chance of exploitation in the next 30 days.",
         "check": {
           "prompt": "Flaw A scores 9.8, with an EPSS near zero and no KEV entry. Flaw B scores 6.5 and is in KEV. Both sit on internet-facing servers. Which do you patch first?",
           "answer": "B, because KEV shows attackers are using it now",
@@ -850,10 +992,6 @@
             "say": "Three languages carry most security automation."
           },
           {
-            "code": "Python      web, cloud SDKs\nPowerShell  Windows, M365\nBash        Linux, pipelines",
-            "language": "language: its job"
-          },
-          {
             "say": "**Python** drives web services and cloud kits such as `boto3`."
           },
           {
@@ -920,13 +1058,13 @@
             }
           },
           {
-            "say": "Here the script isolates each affected host through the EDR tool's API, then opens one ticket."
+            "say": "In this flow, the script isolates each affected host through the EDR tool's API, then opens one ticket."
           },
           {
             "say": "A webhook endpoint is attack surface, so authenticate callers with signed payloads or mutual TLS, and validate input."
           }
         ],
-        "say": "Here the script isolates each affected host through the EDR tool's API, then opens one ticket. A webhook endpoint is attack surface, so authenticate callers with signed payloads or mutual TLS, and validate input."
+        "say": "In this flow, the script isolates each affected host through the EDR tool's API, then opens one ticket. A webhook endpoint is attack surface, so authenticate callers with signed payloads or mutual TLS, and validate input."
       },
       {
         "beats": [
@@ -964,8 +1102,31 @@
             "say": "Automation reads **configuration files**, plain text in four common formats."
           },
           {
-            "code": "YAML  Kubernetes, Ansible,\n      CI pipelines\nJSON  cloud templates,\n      API payloads\nXML   SCAP content\nTOML  Python, Rust settings",
-            "language": "format: typical use"
+            "table": {
+              "head": [
+                "Format",
+                "Typical use"
+              ],
+              "rows": [
+                [
+                  "YAML",
+                  "Kubernetes, Ansible, CI pipelines"
+                ],
+                [
+                  "JSON",
+                  "cloud templates, API payloads"
+                ],
+                [
+                  "XML",
+                  "SCAP content"
+                ],
+                [
+                  "TOML",
+                  "Python, Rust settings"
+                ]
+              ]
+            },
+            "caption": "configuration formats"
           },
           {
             "say": "One misplaced YAML indent can attach a setting to the wrong block, so lint and validate first."
@@ -1107,13 +1268,13 @@
             "language": "playbook excerpt"
           },
           {
-            "say": "This one fired on an account HR was quietly investigating."
+            "say": "The `cred-stuffing-v3` playbook fired on an account HR was quietly investigating."
           },
           {
             "say": "The user powered off his laptop, and its memory was lost."
           }
         ],
-        "say": "This one fired on an account HR was quietly investigating. The user powered off his laptop, and its memory was lost.",
+        "say": "The `cred-stuffing-v3` playbook fired on an account HR was quietly investigating. The user powered off his laptop, and its memory was lost.",
         "check": {
           "prompt": "What was the playbook missing?",
           "answer": "A scope condition that sends accounts under HR or legal review to a runbook",
@@ -1138,11 +1299,18 @@
       {
         "beats": [
           {
-            "say": "**Automated patching** covers every layer in the table."
+            "say": "**Automated patching** covers every layer in the list."
           },
           {
-            "code": "operating system\napplications\nhypervisor\nfirmware\nsystem images (the\n  templates new machines\n  are built from)",
-            "language": "what gets patched"
+            "list": [
+              "operating system",
+              "applications",
+              "hypervisor",
+              "firmware",
+              "system images (the templates new machines are built from)"
+            ],
+            "ordered": false,
+            "caption": "what gets patched"
           },
           {
             "say": "Roll out safely: keep a rollback path, patch a pilot group first, use maintenance windows, then confirm with a follow-up scan."
@@ -1154,7 +1322,7 @@
             "say": "With **immutable infrastructure**, you rebuild and redeploy images instead of patching in place."
           }
         ],
-        "say": "**Automated patching** covers every layer in the table. Roll out safely: keep a rollback path, patch a pilot group first, use maintenance windows, then confirm with a follow-up scan. A KEV-listed flaw earns an emergency patch. With **immutable infrastructure**, you rebuild and redeploy images instead of patching in place."
+        "say": "**Automated patching** covers every layer in the list. Roll out safely: keep a rollback path, patch a pilot group first, use maintenance windows, then confirm with a follow-up scan. A KEV-listed flaw earns an emergency patch. With **immutable infrastructure**, you rebuild and redeploy images instead of patching in place."
       }
     ],
     "outro": "Here is another playbook, drawn as a flow. Find where a person has to step in."
@@ -1320,8 +1488,13 @@
             "say": "Add an **out-of-band** call tree on personal phones, since corporate email may be compromised, and a **jump bag** of forensic tools."
           },
           {
-            "code": "write-blockers\nbootable forensic media\nclean drives",
-            "language": "jump bag"
+            "list": [
+              "write-blockers",
+              "bootable forensic media",
+              "clean drives"
+            ],
+            "ordered": false,
+            "caption": "the jump bag"
           }
         ],
         "say": "**Preparation** comes first: a board-approved plan saying who can declare an incident, plus playbooks and runbooks reachable when the network is down. Add an **out-of-band** call tree on personal phones, since corporate email may be compromised, and a **jump bag** of forensic tools."
@@ -1332,8 +1505,23 @@
             "say": "Bring legal in early; notice deadlines start when you become aware."
           },
           {
-            "code": "EU GDPR regulator notice:\n  within 72 hours\nUS SEC 8-K (material):\n  within 4 business days",
-            "language": "notice deadlines"
+            "table": {
+              "head": [
+                "Rule",
+                "Notice deadline"
+              ],
+              "rows": [
+                [
+                  "EU GDPR (regulator notice)",
+                  "within 72 hours"
+                ],
+                [
+                  "US SEC 8-K (material incident)",
+                  "within 4 business days"
+                ]
+              ]
+            },
+            "caption": "notice deadlines"
           },
           {
             "say": "A **legal hold** suspends routine deletion of relevant logs, mail and files when litigation is likely."
@@ -1564,16 +1752,16 @@
             }
           },
           {
-            "say": "**Volatile evidence** vanishes at power-off."
-          },
-          {
-            "say": "**Non-volatile evidence**, such as the disk and logs, persists."
+            "say": "**Volatile evidence** vanishes at power-off, while **non-volatile evidence**, such as the disk and logs, persists."
           },
           {
             "say": "So never reboot, because RAM may hold keys, passwords and malware that never touched the disk."
+          },
+          {
+            "say": "On Windows, `netstat -an` lists every connection and listening port in numeric form; `-o` adds each owner's process ID."
           }
         ],
-        "say": "On a live host, collect in the **order of volatility**: what vanishes first is captured first. **Volatile evidence** vanishes at power-off. **Non-volatile evidence**, such as the disk and logs, persists. So never reboot, because RAM may hold keys, passwords and malware that never touched the disk.",
+        "say": "On a live host, collect in the **order of volatility**: what vanishes first is captured first. **Volatile evidence** vanishes at power-off, while **non-volatile evidence**, such as the disk and logs, persists. So never reboot, because RAM may hold keys, passwords and malware that never touched the disk. On Windows, `netstat -an` lists every connection and listening port in numeric form; `-o` adds each owner's process ID.",
         "check": {
           "prompt": "A laptop with full-disk encryption is still running. Why does capturing memory matter even more here?",
           "answer": "The decryption key may be in RAM, and once powered off the disk may be unreadable",
@@ -1587,9 +1775,6 @@
       {
         "beats": [
           {
-            "say": "On Windows, `netstat -an` lists every connection and listening port in numeric form; `-o` adds each owner's process ID."
-          },
-          {
             "say": "A **write-blocker** keeps the original disk from being written to while you take a bit-for-bit image."
           },
           {
@@ -1600,7 +1785,7 @@
             "say": "Matching SHA-256 hashes before and after prove the image is an exact copy."
           }
         ],
-        "say": "On Windows, `netstat -an` lists every connection and listening port in numeric form; `-o` adds each owner's process ID. A **write-blocker** keeps the original disk from being written to while you take a bit-for-bit image. Matching SHA-256 hashes before and after prove the image is an exact copy."
+        "say": "A **write-blocker** keeps the original disk from being written to while you take a bit-for-bit image. Matching SHA-256 hashes before and after prove the image is an exact copy."
       },
       {
         "beats": [
@@ -1619,8 +1804,35 @@
       {
         "beats": [
           {
-            "code": "network: PCAP, NetFlow\nhost: registry, USB,\n  Prefetch, shell history\nmetadata: EXIF, email\n  headers\ncloud: snapshots, audit\n  log, CWPP agent\nlocked phone: JTAG or ISP",
-            "language": "where to look"
+            "table": {
+              "head": [
+                "Where",
+                "What to look at"
+              ],
+              "rows": [
+                [
+                  "network",
+                  "PCAP, NetFlow"
+                ],
+                [
+                  "host",
+                  "registry, USB, Prefetch, shell history"
+                ],
+                [
+                  "metadata",
+                  "EXIF, email headers"
+                ],
+                [
+                  "cloud",
+                  "snapshots, audit log, CWPP agent"
+                ],
+                [
+                  "locked phone",
+                  "JTAG or ISP"
+                ]
+              ]
+            },
+            "caption": "where to look"
           },
           {
             "say": "A full packet capture (**PCAP**) shows everything; **NetFlow** keeps addresses and counts."
