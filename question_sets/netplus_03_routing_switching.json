@@ -92,7 +92,7 @@
       {
         "beats": [
           {
-            "say": "If a link fails, its routes are withdrawn, and the routers **converge**, settling on another path."
+            "say": "When a link fails, the routes through it are withdrawn, and the routers **converge**, settling on another path."
           },
           {
             "say": "The internet works the same way: organizations announce their public prefixes to their internet service providers (ISPs)."
@@ -101,7 +101,7 @@
             "say": "A static route isn't announced unless redistributed into a routing protocol."
           }
         ],
-        "say": "If a link fails, its routes are withdrawn, and the routers **converge**, settling on another path. The internet works the same way: organizations announce their public prefixes to their internet service providers (ISPs). A static route isn't announced unless redistributed into a routing protocol."
+        "say": "When a link fails, the routes through it are withdrawn, and the routers **converge**, settling on another path. The internet works the same way: organizations announce their public prefixes to their internet service providers (ISPs). A static route isn't announced unless redistributed into a routing protocol."
       }
     ],
     "outro": "Next, Brom shows you the routing table from the Ember Forge branch router. Work out what the router does with one arriving packet."
@@ -213,8 +213,39 @@
             "say": "Each source, such as static routes or the protocols OSPF and EIGRP, has an **administrative distance** (AD): how far the router trusts it. Lower wins."
           },
           {
-            "code": "source            AD\nConnected          0\nStatic             1\neBGP              20\nEIGRP (internal)  90\nOSPF             110\niBGP             200",
-            "language": "Cisco default AD"
+            "table": {
+              "head": [
+                "Source",
+                "Default AD"
+              ],
+              "rows": [
+                [
+                  "Connected",
+                  "0"
+                ],
+                [
+                  "Static",
+                  "1"
+                ],
+                [
+                  "eBGP",
+                  "20"
+                ],
+                [
+                  "EIGRP (internal)",
+                  "90"
+                ],
+                [
+                  "OSPF",
+                  "110"
+                ],
+                [
+                  "iBGP",
+                  "200"
+                ]
+              ]
+            },
+            "caption": "Cisco default administrative distance"
           },
           {
             "say": "If EIGRP and OSPF both offer 10.40.7.0/24, EIGRP wins, because 90 beats 110."
@@ -249,8 +280,27 @@
             "say": "It compares the **metric**, and the best metric wins."
           },
           {
-            "code": "OSPF   adds up link costs\nEIGRP  bandwidth and delay\nBGP    path attributes",
-            "language": "how each protocol measures"
+            "table": {
+              "head": [
+                "Protocol",
+                "How it measures"
+              ],
+              "rows": [
+                [
+                  "OSPF",
+                  "adds up link costs"
+                ],
+                [
+                  "EIGRP",
+                  "bandwidth and delay"
+                ],
+                [
+                  "BGP",
+                  "path attributes"
+                ]
+              ]
+            },
+            "caption": "the metric of each protocol"
           },
           {
             "say": "BGP compares **attributes**, details carried on each route."
@@ -415,8 +465,27 @@
             "say": "An exterior one routes between organizations, each an **autonomous system** (AS) with its own AS number."
           },
           {
-            "code": "OSPF   inside, open\nEIGRP  inside, Cisco\nBGP    between ASes",
-            "language": "where each one runs"
+            "table": {
+              "head": [
+                "Protocol",
+                "Where it runs"
+              ],
+              "rows": [
+                [
+                  "OSPF",
+                  "inside one organization, open standard"
+                ],
+                [
+                  "EIGRP",
+                  "inside one organization, Cisco"
+                ],
+                [
+                  "BGP",
+                  "between autonomous systems"
+                ]
+              ]
+            },
+            "caption": "where each one runs"
           }
         ],
         "say": "An **interior gateway protocol** (IGP) routes inside one organization. An exterior one routes between organizations, each an **autonomous system** (AS) with its own AS number."
@@ -455,8 +524,27 @@
             "say": "A path costs the sum of its links."
           },
           {
-            "code": "link        cost\n10 Gbps       1\n1 Gbps       10\n100 Mbps    100",
-            "language": "cost, 10 Gbps reference"
+            "table": {
+              "head": [
+                "Link",
+                "Cost"
+              ],
+              "rows": [
+                [
+                  "10 Gbps",
+                  "1"
+                ],
+                [
+                  "1 Gbps",
+                  "10"
+                ],
+                [
+                  "100 Mbps",
+                  "100"
+                ]
+              ]
+            },
+            "caption": "cost, 10 Gbps reference"
           },
           {
             "say": "Many routers default to a 100 Mbps reference, so every link of 100 Mbps or faster costs 1. That's why networks raise it."
@@ -675,7 +763,7 @@
       {
         "beats": [
           {
-            "say": "The router also rewrites each flow's source port, and records the pair in its translation table so replies find their way back."
+            "say": "With PAT, the router rewrites each flow's source port and records the pair in its translation table, so replies find their way back."
           },
           {
             "code": "Pro Inside global      Inside local\ntcp 203.0.113.9:40001  10.0.1.21:50111\ntcp 203.0.113.9:40002  10.0.1.22:50111",
@@ -685,7 +773,7 @@
             "say": "On Cisco routers, mark the LAN side `ip nat inside` and the internet side `ip nat outside`."
           }
         ],
-        "say": "The router also rewrites each flow's source port, and records the pair in its translation table so replies find their way back. On Cisco routers, mark the LAN side `ip nat inside` and the internet side `ip nat outside`.",
+        "say": "With PAT, the router rewrites each flow's source port and records the pair in its translation table, so replies find their way back. On Cisco routers, mark the LAN side `ip nat inside` and the internet side `ip nat outside`.",
         "check": {
           "prompt": "A reply from 192.0.2.80:443 arrives for 203.0.113.9:40002. Where does the router send it?",
           "answer": "To 10.0.1.22, port 50111",
@@ -699,7 +787,7 @@
       {
         "beats": [
           {
-            "say": "Now the gateway. Hosts know only one default gateway address."
+            "say": "A host knows only one default gateway address."
           },
           {
             "say": "A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** address and a virtual MAC."
@@ -719,7 +807,7 @@
             "say": "The router with the highest **priority** becomes active."
           }
         ],
-        "say": "Now the gateway. Hosts know only one default gateway address. A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** address and a virtual MAC. The **active** router answers for them; the **standby** waits. The router with the highest **priority** becomes active.",
+        "say": "A host knows only one default gateway address. A **First Hop Redundancy Protocol** (FHRP) lets two routers share a **virtual IP** address and a virtual MAC. The **active** router answers for them; the **standby** waits. The router with the highest **priority** becomes active.",
         "check": {
           "prompt": "R1 (10.0.20.2) is active for virtual IP 10.0.20.1, and R2 (10.0.20.3) is standby. What gateway should DHCP give the hosts?",
           "answer": "10.0.20.1, the virtual IP",
@@ -860,14 +948,14 @@
             "say": "The tag follows **802.1Q**: 4 bytes holding a 12-bit VLAN ID, 1 to 4094."
           },
           {
-            "say": "Trunk Gi1/0/24 is missing from `show vlan brief`; `show interfaces trunk` lists trunks."
+            "say": "Trunk Gi1/0/24 does not appear in `show vlan brief`, so use `show interfaces trunk` to list trunks."
           },
           {
             "code": "interface Gi1/0/1\n switchport mode access\n switchport access vlan 10\n!\ninterface Gi1/0/24\n switchport mode trunk\n switchport trunk allowed vlan 10,30,99\n switchport trunk native vlan 999",
             "language": "Cisco IOS switch"
           }
         ],
-        "say": "A **trunk port** carries many VLANs over one link. Frames on a trunk are **tagged** with their VLAN. The tag follows **802.1Q**: 4 bytes holding a 12-bit VLAN ID, 1 to 4094. Trunk Gi1/0/24 is missing from `show vlan brief`; `show interfaces trunk` lists trunks."
+        "say": "A **trunk port** carries many VLANs over one link. Frames on a trunk are **tagged** with their VLAN. The tag follows **802.1Q**: 4 bytes holding a 12-bit VLAN ID, 1 to 4094. Trunk Gi1/0/24 does not appear in `show vlan brief`, so use `show interfaces trunk` to list trunks."
       },
       {
         "beats": [
@@ -1210,7 +1298,7 @@
       {
         "beats": [
           {
-            "say": "The priority field also holds the VLAN number, the **extended system ID**: 32778 for VLAN 10."
+            "say": "In the bridge ID, the priority field also holds the VLAN number, the **extended system ID**: 32778 for VLAN 10."
           },
           {
             "figure": {
@@ -1227,12 +1315,12 @@
             "say": "On each link, the end nearer the root is the **designated port**. Ties go to the lower bridge ID."
           }
         ],
-        "say": "The priority field also holds the VLAN number, the **extended system ID**: 32778 for VLAN 10. Each non-root switch picks one **root port**: its lowest-cost way to the root. On each link, the end nearer the root is the **designated port**. Ties go to the lower bridge ID."
+        "say": "In the bridge ID, the priority field also holds the VLAN number, the **extended system ID**: 32778 for VLAN 10. Each non-root switch picks one **root port**: its lowest-cost way to the root. On each link, the end nearer the root is the **designated port**. Ties go to the lower bridge ID."
       },
       {
         "beats": [
           {
-            "say": "A port that is neither is blocked. The faster RSTP calls it an **alternate port**."
+            "say": "A port that is neither a root port nor a designated port is blocked, and the faster RSTP calls it an **alternate port**."
           },
           {
             "say": "A port facing one host can be an **edge port** (Cisco's **PortFast**), going straight to forwarding."
@@ -1241,14 +1329,41 @@
             "say": "Classic 802.1D ports move through four **states**."
           },
           {
-            "code": "blocking    hears BPDUs\nlistening   BPDUs only\nlearning    fills table\nforwarding  passes frames\n(disabled = shut down)",
-            "language": "802.1D port states"
+            "table": {
+              "head": [
+                "State",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "blocking",
+                  "hears BPDUs"
+                ],
+                [
+                  "listening",
+                  "BPDUs only"
+                ],
+                [
+                  "learning",
+                  "fills table"
+                ],
+                [
+                  "forwarding",
+                  "passes frames"
+                ],
+                [
+                  "disabled",
+                  "shut down"
+                ]
+              ]
+            },
+            "caption": "802.1D port states"
           },
           {
             "say": "Listening and learning each last the forward delay: 15 seconds by default."
           }
         ],
-        "say": "A port that is neither is blocked. The faster RSTP calls it an **alternate port**. A port facing one host can be an **edge port** (Cisco's **PortFast**), going straight to forwarding. Classic 802.1D ports move through four **states**. Listening and learning each last the forward delay: 15 seconds by default.",
+        "say": "A port that is neither a root port nor a designated port is blocked, and the faster RSTP calls it an **alternate port**. A port facing one host can be an **edge port** (Cisco's **PortFast**), going straight to forwarding. Classic 802.1D ports move through four **states**. Listening and learning each last the forward delay: 15 seconds by default.",
         "check": {
           "prompt": "Two switches run 802.1D with default timers. A new uplink between them comes up, and it isn't an edge port. About how long before it forwards?",
           "answer": "About 30 seconds: 15 listening, 15 learning",
@@ -1268,8 +1383,27 @@
             "say": "Its port states are discarding, learning and forwarding."
           },
           {
-            "code": "MSTP        shared trees\nPVST+       tree per VLAN\nRapid PVST+ fast per VLAN",
-            "language": "other STP modes"
+            "table": {
+              "head": [
+                "Mode",
+                "Idea"
+              ],
+              "rows": [
+                [
+                  "MSTP",
+                  "shared trees"
+                ],
+                [
+                  "PVST+",
+                  "tree per VLAN"
+                ],
+                [
+                  "Rapid PVST+",
+                  "fast per VLAN"
+                ]
+              ]
+            },
+            "caption": "other STP modes"
           },
           {
             "say": "**MSTP** (802.1s) maps many VLANs onto a few tree instances. **PVST+** is Cisco's, running one tree per VLAN."
@@ -1414,8 +1548,23 @@
             "say": "An **error-disabled** (err-disabled) port is one the switch shut down itself after detecting a fault."
           },
           {
-            "code": "BPDU guard:\n  BPDU on an edge port\nport security:\n  MAC violation",
-            "language": "common causes"
+            "table": {
+              "head": [
+                "Feature",
+                "Common cause"
+              ],
+              "rows": [
+                [
+                  "BPDU guard",
+                  "a BPDU arrives on an edge port"
+                ],
+                [
+                  "port security",
+                  "a MAC violation"
+                ]
+              ]
+            },
+            "caption": "common causes"
           },
           {
             "say": "The port stays down until someone fixes the cause and bounces it with `shutdown` then `no shutdown`."
@@ -1435,8 +1584,23 @@
             "say": "**LACP**, the Link Aggregation Control Protocol, builds the bundle by trading messages."
           },
           {
-            "code": "4 links x 1 Gbps\ntotal        4 Gbps\none transfer 1 Gbps",
-            "language": "traffic spreads per flow"
+            "table": {
+              "head": [
+                "Measure",
+                "Speed"
+              ],
+              "rows": [
+                [
+                  "total across the bundle",
+                  "4 Gbps"
+                ],
+                [
+                  "one transfer",
+                  "1 Gbps"
+                ]
+              ]
+            },
+            "caption": "4 links of 1 Gbps: traffic spreads per flow"
           }
         ],
         "say": "**Link aggregation** bundles parallel links into one logical link, a **port channel**, for bandwidth and redundancy. **LACP**, the Link Aggregation Control Protocol, builds the bundle by trading messages."
@@ -1496,8 +1660,36 @@
             "say": "The switch is the **PSE**; the device is the **PD**."
           },
           {
-            "code": "standard   port   device\n802.3af    15.4W  12.95W\n802.3at    30W    25.5W\n802.3bt T3 60W    51W\n802.3bt T4 90W    71.3W",
-            "language": "PoE: port, then device"
+            "table": {
+              "head": [
+                "Standard",
+                "At the port",
+                "At the device"
+              ],
+              "rows": [
+                [
+                  "802.3af",
+                  "15.4 W",
+                  "12.95 W"
+                ],
+                [
+                  "802.3at",
+                  "30 W",
+                  "25.5 W"
+                ],
+                [
+                  "802.3bt T3",
+                  "60 W",
+                  "51 W"
+                ],
+                [
+                  "802.3bt T4",
+                  "90 W",
+                  "71.3 W"
+                ]
+              ]
+            },
+            "caption": "PoE: port, then device"
           },
           {
             "say": "A switch also has a total **PoE budget**: all port allocations must fit inside it."
