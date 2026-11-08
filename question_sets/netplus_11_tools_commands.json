@@ -17,11 +17,26 @@
             "say": "So delay and lost replies show at a glance."
           },
           {
-            "code": "send exactly 4\nLinux    ping -c 4 host\nWindows  ping -n 4 host",
-            "language": "the count flag"
+            "say": "On Linux, plain ping runs until you stop it. On Windows it stops after four."
           },
           {
-            "say": "On Linux, plain ping runs until you stop it. On Windows it stops after four."
+            "table": {
+              "head": [
+                "OS",
+                "Send exactly 4"
+              ],
+              "rows": [
+                [
+                  "Linux",
+                  "`ping -c 4 host`"
+                ],
+                [
+                  "Windows",
+                  "`ping -n 4 host`"
+                ]
+              ]
+            },
+            "caption": "the count flag"
           }
         ],
         "say": "**ping** sends a small 'are you there?' message, an **ICMP Echo Request**. The machine answers with an **Echo Reply**, and ping times the round trip. So delay and lost replies show at a glance. On Linux, plain ping runs until you stop it. On Windows it stops after four."
@@ -44,24 +59,34 @@
           },
           {
             "say": "traceroute sends probes with TTL 1, then 2, then 3. A router that drops one answers with **ICMP Time Exceeded**, naming itself."
-          }
-        ],
-        "say": "**traceroute** lists the routers on the way to a destination. Every packet carries a countdown number, its **TTL**. Each router subtracts one, and drops the packet at zero. traceroute sends probes with TTL 1, then 2, then 3. A router that drops one answers with **ICMP Time Exceeded**, naming itself."
-      },
-      {
-        "beats": [
-          {
-            "say": "The tool's name depends on the operating system."
           },
           {
-            "code": "OS        command\nWindows   tracert\nLinux/Mac traceroute\n\nOS        probes\nWindows   ICMP Echo\nLinux/Mac UDP (default)",
-            "language": "names and probes"
+            "say": "The tool's name and its probes depend on the operating system."
           },
           {
-            "say": "Either way, the router that drops the probe answers with Time Exceeded."
+            "table": {
+              "head": [
+                "OS",
+                "Command",
+                "Probes sent"
+              ],
+              "rows": [
+                [
+                  "Windows",
+                  "`tracert`",
+                  "ICMP Echo"
+                ],
+                [
+                  "Linux and macOS",
+                  "`traceroute`",
+                  "UDP (the default)"
+                ]
+              ]
+            },
+            "caption": "traceroute by operating system"
           }
         ],
-        "say": "The tool's name depends on the operating system. Either way, the router that drops the probe answers with Time Exceeded.",
+        "say": "**traceroute** lists the routers on the way to a destination. Every packet carries a countdown number, its **TTL**. Each router subtracts one, and drops the packet at zero. traceroute sends probes with TTL 1, then 2, then 3. A router that drops one answers with **ICMP Time Exceeded**, naming itself. The tool's name and its probes depend on the operating system.",
         "check": {
           "prompt": "A traceroute shows the first six hops answering quickly, then hop 7 onward all time out, yet the destination web page loads fine. What is the MOST likely reason?",
           "answer": "Those routers are configured not to reply to the probes, but still forward traffic",
@@ -81,7 +106,7 @@
             "say": "**dig** gives fuller answers on Linux and macOS, but Windows doesn't include it."
           },
           {
-            "code": "dig silverkeep.example\n    AAAA",
+            "code": "dig silverkeep.example AAAA",
             "language": "one record type"
           },
           {
@@ -96,26 +121,52 @@
             "say": "**ipconfig** shows a Windows host's own settings."
           },
           {
-            "code": "Windows\n ipconfig\n ipconfig /all\n ipconfig /flushdns\nLinux\n ip address (ip a)\n ifconfig (older)",
-            "language": "own address and settings"
-          },
-          {
-            "say": "Add `/all` for more, such as the DNS servers. `/flushdns` empties the DNS cache."
-          },
-          {
             "say": "Modern Linux uses **ip address**, or `ip a`. The older **ifconfig** may still be installed."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "System",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "`ipconfig`",
+                  "Windows",
+                  "shows the host's own address and settings"
+                ],
+                [
+                  "`ipconfig /all`",
+                  "Windows",
+                  "shows more, such as the DNS servers"
+                ],
+                [
+                  "`ipconfig /flushdns`",
+                  "Windows",
+                  "empties the DNS cache"
+                ],
+                [
+                  "`ip address` (`ip a`)",
+                  "Linux",
+                  "shows the host's addresses"
+                ],
+                [
+                  "`ifconfig`",
+                  "older Linux",
+                  "the older tool, which may still be installed"
+                ]
+              ]
+            },
+            "caption": "own address and settings"
           }
         ],
-        "say": "**ipconfig** shows a Windows host's own settings. Add `/all` for more, such as the DNS servers. `/flushdns` empties the DNS cache. Modern Linux uses **ip address**, or `ip a`. The older **ifconfig** may still be installed."
+        "say": "**ipconfig** shows a Windows host's own settings. Modern Linux uses **ip address**, or `ip a`. The older **ifconfig** may still be installed."
       },
       {
         "beats": [
           {
             "say": "**netstat**, or **ss** on modern Linux, lists this host's own connections and listening ports."
-          },
-          {
-            "code": "netstat -an   (ss -an)\n  this host's connections\narp -a\n  IP-to-MAC cache\nnmap\n  scans other hosts",
-            "language": "three more tools"
           },
           {
             "say": "`-a` shows them all, and `-n` keeps addresses and ports as numbers."
@@ -125,6 +176,29 @@
           },
           {
             "say": "**nmap** scans other hosts to find which are up, their open ports, services and OS."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "Looks at"
+              ],
+              "rows": [
+                [
+                  "`netstat -an` (`ss -an`)",
+                  "this host's connections"
+                ],
+                [
+                  "`arp -a`",
+                  "the IP-to-MAC cache"
+                ],
+                [
+                  "`nmap`",
+                  "other hosts"
+                ]
+              ]
+            },
+            "caption": "three more tools"
           }
         ],
         "say": "**netstat**, or **ss** on modern Linux, lists this host's own connections and listening ports. `-a` shows them all, and `-n` keeps addresses and ports as numbers. **arp -a** prints the cache of IP-to-MAC pairs. **nmap** scans other hosts to find which are up, their open ports, services and OS."
@@ -468,18 +542,10 @@
             "say": "A **packet capture** records whole packets off a network interface: headers and payload, the data inside."
           },
           {
-            "say": "On Linux the classic tool is **tcpdump**. It saves what it sees in a `.pcap` file."
-          }
-        ],
-        "say": "A **packet capture** records whole packets off a network interface: headers and payload, the data inside. On Linux the classic tool is **tcpdump**. It saves what it sees in a `.pcap` file."
-      },
-      {
-        "beats": [
-          {
-            "say": "You open that file in a **packet analyzer**, also called a protocol analyzer."
+            "say": "On Linux the classic tool is **tcpdump**, which saves a `.pcap` file you open in a **packet analyzer**, also called a protocol analyzer."
           },
           {
-            "say": "**Wireshark** is the best known. It decodes each packet across hundreds of protocols."
+            "say": "**Wireshark** is the best known, decoding each packet across hundreds of protocols."
           },
           {
             "code": "tcpdump -i eth0 port 53",
@@ -489,7 +555,7 @@
             "say": "`-i` picks the interface, and `port 53` keeps only DNS traffic."
           }
         ],
-        "say": "You open that file in a **packet analyzer**, also called a protocol analyzer. **Wireshark** is the best known. It decodes each packet across hundreds of protocols. `-i` picks the interface, and `port 53` keeps only DNS traffic."
+        "say": "A **packet capture** records whole packets off a network interface: headers and payload, the data inside. On Linux the classic tool is **tcpdump**, which saves a `.pcap` file you open in a **packet analyzer**, also called a protocol analyzer. **Wireshark** is the best known, decoding each packet across hundreds of protocols. `-i` picks the interface, and `port 53` keeps only DNS traffic."
       },
       {
         "beats": [
@@ -502,34 +568,30 @@
             }
           },
           {
-            "say": "Capturing everything is heavy."
+            "say": "Capturing everything is heavy, so **NetFlow** instead exports one summary of each conversation, a **flow**, with no payload."
           },
           {
-            "say": "**NetFlow** instead exports one summary of each conversation, a **flow**, with no payload."
-          },
-          {
-            "code": "source IP, destination IP\nsource port, dest. port\nprotocol\nbytes, packets\nstart and end time",
-            "language": "a NetFlow record"
+            "list": [
+              "source IP, destination IP",
+              "source port, destination port",
+              "protocol",
+              "bytes, packets",
+              "start and end time"
+            ],
+            "ordered": false,
+            "caption": "a NetFlow record"
           },
           {
             "say": "A vendor-neutral standard built from it is **IPFIX**."
-          }
-        ],
-        "say": "Capturing everything is heavy. **NetFlow** instead exports one summary of each conversation, a **flow**, with no payload. A vendor-neutral standard built from it is **IPFIX**."
-      },
-      {
-        "beats": [
-          {
-            "say": "A flow answers who talked to whom, how much, and when."
           },
           {
-            "say": "A full capture answers what they actually said."
+            "say": "A flow answers who talked to whom, how much, and when. A full capture answers what they actually said."
           },
           {
             "say": "A report that a host sent 240,240 bytes is flow data, not a packet."
           }
         ],
-        "say": "A flow answers who talked to whom, how much, and when. A full capture answers what they actually said. A report that a host sent 240,240 bytes is flow data, not a packet.",
+        "say": "Capturing everything is heavy, so **NetFlow** instead exports one summary of each conversation, a **flow**, with no payload. A vendor-neutral standard built from it is **IPFIX**. A flow answers who talked to whom, how much, and when. A full capture answers what they actually said. A report that a host sent 240,240 bytes is flow data, not a packet.",
         "check": {
           "prompt": "You need to prove which exact HTTP URL a host requested. Which source has that detail?",
           "answer": "A full packet capture, because it keeps the payload",
@@ -560,7 +622,7 @@
             "say": "Here is one collected line, read left to right."
           },
           {
-            "code": "Mar 2 23:41:55 core1 %LINK-3-UPDOWN:\n  Interface TenGigabitEthernet1/1, changed state to up",
+            "code": "Mar 2 23:41:55 core1 %LINK-3-UPDOWN: Interface TenGigabitEthernet1/1, changed state to up",
             "language": "syslog"
           },
           {
@@ -728,8 +790,13 @@
             "say": "So it also sees sources that are not Wi-Fi:"
           },
           {
-            "code": "microwave oven\n2.4 GHz cordless phone\nBluetooth device",
-            "language": "non-Wi-Fi interference"
+            "list": [
+              "microwave oven",
+              "2.4 GHz cordless phone",
+              "Bluetooth device"
+            ],
+            "ordered": false,
+            "caption": "non-Wi-Fi interference"
           },
           {
             "say": "Those crowd the band, and only a spectrum analyzer shows them."
@@ -752,31 +819,48 @@
             "say": "To watch a link, you need a copy of its traffic."
           },
           {
-            "say": "A **network tap** is a device spliced into the cable."
+            "say": "A **network tap** is a device spliced into the cable that copies its traffic, both directions at once (**full-duplex**), to a monitor port."
           },
           {
-            "say": "It copies the traffic, in both directions at once (**full-duplex**), out to a monitor port."
+            "say": "A switch can copy traffic inside itself instead, with a **SPAN**, or mirror, port."
           },
           {
-            "say": "No frames are lost, but a tap sees only the link it sits on."
-          }
-        ],
-        "say": "To watch a link, you need a copy of its traffic. A **network tap** is a device spliced into the cable. It copies the traffic, in both directions at once (**full-duplex**), out to a monitor port. No frames are lost, but a tap sees only the link it sits on."
-      },
-      {
-        "beats": [
-          {
-            "say": "A switch can make the copy inside itself instead: a **SPAN**, or mirror, port."
-          },
-          {
-            "code": "tap\n  in the cable\n  loses no frames\n  passes physical errors\nSPAN port\n  set up in the switch\n  may drop frames\n  usually filters errors",
-            "language": "tap or SPAN"
+            "table": {
+              "head": [
+                "Compared",
+                "Network tap",
+                "SPAN port"
+              ],
+              "rows": [
+                [
+                  "Where it lives",
+                  "in the cable",
+                  "set up in the switch"
+                ],
+                [
+                  "Frames",
+                  "loses no frames",
+                  "may drop frames"
+                ],
+                [
+                  "Physical errors",
+                  "passes them on",
+                  "usually filters them"
+                ],
+                [
+                  "Sees",
+                  "only the link it sits on",
+                  "the source ports you pick"
+                ]
+              ]
+            },
+            "caption": "tap or SPAN"
           },
           {
             "say": "A SPAN session copies a **source** port to a **destination** port, where the analyzer plugs in."
           }
         ],
-        "say": "A switch can make the copy inside itself instead: a **SPAN**, or mirror, port. A SPAN session copies a **source** port to a **destination** port, where the analyzer plugs in."
+        "say": "To watch a link, you need a copy of its traffic. A **network tap** is a device spliced into the cable that copies its traffic, both directions at once (**full-duplex**), to a monitor port. A switch can copy traffic inside itself instead, with a **SPAN**, or mirror, port. A SPAN session copies a **source** port to a **destination** port, where the analyzer plugs in."
       }
     ],
     "outro": "Next, Old Hask has a job to do in the wiring closet. Read it and pick the tool built for it."
@@ -941,24 +1025,16 @@
             "language": "ip route"
           },
           {
-            "say": "The first word of each line is the destination. `default` is the catch-all, used when nothing more specific matches."
+            "say": "The first word of each line is the destination, and `default` is the catch-all when nothing more specific matches."
           },
           {
-            "say": "`src` is this host's own address on that network."
-          }
-        ],
-        "say": "A host's **route table** says where it sends each packet. On Linux, `ip route` prints it. The first word of each line is the destination. `default` is the catch-all, used when nothing more specific matches. `src` is this host's own address on that network."
-      },
-      {
-        "beats": [
-          {
-            "say": "`default via 192.168.1.1` hands anything outside 192.168.1.0/24 to 192.168.1.1: the **default gateway**."
+            "say": "So `default via 192.168.1.1` sends anything outside 192.168.1.0/24 to the **default gateway**, 192.168.1.1."
           },
           {
-            "say": "The second line is the directly connected LAN, reached without a gateway."
+            "say": "The second line is the connected LAN, reached without a gateway. `src` is this host's own address."
           }
         ],
-        "say": "`default via 192.168.1.1` hands anything outside 192.168.1.0/24 to 192.168.1.1: the **default gateway**. The second line is the directly connected LAN, reached without a gateway.",
+        "say": "A host's **route table** says where it sends each packet. On Linux, `ip route` prints it. The first word of each line is the destination, and `default` is the catch-all when nothing more specific matches. So `default via 192.168.1.1` sends anything outside 192.168.1.0/24 to the **default gateway**, 192.168.1.1. The second line is the connected LAN, reached without a gateway. `src` is this host's own address.",
         "check": {
           "prompt": "A host's route table holds `default via 192.168.1.1` and `192.168.1.0/24 dev eth0`. Which line decides where a packet for 8.8.8.8 goes first?",
           "answer": "The default route, via 192.168.1.1, since 8.8.8.8 is not in 192.168.1.0/24",
@@ -972,11 +1048,11 @@
       {
         "beats": [
           {
-            "code": "192.168.1.1   aa-bb-cc-00-11-22  dynamic\n192.168.1.60  aa-bb-cc-00-11-22  dynamic",
-            "language": "arp -a"
+            "say": "`arp -a` prints the **ARP cache**: each line pairs an IP address with the MAC address that answered for it."
           },
           {
-            "say": "`arp -a` prints the **ARP cache**: each line pairs an IP address with the MAC address that answered for it."
+            "code": "192.168.1.1   aa-bb-cc-00-11-22  dynamic\n192.168.1.60  aa-bb-cc-00-11-22  dynamic",
+            "language": "arp -a"
           },
           {
             "say": "Read carefully: two different IPs share one MAC."
@@ -1165,32 +1241,48 @@
             "say": "Work from the symptom, because the complaint points at the tool."
           },
           {
-            "code": "is the server up?\n  ping\nwhere is the path slow?\n  traceroute\nIP works, name doesn't?\n  nslookup or dig",
-            "language": "reachability and names"
+            "say": "Reachability and the path to a server each have a command, and a name that won't resolve is a job for DNS lookups."
           },
           {
-            "say": "Use ping to test reachability and traceroute to see the path."
+            "say": "To see which services this host is listening on, read its own connection list. To look beyond it, you need a different tool."
           },
           {
-            "say": "A name that won't resolve is a job for DNS lookups."
+            "table": {
+              "head": [
+                "Symptom",
+                "Tool"
+              ],
+              "rows": [
+                [
+                  "is the server up?",
+                  "`ping`"
+                ],
+                [
+                  "where is the path slow?",
+                  "`traceroute`"
+                ],
+                [
+                  "IP works, name doesn't?",
+                  "`nslookup` or `dig`"
+                ],
+                [
+                  "what is listening here?",
+                  "`netstat`"
+                ],
+                [
+                  "what else is out there?",
+                  "`nmap`"
+                ],
+                [
+                  "one IP, two MACs?",
+                  "`arp -a`"
+                ]
+              ]
+            },
+            "caption": "software tools by symptom"
           }
         ],
-        "say": "Work from the symptom, because the complaint points at the tool. Use ping to test reachability and traceroute to see the path. A name that won't resolve is a job for DNS lookups."
-      },
-      {
-        "beats": [
-          {
-            "code": "what is listening here?\n  netstat\nwhat else is out there?\n  nmap\none IP, two MACs?\n  arp -a",
-            "language": "this host and its LAN"
-          },
-          {
-            "say": "To see which services this host is listening on, read its own connection list."
-          },
-          {
-            "say": "To look beyond it, you need a different tool."
-          }
-        ],
-        "say": "To see which services this host is listening on, read its own connection list. To look beyond it, you need a different tool.",
+        "say": "Work from the symptom, because the complaint points at the tool. Reachability and the path to a server each have a command, and a name that won't resolve is a job for DNS lookups. To see which services this host is listening on, read its own connection list. To look beyond it, you need a different tool.",
         "check": {
           "prompt": "You must find which hosts on a subnet are up and which ports each one exposes. Which tool fits?",
           "answer": "nmap, which probes the whole range across the network",
@@ -1204,14 +1296,33 @@
       {
         "beats": [
           {
-            "code": "which cable is this?\n  toner and probe\nwhat jams this channel?\n  spectrum analyzer\ncopy a link to watch?\n  network tap",
-            "language": "hardware"
-          },
-          {
             "say": "Some symptoms are physical or radio, and no command reaches them."
           },
           {
             "say": "Those need a hand-held tool, or a tap."
+          },
+          {
+            "table": {
+              "head": [
+                "Symptom",
+                "Tool"
+              ],
+              "rows": [
+                [
+                  "which cable is this?",
+                  "toner and probe"
+                ],
+                [
+                  "what jams this channel?",
+                  "spectrum analyzer"
+                ],
+                [
+                  "copy a link to watch?",
+                  "network tap"
+                ]
+              ]
+            },
+            "caption": "hardware tools by symptom"
           }
         ],
         "say": "Some symptoms are physical or radio, and no command reaches them. Those need a hand-held tool, or a tap."
