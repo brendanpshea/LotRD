@@ -39,7 +39,7 @@
       {
         "beats": [
           {
-            "say": "The rule for every interpreter: keep data separate from code."
+            "say": "With every interpreter, keep data separate from code."
           },
           {
             "say": "For SQL, a **parameterized query** sends the query with a `?` placeholder and binds the value separately."
@@ -55,7 +55,7 @@
             "say": "Validation narrows the input; separation is what stops it running."
           }
         ],
-        "say": "The rule for every interpreter: keep data separate from code. For SQL, a **parameterized query** sends the query with a `?` placeholder and binds the value separately. **Input validation** accepts only what you expect, such as letters, digits and `.png`. Validation narrows the input; separation is what stops it running."
+        "say": "With every interpreter, keep data separate from code. For SQL, a **parameterized query** sends the query with a `?` placeholder and binds the value separately. **Input validation** accepts only what you expect, such as letters, digits and `.png`. Validation narrows the input; separation is what stops it running."
       },
       {
         "beats": [
@@ -95,7 +95,7 @@
       {
         "beats": [
           {
-            "say": "In **server-side request forgery** (SSRF), the server itself is tricked into fetching a URL the attacker chose."
+            "say": "In **server-side request forgery** (SSRF), the server is tricked into fetching a URL the attacker chose."
           },
           {
             "figure": {
@@ -109,10 +109,10 @@
             "say": "Often the target is an internal service or the cloud metadata endpoint, which hands out credentials."
           },
           {
-            "say": "The fix: allow-list where the server may connect, block internal addresses, and on AWS require token-based **IMDSv2**."
+            "say": "The fix is to allow-list where it may connect, block internal addresses, and on AWS require token-based **IMDSv2**."
           }
         ],
-        "say": "In **server-side request forgery** (SSRF), the server itself is tricked into fetching a URL the attacker chose. Often the target is an internal service or the cloud metadata endpoint, which hands out credentials. The fix: allow-list where the server may connect, block internal addresses, and on AWS require token-based **IMDSv2**.",
+        "say": "In **server-side request forgery** (SSRF), the server is tricked into fetching a URL the attacker chose. Often the target is an internal service or the cloud metadata endpoint, which hands out credentials. The fix is to allow-list where it may connect, block internal addresses, and on AWS require token-based **IMDSv2**.",
         "check": {
           "prompt": "A bank customer, still logged in, opens a post on an outside forum that silently submits the bank's transfer form. Which class is it, and what stops it?",
           "answer": "CSRF, stopped by a per-form token the bank verifies",
@@ -129,17 +129,20 @@
             "say": "**Deserialization** turns saved bytes back into live objects."
           },
           {
-            "say": "In native formats such as Python's `pickle`, whoever controls the bytes can make the loader run code: **insecure deserialization**."
+            "say": "In native formats such as Python's `pickle`, whoever controls the bytes can make the loader run code."
+          },
+          {
+            "say": "That flaw is **insecure deserialization**."
           },
           {
             "code": "session = pickle.loads(base64.b64decode(request.cookies[\"session\"]))",
             "language": "python"
           },
           {
-            "say": "The fix: use a data-only format such as JSON, checked against a strict schema."
+            "say": "The fix is to use a data-only format such as JSON, checked against a strict schema."
           }
         ],
-        "say": "**Deserialization** turns saved bytes back into live objects. In native formats such as Python's `pickle`, whoever controls the bytes can make the loader run code: **insecure deserialization**. The fix: use a data-only format such as JSON, checked against a strict schema."
+        "say": "**Deserialization** turns saved bytes back into live objects. In native formats such as Python's `pickle`, whoever controls the bytes can make the loader run code. That flaw is **insecure deserialization**. The fix is to use a data-only format such as JSON, checked against a strict schema."
       }
     ],
     "outro": "Next, a Java service reads a cookie that comes straight back from the user's browser. Name the family first, then the fix."
@@ -154,7 +157,7 @@
       "Stored XSS; HTML-encode the decoded prefs every time the settings page renders them",
       "CSRF; require an unpredictable per-session token on each state-changing request that carries the cookie"
     ],
-    "feedback": "Java's native ObjectInputStream rebuilds whatever object graph the bytes describe, and these bytes come from the client, so a crafted payload can run code inside readObject(): insecure deserialization. The root-cause fix is to stop deserializing untrusted bytes natively and parse a data-only format against a schema. No SQL is built here, so a prepared statement changes nothing; HTML-encoding protects page output, not the loader; and a CSRF token stops forged requests from other sites, not a malicious cookie the attacker sends from their own browser."
+    "feedback": "Java's native ObjectInputStream rebuilds whatever object graph the bytes describe, and these bytes come from the client, so a crafted payload can run code inside readObject(). That flaw is insecure deserialization. The root-cause fix is to stop deserializing untrusted bytes natively and parse a data-only format against a schema. No SQL is built here, so a prepared statement changes nothing. HTML-encoding protects page output and not the loader. A CSRF token stops forged requests from other sites, but not a malicious cookie the attacker sends from their own browser."
   },
   {
     "type": "cloze",
@@ -197,7 +200,7 @@
       "HTML-encode the fetched body before returning it, so no script inside a feed can execute",
       "Require a CSRF token on the preview request so that other sites cannot trigger the fetch"
     ],
-    "feedback": "The server is fetching a URL the attacker chose and reaching the instance metadata service at 169.254.169.254, which hands out credentials: server-side request forgery. Because the feature needs only twelve partners, allow-listing destinations removes the weakness, blocking internal addresses covers redirects and lookalike hosts, and token-based IMDSv2 adds a second barrier. A well-formed http URL is exactly what the attack used; HTML-encoding fixes XSS in the response, not where the server connects; and a CSRF token stops other sites forging the request, not an attacker who sends it directly."
+    "feedback": "The server is fetching a URL the attacker chose and reaching the instance metadata service at 169.254.169.254, which hands out credentials. That attack is server-side request forgery. Because the feature needs only twelve partners, allow-listing destinations removes the weakness, blocking internal addresses covers redirects and lookalike hosts, and token-based IMDSv2 adds a second barrier. A well-formed http URL is exactly what the attack used. HTML-encoding fixes XSS in the response and not where the server connects. A CSRF token stops other sites forging the request, but not an attacker who sends it directly."
   },
   {
     "question": "A code review at Highrook Conclave finds three flaws: the login query is built by string concatenation, comment text is written into pages unencoded, and session data is loaded from a cookie with Python's pickle. Which changes remove a root cause rather than catch exploitation after the fact?",
@@ -266,10 +269,10 @@
             "say": "**Memory unsafety** means code that touches memory it shouldn't: buffer overflows, use-after-free, integer overflows."
           },
           {
-            "say": "A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`."
+            "say": "A **memory-safe function** checks bounds, such as `snprintf` used instead of `sprintf`."
           }
         ],
-        "say": "An **atomic function** finishes as one indivisible step. A **thread-safe function** stays correct when many threads (parallel tasks) run it at once. **Memory unsafety** means code that touches memory it shouldn't: buffer overflows, use-after-free, integer overflows. A **memory-safe function** checks bounds: `snprintf` instead of `sprintf`."
+        "say": "An **atomic function** finishes as one indivisible step. A **thread-safe function** stays correct when many threads (parallel tasks) run it at once. **Memory unsafety** means code that touches memory it shouldn't: buffer overflows, use-after-free, integer overflows. A **memory-safe function** checks bounds, such as `snprintf` used instead of `sprintf`."
       },
       {
         "beats": [
@@ -351,7 +354,7 @@
       "Validate the amount against an allow-list of permitted withdrawal values before the check runs",
       "Limit each account to one withdrawal request per second at the API gateway in front of the service"
     ],
-    "feedback": "Both threads read 1,000 before either wrote, so both passed the check: a time-of-check-to-time-of-use race. Making check and debit indivisible (a row lock, a transaction, or an UPDATE ... WHERE balance >= amount) leaves no gap to exploit. A second read has its own gap between the read and the write; validating the amount checks the input, not the timing; and a rate limit makes the race harder to hit, but requests that land inside the same window, or on different gateway nodes, can still win it."
+    "feedback": "Both threads read 1,000 before either wrote, so both passed the check. That is a time-of-check-to-time-of-use race. Making check and debit indivisible (a row lock, a transaction, or an UPDATE ... WHERE balance >= amount) leaves no gap to exploit. A second read has its own gap between the read and the write. Validating the amount checks the input and not the timing. A rate limit makes the race harder to hit, but requests that land inside the same window, or on different gateway nodes, can still win it."
   },
   {
     "type": "matching",
@@ -488,14 +491,14 @@
             "say": "That includes **transitive dependencies**: libraries pulled in by other libraries."
           },
           {
-            "say": "Searching SBoMs answers 'are we affected?' in hours, not weeks."
+            "say": "Searching SBoMs can answer 'are we affected?' in hours instead of weeks."
           },
           {
             "code": "SPDX\nCycloneDX",
             "language": "common SBoM formats"
           }
         ],
-        "say": "Log4Shell hid in Log4j, a Java logging library inside thousands of products. A **Software Bill of Materials** (SBoM) lists every component and version in a product. That includes **transitive dependencies**: libraries pulled in by other libraries. Searching SBoMs answers 'are we affected?' in hours, not weeks."
+        "say": "Log4Shell hid in Log4j, a Java logging library inside thousands of products. A **Software Bill of Materials** (SBoM) lists every component and version in a product. That includes **transitive dependencies**: libraries pulled in by other libraries. Searching SBoMs can answer 'are we affected?' in hours instead of weeks."
       },
       {
         "beats": [
@@ -544,7 +547,7 @@
             "say": "Read it pair by pair; this vector scores 9.8."
           },
           {
-            "say": "Those are **base metrics**: the flaw in the abstract."
+            "say": "Those are **base metrics**, which describe the flaw in the abstract."
           },
           {
             "say": "CVSS measures severity, not how likely an attack is."
@@ -554,21 +557,24 @@
             "language": "other values"
           }
         ],
-        "say": "**CVSS**, the Common Vulnerability Scoring System, rates severity from 0 to 10. A **vector string** records the metrics behind the score. Read it pair by pair; this vector scores 9.8. Those are **base metrics**: the flaw in the abstract. CVSS measures severity, not how likely an attack is."
+        "say": "**CVSS**, the Common Vulnerability Scoring System, rates severity from 0 to 10. A **vector string** records the metrics behind the score. Read it pair by pair; this vector scores 9.8. Those are **base metrics**, which describe the flaw in the abstract. CVSS measures severity, not how likely an attack is."
       },
       {
         "beats": [
           {
-            "say": "**Threat** metrics add whether an exploit exists; **environmental** metrics, how much the asset matters to you."
+            "say": "**Threat** metrics add whether an exploit exists."
           },
           {
-            "say": "CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now: patch these first."
+            "say": "**Environmental** metrics add how much the asset matters to you."
+          },
+          {
+            "say": "CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now, so patch these first."
           },
           {
             "say": "FIRST's **EPSS** estimates the chance of exploitation in the next 30 days."
           }
         ],
-        "say": "**Threat** metrics add whether an exploit exists; **environmental** metrics, how much the asset matters to you. CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now: patch these first. FIRST's **EPSS** estimates the chance of exploitation in the next 30 days.",
+        "say": "**Threat** metrics add whether an exploit exists. **Environmental** metrics add how much the asset matters to you. CISA's **KEV** catalog (Known Exploited Vulnerabilities) lists CVEs attackers are exploiting now, so patch these first. FIRST's **EPSS** estimates the chance of exploitation in the next 30 days.",
         "check": {
           "prompt": "Flaw A scores 9.8, with an EPSS near zero and no KEV entry. Flaw B scores 6.5 and is in KEV. Both sit on internet-facing servers. Which do you patch first?",
           "answer": "B, because KEV shows attackers are using it now",
@@ -665,7 +671,7 @@
         "definition": "How much can the attacker modify data?"
       }
     ],
-    "feedback": "Attack Vector runs Network, Adjacent, Local, Physical; Attack Complexity is Low or High; Privileges Required None, Low or High; User Interaction None or Required; Scope Unchanged or Changed; and each impact None, Low or High. Together they make the base score, which describes the flaw in the abstract; the temporal (v4.0 Threat) and environmental groups adjust it for exploit maturity and for your own assets."
+    "feedback": "Attack Vector runs Network, Adjacent, Local, Physical. Attack Complexity is Low or High, and Privileges Required is None, Low or High. User Interaction is None or Required, and Scope is Unchanged or Changed. Each impact is None, Low or High. Together they make the base score, which describes the flaw in the abstract; the temporal (v4.0 Threat) and environmental groups adjust it for exploit maturity and for your own assets."
   },
   {
     "question": "A critical flaw is announced in a widely used XML-parsing library. Which statements about Wyrmkeep Logistics' SBoM and VEX data are correct?",
@@ -763,7 +769,7 @@
       "expr": "start + n * (arrive - fixed)",
       "tolerance_abs": 0
     },
-    "feedback_template": "Each sprint the backlog grows by {{arrive}} − {{fixed}} findings, so after {{n}} sprints it reaches {{expected}}. A rising total means findings arrive faster than they are fixed: the trend a dashboard should show, and the case for prioritising with KEV and EPSS rather than working the list top to bottom."
+    "feedback_template": "Each sprint the backlog grows by {{arrive}} − {{fixed}} findings, so after {{n}} sprints it reaches {{expected}}. A rising total means findings arrive faster than they are fixed. That trend is what a dashboard should show, and it is the case for prioritising with KEV and EPSS rather than working the list top to bottom."
   },
   {
     "type": "rule_table",
@@ -830,7 +836,7 @@
       ]
     ],
     "reorder": true,
-    "feedback": "KEV lists flaws that are being exploited right now, so a KEV flaw on an internet-facing VPN appliance jumps the queue: 48 hours. The web app's 9.1 is critical but not known to be exploited, so 7 days. The file server's 8.1 is high, 30 days; the wiki's 5.4 waits for the quarterly cycle. The order follows the deadlines: severity matters, but evidence of exploitation and exposure decide what goes first."
+    "feedback": "KEV lists flaws that are being exploited right now, so a KEV flaw on an internet-facing VPN appliance jumps the queue, so its deadline is 48 hours. The web app's 9.1 is critical but not known to be exploited, so its deadline is 7 days. The file server's 8.1 is high, so it has 30 days, and the wiki's 5.4 waits for the quarterly cycle. The order follows the deadlines, because severity matters but evidence of exploitation and exposure decide what goes first."
   },
   {
     "type": "npc_demo",
@@ -857,10 +863,10 @@
             "say": "**Bash** drives Linux, CI/CD pipelines and containers."
           },
           {
-            "say": "The simplest trigger is a schedule: on Linux, a **cron job**."
+            "say": "The simplest trigger is a schedule, which on Linux is a **cron job**."
           }
         ],
-        "say": "Three languages carry most security automation. **Python** drives web services and cloud kits such as `boto3`. **PowerShell** drives Windows and Microsoft 365. **Bash** drives Linux, CI/CD pipelines and containers. The simplest trigger is a schedule: on Linux, a **cron job**."
+        "say": "Three languages carry most security automation. **Python** drives web services and cloud kits such as `boto3`. **PowerShell** drives Windows and Microsoft 365. **Bash** drives Linux, CI/CD pipelines and containers. The simplest trigger is a schedule, which on Linux is a **cron job**."
       },
       {
         "beats": [
@@ -917,10 +923,10 @@
             "say": "Here the script isolates each affected host through the EDR tool's API, then opens one ticket."
           },
           {
-            "say": "A webhook endpoint is attack surface: authenticate callers with signed payloads or mutual TLS, and validate input."
+            "say": "A webhook endpoint is attack surface, so authenticate callers with signed payloads or mutual TLS, and validate input."
           }
         ],
-        "say": "Here the script isolates each affected host through the EDR tool's API, then opens one ticket. A webhook endpoint is attack surface: authenticate callers with signed payloads or mutual TLS, and validate input."
+        "say": "Here the script isolates each affected host through the EDR tool's API, then opens one ticket. A webhook endpoint is attack surface, so authenticate callers with signed payloads or mutual TLS, and validate input."
       },
       {
         "beats": [
@@ -1101,10 +1107,13 @@
             "language": "playbook excerpt"
           },
           {
-            "say": "This one fired on an account HR was quietly investigating; the user powered off his laptop, losing its memory."
+            "say": "This one fired on an account HR was quietly investigating."
+          },
+          {
+            "say": "The user powered off his laptop, and its memory was lost."
           }
         ],
-        "say": "This one fired on an account HR was quietly investigating; the user powered off his laptop, losing its memory.",
+        "say": "This one fired on an account HR was quietly investigating. The user powered off his laptop, and its memory was lost.",
         "check": {
           "prompt": "What was the playbook missing?",
           "answer": "A scope condition that sends accounts under HR or legal review to a runbook",
@@ -1142,10 +1151,10 @@
             "say": "A KEV-listed flaw earns an emergency patch."
           },
           {
-            "say": "**Immutable infrastructure**: rebuild and redeploy images instead of patching in place."
+            "say": "With **immutable infrastructure**, you rebuild and redeploy images instead of patching in place."
           }
         ],
-        "say": "**Automated patching** covers every layer in the table. Roll out safely: keep a rollback path, patch a pilot group first, use maintenance windows, then confirm with a follow-up scan. A KEV-listed flaw earns an emergency patch. **Immutable infrastructure**: rebuild and redeploy images instead of patching in place."
+        "say": "**Automated patching** covers every layer in the table. Roll out safely: keep a rollback path, patch a pilot group first, use maintenance windows, then confirm with a follow-up scan. A KEV-listed flaw earns an emergency patch. With **immutable infrastructure**, you rebuild and redeploy images instead of patching in place."
       }
     ],
     "outro": "Here is another playbook, drawn as a flow. Find where a person has to step in."
@@ -1203,9 +1212,11 @@
     ],
     "incorrect": [
       "Isolating hosts on its own whenever its verdict confidence is above 90 percent",
-      "Receiving raw logs, API keys included, in an external service for better context"
+      "Receiving raw logs, API keys included, in an external service for better context",
+      "Final sign-off on isolating a production server, based on the assistant's confidence score",
+      "Drafting a KQL detection rule and deploying it to production once it passes a syntax check"
     ],
-    "feedback": "Code assist, alert summarization and documentation are where AI saves time while a person still checks the output. An AI verdict can be a confident hallucination, so any containment it suggests needs human confirmation, however high its self-reported confidence. Secrets and sensitive logs stay out of external AI services unless policy allows it."
+    "feedback": "Code assist, alert summarization and documentation are where AI saves time while a person still checks the output. An AI verdict can be a confident hallucination, so any containment it suggests, or any sign-off on isolating a production server, needs human confirmation however high its self-reported confidence. A rule it drafts still needs an engineer's review and a lab test before production, so a clean syntax check is not enough. Secrets and sensitive logs stay out of external AI services unless policy allows it."
   },
   {
     "type": "dynamic_numeric",
@@ -1263,14 +1274,14 @@
     "correct": [
       "Hypervisors that host the production virtual machines",
       "Firmware on servers and network appliances",
-      "The golden system images new machines are built from",
-      "Application software and libraries, not just the OS"
+      "The golden system images new machines are built from"
     ],
     "incorrect": [
       "Running containers, updated in place with a package manager",
-      "Internet-facing hosts alone, since internal ones sit behind the firewall"
+      "Internet-facing hosts alone, since internal ones sit behind the firewall",
+      "The operating system alone, since the layers above it follow from OS patches"
     ],
-    "feedback": "Automated patching has to cover every layer: the operating system, application software, the hypervisor, firmware, and the images machines are built from, since an unpatched golden image re-creates the flaw on every new machine. Containers are rebuilt from a patched image and redeployed rather than updated in place, which would make them drift from their image. Patching only the internet-facing edge leaves internal hosts open to an attacker who gets past it and moves laterally."
+    "feedback": "Automated patching has to cover every layer: the operating system, application software, the hypervisor, firmware, and the images machines are built from, since an unpatched golden image re-creates the flaw on every new machine. Patching the operating system alone leaves application libraries, hypervisors and firmware exposed. Containers are rebuilt from a patched image and redeployed rather than updated in place, which would make them drift from their image. Patching only the internet-facing edge leaves internal hosts open to an attacker who gets past it and moves laterally."
   },
   {
     "type": "npc_demo",
@@ -1345,13 +1356,16 @@
             "say": "It does not clean yet: that destroys evidence."
           },
           {
-            "say": "An **insider threat** is the exception: scope quietly with HR and legal, so you don't tip them off."
+            "say": "An **insider threat** is the exception."
+          },
+          {
+            "say": "Scope quietly with HR and legal, so you don't tip them off."
           },
           {
             "say": "**UEBA** usually spots insiders by comparing them with peers."
           }
         ],
-        "say": "**Containment** stops the spread: isolate hosts, block the attacker's command-and-control (C2) address, disable compromised accounts. It does not clean yet: that destroys evidence. An **insider threat** is the exception: scope quietly with HR and legal, so you don't tip them off. **UEBA** usually spots insiders by comparing them with peers."
+        "say": "**Containment** stops the spread: isolate hosts, block the attacker's command-and-control (C2) address, disable compromised accounts. It does not clean yet: that destroys evidence. An **insider threat** is the exception. Scope quietly with HR and legal, so you don't tip them off. **UEBA** usually spots insiders by comparing them with peers."
       },
       {
         "beats": [
@@ -1385,10 +1399,13 @@
             "say": "Convert every timestamp to UTC and allow for clock skew first."
           },
           {
-            "say": "**Root cause analysis** (RCA) asks why, not just what: keep asking why until you reach a cause you can fix."
+            "say": "**Root cause analysis** (RCA) asks why and not just what."
+          },
+          {
+            "say": "Keep asking why until you reach a cause you can fix."
           }
         ],
-        "say": "**Timeline reconstruction** merges events from every source into one ordered story, from the earliest malicious event. Convert every timestamp to UTC and allow for clock skew first. **Root cause analysis** (RCA) asks why, not just what: keep asking why until you reach a cause you can fix.",
+        "say": "**Timeline reconstruction** merges events from every source into one ordered story, from the earliest malicious event. Convert every timestamp to UTC and allow for clock skew first. **Root cause analysis** (RCA) asks why and not just what. Keep asking why until you reach a cause you can fix.",
         "check": {
           "prompt": "A review finds that a user opened an invoice macro, that the macro ran because policy allowed macros in files from the internet, and that the attacker then moved laterally. Which is the root cause to fix?",
           "answer": "The policy that allowed macros from internet files",
@@ -1498,10 +1515,10 @@
     ],
     "incorrect": [
       "The IR plan is kept on the corporate file share, the one place it is versioned",
-      "Legal counsel is brought in once an incident is declared, to keep drills small",
-      "The jump bag will be assembled from spare production laptops when needed"
+      "Legal counsel is engaged when an incident is declared, since notice deadlines only start then",
+      "A jump bag of forensic tools is installed on the SOC's shared analysis server for easy access"
     ],
-    "feedback": "Preparation means the plan, the people and the tools still work when the corporate network does not: offline playbooks, an out-of-band call tree, and notification deadlines known before 2 a.m. on the bad night. A plan on the file share is lost with the file share; legal brought in late learns the deadlines too late and may miss the chance to bring the investigation under privilege; and a jump bag built on the night from production laptops is neither clean nor ready."
+    "feedback": "Preparation means the plan, the people and the tools still work when the corporate network does not: offline playbooks, an out-of-band call tree, and notification deadlines known before 2 a.m. on the bad night. A plan on the file share is lost with the file share. Notice deadlines start when you become aware, not when you declare, so legal brought in late learns them too late and may miss the chance to bring the investigation under privilege. Forensic tools on a shared server are unreachable when the network is down, so they are not a jump bag."
   },
   {
     "question": "UEBA flags a Marketstone Exchange trader whose peer group rarely touches the client-list share: he has pulled 4 GB from it this week, and DLP logs USB writes on his desk PC. HR says he gave notice yesterday. What should Kaeli do FIRST?",
@@ -1525,7 +1542,7 @@
       "EDR (UTC) 14:16 p.bin writes a Run key for persistence",
       "Firewall (UTC) 14:31 FIN-07 sends 2 GB to 198.51.100.47"
     ],
-    "feedback": "The proxy's 09:11 at UTC-5 is 14:11 UTC, which puts the download after PowerShell launched and before the persistence key: the order a macro dropper follows. Sorting the raw timestamps would put the download first, hours before the email even arrived. Normalizing every source to UTC, and allowing for clock skew, comes before merging."
+    "feedback": "The proxy's 09:11 at UTC-5 is 14:11 UTC, which puts the download after PowerShell launched and before the persistence key, which is the order a macro dropper follows. Sorting the raw timestamps would put the download first, hours before the email even arrived. Normalizing every source to UTC, and allowing for clock skew, comes before merging."
   },
   {
     "type": "npc_demo",
@@ -1547,13 +1564,16 @@
             }
           },
           {
-            "say": "**Volatile evidence** vanishes at power-off; **non-volatile evidence** persists: disk, logs."
+            "say": "**Volatile evidence** vanishes at power-off."
           },
           {
-            "say": "So never reboot: RAM may hold keys, passwords and malware that never touched the disk."
+            "say": "**Non-volatile evidence**, such as the disk and logs, persists."
+          },
+          {
+            "say": "So never reboot, because RAM may hold keys, passwords and malware that never touched the disk."
           }
         ],
-        "say": "On a live host, collect in the **order of volatility**: what vanishes first is captured first. **Volatile evidence** vanishes at power-off; **non-volatile evidence** persists: disk, logs. So never reboot: RAM may hold keys, passwords and malware that never touched the disk.",
+        "say": "On a live host, collect in the **order of volatility**: what vanishes first is captured first. **Volatile evidence** vanishes at power-off. **Non-volatile evidence**, such as the disk and logs, persists. So never reboot, because RAM may hold keys, passwords and malware that never touched the disk.",
         "check": {
           "prompt": "A laptop with full-disk encryption is still running. Why does capturing memory matter even more here?",
           "answer": "The decryption key may be in RAM, and once powered off the disk may be unreadable",
@@ -1824,9 +1844,10 @@
     ],
     "incorrect": [
       "A stricter written policy that shortens the patch deadline to 24 hours",
-      "Rescoring the Struts CVE with CVSS environmental metrics for the portal"
+      "Rescoring the Struts CVE with CVSS environmental metrics for the portal",
+      "Annual security awareness training for the developers who maintain the dispute portal"
     ],
-    "feedback": "The policy existed; what failed was knowing the server was in scope, confirming the patch had landed, and keeping detection running. An inventory-fed scan scope and credentialed plus verification scanning close the patch gap, and certificate-expiry monitoring would have caught the inspection device that had been blind for 19 months. A tighter written deadline is still only policy, and rescoring the CVE changes its number, not whether anyone patches the server."
+    "feedback": "The policy existed; what failed was knowing the server was in scope, confirming the patch had landed, and keeping detection running. An inventory-fed scan scope and credentialed plus verification scanning close the patch gap, and certificate-expiry monitoring would have caught the inspection device that had been blind for 19 months. A tighter written deadline is still only policy, and rescoring the CVE changes its number, not whether anyone patches the server. Training developers is not a technical control and does nothing about a server nobody knew to patch."
   },
   {
     "question": "Counsel at Greycloak Apothecary says a breach under investigation may lead to litigation and issues a legal hold. The SIEM keeps logs for 30 days, and the mail system purges deleted items after 14. What should Hesper do FIRST?",
