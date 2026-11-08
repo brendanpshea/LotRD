@@ -1957,6 +1957,62 @@ export class GameUI {
       return wrap;
     };
 
+    /**
+     * An example that is not code, in the reading font: a list, a table, a chain
+     * of causes, or a document such as an email. Each wraps on a phone, where a
+     * monospace panel would have to scroll. Code, commands and output stay in
+     * `addCode`.
+     */
+    const addPanel = (beat) => {
+      const md = text => this._withMarkup(String(text));
+      const el = (tag, cls, kids) => {
+        const n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (kids) n.append(...kids);
+        return n;
+      };
+      const wrap = el("figure", "npc-panel");
+      if (beat.caption) wrap.appendChild(el("figcaption", "npc-panel-caption", [beat.caption]));
+      if (Array.isArray(beat.list)) {
+        wrap.classList.add("npc-panel--list");
+        wrap.appendChild(el(beat.ordered ? "ol" : "ul", "npc-panel-list",
+          beat.list.map(item => el("li", null, md(item)))));
+      } else if (beat.table) {
+        wrap.classList.add("npc-panel--table");
+        const table = el("table", "npc-panel-table");
+        // Three or more columns don't fit side by side on a phone; those rows stack there.
+        if ((beat.table.rows?.[0]?.length || 0) >= 3) table.classList.add("npc-panel-table--wide");
+        if (Array.isArray(beat.table.head)) {
+          table.appendChild(el("thead", null, [el("tr", null,
+            beat.table.head.map(h => { const th = el("th", null, md(h)); th.scope = "col"; return th; }))]));
+        }
+        const head = Array.isArray(beat.table.head) ? beat.table.head : [];
+        table.appendChild(el("tbody", null, (beat.table.rows || []).map(row =>
+          el("tr", null, row.map((cell, c) => {
+            const node = el(c === 0 ? "th" : "td", null, md(cell));
+            if (c === 0) node.scope = "row";
+            // On the narrowest phones the rows stack, and each value is labelled by its column.
+            else if (head[c]) node.dataset.col = head[c];
+            return node;
+          })))));
+        wrap.appendChild(table);
+      } else if (Array.isArray(beat.chain)) {
+        wrap.classList.add("npc-panel--chain");
+        wrap.appendChild(el("ol", "npc-panel-chain", beat.chain.map(item => el("li", null, md(item)))));
+      } else if (beat.document) {
+        wrap.classList.add("npc-panel--document");
+        const doc = beat.document;
+        if (Array.isArray(doc.header) && doc.header.length) {
+          wrap.appendChild(el("dl", "npc-panel-doc-head", doc.header.flatMap(([label, value]) =>
+            [el("dt", null, [label]), el("dd", null, md(value))])));
+        }
+        wrap.appendChild(el("div", "npc-panel-doc-body", md(doc.body || "")));
+      }
+      dialogue.appendChild(wrap);
+      wrap.scrollIntoView?.({ block: "nearest" });
+      return wrap;
+    };
+
     // The mentor's opening and closing words are speech like every other line.
     const introEl = q.intro ? addLine(q.intro) : null;
 
@@ -1982,8 +2038,10 @@ export class GameUI {
       const beats = Array.isArray(step.beats) && step.beats.length
         ? step.beats
         : [{ say: step.say }];
+      const isPanel = b => Array.isArray(b.list) || !!b.table || Array.isArray(b.chain) || !!b.document;
       beats.forEach((b, i) => queue.push({
-        kind: b.figure ? "figure" : b.code != null ? "code" : "say", beat: b, step: s, first: i === 0,
+        kind: b.figure ? "figure" : b.code != null ? "code" : isPanel(b) ? "panel" : "say",
+        beat: b, step: s, first: i === 0,
       }));
       if (step.check) queue.push({ kind: "check", check: step.check, step: s });
     }
@@ -2023,6 +2081,11 @@ export class GameUI {
       }
       if (item.kind === "code") {
         speak([[item.beat.narrate, addCode(item.beat.code, item.beat.language)]]);
+        makeButton("Continue ▸", "action-button", advance).focus();
+        return;
+      }
+      if (item.kind === "panel") {
+        speak([[item.beat.narrate, addPanel(item.beat)]]);
         makeButton("Continue ▸", "action-button", advance).focus();
         return;
       }

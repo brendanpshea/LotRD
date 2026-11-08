@@ -26,6 +26,19 @@ function loadJSON(relPath) {
   return JSON.parse(readFileSync(join(ROOT, relPath), 'utf-8'));
 }
 
+/** The words inside a list, table, chain or document beat, which show like a mentor's lines. */
+function panelText(b) {
+  if (!b || typeof b !== 'object') return [];
+  return [
+    ...(Array.isArray(b.list) ? b.list : []),
+    ...(Array.isArray(b.chain) ? b.chain : []),
+    ...(Array.isArray(b.table?.head) ? b.table.head : []),
+    ...(Array.isArray(b.table?.rows) ? b.table.rows.flat() : []),
+    ...(Array.isArray(b.document?.header) ? b.document.header.map(h => h?.[1]) : []),
+    b.document?.body,
+  ].filter(x => typeof x === 'string');
+}
+
 function getMultipleChoiceQuestions(questions) {
   return questions.filter(q => (q.type || 'multiple_choice') === 'multiple_choice');
 }
@@ -887,12 +900,45 @@ describe('Question set file validation', () => {
                 // one spoken line, one code listing, or one picture at a time.
                 assert.ok(Array.isArray(step.beats) && step.beats.length > 0,
                   `${label}: beats must be a non-empty array when present`);
+                const str = v => typeof v === 'string' && v.trim().length > 0;
                 for (const [bi, b] of step.beats.entries()) {
                   const hasSay = typeof b.say === 'string' && b.say.length > 0;
                   const hasCode = typeof b.code === 'string' && b.code.length > 0;
                   const hasFigure = b.figure !== undefined;
-                  assert.ok([hasSay, hasCode, hasFigure].filter(Boolean).length === 1,
-                    `${label}: beat ${bi + 1} must carry exactly one of say, code, or figure`);
+                  // Examples that are not code: a list, a table, a chain, a document.
+                  const hasList = b.list !== undefined, hasTable = b.table !== undefined;
+                  const hasChain = b.chain !== undefined, hasDocument = b.document !== undefined;
+                  assert.ok([hasSay, hasCode, hasFigure, hasList, hasTable, hasChain, hasDocument].filter(Boolean).length === 1,
+                    `${label}: beat ${bi + 1} must carry exactly one of say, code, figure, list, table, chain or document`);
+                  if ('caption' in b) assert.ok(str(b.caption) && b.caption.length <= 60, `${label}: beat ${bi + 1}: caption is one short line`);
+                  if (hasList) {
+                    assert.ok(Array.isArray(b.list) && b.list.length >= 2 && b.list.every(str),
+                      `${label}: beat ${bi + 1}: a list holds two or more non-empty items`);
+                    if ('ordered' in b) assert.equal(typeof b.ordered, 'boolean', `${label}: beat ${bi + 1}: ordered is true or false`);
+                  }
+                  if (hasTable) {
+                    const rows = b.table?.rows;
+                    assert.ok(Array.isArray(rows) && rows.length >= 1 && rows.every(r => Array.isArray(r) && r.length >= 2 && r.every(c => typeof c === 'string')),
+                      `${label}: beat ${bi + 1}: a table has rows of two or more cells`);
+                    const width = rows[0].length;
+                    assert.ok(rows.every(r => r.length === width) && width <= 4,
+                      `${label}: beat ${bi + 1}: every table row has the same number of cells, at most four`);
+                    if (b.table.head !== undefined) {
+                      assert.ok(Array.isArray(b.table.head) && b.table.head.length === width && b.table.head.every(str),
+                        `${label}: beat ${bi + 1}: a table's head names each column`);
+                    }
+                  }
+                  if (hasChain) {
+                    assert.ok(Array.isArray(b.chain) && b.chain.length >= 2 && b.chain.every(str),
+                      `${label}: beat ${bi + 1}: a chain has two or more links`);
+                  }
+                  if (hasDocument) {
+                    assert.ok(str(b.document?.body), `${label}: beat ${bi + 1}: a document needs a body`);
+                    if (b.document.header !== undefined) {
+                      assert.ok(Array.isArray(b.document.header) && b.document.header.every(h => Array.isArray(h) && h.length === 2 && h.every(str)),
+                        `${label}: beat ${bi + 1}: a document's header is a list of [label, value] pairs`);
+                    }
+                  }
                   if (hasSay) {
                     assert.ok(b.say.length <= 320,
                       `${label}: beat ${bi + 1} is ${b.say.length} chars — split it so the ` +
@@ -917,7 +963,7 @@ describe('Question set file validation', () => {
             // **term** puts a key term in bold in a mentor's lines; an odd number
             // of ** would leave asterisks on the screen.
             const spoken = [q.intro, q.outro, ...q.steps.flatMap(s =>
-              [s.say, ...(s.beats || []).map(b => b.say), s.check?.prompt, s.check?.why])];
+              [s.say, ...(s.beats || []).flatMap(b => [b.say, ...panelText(b)]), s.check?.prompt, s.check?.why])];
             for (const text of spoken.filter(t => typeof t === 'string')) {
               assert.equal((text.match(/\*\*/g) || []).length % 2, 0,
                 `${label}: unpaired ** in "${text.slice(0, 60)}"`);
@@ -1972,9 +2018,12 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
   // Frames a beginner can read (WRITING_GUIDE: Beats a beginner can read). Sets move
   // to this as their scenes are rewritten.
   const LIGHT_FRAMES = setId => /^securityx_|^netplus_/.test(setId);
+  // Sets regrouped into slides (WRITING_GUIDE: Beats a beginner can read, item 2), where no frame
+  // may open on a pronoun for the cleared screen. Sets move here as they are regrouped.
+  const SLIDES = setId => /^netplus_07_/.test(setId);
   const wordCount = s => s.replace(/[*`]/g, '').split(/\s+/).filter(Boolean).length;
 
-  it('a rewritten set keeps each frame light: short beats, five new terms at most, 50 words on screen', () => {
+  it('a rewritten set keeps each frame one slide: short beats, five new terms at most, 70 words, a fresh start', () => {
     const bad = [];
     for (const setId of index.filter(LIGHT_FRAMES)) {
       loadJSON(`question_sets/${setId}`).forEach((q, i) => {
@@ -1985,7 +2034,10 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
         q.steps.forEach((step, s) => {
           const says = step.beats?.length ? step.beats.filter(b => typeof b.say === 'string').map(b => b.say) : [step.say];
           const frame = says.reduce((n, b) => n + wordCount(b), 0);
-          if (frame > 50) bad.push(`${setId}[${i}] step ${s + 1}: ${frame} spoken words in one frame; split the step`);
+          if (frame > 70) bad.push(`${setId}[${i}] step ${s + 1}: ${frame} spoken words in one frame; start a new slide at the next idea`);
+          // The screen clears between frames, so a frame's first line cannot lean on the last frame's.
+          const first = step.beats?.length ? step.beats.find(b => typeof b.say === 'string')?.say : step.say;
+          if (SLIDES(setId) && s > 0 && first && /^(It|Its|This|That|These|Those|They|Their|Them)\b/.test(first)) bad.push(`${setId}[${i}] step ${s + 1}: the frame opens on "${first.split(' ').slice(0, 4).join(' ')}…", which points back at a cleared screen`);
           const terms = says.reduce((n, b) => n + (b.match(/\*\*[^*]+\*\*/g) || []).length, 0);
           if (terms > 5) bad.push(`${setId}[${i}] step ${s + 1}: ${terms} new terms in one frame; teach fewer at once`);
           for (const b of says) {
@@ -2018,7 +2070,7 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
    * A step with beats is shown beat by beat, so its combined `say` never is.
    */
   const shownText = q => [q.intro, q.outro, ...(q.steps || []).flatMap(s => [
-    ...(s.beats?.length ? s.beats.map(b => b.say) : [s.say]),
+    ...(s.beats?.length ? s.beats.flatMap(b => [b.say, ...panelText(b)]) : [s.say]),
     s.check?.prompt, s.check?.why, s.check?.answer, ...(s.check?.wrong || [])])].filter(t => typeof t === 'string');
 
   it('`code` in a scene is marked with paired backticks, not set off by extra spaces', () => {

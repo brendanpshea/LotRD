@@ -12,17 +12,17 @@
           },
           {
             "say": "A **threat** is anything that could use that weakness to cause harm: a phishing gang, a careless insider, even a flood."
+          },
+          {
+            "say": "An **exploit** is the code or technique that actually uses the weakness."
           }
         ],
-        "say": "A **vulnerability** is a weakness: a default password on a security camera, an unpatched web server. A **threat** is anything that could use that weakness to cause harm: a phishing gang, a careless insider, even a flood."
+        "say": "A **vulnerability** is a weakness: a default password on a security camera, an unpatched web server. A **threat** is anything that could use that weakness to cause harm: a phishing gang, a careless insider, even a flood. An **exploit** is the code or technique that actually uses the weakness."
       },
       {
         "beats": [
           {
-            "say": "An **exploit** is the code or technique that actually uses the weakness."
-          },
-          {
-            "say": "**Risk** joins the two."
+            "say": "**Risk** is what you get when a threat meets a vulnerability."
           },
           {
             "say": "Its **likelihood** is how likely the harm is; its **impact** is how bad it would be."
@@ -31,11 +31,15 @@
             "say": "Put numbers on it and risk becomes an expected loss per year."
           },
           {
-            "code": "1 incident per 4 years\ncost $200,000\n$200,000 / 4\n= $50,000 a year",
-            "language": "expected loss a year"
+            "chain": [
+              "1 incident every 4 years",
+              "Each incident costs $200,000",
+              "$200,000 / 4 = $50,000 a year"
+            ],
+            "caption": "expected loss a year"
           }
         ],
-        "say": "An **exploit** is the code or technique that actually uses the weakness. **Risk** joins the two. Its **likelihood** is how likely the harm is; its **impact** is how bad it would be. Put numbers on it and risk becomes an expected loss per year.",
+        "say": "**Risk** is what you get when a threat meets a vulnerability. Its **likelihood** is how likely the harm is; its **impact** is how bad it would be. Put numbers on it and risk becomes an expected loss per year.",
         "check": {
           "prompt": "The same serious flaw sits on two servers: one faces the internet, the other is unplugged in a locked lab. How do their risks compare?",
           "answer": "The lab server's risk is far lower: hardly any threat can reach it",
@@ -49,33 +53,25 @@
       {
         "beats": [
           {
-            "say": "**CVE**, Common Vulnerabilities and Exposures, gives each publicly disclosed flaw a unique ID."
+            "say": "**CVE**, Common Vulnerabilities and Exposures, gives each public flaw a unique ID, such as `CVE-2014-0160` for Heartbleed."
           },
           {
-            "say": "So every scanner, advisory and patch note calls the Heartbleed flaw `CVE-2014-0160`."
+            "say": "A CVE ID names a flaw but does not grade it. A separate score, **CVSS**, rates severity from 0 to 10."
           },
           {
-            "say": "A CVE ID names a flaw; it does not grade it. A separate score, **CVSS**, rates severity from 0 to 10."
+            "say": "A **zero-day** is a flaw attackers exploit before the vendor has a fix, so defenders get zero days to patch."
+          },
+          {
+            "say": "Other layers must hold until a patch ships."
           }
         ],
-        "say": "**CVE**, Common Vulnerabilities and Exposures, gives each publicly disclosed flaw a unique ID. So every scanner, advisory and patch note calls the Heartbleed flaw `CVE-2014-0160`. A CVE ID names a flaw; it does not grade it. A separate score, **CVSS**, rates severity from 0 to 10."
+        "say": "**CVE**, Common Vulnerabilities and Exposures, gives each public flaw a unique ID, such as `CVE-2014-0160` for Heartbleed. A CVE ID names a flaw but does not grade it. A separate score, **CVSS**, rates severity from 0 to 10. A **zero-day** is a flaw attackers exploit before the vendor has a fix, so defenders get zero days to patch. Other layers must hold until a patch ships."
       },
       {
         "beats": [
-          {
-            "say": "A **zero-day** is a vulnerability attackers are exploiting before the vendor has a fix."
-          },
-          {
-            "say": "Defenders have had zero days to patch, so other layers must hold until one ships."
-          },
           {
             "say": "Your **attack surface** is every point an attacker could try: each open port, exposed service, account, and person who reads email."
-          }
-        ],
-        "say": "A **zero-day** is a vulnerability attackers are exploiting before the vendor has a fix. Defenders have had zero days to patch, so other layers must hold until one ships. Your **attack surface** is every point an attacker could try: each open port, exposed service, account, and person who reads email."
-      },
-      {
-        "beats": [
+          },
           {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; t[label=\"threat:\\nphishing\\ngang\"]; subgraph cluster_s { label=\"attack surface\"; style=\"rounded,dashed\"; vpn[label=\"VPN login\"]; web[label=\"web server\\nTCP 443\"]; mail[label=\"staff\\ninboxes\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; } fs[label=\"file server\"]; t -> mail [label=\"vector:\\nemail\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; mail -> fs; }",
@@ -91,7 +87,7 @@
             "say": "Shrinking the surface, by closing ports and removing services nobody uses, leaves an attacker fewer vectors."
           }
         ],
-        "say": "The **attack vector** is the path one attack actually takes, such as a phishing email to a staff inbox. Shrinking the surface, by closing ports and removing services nobody uses, leaves an attacker fewer vectors."
+        "say": "Your **attack surface** is every point an attacker could try: each open port, exposed service, account, and person who reads email. The **attack vector** is the path one attack actually takes, such as a phishing email to a staff inbox. Shrinking the surface, by closing ports and removing services nobody uses, leaves an attacker fewer vectors."
       },
       {
         "beats": [
@@ -243,17 +239,42 @@
       {
         "beats": [
           {
-            "say": "Data **in transit** is crossing a network. TLS, IPsec and SSH are protocols that encrypt it."
+            "say": "Data **in transit** is crossing a network, so the connection itself must be encrypted."
           },
           {
-            "say": "Data **at rest** sits on storage. Full-disk encryption, such as BitLocker, protects it."
+            "say": "Data **at rest** sits on storage, so the disk, database or backup is encrypted instead."
           },
           {
-            "code": "in transit\n  crossing a network\n  TLS, IPsec, SSH\nat rest\n  on storage: disk\n  (BitLocker), database,\n  backup",
-            "language": "two of the three states"
+            "say": "Data **in use** is in memory, being processed as readable plaintext."
+          },
+          {
+            "say": "A **trusted execution environment** is a sealed area inside the CPU that other software cannot look into. Protecting data there is **confidential computing**."
+          },
+          {
+            "table": {
+              "head": [
+                "State",
+                "Protected by"
+              ],
+              "rows": [
+                [
+                  "in transit",
+                  "TLS, IPsec or SSH"
+                ],
+                [
+                  "at rest",
+                  "full-disk encryption, such as BitLocker"
+                ],
+                [
+                  "in use",
+                  "a trusted execution environment"
+                ]
+              ]
+            },
+            "caption": "the three states of data"
           }
         ],
-        "say": "Data **in transit** is crossing a network. TLS, IPsec and SSH are protocols that encrypt it. Data **at rest** sits on storage. Full-disk encryption, such as BitLocker, protects it.",
+        "say": "Data **in transit** is crossing a network, so the connection itself must be encrypted. Data **at rest** sits on storage, so the disk, database or backup is encrypted instead. Data **in use** is in memory, being processed as readable plaintext. A **trusted execution environment** is a sealed area inside the CPU that other software cannot look into. Protecting data there is **confidential computing**.",
         "check": {
           "prompt": "A backup tape rides in a courier's van to the off-site vault. Which kind of encryption protects the data on it?",
           "answer": "At-rest encryption of the tape: it is stored data, even on the move",
@@ -263,24 +284,6 @@
           ],
           "why": "In transit means crossing a network. A tape in a van is storage that happens to be moving, so it is protected only if the tape itself is encrypted at rest, which is exactly what matters if the van is stolen."
         }
-      },
-      {
-        "beats": [
-          {
-            "say": "Data **in use** is in memory, being processed as readable plaintext."
-          },
-          {
-            "say": "A **trusted execution environment** is a sealed area inside the CPU that other software cannot look into."
-          },
-          {
-            "say": "Using one to protect data in use is **confidential computing**."
-          },
-          {
-            "code": "in use\n  in memory, plaintext\n  sealed CPU area",
-            "language": "the third state"
-          }
-        ],
-        "say": "Data **in use** is in memory, being processed as readable plaintext. A **trusted execution environment** is a sealed area inside the CPU that other software cannot look into. Using one to protect data in use is **confidential computing**."
       },
       {
         "beats": [
@@ -319,16 +322,22 @@
       {
         "beats": [
           {
-            "say": "To get one, the server generates a key pair and sends the CA a **certificate signing request** (CSR)."
+            "say": "Getting a certificate from a CA takes four steps."
           },
           {
-            "say": "The CSR holds its public key and name."
+            "say": "The second is a **certificate signing request** (CSR), a message that carries the server's public key and its name."
           },
           {
-            "say": "The CA checks the requester controls that name, signs, and the certificate goes onto the server."
+            "chain": [
+              "Server generates a key pair",
+              "Server sends the CA a CSR: its public key and name",
+              "CA checks control of the name and signs",
+              "Signed certificate goes onto the server"
+            ],
+            "caption": "getting a certificate"
           }
         ],
-        "say": "To get one, the server generates a key pair and sends the CA a **certificate signing request** (CSR). The CSR holds its public key and name. The CA checks the requester controls that name, signs, and the certificate goes onto the server."
+        "say": "Getting a certificate from a CA takes four steps. The second is a **certificate signing request** (CSR), a message that carries the server's public key and its name."
       },
       {
         "beats": [
@@ -533,14 +542,6 @@
             "say": "The server proves itself by its **host key**, a key pair that identifies that server."
           },
           {
-            "say": "HTTP on TCP 80 becomes **HTTPS**, HTTP inside TLS, on TCP 443."
-          }
-        ],
-        "say": "Telnet on TCP 23 becomes **SSH** on TCP 22. It gives the same remote command line, but encrypted. The server proves itself by its **host key**, a key pair that identifies that server. HTTP on TCP 80 becomes **HTTPS**, HTTP inside TLS, on TCP 443."
-      },
-      {
-        "beats": [
-          {
             "say": "From a Linux shell, the user name goes before the `@`:"
           },
           {
@@ -548,17 +549,14 @@
             "language": "Linux shell"
           },
           {
-            "say": "On Cisco gear, the remote login lines, the `vty` lines, accept whichever protocols `transport input` lists."
-          },
-          {
-            "say": "This switch still lets Telnet in:"
+            "say": "On Cisco gear, the `vty` lines accept whichever protocols `transport input` lists. This switch still lets Telnet in:"
           },
           {
             "code": "line vty 0 4\n transport input telnet ssh",
             "language": "Cisco IOS config"
           }
         ],
-        "say": "From a Linux shell, the user name goes before the `@`: On Cisco gear, the remote login lines, the `vty` lines, accept whichever protocols `transport input` lists. This switch still lets Telnet in:"
+        "say": "Telnet on TCP 23 becomes **SSH** on TCP 22. It gives the same remote command line, but encrypted. The server proves itself by its **host key**, a key pair that identifies that server. From a Linux shell, the user name goes before the `@`: On Cisco gear, the `vty` lines accept whichever protocols `transport input` lists. This switch still lets Telnet in:"
       },
       {
         "beats": [
@@ -589,6 +587,9 @@
       {
         "beats": [
           {
+            "say": "HTTP on TCP 80 becomes **HTTPS**, HTTP inside TLS, on TCP 443."
+          },
+          {
             "say": "For directory lookups, **LDAP** on TCP 389 becomes **LDAPS** on TCP 636."
           },
           {
@@ -598,7 +599,7 @@
             "say": "LDAP and IMAP can also upgrade on their old ports with a command, **STARTTLS**, but the dedicated TLS ports are the ones to know."
           }
         ],
-        "say": "For directory lookups, **LDAP** on TCP 389 becomes **LDAPS** on TCP 636. Mail pickup follows suit: POP3 becomes POP3S, IMAP becomes IMAPS. LDAP and IMAP can also upgrade on their old ports with a command, **STARTTLS**, but the dedicated TLS ports are the ones to know."
+        "say": "HTTP on TCP 80 becomes **HTTPS**, HTTP inside TLS, on TCP 443. For directory lookups, **LDAP** on TCP 389 becomes **LDAPS** on TCP 636. Mail pickup follows suit: POP3 becomes POP3S, IMAP becomes IMAPS. LDAP and IMAP can also upgrade on their old ports with a command, **STARTTLS**, but the dedicated TLS ports are the ones to know."
       },
       {
         "beats": [
@@ -609,14 +610,65 @@
             "say": "**SNMPv3** adds real user accounts; in **authPriv** mode it authenticates and encrypts, still on UDP 161."
           },
           {
-            "say": "Secure protocols age too. SSL, TLS 1.0 and TLS 1.1 are deprecated; a hardened server offers only TLS 1.2 and 1.3."
+            "say": "Secure protocols age too. SSL, TLS 1.0 and TLS 1.1 are deprecated, so a hardened server offers only TLS 1.2 and 1.3."
           },
           {
-            "code": "Telnet 23   > SSH 22\nHTTP 80     > HTTPS 443\nFTP 21      > SFTP 22\n               or FTPS 990\nTFTP 69/U   > SFTP/SCP 22\nLDAP 389    > LDAPS 636\nPOP3 110    > POP3S 995\nIMAP 143    > IMAPS 993\nSNMPv2c 161/U> v3 161/U",
-            "language": "the swaps: TCP, /U is UDP"
+            "say": "Here are all the swaps in one place."
+          },
+          {
+            "table": {
+              "head": [
+                "Cleartext",
+                "Secure swap",
+                "Secure port"
+              ],
+              "rows": [
+                [
+                  "Telnet, TCP 23",
+                  "SSH",
+                  "TCP 22"
+                ],
+                [
+                  "HTTP, TCP 80",
+                  "HTTPS",
+                  "TCP 443"
+                ],
+                [
+                  "FTP, TCP 21",
+                  "SFTP or FTPS",
+                  "TCP 22 or 990"
+                ],
+                [
+                  "TFTP, UDP 69",
+                  "SFTP or SCP",
+                  "TCP 22"
+                ],
+                [
+                  "LDAP, TCP 389",
+                  "LDAPS",
+                  "TCP 636"
+                ],
+                [
+                  "POP3, TCP 110",
+                  "POP3S",
+                  "TCP 995"
+                ],
+                [
+                  "IMAP, TCP 143",
+                  "IMAPS",
+                  "TCP 993"
+                ],
+                [
+                  "SNMPv2c, UDP 161",
+                  "SNMPv3",
+                  "UDP 161"
+                ]
+              ]
+            },
+            "caption": "the swaps"
           }
         ],
-        "say": "**SNMPv2c** (and v1) authenticates with a **community string** sent in cleartext. **SNMPv3** adds real user accounts; in **authPriv** mode it authenticates and encrypts, still on UDP 161. Secure protocols age too. SSL, TLS 1.0 and TLS 1.1 are deprecated; a hardened server offers only TLS 1.2 and 1.3."
+        "say": "**SNMPv2c** (and v1) authenticates with a **community string** sent in cleartext. **SNMPv3** adds real user accounts; in **authPriv** mode it authenticates and encrypts, still on UDP 161. Secure protocols age too. SSL, TLS 1.0 and TLS 1.1 are deprecated, so a hardened server offers only TLS 1.2 and 1.3. Here are all the swaps in one place."
       }
     ],
     "outro": "Now Lyra captures an hour of traffic on the management VLAN. Pick every session in which she could read a password or a community string."
@@ -837,25 +889,39 @@
             "say": "**Multifactor authentication** (MFA) demands proof from two or more different **factor** categories."
           },
           {
-            "code": "know   password, PIN\nhave   phone app, key,\n       smart card\nare    fingerprint, face",
-            "language": "factor categories"
+            "table": {
+              "head": [
+                "Factor",
+                "Examples"
+              ],
+              "rows": [
+                [
+                  "something you know",
+                  "password, PIN"
+                ],
+                [
+                  "something you have",
+                  "phone app, key, smart card"
+                ],
+                [
+                  "something you are",
+                  "fingerprint, face"
+                ]
+              ]
+            },
+            "caption": "factor categories"
           },
           {
             "say": "Two proofs from one category, such as a password and a security question, are still a single factor."
-          }
-        ],
-        "say": "**Multifactor authentication** (MFA) demands proof from two or more different **factor** categories. Two proofs from one category, such as a password and a security question, are still a single factor."
-      },
-      {
-        "beats": [
+          },
           {
-            "say": "Location can be a factor too. It is called somewhere you are."
+            "say": "Location can be a factor too, called somewhere you are."
           },
           {
             "say": "**Geofencing** draws a boundary on a map and refuses or challenges a sign-in from outside it, judged by GPS or the IP address's location."
           }
         ],
-        "say": "Location can be a factor too. It is called somewhere you are. **Geofencing** draws a boundary on a map and refuses or challenges a sign-in from outside it, judged by GPS or the IP address's location."
+        "say": "**Multifactor authentication** (MFA) demands proof from two or more different **factor** categories. Two proofs from one category, such as a password and a security question, are still a single factor. Location can be a factor too, called somewhere you are. **Geofencing** draws a boundary on a map and refuses or challenges a sign-in from outside it, judged by GPS or the IP address's location."
       },
       {
         "beats": [
@@ -1025,7 +1091,7 @@
       {
         "beats": [
           {
-            "say": "It runs over UDP: port 1812 for authentication and 1813 for accounting (older gear uses 1645 and 1646)."
+            "say": "RADIUS runs over UDP: port 1812 for authentication and 1813 for accounting (older gear uses 1645 and 1646)."
           },
           {
             "code": "10.0.4.2 -> 10.0.9.20:1812\n  RADIUS Access-Request\n  User-Name = mira\n  User-Password = (hidden)\n10.0.9.20 -> 10.0.4.2\n  RADIUS Access-Accept\n  Filter-Id = staff",
@@ -1038,7 +1104,7 @@
             "say": "The Access-Accept that says yes also carries what Mira may do, so authentication and authorization travel together."
           }
         ],
-        "say": "It runs over UDP: port 1812 for authentication and 1813 for accounting (older gear uses 1645 and 1646). Only the password is hidden: the user name and every other attribute are readable. The Access-Accept that says yes also carries what Mira may do, so authentication and authorization travel together."
+        "say": "RADIUS runs over UDP: port 1812 for authentication and 1813 for accounting (older gear uses 1645 and 1646). Only the password is hidden: the user name and every other attribute are readable. The Access-Accept that says yes also carries what Mira may do, so authentication and authorization travel together."
       },
       {
         "beats": [
@@ -1081,8 +1147,31 @@
             }
           },
           {
-            "code": "RADIUS\n  UDP 1812, 1813\n  hides only password\n  merges authn + authz\n  serves users\nTACACS+\n  TCP 49\n  encrypts whole body\n  keeps three A's apart\n  serves admins",
-            "language": "side by side"
+            "table": {
+              "head": [
+                "Compare",
+                "RADIUS",
+                "TACACS+"
+              ],
+              "rows": [
+                [
+                  "Transport",
+                  "UDP 1812, 1813",
+                  "TCP 49"
+                ],
+                [
+                  "Encryption",
+                  "hides only the password",
+                  "encrypts the whole body"
+                ],
+                [
+                  "The three A's",
+                  "authentication and authorization merged",
+                  "kept as three separate exchanges"
+                ]
+              ]
+            },
+            "caption": "side by side"
           },
           {
             "say": "RADIUS serves users joining the network; TACACS+ serves admins managing devices."
@@ -1207,14 +1296,16 @@
             "say": "**Hardening** cuts a device's attack surface down to what its job needs."
           },
           {
-            "code": "disable unused services\n  and ports\nchange default passwords\nremove sample accounts\n  and software\npatch the firmware\nuse secure protocols",
-            "language": "hardening steps"
-          }
-        ],
-        "say": "**Hardening** cuts a device's attack surface down to what its job needs."
-      },
-      {
-        "beats": [
+            "list": [
+              "Disable unused services and ports",
+              "Change default passwords",
+              "Remove sample accounts and software",
+              "Patch the firmware",
+              "Use secure protocols"
+            ],
+            "ordered": false,
+            "caption": "hardening steps"
+          },
           {
             "say": "Here are the listening TCP ports on a new web server:"
           },
@@ -1223,16 +1314,13 @@
             "language": "Linux shell (columns trimmed)"
           },
           {
-            "say": "Each one is a door."
-          },
-          {
-            "say": "The site needs 443, and 22 for its admins."
+            "say": "Each port is a door. The site needs 443, and 22 for its admins."
           },
           {
             "say": "FTP on 21 and Telnet on 23 are doors to close."
           }
         ],
-        "say": "Here are the listening TCP ports on a new web server: Each one is a door. The site needs 443, and 22 for its admins. FTP on 21 and Telnet on 23 are doors to close."
+        "say": "**Hardening** cuts a device's attack surface down to what its job needs. Here are the listening TCP ports on a new web server: Each port is a door. The site needs 443, and 22 for its admins. FTP on 21 and Telnet on 23 are doors to close."
       },
       {
         "beats": [
@@ -1240,27 +1328,26 @@
             "say": "A **security baseline** is the written, approved secure configuration for one kind of device."
           },
           {
-            "say": "It says which services run, which protocols, and the password and logging settings."
-          },
-          {
             "say": "**CIS Benchmarks** give a vetted starting point."
-          }
-        ],
-        "say": "A **security baseline** is the written, approved secure configuration for one kind of device. It says which services run, which protocols, and the password and logging settings. **CIS Benchmarks** give a vetted starting point."
-      },
-      {
-        "beats": [
-          {
-            "say": "Every new device is built to the baseline."
           },
           {
-            "say": "Regular scans compare each device with it, to catch **drift**: settings that wandered from the approved state."
+            "list": [
+              "Which services run",
+              "Which protocols are allowed",
+              "Password settings",
+              "Logging settings"
+            ],
+            "ordered": false,
+            "caption": "what a baseline sets"
           },
           {
-            "say": "That is different from a performance baseline, which records normal traffic and CPU levels."
+            "say": "Every device is built to the baseline, and regular scans catch **drift**: settings that wandered from the approved state."
+          },
+          {
+            "say": "A performance baseline is different: it records normal traffic and CPU levels."
           }
         ],
-        "say": "Every new device is built to the baseline. Regular scans compare each device with it, to catch **drift**: settings that wandered from the approved state. That is different from a performance baseline, which records normal traffic and CPU levels.",
+        "say": "A **security baseline** is the written, approved secure configuration for one kind of device. **CIS Benchmarks** give a vetted starting point. Every device is built to the baseline, and regular scans catch **drift**: settings that wandered from the approved state. A performance baseline is different: it records normal traffic and CPU levels.",
         "check": {
           "prompt": "A scan finds Telnet enabled on one access switch, though the baseline says Telnet is off. What is the right move?",
           "answer": "Treat it as drift: restore the baseline setting and find out why it changed",
@@ -1282,27 +1369,19 @@
             }
           },
           {
-            "say": "Network sensors watch traffic on the wire."
+            "say": "Network sensors watch the wire."
           },
           {
-            "say": "A **HIDS**, host-based intrusion detection system, is an agent on the server itself."
-          },
-          {
-            "say": "It watches logs, file integrity and process behavior, and raises an alert."
+            "say": "A **HIDS**, host-based intrusion detection system, is an agent on the server that watches logs, file integrity and process behavior, and raises an alert."
           },
           {
             "say": "A **HIPS**, host-based intrusion prevention system, can also stop the action: block the write, kill the process."
-          }
-        ],
-        "say": "Network sensors watch traffic on the wire. A **HIDS**, host-based intrusion detection system, is an agent on the server itself. It watches logs, file integrity and process behavior, and raises an alert. A **HIPS**, host-based intrusion prevention system, can also stop the action: block the write, kill the process."
-      },
-      {
-        "beats": [
+          },
           {
-            "say": "Because the agent lives on the host, it sees what happens after TLS is decrypted there, which a network sensor looking at encrypted packets cannot."
+            "say": "Because an agent runs on the host, it sees data after TLS is decrypted there, which a network sensor cannot."
           }
         ],
-        "say": "Because the agent lives on the host, it sees what happens after TLS is decrypted there, which a network sensor looking at encrypted packets cannot."
+        "say": "Network sensors watch the wire. A **HIDS**, host-based intrusion detection system, is an agent on the server that watches logs, file integrity and process behavior, and raises an alert. A **HIPS**, host-based intrusion prevention system, can also stop the action: block the write, kill the process. Because an agent runs on the host, it sees data after TLS is decrypted there, which a network sensor cannot."
       }
     ],
     "outro": "Next come four records Silverkeep keeps about its switches. Pick the one that's a security baseline."
@@ -1412,16 +1491,8 @@
             "say": "**Regulations** carry legal force."
           },
           {
-            "say": "**GDPR** protects the personal data of people in the EU."
+            "say": "**GDPR** and **HIPAA** are laws: one protects the personal data of people in the EU, the other patients' health information in the US."
           },
-          {
-            "say": "**HIPAA** protects patients' health information in the US."
-          }
-        ],
-        "say": "**Regulations** carry legal force. **GDPR** protects the personal data of people in the EU. **HIPAA** protects patients' health information in the US."
-      },
-      {
-        "beats": [
           {
             "say": "**PCI DSS**, the Payment Card Industry Data Security Standard, is the card industry's own rulebook, enforced by contract."
           },
@@ -1429,11 +1500,39 @@
             "say": "**SOX**, the Sarbanes-Oxley Act, governs US public companies' financial reporting controls."
           },
           {
-            "code": "GDPR     EU personal data\nHIPAA    US health records\nPCI DSS  card data\nSOX      financial reports",
-            "language": "what each protects"
+            "table": {
+              "head": [
+                "Rule",
+                "Protects",
+                "Enforced by"
+              ],
+              "rows": [
+                [
+                  "GDPR",
+                  "EU personal data",
+                  "law"
+                ],
+                [
+                  "HIPAA",
+                  "US health records",
+                  "law"
+                ],
+                [
+                  "PCI DSS",
+                  "card data",
+                  "contract"
+                ],
+                [
+                  "SOX",
+                  "financial reports",
+                  "law"
+                ]
+              ]
+            },
+            "caption": "what each rule covers"
           }
         ],
-        "say": "**PCI DSS**, the Payment Card Industry Data Security Standard, is the card industry's own rulebook, enforced by contract. **SOX**, the Sarbanes-Oxley Act, governs US public companies' financial reporting controls."
+        "say": "**Regulations** carry legal force. **GDPR** and **HIPAA** are laws: one protects the personal data of people in the EU, the other patients' health information in the US. **PCI DSS**, the Payment Card Industry Data Security Standard, is the card industry's own rulebook, enforced by contract. **SOX**, the Sarbanes-Oxley Act, governs US public companies' financial reporting controls."
       },
       {
         "beats": [
@@ -1536,8 +1635,16 @@
             "say": "The **NIST Cybersecurity Framework** sorts the work into six functions."
           },
           {
-            "code": "Govern\nIdentify\nProtect\nDetect\nRespond\nRecover",
-            "language": "NIST functions"
+            "list": [
+              "Govern",
+              "Identify",
+              "Protect",
+              "Detect",
+              "Respond",
+              "Recover"
+            ],
+            "ordered": false,
+            "caption": "NIST functions"
           },
           {
             "say": "**ISO/IEC 27001** is a standard an organization can be certified against."
@@ -1564,27 +1671,47 @@
           },
           {
             "say": "**Transference** shifts the financial impact elsewhere, often via **cyber insurance**."
+          },
+          {
+            "say": "**Acceptance** is knowingly living with a risk, signed off by its owner."
           }
         ],
-        "say": "Once a risk is found, you have four ways to answer it. **Mitigation** lowers the likelihood or impact with a control. **Avoidance** removes the risky activity altogether. **Transference** shifts the financial impact elsewhere, often via **cyber insurance**."
+        "say": "Once a risk is found, you have four ways to answer it. **Mitigation** lowers the likelihood or impact with a control. **Avoidance** removes the risky activity altogether. **Transference** shifts the financial impact elsewhere, often via **cyber insurance**. **Acceptance** is knowingly living with a risk, signed off by its owner."
       },
       {
         "beats": [
           {
-            "say": "**Acceptance** is knowingly living with a risk, signed off by its owner."
+            "say": "After a risk is mitigated, avoided, transferred or accepted, what is left is **residual risk**."
           },
           {
-            "say": "What is left after any of the four is **residual risk**."
-          },
-          {
-            "say": "Side by side, with an example of each:"
-          },
-          {
-            "code": "mitigation\n  patch, MFA, backup\navoidance\n  retire the service\ntransference\n  insurance, contract\nacceptance\n  fixing costs more",
-            "language": "four choices for a risk"
+            "table": {
+              "head": [
+                "Choice",
+                "Example"
+              ],
+              "rows": [
+                [
+                  "mitigation",
+                  "patch, MFA, backup"
+                ],
+                [
+                  "avoidance",
+                  "retire the service"
+                ],
+                [
+                  "transference",
+                  "insurance, contract"
+                ],
+                [
+                  "acceptance",
+                  "fixing costs more"
+                ]
+              ]
+            },
+            "caption": "four choices for a risk"
           }
         ],
-        "say": "**Acceptance** is knowingly living with a risk, signed off by its owner. What is left after any of the four is **residual risk**. Side by side, with an example of each:",
+        "say": "After a risk is mitigated, avoided, transferred or accepted, what is left is **residual risk**.",
         "check": {
           "prompt": "Silverkeep insures its customer portal. If the portal is breached, what has the policy taken off Silverkeep's hands?",
           "answer": "Part of the financial loss, not the blame or the duty to protect",

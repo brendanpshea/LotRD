@@ -2179,6 +2179,7 @@ code.verdict-text {
 .npc-line--good.npc-speaking,
 .npc-line--gentle.npc-speaking,
 .npc-code.npc-speaking,
+.npc-panel.npc-speaking,
 .npc-figure.npc-speaking {
     outline: 1px solid #ffb300;
     outline-offset: 3px;
@@ -2280,6 +2281,161 @@ code.verdict-text {
     text-transform: uppercase;
     color: #6fae6f;
     margin-bottom: 4px;
+}
+
+/* An example that is not code: a list, a table, a chain, a document. Framed
+   like a code panel so it reads as the thing being examined, but set in the
+   reading font, and it wraps on a phone instead of scrolling. */
+.npc-panel {
+    margin: 0 0 10px 0;
+    padding: 9px 12px;
+    border: 1px solid #2f5f2f;
+    border-left: 3px solid #7CFC00;
+    background: #050c05;
+    color: #c8ffb0;
+    font-family: var(--npc-prose-font);
+    font-size: 0.95em;
+    line-height: 1.45;
+}
+
+.npc-panel-caption {
+    font-family: var(--npc-font);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6fae6f;
+    margin-bottom: 6px;
+}
+
+.npc-panel-list {
+    margin: 0;
+    padding-left: 1.4em;
+}
+
+.npc-panel-list li + li { margin-top: 3px; }
+
+/* Fixed columns, the label column about two fifths: a value then breaks only
+   when it truly cannot fit, never because the labels took the room. */
+.npc-panel-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.npc-panel-table tr > :first-child { width: 38%; }
+
+.npc-panel-table th,
+.npc-panel-table td {
+    text-align: left;
+    vertical-align: top;
+    padding: 4px 10px 4px 0;
+    border-bottom: 1px solid #1d361d;
+}
+
+.npc-panel-table td { overflow-wrap: break-word; }
+
+.npc-panel-table th:last-child,
+.npc-panel-table td:last-child { padding-right: 0; }
+
+.npc-panel-table tr:last-child th,
+.npc-panel-table tr:last-child td { border-bottom: none; }
+
+.npc-panel-table thead th {
+    color: #6fae6f;
+    font-weight: normal;
+    font-size: 0.85em;
+    border-bottom-color: #2f5f2f;
+}
+
+.npc-panel-table tbody th {
+    color: #ffd86b;
+    font-weight: bold;
+}
+
+/* A chain: each link a box, joined by arrows, read top to bottom. */
+.npc-panel-chain {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.npc-panel-chain li {
+    position: relative;
+    padding: 5px 10px;
+    border: 1px solid #2f5f2f;
+    border-radius: 4px;
+    background: #081208;
+}
+
+.npc-panel-chain li + li { margin-top: 22px; }
+
+.npc-panel-chain li + li::before {
+    content: "↓";
+    position: absolute;
+    top: -21px;
+    left: 18px;
+    color: #7CFC00;
+    line-height: 20px;
+}
+
+/* A document: an email, a ticket, a policy excerpt. Its header lines, then the text. */
+.npc-panel-doc-head {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 10px;
+    margin: 0 0 8px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #2f5f2f;
+}
+
+.npc-panel-doc-head dt { color: #6fae6f; }
+.npc-panel-doc-head dd { margin: 0; }
+
+.npc-panel-doc-body { white-space: pre-wrap; }
+
+@media (max-width: 600px) {
+    .npc-panel { font-size: 0.9em; padding: 8px 9px; }
+    .npc-panel-table th,
+    .npc-panel-table td { padding-right: 8px; }
+}
+
+/* On a phone, a table of three or more columns stacks: each row's label, then
+   each value named by its column. On the narrowest phones every table does,
+   so no word is broken to fit a column. */
+@media (max-width: 600px) {
+    .npc-panel-table--wide,
+    .npc-panel-table--wide tbody,
+    .npc-panel-table--wide tr,
+    .npc-panel-table--wide th,
+    .npc-panel-table--wide td { display: block; width: auto; }
+    .npc-panel-table--wide thead { display: none; }
+    .npc-panel-table--wide tr > :first-child { width: auto; }
+    .npc-panel-table--wide tr { padding: 5px 0; border-bottom: 1px solid #1d361d; }
+    .npc-panel-table--wide tr:last-child { border-bottom: none; }
+    .npc-panel-table--wide th,
+    .npc-panel-table--wide td { border-bottom: none; padding: 0; }
+    .npc-panel-table--wide td[data-col]::before {
+        content: attr(data-col) ": ";
+        color: #6fae6f;
+    }
+}
+
+@media (max-width: 360px) {
+    .npc-panel-table,
+    .npc-panel-table tbody,
+    .npc-panel-table tr,
+    .npc-panel-table th,
+    .npc-panel-table td { display: block; width: auto; }
+    .npc-panel-table thead { display: none; }
+    .npc-panel-table tr > :first-child { width: auto; }
+    .npc-panel-table tr { padding: 5px 0; border-bottom: 1px solid #1d361d; }
+    .npc-panel-table tr:last-child { border-bottom: none; }
+    .npc-panel-table th,
+    .npc-panel-table td { border-bottom: none; padding: 0; }
+    .npc-panel-table td[data-col]::before {
+        content: attr(data-col) ": ";
+        color: #6fae6f;
+    }
 }
 
 .npc-check-prompt {
