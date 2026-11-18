@@ -46,6 +46,7 @@ const PRECACHE = [
   "src/npcs.js",
   "src/pwa.js",
   "src/pytiny.js",
+  "src/rewards.js",
   "src/sound.js",
   "src/sqlengine.js",
   "src/sqlgrade.js",

@@ -11,6 +11,8 @@ import { HEROES, chosenHero, chooseHero, heroChosen } from "./heroes.js";
 import { ITEMS } from "./items.js";
 import { planTurn, planItem, sfxFor, BEAT } from "./stage.js";
 import { attachKeyBar, keysFor } from "./keybar.js";
+import { nextStreakReward } from "./rewards.js";
+import { findItemById } from "./items.js";
 
 // Width over height of one pose in a sprite strip (three poses side by side),
 // by URL. Known only once the image has loaded; kept for the session.
@@ -223,12 +225,13 @@ export class GameUI {
 
     const streakEl = $(root, "[data-ref=streak]");
     if (streakEl) {
-      if (p.streak >= 3) {
-        const bonus = p.streak >= 10 ? "2×" : p.streak >= 5 ? "1.5×" : "1.25×";
-        streakEl.textContent = `🔥 Streak ${p.streak} · ${bonus} damage`;
-        streakEl.hidden = false;
-      } else if (p.streak > 0) {
-        streakEl.textContent = `🔥 Streak ${p.streak}`;
+      if (p.streak > 0) {
+        const bonus = p.streak >= 10 ? " · 2× damage" : p.streak >= 5 ? " · 1.5× damage" : p.streak >= 3 ? " · 1.25× damage" : "";
+        // What the streak is building towards (src/rewards.js). Not against the dragon, where nothing is earned.
+        const next = this.model.boss_phase ? null : nextStreakReward(p.streak);
+        const prize = next && findItemById(next.item);
+        const ahead = prize ? ` · ${next.more} more for ${prize.emoji} ${prize.name}` : "";
+        streakEl.textContent = `🔥 Streak ${p.streak}${bonus}${ahead}`;
         streakEl.hidden = false;
       } else {
         streakEl.hidden = true;
@@ -1856,7 +1859,7 @@ export class GameUI {
    * gets a gentle correction and the walkthrough continues. No damage, no XP,
    * no requeue: the paired combat question that follows is where it counts.
    */
-  showNpcScene(onDone) {
+  showNpcScene(onDone, onChecksDone = null) {
     this._clearKeyboard();
     const q = this.model.current_question;
     renderTemplate(this.root, "tpl-npc-scene");
@@ -2055,6 +2058,7 @@ export class GameUI {
     // under everything said before it. The opening and closing lines get a frame
     // each, too.
     let pos = 0;
+    let checksSeen = 0, checksRight = 0;
     const advance = () => {
       controls.innerHTML = "";
       if (pos >= queue.length) {
@@ -2062,6 +2066,11 @@ export class GameUI {
         if (q.outro) {
           dialogue.replaceChildren();
           outroEl = addLine(q.outro);
+        }
+        // Every check right the first time earns something, and says so.
+        const earned = onChecksDone?.({ checks: checksSeen, right: checksRight });
+        if (earned) {
+          addLine(`🎁 ${earned.reason}: you earned ${earned.emoji} ${earned.name}. ${earned.flavor}`, "npc-line npc-line--good");
         }
         speak([[q.outro_narrate, outroEl]]);
         makeButton("Continue the adventure ⚔", "action-button", () => onDone()).focus();
@@ -2105,6 +2114,8 @@ export class GameUI {
       shuffle([check.answer, ...(check.wrong || [])]).forEach(opt => {
         makeButton(opt, "action-button action-button--secondary npc-check-option", () => {
           let whyEl;
+          checksSeen++;
+          if (opt === check.answer) checksRight++;
           if (opt === check.answer) {
             whyEl = addLine(`✓ ${check.why || "Exactly right."}`, "npc-line npc-line--good");
           } else {
@@ -3308,7 +3319,7 @@ export class GameUI {
     if (itemDrop) {
       const slot = itemDrop.placed_slot === 0 ? "Q" : "W";
       const gone = itemDrop.displaced ? ` (${itemDrop.displaced.emoji} ${itemDrop.displaced.name} discarded)` : "";
-      line(`🎁 Found ${itemDrop.emoji} ${itemDrop.name}, in slot ${slot}${gone}`, "loot-name");
+      line(`🎁 ${itemDrop.reason || "Earned"}: ${itemDrop.emoji} ${itemDrop.name}, in slot ${slot}${gone}`, "loot-name");
     }
     this.root.appendChild(note);
 
@@ -3507,7 +3518,7 @@ export class GameUI {
       loot.className = "loot-drop";
       loot.setAttribute("aria-live", "polite");
       loot.innerHTML =
-        "<div class=\"loot-header\">&gt;&gt;&gt; ITEM DROP &lt;&lt;&lt;</div>" +
+        `<div class="loot-header">&gt;&gt;&gt; EARNED: ${this._esc(itemDrop.reason || "a power-up")} &lt;&lt;&lt;</div>` +
         `<div class="loot-body">${itemDrop.emoji} <span class="loot-name">${this._esc(itemDrop.name)}</span><br>` +
         `<span class="loot-flavor">${this._esc(itemDrop.flavor)}</span><br>` +
         `<span class="loot-effect">${this._esc(slotLabel)}</span>${displaced}</div>`;

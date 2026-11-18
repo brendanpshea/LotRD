@@ -47,8 +47,15 @@ A free, browser-based quiz-RPG for learning programming, networking, and compute
 - **Global level** — player level and revive charges persist across all question sets. A level is rare (300 XP for the first, 15% more for each after: about one a set early on) and gets a screen of its own: the hero in a burst of light, the new level and title, each gain as before → after, and a fanfare
 - **Revive mechanic** — revive charges (earned on level-up) auto-restore 10 HP on defeat; with none left, a full run goes back to its last checkpoint
 - **Retrieval boss** — when the questions run out, anything missed during the run comes back as the Recursive Dragon's HP bar. The dragon is drawn as the Recursion Wyrm, the monster marked `"boss": true` in `assets/monsters.json`, which is never met mid-set; each concept only leaves the bar once it's answered cleanly (a flawless run skips the fight)
-- **Monster fights** — a monster has a d10 of HP per level plus eight more, so it takes about five answers to beat (it was about two). Every monster beaten drops an item and gives back a quarter of your max HP
-- **Items** — two inventory slots (`Q`/`W`) hold drops from defeated monsters: heals, shields, 2× damage/XP, and a Mulligan that rewinds one wrong answer
+- **Monster fights** — a monster has a d10 of HP per level plus eight more, so it takes about five answers to beat (it was about two). Every monster beaten gives back a quarter of your max HP
+- **Items** — two inventory slots (`Q`/`W`) hold power-ups, which are earned, not found (`src/rewards.js`). Each one answers something the student did, and says so:
+  - a streak of 3, 5 or 10
+  - getting right a question missed earlier
+  - a hard question right first time (once a set)
+  - a fight without a scratch, or one won from the brink
+  - every check right in a teaching scene (once a set)
+
+  A streak of 5 or 10 and the once-a-set prizes always pay; the rest pay at most once a fight. Nothing is earned against the dragon
 - **Spaced review** — once a set reaches Master rank, it becomes "due" again on an expanding schedule (first ~21 days after mastery, then 60) and offers a short 5-question refresher; below Master, the rank trials are the spaced re-encounters
 
 ---
@@ -360,7 +367,9 @@ src/
   sound.js          — SoundSystem and the SFX table; woken by every press, kept awake by an inaudible hum, never played late
   narration.js      — A mentor's voice in a scene: clip names, listen/pause and speed, one shared <audio>
   zzfx.js           — ZzFX's sample generator (MIT), which turns each SFX entry into a sound
-  items.js          — ITEM_DROPS table for post-battle loot
+  items.js          — the power-ups and what each does
+  rewards.js        — what earns each power-up
+  keybar.js         — symbol keys for touch keyboards
   stage.js          — The battle stage's choreography: a round or an item as timed beats
   heroes.js         — The heroes a student can play as, and which one this browser chose
   model.js          — Player, Monster, GameModel; game logic, battle math, checkpoints, save/load state

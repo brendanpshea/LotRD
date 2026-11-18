@@ -1118,6 +1118,7 @@ export class GameModel {
             this.boss_phase       = saveData.boss_phase || false;
             this.boss_done        = saveData.boss_done  || false;
             this.boss_queue       = saveData.boss_queue || [];
+            this.reward_state     = { heart: false, feather: false, fight_damage: 0, fight_paid: false, ...(saveData.reward_state || {}) };
             this.player = Player.fromSave(saveData.player);
         } else {
             // ── Fresh game path ──────────────────────────────────────────
@@ -1130,6 +1131,10 @@ export class GameModel {
             this.boss_phase      = false;
             this.boss_done       = false;
             this.boss_queue      = [];
+            // What earning power-ups needs to remember (src/rewards.js): the once-a-set
+            // prizes already given, the damage taken in the fight under way, and whether
+            // that fight has paid its everyday reward.
+            this.reward_state    = { heart: false, feather: false, fight_damage: 0, fight_paid: false };
             this.player          = Player.fresh(levelData);
             // Each question remembers its number in the authored file, which is
             // what lets a run be described compactly enough to cross devices.
@@ -1254,6 +1259,7 @@ export class GameModel {
             boss_phase:       this.boss_phase,
             boss_done:        this.boss_done,
             boss_queue:       boss_queue,
+            reward_state:     this.reward_state,
             recent_monsters:  this.recent_monsters,
             player: {
                 level:            p.level,
@@ -1505,6 +1511,8 @@ export class GameModel {
 
         if (!this.current_monster || this.current_monster.hit_points <= 0) {
             this.current_monster = this.generateMonster();
+            this.reward_state.fight_damage = 0;
+            this.reward_state.fight_paid = false;
         }
 
         this.current_question = this.questions_to_ask.shift();
@@ -1587,6 +1595,7 @@ export class GameModel {
 
         this.current_monster.hit_points -= effective_player_damage;
         this.player.hit_points          -= effective_monster_damage;
+        if (this.reward_state) this.reward_state.fight_damage += effective_monster_damage;
 
         return { effective_player_damage, effective_monster_damage, ...itemEffects };
     }
@@ -1657,6 +1666,7 @@ export class GameModel {
             xp_doubled,
             question_repeated: !!requeue,
             questionText:      resolvedQuestion?.question || null,
+            questionType:      resolvedQuestion?.type || "multiple_choice",
             levelsGained,
             levelUpRewards,
         };

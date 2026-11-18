@@ -11,6 +11,8 @@ import {
 } from "./util.js";
 import { pickDragonLine } from "./dragon.js";
 import { gradeSql, describeTables } from "./sqlgrade.js";
+import { rewardForTurn, rewardForScene, earlierMisses } from "./rewards.js";
+import { findItemById } from "./items.js";
 import { createSqlRunner } from "./sqlengine.js";
 
 const SAVE_DATA_VERSION = "2026-04-26";
@@ -972,10 +974,45 @@ export class GameController {
     } else if (qtype === "sql_write") {
       this.ui.showEncounterSqlWrite();
     } else if (qtype === "npc_demo") {
-      this.ui.showNpcScene(() => this.completeNpcScene());
+      this.ui.showNpcScene(() => this.completeNpcScene(), result => this.rewardScene(result));
     } else {
       this.ui.showEncounter();
     }
+  }
+
+  /** What the reward rules need to know about the turn just resolved. */
+  _turnForRewards(battleData) {
+    const m = this.model;
+    const history = m.answer_history;
+    const latest = history[history.length - 1];
+    return {
+      perfect: !!battleData.perfect,
+      streak: m.player.streak,
+      questionType: battleData.questionType,
+      misses: latest ? earlierMisses(history, latest) : 0,
+      killed: !!battleData.defeated_monster,
+      fightDamage: m.reward_state.fight_damage,
+      hpBeforeHeal: m.player.hit_points - (battleData.healed || 0),
+      maxHp: m.player.max_hit_points,
+      boss: !!m.boss_phase || !!m.current_monster?.is_boss,
+    };
+  }
+
+  /** Put an earned reward in the inventory. Returns what the results screen shows, or null. */
+  _grant(reward) {
+    const item = reward && findItemById(reward.item);
+    if (!item) return null;
+    if (reward.once) this.model.reward_state[reward.once] = true;
+    if (reward.perFight) this.model.reward_state.fight_paid = true;
+    const placement = this.model.addItemDrop({ ...item });
+    return { ...item, reason: reward.reason, placed_slot: placement.placed, displaced: placement.displaced };
+  }
+
+  /** Every check in a teaching scene answered right: what that earns, once a set. */
+  rewardScene(result) {
+    const drop = this._grant(rewardForScene(result, this.model.reward_state));
+    if (drop) this.saveGame();
+    return drop;
   }
 
   /** An NPC teaching scene ended (finished or skipped) — no combat resolution. */
@@ -1220,6 +1257,7 @@ export class GameController {
       pending_effects: new Set(this.model.pending_effects),
       questions_asked: this.model.questions_asked,
       answer_history_len: this.model.answer_history.length,
+      reward_state: { ...this.model.reward_state },
     };
   }
 
@@ -1237,6 +1275,7 @@ export class GameController {
     this.model.pending_effects = snap.pending_effects;
     this.model.questions_asked = snap.questions_asked;
     this.model.answer_history.length = snap.answer_history_len;
+    this.model.reward_state = { ...snap.reward_state };
   }
 
   _resolveBattle(battleData) {
@@ -1246,18 +1285,9 @@ export class GameController {
       battleData = { ...battleData, defeated_player: false, revived: true };
     }
 
-    // Every monster beaten drops something. A fight lasts about five answers, so
-    // kills are a third as many as when a third of them dropped: as many items
-    // as before, and a kill that is worth something. Not the dragon: the run is over.
-    let itemDrop = null;
-    if (battleData.defeated_monster && !this.model.current_monster.is_boss) {
-      const tier = this.model.current_monster.hit_dice;
-      const eligible = ITEMS.filter(d => (d.min_tier ?? 1) <= tier);
-      const pool = eligible.length > 0 ? eligible : ITEMS;
-      const drop = pool[Math.floor(Math.random() * pool.length)];
-      const placement = this.model.addItemDrop({ ...drop });
-      itemDrop = { ...drop, placed_slot: placement.placed, displaced: placement.displaced };
-    }
+    // A power-up is earned by what the student just did (src/rewards.js): a
+    // streak, a recovered miss, a clean fight. A monster drops nothing by itself.
+    const itemDrop = this._grant(rewardForTurn(this._turnForRewards(battleData), this.model.reward_state));
 
     this._saveAfterAnswer(battleData);
     // No sound here: the battle stage gives each blow its own, as it lands.
