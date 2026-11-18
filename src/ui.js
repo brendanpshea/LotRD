@@ -10,6 +10,7 @@ import { Narrator, sceneHasNarration, stopNarration } from "./narration.js";
 import { HEROES, chosenHero, chooseHero, heroChosen } from "./heroes.js";
 import { ITEMS } from "./items.js";
 import { planTurn, planItem, sfxFor, BEAT } from "./stage.js";
+import { attachKeyBar, keysFor } from "./keybar.js";
 
 // Width over height of one pose in a sprite strip (three poses side by side),
 // by URL. Known only once the image has loaded; kept for the session.
@@ -1519,6 +1520,8 @@ export class GameUI {
       }
       input.setAttribute("inputmode", "decimal");
       input.placeholder = "Type a number…";
+      // A phone's number pad has no operators, and on iOS no minus sign.
+      attachKeyBar(input, input, keysFor({ kind: "math", expressions: q.allow_expression !== false }));
     } else {
       const answers = q.correct || [];
       const caseSens = q.case_sensitive === true;
@@ -1541,6 +1544,7 @@ export class GameUI {
         `${charHint}${caseSens ? "  [case-sensitive]" : "  [not case-sensitive]"}`;
       input.removeAttribute("inputmode");
       input.placeholder = "Type your answer…";
+      attachKeyBar(input, input, keysFor({ kind: "text", answers }));
     }
 
     this._updateWordleStatus(0);
@@ -1658,6 +1662,7 @@ export class GameUI {
     this._updateWordleStatus(0);
 
     const input = $(this.root, "[data-ref=answerInput]");
+    attachKeyBar(input, input, keysFor({ kind: "code", language: q.language }));
     const submitBtn = $(this.root, "[data-action=submit]");
     submitBtn.addEventListener("click", () => {
       this.controller.submitCodeLine(input.value);
@@ -2193,6 +2198,10 @@ export class GameUI {
       inputs.set(seg.index, input);
     });
 
+    // One bar serves every blank; it shows when some blank cannot be typed without it.
+    const hardBlank = blanks.find(b => keysFor({ kind: "text", answers: b.accept }).length);
+    if (hardBlank) attachKeyBar(body, [...inputs.values()], keysFor({ kind: "text", answers: hardBlank.accept }));
+
     const hintEl = $(this.root, "[data-ref=clozeHint]");
     if (hintEl) {
       const n = blanks.length;
@@ -2553,6 +2562,8 @@ export class GameUI {
 
     const input = $(this.root, "[data-ref=bodyInput]");
     input.value = q.starter ? String(q.starter) : "";
+    attachKeyBar(input.closest(".code-write-editor") || input, input,
+      keysFor({ kind: "code", language: java ? "java" : "python" }));
     if (java) input.placeholder = kind === "class" ? "    // the fields, constructors and methods" : "    // your code here";
     const closing = $(this.root, "[data-ref=signatureClose]");
     if (closing) {
@@ -2803,6 +2814,7 @@ export class GameUI {
     $(this.root, "[data-ref=qText]").textContent = q.question;
 
     const input = $(this.root, "[data-ref=queryInput]");
+    attachKeyBar(input.closest(".code-write-editor") || input, input, keysFor({ kind: "sql" }));
     // Everything below answers later (the tables are fetched, a query runs in a
     // worker), so each answer first checks the student is still on this question.
     const stillHere = () => this.model.current_question === q && this.root.contains(input);

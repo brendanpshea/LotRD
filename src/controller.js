@@ -7,6 +7,7 @@ import {
   TIER_APPRENTICE, TIER_MASTER, nextTierInfo, sampleTrialQuestions,
   probeStorage, storageWarningText, STORAGE_OK, STORAGE_FULL,
   encodeIndexList, decodeIndexList, questionSetFingerprint, levelAhead,
+  straightenTyped,
 } from "./util.js";
 import { pickDragonLine } from "./dragon.js";
 import { gradeSql, describeTables } from "./sqlgrade.js";
@@ -1015,7 +1016,7 @@ export class GameController {
   }
 
   submitCodeTrace(inputText) {
-    const normalized = (inputText || "")
+    const normalized = straightenTyped(inputText || "", { code: true })
       .replace(/\r\n/g, "\n")
       .split("\n")
       .map(line => line.replace(/\s+$/, ""))
@@ -1026,6 +1027,7 @@ export class GameController {
 
   submitFillBlank(inputText) {
     if (!this.model.current_question) return;
+    inputText = straightenTyped(inputText);
     if (!inputText.trim()) {
       this.ui.showFeedbackInline("Please type an answer before submitting.");
       return;
@@ -1059,6 +1061,7 @@ export class GameController {
 
   submitCodeLine(inputText, { confirmed = false } = {}) {
     if (!this.model.current_question) return;
+    inputText = straightenTyped(inputText, { code: true });
     if (!inputText.trim()) {
       this.ui.showFeedbackInline("Please type an answer before submitting.");
       return;
@@ -1109,7 +1112,8 @@ export class GameController {
 
   submitCloze(typedAnswers) {
     if (!this.model.current_question) return;
-    this._evaluateWithMulligan(() => this.model.evaluateCloze(typedAnswers));
+    const typed = (typedAnswers || []).map(a => straightenTyped(a));
+    this._evaluateWithMulligan(() => this.model.evaluateCloze(typed));
   }
 
   submitRuleTable(rows) {
@@ -1119,7 +1123,8 @@ export class GameController {
 
   submitCodeWrite(bodyText) {
     if (!this.model.current_question) return;
-    this._evaluateWithMulligan(() => this.model.evaluateCodeWrite(bodyText));
+    const body = straightenTyped(bodyText, { code: true });
+    this._evaluateWithMulligan(() => this.model.evaluateCodeWrite(body));
   }
 
   // ─── Write-the-query problems ─────────────────────────────────────────────
@@ -1151,7 +1156,7 @@ export class GameController {
     if (!question) return null;
     const database = await this._sqlDatabase(question.database);
     this._sqlRunner ??= createSqlRunner();
-    return gradeSql(this._sqlRunner.run, question, database, queryText);
+    return gradeSql(this._sqlRunner.run, question, database, straightenTyped(queryText, { code: true }));
   }
 
   async submitSqlWrite(queryText) {

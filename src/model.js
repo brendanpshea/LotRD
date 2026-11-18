@@ -1902,7 +1902,9 @@ export class GameModel {
     }
 
     _parseDynamicNumericGuess(inputText) {
-        const raw = String(inputText ?? '').trim();
+        // The signs as written by hand, or as the symbol bar labels them, are arithmetic too.
+        const raw = String(inputText ?? '').trim()
+            .replace(/[\u2212\u2013]/g, '-').replace(/\u00D7/g, '*').replace(/\u00F7/g, '/');
         if (!raw) return null;
         // Separators are read as digit grouping only in something shaped like a
         // grouped number (1,000 · 1 000 · 1_000). They used to be stripped from

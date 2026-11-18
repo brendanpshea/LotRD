@@ -335,3 +335,18 @@ export function fillBlankLengthHint(answers) {
         : `${lengths.slice(0, -1).join(", ")} or ${lengths[lengths.length - 1]}`;
     return `${blanks}  · also accepted: an answer of ${spoken} characters`;
 }
+
+/**
+ * A phone's keyboard "corrects" what is typed: straight quotes become curly
+ * ones, and a non-breaking space can stand in for a space. Neither is what the
+ * student meant, and either makes a right answer compare as wrong.
+ * With `code`, a dash the keyboard made from two hyphens is put back too.
+ */
+export function straightenTyped(text, { code = false } = {}) {
+    let s = String(text ?? "")
+        .replace(/[\u2018\u2019\u201A\u2032]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u2033]/g, '"')
+        .replace(/\u00A0/g, " ");
+    if (code) s = s.replace(/\u2014/g, "--").replace(/\u2013/g, "-");
+    return s;
+}

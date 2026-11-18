@@ -38,6 +38,7 @@ const PRECACHE = [
   "src/heroes.js",
   "src/highlight.js",
   "src/items.js",
+  "src/keybar.js",
   "src/jtiny.js",
   "src/main.js",
   "src/model.js",
