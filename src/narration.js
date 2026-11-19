@@ -1,6 +1,6 @@
 // A mentor's voice for the teaching scenes (npc_demo). A narrated scene carries
 // spoken lines beside what is shown: `narrate` on a beat, `narrate` and
-// `why_narrate` on a check, `intro_narrate` and `outro_narrate` on the scene.
+// `why_narrate` on a check, `intro_narrate` on the scene.
 // Each line is an MP3 under narration/, named by a hash of the mentor's voice
 // and the line: the name tools/narrate.py gives it. A line edited without
 // running the tool again has no clip, so it plays nothing, never the old audio.
@@ -38,7 +38,6 @@ export function sceneLines(q) {
     for (const beat of step.beats || []) lines.push(beat?.narrate);
     if (step.check) lines.push(step.check.narrate, step.check.why_narrate);
   }
-  lines.push(q?.outro_narrate);
   return lines.filter(line => typeof line === "string" && squash(line)).map(squash);
 }
 

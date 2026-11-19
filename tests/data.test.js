@@ -2012,7 +2012,7 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
   });
 
   // A scene's title is the question it answers, shown as its heading. Sets move to
-  // this as their scenes are rewritten (WRITING_GUIDE: Title, opening and closing lines).
+  // this as their scenes are rewritten (WRITING_GUIDE: Title and opening line).
   const QUESTION_TITLES = setId => /^securityx_|^netplus_|^techplus_/.test(setId);
 
   // Frames a beginner can read (WRITING_GUIDE: Beats a beginner can read). Sets move
@@ -2095,18 +2095,16 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
     assert.deepEqual(bad, []);
   });
 
-  it('a mentor introduces themselves once in a set, in their first scene there', () => {
+  it('a scene has no closing line, and no mentor introduces themselves in the text', () => {
+    // The scene's header shows the mentor's portrait and name. A closing line
+    // pointed at "the next question", which is often an old one returning.
     const bad = [];
     for (const setId of index) {
-      const met = new Set();
       loadJSON(`question_sets/${setId}`).forEach((q, i) => {
         if (q.type !== 'npc_demo') return;
+        if ('outro' in q || 'outro_narrate' in q) bad.push(`${setId}[${i}]: a scene ends on its last frame; drop the outro`);
         const n = npcs.find(m => m.id === String(q.npc).toLowerCase());
-        if (!n) return;
-        const says = intro(n).test(q.intro || '');
-        if (!met.has(n.id) && !says) bad.push(`${setId}[${i}]: ${n.short}'s first scene in the set should open "I'm ${n.short}, …"`);
-        if (met.has(n.id) && says) bad.push(`${setId}[${i}]: ${n.short} has already introduced themselves in this set`);
-        met.add(n.id);
+        if (n && intro(n).test(q.intro || '')) bad.push(`${setId}[${i}]: ${n.short} introduces themselves; the header already does`);
       });
     }
     assert.deepEqual(bad, []);
@@ -2146,7 +2144,6 @@ describe('Narration in teaching scenes', () => {
     for (const { label, q } of scenes) {
       if (!voices.get(String(q.npc).toLowerCase())) bad.push(`${label}: narrated, but mentor ${q.npc} has no voice in assets/npcs.json`);
       if (q.intro && !q.intro_narrate) bad.push(`${label}: intro has no intro_narrate`);
-      if (q.outro && !q.outro_narrate) bad.push(`${label}: outro has no outro_narrate`);
       q.steps.forEach((s, si) => {
         (s.beats || []).forEach((b, bi) => {
           if (!b.narrate) bad.push(`${label} step ${si + 1} beat ${bi + 1}: no narrate (a silent beat in a narrated scene)`);

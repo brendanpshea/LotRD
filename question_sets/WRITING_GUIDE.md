@@ -925,7 +925,7 @@ Writing good ones — everything said for Python class problems applies, and als
   "type": "npc_demo",
   "question": "NPC: Turning 13 into binary",
   "npc": "Ada the Artificer",
-  "intro": "I'm Nia, the Logic-Weaver. Here is a number, and a row of empty boxes to fill.",
+  "intro": "Here is a number, and a row of empty boxes to fill.",
   "steps": [
     { "say": "First teaching beat — one idea per step." },
     { "say": "Second beat, ending just before a decision point.",
@@ -938,7 +938,6 @@ Writing good ones — everything said for Python class problems applies, and als
     },
     { "say": "Final beat: complete the example and state the takeaway pattern." }
   ],
-  "outro": "Your turn. A new number, the same boxes."
 }
 ```
 
@@ -947,9 +946,9 @@ Writing good ones — everything said for Python class problems applies, and als
 | Field | Required | Type | Notes |
 |-------|----------|------|-------|
 | `type` | yes | `"npc_demo"` | Must be exactly this string |
-| `question` | yes | string | The scene's title: the question the scene answers (see *Title, opening and closing lines*). Shown as the scene's heading; also its identity, so it must be unique. Prefix it with `NPC:`, which marks a scene in the data and is not shown |
+| `question` | yes | string | The scene's title: the question the scene answers (see *Title and opening line*). Shown as the scene's heading; also its identity, so it must be unique. Prefix it with `NPC:`, which marks a scene in the data and is not shown |
 | `npc` | yes | string | Mentor **id** from [`assets/npcs.json`](../assets/npcs.json) — `ada`, `nia`, `zoya`, `flint`, `kaelen`, `tariq`, `val`, `omu`. The game resolves the display name and portrait from the roster. Pick the mentor whose domain matches the lesson, and write the prose to fit them (Zoya uses they/them) |
-| `intro` / `outro` | no | string | The mentor's opening and closing words, spoken to the student (see *Title, opening and closing lines*) |
+| `intro` | no | string | The mentor's opening words, spoken to the student (see *Title and opening line*). A scene has no closing line: it ends on its last frame |
 | `steps` | yes | object[] | 2–6 steps; each needs `say`, may carry `beats` and one `check`. Each step is a frame: split a heavy step rather than packing it (see *Beats a beginner can read*) |
 | `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is one of `{"say": "..."}` (one spoken line), `{"code": "...", "language": "..."}` (code, a command or its output), a panel (`list`, `table`, `chain` or `document`; see *Panels*), or `{"figure": {...}}` (a picture; see [Pictures in Questions](#pictures-in-questions-figure)). Without it the whole `say` string appears in one go |
 | `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues |
@@ -972,7 +971,7 @@ ADD 5 TO count", "language": "pseudocode" },
 
 Useful `language` values: `pseudocode`, `python`, `sql`, or a short phrase describing the artifact (`typed by the attacker`). It is shown as a caption above the panel.
 
-**Key terms in bold.** Write `**term**` in a spoken line (a `say`, the `intro`/`outro`, a check's `prompt` or `why`) to show the term in bold where the mentor first names it: `"A **primary key** is a column whose value is unique for every row."` Bold the defining mention, not every mention, or nothing stands out. Check options are plain button labels, so `**` is not allowed there; `data.test.js` rejects that and an unpaired `**`.
+**Key terms in bold.** Write `**term**` in a spoken line (a `say`, the `intro`, a check's `prompt` or `why`) to show the term in bold where the mentor first names it: `"A **primary key** is a column whose value is unique for every row."` Bold the defining mention, not every mention, or nothing stands out. Check options are plain button labels, so `**` is not allowed there; `data.test.js` rejects that and an unpaired `**`.
 
 **Code in a line.** Write `` `code` `` to show code, or output, inside a line as a small monospaced chip: ``"It shows `Forge lit`, and then `Anvil ready`."`` Mark what a program prints or a user types, a code fragment (`` `name.length()` ``, `` `i++` ``, `` `return -1;` ``), a command or file name, and a name from the code where the sentence could read it as an ordinary word (`` `count` ``, `` `max` ``). Class names written as names (Bird, Golem) stay plain, and so does a term in bold. Check options may use it too. Be sparing: the point is that code can be told from prose at a glance. `data.test.js` rejects an unpaired backtick, and code set off by extra spaces (`So  power = power;  copies`), the old way.
 
@@ -1016,22 +1015,22 @@ An example that is not code goes in a panel of its own kind, framed like a code 
 
 Choose by the example, not by habit: a DHCP lease is a `table`, DORA is an ordered `list` or a `chain`, a phishing email is a `document`, and `show ip route` is `code`. A panel shows what the spoken beats point at; it does not replace them, so a frame still says the idea in words.
 
-### Title, opening and closing lines
+### Title and opening line
 
 **The title is the question the scene answers**, asked the way a student would ask it: "How do you decide which risks to fix?", "What does a risk cost per year?", "Who takes charge when ransomware hits?" It is the scene's heading, read before anything else, so it does the job of saying what the scene is for. That frees the intro to start talking instead of summarising. One question, about ten words at most, ending in a question mark; `NPC: ` goes in front of it in the data. (Older sets still have noun-phrase titles such as "Planning for the worst day". A scene that is rewritten gets a question.)
 
-The `intro` and `outro` are the mentor talking, shown like every other line the mentor says: first person, to the student. They are not stage directions. A line like "Kaelen lays out five index cards…" or "“Words in hand,” Zoya says." is narration about the mentor, and `data.test.js` rejects it.
+The `intro` is the mentor talking, shown like every other line the mentor says: first person, to the student. They are not stage directions. A line like "Kaelen lays out five index cards…" or "“Words in hand,” Zoya says." is narration about the mentor, and `data.test.js` rejects it.
 
-- **A mentor introduces themselves once per set**, very briefly, at the start of their first scene in it: "I'm Kaelen, the Grand Archivist." Later scenes in the same set go straight to the point. The name and portrait are already in the scene's header.
+- **No self-introduction.** The scene's header shows the mentor's portrait, name and subject, so the text never opens "I'm Kaelen, …"; `data.test.js` rejects it. (A narrated scene's `intro_narrate` may still say the name: heard, it is natural.)
 - **Open on something concrete**: a moment, a person, a cost, a puzzle. Then say why it is hard or why it matters, and hand over to the first beat. "Sooner or later something gets through, and the day it does is no time to work out who decides what. The plans that matter are written long before. Let's start with the people, because coordination breaks before the technology does."
 - **Talk; don't outline.** Write whole sentences, with contractions and the joining words of speech (so, but, because). Never list what is coming. "Here: who leads, how fast systems must come back, which backups survive ransomware, and how you prove…" is a table of contents with its heading torn off, and so is "This scene covers X, Y and Z", which `data.test.js` rejects along with "Here:". The steps will show what is coming. Two things joined by "and" read as speech; three or more read as a list. No slogan or fragment standing alone ("Assume the breach."). Don't announce props or images here; if the scene uses one, it is introduced where it is explained (rule 3 below).
 - **Don't repeat the title.** Answer the question the title leaves open: why should I care?
-- **Vary the handover across a set.** "Let's start with…" is one way to hand over to the first beat, and it is fine once or twice. Seven scenes that all end on it, or seven outros that all open "Next,", become a tic the student hears. The handover can be a question, the problem's first step, or simply the sentence that makes the first beat necessary.
-- **Length:** two to four sentences after the self-introduction, about 70 words at most.
+- **Vary the handover across a set.** "Let's start with…" is one way to hand over to the first beat, and it is fine once or twice. Seven scenes that all end on it become a tic the student hears. The handover can be a question, the problem's first step, or simply the sentence that makes the first beat necessary.
+- **Length:** two to four sentences, about 70 words at most.
 - **The first beat picks up where the intro stops.** If the intro ends "Let's start with the people", the first beat is about people. A first beat that opens on a bare definition can land abruptly. Then either the intro's last sentence leads into it ("…so let's start with what a risk actually is"), or the beat gets a half-sentence of why before the definition.
 - **No quotation marks around the speech, and no dialogue tags.** Quotation marks for in-world text inside it are fine (a sign reading "ENTER YOUR AGE").
 
-**The outro** is one or two whole sentences that send the student to the question after the scene: what it is, and what to do with it. "Next, ransomware strikes between two snapshots. Work out how much data is lost." Write sentences, not a string of fragments ("Snapshots, a ransomware strike and a clock."), and never give the answer away.
+**A scene has no closing line.** It ends on its last teaching frame, whose button returns the student to the adventure. A line that pointed at "the next question" was often wrong, because a question missed earlier can come back first. So the last frame must end the lesson cleanly on its own: finish the idea, don't trail into a promise of what comes next. `data.test.js` rejects an `outro`.
 
 A scene from SecurityX 02, before and after:
 
@@ -1039,7 +1038,6 @@ A scene from SecurityX 02, before and after:
 |---|---|---|
 | Title | Planning for the worst day | How do you plan for the worst day? |
 | Intro | Assume the breach. Here: who leads when it happens, how fast systems and data must come back, which backups survive ransomware, and how you prove that what you restored is intact. | Sooner or later something gets through, and the day it does is no time to work out who decides what. The plans that matter are written long before: who leads, and how much the business can afford to lose. Let's start with the people, because coordination breaks before the technology does. |
-| Outro | Snapshots, a ransomware strike and a clock. Work out what is lost. | Next, ransomware strikes between two snapshots. Work out how much data is lost. |
 
 ### Narration (a mentor's voice)
 
@@ -1049,11 +1047,10 @@ A narrated scene has a spoken line for everything it shows:
 
 | Field | Where | What it says |
 |-------|-------|--------------|
-| `intro_narrate` | the scene | The intro, spoken: the same self-introduction, if there is one, then a somewhat fuller greeting |
+| `intro_narrate` | the scene | The intro, spoken: a somewhat fuller greeting, which may begin with the mentor's name |
 | `narrate` | every beat | A say beat: its point, in speech, somewhat fuller. A code beat: what to look at, never the code read out. A figure beat: where to look |
 | `narrate` | each `check` | The question, spoken. Not the options, and no hint |
 | `why_narrate` | each `check` | The explanation, heard after the student answers, right or wrong; so not "Right!" or "Not quite" |
-| `outro_narrate` | the scene | The closing line |
 
 The point of the voice is that the eyes can stay on the code or the diagram while the mentor explains it. Reading the screen aloud word for word is the weakest use of it. Write instead:
 

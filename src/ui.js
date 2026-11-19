@@ -1902,6 +1902,13 @@ export class GameUI {
       const npc = findNpc(roster, q.npc);
       if (!npc || !nameEl.isConnected) return;
       nameEl.textContent = npc.name;
+      // What this mentor teaches, small, under the name: the introduction the text no longer makes.
+      if (npc.domain) {
+        const subject = document.createElement("span");
+        subject.className = "npc-subject";
+        subject.textContent = npc.domain;
+        nameEl.appendChild(subject);
+      }
       if (npc.voice && sceneHasNarration(q)) {
         narrator = new Narrator(npc.voice);
         narrateBtn.hidden = false;
@@ -2021,7 +2028,7 @@ export class GameUI {
       return wrap;
     };
 
-    // The mentor's opening and closing words are speech like every other line.
+    // The mentor's opening words are speech like every other line.
     const introEl = q.intro ? addLine(q.intro) : null;
 
     // A check's options may hold `code` too, so they are built like a line.
@@ -2055,31 +2062,29 @@ export class GameUI {
     }
 
     // Each step is a frame of its own: it starts on a clear screen instead of
-    // under everything said before it. The opening and closing lines get a frame
-    // each, too.
+    // under everything said before it. The opening line gets a frame too.
     let pos = 0;
     let checksSeen = 0, checksRight = 0;
-    const advance = () => {
-      controls.innerHTML = "";
-      if (pos >= queue.length) {
-        let outroEl = null;
-        if (q.outro) {
-          dialogue.replaceChildren();
-          outroEl = addLine(q.outro);
-        }
-        // Every check right the first time earns something, and says so.
+    // The button that moves on. The scene ends on its last teaching frame: there
+    // is no closing line, since the question that comes next may be an old one
+    // returning. Every check right the first time earns something, said here.
+    const nextButton = () => {
+      const last = pos >= queue.length;
+      if (last) {
         const earned = onChecksDone?.({ checks: checksSeen, right: checksRight });
         if (earned) {
           addLine(`🎁 ${earned.reason}: you earned ${earned.emoji} ${earned.name}. ${earned.flavor}`, "npc-line npc-line--good");
         }
-        speak([[q.outro_narrate, outroEl]]);
-        makeButton("Continue the adventure ⚔", "action-button", () => onDone()).focus();
-        return;
       }
+      makeButton(last ? "Continue the adventure ⚔" : "Continue ▸", "action-button", advance).focus();
+    };
+    const advance = () => {
+      controls.innerHTML = "";
+      if (pos >= queue.length) { onDone(); return; }
       const item = queue[pos++];
       if (item.kind === "intro") {
         speak([[q.intro_narrate, introEl]]);
-        makeButton("Continue ▸", "action-button", advance).focus();
+        nextButton();
         return;
       }
       if (item.first && (item.step > 0 || introEl)) dialogue.replaceChildren();
@@ -2090,22 +2095,22 @@ export class GameUI {
         dialogue.appendChild(fig);
         fig.scrollIntoView?.({ block: "nearest" });
         speak([[item.beat.narrate, fig]]);
-        makeButton("Continue ▸", "action-button", advance).focus();
+        nextButton();
         return;
       }
       if (item.kind === "code") {
         speak([[item.beat.narrate, addCode(item.beat.code, item.beat.language)]]);
-        makeButton("Continue ▸", "action-button", advance).focus();
+        nextButton();
         return;
       }
       if (item.kind === "panel") {
         speak([[item.beat.narrate, addPanel(item.beat)]]);
-        makeButton("Continue ▸", "action-button", advance).focus();
+        nextButton();
         return;
       }
       if (item.kind === "say") {
         speak([[item.beat.narrate, addLine(item.beat.say)]]);
-        makeButton("Continue ▸", "action-button", advance).focus();
+        nextButton();
         return;
       }
 
@@ -2127,7 +2132,7 @@ export class GameUI {
           speak([[check.why_narrate, whyEl]]);
           // Wait for the student: the next frame would clear this away unread.
           controls.innerHTML = "";
-          makeButton("Continue ▸", "action-button", advance).focus();
+          nextButton();
         }, opt === check.answer ? "checkYes" : "checkNo");
       });
     };

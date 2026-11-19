@@ -30,12 +30,11 @@ const scene = {
       check: { prompt: 'Q?', answer: 'a', wrong: ['b'], why: 'W.', narrate: 'Which is it?', why_narrate: 'Because.' } },
     { say: 'Two.', beats: [{ say: 'Two.', narrate: 'Second.' }] },
   ],
-  outro: 'Bye.', outro_narrate: 'Off you go.',
 };
 
 describe('narration: lines and names', () => {
   it('a scene speaks its lines in the order a student meets them, squashed', () => {
-    assert.deepEqual(sceneLines(scene), ['Hello there.', 'First, one.', 'Look at the code.', 'Which is it?', 'Because.', 'Second.', 'Off you go.']);
+    assert.deepEqual(sceneLines(scene), ['Hello there.', 'First, one.', 'Look at the code.', 'Which is it?', 'Because.', 'Second.']);
   });
 
   it('a scene with no narrate fields has no narration', () => {

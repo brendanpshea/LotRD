@@ -3,7 +3,7 @@
 
 A narrated scene (type npc_demo) carries spoken lines beside what it shows:
 `narrate` on a beat, `narrate` (the prompt) and `why_narrate` on a check, and
-`intro_narrate` / `outro_narrate` on the scene. Each line becomes one MP3 in
+`intro_narrate` on the scene. Each line becomes one MP3 in
 narration/, in the voice of the scene's mentor (the `voice` in
 assets/npcs.json), named by a hash of voice and line: the name the game
 computes too (clipName in src/narration.js). A line edited without running
@@ -64,7 +64,6 @@ def scene_lines(scene: dict) -> list:
         lines += [b.get("narrate") for b in step.get("beats") or [] if isinstance(b, dict)]
         check = step.get("check") or {}
         lines += [check.get("narrate"), check.get("why_narrate")]
-    lines.append(scene.get("outro_narrate"))
     return [squash(l) for l in lines if isinstance(l, str) and squash(l)]
 
 
