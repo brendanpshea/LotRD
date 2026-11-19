@@ -444,6 +444,48 @@
     "feedback": "The SAN decides names, since browsers ignore the CN. The EKU decides purposes, so a server-authentication certificate cannot legitimately sign code. Basic Constraints with CA:FALSE stops a leaf from issuing certificates. AIA points to the issuer's certificate and its OCSP responder, and the CDP points to its CRL. Each is a constraint a relying party enforces; a missing one should make it suspicious."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How do you print a certificate as readable text?",
+    "npc": "val",
+    "intro": "A certificate file is a block of encoded text that nobody can read by eye. When a client rejects one, someone has to look inside it. One command turns the file into the fields you have just seen.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**openssl x509** reads a certificate and can print its fields in plain text."
+          },
+          {
+            "code": "openssl x509 -in <file> -noout -text",
+            "language": "general form"
+          },
+          {
+            "say": "`-in` names the certificate file. `-text` prints the fields, and `-noout` hides the encoded block."
+          },
+          {
+            "code": "openssl x509 -in vpn.pem -noout -text",
+            "language": "worked example"
+          }
+        ],
+        "say": "**openssl x509** reads a certificate and can print its fields in plain text. `-in` names the certificate file. `-text` prints the fields, and `-noout` hides the encoded block.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Print the certificate in the file api.crt as readable text, without the encoded block.",
+          "language": "bash",
+          "correct": [
+            "openssl x509 -in api.crt -noout -text",
+            "openssl x509 -in api.crt -text -noout",
+            "openssl x509 -noout -text -in api.crt",
+            "openssl x509 -text -noout -in api.crt",
+            "openssl x509 -noout -in api.crt -text",
+            "openssl x509 -text -in api.crt -noout"
+          ],
+          "case_sensitive": true,
+          "why": "`-in api.crt` names the file, `-text` prints the fields, and `-noout` hides the encoded block."
+        }
+      }
+    ]
+  },
+  {
     "type": "code_line",
     "question": "Iolen saved a server's certificate in a file named c. Write the openssl command that prints the certificate as readable text: subject, dates, SAN and the other extensions.",
     "language": "bash",
@@ -1034,6 +1076,39 @@
           }
         ],
         "say": "**Hashing** turns any input into a fixed-length **digest**, a fingerprint that cannot be reversed in practice. Change one bit and the digest changes completely. Use SHA-256 or stronger; MD5 and SHA-1 are broken."
+      },
+      {
+        "beats": [
+          {
+            "say": "**openssl dgst** prints a file's digest using the hash algorithm you name."
+          },
+          {
+            "code": "openssl dgst -<algorithm> <file>",
+            "language": "general form"
+          },
+          {
+            "say": "The algorithm is a flag such as `-sha256` or `-sha512`, and the file name comes last."
+          },
+          {
+            "code": "openssl dgst -sha512 backup.zip",
+            "language": "worked example"
+          }
+        ],
+        "say": "**openssl dgst** prints a file's digest using the hash algorithm you name. The algorithm is a flag such as `-sha256` or `-sha512`, and the file name comes last.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Use openssl to print the SHA-256 digest of the file notes.txt.",
+          "language": "bash",
+          "correct": [
+            "openssl dgst -sha256 notes.txt",
+            "openssl sha256 notes.txt",
+            "openssl dgst -sha256 -hex notes.txt",
+            "openssl dgst -hex -sha256 notes.txt",
+            "openssl dgst -sha256 < notes.txt"
+          ],
+          "case_sensitive": true,
+          "why": "`-sha256` picks the algorithm, and the file name comes last."
+        }
       },
       {
         "beats": [

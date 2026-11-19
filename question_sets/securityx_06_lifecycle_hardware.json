@@ -617,6 +617,44 @@
     "feedback": "RASP runs inside the production application and can stop an exploit at the moment input reaches the vulnerable call, which is exactly the stated gap. A SAST rule only finds the pattern in code, and nobody is changing this vendor module. A DAST scan confirms the exposure without blocking anything. IAST adds diagnostic detail in staging but protects no live user. RASP is only the stopgap, so the vendor fix is still needed."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How does Python read a secret from the environment?",
+    "npc": "flint",
+    "intro": "A password typed into source code travels with every copy of the repository. Scanners find it, and so does anyone who clones the code. The fix is to keep the value outside the code and read it when the program runs.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Python can read an **environment variable**, a named setting the system holds outside the code."
+          },
+          {
+            "code": "os.environ[\"<VARIABLE>\"]",
+            "language": "general form"
+          },
+          {
+            "say": "The name in quotes is the variable to read. If it is not set, Python stops with an error."
+          },
+          {
+            "code": "DB_PASSWORD = os.environ[\"DB_PASS\"]",
+            "language": "worked example"
+          }
+        ],
+        "say": "Python can read an **environment variable**, a named setting the system holds outside the code. The name in quotes is the variable to read. If it is not set, Python stops with an error.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Write the Python expression that reads the environment variable REGION and raises an error if it is not set. (os is already imported.)",
+          "language": "python",
+          "correct": [
+            "os.environ[\"REGION\"]",
+            "os.environ['REGION']"
+          ],
+          "case_sensitive": true,
+          "why": "`os.environ[\"REGION\"]` raises a KeyError when the variable is missing, so a bad deploy fails loudly."
+        }
+      }
+    ]
+  },
+  {
     "type": "code_line",
     "question": "SAST flags this line in a service's settings.py:\n\nAPI_TOKEN = \"tk_live_93f1c\"\n\nWrite the Python expression to put on the right-hand side instead. It must read the environment variable TOKEN at run time and raise an error if TOKEN is not set. (os is already imported.)",
     "language": "python",
@@ -976,6 +1014,38 @@
           }
         ],
         "say": "A motherboard is designed, made, assembled and shipped by four companies. Each hand-off invites counterfeit parts, modified firmware or implants. Buy from authorized channels and inspect **tamper-evident packaging**. Compare the firmware's hash, a file's fingerprint, with the vendor's **golden hash**, the published hash of the genuine image."
+      },
+      {
+        "beats": [
+          {
+            "say": "**sha256sum** prints a file's SHA-256 hash, the value to compare with the vendor's golden hash."
+          },
+          {
+            "code": "sha256sum <file>",
+            "language": "general form"
+          },
+          {
+            "say": "The file name comes last. Any change to the file gives a completely different hash."
+          },
+          {
+            "code": "sha256sum bmc-fw-5.0.bin",
+            "language": "worked example"
+          }
+        ],
+        "say": "**sha256sum** prints a file's SHA-256 hash, the value to compare with the vendor's golden hash. The file name comes last. Any change to the file gives a completely different hash.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Print the SHA-256 hash of the file drive-fw-3.1.bin.",
+          "language": "bash",
+          "correct": [
+            "sha256sum drive-fw-3.1.bin",
+            "shasum -a 256 drive-fw-3.1.bin",
+            "openssl dgst -sha256 drive-fw-3.1.bin",
+            "openssl sha256 drive-fw-3.1.bin"
+          ],
+          "case_sensitive": true,
+          "why": "`sha256sum` takes the file name and prints its SHA-256 hash."
+        }
       },
       {
         "beats": [
