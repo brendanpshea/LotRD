@@ -1038,6 +1038,8 @@ A `code_line` question asks for one exact line. A student who has never typed th
 
 The practice is graded as a `code_line` question is (spacing ignored, case ignored unless `case_sensitive` is true), gives two tries, and costs nothing. It has `correct[]` and no `answer` or `wrong`.
 
+In a narrated scene the practice frame may be silent until its lines are recorded: the whole step (every beat and the check) carries no `narrate` field, or all of it does.
+
 The real question, later in the set, asks for a line of that form with values that differ from both the example and the practice. It is never the scene's own example. A line with nothing to choose (`arp -a`, `no shutdown`) is taught as one of a small family in a `table` beat; the practice asks for one member and the real question for another.
 
 ### Title and opening line

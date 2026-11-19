@@ -2107,8 +2107,7 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
 
   // A typed line is taught before it is asked (WRITING_GUIDE: Practice a line before
   // it is asked).
-  // The narrated sets wait: a practice there needs its lines recorded first.
-  const TYPED_TAUGHT = setId => !/^computing_concepts_(0[6-9]|1\d)_|^java_0[07]_/.test(setId);
+  const TYPED_TAUGHT = () => true;
 
   it('a typed line is practised in a scene before it, and the question asks for a new one', () => {
     const squash = line => line.toLowerCase().replace(/\s+/g, '');
@@ -2187,6 +2186,8 @@ describe('Narration in teaching scenes', () => {
       if (!voices.get(String(q.npc).toLowerCase())) bad.push(`${label}: narrated, but mentor ${q.npc} has no voice in assets/npcs.json`);
       if (q.intro && !q.intro_narrate) bad.push(`${label}: intro has no intro_narrate`);
       q.steps.forEach((s, si) => {
+        // A typed practice frame may be silent until its lines are recorded: all of it, or none.
+        if (s.check?.type === 'code_line' && !s.check.narrate && !(s.beats || []).some(b => b.narrate)) return;
         (s.beats || []).forEach((b, bi) => {
           if (!b.narrate) bad.push(`${label} step ${si + 1} beat ${bi + 1}: no narrate (a silent beat in a narrated scene)`);
         });
