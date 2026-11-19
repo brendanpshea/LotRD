@@ -8,21 +8,21 @@ A guide to the non-player characters (NPCs) who teach core computing and compute
 
 | Portrait | Name | Domain & Concepts | Tone / Archetype |
 | :---: | :--- | :--- | :--- |
-| ![Ada](ada.jpg) | **Ada the Chief Artificer**<br>`ada.jpg` | **Core Computing & Architecture**<br>Von Neumann model, logic gates, binary/hex, clock cycles | Practical, sharp, master builder |
-| ![Master Kaelen](kaelen.jpg) | **Master Kaelen the Grand Archivist**<br>`kaelen.jpg` | **Databases & Relational Models**<br>Schemas, primary/foreign keys, SQL queries, normalization | Venerable, meticulous, structured |
-| ![Valeria](val.jpg) | **Valeria "Val" Vex the Ward-Smith**<br>`val.jpg` | **Cybersecurity & Cryptography**<br>CIA triad, SQL injection, XSS, hashing vs encryption, salting | Edgy, vigilant, security penetration tester |
-| ![Tariq](tariq.jpg) | **Tariq the Beacon-Courier**<br>`tariq.jpg` | **Networking & Operating Systems**<br>Packets, TCP/IP, DNS, HTTP cycle, cloud architectures | Charismatic, worldly, pathfinder |
-| ![Nia](nia.jpg) | **Nia the Logic-Weaver**<br>`nia.jpg` | **Control Flow & Algorithms**<br>Conditionals, while/for loops, branching, recursion | Playful, poetic, analytical pattern-seeker |
-| ![Professor Flint](flint.jpg) | **Prof. Ignatius "Iggy" Flint**<br>`flint.jpg` | **Software Engineering & Git**<br>SDLC, Agile/sprints, git branch lineages, assertions, testing | Pedantic, rigorous, quality inspector |
-| ![Zoya](zoya.jpg) | **Zoya the Golem-Shaper**<br>`zoya.jpg` | **Object-Oriented Programming**<br>Classes, objects, inheritance, polymorphism, encapsulation | Hands-on, curious, blueprint artisan |
-| ![Elder Omu](omu.jpg) | **Elder Omu the Oracle of Echoes**<br>`omu.jpg` | **AI, Machine Learning & Ethics**<br>Neural weights, training data, LLM mechanics, bias, accountability | Mystical, wise, ethical philosopher |
+| ![Ada](ada.jpg) | **Ada, Guild Engineer**<br>`ada.jpg` | **Core Computing & Architecture**<br>Von Neumann model, logic gates, binary/hex, clock cycles | Practical, sharp, master builder |
+| ![Kaelen](kaelen.jpg) | **Kaelen, Guild Archivist**<br>`kaelen.jpg` | **Databases & Relational Models**<br>Schemas, primary/foreign keys, SQL queries, normalization | Venerable, meticulous, structured |
+| ![Val](val.jpg) | **Val, Guild Warden**<br>`val.jpg` | **Cybersecurity & Cryptography**<br>CIA triad, SQL injection, XSS, hashing vs encryption, salting | Edgy, vigilant, security penetration tester |
+| ![Tariq](tariq.jpg) | **Tariq, Guild Courier**<br>`tariq.jpg` | **Networking & Operating Systems**<br>Packets, TCP/IP, DNS, HTTP cycle, cloud architectures | Charismatic, worldly, pathfinder |
+| ![Nia](nia.jpg) | **Nia, Guild Tracer**<br>`nia.jpg` | **Control Flow & Algorithms**<br>Conditionals, while/for loops, branching, recursion | Playful, poetic, analytical pattern-seeker |
+| ![Flint](flint.jpg) | **Flint, Guild Builder**<br>`flint.jpg` | **Software Engineering & Git**<br>SDLC, Agile/sprints, git branch lineages, assertions, testing | Pedantic, rigorous, quality inspector |
+| ![Zoya](zoya.jpg) | **Zoya, Guild Modeller**<br>`zoya.jpg` | **Object-Oriented Programming**<br>Classes, objects, inheritance, polymorphism, encapsulation | Hands-on, curious, blueprint artisan |
+| ![Omu](omu.jpg) | **Omu, Guild Oracle**<br>`omu.jpg` | **AI, Machine Learning & Ethics**<br>Neural weights, training data, LLM mechanics, bias, accountability | Mystical, wise, ethical philosopher |
 
 ---
 
 ## Detailed Character Profiles
 
-### 1. Ada the Chief Artificer (`ada.jpg`)
-* **Title:** Chief Artificer of the Guild
+### 1. Ada, Guild Engineer (`ada.jpg`)
+* **Title:** Guild Engineer
 * **Demographics:** Woman, late 30s, olive complexion, auburn hair in a brass-pinned bun.
 * **Curriculum Focus:** Machine Architecture, Von Neumann Architecture, Logic Gates, Binary/Hex representations, CPU cycles.
 * **Personality:** Grounded, encouraging, with zero tolerance for hand-wavy explanations. She believes if you can't trace the switches, you don't really know where the power goes.
@@ -31,7 +31,7 @@ A guide to the non-player characters (NPCs) who teach core computing and compute
 
 ---
 
-### 2. Master Kaelen the Grand Archivist (`kaelen.jpg`)
+### 2. Kaelen, Guild Archivist (`kaelen.jpg`)
 * **Title:** Keeper of the Indexed Vaults
 * **Demographics:** Elder man, mid 60s, deep ebony skin, silver-white braided beard and spectacles.
 * **Curriculum Focus:** Relational Databases, SQL (`SELECT`, `JOIN`, `GROUP BY`), Primary/Foreign Keys, Constraints, ACID guarantees.
@@ -41,7 +41,7 @@ A guide to the non-player characters (NPCs) who teach core computing and compute
 
 ---
 
-### 3. Valeria "Val" Vex the Ward-Smith (`val.jpg`)
+### 3. Val, Guild Warden (`val.jpg`)
 * **Title:** High Inquisitor of Wards & Ciphers
 * **Demographics:** Young woman, early 20s, East Asian descent, short undercut hair with phosphor-green streaks.
 * **Curriculum Focus:** Cybersecurity, Input Sanitization, SQL Injection, Cross-Site Scripting (XSS), Hashing & Salts, Secrets Management.
@@ -51,7 +51,7 @@ A guide to the non-player characters (NPCs) who teach core computing and compute
 
 ---
 
-### 4. Tariq the Beacon-Courier (`tariq.jpg`)
+### 4. Tariq, Guild Courier (`tariq.jpg`)
 * **Title:** Master of the Signal Towers
 * **Demographics:** Middle-aged man, 40s, Middle Eastern / Mediterranean descent, tan skin, salt-and-pepper beard.
 * **Curriculum Focus:** Networking, OSI & TCP/IP models, Packet Routing, DNS Resolution, HTTP Requests & Status Codes, APIs.
@@ -61,7 +61,7 @@ A guide to the non-player characters (NPCs) who teach core computing and compute
 
 ---
 
-### 5. Nia the Logic-Weaver (`nia.jpg`)
+### 5. Nia, Guild Tracer (`nia.jpg`)
 * **Title:** Mistress of the Loom of Flow
 * **Demographics:** Young woman, late 20s, Black / African descent, styled locs decorated with gold rings and thread.
 * **Curriculum Focus:** Control Flow (`if`/`elif`/`else`), Boolean Logic & Short-Circuiting, While & For Loops, Recursion, Tracing.
@@ -71,7 +71,7 @@ A guide to the non-player characters (NPCs) who teach core computing and compute
 
 ---
 
-### 6. Professor Ignatius "Iggy" Flint (`flint.jpg`)
+### 6. Flint, Guild Builder (`flint.jpg`)
 * **Title:** Inspector General of Code & Lineage
 * **Demographics:** Mature man, 50s, South Asian descent, warm bronze skin, graying hair, mustache, brass monocular.
 * **Curriculum Focus:** Software Engineering, Git Lineage & Version Control, Code Reviews, Sprints, Automated Testing & Assertions.
@@ -81,7 +81,7 @@ A guide to the non-player characters (NPCs) who teach core computing and compute
 
 ---
 
-### 7. Zoya the Golem-Shaper (`zoya.jpg`)
+### 7. Zoya, Guild Modeller (`zoya.jpg`)
 * **Title:** Blueprint Artisan & Golem Wright
 * **Demographics:** Non-binary / androgynous young adult, mid-20s, Central Asian / Slavic descent, golden skin, clay smudge on cheek.
 * **Curriculum Focus:** Object-Oriented Programming (OOP), Classes & Instances, Methods & `self`, Inheritance, Polymorphism, Composition.
@@ -91,7 +91,7 @@ A guide to the non-player characters (NPCs) who teach core computing and compute
 
 ---
 
-### 8. Elder Omu the Oracle of Echoes (`omu.jpg`)
+### 8. Omu, Guild Oracle (`omu.jpg`)
 * **Title:** Custodian of the Recursive Core
 * **Demographics:** Venerable elder woman, 70s, Indigenous / First Nations descent, weathered copper skin, long silver hair with beadwork.
 * **Curriculum Focus:** Artificial Intelligence, Machine Learning, Perceptrons, Neural Networks, Training Data, Algorithmic Bias, Ethics & Accountability.
@@ -127,8 +127,7 @@ The roster the game reads is [`assets/npcs.json`](../../assets/npcs.json) — na
         "why": "user_id is unique and never changes; names and cities are neither."
       }
     }
-  ],
-  "outro": "Kaelen nods slowly and inks the index entry into the ledger."
+  ]
 }
 ```
 
@@ -137,5 +136,6 @@ Notes for authors:
 - `beats` is how the scene is paced — the screen reveals **one beat per click**. Keep spoken beats to a sentence or two, and always put code in its own `code` beat so it renders as a captioned panel instead of blending into the mentor's speech.
 - `check` uses `answer` plus a `wrong` array, not an options list with an index. The game shuffles them.
 - Write the prose so it fits the mentor who is teaching. Zoya uses **they/them**; the pronouns for each mentor are in the roster.
+- A scene has no `outro`: it ends on its last frame. The mentor never introduces themselves in the scene text ("I'm Tariq, ..."); the scene header shows their portrait, name and subject.
 - `question` is the scene's title and its identity in the data, so it must be unique within the set. Prefixing with `NPC:` is the convention.
 - The full schema, including the rules the automated tests enforce, is in [`question_sets/WRITING_GUIDE.md`](../../question_sets/WRITING_GUIDE.md).
