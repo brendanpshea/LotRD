@@ -2107,7 +2107,7 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
 
   // A typed line is taught before it is asked (WRITING_GUIDE: Practice a line before
   // it is asked). Sets move here as their scenes gain the practice.
-  const TYPED_TAUGHT = setId => /^$/.test(setId);
+  const TYPED_TAUGHT = setId => /^netplus_11_/.test(setId);
 
   it('a typed line is practised in the scene before it, and the question asks for a new one', () => {
     const squash = line => line.toLowerCase().replace(/\s+/g, '');

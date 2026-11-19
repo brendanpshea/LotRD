@@ -44,6 +44,38 @@
       {
         "beats": [
           {
+            "say": "**ping** needs two choices from you: how many requests to send, and which address to test."
+          },
+          {
+            "code": "ping -c <count> <address>",
+            "language": "general form, Linux"
+          },
+          {
+            "say": "`-c` sets how many echo requests to send, and the address comes last."
+          },
+          {
+            "code": "ping -c 3 192.168.1.1",
+            "language": "worked example: send 3"
+          }
+        ],
+        "say": "**ping** needs two choices from you: how many requests to send, and which address to test. `-c` sets how many echo requests to send, and the address comes last.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Send exactly 2 echo requests to 192.168.5.9.",
+          "language": "bash",
+          "correct": [
+            "ping -c 2 192.168.5.9",
+            "ping -c2 192.168.5.9",
+            "ping 192.168.5.9 -c 2",
+            "ping 192.168.5.9 -c2"
+          ],
+          "case_sensitive": true,
+          "why": "`-c 2` stops after two requests, and the address comes last."
+        }
+      },
+      {
+        "beats": [
+          {
             "figure": {
               "dot": "digraph { rankdir=LR; node[shape=box]; h[label=\"host\"]; r1[label=\"R1\", color=\"#ffb300\", fontcolor=\"#ffd86b\"]; r2[label=\"R2\"]; r3[label=\"R3\"]; d[label=\"server\"]; h->r1[label=\" TTL=1\"]; r1->h[label=\" Time\\nExceeded\", style=dashed]; r1->r2[label=\" TTL=2\"]; r2->r3; r3->d; }",
               "alt": "A host sending a probe to the first router, which sends a dashed reply back; longer arrows reach the second and third routers and then a server.",
@@ -286,6 +318,190 @@
     "feedback_template": "Packet loss is replies missing divided by requests sent, times 100: ({{sent}} minus {{recv}}) over {{sent}} is {{expected}} percent. Any steady loss on a LAN points to a duplex mismatch, a bad cable, or an overloaded link."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How do you ask DNS and the host about themselves?",
+    "npc": "tariq",
+    "intro": "A site won't open, and the user is sure the network is down. Often the quickest proof is a DNS question, or a look at the machine's own addresses, and each takes one typed line.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**dig** asks DNS a question and prints the full answer. You choose the name and the record type."
+          },
+          {
+            "code": "dig <name> <type>",
+            "language": "general form"
+          },
+          {
+            "say": "The name comes first. The **record type** says what kind of answer you want."
+          },
+          {
+            "table": {
+              "head": [
+                "Type",
+                "Asks for"
+              ],
+              "rows": [
+                [
+                  "`A`",
+                  "an IPv4 address"
+                ],
+                [
+                  "`NS`",
+                  "a name server"
+                ],
+                [
+                  "`MX`",
+                  "a mail server"
+                ],
+                [
+                  "`TXT`",
+                  "a text note"
+                ]
+              ]
+            },
+            "caption": "common record types"
+          },
+          {
+            "code": "dig silverkeep.example NS",
+            "language": "worked example: name servers"
+          }
+        ],
+        "say": "**dig** asks DNS a question and prints the full answer. You choose the name and the record type. The name comes first. The **record type** says what kind of answer you want.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Use dig to look up the TXT records for the domain example.org.",
+          "language": "bash",
+          "correct": [
+            "dig example.org txt",
+            "dig txt example.org",
+            "dig example.org TXT",
+            "dig TXT example.org",
+            "dig -t txt example.org",
+            "dig -t TXT example.org",
+            "dig example.org -t txt",
+            "dig example.org -t TXT"
+          ],
+          "case_sensitive": true,
+          "why": "The domain and the record type are the two choices, so `dig example.org TXT` asks for text records."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "On modern Linux, the **ip** command shows the host's networking. The word after `ip` picks the view."
+          },
+          {
+            "code": "ip <object>",
+            "language": "general form"
+          },
+          {
+            "say": "Each object is a different table kept by the host."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "Shows"
+              ],
+              "rows": [
+                [
+                  "`ip addr`",
+                  "the addresses on each interface"
+                ],
+                [
+                  "`ip link`",
+                  "each interface, up or down"
+                ],
+                [
+                  "`ip route`",
+                  "the route table"
+                ]
+              ]
+            },
+            "caption": "three common objects"
+          },
+          {
+            "code": "ip route",
+            "language": "worked example: route table"
+          }
+        ],
+        "say": "On modern Linux, the **ip** command shows the host's networking. The word after `ip` picks the view. Each object is a different table kept by the host.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Use the ip command to show each interface and whether it is up or down.",
+          "language": "bash",
+          "correct": [
+            "ip link",
+            "ip link show",
+            "ip link list",
+            "ip l",
+            "ip -br link",
+            "ip -brief link"
+          ],
+          "case_sensitive": true,
+          "why": "`link` is the object that describes each interface and its state, so `ip link` prints them."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "On Windows, **ipconfig** shows the host's settings. An option after a slash changes what it does."
+          },
+          {
+            "code": "ipconfig /<option>",
+            "language": "general form"
+          },
+          {
+            "say": "Each option is one small job. Plain `ipconfig` with no option lists the addresses."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "`ipconfig /all`",
+                  "shows every setting, including DNS servers"
+                ],
+                [
+                  "`ipconfig /release`",
+                  "gives back the address a DHCP server lent"
+                ],
+                [
+                  "`ipconfig /renew`",
+                  "asks the DHCP server for an address again"
+                ],
+                [
+                  "`ipconfig /flushdns`",
+                  "empties the DNS cache"
+                ]
+              ]
+            },
+            "caption": "common options"
+          },
+          {
+            "code": "ipconfig /all",
+            "language": "worked example: every setting"
+          }
+        ],
+        "say": "On Windows, **ipconfig** shows the host's settings. An option after a slash changes what it does. Each option is one small job. Plain `ipconfig` with no option lists the addresses.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Make a Windows host give back the address its DHCP server lent it.",
+          "language": "bash",
+          "correct": [
+            "ipconfig /release",
+            "ipconfig/release"
+          ],
+          "why": "`/release` tells the host to hand back its DHCP lease."
+        }
+      }
+    ]
+  },
+  {
     "question": "On a Windows workstation with no extra tools installed, Mira needs to look up the IPv4 address a hostname resolves to. Which command is built in for this?",
     "correct": [
       "nslookup"
@@ -382,6 +598,146 @@
     "feedback": "ipconfig /flushdns (or PowerShell's Clear-DnsClientCache) empties the Windows resolver cache so the next lookup goes back to the DNS server. That is the fix when a record changed but the host keeps resolving the old address. On Linux the cache lives in the resolver service (for example systemd-resolved), not in ip."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How do you list connections and the ARP cache?",
+    "npc": "tariq",
+    "intro": "Some questions are about this host, and some are about the hosts around it. A few short commands answer a lot of both, and each prints one line per entry, so the output is quick to read.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**netstat** lists the connections and listening ports on this host. Modern Linux has a faster twin, **ss**."
+          },
+          {
+            "code": "netstat -<flags>",
+            "language": "general form"
+          },
+          {
+            "table": {
+              "head": [
+                "Flag",
+                "Means"
+              ],
+              "rows": [
+                [
+                  "`a`",
+                  "all sockets"
+                ],
+                [
+                  "`n`",
+                  "numbers, not names"
+                ],
+                [
+                  "`t`",
+                  "TCP only"
+                ],
+                [
+                  "`u`",
+                  "UDP only"
+                ]
+              ]
+            },
+            "caption": "common flags"
+          },
+          {
+            "say": "Join the letters after one dash, and `ss` takes the same ones."
+          },
+          {
+            "code": "netstat -tn",
+            "language": "worked example: TCP, numeric"
+          }
+        ],
+        "say": "**netstat** lists the connections and listening ports on this host. Modern Linux has a faster twin, **ss**. Join the letters after one dash, and `ss` takes the same ones.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. List all UDP sockets with numeric addresses and ports, using netstat or ss.",
+          "language": "bash",
+          "correct": [
+            "netstat -aun",
+            "netstat -anu",
+            "netstat -uan",
+            "netstat -una",
+            "netstat -nau",
+            "netstat -nua",
+            "netstat -a -u -n",
+            "ss -aun",
+            "ss -anu",
+            "ss -uan",
+            "ss -una",
+            "ss -nau",
+            "ss -nua",
+            "ss -a -u -n"
+          ],
+          "case_sensitive": true,
+          "why": "`a` adds the listening sockets, `u` keeps UDP, and `n` keeps the numbers, so the letters `aun` do the job."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "**arp** shows the ARP cache, the list of IP addresses this host has matched to MAC addresses."
+          },
+          {
+            "code": "arp -a [<address>]",
+            "language": "general form, address optional"
+          },
+          {
+            "say": "`-a` shows the cache. Leave the address off for every entry, or add one to see only that host."
+          },
+          {
+            "code": "arp -a 10.0.0.7",
+            "language": "worked example: one host"
+          }
+        ],
+        "say": "**arp** shows the ARP cache, the list of IP addresses this host has matched to MAC addresses. `-a` shows the cache. Leave the address off for every entry, or add one to see only that host.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Use arp to show only the cache entry for 192.168.1.1.",
+          "language": "bash",
+          "correct": [
+            "arp -a 192.168.1.1"
+          ],
+          "case_sensitive": true,
+          "why": "`-a` shows the cache, and the address at the end limits it to that one host."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "**nc**, short for netcat, opens a raw connection to a port. With the right flags it only tests whether the port answers."
+          },
+          {
+            "code": "nc -zv <address> <port>",
+            "language": "general form"
+          },
+          {
+            "say": "`-z` tests the port without sending data, and `-v` prints the result. The address comes first, then the port."
+          },
+          {
+            "code": "nc -zv 192.168.1.20 22",
+            "language": "worked example: test port 22"
+          }
+        ],
+        "say": "**nc**, short for netcat, opens a raw connection to a port. With the right flags it only tests whether the port answers. `-z` tests the port without sending data, and `-v` prints the result. The address comes first, then the port.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Test whether TCP port 25 is open on 10.0.2.8, with verbose output and no data sent.",
+          "language": "bash",
+          "correct": [
+            "nc -zv 10.0.2.8 25",
+            "nc -vz 10.0.2.8 25",
+            "nc -z -v 10.0.2.8 25",
+            "nc -v -z 10.0.2.8 25",
+            "netcat -zv 10.0.2.8 25",
+            "netcat -vz 10.0.2.8 25"
+          ],
+          "case_sensitive": true,
+          "why": "`-z` skips sending data and `-v` reports the result, with the address first and then the port."
+        }
+      }
+    ]
+  },
+  {
     "type": "code_line",
     "question": "On Linux, display all TCP and UDP connections with numeric addresses and ports (no name resolution). Use netstat or its modern replacement.",
     "language": "bash",
@@ -447,6 +803,16 @@
     "feedback": "-a shows all sockets, listening and established; -n keeps addresses and ports numeric instead of resolving names, which is faster and avoids a hung lookup. Adding -t and -u (netstat -tuan) limits the list to TCP and UDP, leaving out local Unix sockets. ss -an or ss -tuan is the modern Linux equivalent."
   },
   {
+    "type": "code_line",
+    "question": "On Windows or Linux, write the command that displays all entries in the local ARP cache.",
+    "language": "bash",
+    "correct": [
+      "arp -a"
+    ],
+    "case_sensitive": true,
+    "feedback": "arp -a lists every cached IP-to-MAC mapping on Windows and Linux alike. (Modern Linux also offers ip neigh for the same table.) Watch for one MAC claiming several IPs, a sign of ARP spoofing."
+  },
+  {
     "question": "A security review uses nmap against a subnet. Which of the following are things nmap is designed to do?",
     "correct": [
       "Discover which hosts on a range are up",
@@ -481,16 +847,6 @@
     },
     "allow_expression": false,
     "feedback_template": "One probe per port per host: {{ports}} ports times {{hosts}} hosts is {{expected}} probes. This is why scanning every port on a large range is slow and noisy, and why targeted port lists are kinder to the network."
-  },
-  {
-    "type": "code_line",
-    "question": "On Windows or Linux, write the command that displays all entries in the local ARP cache.",
-    "language": "bash",
-    "correct": [
-      "arp -a"
-    ],
-    "case_sensitive": true,
-    "feedback": "arp -a lists every cached IP-to-MAC mapping on Windows and Linux alike. (Modern Linux also offers ip neigh for the same table.) Watch for one MAC claiming several IPs, a sign of ARP spoofing."
   },
   {
     "question": "Old Hask keeps netcat (nc), a tool that opens raw TCP and UDP connections, in his kit. Which of these jobs can nc do from the command line?",
@@ -545,16 +901,47 @@
           },
           {
             "say": "**Wireshark** is the best known, decoding each packet across hundreds of protocols."
-          },
-          {
-            "code": "tcpdump -i eth0 port 53",
-            "language": "capture DNS on eth0"
-          },
-          {
-            "say": "`-i` picks the interface, and `port 53` keeps only DNS traffic."
           }
         ],
-        "say": "A **packet capture** records whole packets off a network interface: headers and payload, the data inside. On Linux the classic tool is **tcpdump**, which saves a `.pcap` file you open in a **packet analyzer**, also called a protocol analyzer. **Wireshark** is the best known, decoding each packet across hundreds of protocols. `-i` picks the interface, and `port 53` keeps only DNS traffic."
+        "say": "A **packet capture** records whole packets off a network interface: headers and payload, the data inside. On Linux the classic tool is **tcpdump**, which saves a `.pcap` file you open in a **packet analyzer**, also called a protocol analyzer. **Wireshark** is the best known, decoding each packet across hundreds of protocols."
+      },
+      {
+        "beats": [
+          {
+            "say": "**tcpdump** needs two choices from you: which interface to listen on, and which traffic to keep."
+          },
+          {
+            "code": "tcpdump -i <if> port <num>",
+            "language": "general form"
+          },
+          {
+            "say": "`-i` picks the interface, and `port` with a number keeps only traffic to or from that port."
+          },
+          {
+            "code": "tcpdump -i eth1 port 80",
+            "language": "worked example: web traffic"
+          }
+        ],
+        "say": "**tcpdump** needs two choices from you: which interface to listen on, and which traffic to keep. `-i` picks the interface, and `port` with a number keeps only traffic to or from that port.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Capture on interface wlan0, keeping only port 443.",
+          "language": "bash",
+          "correct": [
+            "tcpdump -i wlan0 port 443",
+            "tcpdump -ni wlan0 port 443",
+            "tcpdump -n -i wlan0 port 443",
+            "tcpdump -i wlan0 -n port 443",
+            "tcpdump -i wlan0 port 443 -n",
+            "tcpdump port 443 -i wlan0",
+            "tcpdump -i wlan0 'port 443'",
+            "tcpdump -i wlan0 \"port 443\"",
+            "sudo tcpdump -i wlan0 port 443",
+            "sudo tcpdump -ni wlan0 port 443"
+          ],
+          "case_sensitive": true,
+          "why": "`-i wlan0` picks the interface, and `port 443` keeps only that traffic."
+        }
       },
       {
         "beats": [
