@@ -2681,3 +2681,31 @@ describe('rule tables (type "rule_table")', () => {
     assert.equal(RULE_TABLE_HIT_BUDGET, 4);
   });
 });
+
+describe('gradeTypedLine: a practice line typed in a teaching scene', async () => {
+  const { gradeTypedLine } = await import('../src/model.js');
+  const check = { correct: ['ping -c 2 192.168.5.9', 'ping 192.168.5.9 -c 2'], language: 'bash' };
+  it('accepts any listed form, whatever the spacing or case', () => {
+    assert.equal(gradeTypedLine('ping  -c 2   192.168.5.9', check).right, true);
+    assert.equal(gradeTypedLine('PING 192.168.5.9 -c 2', check).right, true);
+  });
+  it('refuses a line that differs in substance, and names the nearest accepted form', () => {
+    const g = gradeTypedLine('ping -c 4 192.168.5.9', check);
+    assert.equal(g.right, false);
+    assert.equal(g.slip, false);
+    assert.equal(g.answer, 'ping -c 2 192.168.5.9');
+  });
+  it('calls a misspelled word a slip, not a wrong answer', () => {
+    const g = gradeTypedLine('tcpdmp -i eth1 port 80', { correct: ['tcpdump -i eth1 port 80'], language: 'bash' });
+    assert.equal(g.right, false);
+    assert.equal(g.slip, true);
+  });
+  it('minds case when the check asks it to', () => {
+    const c = { correct: ['String name = "Ada";'], language: 'java', case_sensitive: true };
+    assert.equal(gradeTypedLine('string name = "Ada";', c).right, false);
+    assert.equal(gradeTypedLine('String name="Ada";', c).right, true);
+  });
+  it('an empty line is never right', () => {
+    assert.equal(gradeTypedLine('   ', check).right, false);
+  });
+});

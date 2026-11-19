@@ -411,6 +411,28 @@ export function isSlip(guessTokens, answerTokens) {
     return misspelt === 1 || guessTokens.length !== answerTokens.length;
 }
 
+/**
+ * Grade one typed line against its accepted answers, apart from any fight:
+ * the practice a teaching scene sets uses this, and so could anything else
+ * that wants a yes or no. Spacing never matters; case matters only when asked.
+ *   { right, slip, answer }   answer: the accepted form nearest the guess
+ */
+export function gradeTypedLine(inputText, { correct = [], case_sensitive = false, language = "" } = {}) {
+    const lang = String(language || "").toLowerCase();
+    const norm = s => (case_sensitive ? String(s ?? "").trim() : String(s ?? "").trim().toLowerCase());
+    const guess = tokenize(norm(inputText), lang);
+    let best = correct[0] ?? "", bestSim = -1, slip = false;
+    for (const ans of correct) {
+        const tokens = tokenize(norm(ans), lang);
+        const sim = tokenSimilarity(guess, tokens);
+        if (sim > bestSim) { bestSim = sim; best = ans; }
+        if (sim === 1) break;
+        if (isSlip(guess, tokens)) slip = true;
+    }
+    const right = guess.length > 0 && bestSim === 1;
+    return { right, slip: !right && slip, answer: best };
+}
+
 const MAX_DYNAMIC_RANGE_STEPS = 10000;
 const MAX_DYNAMIC_LOOP_ITERS = 100000;
 

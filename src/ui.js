@@ -4,7 +4,7 @@ import {
 } from "./util.js";
 import { highlightJava, highlightPython } from "./highlight.js";
 import { parseClozeSegments, evaluateDynamicExpression, codeWriteExamples, codeWriteHeader, codeWriteFooter, codeWriteKind, isJavaProblem, BOSS_IMAGE,
-  ruleTableCell, ruleTableOrderRules, ruleTableRowLabel } from "./model.js";
+  ruleTableCell, ruleTableOrderRules, ruleTableRowLabel, gradeTypedLine } from "./model.js";
 import { loadNpcRoster, findNpc } from "./npcs.js";
 import { Narrator, sceneHasNarration, stopNarration } from "./narration.js";
 import { HEROES, chosenHero, chooseHero, heroChosen } from "./heroes.js";
@@ -2078,6 +2078,63 @@ export class GameUI {
       }
       makeButton(last ? "Continue the adventure ⚔" : "Continue ▸", "action-button", advance).focus();
     };
+    // A practice line: the student types a command of the form just shown,
+    // before a fight asks for one. Two tries, and a miss costs nothing.
+    const typedCheck = (check) => {
+      const row = document.createElement("div");
+      row.className = "npc-typed";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "fill-blank-input code-line-input npc-typed-input";
+      input.autocomplete = "off";
+      input.autocapitalize = "off";
+      input.spellcheck = false;
+      input.setAttribute("autocorrect", "off");
+      input.setAttribute("aria-label", "Type the line");
+      input.placeholder = check.language ? `Type the ${check.language} line…` : "Type the line…";
+      row.appendChild(input);
+      // How a typed line is marked, said where the student first needs it.
+      const note = document.createElement("p");
+      note.className = "npc-typed-note";
+      note.textContent = `Spacing does not matter${check.case_sensitive ? ", but capital letters do" : ""}. `
+        + "You get two tries here, and a miss costs nothing.";
+      row.appendChild(note);
+      controls.appendChild(row);
+      attachKeyBar(input, input, keysFor({ kind: "code", language: check.language }));
+      let tries = 0, hint = null;
+      const submit = makeButton("Check my line", "action-button", () => {
+        if (!input.value.trim()) { input.focus(); return; }
+        const graded = gradeTypedLine(input.value, check);
+        tries++;
+        if (!graded.right && tries < 2) {
+          hint?.remove();
+          hint = addLine(graded.slip
+            ? "Almost: one word is misspelled. Fix it and try once more."
+            : "Not quite. Compare your line with the form above and try once more.",
+            "npc-line npc-line--gentle");
+          input.focus();
+          input.select?.();
+          return;
+        }
+        hint?.remove();
+        checksSeen++;
+        if (graded.right && tries === 1) checksRight++;
+        const typed = addCode(graded.right ? input.value.trim() : graded.answer, check.language);
+        const whyEl = addLine(graded.right
+          ? `✓ ${check.why || "Exactly right."}`
+          : `Here is the line. ${check.why || ""}`.trim(),
+          graded.right ? "npc-line npc-line--good" : "npc-line npc-line--gentle");
+        speak([[check.why_narrate, whyEl]]);
+        typed.scrollIntoView?.({ block: "nearest" });
+        controls.innerHTML = "";
+        nextButton();
+      }, "blip");
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); submit.click(); }
+      });
+      input.focus();
+    };
+
     const advance = () => {
       controls.innerHTML = "";
       if (pos >= queue.length) { onDone(); return; }
@@ -2116,6 +2173,7 @@ export class GameUI {
 
       const check = item.check;
       speak([[check.narrate, addLine(check.prompt, "npc-line npc-check-prompt")]]);
+      if (check.type === "code_line") { typedCheck(check); return; }
       shuffle([check.answer, ...(check.wrong || [])]).forEach(opt => {
         makeButton(opt, "action-button action-button--secondary npc-check-option", () => {
           let whyEl;

@@ -949,6 +949,16 @@ describe('Question set file validation', () => {
               if (step.check) {
                 assert.ok(typeof step.check.prompt === 'string' && step.check.prompt.length > 0,
                   `${label}: npc_demo check needs a prompt`);
+                if (step.check.type === 'code_line') {
+                  // A practice line the student types: graded like a code_line question.
+                  const c = step.check;
+                  assert.ok(Array.isArray(c.correct) && c.correct.length >= 1 && c.correct.every(a => typeof a === 'string' && a.trim()),
+                    `${label}: a typed check needs correct[], the accepted lines`);
+                  assert.ok(typeof c.language === 'string' && c.language, `${label}: a typed check names its language`);
+                  assert.ok(typeof c.why === 'string' && c.why, `${label}: a typed check needs a why`);
+                  assert.ok(!('answer' in c) && !('wrong' in c), `${label}: a typed check has correct[], not answer and wrong`);
+                  continue;
+                }
                 assert.ok(typeof step.check.answer === 'string' && step.check.answer.length > 0,
                   `${label}: npc_demo check needs an answer`);
                 assert.ok(Array.isArray(step.check.wrong) && step.check.wrong.length >= 1,
@@ -2089,6 +2099,34 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
           }
           // Outside the chips, a run of spaces between words was the old way of marking code.
           if (/\S {2,}\S/.test(text.replace(/`[^`]*`/g, '`x`'))) bad.push(`${setId}[${i}]: code set off by spaces; mark it \`like this\`: "${text.slice(0, 60)}"`);
+        }
+      });
+    }
+    assert.deepEqual(bad, []);
+  });
+
+  // A typed line is taught before it is asked (WRITING_GUIDE: Practice a line before
+  // it is asked). Sets move here as their scenes gain the practice.
+  const TYPED_TAUGHT = setId => /^$/.test(setId);
+
+  it('a typed line is practised in the scene before it, and the question asks for a new one', () => {
+    const squash = line => line.toLowerCase().replace(/\s+/g, '');
+    const bad = [];
+    for (const setId of index.filter(TYPED_TAUGHT)) {
+      const qs = loadJSON(`question_sets/${setId}`);
+      const shown = new Set();      // every line a scene has shown or had the student type so far
+      let practised = false;        // the scene most recently passed had a typed practice
+      qs.forEach((q, i) => {
+        if (q.type === 'npc_demo') {
+          practised = q.steps.some(st => st.check?.type === 'code_line');
+          for (const st of q.steps) {
+            for (const b of st.beats || []) if (typeof b.code === 'string') b.code.split('\n').forEach(l => shown.add(squash(l)));
+            if (st.check?.type === 'code_line') st.check.correct.forEach(l => shown.add(squash(l)));
+          }
+        } else if (q.type === 'code_line') {
+          if (!practised) bad.push(`${setId}[${i}]: the scene before this typed question has no typed practice`);
+          const seen = q.correct.find(l => shown.has(squash(l)));
+          if (seen) bad.push(`${setId}[${i}]: "${seen}" was already shown or practised in a scene; ask for a new line`);
         }
       });
     }

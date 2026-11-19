@@ -530,6 +530,7 @@ Use when the student should **write** (not just recognize) a single line of code
 
 > **Typed-length limit:** `code_line` answers may be up to **20 characters after tokenization** — whitespace and punctuation are tokenized away, so `x = 5` counts as `x=5` (3). Every other typed type stays at **12**. The larger allowance exists because a complete short statement is the point of the exercise: `SELECT name FROM candies` cannot reach its `FROM` clause inside 12. `data.test.js` enforces both limits.
 
+0. **Teach the line first.** The scene before the question shows the general form and an example, and has the student type one (see *Practice a line before it is asked* under NPC scenes). The question then asks for a new one.
 1. **Pin every free variable in the stem.** "Declare a list of Strings" → infinite valid names. "Declare a list of Strings named `names`" → bounded answer set.
 2. **Enumerate every reasonable surface form** in `correct[]` (diamond vs explicit type, `var` vs declared type, alternate method orders for bash flags). Aim for 2–6 entries.
 3. **Keep it to one line.** Multi-line answers belong in `code_trace` or a different format.
@@ -951,7 +952,7 @@ Writing good ones — everything said for Python class problems applies, and als
 | `intro` | no | string | The mentor's opening words, spoken to the student (see *Title and opening line*). A scene has no closing line: it ends on its last frame |
 | `steps` | yes | object[] | 2–6 steps; each needs `say`, may carry `beats` and one `check`. Each step is a frame: split a heavy step rather than packing it (see *Beats a beginner can read*) |
 | `steps[].beats` | no | object[] | How the step is revealed: an ordered list where each entry is one of `{"say": "..."}` (one spoken line), `{"code": "...", "language": "..."}` (code, a command or its output), a panel (`list`, `table`, `chain` or `document`; see *Panels*), or `{"figure": {...}}` (a picture; see [Pictures in Questions](#pictures-in-questions-figure)). Without it the whole `say` string appears in one go |
-| `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues |
+| `steps[].check` | no | object | `prompt`, `answer`, `wrong[]` (1–2), optional `why`. Low-stakes: a wrong tap gets a gentle correction and the scene continues. A check may instead be a typed practice line (see *Practice a line before it is asked*) |
 
 ### Revealing a scene
 
@@ -1014,6 +1015,30 @@ An example that is not code goes in a panel of its own kind, framed like a code 
 | `document` | an email, a message, a ticket, a policy excerpt | `{"document": {"header": [["From", "…"], ["Subject", "…"]], "body": "…"}}`: header lines, then the text |
 
 Choose by the example, not by habit: a DHCP lease is a `table`, DORA is an ordered `list` or a `chain`, a phishing email is a `document`, and `show ip route` is `code`. A panel shows what the spoken beats point at; it does not replace them, so a frame still says the idea in words.
+
+### Practice a line before it is asked
+
+A `code_line` question asks for one exact line. A student who has never typed that kind of line does not know where to start, so the scene before the question teaches it in one frame:
+
+1. a `say` beat: what the line is for
+2. a `code` beat: the **general form**, with each part the student chooses as a placeholder in angle brackets (`ping -c <count> <address>`)
+3. a `say` beat naming the parts
+4. a `code` beat: one worked example with real values
+5. a typed practice check that asks for a line of the same form with different values
+
+```json
+"check": {
+  "type": "code_line",
+  "prompt": "Your turn. Send exactly 2 echo requests to 192.168.5.9.",
+  "language": "bash",
+  "correct": ["ping -c 2 192.168.5.9", "ping -c2 192.168.5.9", "ping 192.168.5.9 -c 2"],
+  "why": "`-c 2` stops after two requests, and the address comes last."
+}
+```
+
+The practice is graded as a `code_line` question is (spacing ignored, case ignored unless `case_sensitive` is true), gives two tries, and costs nothing. It has `correct[]` and no `answer` or `wrong`.
+
+The real question, later in the set, asks for a line of that form with values that differ from both the example and the practice. It is never the scene's own example. A line with nothing to choose (`arp -a`, `no shutdown`) is taught as one of a small family in a `table` beat; the practice asks for one member and the real question for another.
 
 ### Title and opening line
 
