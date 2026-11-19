@@ -357,6 +357,81 @@
     "feedback_template": "Add the design, build, and query/testing blocks together. The full plan uses {{expected}} hours, which fits the chapter's rough project size."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How do you keep or cancel a group of changes?",
+    "npc": "kaelen",
+    "intro": "A ledger entry is only trustworthy when the whole change is written. A transaction lets the archive keep a group of changes or discard it.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A **transaction** groups several changes so that they all happen or none of them do."
+          },
+          {
+            "say": "Moving a book between two shelf ledgers is two updates. One without the other leaves the archive wrong."
+          },
+          {
+            "code": "UPDATE shelf_a SET copies = copies - 1 WHERE book_id = 7;\nUPDATE shelf_b SET copies = copies + 1 WHERE book_id = 7;",
+            "language": "two updates that belong together"
+          }
+        ],
+        "say": "A **transaction** groups several changes so that they all happen or none of them do. Moving a book between two shelf ledgers is two updates. One without the other leaves the archive wrong."
+      },
+      {
+        "beats": [
+          {
+            "say": "Three short lines control a transaction, and none of them has anything to fill in."
+          },
+          {
+            "table": {
+              "head": [
+                "Line",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "`BEGIN TRANSACTION;`",
+                  "opens a group of changes"
+                ],
+                [
+                  "`COMMIT;`",
+                  "keeps every change in the group for good"
+                ],
+                [
+                  "`ROLLBACK;`",
+                  "undoes every change since the group opened"
+                ]
+              ]
+            },
+            "caption": "the transaction family"
+          },
+          {
+            "say": "A group opens with BEGIN and ends with exactly one of the other two."
+          },
+          {
+            "code": "BEGIN TRANSACTION;",
+            "language": "worked example: open a group"
+          }
+        ],
+        "say": "Three short lines control a transaction, and none of them has anything to fill in. A group opens with BEGIN and ends with exactly one of the other two.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. A transaction is open and every update in it looks right. Write the line that keeps the changes for good.",
+          "language": "sql",
+          "correct": [
+            "COMMIT;",
+            "COMMIT",
+            "COMMIT TRANSACTION;",
+            "END;",
+            "END TRANSACTION;"
+          ],
+          "case_sensitive": false,
+          "why": "`COMMIT;` ends the transaction and keeps its changes."
+        }
+      }
+    ]
+  },
+  {
     "question": "Why is a transaction helpful when updating several related tables at once?",
     "correct": [
       "It lets the changes succeed together or be undone together"

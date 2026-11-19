@@ -872,6 +872,55 @@
     "feedback": "Outbound, the router replaces the private source address and port with its public address and a free port, and records the mapping. The server only ever sees 203.0.113.9:1025, so that is where it replies. Inbound, the router looks up port 1025, restores 10.0.1.30:49200 as the destination, and forwards the reply inside."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: Which command marks a router interface for NAT?",
+    "npc": "tariq",
+    "intro": "NAT only translates packets that cross between an inside interface and an outside one. So each interface needs a mark, and the mark is one short command.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Each interface in the translation gets one mark, typed in interface configuration mode."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "Marks"
+              ],
+              "rows": [
+                [
+                  "`ip nat inside`",
+                  "the LAN side, where private hosts connect"
+                ],
+                [
+                  "`ip nat outside`",
+                  "the internet side, where public addresses live"
+                ]
+              ]
+            },
+            "caption": "NAT interface marks, interface configuration mode"
+          },
+          {
+            "say": "Enter that mode first, with `interface <name>`."
+          }
+        ],
+        "say": "Each interface in the translation gets one mark, typed in interface configuration mode. Enter that mode first, with `interface <name>`.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. In interface configuration mode for GigabitEthernet0/0, which faces the internet, mark it as the NAT outside interface.",
+          "language": "cisco",
+          "correct": [
+            "ip nat outside",
+            "ip nat out"
+          ],
+          "case_sensitive": false,
+          "why": "`ip nat outside` marks the internet-facing interface."
+        }
+      }
+    ]
+  },
+  {
     "type": "code_line",
     "question": "On Cisco IOS, interface GigabitEthernet0/1 faces Silverkeep's LAN, and you are in its interface configuration mode. Write the command that marks it as the NAT inside interface.",
     "language": "cisco",
@@ -1068,6 +1117,93 @@
       "Native VLAN 10 on both ends, so staff frames skip the tag; 10, 20, 99"
     ],
     "feedback": "Good practice moves the native VLAN off VLAN 1 to a VLAN no host uses, sets it the same on both ends, and prunes the allowed list to what the link needs. The defaults leave VLAN 1 untagged and every VLAN crossing the link. Mismatched native VLANs leak untagged frames from one VLAN into another. Making a user VLAN native puts real traffic on the untagged VLAN, where it is easiest to misdeliver."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you set a switch port's mode and a sub-interface's VLAN?",
+    "npc": "tariq",
+    "intro": "A port or sub-interface knows nothing about VLANs until you tell it. Each command is short, and each is typed in its own configuration mode.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A switch port's role comes from a few short commands, typed in interface configuration mode."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "`switchport mode access`",
+                  "port belongs to one VLAN"
+                ],
+                [
+                  "`switchport mode trunk`",
+                  "port carries many tagged VLANs"
+                ],
+                [
+                  "`switchport access vlan <id>`",
+                  "picks the VLAN of an access port"
+                ]
+              ]
+            },
+            "caption": "switch port commands, interface configuration mode"
+          },
+          {
+            "say": "Only the last one takes a value, the VLAN number."
+          }
+        ],
+        "say": "A switch port's role comes from a few short commands, typed in interface configuration mode. Only the last one takes a value, the VLAN number.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. In interface configuration mode for Gi1/0/5, which is already an access port, put the port in VLAN 30.",
+          "language": "cisco",
+          "correct": [
+            "switchport access vlan 30",
+            "sw access vlan 30",
+            "sw acc vlan 30",
+            "switchport acc vlan 30",
+            "sw a v 30"
+          ],
+          "case_sensitive": false,
+          "why": "`switchport access vlan 30` places an access port in VLAN 30."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "A router on a stick must tell each sub-interface which VLAN's frames it handles."
+          },
+          {
+            "code": "encapsulation dot1Q <vlan-id>",
+            "language": "general form, sub-interface configuration mode"
+          },
+          {
+            "say": "`dot1Q` names the 802.1Q tag, and the number is the VLAN. Type it under the sub-interface."
+          },
+          {
+            "code": "interface GigabitEthernet0/0.30\n encapsulation dot1Q 30",
+            "language": "worked example: VLAN 30"
+          }
+        ],
+        "say": "A router on a stick must tell each sub-interface which VLAN's frames it handles. `dot1Q` names the 802.1Q tag, and the number is the VLAN. Type it under the sub-interface.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. In sub-interface configuration mode for GigabitEthernet0/0.40, make it handle VLAN 40.",
+          "language": "cisco",
+          "correct": [
+            "encapsulation dot1q 40",
+            "encap dot1q 40",
+            "enc dot1q 40"
+          ],
+          "case_sensitive": false,
+          "why": "`encapsulation dot1Q 40` binds the sub-interface to VLAN 40's tag."
+        }
+      }
+    ]
   },
   {
     "type": "code_line",
@@ -1852,6 +1988,68 @@
     "feedback": "The port being watched is the mirror source, and the IDS port is the destination, and mirroring both directions copies the frames the server receives as well as those it sends. The reversed session would pour copies of the IDS's traffic onto the server's port. Joining the server's VLAN, on an access port or a trunk, shows the IDS only broadcasts and flooded frames, because the switch sends the server's unicast frames out the server's port alone."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: Which command lists the neighbors a switch has discovered?",
+    "npc": "tariq",
+    "intro": "A switch can learn who is cabled to each port without anyone tracing a cable. Two discovery protocols supply that list, one from Cisco and one open to every vendor.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**CDP** is Cisco's neighbor protocol, and **LLDP** is the vendor-neutral one. Each has its own show command."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "Lists"
+              ],
+              "rows": [
+                [
+                  "`show cdp neighbors`",
+                  "Cisco-protocol neighbors"
+                ],
+                [
+                  "`show cdp neighbors detail`",
+                  "the same, with addresses and software"
+                ],
+                [
+                  "`show lldp neighbors`",
+                  "neighbors from any vendor"
+                ],
+                [
+                  "`show lldp neighbors detail`",
+                  "the same, with addresses and capabilities"
+                ]
+              ]
+            },
+            "caption": "neighbor discovery commands"
+          },
+          {
+            "say": "Type these in privileged EXEC mode, the prompt that ends in #."
+          }
+        ],
+        "say": "**CDP** is Cisco's neighbor protocol, and **LLDP** is the vendor-neutral one. Each has its own show command. Type these in privileged EXEC mode, the prompt that ends in #.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. In privileged EXEC mode, list the neighbors found by Cisco's own discovery protocol, with addresses and software.",
+          "language": "cisco",
+          "correct": [
+            "show cdp neighbors detail",
+            "show cdp neighbor detail",
+            "sh cdp neighbors detail",
+            "sh cdp neighbor detail",
+            "show cdp nei detail",
+            "sh cdp nei detail",
+            "show cdp entry *"
+          ],
+          "case_sensitive": false,
+          "why": "`show cdp neighbors detail` adds each neighbor's address and software to the list."
+        }
+      }
+    ]
+  },
+  {
     "question": "Brom needs to know where SW1's uplink, Gi1/0/24, lands on the core switch. He runs the command below on SW1. Which port on CORE1 is the uplink cabled to?",
     "code": "SW1# show cdp neighbors\nDevice ID  Local Intrfce  Holdtme  Capability  Platform    Port ID\nCORE1      Gig 1/0/24     152      R S I       C9300-48P   Gig 1/0/1\nAP-LOBBY   Gig 1/0/5      121      T           AIR-AP2802  Gig 0",
     "code_language": "Cisco IOS output",
@@ -1867,7 +2065,7 @@
   },
   {
     "type": "code_line",
-    "question": "SW1, a Cisco switch, connects to IP phones and APs from another vendor. Write the IOS command that lists the neighbors SW1 has discovered with the vendor-neutral discovery protocol.",
+    "question": "SW1, a Cisco switch, connects to IP phones and APs from another vendor. In privileged EXEC mode, write the IOS command that lists the neighbors SW1 has discovered with the vendor-neutral discovery protocol.",
     "language": "cisco",
     "correct": [
       "show lldp neighbors",

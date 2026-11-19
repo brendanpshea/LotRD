@@ -1145,6 +1145,63 @@
     "feedback": "Only a pre-deployment scan reads the file before the bucket exists, so only it can block the merge. Drift detection would find nothing, because the live bucket would match the file exactly: the file itself is wrong. An hourly reset fights the declared state after the data is already public, and a next-morning scan finds the exposure hours after it began."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How do you write a cron line for a daily run time?",
+    "npc": "flint",
+    "intro": "A script that should run every night needs a schedule, and cron reads that schedule from one short line. Get the order of the fields right and the line writes itself.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A daily job sets the minute and the hour, then uses a `*` in each of the next three fields."
+          },
+          {
+            "code": "<minute> <hour> * * * <command>",
+            "language": "general form, crontab"
+          },
+          {
+            "say": "Minute comes first, then the hour on a 24-hour clock, and the command is the script's full path."
+          },
+          {
+            "code": "15 4 * * * /opt/scan.sh",
+            "language": "worked example: 04:15 every day"
+          }
+        ],
+        "say": "A daily job sets the minute and the hour, then uses a `*` in each of the next three fields. Minute comes first, then the hour on a 24-hour clock, and the command is the script's full path.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Write the crontab line that runs /opt/ioc.sh every day at 22:45.",
+          "language": "crontab",
+          "correct": [
+            "45 22 * * * /opt/ioc.sh"
+          ],
+          "case_sensitive": true,
+          "why": "The minute is 45 and the hour is 22, so the line starts `45 22`, and the three stars mean every day."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "The minute runs from 0 to 59, and the hour runs from 0 to 23."
+          },
+          {
+            "say": "So midnight is hour 0, and 11 p.m. is hour 23."
+          }
+        ],
+        "say": "The minute runs from 0 to 59, and the hour runs from 0 to 23. So midnight is hour 0, and 11 p.m. is hour 23.",
+        "check": {
+          "prompt": "Which line runs /opt/scan.sh every day at midnight?",
+          "answer": "`0 0 * * * /opt/scan.sh`",
+          "wrong": [
+            "`0 24 * * * /opt/scan.sh`",
+            "`0 12 * * * /opt/scan.sh`"
+          ],
+          "why": "Hour 0 is midnight. There is no hour 24, and hour 12 is noon."
+        }
+      }
+    ]
+  },
+  {
     "type": "code_line",
     "question": "Write the crontab line that runs /opt/kev.sh every day at 03:30.",
     "language": "crontab",
@@ -1768,6 +1825,40 @@
       {
         "beats": [
           {
+            "say": "On Windows, **netstat** lists the machine's network connections, and switches choose what it shows."
+          },
+          {
+            "code": "netstat -<switches>",
+            "language": "general form, Windows"
+          },
+          {
+            "say": "`-a` includes listening ports, `-n` keeps addresses numeric, and `-b` names the program. Switches can be combined."
+          },
+          {
+            "code": "netstat -ab",
+            "language": "worked example: all, with programs"
+          }
+        ],
+        "say": "On Windows, **netstat** lists the machine's network connections, and switches choose what it shows. `-a` includes listening ports, `-n` keeps addresses numeric, and `-b` names the program. Switches can be combined.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Show all connections and listening ports in numeric form, with the program name, using three combined switches.",
+          "language": "cmd",
+          "correct": [
+            "netstat -anb",
+            "netstat -abn",
+            "netstat -nab",
+            "netstat -nba",
+            "netstat -ban",
+            "netstat -bna",
+            "netstat -a -n -b"
+          ],
+          "why": "`-a` adds listening ports, `-n` keeps numbers, and `-b` adds the program name."
+        }
+      },
+      {
+        "beats": [
+          {
             "say": "A **write-blocker** keeps the original disk from being written to while you take a bit-for-bit image."
           },
           {
@@ -1779,6 +1870,38 @@
           }
         ],
         "say": "A **write-blocker** keeps the original disk from being written to while you take a bit-for-bit image. Matching SHA-256 hashes before and after prove the image is an exact copy."
+      },
+      {
+        "beats": [
+          {
+            "say": "On Linux, one short command prints the SHA-256 hash of a file."
+          },
+          {
+            "code": "sha256sum <file>",
+            "language": "general form, Linux"
+          },
+          {
+            "say": "The file name is the only part you choose, and the output is the hash followed by that name."
+          },
+          {
+            "code": "sha256sum disk.img",
+            "language": "worked example: hash disk.img"
+          }
+        ],
+        "say": "On Linux, one short command prints the SHA-256 hash of a file. The file name is the only part you choose, and the output is the hash followed by that name.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Print the SHA-256 hash of the file evidence.bin in the current directory.",
+          "language": "bash",
+          "correct": [
+            "sha256sum evidence.bin",
+            "sha256sum ./evidence.bin",
+            "shasum -a 256 evidence.bin",
+            "openssl dgst -sha256 evidence.bin"
+          ],
+          "case_sensitive": true,
+          "why": "`sha256sum` takes the file name and prints its hash."
+        }
       },
       {
         "beats": [

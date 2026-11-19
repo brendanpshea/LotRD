@@ -1389,6 +1389,36 @@
       {
         "beats": [
           {
+            "say": "The threshold is one line, typed in global configuration mode, where the prompt ends in `(config)#`."
+          },
+          {
+            "code": "logging trap <level>",
+            "language": "general form, Cisco IOS global configuration"
+          },
+          {
+            "say": "`<level>` is a severity name such as `errors`, or its number from 0 to 7."
+          },
+          {
+            "code": "logging trap notifications",
+            "language": "worked example: levels 0 to 5"
+          }
+        ],
+        "say": "The threshold is one line, typed in global configuration mode, where the prompt ends in `(config)#`. `<level>` is a severity name such as `errors`, or its number from 0 to 7.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. You are in global configuration mode on a router. Send only Critical (level 2) and more severe messages to the collector.",
+          "language": "cisco",
+          "correct": [
+            "logging trap critical",
+            "logging trap 2",
+            "logging trap crit"
+          ],
+          "why": "`logging trap critical`, or its number 2, sends Emergency, Alert and Critical, and drops everything less severe."
+        }
+      },
+      {
+        "beats": [
+          {
             "figure": {
               "dot": "digraph { rankdir=TB; ranksep=0.3; node[shape=box]; sw[label=\"switches\"]; fw[label=\"firewalls\"]; sv[label=\"servers\"]; agg[label=\"log aggregator\\ncollect, parse,\\nstore, search\"]; siem[label=\"SIEM\\ncorrelate, alert\", color=\"#7CFC00\", fontcolor=\"#7CFC00\"]; an[label=\"analyst\"]; sw -> agg; fw -> agg; sv -> agg; agg -> siem; siem -> an[label=\" alert\"]; }",
               "alt": "Three source boxes, switches, firewalls and servers, feed one box that collects, parses, stores and searches. That box feeds a highlighted box that correlates and alerts, which sends an alert to an analyst.",
@@ -1690,6 +1720,50 @@
       "A synthetic test sent across the uplink every minute"
     ],
     "feedback": "Who used the bandwidth, by host and application, is exactly what flow records summarize, at a tiny fraction of capture's storage. SNMP counters give the uplink's total utilization but cannot split it by host. Syslog records events, not traffic volumes, and a synthetic test measures the path's performance, not who is using it."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you capture only one port with tcpdump?",
+    "npc": "tariq",
+    "intro": "A capture of everything on a busy server is far too noisy to read. A filter keeps only the packets you care about.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**tcpdump** is a Linux tool that shows packets as they cross an interface, and a filter keeps only some of them."
+          },
+          {
+            "code": "tcpdump -i <interface> port <number>",
+            "language": "general form, Linux"
+          },
+          {
+            "say": "`-i` names the interface to watch, and `port` keeps only packets that use that port number."
+          },
+          {
+            "code": "tcpdump -i ens3 port 443",
+            "language": "worked example: HTTPS on ens3"
+          }
+        ],
+        "say": "**tcpdump** is a Linux tool that shows packets as they cross an interface, and a filter keeps only some of them. `-i` names the interface to watch, and `port` keeps only packets that use that port number.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Capture only NTP traffic, port 123, on interface eth1.",
+          "language": "bash",
+          "correct": [
+            "tcpdump -i eth1 port 123",
+            "tcpdump -i eth1 udp port 123",
+            "sudo tcpdump -i eth1 port 123",
+            "sudo tcpdump -i eth1 udp port 123",
+            "tcpdump -n -i eth1 port 123",
+            "tcpdump -ni eth1 port 123",
+            "tcpdump -i eth1 -n port 123",
+            "tcpdump port 123 -i eth1"
+          ],
+          "case_sensitive": true,
+          "why": "`-i eth1` picks the interface, and `port 123` keeps only NTP packets."
+        }
+      }
+    ]
   },
   {
     "type": "code_line",

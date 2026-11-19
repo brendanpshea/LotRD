@@ -1893,6 +1893,62 @@
     "feedback": "127.0.0.1 is loopback, so a reply proves only the PC's own software. A 169.254 address is APIPA, the sign that DHCP never answered. RFC 1918 addresses such as 192.168.4.20 are not routed on the internet, so the edge router uses NAT, usually PAT, to swap in its public address."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: Which ipconfig switch fixes a stale address or name?",
+    "npc": "tariq",
+    "intro": "A Windows PC keeps its address settings on a lease, and it caches the answers to its DNS lookups. When something stale causes trouble, one short command usually clears it.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**ipconfig** shows and manages a Windows PC's address settings, and the switch after it picks the job."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "`ipconfig /all`",
+                  "shows every setting, with DHCP server and lease times"
+                ],
+                [
+                  "`ipconfig /release`",
+                  "gives up the current DHCP lease"
+                ],
+                [
+                  "`ipconfig /renew`",
+                  "asks DHCP for a new lease"
+                ],
+                [
+                  "`ipconfig /flushdns`",
+                  "clears the DNS resolver cache"
+                ]
+              ]
+            },
+            "caption": "the ipconfig family"
+          },
+          {
+            "say": "Each switch stands alone, with no address or name to add."
+          }
+        ],
+        "say": "**ipconfig** shows and manages a Windows PC's address settings, and the switch after it picks the job. Each switch stands alone, with no address or name to add.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. On a Windows PC, write the command that clears the DNS resolver cache.",
+          "language": "cmd",
+          "correct": [
+            "ipconfig /flushdns"
+          ],
+          "case_sensitive": false,
+          "why": "`/flushdns` throws away the cached name lookups, so the PC asks DNS again."
+        }
+      }
+    ]
+  },
+  {
     "type": "code_line",
     "question": "A Windows PC shows a 169.254 address because its DHCP server was down. The server is back. Write the ipconfig command that asks DHCP for a new lease.",
     "language": "cmd",
@@ -2130,6 +2186,48 @@
       "Runs Duplicate Address Detection on the new address"
     ],
     "feedback": "The link-local address lets the host speak on its segment at all, so it comes first; the host then solicits a router, which advertises the prefix. Only with the prefix can it build a global address, and it checks that address is unique with Duplicate Address Detection before using it."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you ping an IPv6 address from Linux?",
+    "npc": "tariq",
+    "intro": "An IPv6 host answers a ping just as an IPv4 host does. The only change is the address, which is written with colons.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Pinging IPv6 needs one choice from you: the address to test."
+          },
+          {
+            "code": "ping -6 <ipv6-address>",
+            "language": "general form, Linux"
+          },
+          {
+            "say": "`-6` forces IPv6, and the address comes last. Older systems use `ping6` and leave out the flag."
+          },
+          {
+            "code": "ping -6 2001:db8::1",
+            "language": "worked example"
+          }
+        ],
+        "say": "Pinging IPv6 needs one choice from you: the address to test. `-6` forces IPv6, and the address comes last. Older systems use `ping6` and leave out the flag.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. From a Linux host, ping the IPv6 address 2001:db8:0:5::9.",
+          "language": "bash",
+          "correct": [
+            "ping -6 2001:db8:0:5::9",
+            "ping 2001:db8:0:5::9",
+            "ping6 2001:db8:0:5::9",
+            "ping -c 4 2001:db8:0:5::9",
+            "ping -6 -c 4 2001:db8:0:5::9",
+            "ping6 -c 4 2001:db8:0:5::9"
+          ],
+          "case_sensitive": true,
+          "why": "`-6` forces IPv6, and the address comes last."
+        }
+      }
+    ]
   },
   {
     "type": "code_line",

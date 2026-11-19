@@ -1271,6 +1271,74 @@
     "feedback": "A jump box is also called a bastion host: the one hardened, logged doorway to the management interfaces. Typed commands are a command-line interface (CLI), fast and scriptable; menus and web pages are a graphical user interface (GUI), easier to learn and read at a glance."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How do you open SSH and limit VTY lines?",
+    "npc": "tariq",
+    "intro": "Two short lines cover most remote logins. One is typed on the admin's workstation, and the other on the switch itself.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "From a Linux shell, **ssh** opens an encrypted session, and it needs an account and the device's address."
+          },
+          {
+            "code": "ssh <user>@<address>",
+            "language": "general form, Linux"
+          },
+          {
+            "say": "The user name goes before the `@`, and the device's address goes after it."
+          },
+          {
+            "code": "ssh mira@172.16.8.3",
+            "language": "worked example"
+          }
+        ],
+        "say": "From a Linux shell, **ssh** opens an encrypted session, and it needs an account and the device's address. The user name goes before the `@`, and the device's address goes after it.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Open an SSH session as the user zinna to the router at 10.30.0.4.",
+          "language": "bash",
+          "correct": [
+            "ssh zinna@10.30.0.4",
+            "ssh -l zinna 10.30.0.4",
+            "ssh 10.30.0.4 -l zinna"
+          ],
+          "case_sensitive": true,
+          "why": "The user name goes before the `@` and the address after it, as in `ssh zinna@10.30.0.4`."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "On Cisco IOS, `transport input` sets what the VTY lines accept. Type it in line configuration mode, `Switch(config-line)#`."
+          },
+          {
+            "code": "transport input <protocols>",
+            "language": "general form, Cisco IOS line configuration"
+          },
+          {
+            "say": "Name every protocol the lines accept, from `ssh`, `telnet`, `all` or `none`."
+          },
+          {
+            "code": "transport input telnet ssh",
+            "language": "worked example: accept both"
+          }
+        ],
+        "say": "On Cisco IOS, `transport input` sets what the VTY lines accept. Type it in line configuration mode, `Switch(config-line)#`. Name every protocol the lines accept, from `ssh`, `telnet`, `all` or `none`.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. You are in line configuration mode under line vty 5 15. Make these lines accept no remote logins at all.",
+          "language": "cisco",
+          "correct": [
+            "transport input none",
+            "transport in none"
+          ],
+          "why": "`transport input none` lists no protocol, so the lines refuse every remote login."
+        }
+      }
+    ]
+  },
+  {
     "type": "code_line",
     "question": "From a Linux admin workstation, write the command that opens an SSH session to the switch at 10.20.0.2, logging in as the user aria.",
     "language": "bash",

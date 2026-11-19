@@ -597,6 +597,43 @@
           ],
           "why": "Resolving the name works, so the A record exists. dig -x asks the reverse zone, and finding no name means that zone has no PTR record for the address. A wrong A record would not stop the name resolving, and DNS plainly answers."
         }
+      },
+      {
+        "beats": [
+          {
+            "say": "To ask which name belongs to an address, run a reverse lookup with `dig` on Linux."
+          },
+          {
+            "code": "dig -x <address>",
+            "language": "general form"
+          },
+          {
+            "say": "`-x` tells dig to do a reverse lookup, and the address comes last."
+          },
+          {
+            "code": "dig -x 198.51.100.7",
+            "language": "worked example"
+          }
+        ],
+        "say": "To ask which name belongs to an address, run a reverse lookup with `dig` on Linux. `-x` tells dig to do a reverse lookup, and the address comes last.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. On a Linux host, write the dig command that does a reverse lookup of 192.0.2.88.",
+          "language": "bash",
+          "correct": [
+            "dig -x 192.0.2.88",
+            "dig +short -x 192.0.2.88",
+            "dig -x 192.0.2.88 +short",
+            "dig ptr 88.2.0.192.in-addr.arpa",
+            "dig 88.2.0.192.in-addr.arpa ptr",
+            "dig -t ptr 88.2.0.192.in-addr.arpa",
+            "dig PTR 88.2.0.192.in-addr.arpa",
+            "dig 88.2.0.192.in-addr.arpa PTR",
+            "dig -t PTR 88.2.0.192.in-addr.arpa"
+          ],
+          "case_sensitive": true,
+          "why": "`-x` builds the reverse name 88.2.0.192.in-addr.arpa, and the address comes last."
+        }
       }
     ]
   },
@@ -1127,10 +1164,6 @@
             ],
             "ordered": false,
             "caption": "fixes for NAT exhaustion"
-          },
-          {
-            "code": "show ip nat translations\nshow ip nat statistics",
-            "language": "commands that show the translations"
           }
         ],
         "say": "**PAT** (port address translation, NAT overload) hides many inside hosts behind one public address. It tells their sessions apart by source port, and one address has roughly 64,000 usable ports per protocol. When they run out, that is **NAT exhaustion**. Open sessions carry on, but new ones fail.",
@@ -1142,6 +1175,53 @@
             "A missing default route on the edge router"
           ],
           "why": "A loop or a missing route would break the running call as well. Only exhaustion spares the sessions that already hold a translation while refusing new ones."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "NAT show commands run in privileged EXEC mode, at a prompt such as `R1#`."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "What it shows"
+              ],
+              "rows": [
+                [
+                  "`show ip nat translations`",
+                  "Every active translation, one per line"
+                ],
+                [
+                  "`show ip nat statistics`",
+                  "Totals for active translations, hits and misses"
+                ],
+                [
+                  "`show ip nat translations verbose`",
+                  "Each translation with extra detail"
+                ]
+              ]
+            },
+            "caption": "the NAT show family"
+          },
+          {
+            "say": "Each command answers a different question, so match the command to what you need to know."
+          }
+        ],
+        "say": "NAT show commands run in privileged EXEC mode, at a prompt such as `R1#`. Each command answers a different question, so match the command to what you need to know.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. In privileged EXEC mode, write the command that lists every active NAT translation.",
+          "language": "cisco",
+          "correct": [
+            "show ip nat translations",
+            "sh ip nat translations",
+            "show ip nat translation",
+            "show ip nat trans",
+            "sh ip nat trans"
+          ],
+          "why": "`show ip nat translations` lists each active translation, while `statistics` only totals them."
         }
       }
     ]
@@ -2063,6 +2143,62 @@
     ],
     "case_sensitive": false,
     "feedback": "A baseline turns a reading into a judgment: 60% CPU is a fault on a switch that normally sits at 20%, and an ordinary afternoon on one that always runs at 60%. Take it when things work, and refresh it after planned changes."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you check what a Cisco device is running?",
+    "npc": "tariq",
+    "intro": "Two switches given the same job should behave the same. When one does not, a short command at the prompt tells you what each one is running.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Device **show** commands run in privileged EXEC mode, at a prompt such as `Switch#`."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "What it shows"
+              ],
+              "rows": [
+                [
+                  "`show version`",
+                  "IOS release, boot image, uptime and hardware"
+                ],
+                [
+                  "`show running-config`",
+                  "The configuration the device uses now"
+                ],
+                [
+                  "`show clock`",
+                  "The device's date and time"
+                ]
+              ]
+            },
+            "caption": "device show commands"
+          },
+          {
+            "say": "Each command answers a different question about the device, so match the command to the question."
+          }
+        ],
+        "say": "Device **show** commands run in privileged EXEC mode, at a prompt such as `Switch#`. Each command answers a different question about the device, so match the command to the question.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. In privileged EXEC mode, write the command that shows the configuration the device is using now.",
+          "language": "cisco",
+          "correct": [
+            "show running-config",
+            "show run",
+            "sh run",
+            "sh running-config",
+            "show running",
+            "sh running"
+          ],
+          "why": "`show running-config` prints the active configuration, and `show version` reports the software release."
+        }
+      }
+    ]
   },
   {
     "type": "code_line",

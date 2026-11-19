@@ -738,7 +738,7 @@
             "say": "Snooping and DAI take only a few lines of configuration on a Cisco switch:"
           },
           {
-            "code": "ip dhcp snooping\nip dhcp snooping vlan 10\nip arp inspection vlan 10\ninterface Gi0/1\n ip dhcp snooping trust\n ip arp inspection trust\nline vty 0 4\n transport input ssh",
+            "code": "ip dhcp snooping\nip dhcp snooping vlan 10\nip arp inspection vlan 10\ninterface Gi0/1\n ip dhcp snooping trust\n ip arp inspection trust",
             "language": "switch configuration"
           },
           {
@@ -746,12 +746,9 @@
           },
           {
             "say": "On the uplink, the two `trust` commands sit together."
-          },
-          {
-            "say": "On the remote-login (VTY) lines, `transport input ssh` refuses cleartext Telnet."
           }
         ],
-        "say": "Snooping and DAI take only a few lines of configuration on a Cisco switch: Turn snooping on globally and for each user VLAN, with DAI on the same VLANs. On the uplink, the two `trust` commands sit together. On the remote-login (VTY) lines, `transport input ssh` refuses cleartext Telnet."
+        "say": "Snooping and DAI take only a few lines of configuration on a Cisco switch: Turn snooping on globally and for each user VLAN, with DAI on the same VLANs. On the uplink, the two `trust` commands sit together."
       },
       {
         "beats": [
@@ -807,6 +804,65 @@
       "DTP negotiation"
     ],
     "feedback": "Port security caps MACs per port and reacts when the cap is passed - the direct answer to MAC flooding and to unexpected devices. Spanning Tree prevents loops, link aggregation bonds links for bandwidth, and DTP negotiates trunks (and is best disabled) - none limit learned addresses."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: Which commands protect a single switch port?",
+    "npc": "tariq",
+    "intro": "Several protections are switched on or off port by port. Each one is a short line under the interface.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "These commands are typed in interface configuration mode, where the prompt ends in `(config-if)#`."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "`switchport port-security`",
+                  "limits the MAC addresses the port may learn"
+                ],
+                [
+                  "`ip dhcp snooping trust`",
+                  "accepts DHCP server replies on this port"
+                ],
+                [
+                  "`ip arp inspection trust`",
+                  "skips ARP checking on this port"
+                ],
+                [
+                  "`shutdown`",
+                  "turns the port off"
+                ],
+                [
+                  "`no shutdown`",
+                  "turns the port back on"
+                ]
+              ]
+            },
+            "caption": "per-port commands"
+          },
+          {
+            "say": "Each line has nothing to fill in, so learn what each one does."
+          }
+        ],
+        "say": "These commands are typed in interface configuration mode, where the prompt ends in `(config-if)#`. Each line has nothing to fill in, so learn what each one does.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. You are in interface configuration mode on an access port. Turn on port security for this port.",
+          "language": "cisco",
+          "correct": [
+            "switchport port-security"
+          ],
+          "why": "`switchport port-security` turns on MAC address limiting for the port."
+        }
+      }
+    ]
   },
   {
     "type": "code_line",
@@ -909,6 +965,43 @@
       }
     ],
     "feedback": "The two work as a pair: DHCP snooping must be enabled first because it builds the binding table, and Dynamic ARP Inspection consults that table to decide which ARP replies are genuine. Turn on DAI without snooping and it has nothing to validate against."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you limit which protocols the VTY lines accept?",
+    "npc": "tariq",
+    "intro": "Remote logins reach a switch on its virtual terminal lines. One line decides which protocols they accept.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "On Cisco IOS, `transport input` sets what the VTY lines accept. Type it in line configuration mode, `Switch(config-line)#`."
+          },
+          {
+            "code": "transport input <protocols>",
+            "language": "general form, Cisco IOS line configuration"
+          },
+          {
+            "say": "Name every protocol the lines accept, from `ssh`, `telnet`, `all` or `none`."
+          },
+          {
+            "code": "transport input telnet ssh",
+            "language": "worked example: accept both"
+          }
+        ],
+        "say": "On Cisco IOS, `transport input` sets what the VTY lines accept. Type it in line configuration mode, `Switch(config-line)#`. Name every protocol the lines accept, from `ssh`, `telnet`, `all` or `none`.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. You are in line configuration mode under line vty 5 15. Make these lines accept no remote logins at all.",
+          "language": "cisco",
+          "correct": [
+            "transport input none",
+            "transport in none"
+          ],
+          "why": "`transport input none` lists no protocol, so the lines refuse every remote login."
+        }
+      }
+    ]
   },
   {
     "type": "code_line",

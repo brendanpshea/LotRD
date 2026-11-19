@@ -1303,6 +1303,49 @@
     "feedback": "Zone transfers (and answers too big for UDP) use TCP 53, DHCP hands out the DNS servers along with the address, mask and gateway, and everyday lookups use UDP 53. DHCP servers listen on UDP 67 and clients on 68, so the swapped ports are wrong. A Discover is a broadcast because the laptop knows no server's address yet. DNS maps names to addresses; finding the MAC address for an IP address is ARP's job, coming up next."
   },
   {
+    "type": "npc_demo",
+    "question": "NPC: How do you open an SSH session on a different port?",
+    "npc": "tariq",
+    "intro": "Many servers move SSH off its usual port to dodge automatic scans. You then have to name the port, and the user, every time you connect.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "**ssh** needs three choices from you: the port, the user name, and the device to reach."
+          },
+          {
+            "code": "ssh -p <port> <user>@<device>",
+            "language": "general form, Linux"
+          },
+          {
+            "say": "`-p` sets the port. The user name goes before the @, and the device goes after it."
+          },
+          {
+            "code": "ssh -p 8022 doran@gw1",
+            "language": "worked example: port 8022"
+          }
+        ],
+        "say": "**ssh** needs three choices from you: the port, the user name, and the device to reach. `-p` sets the port. The user name goes before the @, and the device goes after it.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Open an SSH session to db1 as the user lyra, on port 2345.",
+          "language": "bash",
+          "correct": [
+            "ssh -p 2345 lyra@db1",
+            "ssh lyra@db1 -p 2345",
+            "ssh -p2345 lyra@db1",
+            "ssh -l lyra -p 2345 db1",
+            "ssh -p 2345 -l lyra db1",
+            "ssh -l lyra db1 -p 2345",
+            "ssh lyra@db1 -p2345"
+          ],
+          "case_sensitive": true,
+          "why": "`-p 2345` picks the port, and `lyra@db1` names the user and the device."
+        }
+      }
+    ]
+  },
+  {
     "type": "code_line",
     "question": "Aria's server srv1 runs its SSH service on port 2222 instead of the default. On Linux, write the command that opens an SSH session to srv1 as the user aria.",
     "language": "bash",
@@ -1461,6 +1504,50 @@
             "Its own address, to learn its own MAC"
           ],
           "why": "A frame crosses only one link, so the PC needs the gateway's MAC, not the far server's. ARP never crosses the router: its broadcast stops there."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "The `arp` command works on the ARP cache, and the switch after it picks the job."
+          },
+          {
+            "table": {
+              "head": [
+                "Command",
+                "What it does"
+              ],
+              "rows": [
+                [
+                  "`arp -a`",
+                  "lists every cached IP and MAC pair"
+                ],
+                [
+                  "`arp -d <address>`",
+                  "deletes the cache entry for that address"
+                ],
+                [
+                  "`arp -s <address> <mac>`",
+                  "adds a permanent entry by hand"
+                ]
+              ]
+            },
+            "caption": "the arp family"
+          },
+          {
+            "say": "Only `-d` and `-s` take an address, and only `-s` takes a MAC address as well."
+          }
+        ],
+        "say": "The `arp` command works on the ARP cache, and the switch after it picks the job. Only `-d` and `-s` take an address, and only `-s` takes a MAC address as well.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. On a Windows PC, delete the ARP cache entry for 10.0.0.1.",
+          "language": "cmd",
+          "correct": [
+            "arp -d 10.0.0.1"
+          ],
+          "case_sensitive": false,
+          "why": "`-d` deletes one entry, and the address comes after it."
         }
       },
       {

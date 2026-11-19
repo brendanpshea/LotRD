@@ -2106,27 +2106,31 @@ describe('Teaching scenes: the mentor speaks for themselves', () => {
   });
 
   // A typed line is taught before it is asked (WRITING_GUIDE: Practice a line before
-  // it is asked). Sets move here as their scenes gain the practice.
-  const TYPED_TAUGHT = setId => /^netplus_11_/.test(setId);
+  // it is asked).
+  // The narrated sets wait: a practice there needs its lines recorded first.
+  const TYPED_TAUGHT = setId => !/^computing_concepts_(0[6-9]|1\d)_|^java_0[07]_/.test(setId);
 
-  it('a typed line is practised in the scene before it, and the question asks for a new one', () => {
+  it('a typed line is practised in a scene before it, and the question asks for a new one', () => {
     const squash = line => line.toLowerCase().replace(/\s+/g, '');
     const bad = [];
     for (const setId of index.filter(TYPED_TAUGHT)) {
       const qs = loadJSON(`question_sets/${setId}`);
-      const shown = new Set();      // every line a scene has shown or had the student type so far
-      let practised = false;        // the scene most recently passed had a typed practice
+      const shown = new Set();       // each worked example and each line the student has typed so far
+      const practised = new Set();   // the languages a scene has had the student type
       qs.forEach((q, i) => {
         if (q.type === 'npc_demo') {
-          practised = q.steps.some(st => st.check?.type === 'code_line');
           for (const st of q.steps) {
-            for (const b of st.beats || []) if (typeof b.code === 'string') b.code.split('\n').forEach(l => shown.add(squash(l)));
-            if (st.check?.type === 'code_line') st.check.correct.forEach(l => shown.add(squash(l)));
+            // A one-line code beat is a form or a worked example; a longer one lists a family or shows output.
+            for (const b of st.beats || []) if (typeof b.code === 'string' && !b.code.includes('\n')) shown.add(squash(b.code));
+            if (st.check?.type === 'code_line') {
+              st.check.correct.forEach(l => shown.add(squash(l)));
+              practised.add(st.check.language);
+            }
           }
         } else if (q.type === 'code_line') {
-          if (!practised) bad.push(`${setId}[${i}]: the scene before this typed question has no typed practice`);
+          if (!practised.has(q.language)) bad.push(`${setId}[${i}]: no scene before this typed question has the student type a ${q.language} line`);
           const seen = q.correct.find(l => shown.has(squash(l)));
-          if (seen) bad.push(`${setId}[${i}]: "${seen}" was already shown or practised in a scene; ask for a new line`);
+          if (seen) bad.push(`${setId}[${i}]: "${seen}" was a scene's example or practice; ask for a new line`);
         }
       });
     }

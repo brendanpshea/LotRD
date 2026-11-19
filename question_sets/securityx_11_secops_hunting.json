@@ -349,6 +349,43 @@
       {
         "beats": [
           {
+            "say": "To count how many events carry one event ID, `grep` takes the `-c` flag, a pattern and a file."
+          },
+          {
+            "code": "grep -c <pattern> <file>",
+            "language": "general form, bash"
+          },
+          {
+            "say": "The pattern is the text to find, such as an event ID, and the file name comes last."
+          },
+          {
+            "code": "grep -c 4624 jump.log",
+            "language": "worked example: count 4624 events"
+          }
+        ],
+        "say": "To count how many events carry one event ID, `grep` takes the `-c` flag, a pattern and a file. The pattern is the text to find, such as an event ID, and the file name comes last.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Count the lines of web.log that contain the event ID 4672.",
+          "language": "bash",
+          "correct": [
+            "grep -c 4672 web.log",
+            "grep -c '4672' web.log",
+            "grep -c \"4672\" web.log",
+            "grep -wc 4672 web.log",
+            "grep -cw 4672 web.log",
+            "grep -c -w 4672 web.log",
+            "grep 4672 web.log | wc -l",
+            "grep --count 4672 web.log",
+            "cat web.log | grep -c 4672"
+          ],
+          "case_sensitive": true,
+          "why": "`-c` prints the number of matching lines, and the file name comes last."
+        }
+      },
+      {
+        "beats": [
+          {
             "say": "**Event duplication** is one event arriving twice through overlapping collectors."
           },
           {
@@ -650,6 +687,68 @@
       "Move it to the main queue once it proves its worth"
     ],
     "feedback": "A rule is written and committed, so it is reviewed and versioned. It is tested against history before it touches production, and then run silently to see its real-world noise. After that it is given a small audience, and only then is it sent to the main queue. Each stage catches noise before analysts learn to ignore the rule, and the Git history shows auditors why every change was made."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you hide the lines you already know are noise?",
+    "npc": "val",
+    "intro": "A queue full of alerts from a scanner you already trust buries the ones that matter. One command can hide that noise while you read the rest.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "Adding `-v` to `grep` inverts the match, so it prints the lines that do **not** contain the pattern."
+          },
+          {
+            "code": "grep -v <pattern> <file>",
+            "language": "general form, bash"
+          },
+          {
+            "say": "The pattern is the noise to hide, and the file name comes last."
+          },
+          {
+            "code": "grep -v backup alerts.log",
+            "language": "worked example: hide backup lines"
+          }
+        ],
+        "say": "Adding `-v` to `grep` inverts the match, so it prints the lines that do **not** contain the pattern. The pattern is the noise to hide, and the file name comes last.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Print every line of tmp.log that does not contain healthcheck.",
+          "language": "bash",
+          "correct": [
+            "grep -v healthcheck tmp.log",
+            "grep -v 'healthcheck' tmp.log",
+            "grep -v \"healthcheck\" tmp.log",
+            "grep -vw healthcheck tmp.log",
+            "grep -wv healthcheck tmp.log",
+            "grep -v -w healthcheck tmp.log"
+          ],
+          "case_sensitive": true,
+          "why": "`-v` keeps only the lines without the pattern, and the file name comes last."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "A `grep -v` only hides lines on your own screen."
+          },
+          {
+            "say": "A lasting exclusion belongs in the rule or forwarder configuration, scoped and reviewed, so every exception is written down."
+          }
+        ],
+        "say": "A `grep -v` only hides lines on your own screen. A lasting exclusion belongs in the rule or forwarder configuration, scoped and reviewed, so every exception is written down.",
+        "check": {
+          "prompt": "Kaeli wants a trusted scanner's alerts out of the queue for good. Where should the exclusion live?",
+          "answer": "In the rule or forwarder configuration, scoped and reviewed",
+          "wrong": [
+            "In a grep command she runs by hand each morning",
+            "In the log file itself, by deleting the scanner's lines"
+          ],
+          "why": "A grep helps during triage, but only configuration removes the noise for everyone, and a reviewed exception leaves a record. Deleting log lines destroys evidence."
+        }
+      }
+    ]
   },
   {
     "type": "code_line",
@@ -1785,19 +1884,6 @@
     ]
   },
   {
-    "type": "code_line",
-    "question": "A YARA rule's strings section reads:\n\n    $a1 = \"vault-sync\" ascii\n    $a2 = \"--no-delete\" ascii\n    $a3 = \"drop.cdn-mirror\" ascii\n    $a4 = \"exfil_ok\" ascii\n\nThe rule has no other strings. Write the condition expression that is true when at least three of the $a strings appear in a file.",
-    "language": "yara",
-    "correct": [
-      "3 of ($a*)",
-      "3 of ($a1,$a2,$a3,$a4)",
-      "3 of ($a1, $a2, $a3, $a4)",
-      "3 of them"
-    ],
-    "case_sensitive": true,
-    "feedback": "3 of ($a*) counts the strings whose names start with $a and needs any three of them; because the rule has no other strings, 3 of them means the same thing here. To limit it to Windows executables as well, join it to uint16(0) == 0x5A4D with and."
-  },
-  {
     "type": "cloze",
     "question": "Kaeli shares four detections with partner SOCs. For suspicious PowerShell in Windows event logs, she writes a {{1}} rule; to flag a malware family by byte patterns inside files, a {{2}} rule; to alert on packets leaving for a reverse-shell port, a {{3}} rule; and to score Zeek network logs for beaconing without any signature, she runs {{4}}.",
     "blanks": [
@@ -1824,6 +1910,76 @@
       }
     ],
     "feedback": "Sigma looks at logs and converts into each SIEM's query language; YARA looks at files; Snort and Suricata look at packets on the wire; RITA analyses Zeek's network logs statistically, so it can find command-and-control that no signature has seen. Pick the wrong one and the rule never sees the data it was written for."
+  },
+  {
+    "type": "npc_demo",
+    "question": "NPC: How do you make a YARA rule need several strings?",
+    "npc": "val",
+    "intro": "One string in a file can be a coincidence. Several of them together are far more likely to mean the thing you are hunting.",
+    "steps": [
+      {
+        "beats": [
+          {
+            "say": "A YARA rule's `condition` line can count how many of its strings appear in a file."
+          },
+          {
+            "code": "<count> of ($<prefix>*)",
+            "language": "general form, YARA"
+          },
+          {
+            "say": "The count is how many strings must match, and the `*` covers every string name that starts with the prefix."
+          },
+          {
+            "code": "2 of ($b*)",
+            "language": "worked example: any 2 of the $b strings"
+          }
+        ],
+        "say": "A YARA rule's `condition` line can count how many of its strings appear in a file. The count is how many strings must match, and the `*` covers every string name that starts with the prefix.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. A rule's only strings are $c1 to $c5. Write the condition that is true when at least 4 of them appear.",
+          "language": "yara",
+          "correct": [
+            "4 of ($c*)",
+            "4 of ($c1,$c2,$c3,$c4,$c5)",
+            "4 of ($c1, $c2, $c3, $c4, $c5)",
+            "4 of them"
+          ],
+          "case_sensitive": true,
+          "why": "`4 of ($c*)` needs any four strings whose names start with $c. Here `4 of them` means the same."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "`any of them` fires when a single string matches, and `all of them` needs every string."
+          }
+        ],
+        "say": "`any of them` fires when a single string matches, and `all of them` needs every string.",
+        "check": {
+          "prompt": "A hunter wants the rule to fire when even one of its strings appears. Which condition does that?",
+          "answer": "any of them",
+          "wrong": [
+            "all of them",
+            "2 of them"
+          ],
+          "why": "`any of them` needs only one match. `all of them` needs every string, and `2 of them` needs at least two."
+        }
+      }
+    ]
+  },
+  {
+    "type": "code_line",
+    "question": "A YARA rule's strings section reads:\n\n    $a1 = \"vault-sync\" ascii\n    $a2 = \"--no-delete\" ascii\n    $a3 = \"drop.cdn-mirror\" ascii\n    $a4 = \"exfil_ok\" ascii\n\nThe rule has no other strings. Write the condition expression that is true when at least three of the $a strings appear in a file.",
+    "language": "yara",
+    "correct": [
+      "3 of ($a*)",
+      "3 of ($a1,$a2,$a3,$a4)",
+      "3 of ($a1, $a2, $a3, $a4)",
+      "3 of them"
+    ],
+    "case_sensitive": true,
+    "feedback": "3 of ($a*) counts the strings whose names start with $a and needs any three of them; because the rule has no other strings, 3 of them means the same thing here. To limit it to Windows executables as well, join it to uint16(0) == 0x5A4D with and."
   },
   {
     "question": "Kaeli reads this rule from a community feed before enabling it at Highrook:\n\nalert tcp $HOME_NET any -> $EXTERNAL_NET 8443 (msg:\"Possible C2 over 8443\"; flow:to_server,established; sid:1000412; rev:3;)\n\nWhich statements about it are correct?",

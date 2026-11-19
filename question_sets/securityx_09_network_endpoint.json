@@ -460,6 +460,40 @@
       {
         "beats": [
           {
+            "say": "**setenforce** switches the running SELinux mode, and the change takes effect at once."
+          },
+          {
+            "code": "setenforce <mode>",
+            "language": "general form, Linux"
+          },
+          {
+            "say": "The mode is a word or a number: `Enforcing` or `1`, and `Permissive` or `0`."
+          },
+          {
+            "code": "setenforce Permissive",
+            "language": "worked example: switch to permissive"
+          }
+        ],
+        "say": "**setenforce** switches the running SELinux mode, and the change takes effect at once. The mode is a word or a number: `Enforcing` or `1`, and `Permissive` or `0`.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Put the running host into permissive mode, typing the mode as a number.",
+          "language": "bash",
+          "correct": [
+            "setenforce 0",
+            "sudo setenforce 0",
+            "setenforce Permissive",
+            "setenforce permissive",
+            "sudo setenforce Permissive",
+            "sudo setenforce permissive"
+          ],
+          "case_sensitive": true,
+          "why": "`0` means permissive, so denials are logged but not blocked. `1` would mean enforcing."
+        }
+      },
+      {
+        "beats": [
+          {
             "say": "Windows has its own version, **Attack Surface Reduction**: Microsoft Defender's **ASR rules** block risky behaviors."
           },
           {
@@ -1037,6 +1071,43 @@
             "Anyone: the zone's records are published in DNS anyway"
           ],
           "why": "Secondaries need the whole zone to replicate it, and nobody else does. Restrict transfers by source IP or a shared secret key (**TSIG**). Single records may be public, but the complete list is free reconnaissance."
+        }
+      },
+      {
+        "beats": [
+          {
+            "say": "The **dig** tool asks a DNS server a question, and the `axfr` type asks for the whole zone."
+          },
+          {
+            "code": "dig axfr <zone> @<server>",
+            "language": "general form, Linux"
+          },
+          {
+            "say": "The zone is the domain you want, and the `@` picks which server to ask."
+          },
+          {
+            "code": "dig axfr corp @dns1",
+            "language": "worked example: zone corp, server dns1"
+          }
+        ],
+        "say": "The **dig** tool asks a DNS server a question, and the `axfr` type asks for the whole zone. The zone is the domain you want, and the `@` picks which server to ask.",
+        "check": {
+          "type": "code_line",
+          "prompt": "Your turn. Ask the server ns2 for a full zone transfer of the zone ops.",
+          "language": "bash",
+          "correct": [
+            "dig axfr ops @ns2",
+            "dig @ns2 axfr ops",
+            "dig axfr @ns2 ops",
+            "dig @ns2 ops axfr",
+            "dig ops axfr @ns2",
+            "dig -t axfr ops @ns2",
+            "dig @ns2 -t axfr ops",
+            "dig AXFR ops @ns2",
+            "dig @ns2 AXFR ops"
+          ],
+          "case_sensitive": true,
+          "why": "`axfr` asks for the whole zone, `ops` names it, and `@ns2` picks the server that is asked."
         }
       }
     ]
